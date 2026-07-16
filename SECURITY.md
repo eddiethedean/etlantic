@@ -1,17 +1,17 @@
 # Security Policy
 
-Pipelantic 0.4.0 is an alpha release. Security reports concerning the
+Pipelantic 0.5.0 is an alpha release. Security reports concerning the
 published package, contract loading, planning, local runtime, storage
-bindings, secret handling, documentation, or repository automation are
-welcome.
+bindings, secret handling, dataframe plugins, documentation, or repository
+automation are welcome.
 
 ## Supported Versions
 
 | Version | Support |
 |---|---|
-| 0.4.x | Current alpha line; best-effort security fixes |
-| 0.3.x | Critical fixes only when practical |
-| 0.2.x and earlier | Not supported |
+| 0.5.x | Current alpha line; best-effort security fixes |
+| 0.4.x | Critical fixes only when practical |
+| 0.3.x and earlier | Not supported |
 
 Upgrade to the latest patch release before reporting an issue.
 

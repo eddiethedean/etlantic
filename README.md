@@ -12,19 +12,20 @@ typed Python.
 
 ## Status
 
-**0.4.0 — Local Runtime and Operational Model**
+**0.5.0 — Dataframe Execution**
 
 Pipelantic provides the typed modeling kernel, contract interoperability,
-an immutable secret-free `PipelinePlan`, and a local async runtime that
-executes plans via Python callables, in-memory artifacts, and stdlib
-JSON/CSV bindings.
+an immutable secret-free `PipelinePlan`, a local async runtime, and a
+versioned dataframe execution protocol with independently installable
+Polars (reference) and Pandas (compatibility) plugins.
 
 Use Pipelantic when you want to catch incompatible wiring before processing
-data, generate ODCS/DTCS/DPCS contracts from Python, or inspect a deterministic
-execution plan independently of a future backend.
+data, generate ODCS/DTCS/DPCS contracts from Python, inspect a deterministic
+execution plan, or run the same logical pipeline on local Python, Polars, or
+Pandas.
 
-Pipelantic is currently alpha. Pandas, Polars, SQL, Spark, Airflow, and other
-external backend plugins are design work and are not included in 0.4.
+Pipelantic is currently alpha. SQL, Spark, Airflow, and other external
+backend plugins remain future work.
 
 See the [hosted documentation](https://pipelantic.readthedocs.io/) for the
 full design,
@@ -35,6 +36,9 @@ full design,
 
 ```bash
 pip install pipelantic
+# optional dataframe engines
+pip install pipelantic-polars
+pip install pipelantic-pandas
 # or
 uv add pipelantic
 ```
@@ -58,8 +62,8 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 Tag a version that matches `src/pipelantic/_version.py`, then push the tag:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
 GitHub Actions runs checks and publishes to PyPI using the `PYPI_API_TOKEN`

@@ -47,6 +47,11 @@ from pipelantic.reports.model import (
 )
 from pipelantic.runtime.artifacts import ArtifactStore
 from pipelantic.runtime.context import AttemptContext, RunContext, StepContext
+from pipelantic.runtime.dataframe_exec import (
+    execute_dataframe_step,
+    is_dataframe_engine,
+    resolve_dataframe_plugin,
+)
 from pipelantic.runtime.events import LifecycleEvent, SecurityEvent
 from pipelantic.runtime.invoke import maybe_await
 from pipelantic.runtime.logging import RunLogger, redact_message
@@ -137,6 +142,7 @@ class _NodeState:
     records_in: int | None = None
     records_out: int | None = None
     implementation: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -514,6 +520,7 @@ class LocalOrchestrator:
             records_in=state.records_in,
             records_out=state.records_out,
             implementation=state.implementation,
+            metadata=dict(state.metadata),
         )
 
     def _producers(self, graph: LogicalGraph) -> dict[str, set[str]]:
@@ -580,6 +587,7 @@ class LocalOrchestrator:
                         artifacts=artifacts,
                         graph=graph,
                         validations=validations,
+                        diagnostics=diagnostics,
                         schema_obs=schema_obs,
                         attempt=attempt_no,
                         step_context=ctx,
@@ -735,6 +743,7 @@ class LocalOrchestrator:
         artifacts: ArtifactStore,
         graph: LogicalGraph,
         validations: list[ValidationResult],
+        diagnostics: list[RunDiagnostic],
         schema_obs: list[SchemaObservationResult],
         attempt: int,
         step_context: StepContext,
@@ -754,6 +763,7 @@ class LocalOrchestrator:
         if node.kind is NodeKind.SINK:
             inputs = self._gather_inputs(node, graph, artifacts)
             payload = next(iter(inputs.values()), [])
+            payload = self._coerce_to_records(payload, contract_type=node.contract_type)
             payload = await self._validate_boundary(
                 node, payload, boundary="pre_publication", validations=validations
             )
@@ -779,6 +789,102 @@ class LocalOrchestrator:
 
         if node.kind is NodeKind.STEP:
             inputs = self._gather_inputs(node, graph, artifacts)
+            state.records_in = sum(_count(v) for v in inputs.values())
+            params = self._parameters_for(node)
+            impl = self._resolve_implementation(node)
+            state.implementation = impl.identity
+
+            if is_dataframe_engine(impl.engine):
+                plugin = resolve_dataframe_plugin(
+                    impl.engine,
+                    plugins=getattr(self.runtime, "dataframe_plugins", None),
+                )
+                # Skip record-oriented input validation; plugin validates.
+                for _port_name in inputs:
+                    validations.append(
+                        ValidationResult(
+                            node_name=node.name,
+                            boundary="input_validation",
+                            status="skipped",
+                            message=f"delegated to {impl.engine} plugin",
+                        )
+                    )
+                bundle = await execute_dataframe_step(
+                    plugin=plugin,
+                    impl=impl,
+                    node=node,
+                    inputs=inputs,
+                    params=params,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                )
+                for diag in bundle.diagnostics:
+                    diagnostics.append(
+                        RunDiagnostic(
+                            code=str(diag.get("code") or "PMDF000"),
+                            severity=str(diag.get("severity") or "warning"),
+                            message=redact_message(str(diag.get("message") or "")),
+                            node_name=node.name,
+                        )
+                    )
+                outputs = dict(bundle.valid)
+                for port_name, value in bundle.invalid.items():
+                    logical = f"{node.name}.{port_name}#invalid"
+                    ref = ArtifactRef(
+                        identity=artifact_identity(
+                            pipeline_id=self.plan.pipeline_id,
+                            node_name=node.name,
+                            port_name=f"{port_name}#invalid",
+                            security_domain=self.plan.security_domain,
+                        ),
+                        logical_output=logical,
+                        strategy=ArtifactStrategy.IN_MEMORY,
+                        security_domain=self.plan.security_domain,
+                    )
+                    artifacts.put(ref, value, durable=False)
+                validations.append(
+                    ValidationResult(
+                        node_name=node.name,
+                        boundary="output_validation",
+                        status=bundle.validation_decision.value,
+                        records_checked=bundle.metrics.rows_out,
+                        records_invalid=bundle.metrics.invalid_count or 0,
+                    )
+                )
+                await self._observe_schema(node, outputs, schema_obs=schema_obs)
+                for port_name, value in outputs.items():
+                    strategy = self._strategy_for(node.name, port_name)
+                    logical = f"{node.name}.{port_name}"
+                    ref = ArtifactRef(
+                        identity=artifact_identity(
+                            pipeline_id=self.plan.pipeline_id,
+                            node_name=node.name,
+                            port_name=port_name,
+                            security_domain=self.plan.security_domain,
+                        ),
+                        logical_output=logical,
+                        strategy=strategy,
+                        security_domain=self.plan.security_domain,
+                    )
+                    durable = (
+                        self.request.materialization is MaterializationPolicy.DURABLE
+                        or artifacts.should_durable(strategy)
+                    )
+                    if durable:
+                        # Collect to records for durable JSON workspace.
+                        value = plugin.to_records(value, contract_type=None)
+                    artifacts.put(
+                        ref,
+                        value,
+                        durable=durable,
+                        ownership=bundle.metrics.ownership,
+                    )
+                state.records_in = bundle.metrics.rows_in or state.records_in
+                state.records_out = bundle.metrics.rows_out or 0
+                state.metadata["dataframe"] = bundle.metrics.to_dict()
+                return
+
             for port_name, value in inputs.items():
                 inputs[port_name] = await self._validate_boundary(
                     node,
@@ -788,9 +894,6 @@ class LocalOrchestrator:
                     port_name=port_name,
                 )
             state.records_in = sum(_count(v) for v in inputs.values())
-            params = self._parameters_for(node)
-            impl = self._resolve_implementation(node)
-            state.implementation = impl.identity
             result = await self._invoke_transform(
                 impl,
                 inputs,
@@ -888,8 +991,36 @@ class LocalOrchestrator:
             if edge.consumer_node != node.name:
                 continue
             key = f"{edge.producer_node}.{edge.producer_port}"
-            inputs[edge.consumer_port] = artifacts.get(key)
+            inputs[edge.consumer_port] = artifacts.get_raw(key)
         return inputs
+
+    def _coerce_to_records(self, data: Any, *, contract_type: type[Any] | None) -> Any:
+        """Convert native frames to records for storage/publication boundaries."""
+        from pipelantic.runtime.artifacts import _looks_like_frame
+
+        if not _looks_like_frame(data):
+            return data
+        module = type(data).__module__ or ""
+        engine = "polars" if module.startswith("polars") else "pandas"
+        try:
+            plugin = resolve_dataframe_plugin(
+                engine,
+                plugins=getattr(self.runtime, "dataframe_plugins", None),
+            )
+            return plugin.to_records(data, contract_type=contract_type)
+        except Exception:
+            # Fallback: best-effort via Arrow / to_dicts duck typing
+            if hasattr(data, "to_dicts") and callable(data.to_dicts):
+                rows = (
+                    data.collect().to_dicts()
+                    if hasattr(data, "collect")
+                    else data.to_dicts()
+                )
+                return as_records(rows, contract_type)
+            if hasattr(data, "to_dict") and callable(data.to_dict):
+                orient = data.to_dict(orient="records")
+                return as_records(orient, contract_type)
+            return data
 
     def _store_outputs(self, node: Node, data: Any, artifacts: ArtifactStore) -> None:
         port = node.outputs[0].name if node.outputs else "result"
@@ -1273,4 +1404,12 @@ def _count(data: Any) -> int:
         return 0
     if isinstance(data, (list, tuple)):
         return len(data)
+    if hasattr(data, "__len__") and not isinstance(data, (str, bytes, dict)):
+        try:
+            return len(data)
+        except Exception:
+            pass
+    # LazyFrame: unknown without collect
+    if type(data).__name__ == "LazyFrame":
+        return 0
     return 1

@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-07-16
+
+### Added
+
+- Versioned dataframe execution protocol (`pipelantic.dataframe/1`) with
+  materialize → invoke → normalize → validate → metrics → cleanup phases
+- Expanded capability vocabulary: eager, lazy, Arrow import/export, zero-copy,
+  schema inspection, invalid-row separation, cancellation, thread-safety
+- Planner recording of engine, plugin version, capabilities, collection points,
+  conversion boundaries, ownership, and validation policy on `PipelinePlan`
+- Runtime delegation of Polars/Pandas steps through the dataframe protocol
+  without reselecting engines
+- Independently installable `pipelantic-polars` (eager + LazyFrame preservation)
+  and `pipelantic-pandas` (eager, CoW/ownership isolation)
+- Optional Arrow interchange helpers (PyArrow imported only when available)
+- Entry-point discovery group `pipelantic.dataframe_plugins`
+- Conformance helpers in `pipelantic.testing`
+- uv workspace packaging for core + dataframe plugins
+
+### Changed
+
+- Package version advances to 0.5 (Dataframe Execution)
+- Built-in `local` registry plugin is a runtime/records path (`dataframe=False`),
+  not a dataframe engine
+- Planning contexts for `polars`/`pandas` auto-require dataframe capabilities
+
+### Upgrade notes
+
+- Install `pipelantic-polars` or `pipelantic-pandas` separately; core stays
+  engine-free
+- Register dataframe implementations with
+  `@TransformationClass.implementation("polars")` or `"pandas"`
+- Set `Profile.dataframe_engine` to `"polars"` or `"pandas"` to select a backend
+- Missing plugins or unsupported capabilities (e.g. Pandas + lazy) fail at
+  validation/planning
+
 ## [0.4.0] - 2026-07-16
 
 ### Upgrade notes

@@ -1,0 +1,25 @@
+[project]
+name = "pipelantic-polars"
+version = "0.5.0"
+description = "Polars dataframe execution plugin for Pipelantic."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+dependencies = [
+    "pipelantic>=0.5.0,<0.6",
+    "polars>=1.0,<2",
+]
+
+[project.optional-dependencies]
+arrow = ["pyarrow>=14"]
+
+[project.entry-points."pipelantic.dataframe_plugins"]
+polars = "pipelantic_polars:create_plugin"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pipelantic_polars"]

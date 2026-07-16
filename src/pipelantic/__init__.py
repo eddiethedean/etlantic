@@ -1,7 +1,7 @@
 """Pipelantic — typed, contract-driven data pipeline modeling.
 
-0.4 adds local runtime execution, PipelineRunReport, secrets resolution,
-lifecycle extensions, and stdlib JSON/CSV storage bindings.
+0.5 adds a versioned dataframe execution protocol with independently
+installable Polars and Pandas plugins.
 """
 
 from __future__ import annotations
@@ -12,6 +12,13 @@ from typing import Any
 from pipelantic._version import __version__
 from pipelantic.capabilities import CapabilityDecision, PluginCapabilities
 from pipelantic.contracts import Data, load_data_contract, write_odcs
+from pipelantic.dataframe import (
+    DATAFRAME_PROTOCOL_VERSION,
+    ArtifactOwnership,
+    DataframeValidationOutcome,
+    DataframeValidationPolicy,
+    discover_dataframe_plugins,
+)
 from pipelantic.diagnostics import (
     Diagnostic,
     DiagnosticAction,
@@ -125,6 +132,8 @@ from pipelantic.storage import (
 from pipelantic.transformation import ImplementationRecord, Step, Transformation
 
 __all__ = [
+    "DATAFRAME_PROTOCOL_VERSION",
+    "ArtifactOwnership",
     "ArtifactProvenance",
     "ArtifactRef",
     "ArtifactStrategy",
@@ -138,6 +147,8 @@ __all__ = [
     "Data",
     "DataContractModel",
     "DataValidationError",
+    "DataframeValidationOutcome",
+    "DataframeValidationPolicy",
     "DebugSession",
     "Diagnostic",
     "DiagnosticAction",
@@ -219,6 +230,7 @@ __all__ = [
     "diff_normalized_schemas",
     "diff_pipelines",
     "diff_transformations",
+    "discover_dataframe_plugins",
     "explain_plan",
     "generate_contracts",
     "graphs_equivalent",

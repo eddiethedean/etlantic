@@ -139,24 +139,34 @@ class RegistryBundle:
 
 
 def builtin_stub_registry() -> RegistryBundle:
-    """Return a registry with in-tree stub plugins for local planning tests."""
+    """Return a registry with in-tree stub plugins for local planning tests.
+
+    ``local`` is the in-process Python-records path (not a dataframe engine).
+    Polars/Pandas plugins register themselves via entry points or explicit
+    ``register_plugin`` calls when installed.
+    """
     registry = RegistryBundle()
     local_caps = PluginCapabilities(
         engine="local",
         async_execution=True,
-        dataframe=True,
-        extras=frozenset({"python"}),
+        dataframe=False,
+        eager=True,
+        lazy=False,
+        schema_inspection=True,
+        cancellation=True,
+        extras=frozenset({"python", "records"}),
     )
     null_caps = PluginCapabilities(
         engine="null",
-        dataframe=True,
+        dataframe=False,
+        eager=True,
         extras=frozenset({"noop"}),
     )
     registry.register_plugin(
         PluginDescriptor(
             name="local",
-            kind="dataframe",
-            version="0.4.0",
+            kind="runtime",
+            version="0.5.0",
             engine="local",
             capabilities=local_caps,
         )
@@ -164,8 +174,8 @@ def builtin_stub_registry() -> RegistryBundle:
     registry.register_plugin(
         PluginDescriptor(
             name="null",
-            kind="dataframe",
-            version="0.4.0",
+            kind="runtime",
+            version="0.5.0",
             engine="null",
             capabilities=null_caps,
         )
@@ -174,12 +184,13 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="env-secrets",
             kind="secret_provider",
-            version="0.4.0",
+            version="0.5.0",
             engine="env",
             capabilities=PluginCapabilities(
                 engine="env",
                 secret_provider=True,
                 dataframe=False,
+                eager=False,
             ),
         )
     )
@@ -192,7 +203,7 @@ class PlanningContext:
 
     profile: Profile
     registry: RegistryBundle = field(default_factory=builtin_stub_registry)
-    required_capabilities: list[str] = field(default_factory=lambda: ["dataframe"])
+    required_capabilities: list[str] = field(default_factory=list)
     allow_capability_fallback: bool = False
     fallback_engine: str | None = "null"
     selection: dict[str, Any] = field(default_factory=dict)
@@ -207,9 +218,16 @@ class PlanningContext:
         allow_capability_fallback: bool = False,
     ) -> PlanningContext:
         """Build a planning context from a profile name/object."""
+        resolved = resolve_profile(profile)
+        caps = list(required_capabilities) if required_capabilities is not None else []
+        engine = resolved.dataframe_engine or "local"
+        if not caps and engine in {"polars", "pandas"}:
+            caps = ["dataframe", "eager"]
+            if engine == "polars":
+                caps.append("lazy")
         return cls(
-            profile=resolve_profile(profile),
+            profile=resolved,
             registry=registry or builtin_stub_registry(),
-            required_capabilities=list(required_capabilities or ["dataframe"]),
+            required_capabilities=caps,
             allow_capability_fallback=allow_capability_fallback,
         )

@@ -224,6 +224,7 @@ nav:
   - Development:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap: 11_DEVELOPMENT/ROADMAP.md
+      - Migration 0.4 → 0.5: 11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
       - FastAPI Integration Plan: 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
       - Schema Drift Plan: 11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md
       - ETL Reliability Plan: 11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md

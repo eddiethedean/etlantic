@@ -1,8 +1,9 @@
 # Documentation Status and Conventions
 
-Pipelantic 0.4 implements the typed modeling kernel, contract interoperability,
-Validation / Pipeline Plan IR, and the local runtime / operational model. Much
-of the documentation still describes the intended 1.0 product. It serves three
+Pipelantic 0.5 implements the typed modeling kernel, contract interoperability,
+Validation / Pipeline Plan IR, the local runtime / operational model, and
+dataframe execution (Polars reference + Pandas compatibility). Much of the
+documentation still describes the intended 1.0 product. It serves three
 related purposes:
 
 1. Explain the product vision and user experience.
@@ -26,17 +27,18 @@ Public pages use these visible statuses:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.4 | Tested against the current package |
+| Available in 0.5 | Tested against the current package |
 | Partially available | Shipped and future behavior are explicitly separated |
 | Future design | Not a current API or installation guide |
 | Normative specification | Contract requirements, not package behavior |
 | Internal project plan | Maintainer sequencing and implementation notes |
 
-Unless a chapter says otherwise, user-guide code beyond the shipped 0.4
-modeling, interchange, validation, planning, and **local runtime** surface
-should be read as an **accepted design example**, not as evidence of a
-published package API. The 0.4 surface is defined by the package,
-[API reference](../10_REFERENCE/API_REFERENCE.md), tests, and changelog.
+Unless a chapter says otherwise, user-guide code beyond the shipped 0.5
+modeling, interchange, validation, planning, local runtime, and **dataframe
+plugin** surface should be read as an **accepted design example**, not as
+evidence of a published package API. The 0.5 surface is defined by the
+package, [API reference](../10_REFERENCE/API_REFERENCE.md), tests, and
+changelog.
 
 Dataframe, SQL, Spark, and external orchestration chapters remain accepted
 design until their milestones ship.

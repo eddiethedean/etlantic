@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-Pipelantic 0.4.0 is an alpha release. This page is the shortest answer to
+Pipelantic 0.5.0 is an alpha release. This page is the shortest answer to
 "What can I use today?"
 
-## Available in 0.4
+## Available in 0.5
 
 | Capability | Status |
 |---|---|
@@ -16,29 +16,29 @@ Pipelantic 0.4.0 is an alpha release. This page is the shortest answer to
 | Memory, callable, JSON, CSV, and no-write storage | Available |
 | Run reports, structured logging, and local debugging | Available |
 | Runtime secret references and env/file providers | Available |
+| Dataframe execution protocol (`pipelantic.dataframe/1`) | Available |
+| Polars plugin (eager + lazy preservation) | Available (`pipelantic-polars`) |
+| Pandas plugin (eager compatibility) | Available (`pipelantic-pandas`) |
+| Optional Arrow interchange | Available when PyArrow is installed |
 
-## Not included in 0.4
+## Not included in 0.5
 
 | Capability | Status |
 |---|---|
-| Pandas or Polars execution plugins | Future design |
-| SQL compilation or execution | Future design |
-| PySpark or streaming execution | Future design |
-| Airflow or other orchestrator compilation | Future design |
-| Public third-party Plugin SDK | Future design |
+| SQL compilation or execution | Future design (0.6) |
+| PySpark or streaming execution | Future design (0.7) |
+| Airflow or other orchestrator compilation | Future design (0.8) |
+| Public third-party Plugin SDK polish | Continues in 0.9 |
 | Graphviz and generated HTML pipeline documentation | Future design |
 | Stable 1.0 compatibility guarantees | Not yet |
 
-Pages describing unavailable capabilities are retained as design material.
-They are not evidence that an API or plugin has shipped.
+## Install matrix
 
-## Production Readiness
+```bash
+pip install pipelantic                 # core only — no dataframe engines
+pip install pipelantic-polars          # Polars reference plugin
+pip install pipelantic-pandas          # Pandas compatibility plugin
+pip install 'pipelantic-polars[arrow]' # optional PyArrow
+```
 
-Pipelantic is suitable for evaluation, prototypes, contract generation, plan
-inspection, and controlled local execution. It should not yet be treated as a
-production orchestration platform or as a stable replacement for a dataframe,
-SQL, Spark, or scheduling engine.
-
-Before production use, evaluate the alpha stability policy, security model,
-storage semantics, failure behavior, and compatibility requirements for your
-environment.
+Core never imports Polars, Pandas, PyArrow, or NumPy.

@@ -32,25 +32,29 @@ jobs:
           TAG="${GITHUB_REF_NAME#v}"
           VERSION="$(uv version --short)"
           MODULE_VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/pipelantic/_version.py)"
+          POLARS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/pipelantic-polars/pyproject.toml | head -1)"
+          PANDAS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/pipelantic-pandas/pyproject.toml | head -1)"
           if [ "$TAG" != "$VERSION" ] || [ "$TAG" != "$MODULE_VERSION" ]; then
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-
-      - name: Build
-        run: uv build
-
-      - name: Smoke test wheel
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          shopt -s nullglob
-          wheels=(dist/*.whl)
-          if [ "${#wheels[@]}" -ne 1 ]; then
-            echo "Expected exactly one wheel in dist/, found ${#wheels[@]}"
-            ls -la dist/ || true
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION'"
             exit 1
           fi
-          WHEEL="${wheels[0]}"
+
+      - name: Build
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          uv build --package pipelantic
+          uv build --package pipelantic-polars --out-dir dist
+          uv build --package pipelantic-pandas --out-dir dist
+
+      - name: Smoke test core wheel
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          WHEEL="dist/pipelantic-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project --with "$WHEEL" \
             python -c "import pipelantic; assert pipelantic.__version__ == '$TAG'"
 

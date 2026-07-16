@@ -131,7 +131,9 @@ def _build_plan(
     implementations = _select_implementations(
         pipeline_cls, graph, context, default_engine
     )
+    _assert_dataframe_engines_available(context, implementations, default_engine)
     capability_decisions = _capability_records(context, default_engine)
+    _assert_capabilities_supported(capability_decisions, context, default_engine)
 
     # 6. Regions by resolved engine (never merge across engines/security domains)
     regions = _form_regions(graph, implementations, default_engine, security_domain)
@@ -140,6 +142,7 @@ def _build_plan(
     physical_units: list[PhysicalUnit] = []
     logical_to_physical: dict[str, str] = {}
     for region in regions:
+        caps = context.registry.engines.get(region.engine)
         unit_id = f"unit:{region.identity}"
         physical_units.append(
             PhysicalUnit(
@@ -147,14 +150,31 @@ def _build_plan(
                 region_id=region.identity,
                 logical_nodes=region.node_names,
                 engine=region.engine,
+                metadata={
+                    "plugin_version": next(
+                        (
+                            p.version
+                            for p in context.registry.plugins.values()
+                            if p.engine == region.engine
+                        ),
+                        None,
+                    ),
+                    "capabilities": caps.to_dict() if caps is not None else None,
+                    "ownership": "copied" if region.engine == "pandas" else "shared",
+                },
             )
         )
         for name in region.node_names:
             logical_to_physical[name] = unit_id
 
-    # 7b. Materialization boundaries
+    # 7b. Materialization + collection boundaries
     boundaries = _materialization_boundaries(
         graph, implementations, default_engine, security_domain
+    )
+    boundaries.extend(
+        _collection_boundaries(
+            graph, implementations, default_engine, security_domain, regions
+        )
     )
 
     # 8. Output resolutions
@@ -244,7 +264,38 @@ def _build_plan(
         execution_settings=execution_settings,
         metadata={
             "planner": "pipelantic.plan.planner",
-            "planner_version": "0.3.0",
+            "planner_version": "0.5.0",
+            "dataframe_protocol": "pipelantic.dataframe/1",
+            "collection_points": [
+                {
+                    "identity": b.identity,
+                    "producer_node": b.producer_node,
+                    "producer_port": b.producer_port,
+                    "reason": b.reason,
+                }
+                for b in boundaries
+                if b.reason
+                in {
+                    "collection_point",
+                    "sink_publication",
+                    "cross_engine",
+                    "validation_boundary",
+                }
+            ],
+            "conversion_boundaries": [
+                {
+                    "identity": b.identity,
+                    "producer_node": b.producer_node,
+                    "producer_port": b.producer_port,
+                    "reason": b.reason,
+                }
+                for b in boundaries
+                if b.reason == "cross_engine"
+            ],
+            "validation_policy": {
+                "input_outcome": "fail",
+                "output_outcome": "fail",
+            },
         },
     )
     fingerprint = plan_fingerprint(plan)
@@ -368,8 +419,150 @@ def _capability_records(context: PlanningContext, engine: str) -> list[dict[str,
             fallback=fallback,
             allow_fallback=context.allow_capability_fallback,
         )
-        if item.decision is not CapabilityDecision.UNSUPPORTED
     ]
+
+
+def _assert_dataframe_engines_available(
+    context: PlanningContext,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+) -> None:
+    from pipelantic.dataframe.protocol import DATAFRAME_ENGINES
+
+    engines = {default_engine} | {impl.engine for impl in implementations.values()}
+    missing = sorted(
+        engine
+        for engine in engines
+        if engine in DATAFRAME_ENGINES and engine not in context.registry.engines
+    )
+    if not missing:
+        return
+    diagnostics = [
+        Diagnostic(
+            code="PMPLAN410",
+            severity=Severity.ERROR,
+            message=(
+                f"Dataframe engine {engine!r} is not registered. Install "
+                f"pipelantic-{engine} and ensure it is discoverable."
+            ),
+            path=("capability", engine),
+            phase="capability",
+        )
+        for engine in missing
+    ]
+    raise PipelineValidationError(
+        "Missing dataframe engine plugin(s).",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )
+
+
+def _assert_capabilities_supported(
+    capability_decisions: list[dict[str, Any]],
+    context: PlanningContext,
+    engine: str,
+) -> None:
+    unsupported = [
+        item
+        for item in capability_decisions
+        if item.get("decision") == CapabilityDecision.UNSUPPORTED.value
+    ]
+    # Pandas must fail planning when lazy is required.
+    available = context.registry.engines.get(engine)
+    if (
+        available is not None
+        and engine == "pandas"
+        and "lazy" in context.required_capabilities
+        and not available.supports("lazy")
+    ):
+        unsupported.append(
+            {
+                "requirement": "lazy",
+                "engine": engine,
+                "decision": CapabilityDecision.UNSUPPORTED.value,
+                "message": "Pandas plugin does not support lazy execution.",
+            }
+        )
+    if not unsupported:
+        return
+    diagnostics = [
+        Diagnostic(
+            code="PMPLAN411",
+            severity=Severity.ERROR,
+            message=str(
+                item.get("message")
+                or f"Unsupported capability {item.get('requirement')!r} "
+                f"for engine {engine!r}."
+            ),
+            path=("capability", str(item.get("requirement"))),
+            phase="capability",
+        )
+        for item in unsupported
+    ]
+    raise PipelineValidationError(
+        "Unsupported dataframe capabilities.",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )
+
+
+def _collection_boundaries(
+    graph: LogicalGraph,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+    security_domain: str,
+    regions: list[ExecutionRegion],
+) -> list[MaterializationBoundary]:
+    """Declare explicit collection points for lazy dataframe engines."""
+    from pipelantic.dataframe.protocol import DATAFRAME_ENGINES
+
+    region_engine = {r.identity: r.engine for r in regions}
+    node_region = {
+        name: region.identity for region in regions for name in region.node_names
+    }
+    boundaries: list[MaterializationBoundary] = []
+    for node in graph.nodes:
+        if node.kind is not NodeKind.STEP:
+            continue
+        engine = _node_engine(node.name, implementations, default_engine)
+        if engine not in DATAFRAME_ENGINES:
+            continue
+        caps = None
+        # Collection required before sink / cross-engine / durable boundaries.
+        for edge in graph.edges_from(node.name):
+            cons = next((n for n in graph.nodes if n.name == edge.consumer_node), None)
+            reason = None
+            if (cons is not None and cons.kind is NodeKind.SINK) or _node_engine(
+                edge.consumer_node, implementations, default_engine
+            ) != engine:
+                reason = "collection_point"
+            if reason is None:
+                continue
+            boundaries.append(
+                MaterializationBoundary(
+                    identity=(f"boundary:collect:{node.name}.{edge.producer_port}"),
+                    producer_node=node.name,
+                    producer_port=edge.producer_port,
+                    reason=reason,
+                    security_domain=security_domain,
+                    metadata={
+                        "engine": engine,
+                        "lazy_supported": bool(
+                            caps.supports("lazy") if caps else engine == "polars"
+                        ),
+                        "region": node_region.get(node.name),
+                        "region_engine": region_engine.get(
+                            node_region.get(node.name, ""), engine
+                        ),
+                    },
+                )
+            )
+    seen: set[str] = set()
+    unique: list[MaterializationBoundary] = []
+    for boundary in boundaries:
+        if boundary.identity in seen:
+            continue
+        seen.add(boundary.identity)
+        unique.append(boundary)
+    return unique
 
 
 def _node_engine(

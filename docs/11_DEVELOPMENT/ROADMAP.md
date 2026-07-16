@@ -328,7 +328,7 @@ runtime semantics, not a simplified test-only path.
 
 ## 0.5 — Dataframe Execution
 
-**Status: planned**
+**Status: shipped in 0.5.0**
 
 ### Objective
 

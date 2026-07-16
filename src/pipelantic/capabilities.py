@@ -17,7 +17,11 @@ class CapabilityDecision(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class PluginCapabilities:
-    """Declared capabilities of a plugin or engine."""
+    """Declared capabilities of a plugin or engine.
+
+    Dataframe-oriented flags (eager/lazy/arrow/...) are first-class for 0.5
+    planning. Unknown requirements may still be declared via ``extras``.
+    """
 
     engine: str
     async_execution: bool = False
@@ -28,6 +32,15 @@ class PluginCapabilities:
     spark: bool = False
     dataframe: bool = True
     secret_provider: bool = False
+    eager: bool = True
+    lazy: bool = False
+    arrow_import: bool = False
+    arrow_export: bool = False
+    zero_copy: bool = False
+    schema_inspection: bool = False
+    invalid_row_separation: bool = False
+    cancellation: bool = False
+    thread_safe: bool = False
     extras: frozenset[str] = field(default_factory=frozenset)
 
     def supports(self, requirement: str) -> bool:
@@ -42,6 +55,15 @@ class PluginCapabilities:
             "spark": self.spark,
             "dataframe": self.dataframe,
             "secret_provider": self.secret_provider,
+            "eager": self.eager,
+            "lazy": self.lazy,
+            "arrow_import": self.arrow_import,
+            "arrow_export": self.arrow_export,
+            "zero_copy": self.zero_copy,
+            "schema_inspection": self.schema_inspection,
+            "invalid_row_separation": self.invalid_row_separation,
+            "cancellation": self.cancellation,
+            "thread_safe": self.thread_safe,
         }
         if requirement in known:
             return known[requirement]
@@ -59,8 +81,43 @@ class PluginCapabilities:
             "spark": self.spark,
             "dataframe": self.dataframe,
             "secret_provider": self.secret_provider,
+            "eager": self.eager,
+            "lazy": self.lazy,
+            "arrow_import": self.arrow_import,
+            "arrow_export": self.arrow_export,
+            "zero_copy": self.zero_copy,
+            "schema_inspection": self.schema_inspection,
+            "invalid_row_separation": self.invalid_row_separation,
+            "cancellation": self.cancellation,
+            "thread_safe": self.thread_safe,
             "extras": sorted(self.extras),
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PluginCapabilities:
+        """Deserialize capabilities."""
+        extras = data.get("extras") or ()
+        return cls(
+            engine=str(data["engine"]),
+            async_execution=bool(data.get("async_execution", False)),
+            streaming=bool(data.get("streaming", False)),
+            transactions=bool(data.get("transactions", False)),
+            checkpoints=bool(data.get("checkpoints", False)),
+            sql=bool(data.get("sql", False)),
+            spark=bool(data.get("spark", False)),
+            dataframe=bool(data.get("dataframe", True)),
+            secret_provider=bool(data.get("secret_provider", False)),
+            eager=bool(data.get("eager", True)),
+            lazy=bool(data.get("lazy", False)),
+            arrow_import=bool(data.get("arrow_import", False)),
+            arrow_export=bool(data.get("arrow_export", False)),
+            zero_copy=bool(data.get("zero_copy", False)),
+            schema_inspection=bool(data.get("schema_inspection", False)),
+            invalid_row_separation=bool(data.get("invalid_row_separation", False)),
+            cancellation=bool(data.get("cancellation", False)),
+            thread_safe=bool(data.get("thread_safe", False)),
+            extras=frozenset(str(x) for x in extras),
+        )
 
 
 @dataclass(frozen=True, slots=True)

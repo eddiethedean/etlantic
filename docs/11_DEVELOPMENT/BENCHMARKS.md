@@ -4,6 +4,19 @@ Pipelantic benchmarks measure modeling, validation, planning, and
 coordination overhead. They do not claim ownership of Pandas, Polars, SQL, or
 Spark engine performance.
 
+## Dataframe scale harness (0.5)
+
+A lightweight correctness/timing harness lives at
+`benchmarks/dataframe_scale.py`:
+
+```bash
+uv run --group dataframes python benchmarks/dataframe_scale.py polars
+uv run --group dataframes python benchmarks/dataframe_scale.py pandas
+```
+
+Publish dataset shape, warm-up count, environment, and elapsed seconds with
+any regression notes. Thresholds are advisory during 0.x.
+
 ## Goals
 
 Benchmarks should answer:

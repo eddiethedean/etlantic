@@ -26,9 +26,10 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-**0.4.0** ships validation, profiles, an immutable secret-free
+**0.5.0** ships validation, profiles, an immutable secret-free
 `PipelinePlan`, local Python execution, runtime secret resolution, run reports,
-and memory/callable/JSON/CSV storage.
+memory/callable/JSON/CSV storage, and a versioned dataframe protocol with
+Polars and Pandas plugins.
 
 Many chapters still describe the intended 1.0 product. Examples beyond the
 shipped surface are design examples, not a promise that every illustrated API

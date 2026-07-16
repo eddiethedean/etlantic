@@ -4,7 +4,7 @@ import pipelantic
 
 
 def test_version() -> None:
-    assert pipelantic.__version__ == "0.4.0"
+    assert pipelantic.__version__ == "0.5.0"
 
 
 def test_root_exports() -> None:

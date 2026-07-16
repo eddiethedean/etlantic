@@ -42,6 +42,7 @@ class PipelineRuntime:
     provider_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     secret_providers: dict[str, SecretProvider] = field(default_factory=dict)
     storage: dict[str, StorageBinding] = field(default_factory=dict)
+    dataframe_plugins: dict[str, Any] = field(default_factory=dict)
     memory: MemoryStorage = field(default_factory=MemoryStorage)
     callables: CallableStorage = field(default_factory=CallableStorage)
     _entered: bool = False
@@ -54,6 +55,18 @@ class PipelineRuntime:
             env = EnvSecretProvider()
             self.secret_providers["env"] = env
             self.secret_providers["env-secrets"] = env
+        if not self.dataframe_plugins:
+            try:
+                from pipelantic.dataframe.discovery import (
+                    discover_dataframe_plugins,
+                    register_discovered_plugins,
+                )
+
+                discovered = discover_dataframe_plugins()
+                self.dataframe_plugins.update(discovered)
+                register_discovered_plugins(self.registry, plugins=discovered)
+            except Exception:
+                pass
         if not self.storage:
             self.storage = {
                 "memory": self.memory,
@@ -83,6 +96,13 @@ class PipelineRuntime:
 
     def register_storage(self, name: str, binding: StorageBinding) -> None:
         self.storage[name] = binding
+
+    def register_dataframe_plugin(self, engine: str, plugin: Any) -> None:
+        """Register a live dataframe plugin and its planning descriptor."""
+        from pipelantic.dataframe.discovery import register_discovered_plugins
+
+        self.dataframe_plugins[engine] = plugin
+        register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[PipelineRuntime]:

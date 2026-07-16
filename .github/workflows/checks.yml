@@ -31,7 +31,7 @@ jobs:
       - name: Ruff format
         run: uv run ruff format --check .
 
-      - name: Pytest
+      - name: Pytest (core)
         run: uv run pytest -q
 
       - name: Documentation consistency
@@ -45,6 +45,31 @@ jobs:
       - name: MkDocs
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run mkdocs build --strict
+
+  dataframes:
+    name: Dataframe plugins (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [polars, pandas]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Sync with dataframe plugins
+        run: uv sync --locked --group dataframes
+
+      - name: Pytest dataframe suite
+        run: uv run pytest -q tests/dataframe -m "${{ matrix.engine }}"
+
+      - name: Runnable parity example
+        run: uv run python examples/dataframe_parity.py ${{ matrix.engine }}
 
   package:
     name: Build and test wheel
@@ -61,19 +86,22 @@ jobs:
       - name: Sync dependencies
         run: uv sync --locked
 
-      - name: Build
-        run: uv build
+      - name: Build core wheel
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          uv build --package pipelantic
 
       - name: Pytest against installed wheel
         run: |
           shopt -s nullglob
-          wheels=(dist/*.whl)
+          wheels=(dist/pipelantic-*.whl)
           if [ "${#wheels[@]}" -ne 1 ]; then
-            echo "Expected exactly one wheel in dist/, found ${#wheels[@]}"
+            echo "Expected exactly one pipelantic wheel in dist/, found ${#wheels[@]}"
             ls -la dist/ || true
             exit 1
           fi
           WHEEL="${wheels[0]}"
           echo "Testing wheel: $WHEEL"
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
-            python -m pytest -q
+            python -m pytest -q tests/unit tests/cli

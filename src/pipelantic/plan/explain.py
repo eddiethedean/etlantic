@@ -14,22 +14,49 @@ def explain_plan(plan: PipelinePlan) -> dict[str, Any]:
         for name in region.node_names:
             region_by_node[name] = region.identity
 
+    collection_points = [
+        b.to_dict()
+        for b in plan.materialization_boundaries
+        if b.reason
+        in {
+            "collection_point",
+            "sink_publication",
+            "cross_engine",
+            "validation_boundary",
+        }
+    ]
+    conversion_boundaries = [
+        b.to_dict()
+        for b in plan.materialization_boundaries
+        if b.reason == "cross_engine"
+    ]
+
     steps = []
     for node in plan.logical_graph.nodes:
         if plan.selected_nodes is not None and node.name not in plan.selected_nodes:
             continue
+        unit_id = plan.logical_to_physical.get(node.name)
+        unit = next((u for u in plan.physical_units if u.identity == unit_id), None)
+        out_res = [
+            o.to_dict() for o in plan.output_resolutions if o.node_name == node.name
+        ]
         steps.append(
             {
                 "node": node.name,
                 "kind": node.kind.value,
                 "region": region_by_node.get(node.name),
-                "physical_unit": plan.logical_to_physical.get(node.name),
+                "physical_unit": unit_id,
+                "engine": unit.engine if unit is not None else None,
+                "ownership": (
+                    (unit.metadata or {}).get("ownership") if unit is not None else None
+                ),
                 "implementation": (
                     plan.implementations[node.name].to_dict()
                     if node.name in plan.implementations
                     else None
                 ),
                 "binding": node.binding,
+                "outputs": out_res,
             }
         )
 
@@ -39,10 +66,13 @@ def explain_plan(plan: PipelinePlan) -> dict[str, Any]:
         "profile": plan.profile_name,
         "fingerprint": plan.fingerprint,
         "security_domain": plan.security_domain,
+        "dataframe_protocol": plan.metadata.get("dataframe_protocol"),
         "regions": [r.to_dict() for r in plan.regions],
         "materialization_boundaries": [
             b.to_dict() for b in plan.materialization_boundaries
         ],
+        "collection_points": collection_points,
+        "conversion_boundaries": conversion_boundaries,
         "output_resolutions": [o.to_dict() for o in plan.output_resolutions],
         "capability_decisions": list(plan.capability_decisions),
         "steps": steps,
