@@ -326,37 +326,177 @@ runtime semantics, not a simplified test-only path.
 
 ## 0.5 — Dataframe Execution
 
+**Status: planned**
+
+### Objective
+
+Prove that a single typed transformation contract can execute efficiently
+against multiple in-process dataframe engines without leaking dataframe types
+into contracts or weakening the runtime guarantees established in 0.4.
+
+Polars is the reference backend and must deliver the complete vertical slice.
+Pandas is the compatibility backend and must prove that the protocol is not
+accidentally shaped around Polars.
+
+### Scope boundaries
+
+0.5 owns bounded, in-process dataframe execution. It does not add:
+
+- SQL compilation, database relations, or query pushdown; those belong to 0.6.
+- Distributed execution, Spark sessions, or streaming state; those belong to
+  0.7.
+- External scheduling or DAG compilation; those belong to 0.8.
+- Backend-specific types in `Data`, `Transformation`, DTCS, DPCS, or logical
+  pipeline definitions.
+- Implicit engine changes, silent eager collection, or conversion fallbacks
+  that are absent from the resolved plan and run report.
+
 ### Deliver
 
-- Stable dataframe-plugin protocol
-- Polars reference plugin
-- Pandas compatibility plugin
-- Typed native-object and Arrow interchange
-- Contract validation before and after transformations
-- Valid and invalid artifact production
-- Row-count, schema, timing, and validation metrics
-- Shared implementation-parity fixtures and normalized reconciliation evidence
+#### Dataframe execution protocol
+
+- Versioned dataframe execution protocol with explicit input materialization,
+  implementation invocation, output normalization, validation, metrics, and
+  cleanup phases
+- Public capability vocabulary for eager and lazy execution, Arrow import and
+  export, zero-copy eligibility, schema inspection, invalid-row separation,
+  cancellation, and thread-safety
+- Planner integration that selects a dataframe implementation and records
+  engine, plugin version, capabilities, conversion boundaries, validation
+  policy, and collection points in `PipelinePlan`
+- Runtime integration that consumes the resolved plan without reselecting an
+  engine or inspecting pipeline classes
+- Independently installable backend packages with no Polars, Pandas, PyArrow,
+  or NumPy dependency added to the core package
+
+#### Polars reference plugin
+
+- Eager `DataFrame` execution as the required baseline
+- `LazyFrame` preservation across adjacent compatible steps, with collection
+  only at an explicit validation, conversion, materialization, or publication
+  boundary
+- Contract-to-Polars dtype mapping and Polars-to-normalized-schema inspection,
+  including nullability, nested values, temporal types, decimal precision, and
+  explicitly diagnosed unsupported types
+- Native Polars implementation invocation with sync and async callable support
+- Valid, invalid, and side-output production without losing row provenance
+- Deterministic translation of Polars failures into Pipelantic diagnostics and
+  partial run reports
+
+#### Pandas compatibility plugin
+
+- Eager `DataFrame` execution through the same dataframe protocol
+- Contract-to-Pandas dtype mapping and Pandas-to-normalized-schema inspection,
+  with explicit handling of nullable extension dtypes, object dtype ambiguity,
+  timezone-aware values, categoricals, and index semantics
+- Copy-on-write and mutation isolation rules that prevent one branch or retry
+  from changing data observed by another
+- Feature and capability declarations that fail planning when a pipeline
+  requires unsupported lazy or zero-copy behavior
+
+#### Interchange and ownership
+
+- Canonical record-batch and Arrow interchange boundary for cross-engine
+  transfers when PyArrow is installed
+- A documented non-Arrow fallback for supported values, with a diagnostic and
+  report entry whenever the fallback copies or loses physical metadata
+- Explicit ownership states for borrowed, shared, copied, and consumed
+  dataframe artifacts
+- Branch, retry, callback, cache, and publication rules that prevent mutation
+  of an artifact still visible to another consumer
+- Conversion fidelity checks for nulls, decimals, timestamps, timezones,
+  nested values, categorical values, and stable field order
+
+#### Validation, observation, and evidence
+
+- Configurable input and output contract validation with fail, reject,
+  quarantine, warn, and observe-only outcomes supported where the backend can
+  identify invalid rows
+- Schema observation before transformation invocation and before output
+  publication, using the normalized schema model shipped in 0.3
+- Equivalent Polars, Pandas, Arrow, and Python-record schemas producing the
+  same logical fingerprint when their semantics match
+- Structured row-count, invalid-count, rejected-count, schema, timing,
+  conversion, collection, and memory-estimate metrics
+- Reconciliation evidence and implementation-parity fixtures that compare
+  logical values rather than backend object equality
 - Initial quality-history observations for null, invalid, duplicate, rejection,
-  cardinality, and volume metrics
-- Polars, Pandas, Arrow, and native-object schema inspectors with equivalent
-  normalization and explicit inference limitations
-- Safe ownership, mutation, and copy semantics
-- Cross-backend conformance fixtures
+  cardinality, and volume metrics, without making a durable history service
+  part of this milestone
+
+#### Developer experience and assurance
+
+- Installation and compatibility documentation for supported Polars, Pandas,
+  PyArrow, Python, and Pipelantic versions
+- Runnable Polars and Pandas examples using the same pipeline definition and
+  separate implementations
+- Plugin conformance kit covering discovery, planning, invocation, validation,
+  schema inspection, conversion, cancellation, diagnostics, and cleanup
+- Golden plan and run-report fixtures for eager, lazy, conversion, invalid-row,
+  and failure paths
+- Correctness and performance benchmarks with published dataset shapes,
+  environment details, warm-up policy, and regression thresholds
+
+### Required execution paths
+
+The release must support and test these paths:
+
+| Path | Required behavior |
+|---|---|
+| Polars eager → Polars eager | No interchange conversion |
+| Polars lazy → Polars lazy | Preserve laziness until an explicit boundary |
+| Pandas eager → Pandas eager | Enforce documented ownership and copy rules |
+| Python records → dataframe | Validate conversion against the input contract |
+| Dataframe → Python or storage binding | Validate before publication |
+| Polars ↔ Pandas | Use planned Arrow interchange when available |
+| Valid + invalid outputs | Preserve output roles and record counts |
+| Parallel sibling branches | Prevent cross-branch mutation |
+| Retry after failure | Start from an artifact state allowed by ownership policy |
 
 ### Acceptance scenarios
 
-- Equivalent transformations produce semantically equivalent results across
-  Polars and Pandas.
-- Equivalent logical schemas observed through Polars, Pandas, and Arrow produce
-  compatible normalized observations.
-- Prior-step outputs can flow directly without forced persistence.
-- Backend-native lazy behavior is retained when supported.
-- Mutation or ownership rules cannot corrupt sibling branches.
+- One pipeline definition selects Polars or Pandas from the profile without
+  changing its data, transformation, or pipeline contracts.
+- Equivalent implementations produce contract-valid, semantically equivalent
+  results across Polars and Pandas for the conformance corpus, including null,
+  decimal, temporal, timezone, categorical, and nested-value cases supported by
+  both engines.
+- A chain of compatible Polars lazy transformations reaches its first declared
+  collection boundary without an earlier hidden collection.
+- Every engine conversion, eager collection, copy, invalid-row split, and
+  validation decision is visible in the plan explanation or run report.
+- Equivalent logical schemas observed through Polars, Pandas, Arrow, and Python
+  records produce the same normalized fingerprint; ambiguous or lossy mappings
+  produce structured diagnostics instead of guessed compatibility.
+- A branched pipeline and a retried step cannot observe mutations performed by
+  another consumer of the same upstream artifact.
+- Missing backend packages, unsupported versions, unavailable capabilities, and
+  incompatible implementation signatures fail during discovery, validation, or
+  planning rather than midway through execution.
+- Backend exceptions retain pipeline, step, transformation, implementation,
+  engine, attempt, and source context without exposing dataframe values or
+  secrets.
+- Installing `pipelantic` alone does not install or import a dataframe engine;
+  installing either supported plugin does not require the other.
+- The documented Polars and Pandas examples run in CI from clean environments.
+
+### Release artifacts
+
+- Versioned dataframe protocol and capability documentation
+- Polars and Pandas plugin packages with declared compatibility ranges
+- Conformance suite reusable by third-party dataframe plugins
+- Runnable parity example and benchmark report
+- Migration notes for any 0.4 implementation-registration or profile changes
+- Known-limitations page covering unsupported dtypes, lazy boundaries,
+  conversion costs, validation limits, and mutation guarantees
 
 ### Exit gate
 
-The dataframe SDK proves that one transformation contract can support multiple
-implementations without changing pipeline semantics.
+The complete Polars vertical slice passes the conformance, correctness,
+security, and performance gates; Pandas passes the compatibility subset; and
+the same logical pipeline can switch between them through profile and plan
+selection without changing contract meaning, hiding materialization, or
+corrupting shared artifacts.
 
 ## 0.6 — SQL-Native Execution
 
