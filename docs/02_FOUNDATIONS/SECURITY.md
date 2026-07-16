@@ -324,6 +324,31 @@ cross-environment, cross-tenant, expired, or revoked reuse.
 
 Unguessable artifact identifiers are not a substitute for authorization.
 
+## Schema Observations and Drift History
+
+Schema metadata can expose confidential field names, system topology, tenant
+identities, classifications, and business behavior even when no source rows
+are stored.
+
+Schema inspection and tracking must:
+
+- require explicit source, profile, workspace, and environment authority;
+- avoid reading source records when catalog metadata is sufficient;
+- store no source values in observations by default;
+- bound backend metadata, nested schemas, samples, and history queries;
+- isolate histories and baselines by tenant and security domain;
+- redact or classify sensitive field and system metadata;
+- prevent observations from one environment satisfying another environment's
+  policy gate;
+- integrity-protect production observations used as approval or audit evidence;
+- audit inspection, acknowledgement, approval, baseline, and remediation
+  actions;
+- keep live inspection out of loading, static validation, planning, editor
+  startup, and rich display methods.
+
+Acknowledgement is an auditable operational decision, not authorization to
+rewrite an authoritative data contract.
+
 ## Cache Security
 
 Cache identity should include:

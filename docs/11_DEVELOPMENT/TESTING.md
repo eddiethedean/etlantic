@@ -185,6 +185,12 @@ Use property-based tests for:
 - Profile merging
 - Plan serialization round trips
 - Diff and compatibility invariants
+- Schema normalization and fingerprint determinism
+- Contract drift versus operational drift classification
+- Schema-history idempotency and concurrent baseline updates
+- Drift-policy precedence and fail-closed behavior
+- Field-level impact analysis with complete and incomplete lineage
+- Equivalent observations across dataframe, SQL, Spark, and Arrow inspectors
 - Random valid transformation signatures
 
 ## Async Testing

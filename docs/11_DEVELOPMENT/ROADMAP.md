@@ -203,6 +203,12 @@ with explicit provenance and no domain semantics duplicated in Pipelantic.
 - Machine-readable diagnostic actions and safe edit suggestions that future IDE
   integrations can expose as quick fixes
 - JSON Schemas for project configuration, profiles, and portable artifacts
+- Versioned normalized-schema representation, deterministic fingerprints,
+  `SchemaObservation`, `SchemaChange`, and `SchemaChangeSet`
+- Separate contract-drift and operational-drift comparison paths, delegating
+  data-contract compatibility meaning to ContractModel
+- Drift-impact vocabulary covering informational, compatible, conditional,
+  breaking, and unknown changes
 - Immutable, versioned, secret-free `PipelinePlan`
 - Logical-to-physical identity mappings
 - `OutputRef` to runtime `ArtifactRef` resolution rules
@@ -235,6 +241,8 @@ with explicit provenance and no domain semantics duplicated in Pipelantic.
 - Optimizations cannot combine regions across declared security boundaries.
 - Diagnostics identify their originating file and symbol and include related
   producer or consumer locations when relevant.
+- Equivalent backend schemas normalize to the same logical fingerprint, while
+  meaningful physical differences remain namespaced metadata.
 
 ### Exit gate
 
@@ -269,6 +277,10 @@ the three top-level models.
 - Immutable lifecycle and security events
 - Structured contextual logging with central secret redaction
 - Normalized run, step, artifact, validation, and transition results
+- Explicit preflight, source, output, and pre-publication schema-observation
+  hooks
+- Profile-scoped `SchemaDriftPolicy` decisions for record, warn, notify,
+  approve, quarantine, adapt, or block behavior
 - Versioned `PipelineRunReport`
 - Text, JSON, and HTML report renderers
 - Cancellation-safe cleanup and partial-run reporting
@@ -290,6 +302,8 @@ the three top-level models.
 - Secrets are absent from logs, reports, events, and serialized plans.
 - IDE-triggered runs use the same `RunRequest`, security policy, execution
   semantics, and report format as CLI and API runs.
+- Reports distinguish declared, previously observed, and currently observed
+  schemas and record the applied drift-policy decision.
 
 ### Exit gate
 
@@ -307,6 +321,8 @@ runtime semantics, not a simplified test-only path.
 - Contract validation before and after transformations
 - Valid and invalid artifact production
 - Row-count, schema, timing, and validation metrics
+- Polars, Pandas, Arrow, and native-object schema inspectors with equivalent
+  normalization and explicit inference limitations
 - Safe ownership, mutation, and copy semantics
 - Cross-backend conformance fixtures
 
@@ -314,6 +330,8 @@ runtime semantics, not a simplified test-only path.
 
 - Equivalent transformations produce semantically equivalent results across
   Polars and Pandas.
+- Equivalent logical schemas observed through Polars, Pandas, and Arrow produce
+  compatible normalized observations.
 - Prior-step outputs can flow directly without forced persistence.
 - Backend-native lazy behavior is retained when supported.
 - Mutation or ownership rules cannot corrupt sibling branches.
@@ -336,6 +354,8 @@ implementations without changing pipeline semantics.
 - Predicate, projection, join, and aggregation pushdown
 - Safe adjacent-step query fusion
 - SQL lineage and query-plan explanation
+- SQL catalog, relation, and result-schema inspection with dialect-specific
+  metadata preserved separately from the logical schema
 - Dialect conformance suite
 
 ### Acceptance scenarios
@@ -346,6 +366,8 @@ implementations without changing pipeline semantics.
   lineage, and security boundaries.
 - Unsupported merge or transaction semantics fail before execution or use an
   explicitly documented fallback.
+- Catalog-supported inspection does not execute arbitrary queries or read
+  source rows merely to discover schema metadata.
 
 ### Exit gate
 
@@ -366,11 +388,15 @@ SQL is a first-class execution backend rather than a special pipeline type.
 - Structured Streaming foundation: triggers, checkpoints, watermarks, state,
   and bounded-output semantics
 - Spark plan and metric normalization into `PipelineRunReport`
+- Spark, Delta, and Structured Streaming schema inspectors, including nested
+  fields, nullability, precision, partition metadata, and evolution evidence
 
 ### Acceptance scenarios
 
 - Adjacent compatible steps remain one lazy Spark region while retaining
   logical identities.
+- Spark and Delta observations identify lossy or unknown normalization instead
+  of guessing compatibility.
 - A Spark pipeline reports plan, stage, validation, and artifact evidence
   through provider-neutral result models.
 - Batch-only transformations are rejected from streaming regions.
@@ -415,6 +441,13 @@ alternate source of pipeline truth.
 
 - CLI for inspect, validate, plan, explain, run, compile, generate, diff, and
   plugin operations
+- CLI and public result models for `schema inspect`, `schema check`,
+  `schema diff`, `schema history`, `schema impact`, `schema acknowledge`,
+  `schema propose`, and `schema monitor`
+- Schema-history provider protocol with canonical-file, local, and future
+  registry-backed implementations
+- Stable drift diagnostic codes, SARIF output, notification deduplication, and
+  drift evidence in reports
 - Language-server foundations for workspace discovery, incremental document
   indexing, source maps, diagnostic publication, and graph previews
 - Editor-neutral command and result schemas for validate, plan, explain,
@@ -461,11 +494,16 @@ alternate source of pipeline truth.
   plan.
 - Generated Codex, Claude Code, and Cursor guidance expresses the same
   workflows and security boundaries through each tool's native file format.
+- Schema observations can be recorded, compared, acknowledged, and rendered
+  without storing source rows or silently updating a contract.
 
 ### Exit gate
 
 The ecosystem can grow outside the core repository without relying on internal
 modules or weakening security defaults.
+
+See [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) for the cross-phase
+observation, history, policy, impact, and remediation design.
 
 ## 0.10 — SparkForge Migration Preview
 
@@ -578,6 +616,9 @@ Deliver:
 - embeddable router and standalone application factory;
 - typed discovery, validation, planning, run submission, status, cancellation,
   report, artifact-metadata, and lineage endpoints;
+- typed schema observation, history, diff, impact, proposal, and
+  acknowledgement endpoints with authorization distinct from ordinary pipeline
+  reads;
 - FastAPI lifespan integration for registry, store, broker, and submitter
   clients;
 - dependency adapters for identity, tenant, policy, idempotency, and request
@@ -598,6 +639,8 @@ Acceptance:
 - heavy pipeline work never depends on FastAPI `BackgroundTasks`;
 - unauthorized profile, artifact, override, and cancellation access fails
   closed.
+- live schema inspection and drift acknowledgement require explicit subject,
+  profile, workspace, and policy authority.
 
 See [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md).
 
@@ -610,6 +653,10 @@ Deliver:
 - immutable revisions, aliases, promotion channels, signatures, and provenance;
 - workspace and tenant model with namespaced identities;
 - dependency and impact queries across pipeline revisions;
+- immutable schema observations, operational baselines, acknowledgements, and
+  remediation references;
+- field-aware impact queries from observed changes through contracts,
+  transformations, outputs, sinks, and downstream pipelines;
 - searchable metadata indexes without storing arbitrary dataset contents;
 - registry events and cache-invalidation protocol;
 - FastAPI registry routes and CLI parity.
@@ -622,6 +669,8 @@ Acceptance:
   contract;
 - tenant and workspace boundaries are preserved in registry, cache, API, and
   artifact identities.
+- accepting an operational baseline never mutates or aliases the authoritative
+  contract revision.
 
 ### 1.3 — Incremental State and Reproducibility
 
@@ -633,6 +682,10 @@ Deliver:
 - compare-and-swap and atomic checkpoint advancement;
 - replay, resume, repair, and backfill planning;
 - dataset and code provenance sufficient to reproduce or explain a run;
+- schema-baseline revisions linked to checkpoints, snapshots, runs, and replay
+  evidence;
+- compare-and-swap baseline acknowledgement and concurrent-observation
+  handling;
 - state migration and corruption diagnostics;
 - dry-run state transition explanation.
 
@@ -642,6 +695,8 @@ Acceptance:
 - concurrent runs detect and resolve state conflicts explicitly;
 - replay identifies the exact contracts, plan, implementation, input snapshot,
   secret versions where safe, and state transition used by the original run.
+- replay identifies the schema observations and baseline decisions used by the
+  original run.
 
 ### 1.4 — Policy, Governance, and Supply-Chain Assurance
 
@@ -654,6 +709,8 @@ Deliver:
 - approval gates and separation-of-duty workflows;
 - residency, classification, masking, retention, and egress constraints;
 - policy decision evidence in reports and APIs;
+- signed or integrity-protected production schema observations, approval gates,
+  retention rules, and acknowledgement evidence;
 - compatibility rules for policy revisions.
 
 Acceptance:
@@ -662,6 +719,8 @@ Acceptance:
 - a submitted plan can be verified against its authoring revision, approved
   plugins, and policy bundle;
 - approval and denial are durable, auditable, and free of secret values.
+- forged, cross-tenant, or cross-environment schema observations cannot satisfy
+  a deployment or execution gate.
 
 ### 1.5 — Developer Intelligence: LSP, IDE, and Static Analysis
 
@@ -717,6 +776,9 @@ Deliver:
   overrides, unused settings, and redacted secret references;
 - compatibility and downstream-impact previews before a contract or port
   change is accepted;
+- source and port drift indicators, declared-versus-observed hover summaries,
+  schema-history timelines, field-level impact navigation, and reviewable
+  adapter or contract-update proposals;
 - test discovery and one-click conformance runs across multiple transformation
   implementations;
 - code actions to extract a transformation, add an adapter, create a missing
@@ -741,6 +803,7 @@ Acceptance:
 - remote-run observation can reconnect after an editor restart when the backend
   provides a durable event and report store;
 - configuration inspection never reveals secret values;
+- editors and notebooks never query live production schemas automatically;
 - notebook execution produces the same plan hash and report model as the
   equivalent Python API or CLI request;
 - rich display methods remain side-effect free and never resolve secrets,
@@ -835,6 +898,9 @@ Deliver:
   documentation, and report-query tools;
 - structured proposal format for generated pipelines, migrations, policies, and
   optimization suggestions;
+- human-governed proposals for schema adapters, source corrections, contract
+  revisions, migrations, and conformance tests using bounded redacted drift
+  evidence;
 - provenance and evidence attached to every generated proposal;
 - deterministic validation sandbox for proposals before review;
 - proposal previews showing file diffs, graph changes, compatibility, plan
@@ -864,14 +930,19 @@ Acceptance:
   mutations;
 - every proposed mutation includes validation results and a semantic-impact
   preview before human approval;
+- an assistant cannot acknowledge drift, replace an operational baseline, or
+  revise an authoritative contract without explicit human approval;
 - untrusted contract text or logs cannot grant tools, reveal secrets, install
   plugins, or initiate runs.
+
+See [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md).
 
 ### 1.x Candidate Themes
 
 These remain candidates rather than promised release numbers:
 
 - run-history trends, regression detection, and anomaly analysis;
+- schema-drift frequency, recurring-change, and source-stability trends;
 - additional orchestrators, dataframe engines, SQL dialects, and stores;
 - declarative data previews with bounded privacy budgets;
 - Wasm or isolated remote transformations where ecosystem maturity permits;
