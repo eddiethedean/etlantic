@@ -107,7 +107,7 @@ Every milestone must satisfy all applicable gates.
 
 ## Workstreams
 
-The releases below combine seven continuing workstreams:
+The releases below combine eight continuing workstreams:
 
 | Workstream | Responsibility |
 |---|---|
@@ -118,6 +118,7 @@ The releases below combine seven continuing workstreams:
 | Backends | Local Python, Polars, Pandas, SQL, PySpark, and orchestrators |
 | Tooling | CLI, generated artifacts, visualization, docs, and plugin SDK |
 | Assurance | Security, testing, benchmarks, release policy, and migration |
+| Developer experience | IDE protocols, source maps, LSP, previews, refactoring, and debugging |
 
 ## 0.1 — Typed Modeling Kernel
 
@@ -197,6 +198,11 @@ with explicit provenance and no domain semantics duplicated in Pipelantic.
 - Serializable `SecretRef` model and secret-provider capability declarations
 - Plugin, implementation, binding, and provider registries
 - Capability negotiation and fallback diagnostics
+- Stable source spans and symbol identities for models, steps, ports, contracts,
+  bindings, profiles, and diagnostics
+- Machine-readable diagnostic actions and safe edit suggestions that future IDE
+  integrations can expose as quick fixes
+- JSON Schemas for project configuration, profiles, and portable artifacts
 - Immutable, versioned, secret-free `PipelinePlan`
 - Logical-to-physical identity mappings
 - `OutputRef` to runtime `ArtifactRef` resolution rules
@@ -227,6 +233,8 @@ with explicit provenance and no domain semantics duplicated in Pipelantic.
 - Unsupported capabilities either produce an explicit safe fallback or fail
   closed.
 - Optimizations cannot combine regions across declared security boundaries.
+- Diagnostics identify their originating file and symbol and include related
+  producer or consumer locations when relevant.
 
 ### Exit gate
 
@@ -240,6 +248,10 @@ the three top-level models.
 ### Deliver
 
 - Async-first local orchestration with transparent `def` and `async def`
+- An IDE-safe local run and debug protocol that can select a step, dependency
+  closure, profile, parameters, and materialization policy
+- Structured breakpoint events at validation, pre-step, post-step, failure, and
+  publication boundaries
 - Dependency-aware DAG concurrency
 - `RunIntent`, `RunSelection`, and `RunRequest`
 - Full, initial, incremental, refresh, validation, backfill, and replay intents
@@ -276,6 +288,8 @@ the three top-level models.
   where available, validation outcomes, artifacts, diagnostics, lineage, and
   failure context.
 - Secrets are absent from logs, reports, events, and serialized plans.
+- IDE-triggered runs use the same `RunRequest`, security policy, execution
+  semantics, and report format as CLI and API runs.
 
 ### Exit gate
 
@@ -401,6 +415,23 @@ alternate source of pipeline truth.
 
 - CLI for inspect, validate, plan, explain, run, compile, generate, diff, and
   plugin operations
+- Language-server foundations for workspace discovery, incremental document
+  indexing, source maps, diagnostic publication, and graph previews
+- Editor-neutral command and result schemas for validate, plan, explain,
+  generate, selected execution, and report retrieval
+- Optional IPython display adapters for pipelines, plans, diagnostics, lineage,
+  artifacts, and run reports, with plain-text and HTML representations
+- Optional notebook session helpers that make the active profile, run
+  selection, and generated artifacts explicit rather than relying on hidden
+  kernel state
+- A canonical, vendor-neutral set of AI coding workflows for inspecting,
+  validating, planning, testing, documenting, and safely modifying Pipelantic
+  projects
+- Generators for repository guidance and workflow files used by Codex, Claude
+  Code, and Cursor, including `AGENTS.md`, `CLAUDE.md`, Codex `SKILL.md`
+  packages, and scoped Cursor project rules and commands
+- Drift checks that verify generated agent guidance still matches the current
+  public API, CLI, security policy, and documentation
 - Stable Plugin SDK protocols and capability vocabulary
 - Plugin conformance and compatibility suite
 - Entry-point discovery plus production allowlists and version pinning
@@ -423,6 +454,13 @@ alternate source of pipeline truth.
 - CI can validate contracts and plans and publish SARIF diagnostics.
 - A run report can be persisted, retrieved, rendered, and compared without
   backend-specific classes.
+- An editor integration can consume public commands and schemas without
+  importing Pipelantic internals or executing a pipeline during analysis.
+- A notebook can inspect and render a pipeline without installing an execution
+  backend, and restarting the kernel does not change the serialized model or
+  plan.
+- Generated Codex, Claude Code, and Cursor guidance expresses the same
+  workflows and security boundaries through each tool's native file format.
 
 ### Exit gate
 
@@ -629,20 +667,91 @@ Acceptance:
 
 Deliver:
 
-- language server for Python-authored and contract-first pipelines;
+- an editor-neutral language server for Python-authored and contract-first
+  pipelines;
+- a first-party VS Code extension and a documented integration contract for
+  PyCharm, Neovim, Zed, and other LSP-capable editors;
+- workspace discovery for monorepositories, multiple project files, and
+  selectable profiles;
 - completion for bindings, ports, parameters, profiles, plugin capabilities,
-  and secret references;
-- cross-file navigation among Python, ODCS, DTCS, DPCS, plans, and generated
-  artifacts;
-- inline diagnostics, safe quick fixes, rename support, and graph previews;
-- pyright-oriented type diagnostics and optional editor integrations;
-- incremental analysis cache with source provenance;
+  secret references, `Data`, `Transformation`, `Pipeline`, implementations,
+  run intents, selectors, and contract fields;
+- hover cards with contract summaries, producers, consumers, selected
+  implementations, compatibility status, and documentation links;
+- go-to-definition, find references, call hierarchy, document symbols, and
+  workspace symbols across Python, ODCS, DTCS, DPCS, plans, profiles, and
+  generated artifacts;
+- inline diagnostics with related locations, stable codes, suppression
+  guidance, and direct links to relevant documentation;
+- safe quick fixes for missing bindings, incompatible ports, stale generated
+  artifacts, unknown profiles, deprecated APIs, and deterministic migrations;
+- semantic rename with a reviewable workspace edit across Python, contracts,
+  profiles, generated artifacts, and known registry references;
+- in-editor previews for pipeline graphs, lineage, execution regions, resolved
+  plans, and plan diffs;
+- CodeLens actions for validate, plan, explain, run, run to step, run from step,
+  generate artifacts, and open the latest report;
+- a run and debug panel showing live step state, logs, diagnostics, artifacts,
+  metrics, cancellation controls, and backend links;
+- an optional Jupyter and IPython integration with rich displays for `Data`,
+  `Transformation`, `Pipeline`, `PipelinePlan`, diagnostics, lineage, and
+  `PipelineRunReport`;
+- notebook controls for validate, plan, explain, run selected steps, cancel,
+  compare runs, and open generated artifacts without inventing notebook-only
+  execution semantics;
+- optional progress widgets driven by the same structured lifecycle events used
+  by the CLI, IDE, and report system;
+- safe artifact previews with configurable row, byte, column, and rendering
+  limits, explicit sampling, and automatic redaction of protected values;
+- deterministic notebook export helpers that capture code, resolved
+  non-secret configuration, plan hashes, contract versions, implementation
+  identities, and report references for reproducible analysis;
+- notebook-to-project extraction actions that turn exploratory transformations
+  and pipelines into ordinary Python modules and tests;
+- clear stale-state detection when notebook cells redefine a model after a plan
+  or run was created;
+- logical lifecycle breakpoints at validation, pre-step, post-step, failure, and
+  publication boundaries without pretending that every remote backend can
+  pause arbitrary user code;
+- a profile and configuration inspector showing effective values, provenance,
+  overrides, unused settings, and redacted secret references;
+- compatibility and downstream-impact previews before a contract or port
+  change is accepted;
+- test discovery and one-click conformance runs across multiple transformation
+  implementations;
+- code actions to extract a transformation, add an adapter, create a missing
+  binding, and scaffold an implementation;
+- pyright-oriented type diagnostics and generated typing metadata where it
+  improves editor inference;
+- an incremental analysis cache with cancellation, bounded memory, precise
+  invalidation, and source provenance;
+- restricted static analysis that avoids importing project modules by default,
+  with explicit trusted-workspace opt-in for deeper introspection;
 - notebook-friendly inspection without hidden runtime state.
 
 Acceptance:
 
 - changing an output contract updates downstream diagnostics before execution;
 - an editor can navigate from a step input to its producing output and contract;
+- rename produces a reviewable workspace edit and identifies external
+  references that cannot be changed automatically;
+- graph previews preserve stable layout as nearby files change;
+- an editor-triggered run produces the same plan hash and report model as the
+  equivalent CLI command;
+- remote-run observation can reconnect after an editor restart when the backend
+  provides a durable event and report store;
+- configuration inspection never reveals secret values;
+- notebook execution produces the same plan hash and report model as the
+  equivalent Python API or CLI request;
+- rich display methods remain side-effect free and never resolve secrets,
+  import execution plugins, read artifacts, or contact remote systems unless
+  the user invokes an explicit operation;
+- large artifact previews remain bounded and visibly identify sampling or
+  truncation;
+- stale notebook definitions are detected before execution instead of silently
+  reusing an obsolete plan;
+- representative large workspaces meet documented interactive latency and
+  memory budgets;
 - quick fixes never import untrusted modules or resolve remote references
   implicitly.
 
@@ -711,21 +820,50 @@ Deliver:
 
 - read-only machine-consumable inspection APIs for models, contracts, lineage,
   diagnostics, plans, capabilities, and run history;
+- a versioned, vendor-neutral Pipelantic AI workflow catalog;
+- maintained skill packs for Codex and Claude Code plus scoped Cursor rules and
+  commands for explaining pipelines, scaffolding models, diagnosing wiring,
+  generating contracts, creating conformance tests, reviewing security, and
+  performing migrations;
+- project-local generators for `AGENTS.md`, `CLAUDE.md`, Codex skills, and
+  `.cursor/rules` or `.cursor/commands` that preserve user-owned instructions;
+- composable repository, directory, and task-specific instruction layers;
+- bounded machine-readable context bundles containing selected contracts,
+  graph slices, diagnostics, plan explanations, and report summaries with
+  explicit provenance;
+- an optional read-only MCP server for inspection, validation, planning,
+  documentation, and report-query tools;
 - structured proposal format for generated pipelines, migrations, policies, and
   optimization suggestions;
 - provenance and evidence attached to every generated proposal;
 - deterministic validation sandbox for proposals before review;
+- proposal previews showing file diffs, graph changes, compatibility, plan
+  changes, downstream impact, and required approvals;
+- cross-agent evaluation fixtures that score correctness, safety, determinism,
+  and unnecessary context use;
 - prompt-injection-resistant boundaries around documents, logs, and metadata;
 - explicit human approval before mutation, submission, secret access, or
   external communication;
-- optional agent/tool adapters in separate packages.
+- optional agent/tool adapters in separate packages, with no Claude, OpenAI, or
+  Cursor SDK dependency in Pipelantic core.
 
 Acceptance:
 
 - an assistant can propose a contract-compatible transformation and receive
   precise validation feedback without execution authority;
+- Codex, Claude Code, and Cursor can perform the same canonical scaffold,
+  validation, migration, and review workflows through their native project
+  instruction formats;
+- regeneration is deterministic, preserves marked user-owned regions, and
+  reports conflicts rather than silently overwriting them;
+- context bundles are bounded, redacted, explicitly selected, and identify
+  every included source;
+- read-only MCP tools cannot submit runs, install plugins, resolve secrets,
+  mutate files, or contact undeclared external systems;
 - generated changes are ordinary reviewable files and plans, not hidden runtime
   mutations;
+- every proposed mutation includes validation results and a semantic-impact
+  preview before human approval;
 - untrusted contract text or logs cannot grant tools, reveal secrets, install
   plugins, or initiate runs.
 

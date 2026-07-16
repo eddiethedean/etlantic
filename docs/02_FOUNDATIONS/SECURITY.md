@@ -423,6 +423,40 @@ The CLI must:
 
 Debug verbosity must not weaken redaction.
 
+## AI Coding Assistants and Agent Skills
+
+Codex, Claude Code, Cursor, and similar tools may read repository files, edit
+code, invoke commands, and connect to external tools. Their instruction files
+are guidance, not a security boundary, and never prove that an action is
+authorized.
+
+Pipelantic-generated skills, rules, commands, context bundles, and MCP tools
+must:
+
+- use one vendor-neutral workflow definition as their source;
+- treat contracts, documentation, comments, logs, diagnostics, artifacts, and
+  reports as untrusted and potentially prompt-injecting input;
+- distinguish instructions from quoted project data with explicit provenance;
+- default agent-facing APIs and MCP tools to read-only inspection, validation,
+  planning, explanation, and report queries;
+- require human approval for mutation, command execution, run submission,
+  plugin installation, secret access, or external communication;
+- exclude secret values, credentials, protected artifact contents, and
+  unrestricted environment variables from generated context;
+- bound context by files, bytes, graph size, rows, columns, diagnostics, and
+  events;
+- preserve user-authored instruction regions and report generation conflicts;
+- record workflow versions, selected inputs, tool calls, validation results,
+  and proposal provenance;
+- route changes through ordinary files, semantic diff, validation,
+  compatibility analysis, and policy checks;
+- prohibit generated guidance from weakening sandbox, network, plugin,
+  resolver, or secret-provider policies;
+- keep model-vendor SDKs and credentials outside Pipelantic core.
+
+Agent output remains an untrusted proposal until normal validation, testing,
+security review, and human approval succeed.
+
 ## Denial-of-Service Budgets
 
 Configurable budgets should cover:

@@ -271,6 +271,57 @@ Python logging canonical and bridge it to OpenTelemetry through a provider.
 should not become the logging facade required by every plugin. Plugins log
 through Pipelantic's context or standard `logging`.
 
+### `pipelantic[notebook]`
+
+Recommended packages:
+
+- `ipython`
+- `ipywidgets`
+
+IPython supplies the rich display protocol needed to render pipelines, plans,
+diagnostics, lineage, artifacts, and reports in notebooks without changing
+their underlying public models. Ipywidgets may provide optional progress,
+selection, cancellation, and report-navigation controls.
+
+Pipelantic should not depend on the complete Jupyter distribution. JupyterLab,
+Notebook, VS Code notebooks, and other frontends should consume the same
+IPython display objects and public execution APIs.
+
+Notebook integration requirements:
+
+- rich representations must be side-effect free;
+- rendering must not resolve secrets, import execution plugins, access
+  artifacts, or perform network requests implicitly;
+- dataframe and artifact previews must enforce row, column, byte, and rendering
+  limits;
+- widget actions must create ordinary `RunRequest` values and consume ordinary
+  lifecycle events and reports;
+- notebook helpers must expose active profiles, overrides, selections, and
+  stale model state explicitly;
+- every rich object must retain a useful plain-text representation;
+- widgets must be an enhancement, not a requirement for notebook use.
+
+Use `nbformat` and `nbclient` as development or documentation dependencies when
+the project begins executing example notebooks in CI. They should not be
+runtime dependencies of the notebook extra.
+
+### AI coding assistants
+
+Pipelantic should generate documentation-only instruction and skill artifacts
+for Codex, Claude Code, and Cursor without depending on their model SDKs.
+Repository guidance and task workflows should be generated from one canonical,
+vendor-neutral catalog rather than maintained as divergent prompts.
+
+The existing template and serialization facilities may generate `AGENTS.md`,
+`CLAUDE.md`, Codex `SKILL.md` packages, scoped Cursor rules and commands, and
+bounded machine-readable context bundles. Vendor SDKs, hosted-agent clients,
+and model APIs belong only in separately distributed adapters with their own
+authentication, network, retention, and security policies.
+
+An optional read-only MCP server should evaluate the official MCP Python SDK
+when implementation begins. It must expose Pipelantic's public inspection APIs
+rather than creating a second internal API.
+
 ## Separate Plugin Dependencies
 
 Heavy backends and infrastructure libraries belong in separately installable
@@ -504,6 +555,7 @@ jsonschema = ["jsonschema>=4.25,<5", "referencing>=0.36,<1"]
 cli = ["cyclopts>=4,<5", "rich>=14,<15"]
 http = ["httpx>=0.28,<1"]
 observability = ["opentelemetry-api>=1.36,<2"]
+notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
 docs-rendering = [
     "jinja2>=3.1,<4",
     "markdown-it-py>=4,<5",
@@ -532,6 +584,11 @@ them in the core project's optional-dependency table.
 | Cyclopts + Rich | CLI extra | Adopt |
 | HTTPX | HTTP extra | Adopt behind network policy |
 | OpenTelemetry API | Observability extra | Adopt |
+| IPython | Notebook extra | Adopt for rich display integration |
+| Ipywidgets | Notebook extra | Adopt for optional interactive controls |
+| nbformat + nbclient | Development/docs | Use to verify example notebooks in CI |
+| Claude, OpenAI, or Cursor SDKs | Separate adapter only | Do not add to core or documentation generators |
+| MCP Python SDK | Optional AI tooling extra | Evaluate for a read-only inspection server |
 | Structlog | Provider | Support, do not require |
 | Jinja2 + Markdown-It | Docs extra | Adopt with escaping |
 | Graphviz Python package | Visualization extra | Adopt |
