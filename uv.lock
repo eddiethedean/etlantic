@@ -172,6 +172,38 @@ wheels = [
 ]
 
 [[package]]
+name = "dpcs"
+version = "0.13.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/2c/a8d9cbb6e58548977ca3a73a402e23a34825ae97384811c2628782b18650/dpcs-0.13.1.tar.gz", hash = "sha256:055bc2f1bb6fbce37c268d773deec2db926dd63a6cf367979532131ac47493e5", size = 150409, upload-time = "2026-07-15T12:36:26.939Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/11/01ac91e392e2649167e71d8f8589d10a502d34df31d00ef91042a322224d/dpcs-0.13.1-cp39-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:8cdc3a0608187810815d1acfc705799dceb7717afaac34d61f3e9b41954fcad7", size = 1220390, upload-time = "2026-07-15T12:36:25.63Z" },
+]
+
+[[package]]
+name = "dtcs"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/17/ef689713d0bb5d5746723df002691464ddf64e7a282f007be8b477c9a6cb/dtcs-0.11.0.tar.gz", hash = "sha256:f755c789e75387ad26f7d3d68e61cdeb47e88a604e8dcbe4095b6d63567d1550", size = 320427, upload-time = "2026-07-15T01:45:33.266Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8c/06/47e4d377791ea34bf4d463a75dc5d552d83d8c6acb46efd26856ae9d9066/dtcs-0.11.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:1fc9ef09cf6e9a404580cbf12c3f20459f1dc2d58a5b51453e08c2be3d9ea582", size = 2177993, upload-time = "2026-07-15T01:45:14.315Z" },
+    { url = "https://files.pythonhosted.org/packages/34/db/18c3bf494726ef4fd129fc58679a563fd4f2181b9230cfb34d1dda6cd930/dtcs-0.11.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:fd39a2fc7a711d88c378c0ea1598fafd81f984c2458e172d4067b0b6b90ea989", size = 2078967, upload-time = "2026-07-15T01:45:15.822Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/2f/d02f223cf3b8ca0a07b117a6ea42ee2a18605698543e669b2da29e93a5d2/dtcs-0.11.0-cp39-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:6647c88a1552af6ea46dee06a1e956c7d78ada32b6bbeacca31ef7b5bdf62bd8", size = 2222233, upload-time = "2026-07-15T01:45:17.041Z" },
+    { url = "https://files.pythonhosted.org/packages/76/0c/25dea5da382296dfdbec2f02c0a78fb9bc1b2ccde4ff46d14e683a138eac/dtcs-0.11.0-cp39-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:3f52ad948292057d9ed8cec756e3693139e2ef079a864644c6d74474c894f52c", size = 2701832, upload-time = "2026-07-15T01:45:18.22Z" },
+    { url = "https://files.pythonhosted.org/packages/be/35/a98a81e71e1500b64bd111c1a0b0f3d1b5c9cfb78dcbaf5a38bde29f858b/dtcs-0.11.0-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f956d6431510882806dcbb01b81cdc122d9a06c37beec7dacb30308249bf9427", size = 2463767, upload-time = "2026-07-15T01:45:19.292Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/65/952a2e84de2f30f365afd9e54f50b01c7f5a941ce381fb4e026e952c9a41/dtcs-0.11.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d900ed19ead84165c742880b1468b790e69c9fa5c7bf7a3f6315c5cc8fc0a22b", size = 2310717, upload-time = "2026-07-15T01:45:20.575Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/30/aa3eb66a3cadb1fbf65d2bb7b9174b86141d4151a4cce9d46ba74f5f7c4e/dtcs-0.11.0-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:9f45dd89d7730d3508c22f53693b45026f4fa6901a012dc07d409ce2976aea22", size = 2280536, upload-time = "2026-07-15T01:45:22.062Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/43/becd8b7ab9f9c5385af812ec836ad72f2465924fb17590fa3d36db1f6db0/dtcs-0.11.0-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:24f07e054b8c3d8b1352184fe34e79bb257062e68a1470241647afdd9c801091", size = 2463284, upload-time = "2026-07-15T01:45:23.404Z" },
+    { url = "https://files.pythonhosted.org/packages/92/1a/0b03af867a43ecddff75a2a7ae7475b6a43cdbe54c53be8c419f94ccbc32/dtcs-0.11.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:c792da55e82774deed6e081c9da8010dea811150508d0ce9afe684778d10b8fa", size = 2453121, upload-time = "2026-07-15T01:45:24.542Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/38/b18cabee86fcbc8ca2f87995e83349fb8e825aa944accaa21526c4eaf578/dtcs-0.11.0-cp39-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:14c3f9f39fde55af3186ce2ceecb515f0eaa827b69ae3ddf4bde4d2b4dc5999d", size = 2489973, upload-time = "2026-07-15T01:45:25.648Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/23/9852e45f897e6a9ed90e8d652aae717e366081f52e4049395a7903acb5f2/dtcs-0.11.0-cp39-abi3-musllinux_1_2_i686.whl", hash = "sha256:4ad5291fee2c60e5e5448f0c9ef629c5a2360c828844e2d86e5d97193e0c6530", size = 2559930, upload-time = "2026-07-15T01:45:26.872Z" },
+    { url = "https://files.pythonhosted.org/packages/8e/4a/98f083d36966b49bb7a374409eae34c09adb9280159597e39ec0814dc4b0/dtcs-0.11.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:0deb46aaeb2d450f2b9b88e15332c571b9d7f0c05d72c4e0b7c4dd7ea2e1302d", size = 2584975, upload-time = "2026-07-15T01:45:27.999Z" },
+    { url = "https://files.pythonhosted.org/packages/dc/c1/d8dd818e0257c7bc2d565d83d5956fad2d598090ea81d4add20dde539bab/dtcs-0.11.0-cp39-abi3-win32.whl", hash = "sha256:d86f7134e9640adacb1b4da4a5ef22ff635a6334707f6b4c94cb03e2f02f6864", size = 1873350, upload-time = "2026-07-15T01:45:29.607Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/f7/8a6e59dd7f6c20d1789a36df694db70d0397147890627ce0455ff2da0ba2/dtcs-0.11.0-cp39-abi3-win_amd64.whl", hash = "sha256:e4e701a4e74633347469b70dc4d8e456c6099cc8f25e99e9bdb0e72a2dd45fa1", size = 2079899, upload-time = "2026-07-15T01:45:30.776Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/15/a0a1f42330e8fa757cf1d83122dc7340b273154aeec470847b36c5b5cfe8/dtcs-0.11.0-cp39-abi3-win_arm64.whl", hash = "sha256:9c2c063f5646a6afcdce3b447b8a531ee662bfb1e62f41de31d04b3d4ad56b7a", size = 1950619, upload-time = "2026-07-15T01:45:32.126Z" },
+]
+
+[[package]]
 name = "email-validator"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -496,10 +528,12 @@ wheels = [
 
 [[package]]
 name = "pipelantic"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "contractmodel" },
+    { name = "dpcs" },
+    { name = "dtcs" },
     { name = "packaging" },
     { name = "pydantic" },
 ]
@@ -517,6 +551,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "contractmodel", specifier = ">=0.1.2" },
+    { name = "dpcs", specifier = ">=0.13,<1" },
+    { name = "dtcs", specifier = ">=0.11,<1" },
     { name = "packaging", specifier = ">=24" },
     { name = "pydantic", specifier = ">=2.12,<3" },
 ]

@@ -1,7 +1,8 @@
 # Documentation Status and Conventions
 
-Pipelantic 0.1 implements the typed modeling kernel. Much of the documentation
-still describes the intended 1.0 product. It serves three related purposes:
+Pipelantic 0.2 implements the typed modeling kernel and contract
+interoperability (ODCS/DTCS/DPCS). Much of the documentation still describes
+the intended 1.0 product. It serves three related purposes:
 
 1. Explain the product vision and user experience.
 2. Specify the intended 1.0 architecture and public interfaces.

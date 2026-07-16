@@ -1,11 +1,12 @@
 # API Reference
 
-This chapter defines the intended shape of Pipelantic's public Python API.
-It is a design reference until the implementation reaches API stability.
+This chapter describes Pipelantic's public Python API. Surfaces marked
+**shipped** are available in the current release. Other entries remain design
+references for later milestones.
 
 ## Stable Import Surface
 
-Common authoring APIs should be available from the package root:
+Common authoring and interchange APIs are available from the package root:
 
 ```python
 from pipelantic import (
@@ -17,14 +18,22 @@ from pipelantic import (
     Source,
     Step,
     Sink,
-    Profile,
+    DataContractModel,
+    ContractBundle,
+    load_data_contract,
+    write_odcs,
+    write_contracts,
+    load_bundle,
+    diff_data_contracts,
 )
 ```
 
-Data-contract models come from ContractModel:
+Data-contract authoring remains owned by ContractModel:
 
 ```python
-from contractmodel import DataContractModel
+from contractmodel import ContractModel as DataContractModel
+# or
+from pipelantic import DataContractModel
 ```
 
 Plugin-author interfaces should live under `pipelantic.sdk`, not the root.
@@ -48,8 +57,8 @@ NormalizeCustomers.outputs()
 NormalizeCustomers.parameters()
 NormalizeCustomers.implementations()
 NormalizeCustomers.validate_definition()
-NormalizeCustomers.to_dtcs()
-NormalizeCustomers.from_dtcs(...)
+NormalizeCustomers.to_dtcs()          # shipped in 0.2
+NormalizeCustomers.from_dtcs(...)     # shipped in 0.2
 NormalizeCustomers.step(...)
 ```
 
@@ -102,15 +111,16 @@ Proposed class methods:
 ```python
 CustomerPipeline.inspect()
 CustomerPipeline.validate()
-CustomerPipeline.plan(profile="local")
-CustomerPipeline.run(profile="local")
-await CustomerPipeline.arun(profile="local")
-CustomerPipeline.compile(target="airflow", profile="production")
-CustomerPipeline.to_dpcs()
-CustomerPipeline.from_dpcs(...)
-CustomerPipeline.generate_contracts(...)
+CustomerPipeline.plan(profile="local")       # 0.3+
+CustomerPipeline.run(profile="local")        # 0.4+
+await CustomerPipeline.arun(profile="local") # 0.4+
+CustomerPipeline.compile(target="airflow", profile="production")  # later
+CustomerPipeline.to_dpcs()                   # shipped in 0.2
+CustomerPipeline.from_dpcs(...)              # shipped in 0.2
+CustomerPipeline.generate_contracts(...)     # shipped in 0.2
+CustomerPipeline.write_contracts("contracts/")  # shipped in 0.2
 CustomerPipeline.to_mermaid()
-CustomerPipeline.to_graphviz()
+CustomerPipeline.to_graphviz()               # later
 ```
 
 ## Nodes

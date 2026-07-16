@@ -151,6 +151,8 @@ by the initial end-to-end and SparkForge parity fixtures.
 
 ## 0.2 — Contract Interoperability
 
+**Status: shipped in 0.2.0**
+
 ### Deliver
 
 - ContractModel integration for data-contract operationalization

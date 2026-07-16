@@ -11,12 +11,11 @@ Typed, contract-driven data pipeline modeling for Python.
 
 ## Status
 
-**0.1.0 — Typed Modeling Kernel**
+**0.2.0 — Contract Interoperability**
 
-Pipelantic currently provides the authoring model, logical graph construction,
-topology and compatibility diagnostics, graph inspection, and Mermaid output.
-Planning, execution plugins, and contract serialization arrive in later
-milestones.
+Pipelantic provides the typed modeling kernel plus ODCS/DTCS/DPCS generate and
+load, deterministic contract bundles, and compatibility hooks. Planning and
+execution plugins arrive in later milestones.
 
 See the [hosted documentation](https://pipelantic.readthedocs.io/) for the
 full design,
@@ -50,8 +49,8 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 Tag a version that matches `src/pipelantic/_version.py`, then push the tag:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 GitHub Actions runs checks and publishes to PyPI using the `PYPI_API_TOKEN`

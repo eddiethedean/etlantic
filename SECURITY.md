@@ -1,8 +1,9 @@
 # Security Policy
 
-Pipelantic 0.1 publishes the typed modeling kernel. Security reports
-concerning the published package, documentation, proposed APIs, repository
-automation, or later milestones are welcome.
+Pipelantic 0.2 provides the typed modeling kernel and contract
+interoperability. Security reports concerning the published package,
+documentation, proposed APIs, repository automation, or later milestones are
+welcome.
 
 ## Reporting a Vulnerability
 
@@ -33,7 +34,8 @@ Do not include production secrets, customer data, or regulated records.
 
 | Version | Supported |
 |---|---|
-| 0.1.x | Best-effort while the modeling kernel is in alpha |
+| 0.2.x | Best-effort while contract interoperability is in alpha |
+| 0.1.x | Best-effort |
 | earlier | Not supported |
 
 A formal security patch policy will be published before 1.0.

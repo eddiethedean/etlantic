@@ -4,7 +4,7 @@ import pipelantic
 
 
 def test_version() -> None:
-    assert pipelantic.__version__ == "0.1.0"
+    assert pipelantic.__version__ == "0.2.0"
 
 
 def test_root_exports() -> None:
@@ -17,3 +17,8 @@ def test_root_exports() -> None:
     assert hasattr(pipelantic, "Sink")
     assert hasattr(pipelantic, "OutputRef")
     assert hasattr(pipelantic, "DataContractModel")
+    assert hasattr(pipelantic, "ContractBundle")
+    assert hasattr(pipelantic, "load_bundle")
+    assert hasattr(pipelantic, "write_contracts")
+    assert hasattr(pipelantic, "load_data_contract")
+    assert hasattr(pipelantic, "diff_data_contracts")

@@ -26,13 +26,14 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-**0.1.0** ships the typed modeling kernel: authoring APIs, logical graphs,
-validation diagnostics, inspection, and Mermaid. Planning, execution plugins,
-and contract serialization are later milestones.
+**0.2.0** ships the typed modeling kernel and contract interoperability: ODCS
+via ContractModel, DTCS/DPCS generate and load, deterministic bundles, and
+diff hooks. Planning, execution plugins, and richer registries are later
+milestones.
 
 Many chapters still describe the intended 1.0 product. Examples beyond the
-0.1 surface are design examples, not a promise that every illustrated API is
-already available. See [Documentation Status](02_FOUNDATIONS/DOCUMENTATION_STATUS.md)
+shipped surface are design examples, not a promise that every illustrated API
+is already available. See [Documentation Status](02_FOUNDATIONS/DOCUMENTATION_STATUS.md)
 and the [Roadmap](11_DEVELOPMENT/ROADMAP.md).
 
 ## Thirty-Second Example

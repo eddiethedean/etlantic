@@ -2,11 +2,13 @@
 
 Pipelantic docs refer to ``DataContractModel``. The published ContractModel
 package exposes ``ContractModel`` as the Pydantic authoring base. This module
-aliases that type and provides helpers for identity and compatibility checks.
+aliases that type and provides helpers for identity, compatibility checks, and
+ODCS load/save facades.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, TypeAlias
 
 from contractmodel import ContractModel
@@ -18,7 +20,9 @@ __all__ = [
     "ContractModel",
     "DataContractModel",
     "is_data_contract_type",
+    "load_data_contract",
     "resolve_contract_type",
+    "write_odcs",
 ]
 
 
@@ -40,3 +44,27 @@ def resolve_contract_type(annotation: Any) -> type[Any] | None:
         if len(args) == 1 and is_data_contract_type(args[0]):
             return args[0]
     return None
+
+
+def load_data_contract(
+    path: str | Path,
+    *,
+    root: str | Path | None = None,
+    class_name: str | None = None,
+) -> type[DataContractModel]:
+    """Load an ODCS artifact into a ``DataContractModel`` subclass."""
+    from pipelantic.interchange.odcs import load_data_contract as _load
+
+    return _load(path, root=root, class_name=class_name)
+
+
+def write_odcs(
+    model: type[DataContractModel],
+    path: str | Path,
+    *,
+    root: str | Path | None = None,
+) -> Path:
+    """Write a ``DataContractModel`` class to an ODCS YAML file."""
+    from pipelantic.interchange.odcs import write_odcs as _write
+
+    return _write(model, path, root=root)

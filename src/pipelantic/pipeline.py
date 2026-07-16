@@ -297,6 +297,46 @@ class Pipeline(metaclass=_PipelineMeta):
         return graph_to_mermaid(cls.build_graph())
 
     @classmethod
+    def to_dpcs(cls) -> dict[str, Any]:
+        """Generate a DPCS document dict for this pipeline."""
+        from pipelantic.interchange.dpcs import pipeline_to_dpcs
+
+        return pipeline_to_dpcs(cls)
+
+    @classmethod
+    def from_dpcs(
+        cls,
+        source: str | Any,
+        *,
+        registry: dict[str, Any] | None = None,
+        root: str | Any = None,
+        class_name: str | None = None,
+    ) -> type[Pipeline]:
+        """Load a Pipeline subclass from a DPCS artifact."""
+        from pipelantic.interchange.dpcs import pipeline_from_dpcs
+
+        return pipeline_from_dpcs(
+            source,
+            registry=registry,
+            root=root,
+            class_name=class_name,
+        )
+
+    @classmethod
+    def generate_contracts(cls) -> Any:
+        """Discover and build an in-memory contract bundle."""
+        from pipelantic.interchange.bundle import generate_contracts
+
+        return generate_contracts(cls)
+
+    @classmethod
+    def write_contracts(cls, directory: str | Any) -> Any:
+        """Generate and write ODCS/DTCS/DPCS artifacts under ``directory``."""
+        from pipelantic.interchange.bundle import write_contracts
+
+        return write_contracts(cls, directory)
+
+    @classmethod
     def subpipeline(cls, **bindings: Any) -> SubpipelineInstance:
         """Embed this pipeline as a reusable subpipeline in a parent."""
         return SubpipelineInstance(pipeline_cls=cls, bindings=dict(bindings))

@@ -20,6 +20,16 @@ class Severity(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class SourceLocation:
+    """Optional origin of a diagnostic (file, Python object, or contract path)."""
+
+    path: str | None = None
+    line: int | None = None
+    column: int | None = None
+    object_ref: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class Diagnostic:
     """A structured finding from loading, inspection, or validation."""
 
@@ -29,6 +39,7 @@ class Diagnostic:
     path: tuple[str, ...] = ()
     help: str | None = None
     related: tuple[tuple[str, ...], ...] = ()
+    source: SourceLocation | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

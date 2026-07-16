@@ -199,6 +199,32 @@ class Transformation:
         return decorator
 
     @classmethod
+    def to_dtcs(cls) -> dict[str, Any]:
+        """Generate a DTCS document dict for this transformation."""
+        from pipelantic.interchange.dtcs import transformation_to_dtcs
+
+        return transformation_to_dtcs(cls)
+
+    @classmethod
+    def from_dtcs(
+        cls,
+        source: str | Any,
+        *,
+        contracts: dict[str, type[Any]] | None = None,
+        root: str | Any = None,
+        class_name: str | None = None,
+    ) -> type[Transformation]:
+        """Load a Transformation subclass from a DTCS artifact."""
+        from pipelantic.interchange.dtcs import transformation_from_dtcs
+
+        return transformation_from_dtcs(
+            source,
+            contracts=contracts,
+            root=root,
+            class_name=class_name,
+        )
+
+    @classmethod
     def step(cls, **kwargs: Any) -> Step:
         """Create a concrete step instance of this transformation."""
         input_names = {p.name for p in cls.inputs()}
