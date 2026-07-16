@@ -1,7 +1,7 @@
 """Pipelantic — typed, contract-driven data pipeline modeling.
 
-0.3 adds multi-phase validation, profiles, SecretRef, scoped registries,
-schema-drift and reliability models, and an immutable PipelinePlan IR.
+0.4 adds local runtime execution, PipelineRunReport, secrets resolution,
+lifecycle extensions, and stdlib JSON/CSV storage bindings.
 """
 
 from __future__ import annotations
@@ -20,8 +20,13 @@ from pipelantic.diagnostics import (
     ValidationReport,
 )
 from pipelantic.exceptions import (
+    DataValidationError,
     ModelDefinitionError,
+    NodeExecutionError,
     PipelanticError,
+    PipelineCancelledError,
+    PipelineExecutionError,
+    PipelineTimeoutError,
     PipelineValidationError,
 )
 from pipelantic.interchange import (
@@ -36,6 +41,14 @@ from pipelantic.interchange import (
     load_bundle,
     normalize_pipeline,
     write_contracts,
+)
+from pipelantic.lifecycle import (
+    Emit,
+    FailureAction,
+    Inject,
+    OutboundEvent,
+    PipelineRuntime,
+    StepFailureContext,
 )
 from pipelantic.model import Edge, LogicalGraph, Node, NodeKind
 from pipelantic.pipeline import Pipeline, Sink, Source, SubpipelineInstance
@@ -80,6 +93,16 @@ from pipelantic.reliability import (
     WriteIntent,
     WriteMode,
 )
+from pipelantic.reliability_runtime import BackfillRequest
+from pipelantic.reports import PipelineRunReport, ReportStore
+from pipelantic.runtime import (
+    DebugSession,
+    MaterializationPolicy,
+    RunIntent,
+    RunRequest,
+    RunSelection,
+    RunStatus,
+)
 from pipelantic.schema_drift import (
     DriftImpact,
     NormalizedSchema,
@@ -90,7 +113,15 @@ from pipelantic.schema_drift import (
     diff_normalized_schemas,
     normalize_schema_from_model,
 )
-from pipelantic.secrets import SecretRef
+from pipelantic.schema_policy import DriftAction, SchemaDriftPolicy
+from pipelantic.secrets import SecretRef, SecretValue
+from pipelantic.storage import (
+    CallableStorage,
+    CsvStorage,
+    JsonStorage,
+    MemoryStorage,
+    NullStorage,
+)
 from pipelantic.transformation import ImplementationRecord, Step, Transformation
 
 __all__ = [
@@ -98,34 +129,54 @@ __all__ = [
     "ArtifactRef",
     "ArtifactStrategy",
     "BackfillDeclaration",
+    "BackfillRequest",
     "BindingDescriptor",
+    "CallableStorage",
     "CapabilityDecision",
     "ContractBundle",
+    "CsvStorage",
     "Data",
     "DataContractModel",
+    "DataValidationError",
+    "DebugSession",
     "Diagnostic",
     "DiagnosticAction",
+    "DriftAction",
     "DriftImpact",
     "Edge",
+    "Emit",
+    "FailureAction",
     "FreshnessExpectation",
     "IdempotencyDeclaration",
     "ImplementationDescriptor",
     "ImplementationRecord",
+    "Inject",
     "Input",
+    "JsonStorage",
     "LogicalGraph",
     "MaterializationIntent",
     "MaterializationMode",
+    "MaterializationPolicy",
+    "MemoryStorage",
     "ModelDefinitionError",
     "Node",
+    "NodeExecutionError",
     "NodeKind",
     "NormalizedSchema",
+    "NullStorage",
+    "OutboundEvent",
     "Output",
     "OutputRef",
     "Parameter",
     "PartitionCompletenessExpectation",
     "PipelanticError",
     "Pipeline",
+    "PipelineCancelledError",
+    "PipelineExecutionError",
     "PipelinePlan",
+    "PipelineRunReport",
+    "PipelineRuntime",
+    "PipelineTimeoutError",
     "PipelineValidationError",
     "PlanningContext",
     "PluginCapabilities",
@@ -136,16 +187,24 @@ __all__ = [
     "RegistryBundle",
     "ReliabilityEvidence",
     "RepairDeclaration",
+    "ReportStore",
     "RetrySafetyDeclaration",
+    "RunIntent",
+    "RunRequest",
+    "RunSelection",
+    "RunStatus",
     "SchemaChange",
     "SchemaChangeSet",
+    "SchemaDriftPolicy",
     "SchemaObservation",
     "SecretRef",
+    "SecretValue",
     "Severity",
     "Sink",
     "Source",
     "SourceLocation",
     "Step",
+    "StepFailureContext",
     "SubpipelineInstance",
     "Transformation",
     "ValidationPolicy",

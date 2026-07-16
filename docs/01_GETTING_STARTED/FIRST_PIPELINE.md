@@ -4,9 +4,9 @@ This tutorial walks through building a complete Pipelantic project
 from start to finish. Rather than focusing on execution details, you'll
 learn how to model a pipeline using typed Python classes.
 
-> **Status:** Steps 1–7 match the shipped 0.3.0 surface (authoring, validation,
-> contract generation, and planning). The execution example later in this
-> tutorial describes an upcoming milestone.
+> **Status:** Steps 1–8 match the shipped 0.4.0 surface (authoring, validation,
+> contract generation, planning, and local execution). Dataframe engines and
+> external orchestrators arrive in later milestones.
 
 ## Goal
 
@@ -127,25 +127,31 @@ contracts/
 plan = CustomerPipeline.plan(profile="local")
 ```
 
-0.3.0 resolves the Polars implementation (when registered), source and sink
-bindings, capabilities, resource references, and the physical execution graph
-without reading data, resolving secrets, or executing the transformation.
+0.4.0 resolves registered implementations, source and sink bindings,
+capabilities, resource references, and the physical execution graph without
+reading data, resolving secrets, or executing the transformation during
+planning.
 
-## Step 8 --- Execute (later milestone)
+## Step 8 --- Execute locally
 
 ``` python
-CustomerPipeline.run(profile="local")
+from pipelantic import PipelineRuntime
+
+runtime = PipelineRuntime()
+runtime.memory.seed("customer_source", [...])
+report = CustomerPipeline.run(profile="development", runtime=runtime)
+print(report.to_text())
 ```
 
 or
 
 ``` python
-await CustomerPipeline.arun(profile="production")
+await CustomerPipeline.arun(profile="development", runtime=runtime)
 ```
 
-Execution plugins are not shipped in 0.3.0. The intended model keeps the
-pipeline definition unchanged while delegating runtime work to configured
-plugins.
+Local execution consumes the same `PipelinePlan` as future orchestrators.
+JSON/CSV and callable bindings are available in 0.4; Polars/Pandas/SQL
+plugins ship later.
 
 ## What You Built
 
@@ -156,6 +162,7 @@ You created:
 -   A typed pipeline
 -   Portable ODCS, DTCS, and DPCS contracts
 -   A validated `PipelinePlan`
+-   A local `PipelineRunReport`
 
 ## Key Takeaways
 
@@ -163,7 +170,7 @@ You created:
 -   Contracts are generated automatically.
 -   Pipelines describe intent, not execution.
 -   Execution engines are interchangeable.
--   Validation always happens before execution.
+-   Validation and planning always happen before execution.
 
 ## Next Step
 

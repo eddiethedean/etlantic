@@ -1,4 +1,4 @@
-"""Serializable secret references (values are resolved only at runtime in 0.4+)."""
+"""Serializable secret references (values resolve only at runtime)."""
 
 from __future__ import annotations
 

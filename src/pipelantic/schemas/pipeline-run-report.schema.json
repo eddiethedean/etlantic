@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pipelantic.dev/schemas/pipeline-run-report.json",
+  "title": "Pipelantic PipelineRunReport",
+  "type": "object",
+  "required": [
+    "schema",
+    "pipeline_id",
+    "plan_id",
+    "run_id",
+    "intent",
+    "profile",
+    "status",
+    "started_at"
+  ],
+  "properties": {
+    "schema": { "const": "pipelantic.run_report/1" },
+    "pipeline_id": { "type": "string" },
+    "pipeline_version": { "type": ["string", "null"] },
+    "plan_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "intent": { "type": "string" },
+    "profile": { "type": "string" },
+    "status": { "type": "string" },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": ["string", "null"] },
+    "duration_seconds": { "type": ["number", "null"] },
+    "summary": { "type": "object" },
+    "steps": { "type": "array" },
+    "artifacts": { "type": "array" },
+    "validations": { "type": "array" },
+    "state_transitions": { "type": "array" },
+    "diagnostics": { "type": "array" },
+    "recommendations": { "type": "array" },
+    "backend_runs": { "type": "array" },
+    "schema_observations": { "type": "array" },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": true
+}

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-16
+
+### Added
+
+- Local async-first runtime that executes `PipelinePlan`s in-process
+- `Pipeline.run` / `Pipeline.arun` / `Pipeline.debug` entry points
+- `RunIntent`, `RunSelection`, `RunRequest`, and materialization/retry/timeout
+  policies
+- `PipelineRuntime` with lifespan, middleware, resource injection, callbacks,
+  and outbound event types
+- Runtime-only `SecretValue` with env and mounted-file `SecretProvider`s,
+  bounded cache, and fail-closed resolution (planning remains secret-free)
+- Storage bindings: `memory`, `callable`, `json`, `csv`, and `null` (no-write)
+- Versioned `PipelineRunReport` with text/JSON/HTML renderers and in-process
+  report store
+- Structured logging with central secret redaction and lifecycle/security events
+- `SchemaDriftPolicy` observation hooks and local reliability helpers
+  (freshness, partition completeness, retry-safety, backfill/repair/no-write)
+- CLI: `pipelantic run` and `pipelantic report show|export`
+- Hard dependency on `anyio` for structured concurrency
+
+### Changed
+
+- Package version and public status advance to 0.4 (Local Runtime and
+  Operational Model)
+- `SecretRef` lives under the `pipelantic.secrets` package alongside runtime
+  secret resolution types
+
 ## [0.3.0] - 2026-07-16
 
 ### Added

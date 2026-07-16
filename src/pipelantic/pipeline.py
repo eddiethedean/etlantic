@@ -322,6 +322,69 @@ class Pipeline(metaclass=_PipelineMeta):
         return explain_plan(plan)
 
     @classmethod
+    def run(
+        cls,
+        profile: str | Any = "development",
+        *,
+        request: Any = None,
+        runtime: Any = None,
+        context: Any = None,
+        workspace: str | Any = None,
+    ) -> Any:
+        """Validate, plan, and execute this pipeline locally (sync)."""
+        from pipelantic.runtime.execute import run_pipeline
+
+        return run_pipeline(
+            cls,
+            profile=profile,
+            request=request,
+            runtime=runtime,
+            context=context,
+            workspace=workspace,
+        )
+
+    @classmethod
+    async def arun(
+        cls,
+        profile: str | Any = "development",
+        *,
+        request: Any = None,
+        runtime: Any = None,
+        context: Any = None,
+        workspace: str | Any = None,
+    ) -> Any:
+        """Validate, plan, and execute this pipeline locally (async)."""
+        from pipelantic.runtime.execute import arun_pipeline
+
+        return await arun_pipeline(
+            cls,
+            profile=profile,
+            request=request,
+            runtime=runtime,
+            context=context,
+            workspace=workspace,
+        )
+
+    @classmethod
+    def debug(
+        cls,
+        profile: str | Any = "development",
+        *,
+        runtime: Any = None,
+        context: Any = None,
+    ) -> Any:
+        """Open a stateful local debug session."""
+        from pipelantic.lifecycle.runtime import PipelineRuntime
+        from pipelantic.runtime.execute import DebugSession
+
+        return DebugSession(
+            pipeline_cls=cls,
+            profile=profile,
+            runtime=runtime or PipelineRuntime(),
+            context=context,
+        )
+
+    @classmethod
     def to_mermaid(cls) -> str:
         """Generate a Mermaid flowchart from the logical graph."""
         from pipelantic.mermaid import graph_to_mermaid

@@ -260,6 +260,8 @@ the three top-level models.
 
 ## 0.4 — Local Runtime and Operational Model
 
+**Status: shipped in 0.4.0**
+
 ### Deliver
 
 - Async-first local orchestration with transparent `def` and `async def`

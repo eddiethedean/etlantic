@@ -1,8 +1,10 @@
 # Installation
 
-Pipelantic 0.3 provides the typed modeling kernel, contract interoperability
-(ODCS/DTCS/DPCS), multi-phase validation, profiles, and deterministic planning.
-Execution plugins and secret resolution at runtime arrive in later milestones.
+Pipelantic 0.4 provides the typed modeling kernel, contract interoperability
+(ODCS/DTCS/DPCS), multi-phase validation, profiles, deterministic planning,
+and a local runtime that executes plans with Python callables, in-memory
+artifacts, and stdlib JSON/CSV bindings. Dataframe/SQL/Spark plugins arrive
+in later milestones.
 
 ## Requirements
 

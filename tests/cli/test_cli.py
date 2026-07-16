@@ -23,7 +23,7 @@ def _plain_output(result: object) -> str:
 def test_cli_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.3.0" in result.stdout
+    assert "0.4.0" in result.stdout
 
 
 def test_cli_validate_and_plan() -> None:

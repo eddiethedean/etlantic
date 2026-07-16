@@ -11,11 +11,12 @@ Typed, contract-driven data pipeline modeling for Python.
 
 ## Status
 
-**0.3.0 — Validation and Pipeline Plan IR**
+**0.4.0 — Local Runtime and Operational Model**
 
-Pipelantic provides the typed modeling kernel, contract interoperability, and
-an immutable secret-free `PipelinePlan`. Planning is pure (no secret
-resolution or execution). Local runtime arrives in later milestones.
+Pipelantic provides the typed modeling kernel, contract interoperability,
+an immutable secret-free `PipelinePlan`, and a local async runtime that
+executes plans via Python callables, in-memory artifacts, and stdlib
+JSON/CSV bindings.
 
 See the [hosted documentation](https://pipelantic.readthedocs.io/) for the
 full design,
@@ -49,8 +50,8 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 Tag a version that matches `src/pipelantic/_version.py`, then push the tag:
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 GitHub Actions runs checks and publishes to PyPI using the `PYPI_API_TOKEN`
@@ -90,6 +91,8 @@ class CustomerPipeline(Pipeline):
 graph = CustomerPipeline.inspect()
 report = CustomerPipeline.validate()
 print(CustomerPipeline.to_mermaid())
+# Local execution (0.4+):
+# run_report = CustomerPipeline.run(profile="development")
 ```
 
 ## Documentation

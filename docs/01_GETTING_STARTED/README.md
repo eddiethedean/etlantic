@@ -2,11 +2,11 @@
 
 Welcome to Pipelantic!
 
-> **Project status:** 0.3.0 provides the typed modeling kernel, contract
-> interoperability (ODCS/DTCS/DPCS), multi-phase validation, profiles, and an
-> immutable secret-free `PipelinePlan`. Examples that go beyond authoring,
-> validation, planning, inspection, Mermaid, and contract generate/load describe
-> later milestones (notably execution plugins). See
+> **Project status:** 0.4.0 provides the typed modeling kernel, contract
+> interoperability (ODCS/DTCS/DPCS), multi-phase validation, profiles, an
+> immutable secret-free `PipelinePlan`, and a local async runtime with run
+> reports. Examples that require Polars/Pandas/SQL/Spark or external
+> orchestrators describe later milestones. See
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
 This section is designed to get you productive as quickly as possible.

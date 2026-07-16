@@ -156,7 +156,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="local",
             kind="dataframe",
-            version="0.3.0",
+            version="0.4.0",
             engine="local",
             capabilities=local_caps,
         )
@@ -165,7 +165,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="null",
             kind="dataframe",
-            version="0.3.0",
+            version="0.4.0",
             engine="null",
             capabilities=null_caps,
         )
@@ -174,7 +174,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="env-secrets",
             kind="secret_provider",
-            version="0.3.0",
+            version="0.4.0",
             engine="env",
             capabilities=PluginCapabilities(
                 engine="env",

@@ -1,4 +1,4 @@
-"""Pipelantic CLI (validate / plan / inspect)."""
+"""Pipelantic CLI (validate / plan / inspect / run / report)."""
 
 from __future__ import annotations
 
@@ -14,11 +14,13 @@ import typer
 from typer.core import TyperGroup
 
 from pipelantic import __version__
+from pipelantic.lifecycle.runtime import PipelineRuntime
 from pipelantic.plan.explain import explain_plan
 from pipelantic.plan.planner import plan_pipeline_with_report
 from pipelantic.plan.serialize import plan_to_json
 from pipelantic.profile import resolve_profile
 from pipelantic.registry import PlanningContext
+from pipelantic.runtime.request import RunIntent, RunRequest, RunSelection
 
 
 class _DefaultToPlanGroup(TyperGroup):
@@ -38,7 +40,7 @@ class _DefaultToPlanGroup(TyperGroup):
 
 app = typer.Typer(
     name="pipelantic",
-    help="Validate and plan Pipelantic pipelines.",
+    help="Validate, plan, and run Pipelantic pipelines.",
     no_args_is_help=True,
 )
 plan_app = typer.Typer(
@@ -47,7 +49,12 @@ plan_app = typer.Typer(
     invoke_without_command=False,
     no_args_is_help=True,
 )
+report_app = typer.Typer(help="Inspect stored run reports.")
 app.add_typer(plan_app, name="plan")
+app.add_typer(report_app, name="report")
+
+# Process-local runtime for CLI report history within a process.
+_CLI_RUNTIME = PipelineRuntime()
 
 
 def _load_target(target: str) -> type[Any]:
@@ -227,6 +234,79 @@ def inspect_cmd(
         typer.echo(f"{graph.pipeline_name} ({graph.pipeline_id})")
         for node in graph.nodes:
             typer.echo(f"  - {node.kind.value}: {node.name}")
+
+
+@app.command("run")
+def run_cmd(
+    target: str = typer.Argument(..., help="module:Class or path.py:Class"),
+    profile: str = typer.Option("development", "--profile", "-p"),
+    fmt: str = typer.Option("text", "--format", help="text, json, or html"),
+    run_one: str | None = typer.Option(None, "--run-one"),
+    run_until: str | None = typer.Option(None, "--run-until"),
+    intent: str = typer.Option("standard", "--intent"),
+    no_write: bool = typer.Option(False, "--no-write"),
+) -> None:
+    """Execute a pipeline locally and emit a run report."""
+    pipeline_cls = _load_target(target)
+    if run_one and run_until:
+        raise typer.BadParameter("Use only one of --run-one or --run-until.")
+    selection = RunSelection.all()
+    if run_one:
+        selection = RunSelection.only(run_one)
+    elif run_until:
+        selection = RunSelection.until(run_until)
+    request = RunRequest(
+        selection=selection,
+        intent=RunIntent(intent),
+        no_write=no_write,
+    )
+    report = pipeline_cls.run(profile=profile, request=request, runtime=_CLI_RUNTIME)
+    if fmt == "json":
+        typer.echo(report.to_json())
+    elif fmt == "html":
+        typer.echo(report.to_html())
+    else:
+        typer.echo(report.to_text())
+    raise typer.Exit(0 if report.status.value == "succeeded" else 1)
+
+
+@report_app.command("show")
+def report_show_cmd(
+    run_id: str = typer.Argument(..., help="Run id"),
+    fmt: str = typer.Option("text", "--format"),
+) -> None:
+    """Show a previously recorded run report from this process."""
+    report = _CLI_RUNTIME.reports.get(run_id)
+    if report is None:
+        typer.echo(f"Unknown run id: {run_id}", err=True)
+        raise typer.Exit(1)
+    if fmt == "json":
+        typer.echo(report.to_json())
+    elif fmt == "html":
+        typer.echo(report.to_html())
+    else:
+        typer.echo(report.to_text())
+
+
+@report_app.command("export")
+def report_export_cmd(
+    run_id: str = typer.Argument(..., help="Run id"),
+    output: str = typer.Option("report.json", "--output", "-o"),
+    fmt: str = typer.Option("json", "--format"),
+) -> None:
+    """Export a run report to a file."""
+    report = _CLI_RUNTIME.reports.get(run_id)
+    if report is None:
+        typer.echo(f"Unknown run id: {run_id}", err=True)
+        raise typer.Exit(1)
+    path = Path(output)
+    if fmt == "html":
+        path.write_text(report.to_html(), encoding="utf-8")
+    elif fmt == "text":
+        path.write_text(report.to_text(), encoding="utf-8")
+    else:
+        path.write_text(report.to_json(), encoding="utf-8")
+    typer.echo(f"Wrote {path}")
 
 
 @plan_app.command("_default", hidden=True)

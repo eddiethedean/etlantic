@@ -1,4 +1,4 @@
-"""Portable reliability and intent models (schemas only; enforcement is 0.4+)."""
+"""Portable reliability and intent models (schemas in 0.3; enforcement in 0.4+)."""
 
 from __future__ import annotations
 

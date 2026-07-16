@@ -9,9 +9,9 @@ portable contracts.
 
 > **Goal:** Learn the Pipelantic mental model, not every feature.
 >
-> **Status:** Steps 1–6 match the shipped 0.3.0 surface (authoring, validation,
-> contract generation, and planning). Execution below describes a later
-> milestone.
+> **Status:** Steps 1–7 match the shipped 0.4.0 surface (authoring, validation,
+> contract generation, planning, and local execution). Dataframe/SQL/Spark
+> plugins arrive in later milestones.
 
 ## Step 1 --- Define a Data Contract
 
@@ -97,30 +97,39 @@ contracts/
 plan = CustomerPipeline.plan(profile="local")
 ```
 
-0.3.0 resolves a deterministic, secret-free `PipelinePlan` with
+0.4.0 resolves a deterministic, secret-free `PipelinePlan` with
 implementation, binding, capability, and execution-region decisions. Use
 `CustomerPipeline.explain_plan(profile="local")` or the CLI
 (`pipelantic plan …`) for a structured explanation.
 
-## Step 7 --- Execute (later milestone)
+## Step 7 --- Execute locally
 
 ``` python
-CustomerPipeline.run(
-    profile="local",
+from pipelantic import PipelineRuntime
+
+runtime = PipelineRuntime()
+# Seed in-memory source data for local runs, or register json/csv bindings.
+runtime.memory.seed("customer_source", [...])
+
+report = CustomerPipeline.run(
+    profile="development",
+    runtime=runtime,
 )
+print(report.status, report.to_text())
 ```
 
 or
 
 ``` python
 await CustomerPipeline.arun(
-    profile="production",
+    profile="development",
+    runtime=runtime,
 )
 ```
 
-Execution plugins are not shipped in 0.3.0. The intended model handles
-synchronous and asynchronous implementations transparently while
-delegating runtime work to plugins.
+Local execution uses the same `PipelinePlan` as future orchestrators. Source
+and sink I/O in 0.4 uses Python callables, in-memory datasets, and stdlib
+JSON/CSV bindings. Polars/Pandas/SQL plugins arrive in later milestones.
 
 ## What You've Learned
 
@@ -132,7 +141,7 @@ You have:
 -   Validated the pipeline.
 -   Generated portable contracts.
 -   Planned the pipeline with a profile.
--   Seen how later milestones add execution.
+-   Executed the pipeline locally and inspected a run report.
 
 ## Where to Go Next
 
