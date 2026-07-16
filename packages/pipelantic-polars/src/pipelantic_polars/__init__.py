@@ -27,7 +27,7 @@ from pipelantic.dataframe.protocol import (
 )
 from pipelantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 
 def create_plugin() -> PolarsDataframePlugin:

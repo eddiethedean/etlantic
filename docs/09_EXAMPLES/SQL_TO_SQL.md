@@ -1,10 +1,10 @@
 # SQL to SQL
 
-!!! warning "Future design—not a Pipelantic 0.5 API guide"
-    This page is a design study. It may describe packages, commands, or
-    interfaces that are not installable yet. Use Current Capabilities, the
-    runnable examples under `examples/`, the API reference, and the CLI
-    reference for shipped behavior.
+!!! warning "Future design—not a Pipelantic 0.6 API guide"
+    This page is a design study. Prefer the runnable example
+    `examples/sql_to_sql.py` (requires `pipelantic-sql`) for shipped 0.6
+    behavior. Use Current Capabilities, the API reference, and the CLI
+    reference for the current boundary.
 
 
 This example builds a complete Pipelantic pipeline that reads customer and

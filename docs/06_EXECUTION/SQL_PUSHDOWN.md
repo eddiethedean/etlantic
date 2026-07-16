@@ -1,5 +1,9 @@
 # SQL Pushdown
 
+**Status: shipped in 0.6.0** as part of SQL-native planning and execution.
+Pushdown applies when a SQL plugin and dialect advertise the required
+capabilities; unsupported features fail closed at planning.
+
 SQL pushdown is the process of moving eligible pipeline operations into the
 database so computation occurs as close to the data as possible.
 

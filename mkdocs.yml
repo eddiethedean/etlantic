@@ -157,15 +157,17 @@ nav:
       - Polars: 06_EXECUTION/POLARS.md
       - Pandas: 06_EXECUTION/PANDAS.md
       - Dataframe Plugin Protocol: 07_PLUGIN_SDK/DATAFRAME_PLUGIN.md
+      - SQL: 06_EXECUTION/SQL.md
+      - SQL Execution: 06_EXECUTION/SQL_EXECUTION.md
+      - SQL Pushdown: 06_EXECUTION/SQL_PUSHDOWN.md
+      - SQL Plugin Protocol: 07_PLUGIN_SDK/SQL_PLUGIN.md
+      - SQL Dialect: 07_PLUGIN_SDK/SQL_DIALECT.md
   - Future Design:
       - Execution Plugins:
           - Overview: 06_EXECUTION/PLUGINS.md
           - Orchestration Plugins: 06_EXECUTION/ORCHESTRATION_PLUGINS.md
           - Storage Plugins: 06_EXECUTION/STORAGE_PLUGINS.md
           - Resource Plugins: 06_EXECUTION/RESOURCE_PLUGINS.md
-          - SQL: 06_EXECUTION/SQL.md
-          - SQL Execution: 06_EXECUTION/SQL_EXECUTION.md
-          - SQL Pushdown: 06_EXECUTION/SQL_PUSHDOWN.md
           - PySpark: 06_EXECUTION/PYSPARK.md
           - PySpark Execution: 06_EXECUTION/PYSPARK_EXECUTION.md
           - Spark Optimization: 06_EXECUTION/SPARK_OPTIMIZATION.md
@@ -180,8 +182,6 @@ nav:
           - Resource Provider: 07_PLUGIN_SDK/RESOURCE_PROVIDER.md
           - Secret Provider: 07_PLUGIN_SDK/SECRET_PROVIDER.md
           - Observability Provider: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
-          - SQL Plugin: 07_PLUGIN_SDK/SQL_PLUGIN.md
-          - SQL Dialect: 07_PLUGIN_SDK/SQL_DIALECT.md
           - PySpark Plugin: 07_PLUGIN_SDK/PYSPARK_PLUGIN.md
           - Spark Provider: 07_PLUGIN_SDK/SPARK_PROVIDER.md
           - Testing Plugins: 07_PLUGIN_SDK/TESTING_PLUGINS.md
@@ -229,6 +229,7 @@ nav:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap: 11_DEVELOPMENT/ROADMAP.md
       - Migration 0.4 → 0.5: 11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
+      - Migration 0.5 → 0.6: 11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
       - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
       - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
       - Testing: 11_DEVELOPMENT/TESTING.md

@@ -1,13 +1,13 @@
 [project]
 name = "pipelantic-pandas"
-version = "0.5.0"
+version = "0.6.0"
 description = "Pandas dataframe execution plugin for Pipelantic."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
 dependencies = [
-    "pipelantic>=0.5.0,<0.6",
+    "pipelantic>=0.6.0,<0.7",
     "pandas>=2.0,<3",
 ]
 

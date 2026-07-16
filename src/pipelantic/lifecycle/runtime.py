@@ -43,6 +43,7 @@ class PipelineRuntime:
     secret_providers: dict[str, SecretProvider] = field(default_factory=dict)
     storage: dict[str, StorageBinding] = field(default_factory=dict)
     dataframe_plugins: dict[str, Any] = field(default_factory=dict)
+    sql_plugins: dict[str, Any] = field(default_factory=dict)
     memory: MemoryStorage = field(default_factory=MemoryStorage)
     callables: CallableStorage = field(default_factory=CallableStorage)
     _entered: bool = False
@@ -70,6 +71,25 @@ class PipelineRuntime:
                 import warnings
 
                 msg = f"Dataframe plugin discovery failed during runtime init: {exc}"
+                logging.getLogger(__name__).warning(msg)
+                warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        if not self.sql_plugins:
+            try:
+                from pipelantic.sql.discovery import (
+                    discover_sql_plugins,
+                )
+                from pipelantic.sql.discovery import (
+                    register_discovered_plugins as register_sql_plugins,
+                )
+
+                discovered_sql = discover_sql_plugins()
+                self.sql_plugins.update(discovered_sql)
+                register_sql_plugins(self.registry, plugins=discovered_sql)
+            except Exception as exc:
+                import logging
+                import warnings
+
+                msg = f"SQL plugin discovery failed during runtime init: {exc}"
                 logging.getLogger(__name__).warning(msg)
                 warnings.warn(msg, RuntimeWarning, stacklevel=2)
         if not self.storage:
@@ -107,6 +127,13 @@ class PipelineRuntime:
         from pipelantic.dataframe.discovery import register_discovered_plugins
 
         self.dataframe_plugins[engine] = plugin
+        register_discovered_plugins(self.registry, plugins={engine: plugin})
+
+    def register_sql_plugin(self, engine: str, plugin: Any) -> None:
+        """Register a live SQL plugin and its planning descriptor."""
+        from pipelantic.sql.discovery import register_discovered_plugins
+
+        self.sql_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     @asynccontextmanager

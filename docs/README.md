@@ -26,10 +26,11 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-**0.5.0** ships validation, profiles, an immutable secret-free
+**0.6.0** ships validation, profiles, an immutable secret-free
 `PipelinePlan`, local Python execution, runtime secret resolution, run reports,
-memory/callable/JSON/CSV storage, and a versioned dataframe protocol with
-Polars and Pandas plugins.
+memory/callable/JSON/CSV storage, a versioned dataframe protocol with Polars
+and Pandas plugins, and a versioned SQL protocol with the `pipelantic-sql`
+PostgreSQL reference plugin.
 
 Many chapters still describe the intended 1.0 product. Examples beyond the
 shipped surface are design examples, not a promise that every illustrated API
@@ -85,9 +86,10 @@ From these declarations, Pipelantic can derive:
 - A deterministic, secret-free `PipelinePlan` (0.3.0)
 - A local Python runtime and structured run report (0.4.0)
 - Optional Polars and Pandas dataframe plugins (0.5.0)
+- Optional SQL execution via `pipelantic-sql` (0.6.0)
 
 Memory, callable, JSON, CSV, and no-write storage are included in core.
-SQL, Spark, and external orchestration plugins arrive later.
+Spark and external orchestration plugins arrive later.
 
 The transformation implementation remains separate:
 
@@ -99,10 +101,14 @@ def normalize_customers(customers):
 @NormalizeCustomers.implementation("polars")
 def normalize_customers_polars(customers):
     ...
+
+@NormalizeCustomers.implementation("sql")
+def normalize_customers_sql(customers):
+    ...
 ```
 
-Install `pipelantic-polars` / `pipelantic-pandas` for dataframe engines; later
-milestones may add SQL, PySpark, remote, or other implementations.
+Install `pipelantic-polars` / `pipelantic-pandas` / `pipelantic-sql` for
+engines; later milestones may add PySpark, remote, or other implementations.
 
 ## The Architecture in One View
 
@@ -155,7 +161,7 @@ implementation or runtime concepts—not additional contract standards.
 2. [Installation](01_GETTING_STARTED/INSTALLATION.md)
 3. [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
 4. Runnable code: `examples/quickstart.py`, `examples/file_storage.py`,
-   `examples/dataframe_parity.py`
+   `examples/dataframe_parity.py`, `examples/sql_to_sql.py`
 
 ### I want to understand the idea
 
@@ -178,28 +184,32 @@ implementation or runtime concepts—not additional contract standards.
 2. [Local Python](06_EXECUTION/LOCAL_PYTHON.md)
 3. [Secrets Management](06_EXECUTION/SECRETS_MANAGEMENT.md) (env + file only)
 4. [Polars](06_EXECUTION/POLARS.md) / [Pandas](06_EXECUTION/PANDAS.md)
-5. [Run Reports](06_EXECUTION/RUN_REPORTS.md)
+5. [SQL](06_EXECUTION/SQL.md)
+6. [Run Reports](06_EXECUTION/RUN_REPORTS.md)
 
 ### I want runnable examples
 
 - [examples/quickstart.py](https://github.com/eddiethedean/pipelantic/blob/main/examples/quickstart.py) — local runtime
 - [examples/file_storage.py](https://github.com/eddiethedean/pipelantic/blob/main/examples/file_storage.py) — JSON/CSV storage
 - [examples/dataframe_parity.py](https://github.com/eddiethedean/pipelantic/blob/main/examples/dataframe_parity.py) — Polars/Pandas
+- [examples/sql_to_sql.py](https://github.com/eddiethedean/pipelantic/blob/main/examples/sql_to_sql.py) — SQL (`pipelantic-sql`)
 
 ### I want design studies (not installable)
 
 These pages describe intended 1.0 workflows. They are **not** current API guides:
 
 - [CSV to CSV](09_EXAMPLES/CSV_TO_CSV.md) (design narrative; prefer `examples/file_storage.py`)
-- [SQL to SQL](09_EXAMPLES/SQL_TO_SQL.md)
+- [SQL to SQL](09_EXAMPLES/SQL_TO_SQL.md) (design narrative; prefer `examples/sql_to_sql.py`)
 - [Airflow Pipeline](09_EXAMPLES/AIRFLOW_PIPELINE.md)
 - [PySpark to Delta](09_EXAMPLES/PYSPARK_TO_DELTA.md)
 
-### I want to build a dataframe plugin (0.5)
+### I want to build a dataframe or SQL plugin
 
 1. [Dataframe Plugin protocol](07_PLUGIN_SDK/DATAFRAME_PLUGIN.md)
-2. [Dataframe Plugins overview](06_EXECUTION/DATAFRAME_PLUGINS.md)
-3. [Compatibility](10_REFERENCE/COMPATIBILITY.md)
+2. [SQL Plugin protocol](07_PLUGIN_SDK/SQL_PLUGIN.md)
+3. [Dataframe Plugins overview](06_EXECUTION/DATAFRAME_PLUGINS.md)
+4. [SQL overview](06_EXECUTION/SQL.md)
+5. [Compatibility](10_REFERENCE/COMPATIBILITY.md)
 
 ### I want other plugins (future)
 
@@ -220,8 +230,8 @@ These pages describe intended 1.0 workflows. They are **not** current API guides
 | [Data Contracts](03_DATA_CONTRACTS/README.md) | Define and operationalize typed datasets |
 | [Transformations](04_TRANSFORMATIONS/README.md) | Define typed transformation interfaces |
 | [Pipelines](05_PIPELINES/README.md) | Compose transformations into portable graphs |
-| [Execution](06_EXECUTION/README.md) | Local runtime, secrets, dataframe engines |
-| [Future Design](06_EXECUTION/PLUGINS.md) | SQL, Spark, Airflow, and other unshipped plugins |
+| [Execution](06_EXECUTION/README.md) | Local runtime, secrets, dataframe and SQL engines |
+| [Future Design](06_EXECUTION/PLUGINS.md) | Spark, Airflow, and other unshipped plugins |
 | [Visualization](08_VISUALIZATION/README.md) | Mermaid today; Graphviz/HTML are future |
 | [Examples](09_EXAMPLES/README.md) | Runnable pointers + design studies |
 | [Reference](10_REFERENCE/README.md) | CLI, API, compatibility |

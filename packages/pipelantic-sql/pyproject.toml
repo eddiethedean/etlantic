@@ -1,0 +1,26 @@
+[project]
+name = "pipelantic-sql"
+version = "0.6.0"
+description = "PostgreSQL reference SQL execution plugin for Pipelantic."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+dependencies = [
+    "pipelantic>=0.6.0,<0.7",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+]
+
+[project.optional-dependencies]
+sqlite = []
+
+[project.entry-points."pipelantic.sql_plugins"]
+sql = "pipelantic_sql:create_plugin"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pipelantic_sql"]

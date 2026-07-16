@@ -1,10 +1,10 @@
 # Installation
 
-Pipelantic 0.5.0 provides the typed modeling kernel, contract interoperability
+Pipelantic 0.6.0 provides the typed modeling kernel, contract interoperability
 (ODCS/DTCS/DPCS), multi-phase validation, profiles, deterministic planning,
 a local runtime that executes plans with Python callables, in-memory
-artifacts, and stdlib JSON/CSV bindings, plus optional Polars and Pandas
-dataframe plugins. SQL/Spark/orchestration plugins arrive in later milestones.
+artifacts, and stdlib JSON/CSV bindings, plus optional Polars, Pandas, and
+SQL plugins. Spark/orchestration plugins arrive in later milestones.
 
 ## Requirements
 
@@ -27,27 +27,35 @@ Or with uv:
 uv add pipelantic
 ```
 
-Verify the installed version matches these docs (0.5.0 or newer):
+Verify the installed version matches these docs (0.6.0 or newer):
 
 ```bash
 python -c "import pipelantic; print(pipelantic.__version__)"
 ```
 
-### Optional dataframe plugins
+### Optional dataframe and SQL plugins
 
-Core never installs Polars or Pandas. Add engines explicitly:
+Core never installs Polars, Pandas, or database drivers. Add engines
+explicitly:
 
 ```bash
 pip install pipelantic-polars    # Polars reference plugin
 pip install pipelantic-pandas    # Pandas compatibility plugin
+pip install pipelantic-sql       # PostgreSQL SQL reference plugin
 # or extras:
 pip install 'pipelantic[polars]'
 pip install 'pipelantic[pandas]'
 pip install 'pipelantic[dataframes]'
 ```
 
-SQL, Spark, and Airflow plugins are not part of 0.5. Do not install
-undocumented extras expecting those backends.
+For SQL, set a connection URL:
+
+```bash
+export PIPELANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/pipelantic
+```
+
+Spark and Airflow plugins are not part of 0.6. Do not install undocumented
+extras expecting those backends.
 
 ## Upgrade
 
@@ -59,8 +67,8 @@ uv lock --upgrade-package pipelantic
 
 Review the
 [changelog](https://github.com/eddiethedean/pipelantic/blob/main/CHANGELOG.md)
-before upgrading between 0.x releases because breaking changes remain
-possible.
+and [Migration 0.5 → 0.6](../11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md) before
+upgrading between 0.x releases because breaking changes remain possible.
 
 ## Development Setup
 
@@ -100,6 +108,7 @@ uv.lock
 src/pipelantic/
 packages/pipelantic-polars/
 packages/pipelantic-pandas/
+packages/pipelantic-sql/
 tests/
 examples/
 docs/
@@ -113,8 +122,9 @@ unsupported backend examples.
 
 ## Dependency Philosophy
 
-Pipelantic keeps the core install small. Dataframe engines, orchestrators,
-and storage clients belong in optional plugins—not the base package.
+Pipelantic keeps the core install small. Dataframe engines, SQL drivers,
+orchestrators, and storage clients belong in optional plugins—not the base
+package.
 
 See [Dependency Strategy](../11_DEVELOPMENT/DEPENDENCY_STRATEGY.md) for the
 full dependency policy.

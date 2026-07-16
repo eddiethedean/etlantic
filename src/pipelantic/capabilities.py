@@ -20,7 +20,8 @@ class PluginCapabilities:
     """Declared capabilities of a plugin or engine.
 
     Dataframe-oriented flags (eager/lazy/arrow/...) are first-class for 0.5
-    planning. Unknown requirements may still be declared via ``extras``.
+    planning. SQL-oriented flags are first-class for 0.6. Unknown requirements
+    may still be declared via ``extras``.
     """
 
     engine: str
@@ -41,6 +42,14 @@ class PluginCapabilities:
     invalid_row_separation: bool = False
     cancellation: bool = False
     thread_safe: bool = False
+    # SQL 0.6 vocabulary
+    sql_merge: bool = False
+    sql_cte: bool = False
+    sql_returning: bool = False
+    sql_transactional_ddl: bool = False
+    sql_atomic_rename: bool = False
+    sql_catalog_inspect: bool = False
+    sql_trusted_fragments: bool = False
     extras: frozenset[str] = field(default_factory=frozenset)
 
     def supports(self, requirement: str) -> bool:
@@ -64,6 +73,20 @@ class PluginCapabilities:
             "invalid_row_separation": self.invalid_row_separation,
             "cancellation": self.cancellation,
             "thread_safe": self.thread_safe,
+            "sql_merge": self.sql_merge,
+            "merge": self.sql_merge,
+            "sql_cte": self.sql_cte,
+            "cte": self.sql_cte,
+            "sql_returning": self.sql_returning,
+            "returning": self.sql_returning,
+            "sql_transactional_ddl": self.sql_transactional_ddl,
+            "transactional_ddl": self.sql_transactional_ddl,
+            "sql_atomic_rename": self.sql_atomic_rename,
+            "atomic_rename": self.sql_atomic_rename,
+            "sql_catalog_inspect": self.sql_catalog_inspect,
+            "catalog_inspect": self.sql_catalog_inspect,
+            "sql_trusted_fragments": self.sql_trusted_fragments,
+            "trusted_fragments": self.sql_trusted_fragments,
         }
         if requirement in known:
             return known[requirement]
@@ -90,6 +113,13 @@ class PluginCapabilities:
             "invalid_row_separation": self.invalid_row_separation,
             "cancellation": self.cancellation,
             "thread_safe": self.thread_safe,
+            "sql_merge": self.sql_merge,
+            "sql_cte": self.sql_cte,
+            "sql_returning": self.sql_returning,
+            "sql_transactional_ddl": self.sql_transactional_ddl,
+            "sql_atomic_rename": self.sql_atomic_rename,
+            "sql_catalog_inspect": self.sql_catalog_inspect,
+            "sql_trusted_fragments": self.sql_trusted_fragments,
             "extras": sorted(self.extras),
         }
 
@@ -116,6 +146,13 @@ class PluginCapabilities:
             invalid_row_separation=bool(data.get("invalid_row_separation", False)),
             cancellation=bool(data.get("cancellation", False)),
             thread_safe=bool(data.get("thread_safe", False)),
+            sql_merge=bool(data.get("sql_merge", False)),
+            sql_cte=bool(data.get("sql_cte", False)),
+            sql_returning=bool(data.get("sql_returning", False)),
+            sql_transactional_ddl=bool(data.get("sql_transactional_ddl", False)),
+            sql_atomic_rename=bool(data.get("sql_atomic_rename", False)),
+            sql_catalog_inspect=bool(data.get("sql_catalog_inspect", False)),
+            sql_trusted_fragments=bool(data.get("sql_trusted_fragments", False)),
             extras=frozenset(str(x) for x in extras),
         )
 

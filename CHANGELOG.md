@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-16
+
+### Added
+
+- Versioned SQL execution protocol (`pipelantic.sql/1`) with relation refs,
+  typed expressions, write intents, and dialect capability negotiation
+- `Profile.sql_engine` for selecting a SQL backend during planning
+- Independently installable `pipelantic-sql` PostgreSQL reference plugin
+  (SQLAlchemy Core; SQLite usable for local demos)
+- SQL→SQL execution without intermediate Python row fetches when fusion is
+  preserved
+- Fail-closed merge and capability checks when a dialect cannot honor required
+  semantics
+- Entry-point discovery group `pipelantic.sql_plugins`
+- Conformance helpers under `pipelantic.testing` for SQL expressions
+
+### Changed
+
+- Package version advances to 0.6 (SQL-Native Execution)
+- Planning contexts for `sql` auto-require SQL capabilities when
+  `Profile.sql_engine` is set
+
+### Upgrade notes
+
+- Install `pipelantic-sql` separately; core stays driver-free
+- Register SQL implementations with
+  `@TransformationClass.implementation("sql")`
+- Set `Profile(sql_engine="sql")` to select the SQL backend
+- Configure connections via `PIPELANTIC_SQL_URL` (or plugin-specific wiring)
+- Missing plugins or unsupported capabilities (e.g. MERGE without keys) fail
+  at validation/planning
+
 ## [0.5.0] - 2026-07-16
 
 ### Added
@@ -198,6 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.6.0]: https://github.com/eddiethedean/pipelantic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/eddiethedean/pipelantic/releases/tag/v0.5.0
 [0.4.0]: https://github.com/eddiethedean/pipelantic/releases/tag/v0.4.0
 [0.3.0]: https://github.com/eddiethedean/pipelantic/releases/tag/v0.3.0

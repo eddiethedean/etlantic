@@ -25,8 +25,8 @@ No.
 
 Pipelantic does not implement a dataframe engine, database clients,
 scheduling, or distributed execution. It includes an in-process local runtime
-with memory, callable, JSON, CSV, and no-write storage, plus optional Polars
-and Pandas plugins that execute through a versioned dataframe protocol.
+with memory, callable, JSON, CSV, and no-write storage, plus optional Polars,
+Pandas, and SQL plugins that execute through versioned protocols.
 
 Instead, it coordinates existing tools through a common typed model.
 
@@ -48,7 +48,7 @@ Its focus is:
 
 Pipelantic's architecture is designed so future plugins can consume the same
 plans without changing pipeline definitions. External orchestrator compilation
-is not included in 0.5.
+is not included in 0.6.
 
 ------------------------------------------------------------------------
 
@@ -110,7 +110,8 @@ Examples include:
 
 - local Python
 - Polars / Pandas (optional plugins)
-- future SQL, Spark, or Airflow backends
+- SQL (`pipelantic-sql`)
+- future Spark or Airflow backends
 
 Business logic remains unchanged.
 
@@ -123,8 +124,9 @@ Pipelantic is dataframe-engine neutral.
 Install `pipelantic-polars` or `pipelantic-pandas`, register
 `@Transformation.implementation("polars")` / `"pandas"`, and set
 `Profile.dataframe_engine` accordingly. Prefer Polars when you need lazy
-preservation; use Pandas when you need the Pandas ecosystem. SQL and Spark
-backends are later milestones.
+preservation; use Pandas when you need the Pandas ecosystem. SQL is available
+via `pipelantic-sql` and `Profile.sql_engine="sql"`. Spark backends are a later
+milestone.
 
 ------------------------------------------------------------------------
 

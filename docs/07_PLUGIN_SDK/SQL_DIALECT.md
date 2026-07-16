@@ -1,5 +1,9 @@
 # SQL Dialect
 
+**Status: shipped in 0.6.0** as part of `pipelantic.sql/1`. The reference
+dialect path is PostgreSQL via `pipelantic-sql`. SQLite may be used for demos;
+it is not a full conformance target.
+
 A **SQL Dialect** defines the database-specific rules used by a Pipelantic
 SQL Plugin to compile logical SQL expressions into valid, semantically
 equivalent SQL for a target database.

@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-Pipelantic 0.5.0 is an alpha release. This page is the shortest answer to
+Pipelantic 0.6.0 is an alpha release. This page is the shortest answer to
 "What can I use today?"
 
-## Available in 0.5
+## Available in 0.6
 
 | Capability | Status |
 |---|---|
@@ -20,13 +20,14 @@ Pipelantic 0.5.0 is an alpha release. This page is the shortest answer to
 | Polars plugin (eager + lazy preservation) | Available (`pipelantic-polars`) |
 | Pandas plugin (eager compatibility) | Available (`pipelantic-pandas`) |
 | Optional Arrow interchange | Available when PyArrow is installed |
+| SQL execution protocol (`pipelantic.sql/1`) | Available |
+| SQL plugin (PostgreSQL reference) | Available (`pipelantic-sql`) |
 | Mermaid diagrams (`Pipeline.to_mermaid`) | Available |
 
-## Not included in 0.5
+## Not included in 0.6
 
 | Capability | Status |
 |---|---|
-| SQL compilation or execution | Future design (0.6) |
 | PySpark or streaming execution | Future design (0.7) |
 | Airflow or other orchestrator compilation | Future design (0.8) |
 | Public third-party Plugin SDK polish | Continues in 0.9 |
@@ -36,13 +37,14 @@ Pipelantic 0.5.0 is an alpha release. This page is the shortest answer to
 ## Install matrix
 
 ```bash
-pip install pipelantic                 # core only — no dataframe engines
+pip install pipelantic                 # core only — no engines
 pip install pipelantic-polars          # Polars reference plugin
 pip install pipelantic-pandas          # Pandas compatibility plugin
+pip install pipelantic-sql             # PostgreSQL SQL reference plugin
 pip install 'pipelantic-polars[arrow]' # optional PyArrow
 ```
 
-Core never imports Polars, Pandas, PyArrow, or NumPy.
+Core never imports Polars, Pandas, PyArrow, NumPy, or database drivers.
 
 ## Next Step
 

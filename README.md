@@ -7,11 +7,11 @@
 Catch incompatible data-pipeline wiring before you process data.
 
 Define datasets, transformations, and pipelines as typed Python classes.
-Validate and plan them once. Run locally today; swap Polars or Pandas backends
-without rewriting the logical pipeline.
+Validate and plan them once. Run locally today; swap Polars, Pandas, or SQL
+backends without rewriting the logical pipeline.
 
-**Status:** Alpha **0.5.0** — local runtime + optional Polars/Pandas plugins.
-SQL, Spark, and Airflow compilation are not shipped.
+**Status:** Alpha **0.6.0** — local runtime + optional Polars/Pandas/SQL
+plugins. Spark and Airflow compilation are not shipped.
 
 ## Install
 
@@ -19,9 +19,10 @@ Requires Python 3.11 or newer.
 
 ```bash
 pip install pipelantic
-# optional dataframe engines
+# optional engines
 pip install pipelantic-polars
 pip install pipelantic-pandas
+pip install pipelantic-sql
 ```
 
 Verify:
@@ -49,8 +50,8 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 Tag a version that matches `src/pipelantic/_version.py`, then push the tag:
 
 ```bash
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.6.0
+git push origin v0.6.0
 ```
 
 GitHub Actions runs checks and publishes to PyPI using the `PYPI_API_TOKEN`
@@ -123,13 +124,14 @@ Run the complete tested version at
 
 ## Current capability boundary
 
-| Capability | 0.5 |
+| Capability | 0.6 |
 |---|---|
 | Typed modeling, validation, contracts, and planning | Available |
 | Local Python execution and run reports | Available |
 | Memory, callable, JSON, CSV, and no-write storage | Available |
 | Polars and Pandas dataframe plugins | Available (`pipelantic-polars` / `pipelantic-pandas`) |
-| SQL, Spark, and Airflow plugins | Not yet available |
+| SQL plugin | Available (`pipelantic-sql`) |
+| Spark and Airflow plugins | Not yet available |
 
 ## Documentation
 

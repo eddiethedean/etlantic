@@ -124,7 +124,12 @@ def _build_plan(
         raise _selection_error("Selection produced an empty graph.")
 
     profile = context.profile
-    default_engine = profile.dataframe_engine or "local"
+    # Prefer SQL when profile.sql_engine is set; otherwise dataframe/local.
+    default_engine = (
+        profile.sql_engine
+        if profile.sql_engine
+        else (profile.dataframe_engine or "local")
+    )
     security_domain = profile.security_domain
 
     # 4-5. Implementations + capabilities
@@ -132,6 +137,8 @@ def _build_plan(
         pipeline_cls, graph, context, default_engine
     )
     _assert_dataframe_engines_available(context, implementations, default_engine)
+    _assert_sql_engines_available(context, implementations, default_engine)
+    _assert_sql_write_capabilities(context, implementations, default_engine)
     capability_decisions = _capability_records(context, default_engine)
     _assert_capabilities_supported(capability_decisions, context, default_engine)
 
@@ -236,6 +243,8 @@ def _build_plan(
         "timeout_seconds": profile.timeout_seconds,
         "retry_max_attempts": profile.retry_max_attempts,
         "dataframe_engine": profile.dataframe_engine,
+        "sql_engine": profile.sql_engine,
+        "allow_trusted_sql": profile.allow_trusted_sql,
     }
     intents: dict[str, Any] = {}
     if profile.retry_max_attempts is not None:
@@ -269,8 +278,19 @@ def _build_plan(
         execution_settings=execution_settings,
         metadata={
             "planner": "pipelantic.plan.planner",
-            "planner_version": "0.5.0",
+            "planner_version": "0.6.0",
             "dataframe_protocol": "pipelantic.dataframe/1",
+            "sql_protocol": "pipelantic.sql/1",
+            "sql_fusion": [
+                {
+                    "region": r.identity,
+                    "engine": r.engine,
+                    "nodes": list(r.node_names),
+                    "strategy": "temp_relation" if r.engine == "sql" else None,
+                }
+                for r in regions
+                if r.engine == "sql"
+            ],
             "collection_points": [
                 {
                     "identity": b.identity,
@@ -459,6 +479,84 @@ def _assert_dataframe_engines_available(
         "Missing dataframe engine plugin(s).",
         report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
     )
+
+
+def _assert_sql_engines_available(
+    context: PlanningContext,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+) -> None:
+    from pipelantic.sql.protocol import SQL_ENGINES
+
+    engines = {default_engine} | {impl.engine for impl in implementations.values()}
+    missing = sorted(
+        engine
+        for engine in engines
+        if engine in SQL_ENGINES and engine not in context.registry.engines
+    )
+    if not missing:
+        return
+    diagnostics = [
+        Diagnostic(
+            code="PMPLAN412",
+            severity=Severity.ERROR,
+            message=(
+                f"SQL engine {engine!r} is not registered. Install "
+                "pipelantic-sql and ensure it is discoverable."
+            ),
+            path=("capability", engine),
+            phase="capability",
+        )
+        for engine in missing
+    ]
+    raise PipelineValidationError(
+        "Missing SQL engine plugin(s).",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )
+
+
+def _assert_sql_write_capabilities(
+    context: PlanningContext,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+) -> None:
+    """Fail closed when profile requires unsupported SQL write semantics."""
+    from pipelantic.sql.protocol import SQL_ENGINES
+
+    engines = {default_engine} | {impl.engine for impl in implementations.values()}
+    if not any(e in SQL_ENGINES for e in engines):
+        return
+    required = list(context.profile.required_sql_capabilities)
+    if not required:
+        return
+    for engine in engines:
+        if engine not in SQL_ENGINES:
+            continue
+        available = context.registry.engines.get(engine)
+        if available is None:
+            continue
+        unsupported = [req for req in required if not available.supports(req)]
+        if not unsupported:
+            continue
+        diagnostics = [
+            Diagnostic(
+                code="PMPLAN413",
+                severity=Severity.ERROR,
+                message=(
+                    f"SQL capability {req!r} unsupported by {engine!r}; "
+                    "failing before target mutation."
+                ),
+                path=("capability", req),
+                phase="capability",
+            )
+            for req in unsupported
+        ]
+        raise PipelineValidationError(
+            "Unsupported SQL write/publication capabilities.",
+            report=ValidationReport.from_diagnostics(
+                diagnostics, phases=("capability",)
+            ),
+        )
 
 
 def _assert_capabilities_supported(

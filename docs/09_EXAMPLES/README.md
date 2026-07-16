@@ -1,6 +1,6 @@
 # Examples
 
-## Runnable now (0.5)
+## Runnable now (0.6)
 
 These scripts live in the repository `examples/` directory and are exercised by
 tests:
@@ -30,17 +30,24 @@ python examples/dataframe_parity.py polars
 python examples/dataframe_parity.py pandas
 ```
 
+### SQL to SQL
+
+```bash
+# requires pipelantic-sql
+python examples/sql_to_sql.py
+```
+
 ## Design studies (not installable)
 
 The remaining pages in this section explore intended integrations. Each page
 opens with a Future design warning. They may contain APIs, packages, or
-commands that do not exist yet.
+commands that do not exist yet (or that go beyond the shipped surface).
 
-| Topic | 0.5 status |
+| Topic | 0.6 status |
 |---|---|
 | CSV and JSON through built-in storage | Use `examples/file_storage.py` |
 | Pandas and Polars pipelines | Use `examples/dataframe_parity.py` |
-| SQL execution and pushdown | Future plugin design |
+| SQL execution and pushdown | Use `examples/sql_to_sql.py` (+ SQL docs) |
 | PySpark and streaming | Future plugin design |
 | Airflow compilation | Future plugin design |
 | Generated Graphviz/HTML documentation | Future design |

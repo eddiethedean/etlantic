@@ -2,11 +2,12 @@
 
 Welcome to Pipelantic!
 
-> **Project status:** 0.5.0 provides the typed modeling kernel, contract
+> **Project status:** 0.6.0 provides the typed modeling kernel, contract
 > interoperability (ODCS/DTCS/DPCS), multi-phase validation, profiles, an
 > immutable secret-free `PipelinePlan`, a local async runtime with run
-> reports, and Polars/Pandas dataframe plugins. Examples that require SQL,
-> Spark, or external orchestrators describe later milestones. See
+> reports, Polars/Pandas dataframe plugins, and the `pipelantic-sql` SQL
+> plugin. Examples that require Spark or external orchestrators describe later
+> milestones. See
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
 This section is designed to get you productive as quickly as possible.
@@ -23,7 +24,7 @@ By the end of this guide you will be able to:
 -   Wire transformations into pipelines
 -   Validate your pipeline before execution
 -   Generate portable contract specifications
--   Run pipelines locally (and optionally with Polars/Pandas plugins)
+-   Run pipelines locally (and optionally with Polars/Pandas/SQL plugins)
 -   Know which chapters are shipped vs future design
 
 ## Prerequisites
@@ -61,9 +62,9 @@ You describe *what* the pipeline is:
 
 Pipelantic validates and plans the pipeline.
 
-Pipelantic 0.5 can execute registered Python implementations with its local
-runtime and optional Polars/Pandas dataframe plugins. Later milestones add
-SQL, Spark, and orchestration systems.
+Pipelantic 0.6 can execute registered Python implementations with its local
+runtime and optional Polars/Pandas/SQL plugins. Later milestones add Spark and
+orchestration systems.
 
 ``` text
 Python Classes

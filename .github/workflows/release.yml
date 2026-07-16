@@ -34,12 +34,13 @@ jobs:
           MODULE_VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/pipelantic/_version.py)"
           POLARS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/pipelantic-polars/pyproject.toml | head -1)"
           PANDAS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/pipelantic-pandas/pyproject.toml | head -1)"
+          SQL_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/pipelantic-sql/pyproject.toml | head -1)"
           if [ "$TAG" != "$VERSION" ] || [ "$TAG" != "$MODULE_VERSION" ]; then
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ]; then
-            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION'"
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION'"
             exit 1
           fi
 
@@ -50,13 +51,21 @@ jobs:
           uv build --package pipelantic
           uv build --package pipelantic-polars --out-dir dist
           uv build --package pipelantic-pandas --out-dir dist
+          uv build --package pipelantic-sql --out-dir dist
 
       - name: Smoke test core wheel
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           WHEEL="dist/pipelantic-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project --with "$WHEEL" \
-            python -c "import pipelantic; assert pipelantic.__version__ == '$TAG'"
+            python -c "
+          import pipelantic
+          assert pipelantic.__version__ == '$TAG'
+          import importlib.util
+          assert importlib.util.find_spec('sqlalchemy') is None
+          assert importlib.util.find_spec('psycopg') is None
+          print('core ok, driver-free')
+          "
 
       - name: Publish core to PyPI
         env:
@@ -78,17 +87,30 @@ jobs:
             "dist/pipelantic_pandas-${TAG}-py3-none-any.whl" \
             "dist/pipelantic_pandas-${TAG}.tar.gz"
 
-      - name: Smoke discover_dataframe_plugins on installed wheels
+      - name: Publish SQL plugin to PyPI
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          uv publish \
+            "dist/pipelantic_sql-${TAG}-py3-none-any.whl" \
+            "dist/pipelantic_sql-${TAG}.tar.gz"
+
+      - name: Smoke discover plugins on installed wheels
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           CORE="dist/pipelantic-${TAG}-py3-none-any.whl"
           POLARS="dist/pipelantic_polars-${TAG}-py3-none-any.whl"
           PANDAS="dist/pipelantic_pandas-${TAG}-py3-none-any.whl"
+          SQL="dist/pipelantic_sql-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project \
-            --with "$CORE" --with "$POLARS" --with "$PANDAS" \
+            --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
             python -c "
           from pipelantic.dataframe.discovery import discover_dataframe_plugins
+          from pipelantic.sql.discovery import discover_sql_plugins
           found = discover_dataframe_plugins()
           assert set(found) >= {'polars', 'pandas'}, found
-          print('ok', sorted(found))
+          sql = discover_sql_plugins()
+          assert 'sql' in sql, sql
+          print('ok', sorted(found), sorted(sql))
           "

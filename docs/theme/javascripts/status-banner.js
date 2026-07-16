@@ -5,9 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     "ORCHESTRATION_PLUGINS",
     "STORAGE_PLUGINS",
     "RESOURCE_PLUGINS",
-    "SQL",
-    "SQL_EXECUTION",
-    "SQL_PUSHDOWN",
     "PYSPARK",
     "PYSPARK_EXECUTION",
     "SPARK_OPTIMIZATION",
@@ -15,14 +12,17 @@ document.addEventListener("DOMContentLoaded", () => {
     "AIRFLOW",
     "COMPILATION",
   ];
-  // Shipped in 0.5: DATAFRAME_PLUGINS, POLARS, PANDAS stay out of this list.
+  // Shipped in 0.5: DATAFRAME_PLUGINS, POLARS, PANDAS.
+  // Shipped in 0.6: SQL, SQL_EXECUTION, SQL_PUSHDOWN stay out of this list.
   const isFutureExecution = futureExecutionPages.some((name) =>
     path.includes(`/06_EXECUTION/${name}/`)
   );
-  // Dataframe plugin protocol is shipped; other Plugin SDK pages are future.
+  // Dataframe and SQL plugin protocols are shipped; other Plugin SDK pages are future.
   const isPluginSdk =
     path.includes("/07_PLUGIN_SDK/") &&
-    !path.includes("/07_PLUGIN_SDK/DATAFRAME_PLUGIN/");
+    !path.includes("/07_PLUGIN_SDK/DATAFRAME_PLUGIN/") &&
+    !path.includes("/07_PLUGIN_SDK/SQL_PLUGIN/") &&
+    !path.includes("/07_PLUGIN_SDK/SQL_DIALECT/");
   const isDesignExample =
     path.includes("/09_EXAMPLES/") && !path.endsWith("/09_EXAMPLES/");
   const isFutureVisualization =
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const banner = document.createElement("div");
   banner.className = "admonition warning";
   banner.innerHTML =
-    '<p class="admonition-title">Future design—not a Pipelantic 0.5 API guide</p>' +
+    '<p class="admonition-title">Future design—not a Pipelantic 0.6 API guide</p>' +
     "<p>This page may contain unshipped packages, commands, or interfaces. " +
     "Use Current Capabilities, the API reference, and the CLI reference for shipped behavior.</p>";
   article.prepend(banner);

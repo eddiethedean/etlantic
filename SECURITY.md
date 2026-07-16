@@ -1,15 +1,16 @@
 # Security Policy
 
-Pipelantic 0.5.0 is an alpha release. Security reports concerning the
+Pipelantic 0.6.0 is an alpha release. Security reports concerning the
 published package, contract loading, planning, local runtime, storage
-bindings, secret handling, dataframe plugins, documentation, or repository
-automation are welcome.
+bindings, secret handling, dataframe and SQL plugins, documentation, or
+repository automation are welcome.
 
 ## Supported Versions
 
 | Version | Support |
 |---|---|
-| 0.5.x | Current alpha line; best-effort security fixes |
+| 0.6.x | Current alpha line; best-effort security fixes |
+| 0.5.x | Critical fixes only when practical |
 | 0.4.x | Critical fixes only when practical |
 | 0.3.x and earlier | Not supported |
 
@@ -45,7 +46,9 @@ Security-sensitive areas include:
 - Secret disclosure in plans, logs, reports, exceptions, or generated files
 - Storage binding and plugin supply-chain vulnerabilities
 - Cross-run artifact, cache, or report exposure
-- Injection vulnerabilities
+- Injection vulnerabilities, including SQL identifier and parameter handling
+  in SQL plugins (structured compilation and bound parameters; untrusted raw
+  SQL is out of scope)
 
 The detailed threat model is documented in
 [docs/02_FOUNDATIONS/SECURITY.md](docs/02_FOUNDATIONS/SECURITY.md).

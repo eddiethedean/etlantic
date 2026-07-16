@@ -166,7 +166,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="local",
             kind="runtime",
-            version="0.5.0",
+            version="0.6.0",
             engine="local",
             capabilities=local_caps,
         )
@@ -175,7 +175,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="null",
             kind="runtime",
-            version="0.5.0",
+            version="0.6.0",
             engine="null",
             capabilities=null_caps,
         )
@@ -184,7 +184,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="env-secrets",
             kind="secret_provider",
-            version="0.5.0",
+            version="0.6.0",
             engine="env",
             capabilities=PluginCapabilities(
                 engine="env",
@@ -222,14 +222,20 @@ class PlanningContext:
         When ``dataframe_engine`` is ``polars`` or ``pandas`` and no custom
         registry is supplied, discovered entry-point plugins are registered
         onto a stub registry so plan-only paths work without a runtime.
+        When ``sql_engine`` is ``sql``, discovered SQL plugins are registered
+        the same way.
         """
         resolved = resolve_profile(profile)
         caps = list(required_capabilities) if required_capabilities is not None else []
         engine = resolved.dataframe_engine or "local"
+        sql_engine = resolved.sql_engine
         if not caps and engine in {"polars", "pandas"}:
             caps = ["dataframe", "eager"]
             if engine == "polars":
                 caps.append("lazy")
+        if not caps and sql_engine == "sql":
+            caps = ["sql", "transactions", "sql_catalog_inspect"]
+            caps.extend(resolved.required_sql_capabilities)
         reg = registry
         if reg is None:
             reg = builtin_stub_registry()
@@ -237,6 +243,12 @@ class PlanningContext:
                 from pipelantic.dataframe.discovery import register_discovered_plugins
 
                 register_discovered_plugins(reg)
+            if sql_engine == "sql":
+                from pipelantic.sql.discovery import (
+                    register_discovered_plugins as register_sql,
+                )
+
+                register_sql(reg)
         return cls(
             profile=resolved,
             registry=reg,

@@ -1,5 +1,8 @@
 # SQL Execution
 
+**Status: shipped in 0.6.0** for the `pipelantic-sql` PostgreSQL reference
+plugin. SQLite is usable for local demos; it is not the conformance reference.
+
 The SQL Execution subsystem defines how Pipelantic executes validated
 Pipeline Plans directly within SQL databases.
 
@@ -159,8 +162,8 @@ Planning should verify support for features such as:
 - Streaming
 - Materialized views
 
-If mandatory capabilities are unavailable, another implementation should be
-selected or planning should fail.
+If mandatory capabilities are unavailable, planning fails closed. There is no
+silent emulation of unsupported merge, transaction, or dialect features.
 
 ## Performance
 

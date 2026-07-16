@@ -502,6 +502,8 @@ corrupting shared artifacts.
 
 ## 0.6 — SQL-Native Execution
 
+**Status: shipped in 0.6.0**
+
 ### Outcome
 
 Run eligible relational pipelines inside a database from source relation to

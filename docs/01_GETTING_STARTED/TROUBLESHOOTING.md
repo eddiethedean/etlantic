@@ -10,7 +10,7 @@ python --version
 
 ## Installed version is older than the docs
 
-These docs describe Pipelantic **0.5.0**. Confirm what you installed:
+These docs describe Pipelantic **0.6.0**. Confirm what you installed:
 
 ```bash
 python -c "import pipelantic; print(pipelantic.__version__)"
@@ -19,7 +19,7 @@ python -c "import pipelantic; print(pipelantic.__version__)"
 If the version is older, upgrade:
 
 ```bash
-python -m pip install --upgrade 'pipelantic>=0.5.0'
+python -m pip install --upgrade 'pipelantic>=0.6.0'
 ```
 
 If pip still resolves an older release, you may be on a mirror or pin. Check
@@ -27,24 +27,26 @@ If pip still resolves an older release, you may be on a mirror or pin. Check
 [PyPI](https://pypi.org/project/pipelantic/)) and clear conflicting constraints
 in your environment.
 
-## `pip install pipelantic-polars` / `pipelantic-pandas` fails
+## `pip install pipelantic-polars` / `pipelantic-pandas` / `pipelantic-sql` fails
 
-Those packages ship with Pipelantic 0.5.0. They are separate distributions:
+Those packages ship with Pipelantic 0.6.0. They are separate distributions:
 
 ```bash
 python -m pip install --upgrade pipelantic-polars
 python -m pip install --upgrade pipelantic-pandas
+python -m pip install --upgrade pipelantic-sql
 ```
 
 If pip reports no matching distribution:
 
-1. Confirm core is already at 0.5.0 or newer.
+1. Confirm core is already at 0.6.0 or newer.
 2. Confirm Python is 3.11+.
 3. Confirm the package name uses a hyphen (`pipelantic-polars`), not an
    underscore.
 
-Until 0.5.0 is on PyPI, install from a git checkout with
-`uv sync --group dataframes` instead.
+Until 0.6.0 is on PyPI, install from a git checkout with
+`uv sync --group dataframes` (and install `pipelantic-sql` from the workspace)
+instead.
 
 ## A transformation has no implementation
 
@@ -79,9 +81,10 @@ runtime examples. Do not silently switch profile names within one workflow.
 ## A Pandas, Polars, SQL, Spark, or Airflow example fails
 
 Install the matching plugin for dataframe engines
-(`pipelantic-polars` / `pipelantic-pandas`) and set `Profile.dataframe_engine`.
-SQL, Spark, and Airflow remain design material for later milestones. Start
-with the runnable examples under `examples/`.
+(`pipelantic-polars` / `pipelantic-pandas`) and set `Profile.dataframe_engine`,
+or install `pipelantic-sql` and set `Profile.sql_engine="sql"`. Spark and
+Airflow remain design material for later milestones. Start with the runnable
+examples under `examples/` (including `examples/sql_to_sql.py`).
 
 ## Commands in a design page do not exist
 

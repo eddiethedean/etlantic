@@ -1,7 +1,7 @@
 """Pipelantic — typed, contract-driven data pipeline modeling.
 
-0.5 adds a versioned dataframe execution protocol with independently
-installable Polars and Pandas plugins.
+0.6 adds SQL-native execution with an independently installable
+PostgreSQL reference plugin (``pipelantic-sql``).
 """
 
 from __future__ import annotations
@@ -122,6 +122,13 @@ from pipelantic.schema_drift import (
 )
 from pipelantic.schema_policy import DriftAction, SchemaDriftPolicy
 from pipelantic.secrets import SecretRef, SecretValue
+from pipelantic.sql import (
+    SQL_PROTOCOL_VERSION,
+    RelationRef,
+    SqlQuery,
+    discover_sql_plugins,
+    select,
+)
 from pipelantic.storage import (
     CallableStorage,
     CsvStorage,
@@ -133,6 +140,7 @@ from pipelantic.transformation import ImplementationRecord, Step, Transformation
 
 __all__ = [
     "DATAFRAME_PROTOCOL_VERSION",
+    "SQL_PROTOCOL_VERSION",
     "ArtifactOwnership",
     "ArtifactProvenance",
     "ArtifactRef",
@@ -196,6 +204,7 @@ __all__ = [
     "ProvenanceKind",
     "ReconciliationDeclaration",
     "RegistryBundle",
+    "RelationRef",
     "ReliabilityEvidence",
     "RepairDeclaration",
     "ReportStore",
@@ -214,6 +223,7 @@ __all__ = [
     "Sink",
     "Source",
     "SourceLocation",
+    "SqlQuery",
     "Step",
     "StepFailureContext",
     "SubpipelineInstance",
@@ -231,6 +241,7 @@ __all__ = [
     "diff_pipelines",
     "diff_transformations",
     "discover_dataframe_plugins",
+    "discover_sql_plugins",
     "explain_plan",
     "generate_contracts",
     "graphs_equivalent",
@@ -242,6 +253,7 @@ __all__ = [
     "plan_pipeline",
     "production_profile",
     "resolve_profile",
+    "select",
     "test_profile",
     "write_contracts",
     "write_odcs",

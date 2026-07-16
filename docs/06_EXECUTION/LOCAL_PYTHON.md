@@ -1,6 +1,6 @@
 # Local Python
 
-> **Status: Available in Pipelantic 0.5.0.** Process-local execution of a
+> **Status: Available in Pipelantic 0.6.0.** Process-local execution of a
 > `PipelinePlan` with registered Python and dataframe implementations.
 
 The local runtime executes validated **Pipeline Plans** in-process. It is the

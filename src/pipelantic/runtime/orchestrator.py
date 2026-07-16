@@ -56,6 +56,14 @@ from pipelantic.runtime.events import LifecycleEvent, SecurityEvent
 from pipelantic.runtime.invoke import maybe_await
 from pipelantic.runtime.logging import RunLogger, redact_message
 from pipelantic.runtime.request import MaterializationPolicy, RunRequest
+from pipelantic.runtime.sql_exec import (
+    execute_sql_sink,
+    execute_sql_source,
+    execute_sql_step,
+    is_sql_engine,
+    materialize_sql_temp,
+    resolve_sql_plugin,
+)
 from pipelantic.runtime.state import FailureStage, RunStatus, StepStatus
 from pipelantic.schema_drift import (
     SchemaObservation,
@@ -772,6 +780,37 @@ class LocalOrchestrator:
     ) -> None:
         node = state.node
         if node.kind is NodeKind.SOURCE:
+            if is_sql_engine(self._engine_for(node.name)):
+                plugin = resolve_sql_plugin(
+                    "sql",
+                    plugins=getattr(self.runtime, "sql_plugins", None),
+                )
+                binding_name = node.binding or node.name
+                binding_name = self.request.binding_overrides.get(
+                    node.name, binding_name
+                )
+                descriptor = self._binding_descriptor(node, binding_name)
+                location = descriptor.location if descriptor is not None else None
+                data = await execute_sql_source(
+                    plugin=plugin,
+                    node=node,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                    location=location,
+                    binding=binding_name,
+                )
+                validations.append(
+                    ValidationResult(
+                        node_name=node.name,
+                        boundary="source",
+                        status="skipped",
+                        message="SQL source resolved as RelationRef (no row fetch)",
+                    )
+                )
+                self._store_outputs(node, data, artifacts)
+                state.records_out = 0
+                return
             data = await self._read_source(node, run_id=run_id)
             await self._observe_schema(node, data, schema_obs=schema_obs)
             await self._check_source_reliability(node, data, run_id=run_id)
@@ -785,6 +824,71 @@ class LocalOrchestrator:
         if node.kind is NodeKind.SINK:
             inputs = self._gather_inputs(node, graph, artifacts)
             payload = next(iter(inputs.values()), [])
+            if is_sql_engine(self._engine_for(node.name)) and not isinstance(
+                payload, list
+            ):
+                plugin = resolve_sql_plugin(
+                    "sql",
+                    plugins=getattr(self.runtime, "sql_plugins", None),
+                )
+                binding_name = node.binding or node.name
+                binding_name = self.request.binding_overrides.get(
+                    node.name, binding_name
+                )
+                descriptor = self._binding_descriptor(node, binding_name)
+                location = descriptor.location if descriptor is not None else None
+                write_intent = "insert_select"
+                if descriptor is not None and descriptor.metadata:
+                    write_intent = str(
+                        descriptor.metadata.get("write_intent") or write_intent
+                    )
+                allow_trusted = bool(
+                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
+                )
+                if write_mode_for_request(self.request).value == "no_write":
+                    state.records_in = 0
+                    state.records_out = 0
+                    return
+                result = await execute_sql_sink(
+                    plugin=plugin,
+                    node=node,
+                    source_value=payload,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                    target_location=location,
+                    write_intent=write_intent,
+                    allow_trusted_sql=allow_trusted,
+                )
+                if result.outcome.value == "unknown":
+                    raise NodeExecutionError(
+                        "SQL sink commit outcome unknown; refusing unsafe retry.",
+                        node_name=node.name,
+                        stage=FailureStage.PUBLICATION.value,
+                        code="PMEXEC434",
+                    )
+                state.records_in = result.metrics.rows_affected or 0
+                state.records_out = result.metrics.rows_affected or 0
+                for diag in result.diagnostics:
+                    diagnostics.append(
+                        RunDiagnostic(
+                            code=str(diag.get("code") or "PMSQL000"),
+                            severity=str(diag.get("severity") or "warning"),
+                            message=redact_message(str(diag.get("message") or "")),
+                            node_name=node.name,
+                        )
+                    )
+                self.runtime.events.emit(
+                    LifecycleEvent(
+                        kind="publication",
+                        run_id=run_id,
+                        pipeline_id=self.plan.pipeline_id,
+                        step_name=node.name,
+                        attempt=attempt,
+                        status="succeeded",
+                    )
+                )
+                return
             payload = self._coerce_to_records(payload, contract_type=node.contract_type)
             payload = await self._validate_boundary(
                 node, payload, boundary="pre_publication", validations=validations
@@ -877,6 +981,7 @@ class LocalOrchestrator:
                 await self._observe_schema(node, outputs, schema_obs=schema_obs)
                 for port_name, value in outputs.items():
                     strategy = self._strategy_for(node.name, port_name)
+
                     logical = f"{node.name}.{port_name}"
                     ref = ArtifactRef(
                         identity=artifact_identity(
@@ -902,6 +1007,83 @@ class LocalOrchestrator:
                 state.records_in = bundle.metrics.rows_in or state.records_in
                 state.records_out = bundle.metrics.rows_out or 0
                 state.metadata["dataframe"] = bundle.metrics.to_dict()
+                return
+
+            if is_sql_engine(impl.engine):
+                plugin = resolve_sql_plugin(
+                    impl.engine,
+                    plugins=getattr(self.runtime, "sql_plugins", None),
+                )
+                allow_trusted = bool(
+                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
+                )
+                # Hybrid: fetch SQL handles into records when feeding local engines
+                # is handled in _gather_inputs; here inputs should already be
+                # RelationRef / SqlQuery for SQL-to-SQL.
+                for _port_name in inputs:
+                    validations.append(
+                        ValidationResult(
+                            node_name=node.name,
+                            boundary="input_validation",
+                            status="skipped",
+                            message="delegated to sql plugin",
+                        )
+                    )
+                result = await execute_sql_step(
+                    plugin=plugin,
+                    impl=impl,
+                    node=node,
+                    inputs=inputs,
+                    params=params,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                    allow_trusted_sql=allow_trusted,
+                )
+                from pipelantic.sql.protocol import SqlQuery
+
+                # If consumers are also SQL, keep IR (or temp relation). If any
+                # consumer is non-SQL, materialize later at gather time.
+                output_ports = [p.name for p in node.outputs] or ["result"]
+                port_name = output_ports[0]
+                stored: Any = result
+                consumers_sql = True
+                for edge in graph.edges_from(node.name):
+                    if not is_sql_engine(self._engine_for(edge.consumer_node)):
+                        consumers_sql = False
+                        break
+                if consumers_sql and isinstance(result, SqlQuery):
+                    temp_name = f"pipelantic_tmp_{node.name}_{port_name}"
+                    stored = await materialize_sql_temp(
+                        plugin=plugin,
+                        query=result,
+                        temp_name=temp_name,
+                        plan=self.plan,
+                        node=node,
+                        run_id=run_id,
+                        attempt=attempt,
+                        allow_trusted_sql=allow_trusted,
+                    )
+                strategy = self._strategy_for(node.name, port_name)
+                logical = f"{node.name}.{port_name}"
+                ref = ArtifactRef(
+                    identity=artifact_identity(
+                        pipeline_id=self.plan.pipeline_id,
+                        node_name=node.name,
+                        port_name=port_name,
+                        security_domain=self.plan.security_domain,
+                    ),
+                    logical_output=logical,
+                    strategy=strategy,
+                    security_domain=self.plan.security_domain,
+                )
+                artifacts.put(ref, stored, durable=False)
+                state.records_out = 0
+                state.metadata["sql"] = {
+                    "rows_fetched": plugin.rows_fetched_total(),
+                    "result_kind": type(stored).__name__,
+                    "consumers_sql": consumers_sql,
+                }
                 return
 
             for port_name, value in inputs.items():
@@ -1005,13 +1187,54 @@ class LocalOrchestrator:
     def _gather_inputs(
         self, node: Node, graph: LogicalGraph, artifacts: ArtifactStore
     ) -> dict[str, Any]:
+        from pipelantic.sql.protocol import RelationRef, SqlQuery
+
         inputs: dict[str, Any] = {}
+        consumer_engine = self._engine_for(node.name)
         for edge in graph.edges:
             if edge.consumer_node != node.name:
                 continue
             key = f"{edge.producer_node}.{edge.producer_port}"
-            inputs[edge.consumer_port] = artifacts.get_raw(key)
+            value = artifacts.get_raw(key)
+            # Hybrid boundary: SQL handle → Python/dataframe records.
+            if not is_sql_engine(consumer_engine) and isinstance(
+                value, (RelationRef, SqlQuery)
+            ):
+                plugin = resolve_sql_plugin(
+                    "sql",
+                    plugins=getattr(self.runtime, "sql_plugins", None),
+                )
+                allow_trusted = bool(
+                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
+                )
+                from pipelantic.sql.protocol import SqlExecutionContext
+
+                ctx = SqlExecutionContext(
+                    run_id="hybrid",
+                    pipeline_id=self.plan.pipeline_id,
+                    plan_id=self.plan.plan_id,
+                    step_name=node.name,
+                    allow_trusted_sql=allow_trusted,
+                )
+                fetched = plugin.fetch_records(
+                    value, params={}, context=ctx, contract_type=node.contract_type
+                )
+                value = fetched.records or []
+            inputs[edge.consumer_port] = value
         return inputs
+
+    def _engine_for(self, node_name: str) -> str:
+        for region in self.plan.regions:
+            if node_name in region.node_names:
+                return region.engine
+        impl = self.plan.implementations.get(node_name)
+        if impl is not None:
+            return impl.engine
+        return str(
+            (self.plan.execution_settings or {}).get("sql_engine")
+            or (self.plan.execution_settings or {}).get("dataframe_engine")
+            or "local"
+        )
 
     def _coerce_to_records(self, data: Any, *, contract_type: type[Any] | None) -> Any:
         """Convert native frames to records for storage/publication boundaries."""

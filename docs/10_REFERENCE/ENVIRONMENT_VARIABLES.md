@@ -1,6 +1,6 @@
 # Environment Variables
 
-!!! warning "Future design—not a Pipelantic 0.5 API guide"
+!!! warning "Future design—not a Pipelantic 0.6 API guide"
     This page describes a proposed 1.0 configuration surface. Pipelantic 0.5
     does not load `pipelantic.toml` or these environment variables. Configure
     profiles and bindings in Python.

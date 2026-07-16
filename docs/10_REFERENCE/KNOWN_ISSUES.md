@@ -2,8 +2,15 @@
 
 - The project is alpha and does not promise 1.0 API stability.
 - Local execution is in-process; Pipelantic is not a distributed scheduler.
-- SQL, Spark, Airflow, and other non-dataframe backends are not included in
-  0.5.
+- Spark, Airflow, and other non-SQL distributed backends are not included in
+  0.6.
+- SQL plugins do not treat untrusted raw SQL as safe; use the typed expression
+  model and dialect identifier/parameter APIs.
+- `MERGE` / upsert requires PostgreSQL (or another dialect that advertises
+  merge) and explicit keys; unsupported merge requests fail closed at planning.
+- SQLite via `PIPELANTIC_SQL_URL` is demo-only; it is not the SQL conformance
+  reference (PostgreSQL via `pipelantic-sql` is).
+- Cross-database joins and distributed transactions are not supported.
 - Polars LazyFrames are collected only at plan-declared boundaries; durable
   JSON workspace materialization requires collection to records first.
 - Durable workspace storage rejects native frames/LazyFrames (fail closed);

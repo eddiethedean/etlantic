@@ -4,7 +4,7 @@ import pipelantic
 
 
 def test_version() -> None:
-    assert pipelantic.__version__ == "0.5.0"
+    assert pipelantic.__version__ == "0.6.0"
 
 
 def test_root_exports() -> None:
@@ -29,6 +29,9 @@ def test_root_exports() -> None:
     assert hasattr(pipelantic, "write_contracts")
     assert hasattr(pipelantic, "load_data_contract")
     assert hasattr(pipelantic, "diff_data_contracts")
+    assert hasattr(pipelantic, "RelationRef")
+    assert hasattr(pipelantic, "discover_sql_plugins")
+    assert hasattr(pipelantic, "SQL_PROTOCOL_VERSION")
     assert hasattr(pipelantic.Pipeline, "run")
     assert hasattr(pipelantic.Pipeline, "arun")
     assert hasattr(pipelantic.Pipeline, "debug")

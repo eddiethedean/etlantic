@@ -11,7 +11,7 @@ plans them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in alpha 0.5.0
+## What is ready in alpha 0.6.0
 
 | Area | Ready? |
 |---|---|
@@ -22,13 +22,16 @@ manager.
 | Memory / callable / JSON / CSV / no-write storage | Yes |
 | Env + mounted-file secrets | Yes |
 | Polars / Pandas plugins | Yes (separate packages) |
-| SQL / Spark / Airflow | No — future design |
+| SQL plugin (`pipelantic-sql`) | Yes (PostgreSQL reference) |
+| Spark / Airflow | No — future design |
 | Multi-tenant durable orchestration | No |
 | Formal SLA / support response times | No |
 
 ## Security posture
 
 - Plans never contain resolved secrets
+- SQL plugins use structured compilation with identifier/parameter safety;
+  untrusted raw SQL is out of scope
 - Threat model documents many controls as **Gap** (plugin allowlists, DoS
   budgets, stronger isolation)—read
   [Security](../02_FOUNDATIONS/SECURITY.md) and the repository
@@ -37,7 +40,7 @@ manager.
 
 ## What not to bet on yet
 
-- Copying long “design study” tutorials (SQL/Spark/Airflow) into production
+- Copying long Spark/Airflow “design study” tutorials into production
 - AWS Secrets Manager / Vault / keyring configuration from older docs
 - Process-local reports as an audit system of record
 - Stable 1.0 compatibility guarantees
@@ -47,8 +50,9 @@ manager.
 1. [Capabilities](CAPABILITIES.md)
 2. [Quickstart](QUICKSTART.md) or `examples/quickstart.py`
 3. Optional: `examples/dataframe_parity.py` with Polars or Pandas
-4. [Migration 0.4 → 0.5](../11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md) if upgrading
-5. [Roadmap](../11_DEVELOPMENT/ROADMAP.md) for sequencing
+4. Optional: `examples/sql_to_sql.py` with `pipelantic-sql`
+5. [Migration 0.5 → 0.6](../11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md) if upgrading
+6. [Roadmap](../11_DEVELOPMENT/ROADMAP.md) for sequencing
 
 ## Support channel
 

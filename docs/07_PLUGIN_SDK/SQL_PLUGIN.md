@@ -1,5 +1,9 @@
 # SQL Plugin
 
+**Status: shipped in 0.6.0** (`pipelantic.sql/1`). The reference plugin is
+`pipelantic-sql` (PostgreSQL). Discover plugins via the
+`pipelantic.sql_plugins` entry point.
+
 A **SQL Plugin** implements the Pipelantic SQL Plugin API for a specific SQL
 execution environment.
 
@@ -909,17 +913,12 @@ points or the standard Pipelantic plugin registry.
 
 ## Package Naming
 
-Recommended distribution names include:
+Shipped in 0.6.0:
 
-- `pipelantic-sql`
-- `pipelantic-postgresql`
-- `pipelantic-sqlite`
-- `pipelantic-duckdb`
-- `pipelantic-snowflake`
-- `pipelantic-bigquery`
-- `pipelantic-databricks-sql`
+- `pipelantic-sql` — PostgreSQL reference plugin
 
-A shared SQL core package may provide common IR, compiler, and test utilities.
+Additional dialect packages (for example DuckDB, Snowflake, BigQuery) may
+follow the same protocol later; they are not part of this release.
 
 ## Version Metadata
 

@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in Pipelantic 0.5.0.** This page documents the commands
+> **Status: Available in Pipelantic 0.6.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash

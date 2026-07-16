@@ -1,6 +1,6 @@
 # OpenAPI for Pipelines
 
-!!! warning "Future design—not a Pipelantic 0.5 API guide"
+!!! warning "Future design—not a Pipelantic 0.6 API guide"
     Graphviz, HTML, lineage exporters, and generated pipeline docs beyond
     Mermaid are not shipped in 0.5. For diagrams today, use
     `Pipeline.to_mermaid()`.

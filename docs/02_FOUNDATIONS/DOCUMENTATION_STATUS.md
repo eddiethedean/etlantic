@@ -1,10 +1,10 @@
 # Documentation Status and Conventions
 
-Pipelantic 0.5 implements the typed modeling kernel, contract interoperability,
-Validation / Pipeline Plan IR, the local runtime / operational model, and
-dataframe execution (Polars reference + Pandas compatibility). Much of the
-documentation still describes the intended 1.0 product. It serves three
-related purposes:
+Pipelantic 0.6 implements the typed modeling kernel, contract interoperability,
+Validation / Pipeline Plan IR, the local runtime / operational model,
+dataframe execution (Polars reference + Pandas compatibility), and SQL-native
+execution (`pipelantic-sql`). Much of the documentation still describes the
+intended 1.0 product. It serves three related purposes:
 
 1. Explain the product vision and user experience.
 2. Specify the intended 1.0 architecture and public interfaces.
@@ -27,26 +27,30 @@ Public pages use these visible statuses:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.5 | Tested against the current package |
+| Available in 0.6 | Tested against the current package |
 | Partially available | Shipped and future behavior are explicitly separated |
 | Future design | Not a current API or installation guide |
 | Normative specification | Contract requirements, not package behavior |
 | Internal project plan | Maintainer sequencing and implementation notes |
 
-Unless a chapter says otherwise, user-guide code beyond the shipped 0.5
-modeling, interchange, validation, planning, local runtime, and **dataframe
-plugin** surface should be read as an **accepted design example**, not as
-evidence of a published package API. The 0.5 surface is defined by the
-package, [API reference](../10_REFERENCE/API_REFERENCE.md), tests, and
-changelog.
+Unless a chapter says otherwise, user-guide code beyond the shipped 0.6
+modeling, interchange, validation, planning, local runtime, **dataframe
+plugin**, and **SQL plugin** surface should be read as an **accepted design
+example**, not as evidence of a published package API. The 0.6 surface is
+defined by the package, [API reference](../10_REFERENCE/API_REFERENCE.md),
+tests, and changelog.
 
 **Shipped in 0.5:** dataframe execution protocol, `pipelantic-polars`, and
 `pipelantic-pandas` (see Execution → Polars / Pandas and the Dataframe Plugin
 protocol page).
 
-**Still accepted design until later milestones:** SQL, Spark, external
-orchestration, Graphviz/HTML visualization, and non-dataframe Plugin SDK
-surfaces.
+**Shipped in 0.6:** SQL execution protocol (`pipelantic.sql/1`),
+`pipelantic-sql`, `Profile.sql_engine`, and SQL→SQL fusion without intermediate
+Python fetch (see Execution → SQL and the SQL Plugin protocol page).
+
+**Still accepted design until later milestones:** Spark, external
+orchestration, Graphviz/HTML visualization, and non-dataframe / non-SQL Plugin
+SDK surfaces.
 
 ## Normative Authority
 

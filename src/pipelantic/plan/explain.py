@@ -67,6 +67,8 @@ def explain_plan(plan: PipelinePlan) -> dict[str, Any]:
         "fingerprint": plan.fingerprint,
         "security_domain": plan.security_domain,
         "dataframe_protocol": plan.metadata.get("dataframe_protocol"),
+        "sql_protocol": plan.metadata.get("sql_protocol"),
+        "sql_fusion": plan.metadata.get("sql_fusion"),
         "regions": [r.to_dict() for r in plan.regions],
         "materialization_boundaries": [
             b.to_dict() for b in plan.materialization_boundaries

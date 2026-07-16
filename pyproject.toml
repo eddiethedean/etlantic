@@ -1,6 +1,6 @@
 [project]
 name = "pipelantic"
-version = "0.5.0"
+version = "0.6.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -29,12 +29,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["pipelantic-polars==0.5.0"]
-pandas = ["pipelantic-pandas==0.5.0"]
+polars = ["pipelantic-polars==0.6.0"]
+pandas = ["pipelantic-pandas==0.6.0"]
+sql = ["pipelantic-sql==0.6.0"]
+postgresql = ["pipelantic-sql==0.6.0"]
 arrow = ["pyarrow>=14"]
 dataframes = [
-    "pipelantic-polars==0.5.0",
-    "pipelantic-pandas==0.5.0",
+    "pipelantic-polars==0.6.0",
+    "pipelantic-pandas==0.6.0",
 ]
 
 [project.scripts]
@@ -69,6 +71,9 @@ pandas = [
     "pipelantic-pandas",
     "pyarrow>=14",
 ]
+sql = [
+    "pipelantic-sql",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -99,12 +104,14 @@ members = [
     ".",
     "packages/pipelantic-polars",
     "packages/pipelantic-pandas",
+    "packages/pipelantic-sql",
 ]
 
 [tool.uv.sources]
 pipelantic = { workspace = true }
 pipelantic-polars = { workspace = true }
 pipelantic-pandas = { workspace = true }
+pipelantic-sql = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -112,10 +119,12 @@ pythonpath = [
     "src",
     "packages/pipelantic-polars/src",
     "packages/pipelantic-pandas/src",
+    "packages/pipelantic-sql/src",
 ]
 markers = [
     "polars: tests requiring the Polars plugin",
     "pandas: tests requiring the Pandas plugin",
+    "sql: tests requiring the SQL plugin",
 ]
 
 [tool.ruff]
@@ -147,7 +156,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pipelantic", "pipelantic_polars", "pipelantic_pandas"]
+known-first-party = [
+    "pipelantic",
+    "pipelantic_polars",
+    "pipelantic_pandas",
+    "pipelantic_sql",
+]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -1,0 +1,6 @@
+{
+  "dialect": "sqlite",
+  "has_params": false,
+  "text_contains_select": true,
+  "redacted": {}
+}

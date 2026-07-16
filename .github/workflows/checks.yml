@@ -80,6 +80,62 @@ jobs:
       - name: Runnable parity example
         run: uv run python examples/dataframe_parity.py ${{ matrix.engine }}
 
+  sql:
+    name: SQL plugin
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pipelantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Sync with SQL plugin
+        run: uv sync --locked --group sql
+
+      - name: Discovery smoke
+        run: |
+          uv run python -c "
+          from pipelantic.sql.discovery import discover_sql_plugins
+          found = discover_sql_plugins()
+          assert 'sql' in found, found
+          print('discovered', sorted(found))
+          "
+
+      - name: Pytest SQL suite (SQLite IR + runtime)
+        env:
+          PIPELANTIC_SQL_URL: sqlite+pysqlite:///:memory:
+        run: uv run pytest -q tests/sql -m sql
+
+      - name: Pytest SQL suite (PostgreSQL)
+        env:
+          PIPELANTIC_SQL_URL: postgresql+psycopg://postgres:postgres@localhost:5432/pipelantic
+        run: uv run pytest -q tests/sql -m sql
+
+      - name: Runnable SQL examples
+        env:
+          PIPELANTIC_SQL_URL: postgresql+psycopg://postgres:postgres@localhost:5432/pipelantic
+        run: |
+          uv run python examples/sql_to_sql.py
+          uv run python examples/sql_transactional_write.py
+          uv run python examples/sql_failure_recovery.py
+
   package:
     name: Build and test wheel
     runs-on: ubuntu-latest
