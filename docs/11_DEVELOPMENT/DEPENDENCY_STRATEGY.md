@@ -365,6 +365,24 @@ Airflow, Dagster, Prefect, Argo, and future integrations each belong in their
 own distribution. Their SDKs and providers are dependencies of those
 distributions only.
 
+### FastAPI integration
+
+The post-1.0 control API belongs in a separate `pipelantic-fastapi`
+distribution.
+
+Recommended dependencies:
+
+- `fastapi` for typed HTTP APIs, OpenAPI 3.1, dependencies, lifespan, and
+  WebSockets;
+- Pipelantic core for plans, run requests, reports, events, and registries;
+- optional `uvicorn` extra for standalone development and serving;
+- an SSE implementation selected after evaluating compatibility with current
+  Starlette response streaming and cancellation behavior.
+
+FastAPI must not become a core dependency. Heavy pipeline work must not run
+through `BackgroundTasks`; production submission delegates to a durable
+runtime, queue, or orchestrator.
+
 ### Secret-provider plugins
 
 Pipelantic core should define `SecretRef`, `SecretValue`, and the Secret

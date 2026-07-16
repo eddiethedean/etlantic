@@ -4,6 +4,7 @@ This section defines how Pipelantic is designed, tested, contributed to, and
 released.
 
 - [Roadmap](ROADMAP.md)
+- [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md)
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md)
 - [Design Decisions](DESIGN_DECISIONS.md)
 - [Architecture Decisions](ARCHITECTURE_DECISIONS.md)

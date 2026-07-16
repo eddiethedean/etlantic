@@ -499,21 +499,227 @@ Pipelantic 1.0 ships only when:
 - SparkForge migration has proved the core abstractions without moving
   medallion semantics into Pipelantic.
 
-## Post-1.0 Themes
+## 1.x Strategy
 
-Post-1.0 work should be proposed through design records and prioritized using
-real adoption evidence.
+The 1.x series expands Pipelantic around the stable 1.0 model without turning
+the core into a server, catalog, scheduler, IDE, or AI platform.
 
-- Incremental state providers and atomic checkpoint advancement
-- Mature Structured Streaming semantics and additional streaming backends
-- Workspace-scale lineage, impact analysis, and contract registries
-- IDE, language-server, and static type-checker integrations
-- Additional orchestrators, dataframe engines, SQL dialects, and storage plugins
-- Cost-based and statistics-aware planning
-- Reusable optimization-pass SDK
-- Run-history trends, regression detection, and anomaly analysis
-- Policy-engine and governance integrations
-- Remote execution control planes, if demand justifies them
+Each minor release should:
+
+- add one coherent integration or capability family;
+- preserve 1.0 plan, report, and Plugin SDK compatibility unless an explicitly
+  versioned schema extension is required;
+- ship independently installable integrations for heavyweight concerns;
+- use adoption evidence to adjust ordering without collapsing boundaries.
+
+### 1.1 — FastAPI Control API
+
+Deliver:
+
+- separate `pipelantic-fastapi` distribution;
+- embeddable router and standalone application factory;
+- typed discovery, validation, planning, run submission, status, cancellation,
+  report, artifact-metadata, and lineage endpoints;
+- FastAPI lifespan integration for registry, store, broker, and submitter
+  clients;
+- dependency adapters for identity, tenant, policy, idempotency, and request
+  context;
+- HTTP middleware guidance distinct from Pipelantic runtime middleware;
+- OpenAPI 3.1 schema with stable operation IDs and client-generation fixtures;
+- SSE run-event streaming and optional experimental WebSockets;
+- OpenAPI callbacks and webhooks generated from outbound event declarations;
+- OAuth2/OIDC and application-defined authorization dependencies;
+- durable submission contract returning `202 Accepted`.
+
+Acceptance:
+
+- the router embeds in an existing FastAPI application without owning its
+  lifespan or dependency policy;
+- OpenAPI-generated clients can submit and observe a run;
+- multiple API workers share durable run state and resumable events;
+- heavy pipeline work never depends on FastAPI `BackgroundTasks`;
+- unauthorized profile, artifact, override, and cancellation access fails
+  closed.
+
+See [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md).
+
+### 1.2 — Registry, Workspaces, and Discovery
+
+Deliver:
+
+- registry-provider protocol for contracts, pipelines, plans, plugins, and
+  generated documentation;
+- immutable revisions, aliases, promotion channels, signatures, and provenance;
+- workspace and tenant model with namespaced identities;
+- dependency and impact queries across pipeline revisions;
+- searchable metadata indexes without storing arbitrary dataset contents;
+- registry events and cache-invalidation protocol;
+- FastAPI registry routes and CLI parity.
+
+Acceptance:
+
+- a pipeline revision can be promoted from development to production without
+  changing its identity or embedding environment secrets;
+- impact analysis explains which pipelines and outputs depend on a changed
+  contract;
+- tenant and workspace boundaries are preserved in registry, cache, API, and
+  artifact identities.
+
+### 1.3 — Incremental State and Reproducibility
+
+Deliver:
+
+- state-provider protocol;
+- versioned cursors, watermarks, checkpoints, partitions, and snapshot
+  identities;
+- compare-and-swap and atomic checkpoint advancement;
+- replay, resume, repair, and backfill planning;
+- dataset and code provenance sufficient to reproduce or explain a run;
+- state migration and corruption diagnostics;
+- dry-run state transition explanation.
+
+Acceptance:
+
+- a failed run cannot advance a checkpoint incorrectly;
+- concurrent runs detect and resolve state conflicts explicitly;
+- replay identifies the exact contracts, plan, implementation, input snapshot,
+  secret versions where safe, and state transition used by the original run.
+
+### 1.4 — Policy, Governance, and Supply-Chain Assurance
+
+Deliver:
+
+- policy-provider protocol with pre-plan, post-plan, pre-submit, and
+  post-execution decisions;
+- adapters for external policy engines such as OPA where justified;
+- signed plans, plugin provenance, SBOM attachment, and artifact attestations;
+- approval gates and separation-of-duty workflows;
+- residency, classification, masking, retention, and egress constraints;
+- policy decision evidence in reports and APIs;
+- compatibility rules for policy revisions.
+
+Acceptance:
+
+- optimization and backend selection cannot cross a policy boundary;
+- a submitted plan can be verified against its authoring revision, approved
+  plugins, and policy bundle;
+- approval and denial are durable, auditable, and free of secret values.
+
+### 1.5 — Developer Intelligence: LSP, IDE, and Static Analysis
+
+Deliver:
+
+- language server for Python-authored and contract-first pipelines;
+- completion for bindings, ports, parameters, profiles, plugin capabilities,
+  and secret references;
+- cross-file navigation among Python, ODCS, DTCS, DPCS, plans, and generated
+  artifacts;
+- inline diagnostics, safe quick fixes, rename support, and graph previews;
+- pyright-oriented type diagnostics and optional editor integrations;
+- incremental analysis cache with source provenance;
+- notebook-friendly inspection without hidden runtime state.
+
+Acceptance:
+
+- changing an output contract updates downstream diagnostics before execution;
+- an editor can navigate from a step input to its producing output and contract;
+- quick fixes never import untrusted modules or resolve remote references
+  implicitly.
+
+### 1.6 — Planner and Optimization SDK
+
+Deliver:
+
+- stable optimization-pass protocol;
+- rule-based and statistics-aware cost model;
+- explainable implementation selection and materialization decisions;
+- cardinality, partitioning, ordering, locality, and reuse metadata;
+- safe cross-backend region optimization;
+- shadow planning and plan comparison;
+- optimizer conformance suite proving semantic and security preservation.
+
+Acceptance:
+
+- every optimization identifies its evidence, estimated benefit, and semantic
+  proof obligations;
+- users can compare baseline and optimized plans before execution;
+- an optimization that cannot prove boundary preservation is rejected.
+
+### 1.7 — Streaming and Event-Driven Pipelines
+
+Deliver:
+
+- stable streaming semantics beyond the 1.0 foundation;
+- event-time, watermark, trigger, state, late-data, and replay contracts;
+- Kafka and additional streaming provider integrations;
+- continuous `PipelineRunReport` snapshots and terminal/nonterminal status;
+- event-driven run triggers with deduplication and backpressure;
+- streaming contract compatibility and deployment migration rules.
+
+Acceptance:
+
+- batch and streaming implementations of the same eligible transformation have
+  documented semantic equivalence;
+- restart and replay do not silently duplicate externally visible effects;
+- backpressure and late-data behavior are visible in plans and reports.
+
+### 1.8 — Remote Execution Federation
+
+Deliver:
+
+- remote submitter and execution-control protocols;
+- capability, version, identity, and trust negotiation between client and
+  runtime;
+- signed plan envelopes and content-addressed artifact exchange;
+- resumable event, log, and report synchronization;
+- cancellation, retries, leases, heartbeats, and disconnected-client behavior;
+- placement across multiple approved execution environments;
+- FastAPI gateway support without requiring FastAPI in workers.
+
+Acceptance:
+
+- the same signed plan can be submitted to two conforming runtimes and produce
+  comparable normalized reports;
+- clients can disconnect and later resume observation without losing durable
+  state;
+- a remote runtime cannot request undeclared secrets, plugins, or network
+  authority.
+
+### 1.9 — AI-Assisted, Human-Governed Engineering
+
+Deliver:
+
+- read-only machine-consumable inspection APIs for models, contracts, lineage,
+  diagnostics, plans, capabilities, and run history;
+- structured proposal format for generated pipelines, migrations, policies, and
+  optimization suggestions;
+- provenance and evidence attached to every generated proposal;
+- deterministic validation sandbox for proposals before review;
+- prompt-injection-resistant boundaries around documents, logs, and metadata;
+- explicit human approval before mutation, submission, secret access, or
+  external communication;
+- optional agent/tool adapters in separate packages.
+
+Acceptance:
+
+- an assistant can propose a contract-compatible transformation and receive
+  precise validation feedback without execution authority;
+- generated changes are ordinary reviewable files and plans, not hidden runtime
+  mutations;
+- untrusted contract text or logs cannot grant tools, reveal secrets, install
+  plugins, or initiate runs.
+
+### 1.x Candidate Themes
+
+These remain candidates rather than promised release numbers:
+
+- run-history trends, regression detection, and anomaly analysis;
+- additional orchestrators, dataframe engines, SQL dialects, and stores;
+- declarative data previews with bounded privacy budgets;
+- Wasm or isolated remote transformations where ecosystem maturity permits;
+- portable testing environments and ephemeral integration stacks;
+- contract-aware generated user interfaces;
+- cross-organization contract federation.
 
 ## SparkForge Replacement Gate
 

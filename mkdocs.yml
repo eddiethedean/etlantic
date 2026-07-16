@@ -215,6 +215,7 @@ nav:
   - Development:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap: 11_DEVELOPMENT/ROADMAP.md
+      - FastAPI Integration Plan: 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
       - Dependency Strategy: 11_DEVELOPMENT/DEPENDENCY_STRATEGY.md
       - SparkForge Adoption: 11_DEVELOPMENT/SPARKFORGE_ADOPTION.md
       - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
