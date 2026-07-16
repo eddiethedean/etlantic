@@ -3,8 +3,9 @@
 Pipelantic welcomes contributions to documentation, typed authoring APIs,
 validation, planning, plugins, tests, and examples.
 
-The project is currently design-first. Contributions should preserve the
-boundaries established in the manifesto and foundations documentation.
+Preserve the boundaries established in the manifesto and foundations
+documentation: Pipelantic owns the logical model; plugins own execution;
+standards own semantics.
 
 ## Before You Start
 
@@ -29,16 +30,19 @@ semantics.
 
 ## Development Setup
 
-The exact commands will be finalized with the package scaffold. The intended
-workflow is:
-
 ```bash
-git clone <repository>
+git clone https://github.com/eddiethedean/pipelantic.git
 cd pipelantic
-uv sync --all-extras --dev
-uv run pre-commit install
+uv sync
 uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run mkdocs build --strict
 ```
+
+`uv sync` installs runtime dependencies, the editable package, and the `dev`
+group (pytest, ruff, mkdocs). See [Installation](../01_GETTING_STARTED/INSTALLATION.md)
+for more detail.
 
 Use the supported Python versions documented in `pyproject.toml`.
 

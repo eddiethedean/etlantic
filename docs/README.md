@@ -26,15 +26,14 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-Pipelantic is currently **design-first and pre-implementation**. These
-documents define the intended product, public API, architecture, Plugin SDK,
-and 1.0 direction.
+**0.1.0** ships the typed modeling kernel: authoring APIs, logical graphs,
+validation diagnostics, inspection, and Mermaid. Planning, execution plugins,
+and contract serialization are later milestones.
 
-Examples are normative design examples, not a promise that every illustrated
-API is already available. Reference chapters explicitly label proposed 1.0
-surfaces.
-
-See the [Roadmap](11_DEVELOPMENT/ROADMAP.md) for implementation sequencing.
+Many chapters still describe the intended 1.0 product. Examples beyond the
+0.1 surface are design examples, not a promise that every illustrated API is
+already available. See [Documentation Status](02_FOUNDATIONS/DOCUMENTATION_STATUS.md)
+and the [Roadmap](11_DEVELOPMENT/ROADMAP.md).
 
 ## Thirty-Second Example
 

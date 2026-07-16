@@ -51,9 +51,7 @@ docs/
 uv run python -c "import pipelantic; print(pipelantic.__version__)"
 ```
 
-## User Installation (future)
-
-Once published to PyPI:
+## User Installation
 
 ```bash
 pip install pipelantic
@@ -61,8 +59,8 @@ pip install pipelantic
 uv add pipelantic
 ```
 
-Backend plugins will remain independently installable and must not be required
-by the core package.
+Backend plugins remain independently installable and are not required by the
+core package.
 
 ## Dependency Philosophy
 

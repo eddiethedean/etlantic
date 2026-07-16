@@ -159,6 +159,6 @@ This Vision document explains the destination.
 Subsequent chapters describe the architecture, principles, and
 implementation decisions that move the project toward that vision.
 
-Because the project is pre-implementation, the
+Because later milestones are still design-led, the
 [Documentation Status](DOCUMENTATION_STATUS.md) chapter explains how to read
 accepted designs, proposals, examples, and normative requirements.

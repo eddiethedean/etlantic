@@ -1,11 +1,12 @@
 # Documentation Status and Conventions
 
-Pipelantic is currently a design-first, pre-implementation project. The
-documentation serves three related purposes:
+Pipelantic 0.1 implements the typed modeling kernel. Much of the documentation
+still describes the intended 1.0 product. It serves three related purposes:
 
 1. Explain the product vision and user experience.
 2. Specify the intended 1.0 architecture and public interfaces.
-3. Provide implementation guidance and acceptance criteria.
+3. Provide implementation guidance and acceptance criteria for shipped and
+   upcoming milestones.
 
 ## Stability Labels
 
@@ -19,8 +20,10 @@ Documents use these conceptual stability levels:
 | Normative | A requirement defined by a contract specification |
 | Example | Illustrative code that expresses intended UX |
 
-Unless a chapter says otherwise, user-guide code should be read as an
-**accepted design example**, not as evidence of a published package API.
+Unless a chapter says otherwise, user-guide code beyond the 0.1 modeling
+kernel should be read as an **accepted design example**, not as evidence of a
+published package API. The 0.1 surface is defined by the package,
+[API reference](../10_REFERENCE/API_REFERENCE.md), tests, and changelog.
 
 ## Normative Authority
 

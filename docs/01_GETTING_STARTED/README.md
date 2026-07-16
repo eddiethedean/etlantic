@@ -2,9 +2,9 @@
 
 Welcome to Pipelantic!
 
-> **Project status:** Pipelantic is currently design-first and
-> pre-implementation. The examples in this section define the intended
-> developer experience. See
+> **Project status:** 0.1.0 provides the typed modeling kernel. Examples that
+> go beyond authoring, validation, inspection, and Mermaid describe later
+> milestones. See
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
 This section is designed to get you productive as quickly as possible.

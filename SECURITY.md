@@ -1,8 +1,8 @@
 # Security Policy
 
-Pipelantic is currently design-first and pre-implementation. Security
-reports concerning the documentation, proposed APIs, repository automation, or
-future implementation are welcome.
+Pipelantic 0.1 publishes the typed modeling kernel. Security reports
+concerning the published package, documentation, proposed APIs, repository
+automation, or later milestones are welcome.
 
 ## Reporting a Vulnerability
 
@@ -31,8 +31,12 @@ Do not include production secrets, customer data, or regulated records.
 
 ## Supported Versions
 
-No production-supported release currently exists. Supported versions and
-security patch policy will be published before 1.0.
+| Version | Supported |
+|---|---|
+| 0.1.x | Best-effort while the modeling kernel is in alpha |
+| earlier | Not supported |
+
+A formal security patch policy will be published before 1.0.
 
 ## Security Model
 

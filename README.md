@@ -25,6 +25,14 @@ full design,
 
 ## Install
 
+```bash
+pip install pipelantic
+# or
+uv add pipelantic
+```
+
+### Development
+
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
@@ -35,7 +43,7 @@ uv run ruff format .
 ```
 
 `uv sync` creates `.venv`, installs the package in editable mode, and installs
-the `dev` dependency group (pytest, ruff) by default.
+the `dev` dependency group (pytest, ruff, mkdocs) by default.
 
 ## Release
 
