@@ -64,7 +64,9 @@ class MountedFileSecretProvider:
             ) from exc
         text: str | bytes
         try:
-            text = raw.decode("utf-8").rstrip("\n")
+            # Normalize common line endings so Windows CRLF secrets don't
+            # leak a trailing "\r" into the resolved SecretValue.
+            text = raw.decode("utf-8").rstrip("\r\n")
             content_type = "text"
         except UnicodeDecodeError:
             text = raw
