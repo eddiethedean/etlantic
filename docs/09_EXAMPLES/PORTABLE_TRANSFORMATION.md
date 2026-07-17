@@ -4,8 +4,10 @@
     This example shows `@Transformation.portable` authoring to
     `dtcs.transform-plan/2`. Compiler execution remains planned for 0.12+.
 
-This example defines one transformation and runs it through any conformant
-dataframe compiler.
+This example defines one transformation with `@Transformation.portable` and
+inspects the emitted `dtcs.transform-plan/2` (fingerprint). Execution still
+requires a native `@implementation(...)` until portable compilers ship in
+0.12–0.15.
 
 ```python
 from etlantic import (
@@ -72,6 +74,19 @@ class CustomerPipeline(Pipeline):
         binding="curated_customers",
     )
 ```
+
+
+## Inspect the portable plan
+
+```python
+plan = NormalizeCustomers.to_transform_plan()
+assert plan["planIdentity"] == "dtcs.transform-plan/2"
+print(NormalizeCustomers.portable_fingerprint())
+```
+
+Keep a native `@NormalizeCustomers.implementation("local")` (or another engine)
+registered when you need to **run** the pipeline. Portable authoring alone does
+not execute on Polars, Pandas, SQL, or Spark in 0.11.
 
 ## Profile selection
 

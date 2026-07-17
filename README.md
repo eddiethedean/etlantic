@@ -9,8 +9,10 @@
 Catch incompatible data-pipeline wiring before you process data.
 
 Define datasets, transformations, and pipelines as typed Python classes.
-Validate and plan them once. Run locally today; swap Polars, Pandas, or SQL
-backends without rewriting the logical pipeline.
+Validate and plan them once. Run locally today with registered
+implementations; optional Polars, Pandas, SQL, PySpark, and Airflow plugins
+attach when installed. Portable `@Transformation.portable` authoring ships in
+0.11; portable compilers remain 0.12–0.15.
 
 **Status:** Alpha **0.11.0** — local runtime + optional
 Polars/Pandas/SQL/PySpark/Airflow plugins, plus portable
@@ -125,10 +127,10 @@ Run the complete tested version at
 | Plugin allowlists / keyring / SQLModel extras | Available |
 | SparkForge migration adapter | Available (`etlantic-sparkforge`) |
 
-**Next design line:** releases 0.11-0.15 are planned to add a PySpark-inspired
-portable transformation language, followed by Polars, PySpark, Pandas, and safe
-SQL compilers remain planned for 0.12–0.15; portable authoring ships in 0.11. See
-the [portable transformation design](docs/04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
+**Next design line:** Portable authoring ships in 0.11. Releases 0.12–0.15 add
+Polars, PySpark, Pandas, and safe SQL compilers for the same
+`dtcs.transform-plan/2` plans. See the
+[portable transformation guide](docs/04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
 and [roadmap](docs/11_DEVELOPMENT/ROADMAP.md).
 
 ## Documentation

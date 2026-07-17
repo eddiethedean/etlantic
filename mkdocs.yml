@@ -104,7 +104,7 @@ nav:
   - Home: README.md
   - Learn:
       - Overview: 01_GETTING_STARTED/README.md
-      - Current 0.10 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.11 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
@@ -112,6 +112,7 @@ nav:
       - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
+      - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
       - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
   - Foundations:
       - Overview: 02_FOUNDATIONS/README.md
@@ -142,6 +143,8 @@ nav:
       - Parameters: 04_TRANSFORMATIONS/PARAMETERS.md
       - Type Annotations: 04_TRANSFORMATIONS/TYPE_ANNOTATIONS.md
       - DTCS: 04_TRANSFORMATIONS/DTCS.md
+      - Portable Transformations: 04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md
+      - Portable Functions: 04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md
       - Implementations: 04_TRANSFORMATIONS/IMPLEMENTATIONS.md
       - Callbacks: 04_TRANSFORMATIONS/CALLBACKS.md
       - Error Handling: 04_TRANSFORMATIONS/ERROR_HANDLING.md
@@ -170,7 +173,9 @@ nav:
           - Airflow: 06_EXECUTION/AIRFLOW_TUTORIAL.md
           - CI integration: 06_EXECUTION/CI_INTEGRATION.md
           - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
+          - Ops pilot: 06_EXECUTION/OPS_PILOT.md
       - Execution Model: 06_EXECUTION/EXECUTION_MODEL.md
+      - Observability today: 06_EXECUTION/OBSERVABILITY_TODAY.md
       - Lifecycle Extensions: 06_EXECUTION/LIFECYCLE_EXTENSIONS.md
       - Logging: 06_EXECUTION/LOGGING.md
       - Secrets Management: 06_EXECUTION/SECRETS_MANAGEMENT.md
@@ -199,9 +204,12 @@ nav:
       - Testing Plugins: 07_PLUGIN_SDK/TESTING_PLUGINS.md
   - Design Proposals:
       - Read this first: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
-      - Portable authoring:
-          - Transformations: 04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md
-          - Functions: 04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md
+      - Portable compilers and plans:
+          - Compiler protocol: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
+          - Implementation plan: 11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md
+          - DTCS evolution: 11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md
+          - DTCS 2.0 Publication Record: 11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md
+          - DTCS 3.0 Publication Record: 11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md
       - Execution Plugins:
           - Overview: 06_EXECUTION/PLUGINS.md
           - Storage Plugins: 06_EXECUTION/STORAGE_PLUGINS.md
@@ -281,6 +289,7 @@ nav:
       - Migration 0.7 → 0.8: 11_DEVELOPMENT/MIGRATION_0_7_TO_0_8.md
       - Migration 0.8 → 0.9: 11_DEVELOPMENT/MIGRATION_0_8_TO_0_9.md
       - Migration 0.9 → 0.10: 11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md
+      - Migration 0.10 → 0.11: 11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md
       - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
       - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
       - Testing: 11_DEVELOPMENT/TESTING.md

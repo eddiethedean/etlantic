@@ -46,7 +46,10 @@ The generated signatures below are supplemented by these current guarantees:
 |---|---|---|
 | `Transformation.step(**bindings)` | A symbolic `Step`; no user code runs | Unknown bindings raise `ModelDefinitionError`; required ports are validated before execution |
 | `Transformation.implementation(engine)` | A decorator returning the original callable | Registration replaces the implementation for the same class/engine in the current process |
-| `Pipeline.validate(...)` | `ValidationReport` | Does not execute transformation implementations; unknown policies fail closed |
+| `Transformation.portable` | Decorator registering a symbolic definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) at registration; does not execute |
+| `Transformation.to_transform_plan()` | Deep-copied `dtcs.transform-plan/2` dict | Raises `ModelDefinitionError` if no portable definition is registered |
+| `Transformation.portable_fingerprint()` | Hex fingerprint string | Same failure mode as `to_transform_plan` |
+| `Pipeline.validate(...)` | `ValidationReport` | Does not execute transformation implementations; production empty allowlist fails closed (`PMPLUG401`) |
 | `Pipeline.plan(...)` | Immutable, secret-free `PipelinePlan` | Missing plugins, bindings, trust, or capabilities produce planning/validation failure |
 | `Pipeline.run(...)` | `PipelineRunReport` | Executes in-process; storage and plugin side effects follow the resolved plan |
 | `Pipeline.arun(...)` | Awaitable `PipelineRunReport` | Uses the same validation and planning path as `run` |
@@ -92,6 +95,17 @@ configured.
       show_root_heading: true
       members_order: source
       filters: ["!^_"]
+
+### Portable transform authoring (`etlantic.transform`)
+
+::: etlantic.transform
+    options:
+      show_root_heading: true
+      members_order: source
+      filters: ["!^_"]
+
+Symbolic only: `FrameExpr` / `ColumnExpr` trees lower to DTCS plans. They are
+not Polars/Pandas/Spark objects. Compilers that execute plans are 0.12+.
 
 ### Pipelines
 

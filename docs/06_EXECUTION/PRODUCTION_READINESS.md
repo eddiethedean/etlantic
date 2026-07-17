@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-ETLantic 0.10 is alpha. Use this page to scope a controlled evaluation; it is
+ETLantic 0.11 is alpha. Use this page to scope a controlled evaluation; it is
 not a production-readiness claim.
 
 ## Supported pilot shape

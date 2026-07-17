@@ -1,7 +1,7 @@
 # Execution
 
 !!! note "Portable transformations are a 0.11+ design"
-    ETLantic 0.10 executes registered native implementations. Future engine
+    ETLantic 0.11 executes registered native implementations. Future engine
     plugins will also compile closed DTCS Transformation Plans described in
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).
 

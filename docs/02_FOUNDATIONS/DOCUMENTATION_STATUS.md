@@ -10,9 +10,12 @@ optional `etlantic-keyring` / `etlantic-sqlmodel`, and the SparkForge
 migration adapter (`etlantic-sparkforge`). Structured Streaming APIs are
 experimental. ETLantic also consumes DTCS 3.0 Transformation Plan and Rich
 Portable Analytics models through `dtcs>=0.13` (`dtcs.transform-plan/2`; v1
-readable); ETLantic's portable authoring and compiler integrations remain
-future work. Much of the documentation still describes the intended 1.0
-product. It serves three related purposes:
+readable); ETLantic's `@Transformation.portable` / `etlantic.transform`
+authoring ships in 0.11 and emits `dtcs.transform-plan/2`. Portable compilers
+remain 0.12–0.15—keep `@implementation(...)` for execution. Prefer pages marked
+**Available in 0.11** and the Green path on the docs home. Design Proposals and
+**Future design** chapters describe intended 1.0 surfaces and are not current
+APIs. Documentation serves three related purposes:
 
 1. Explain the product vision and user experience.
 2. Specify the intended 1.0 architecture and public interfaces.

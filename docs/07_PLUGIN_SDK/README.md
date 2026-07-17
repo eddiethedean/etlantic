@@ -3,8 +3,8 @@
 !!! note "Portable transformation compiler proposal"
     The proposed
     [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md)
-    defines how plugins will compile future DTCS Transformation Plans. It
-    portable compilers are not part of ETLantic 0.11 (authoring is).
+    defines how plugins will compile future DTCS Transformation Plans.
+    Portable compilers are not part of ETLantic 0.11 (authoring is).
 
 The Plugin SDK enables developers to extend ETLantic with new execution
 engines, dataframe backends, storage providers, resource providers,

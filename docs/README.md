@@ -1,8 +1,8 @@
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
     <span class="etlantic-hero__eyebrow">Typed, contract-driven pipelines</span>
-    <h1>Design once.<br><span class="etlantic-hero__nowrap">Run anywhere.</span></h1>
-    <p>Model data pipelines in Python, validate them as contracts, and execute them through interchangeable backends.</p>
+    <h1>Design once.<br><span class="etlantic-hero__nowrap">Validate everywhere.</span></h1>
+    <p>Model data pipelines in Python, validate them as contracts, and run them where your engines already are.</p>
     <div class="etlantic-hero__actions">
       <a class="md-button md-button--primary" href="01_GETTING_STARTED/QUICKSTART/">Quickstart</a>
       <a class="md-button" href="01_GETTING_STARTED/CAPABILITIES/">Capabilities</a>
@@ -42,19 +42,21 @@ Structured Streaming APIs are experimental.
     5. [Evaluator brief](01_GETTING_STARTED/EVALUATOR.md) — for decision-makers
 
     Pages marked **Future design** are not APIs. [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
-    is the single source of truth.
+    is the single source of truth. Prefer the Green path above; persona paths
+    below are optional after first success.
 
-Many chapters still describe the intended 1.0 product. Design studies under
-Examples are not a promise that every illustrated API is already available.
+Read **Available** pages and the Green path first. Chapters under
+[Design Proposals](11_DEVELOPMENT/DESIGN_PROPOSALS.md) and Examples marked
+**Future design** are not current APIs. Design studies are not a promise that
+every illustrated surface is installable.
 
 Portable PySpark-inspired authoring ships in 0.11 via `@Transformation.portable`
 and `etlantic.transform`, emitting `dtcs.transform-plan/2`. Compilers remain
-sequenced across 0.12-0.15. Start with
-[Portable Transformations](04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) for
-the proposed UX and the [roadmap](11_DEVELOPMENT/ROADMAP.md) for delivery
-phases; portable compilers remain 0.12+; authoring is available in 0.11.
+0.12–0.15. Start with
+[Portable Transformations](04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md);
+keep `@implementation(...)` for execution today.
 
-## Thirty-Second Example
+## Minimal working example
 
 ```python
 from etlantic import (
@@ -62,6 +64,7 @@ from etlantic import (
     Input,
     Output,
     Pipeline,
+    PipelineRuntime,
     Sink,
     Source,
     Transformation,
@@ -84,6 +87,17 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
+@NormalizeCustomers.implementation("local")
+def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
+    return [
+        Customer(
+            customer_id=row.customer_id,
+            full_name=f"{row.first_name} {row.last_name}",
+        )
+        for row in customers
+    ]
+
+
 class CustomerPipeline(Pipeline):
     raw: Source[RawCustomer] = Source(binding="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
@@ -91,47 +105,26 @@ class CustomerPipeline(Pipeline):
         input=normalized.result,
         binding="customer_sink",
     )
+
+
+CustomerPipeline.validate(profile="development").raise_for_errors()
+runtime = PipelineRuntime()
+runtime.memory.seed(
+    "customer_source",
+    [RawCustomer(customer_id=1, first_name="Ada", last_name="Lovelace")],
+)
+CustomerPipeline.run(profile="development", runtime=runtime)
+print(runtime.memory.get("customer_sink"))
 ```
 
-From these declarations, ETLantic can derive:
+Copy into a file and run with Python after `pip install etlantic`, or use
+`examples/quickstart.py`. From these declarations ETLantic can also generate
+ODCS / DTCS / DPCS contracts, Mermaid lineage, and a secret-free
+`PipelinePlan`. Optional plugins add Polars, Pandas, SQL, PySpark, and Airflow
+compilation.
 
-- ODCS data contracts
-- A DTCS transformation contract
-- A DPCS pipeline contract
-- Static wiring and compatibility diagnostics
-- A logical lineage graph
-- A deterministic, secret-free `PipelinePlan` (0.3.0)
-- A local Python runtime and structured run report (0.4.0)
-- Optional Polars and Pandas dataframe plugins (0.5.0)
-- Optional SQL execution via `etlantic-sql` (0.6.0)
-- Optional PySpark execution via `etlantic-pyspark` (0.7+)
-- Optional Airflow DAG compilation via `etlantic-airflow` (0.8+)
-- Optional SparkForge migration adapter via `etlantic-sparkforge` (0.10+)
-
-Memory, callable, JSON, CSV, and no-write storage are included in core.
-Airflow compilation is available via `etlantic-airflow`; other orchestrators
-(Dagster/Prefect) remain future plugins.
-
-The transformation implementation remains separate:
-
-```python
-@NormalizeCustomers.implementation("local")
-def normalize_customers(customers):
-    ...
-
-@NormalizeCustomers.implementation("polars")
-def normalize_customers_polars(customers):
-    ...
-
-@NormalizeCustomers.implementation("sql")
-def normalize_customers_sql(customers):
-    ...
-```
-
-Install `etlantic-polars` / `etlantic-pandas` / `etlantic-sql` /
-`etlantic-pyspark` / `etlantic-airflow` / `etlantic-sparkforge` for engines
-and adapters; later milestones may add remote Spark providers or additional
-orchestrator compilers.
+The transformation implementation remains separate—register `"polars"`,
+`"sql"`, and other engines the same way after installing the matching plugin.
 
 ## The Architecture in One View
 
@@ -178,15 +171,14 @@ implementation or runtime concepts—not additional contract standards.
 
 ## Choose Your Path
 
+Follow the **Green path** above for first success. Optional persona forks:
+
 ### I want to run something in five minutes
 
-1. [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
-2. [Installation](01_GETTING_STARTED/INSTALLATION.md)
-3. [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
-4. Runnable code: `examples/quickstart.py`, `examples/file_storage.py`,
-   `examples/dataframe_parity.py`, `examples/sql_to_sql.py`,
-   `examples/sql_boundary_hybrid.py`, `examples/sql_transactional_write.py`,
-   `examples/sql_failure_recovery.py`
+Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
+[Quickstart](01_GETTING_STARTED/QUICKSTART.md) → then
+[Capabilities](01_GETTING_STARTED/CAPABILITIES.md). Runnable code:
+`examples/quickstart.py`, `examples/file_storage.py`.
 
 ### I want to understand the idea
 

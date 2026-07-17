@@ -83,9 +83,10 @@ How to read status labels in deeper chapters:
 - Process-local reports as an audit system of record
 - Stable 1.0 compatibility guarantees
 - Managed Databricks/EMR/Connect Spark providers
-- Portable `@Transformation.portable` / `etlantic.transform` (the DTCS 3.0
-  semantic foundation is published, but ETLantic authoring/compiler APIs are
-  still the 0.11–0.15 design program)
+- **Portable compilers** / end-to-end portable execution on Polars, PySpark,
+  Pandas, or SQL (planned 0.12–0.15). `@Transformation.portable` **authoring**
+  to `dtcs.transform-plan/2` ships in 0.11; keep `@implementation(...)` for
+  runtime until compilers land.
 
 ## Recommended evaluation path
 
@@ -98,7 +99,8 @@ How to read status labels in deeper chapters:
 6. Optional: `examples/pyspark_local.py` with `etlantic-pyspark`
 7. Optional: `examples/airflow_compile.py` with `etlantic-airflow`
 8. Optional: SparkForge adapter via `uv sync --group sparkforge`
-9. [Migration 0.9 → 0.10](../11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md) if upgrading
+9. [Migration 0.10 → 0.11](../11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md) if
+   upgrading from 0.10
 10. [Roadmap](../11_DEVELOPMENT/ROADMAP.md) for sequencing
 
 ## Support channel

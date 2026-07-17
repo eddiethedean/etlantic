@@ -47,10 +47,23 @@ Its focus is:
 -   portability
 -   execution abstraction
 
-ETLantic's architecture is designed so future plugins can consume the same
-plans without changing pipeline definitions. External orchestrator compilation
-is available via `etlantic-airflow` (`compile_plan(..., target="airflow")` or
-`etlantic compile … --target airflow`).
+ETLantic's architecture is designed so plugins can consume the same
+logical model. Use Airflow (via `etlantic-airflow`) or another orchestrator
+for scheduling; use ETLantic for typed contracts and fail-closed planning.
+
+------------------------------------------------------------------------
+
+## How does ETLantic compare to dbt, Prefect, or Pandera?
+
+| Tool | Primary job | ETLantic relationship |
+|---|---|---|
+| **dbt** | SQL transformation project / warehouse analytics | Complementary. ETLantic models typed Python pipelines and multi-engine plans; dbt owns SQL project workflows. |
+| **Prefect / Dagster / Airflow** | Orchestration and scheduling | Complementary. ETLantic emits plans/DAGs; orchestrators run them. |
+| **Pandera / Great Expectations** | Dataframe / table validation libraries | Complementary. ETLantic validates **wiring and contracts** before run; row-level suites remain engine-side or library-side. |
+
+If you need only SQL analytics projects, start with dbt. If you need only
+schedulers, start with Airflow/Dagster/Prefect. If you need typed pipeline
+composition across engines with secret-free plans, evaluate ETLantic.
 
 ------------------------------------------------------------------------
 

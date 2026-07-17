@@ -60,9 +60,9 @@ ETLantic 0.11.0 is an alpha release. This page is the shortest answer to
 | Portable PySpark compiler and relational compiler claims | Planned for 0.13 |
 | Portable Pandas compiler and conformance SDK | Planned for 0.14 |
 | Portable SQL lowering and profile graduation | Planned for 0.15+ |
-| Dedicated deployment / multi-worker ops guide | Not yet (use CLI + Runtime configuration) |
+| Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 
-## CI starter (no dedicated deployment guide yet)
+## CI starter
 
 ```bash
 etlantic validate path/to/pipeline.py:MyPipeline --profile production --format sarif
@@ -71,7 +71,8 @@ etlantic plan path/to/pipeline.py:MyPipeline --profile production --format json
 
 Production profiles require a non-empty `Profile.plugin_allowlist`. Never put
 secrets in plans, reports, or CI logs. See
-[Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md) and the
+[Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md),
+[Ops Pilot](../06_EXECUTION/OPS_PILOT.md), and the
 [Evaluator brief](EVALUATOR.md).
 
 ```bash

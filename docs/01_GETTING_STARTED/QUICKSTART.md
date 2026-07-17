@@ -154,9 +154,23 @@ etlantic plan pipeline.py:CustomerPipeline --profile development --format json
 ```
 
 The records seeded above live only inside that Python process. A new CLI process
-does not inherit them, so `etlantic run` would not execute the same demonstrated
-input. Continue to the [file-storage guide](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md)
-for a CLI-runnable pipeline backed by JSON or CSV files.
+does not inherit them, so `etlantic run` cannot replay the same in-memory input.
+
+## 6. Continue with a CLI-runnable file-backed pipeline
+
+For a pipeline that survives process boundaries (and works with `etlantic run`),
+use JSON/CSV storage:
+
+```bash
+# From a git checkout
+uv sync
+uv run python examples/file_storage.py
+```
+
+Then follow the
+[file-storage tutorial](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) to register
+file bindings and run via the CLI. That is the first-session path for
+`etlantic validate` / `plan` / `run` against durable inputs.
 
 Use the same `--profile` for validation, planning, and execution.
 
@@ -175,8 +189,8 @@ The same example is available at `examples/quickstart.py`.
 
 ## Next
 
+- [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — CLI-runnable continuation
 - [Your First Pipeline](FIRST_PIPELINE.md) — inspect Mermaid, contracts, and plan explain
 - [Capabilities](CAPABILITIES.md) — shipped vs not
 - [Troubleshooting](TROUBLESHOOTING.md) if the run fails
-- Optional engines (from a checkout): `examples/file_storage.py`,
-  `examples/dataframe_parity.py`, `examples/airflow_compile.py`
+- Optional engines: `examples/dataframe_parity.py`, `examples/airflow_compile.py`

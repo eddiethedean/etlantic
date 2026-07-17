@@ -7,7 +7,7 @@ logical semantics from DTCS and the Pipeline Plan.
 plugin. SQLite is supported for local demos only.
 
 Lowering the future portable transformation IR to the existing safe SQL IR is
-planned for 0.15. Current 0.10 SQL transformations use native
+planned for 0.15. Current 0.11 SQL transformations use native
 `@implementation("sql")` definitions.
 
 ETLantic does **not** depend on database drivers. Install the plugin

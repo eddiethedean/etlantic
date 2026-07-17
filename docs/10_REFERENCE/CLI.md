@@ -63,9 +63,9 @@ etlantic plan examples/quickstart.py:CustomerPipeline \
   --profile development --explain
 ```
 
-In the proposed 0.11+ surface, explain output also shows portable definition
-fingerprints, selected compiler, operation-level capability decisions, and any
-explicit native fallback. These fields are not emitted by 0.10.
+In 0.11, explain output focuses on bindings, implementations, and capability
+decisions. Portable definition fingerprints and selected **compiler** fields
+appear once portable compilers ship (0.12+).
 
 ## `run`
 
@@ -127,7 +127,9 @@ etlantic plugin list --profile production --format json
 etlantic plugin info polars --kind dataframe
 ```
 
-Production profiles honor `Profile.plugin_allowlist` (fail closed).
+Production profiles honor `Profile.plugin_allowlist` (fail closed). When trust
+diagnostics include severity `error` (for example empty allowlist /
+`PMPLUG401`), `plugin list` exits non-zero.
 
 ## `schema`
 

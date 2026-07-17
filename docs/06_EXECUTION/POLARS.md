@@ -4,7 +4,7 @@
 (`etlantic-polars`).
 
 The portable transformation compiler described below is planned for 0.12 and
-is not part of the current 0.10 plugin.
+is not part of the current 0.11 plugin.
 
 ## Install
 

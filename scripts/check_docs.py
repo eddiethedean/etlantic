@@ -162,6 +162,41 @@ def main() -> None:
                 f"README.md capability table still labels the release as {prior}"
             )
 
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    if "Current 0.10 Guide:" in mkdocs or (
+        major_minor != "0.10" and "Current 0.10 Guide:" in mkdocs
+    ):
+        raise SystemExit("mkdocs.yml still labels Learn nav as Current 0.10 Guide")
+    if f"Current {major_minor} Guide:" not in mkdocs:
+        raise SystemExit(
+            f"mkdocs.yml must label Learn nav as Current {major_minor} Guide"
+        )
+
+    evaluator = (ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md").read_text(
+        encoding="utf-8"
+    )
+    if (
+        "What not to bet on yet" in evaluator
+        and "@Transformation.portable` / `etlantic.transform` (the DTCS"
+        in evaluator
+    ):
+        raise SystemExit(
+            "EVALUATOR.md must not tell readers not to bet on portable authoring "
+            "while Capabilities marks authoring Available"
+        )
+    design_proposals = (ROOT / "docs/11_DEVELOPMENT/DESIGN_PROPOSALS.md").read_text(
+        encoding="utf-8"
+    )
+    if (
+        "contains unshipped APIs" in design_proposals
+        and "Exception" not in design_proposals
+        and "authoring" not in design_proposals.lower()
+    ):
+        raise SystemExit(
+            "DESIGN_PROPOSALS.md must not claim all linked pages are unshipped "
+            "without carving out shipped portable authoring"
+        )
+
     # Shipped capabilities must not be denied on primary getting-started pages.
     capabilities = (ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md").read_text(
         encoding="utf-8"
