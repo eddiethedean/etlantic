@@ -99,14 +99,35 @@ jobs:
             local attempt=1
             local max_attempts=5
             local delay="$PUBLISH_GAP_SECONDS"
+            local log=""
             while true; do
               echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
-              if uv publish "$wheel" "$sdist"; then
+              set +e
+              log="$(
+                uv publish --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1
+              )"
+              local status=$?
+              set -e
+              printf '%s\n' "$log"
+              if [ "$status" -eq 0 ]; then
+                return 0
+              fi
+              # Already on PyPI (same filename): treat as success so re-runs
+              # and partially completed releases do not fail the job.
+              if printf '%s' "$log" | grep -Eiq \
+                'file already exists|already uploaded|skipping.*already'; then
+                echo "Already published; continuing: $(basename "$wheel")"
                 return 0
               fi
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Publish failed after $max_attempts attempts: $wheel"
                 echo "If this is a new-project 429, wait for the rolling hour window and re-run."
+                exit 1
+              fi
+              # Only back off for rate limits / transient failures.
+              if ! printf '%s' "$log" | grep -Eiq \
+                '429|too many|rate limit|timeout|temporar|connection'; then
+                echo "Non-retryable publish failure for $(basename "$wheel")"
                 exit 1
               fi
               echo "Publish failed; waiting ${delay}s before retry..."

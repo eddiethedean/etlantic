@@ -86,8 +86,8 @@ GitHub Actions workflow
 2. Verifies tag == core + all plugin versions.
 3. Builds all nine wheels/sdists.
 4. Smokes the core wheel (driver-free) and plugin discovery/import.
-5. Publishes to PyPI with **10-minute** gaps between packages and retries on
-   transient 429s.
+5. Publishes to PyPI with **10-minute** gaps between packages, skips files
+   already present via `--check-url`, and retries on transient 429s.
 6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
 
 ## After PyPI succeeds
