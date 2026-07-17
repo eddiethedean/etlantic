@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from contractmodel import ContractModel
 
+pytest.importorskip("sqlmodel")
+
 from etlantic_sqlmodel import (
     compare_metadata,
     contract_to_sqlmodel,

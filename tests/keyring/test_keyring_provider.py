@@ -7,6 +7,8 @@ from unittest.mock import patch
 import anyio
 import pytest
 
+pytest.importorskip("keyring")
+
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.secrets.provider import SecretResolutionContext
 from etlantic.secrets.ref import SecretRef
