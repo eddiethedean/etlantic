@@ -2,7 +2,7 @@
 
 !!! warning "Experimental design study—Structured Streaming is experimental in 0.7"
     This page is a design study. It may describe packages, commands, or
-    interfaces that are not installable yet. Use Current Capabilities, the
+    interfaces beyond the shipped API surface. Use Current Capabilities, the
     runnable examples under `examples/`, the API reference, and the CLI
     reference for shipped behavior.
 

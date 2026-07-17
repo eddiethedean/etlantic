@@ -34,6 +34,29 @@ def _observation_from_dict(data: dict[str, Any]) -> SchemaObservation:
     )
 
 
+_FORBIDDEN_ROW_KEYS = frozenset({"rows", "sample_rows", "source_rows", "records"})
+
+
+def _looks_like_row_payload(metadata: dict[str, Any] | None) -> bool:
+    """True when metadata keys/values look like stored source rows."""
+    if not metadata:
+        return False
+    for key, value in metadata.items():
+        key_l = str(key).lower()
+        if key_l in _FORBIDDEN_ROW_KEYS:
+            return True
+        if key_l.endswith("_rows") or key_l in {"row_sample", "row_samples"}:
+            return True
+        if (
+            isinstance(value, list)
+            and value
+            and isinstance(value[0], dict)
+            and (key_l.endswith("rows") or "sample" in key_l)
+        ):
+            return True
+    return False
+
+
 @dataclass
 class FileSchemaHistoryProvider:
     """Canonical-file schema history under a root directory.
@@ -62,9 +85,8 @@ class FileSchemaHistoryProvider:
                     self._memory.record(obs)
 
     def record(self, observation: SchemaObservation) -> None:
-        # Refuse payloads that look like row samples.
-        meta = str(observation.metadata).lower()
-        if any(k in meta for k in ("rows", "sample_rows", "source_rows", "records")):
+        # Refuse payloads that look like row samples (key-based, not substrings).
+        if _looks_like_row_payload(observation.metadata):
             raise ValueError(
                 "Schema history must not store source rows; failing closed."
             )

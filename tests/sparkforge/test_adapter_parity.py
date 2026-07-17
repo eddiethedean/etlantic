@@ -62,7 +62,10 @@ def test_dependency_closure_and_plan_explain() -> None:
     plan = plan_pipeline(result.pipeline_cls, profile=result.profile)
     assert plan is not None
     explained = explain_plan(plan)
-    assert "fingerprint" in explained or "plan_id" in explained or "steps" in explained
+    assert explained["plan_id"] == plan.plan_id
+    assert explained["fingerprint"] == plan.fingerprint
+    assert isinstance(explained["steps"], list)
+    assert explained["steps"]
     assert plan.logical_graph.nodes
 
 
@@ -108,8 +111,19 @@ def test_report_normalization_and_redaction() -> None:
         "mode": "incremental",
         "password": "should-not-leak",
         "steps": [
-            {"name": "orders", "status": "succeeded", "records_out": 10},
-            {"name": "clean_orders", "status": "succeeded", "records_out": 9},
+            {
+                "name": "orders",
+                "status": "failed",
+                "records_out": 10,
+                "error": "password=hunter2 connect failed",
+                "note": "Authorization: Bearer abc123token",
+            },
+            {
+                "name": "clean_orders",
+                "status": "succeeded",
+                "records_out": 9,
+                "dsn": "postgresql://u:secretpass@host/db",
+            },
         ],
         "validations": [
             {
@@ -117,28 +131,63 @@ def test_report_normalization_and_redaction() -> None:
                 "status": "passed",
                 "total": 10,
                 "invalid": 0,
+                "message": "https://user:leakpass@api.example/path",
             }
         ],
         "tables": [{"table": "silver_orders", "count": 9}],
         "secrets": {"api_key": "xyz"},
+        "diagnostics": [
+            {"code": "X", "message": "token=supersecret"},
+            "mongodb://ada:hunter2@db/app",
+        ],
     }
     report = adapt_run_result(payload)
     dumped = report.to_dict()
     text = json.dumps(dumped)
-    assert "should-not-leak" not in text
-    assert "xyz" not in text
+    for secret in (
+        "should-not-leak",
+        "xyz",
+        "hunter2",
+        "abc123token",
+        "secretpass",
+        "leakpass",
+        "supersecret",
+    ):
+        assert secret not in text
     assert report.status.value == "succeeded"
     assert len(report.steps) == 2
     assert report.intent is RunIntent.INCREMENTAL
     explain = report_to_sparkforge_explain(report)
     assert explain["run_id"] == "sf-1"
     assert explain["mode"] == "incremental"
+    assert "hunter2" not in json.dumps(explain)
 
 
 def test_delta_fail_closed_without_capabilities() -> None:
     diags = assert_delta_capabilities(["merge", "vacuum"])
     assert any(d.code == "PMSF322" for d in diags)
     assert all(d.severity.value == "error" for d in diags)
+
+
+def test_delta_missing_capability_respects_strict() -> None:
+    from etlantic.capabilities import PluginCapabilities
+
+    caps = PluginCapabilities(engine="pyspark", spark=True)
+    strict = assert_delta_capabilities(["merge"], capabilities=caps, strict=True)
+    assert any(d.code == "PMSF323" and d.severity.value == "error" for d in strict)
+    soft = assert_delta_capabilities(["merge"], capabilities=caps, strict=False)
+    assert any(d.code == "PMSF323" and d.severity.value == "warning" for d in soft)
+
+
+def test_missing_step_name_emits_diagnostic() -> None:
+    spec, diags = SparkForgePipelineSpec.parse(
+        {
+            "name": "missing_name",
+            "steps": [{"kind": "bronze_rules", "layer": "bronze"}],
+        }
+    )
+    assert any(d.code == "PMSF310" for d in diags)
+    assert spec.steps == ()
 
 
 def test_delta_ops_in_spec_fail_adapt() -> None:

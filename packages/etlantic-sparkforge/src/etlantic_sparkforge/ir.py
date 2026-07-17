@@ -156,6 +156,21 @@ class SparkForgePipelineSpec:
                         )
                     )
                 continue
+            name = item.get("name")
+            if name is None or not str(name).strip():
+                if diagnostics is not None:
+                    diagnostics.append(
+                        Diagnostic(
+                            code="PMSF310",
+                            severity=Severity.ERROR,
+                            message=(
+                                f"SparkForge step at index {index} is missing a name."
+                            ),
+                            path=("steps", str(index), "name"),
+                            phase="sparkforge_adapter",
+                        )
+                    )
+                continue
             steps_list.append(
                 SparkForgeStepSpec.from_dict(item, diagnostics=diagnostics)
             )

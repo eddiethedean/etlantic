@@ -506,7 +506,8 @@ The Pipeline Plan should preserve:
 
 The Pipeline Plan acts as ETLantic's semantic intermediate representation.
 
-It is not yet tied to Airflow, Dagster, Prefect, local Python, or another target.
+It is target-agnostic until bound: Local Python, Airflow (`etlantic-airflow`),
+or a future orchestrator (Dagster/Prefect) consume the same plan.
 
 ## Orchestrator Capabilities
 

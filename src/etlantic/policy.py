@@ -71,7 +71,10 @@ def register_validation_policy(policy: ValidationPolicy) -> ValidationPolicy:
 
 
 def resolve_validation_policy(name: str | ValidationPolicy | None) -> ValidationPolicy:
-    """Resolve a policy name or object."""
+    """Resolve a policy name or object.
+
+    Unknown names fail closed rather than inventing an empty default policy.
+    """
     if name is None:
         return DEFAULT_POLICY
     if isinstance(name, ValidationPolicy):
@@ -79,4 +82,7 @@ def resolve_validation_policy(name: str | ValidationPolicy | None) -> Validation
     key = str(name)
     if key in VALIDATION_POLICIES:
         return VALIDATION_POLICIES[key]
-    return ValidationPolicy(name=key, mode=PolicyMode.DEFAULT)
+    raise KeyError(
+        f"Unknown validation policy {key!r}; register it with "
+        "register_validation_policy() or use default/strict/permissive."
+    )

@@ -214,7 +214,7 @@ implementation or runtime concepts—not additional contract standards.
 - [examples/sql_transactional_write.py](https://github.com/eddiethedean/etlantic/blob/main/examples/sql_transactional_write.py) — insert-select publication
 - [examples/sql_failure_recovery.py](https://github.com/eddiethedean/etlantic/blob/main/examples/sql_failure_recovery.py) — unsupported merge fails closed
 
-### I want design studies (not installable)
+### I want design studies (aspirational)
 
 These pages describe intended 1.0 workflows. They are **not** current API guides:
 

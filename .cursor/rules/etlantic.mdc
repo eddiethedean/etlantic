@@ -6,7 +6,9 @@ globs:
 
 # ETLantic
 
-- Use public imports only: dataframe, sql, spark, orchestration, secrets, testing.
+- Use public imports only: dataframe, sql, spark, orchestration, viz, secrets, testing.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
+- Airflow compile requires optional `etlantic-airflow`.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
+- Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.

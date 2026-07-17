@@ -2,9 +2,9 @@
 
 !!! warning "Future design—not a ETLantic 0.10 API guide"
     This page is a design study. It may describe packages, commands, or
-    interfaces that are not installable yet. Use Current Capabilities, the
-    runnable examples under `examples/`, the API reference, and the CLI
-    reference for shipped behavior.
+    interfaces beyond the shipped API surface. Prefer Current Capabilities,
+    the runnable examples under `examples/`, the API reference, and the CLI
+    reference for installable behavior.
 
 
 This example builds a complete ETLantic pipeline that validates and plans a

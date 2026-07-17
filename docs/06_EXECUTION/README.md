@@ -4,7 +4,8 @@ Execution is the final stage of the ETLantic lifecycle.
 
 After a pipeline has been modeled, validated, and planned, an execution plugin
 realizes the resulting **Pipeline Plan** using a specific runtime such as local
-Python, Polars, Airflow, Dagster, Prefect, or another supported backend.
+Python, Polars, Airflow, or another supported backend. Dagster and Prefect
+compilers remain future plugins.
 
 ETLantic intentionally separates execution from modeling. The core library
 coordinates execution from a resolved `PipelinePlan`, while plugins and

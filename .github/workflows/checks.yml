@@ -34,7 +34,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Pytest (core)
-        run: uv run pytest -q
+        run: uv run pytest -q -m "not sparkforge"
 
       - name: Documentation consistency
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -301,16 +301,50 @@ jobs:
           mkdir -p dist
           uv build --package etlantic
 
+      - name: Build sparkforge wheel
+        run: uv build --package etlantic-sparkforge
+
       - name: Pytest against installed wheel
+        shell: bash
         run: |
           shopt -s nullglob
-          wheels=(dist/etlantic-*.whl)
-          if [ "${#wheels[@]}" -ne 1 ]; then
-            echo "Expected exactly one etlantic wheel in dist/, found ${#wheels[@]}"
+          # Keep only the core package wheel (etlantic-VERSION-...), not plugins.
+          core_wheels=()
+          for w in dist/etlantic-*.whl; do
+            base="$(basename "$w")"
+            if [[ "$base" =~ ^etlantic-[0-9] ]]; then
+              core_wheels+=("$w")
+            fi
+          done
+          if [ "${#core_wheels[@]}" -ne 1 ]; then
+            echo "Expected exactly one etlantic core wheel in dist/, found ${#core_wheels[@]}"
             ls -la dist/ || true
             exit 1
           fi
-          WHEEL="${wheels[0]}"
+          WHEEL="${core_wheels[0]}"
           echo "Testing wheel: $WHEEL"
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
             python -m pytest -q tests/unit tests/cli
+
+      - name: SparkForge wheel import smoke
+        shell: bash
+        run: |
+          shopt -s nullglob
+          sf_wheels=(dist/etlantic_sparkforge-*.whl)
+          if [ "${#sf_wheels[@]}" -lt 1 ]; then
+            echo "Expected etlantic-sparkforge wheel in dist/"
+            ls -la dist/ || true
+            exit 1
+          fi
+          SF="${sf_wheels[0]}"
+          CORE=""
+          for w in dist/etlantic-*.whl; do
+            base="$(basename "$w")"
+            if [[ "$base" =~ ^etlantic-[0-9] ]]; then
+              CORE="$w"
+              break
+            fi
+          done
+          echo "Smoke testing: $SF with $CORE"
+          uv run --isolated --no-project --with "$CORE" --with "$SF" \
+            python -c "import etlantic_sparkforge as s; import etlantic; assert s.__version__ == etlantic.__version__ == '0.10.0'; print(s.__version__)"

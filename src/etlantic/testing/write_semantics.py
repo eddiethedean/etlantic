@@ -39,8 +39,10 @@ def assert_write_intent_parity(
             elif isinstance(caps, dict):
                 supports = mode.value in caps or "write" in caps
         else:
-            # Soft pass when backend only exposes the shared intent model.
-            supports = True
+            raise AssertionError(
+                f"Backend {engine!r} must expose supports_write_mode() or "
+                "capabilities for write-semantics parity checks"
+            )
         results["backends"][engine] = {"supports": supports}
         if not supports:
             raise AssertionError(

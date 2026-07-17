@@ -17,7 +17,6 @@ from etlantic import (
 )
 from etlantic.capabilities import PluginCapabilities
 from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
-from etlantic.pipeline import _PipelineNamespace
 from etlantic.plan.model import PipelinePlan
 from etlantic.policy import PolicyMode, ValidationPolicy, register_validation_policy
 from etlantic.profile import Profile
@@ -244,7 +243,8 @@ def adapt_pipeline(
             code="PMSF301",
         )
 
-    ns = _PipelineNamespace()
+    # Plain dict preserves insertion order (same pattern as DPCS codegen).
+    ns: dict[str, Any] = {}
     annotations: dict[str, Any] = {}
     ns["__annotations__"] = annotations
     step_map: dict[str, str] = {}

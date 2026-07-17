@@ -139,7 +139,7 @@ A different profile might instead select:
 
 - pandas
 - sql
-- spark (future)
+- spark / pyspark
 - remote service
 
 The transformation contract does not change.
@@ -151,10 +151,8 @@ Profiles determine where Pipeline Plans execute.
 Examples include:
 
 - Local Python
-- Airflow
-- Dagster
-- Prefect
-- Future orchestrators
+- Airflow (`etlantic-airflow`)
+- Future orchestrators (Dagster, Prefect)
 
 Planning verifies that the selected orchestrator satisfies all mandatory
 pipeline capabilities.

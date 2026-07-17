@@ -11,7 +11,7 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 ## Public SDK imports
 
-`etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, `etlantic.orchestration`, `etlantic.secrets`, `etlantic.testing`
+`etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`, `etlantic.testing`
 
 ## Security
 
@@ -25,6 +25,8 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 1. Validate before generate/compile: `etlantic validate TARGET --format json`
 2. Plan deterministically: `etlantic plan TARGET --format json`
-3. Compile only from a valid plan: `etlantic compile TARGET --target airflow -o dags/`
+3. Compile only from a valid plan (requires `etlantic-airflow` for `--target airflow`):
+   `etlantic compile TARGET --target airflow -o dags/`
 4. Emit CI diagnostics as SARIF: `etlantic validate TARGET --format sarif`
 5. Use `etlantic.testing` conformance suites for third-party plugins
+6. Diagrams: `Pipeline.to_mermaid()` or `etlantic.viz` / `etlantic viz`

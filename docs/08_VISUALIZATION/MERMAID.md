@@ -24,8 +24,8 @@ Path("customer_pipeline.mmd").write_text(diagram, encoding="utf-8")
 print(diagram)
 ```
 
-Only `Pipeline.to_mermaid()` is available in 0.6. Plan objects do not expose a
-Mermaid helper.
+Only `Pipeline.to_mermaid()` and `etlantic.viz` exporters are available for
+diagrams. Plan objects do not expose a Mermaid helper.
 
 ## Philosophy
 
@@ -46,8 +46,9 @@ Mermaid text
 
 - Output reflects the logical graph, not runtime schedules or engine-specific
   physical plans
-- Styling and advanced lineage views are future design
-- For Graphviz/HTML, see Future Design → Visualization
+- Advanced schedule overlays remain future design
+- For Graphviz/HTML/lineage, see [Graphviz](GRAPHVIZ.md), [HTML](HTML.md), and
+  [Lineage](LINEAGE.md)
 
 ## See also
 

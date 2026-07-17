@@ -65,8 +65,14 @@ def retry_policy_from_sparkforge(raw: dict[str, Any] | None) -> RetryPolicy:
         backoff = data.get("retry_delay_seconds")
     if backoff is None:
         backoff = data.get("delay")
+    raw_attempts = data.get("max_attempts")
+    if raw_attempts is None:
+        raw_attempts = data.get("retries")
+    max_attempts = int(1 if raw_attempts is None else raw_attempts)
+    if max_attempts < 1:
+        max_attempts = 1
     return RetryPolicy(
-        max_attempts=int(data.get("max_attempts") or data.get("retries") or 1),
+        max_attempts=max_attempts,
         backoff_seconds=float(0.0 if backoff is None else backoff),
         retry_on=retry_on,
     )
@@ -119,10 +125,11 @@ def assert_delta_capabilities(
             diagnostics.append(
                 Diagnostic(
                     code="PMSF323",
-                    severity=Severity.ERROR,
+                    severity=missing_caps_severity,
                     message=(
                         f"Delta operation {op!r} requires capability {required!r} "
-                        "which the selected Spark plugin does not declare."
+                        "which the selected Spark plugin does not declare"
+                        + (" (fail closed)." if strict else " (plan-only warning).")
                     ),
                     path=("delta_operations", op),
                     phase="sparkforge_adapter",

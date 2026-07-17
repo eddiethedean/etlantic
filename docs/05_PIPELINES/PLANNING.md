@@ -287,7 +287,7 @@ The plan may then be:
 ```python
 result = await plan.arun()
 artifact = plan.compile(target="airflow")
-diagram = plan.to_mermaid()
+diagram = CustomerPipeline.to_mermaid()
 ```
 
 Exact convenience methods remain a proposed 1.0 API; the architectural rule is

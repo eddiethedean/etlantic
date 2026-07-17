@@ -70,13 +70,17 @@ pip install etlantic-airflow         # Airflow DAG compiler
 pip install etlantic-keyring         # OS keyring secret provider
 pip install etlantic-sqlmodel        # SQLModel contract bridge
 pip install etlantic-sparkforge      # SparkForge → ETLantic adapter
-pip install 'etlantic[sql]'
-pip install 'etlantic[pyspark]'
+pip install 'etlantic[polars]'
+pip install 'etlantic[pandas]'
+pip install 'etlantic[dataframes]'   # polars + pandas
+pip install 'etlantic[sql]'          # alias: postgresql
+pip install 'etlantic[pyspark]'      # alias: spark
 pip install 'etlantic[airflow]'
 pip install 'etlantic[keyring]'
 pip install 'etlantic[sqlmodel]'
 pip install 'etlantic[sparkforge]'
-pip install 'etlantic[otel]'
+pip install 'etlantic[otel]'         # alias: observability
+pip install 'etlantic[arrow]'
 pip install 'etlantic-polars[arrow]'
 ```
 

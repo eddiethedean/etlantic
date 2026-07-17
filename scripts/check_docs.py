@@ -104,6 +104,12 @@ def main() -> None:
         "ETLantic 0.6\n    does not load",
         "future Airflow/orchestration plugins",
         "Visualization (beyond Mermaid)",
+        "Future Design → Visualization",
+        "not shipped in 0.5",
+        "Only `Pipeline.to_mermaid()` is available in 0.6",
+        "spark (future)",
+        "not installable yet",
+        "Design studies (not installable)",
     ]
     if "| Capability | 0.4 |" in (ROOT / "README.md").read_text(encoding="utf-8"):
         raise SystemExit("README.md capability table still labels the release as 0.4")
@@ -155,10 +161,20 @@ def main() -> None:
         ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
         ROOT / "docs/02_FOUNDATIONS/DOCUMENTATION_STATUS.md",
         ROOT / "docs/06_EXECUTION/LOCAL_PYTHON.md",
+        ROOT / "docs/06_EXECUTION/README.md",
         ROOT / "docs/06_EXECUTION/SECRETS_MANAGEMENT.md",
+        ROOT / "docs/05_PIPELINES/PLANNING.md",
+        ROOT / "docs/05_PIPELINES/PROFILES.md",
+        ROOT / "docs/05_PIPELINES/DPCS.md",
         ROOT / "docs/08_VISUALIZATION/MERMAID.md",
         ROOT / "docs/08_VISUALIZATION/DOCUMENTATION.md",
+        ROOT / "docs/08_VISUALIZATION/OPENAPI_FOR_PIPELINES.md",
+        ROOT / "docs/08_VISUALIZATION/GRAPHVIZ.md",
+        ROOT / "docs/08_VISUALIZATION/HTML.md",
+        ROOT / "docs/08_VISUALIZATION/LINEAGE.md",
         ROOT / "docs/09_EXAMPLES/README.md",
+        ROOT / "docs/09_EXAMPLES/AIRFLOW_COMPILE.md",
+        ROOT / "docs/09_EXAMPLES/SPARKFORGE_ADAPTER.md",
         ROOT / "docs/10_REFERENCE/API_REFERENCE.md",
         ROOT / "docs/10_REFERENCE/README.md",
         ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md",
@@ -190,7 +206,10 @@ def main() -> None:
         if path.name in runnable_guides:
             if path.name != "README.md":
                 text = path.read_text(encoding="utf-8")
-                if "**Status: Available" not in text and "Status: Available" not in text:
+                if (
+                    "**Status: Available" not in text
+                    and "Status: Available" not in text
+                ):
                     raise SystemExit(f"{path} runnable guide missing Available status")
             continue
         text = path.read_text(encoding="utf-8")
@@ -213,12 +232,16 @@ def main() -> None:
         raise SystemExit("docs/README.md missing Green path rail")
     known = (ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md").read_text(encoding="utf-8")
     if "etlantic-airflow" not in known:
-        raise SystemExit("KNOWN_ISSUES.md must state Airflow is available via etlantic-airflow")
+        raise SystemExit(
+            "KNOWN_ISSUES.md must state Airflow is available via etlantic-airflow"
+        )
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     viz_idx = mkdocs.find("  - Visualization:")
     future_viz = mkdocs.find("Visualization (beyond Mermaid)")
     if future_viz >= 0:
-        raise SystemExit("mkdocs.yml still nests shipped viz under Visualization (beyond Mermaid)")
+        raise SystemExit(
+            "mkdocs.yml still nests shipped viz under Visualization (beyond Mermaid)"
+        )
     if viz_idx < 0:
         raise SystemExit("mkdocs.yml missing Visualization section")
     viz_block = mkdocs[viz_idx : viz_idx + 500]

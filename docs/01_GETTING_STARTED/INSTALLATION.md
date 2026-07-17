@@ -80,13 +80,15 @@ pip install etlantic-sparkforge  # SparkForge → ETLantic IR adapter
 # or extras:
 pip install 'etlantic[polars]'
 pip install 'etlantic[pandas]'
-pip install 'etlantic[dataframes]'
-pip install 'etlantic[sql]'
-pip install 'etlantic[pyspark]'
+pip install 'etlantic[dataframes]'   # polars + pandas
+pip install 'etlantic[sql]'          # alias: postgresql
+pip install 'etlantic[pyspark]'      # alias: spark
 pip install 'etlantic[airflow]'
 pip install 'etlantic[keyring]'
 pip install 'etlantic[sqlmodel]'
 pip install 'etlantic[sparkforge]'
+pip install 'etlantic[otel]'         # alias: observability
+pip install 'etlantic[arrow]'
 ```
 
 For SQL, set a connection URL (PostgreSQL is the reference; SQLite is demo-only):

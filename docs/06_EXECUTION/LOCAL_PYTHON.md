@@ -1,7 +1,7 @@
 # Local Python
 
-> **Status: Available in ETLantic 0.7.0.** Process-local execution of a
-> `PipelinePlan` with registered Python and dataframe implementations.
+> **Status: Available.** Process-local execution of a `PipelinePlan` with
+> registered Python and dataframe implementations.
 
 The local runtime executes validated **Pipeline Plans** in-process. It is the
 reference execution environment for development, testing, experimentation, and
@@ -147,10 +147,8 @@ Local execution is one orchestration backend among many.
 
 The same Pipeline Plan may also execute using:
 
-- Airflow
-- Dagster
-- Prefect
-- Future orchestration plugins
+- Airflow (`etlantic-airflow` compile target)
+- Future orchestration plugins (Dagster, Prefect)
 
 Observable pipeline semantics should remain identical.
 

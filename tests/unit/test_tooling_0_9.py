@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.diagnostics.sarif import diagnostics_to_sarif
 from etlantic.ide import get_command_schema, list_commands, write_schemas
@@ -67,6 +69,27 @@ def test_file_schema_history(tmp_path: Path) -> None:
     assert provider.latest("orders") is not None
     ack = provider.acknowledge("orders", note="ok")
     assert ack["acknowledged_fingerprint"] == schema.fingerprint()
+
+    # Innocent keys that contain "rows"/"records" as substrings must be allowed.
+    provider.record(
+        SchemaObservation(
+            subject_id="browsers_ok",
+            schema=schema,
+            inspector="test",
+            metadata={"browsers": 1, "nrows": 10, "records_checked": 5},
+        )
+    )
+    assert provider.latest("browsers_ok") is not None
+
+    with pytest.raises(ValueError, match="source rows"):
+        provider.record(
+            SchemaObservation(
+                subject_id="bad",
+                schema=schema,
+                inspector="test",
+                metadata={"sample_rows": [{"id": 1}]},
+            )
+        )
 
 
 def test_file_report_store_compare(tmp_path: Path) -> None:

@@ -1,9 +1,8 @@
 # OpenAPI for Pipelines
 
 !!! warning "Future design—not a ETLantic 0.10 API guide"
-    Graphviz, HTML, lineage exporters, and generated pipeline docs beyond
-    Mermaid are not shipped in 0.5. For diagrams today, use
-    `Pipeline.to_mermaid()`.
+    OpenAPI-for-pipelines is future design. Mermaid, Graphviz, HTML, and lineage
+    exporters are shipped via `Pipeline.to_mermaid()` and `etlantic.viz`.
 
 
 ETLantic can generate an **OpenAPI-inspired interface description for data

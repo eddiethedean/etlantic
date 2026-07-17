@@ -62,11 +62,12 @@ uv sync --group airflow
 uv run python examples/airflow_compile.py
 ```
 
-## Design studies (not installable)
+## Design studies (aspirational)
 
 The remaining pages in this section explore intended integrations. Each page
 opens with a Future design warning. They may contain APIs, packages, or
-commands that do not exist yet (or that go beyond the shipped surface).
+commands that go beyond the shipped surface — prefer the runnable guides and
+`examples/` for installable behavior.
 
 | Topic | Prefer instead |
 |---|---|

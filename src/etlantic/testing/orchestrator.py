@@ -10,6 +10,7 @@ from etlantic.orchestration.protocol import (
     OrchestratorPlugin,
 )
 from etlantic.plan.model import PipelinePlan
+from etlantic.runtime.logging import redact_message
 
 
 def assert_orchestrator_plugin_info(plugin: OrchestratorPlugin, *, engine: str) -> None:
@@ -35,8 +36,14 @@ def run_orchestrator_conformance_suite(
     artifact = plugin.compile(plan, context=ctx)
     assert artifact is not None
     assert artifact.target == engine or artifact.target == plugin.info.engine
-    assert "password" not in (artifact.source or "").lower()
-    assert "secret" not in str(artifact.metadata).lower()
+    source = artifact.source or ""
+    assert source == redact_message(source), (
+        "Compiled artifact source contains secret-like text"
+    )
+    meta = str(artifact.metadata or {})
+    assert meta == redact_message(meta), (
+        "Compiled artifact metadata contains secret-like text"
+    )
     explain = artifact.explain()
     assert "dag_id" in explain
     return artifact

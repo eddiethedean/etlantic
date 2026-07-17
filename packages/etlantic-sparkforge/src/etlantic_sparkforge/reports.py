@@ -13,24 +13,10 @@ from etlantic.reports.model import (
     StepRunReport,
     ValidationResult,
 )
+from etlantic.runtime.logging import redact_message, redact_value
 from etlantic.runtime.request import RunIntent
 from etlantic.runtime.state import RunStatus, StepStatus
-
-_SECRET_KEYS = frozenset(
-    {
-        "password",
-        "passwd",
-        "pwd",
-        "secret",
-        "token",
-        "api_key",
-        "apikey",
-        "credential",
-        "private_key",
-        "authorization",
-        "aws_secret_access_key",
-    }
-)
+from etlantic.secrets.value import SecretValue
 
 _STATUS_ALIASES: dict[str, RunStatus] = {
     "ok": RunStatus.SUCCEEDED,
@@ -76,18 +62,22 @@ _STEP_STATUS_ALIASES: dict[str, StepStatus] = {
 
 
 def _redact(value: Any) -> Any:
+    """Redact secrets in structured and free-text SparkForge payloads."""
+    if isinstance(value, SecretValue):
+        return "***"
     if isinstance(value, dict):
-        out: dict[str, Any] = {}
-        for key, item in value.items():
-            key_l = str(key).lower()
-            if any(s in key_l for s in _SECRET_KEYS):
-                out[str(key)] = "***"
-            else:
-                out[str(key)] = _redact(item)
-        return out
+        return redact_value(value)
     if isinstance(value, list):
         return [_redact(v) for v in value]
+    if isinstance(value, str):
+        return redact_message(value)
     return value
+
+
+def _safe_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    return redact_message(str(value))
 
 
 def _coalesce_int(value: Any, default: int | None = None) -> int | None:
@@ -139,8 +129,9 @@ def adapt_run_result(
 ) -> PipelineRunReport:
     """Convert a SparkForge-shaped result dict into PipelineRunReport.
 
-    Never retains secret-like keys from the source payload. Unknown run statuses
-    fail closed to ``failed`` with diagnostic ``PMSF500``.
+    Never retains secret-like keys or free-text credentials from the source
+    payload. Unknown run statuses fail closed to ``failed`` with diagnostic
+    ``PMSF500``.
     """
     safe = _redact(payload)
     status_raw = str(safe.get("status") or safe.get("pipeline_status") or "succeeded")
@@ -178,11 +169,13 @@ def adapt_run_result(
                 step_name=name,
                 status=step_status,
                 attempts=_coalesce_int(attempts, 1) if attempts is not None else 1,
-                error_message=item.get("error") or item.get("error_message"),
+                error_message=_safe_text(
+                    item.get("error") or item.get("error_message")
+                ),
                 records_in=_coalesce_int(records_in),
                 records_out=_coalesce_int(records_out),
                 metadata={
-                    k: v
+                    k: _redact(v)
                     for k, v in item.items()
                     if k
                     not in {
@@ -217,7 +210,7 @@ def adapt_run_result(
                 node_name=str(item.get("node_name") or item.get("step") or "unknown"),
                 boundary=str(item.get("boundary") or "quality_gate"),
                 status=str(item.get("status") or "passed"),
-                message=item.get("message"),
+                message=_safe_text(item.get("message")),
                 records_checked=_coalesce_int(checked),
                 records_invalid=_coalesce_int(invalid),
             )
@@ -248,14 +241,18 @@ def adapt_run_result(
     for item in safe.get("diagnostics") or safe.get("errors") or []:
         if isinstance(item, str):
             diagnostics.append(
-                RunDiagnostic(code="PMSF500", severity="error", message=item)
+                RunDiagnostic(
+                    code="PMSF500",
+                    severity="error",
+                    message=redact_message(item),
+                )
             )
         elif isinstance(item, dict):
             diagnostics.append(
                 RunDiagnostic(
                     code=str(item.get("code") or "PMSF500"),
                     severity=str(item.get("severity") or "error"),
-                    message=str(item.get("message") or item),
+                    message=redact_message(str(item.get("message") or item)),
                 )
             )
 
@@ -311,7 +308,7 @@ def adapt_run_result(
         diagnostics=tuple(diagnostics),
         metadata={
             "adapter": "etlantic-sparkforge",
-            "source_keys": sorted(safe.keys()),
+            "source_keys": sorted(str(k) for k in safe),
             "status_raw": status_raw,
         },
     )

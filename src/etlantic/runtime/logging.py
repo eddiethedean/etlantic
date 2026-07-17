@@ -36,23 +36,6 @@ class LogRecord:
         return data
 
 
-def redact_value(value: Any) -> Any:
-    """Recursively redact secrets and sensitive keys."""
-    if isinstance(value, SecretValue):
-        return "***"
-    if isinstance(value, dict):
-        out: dict[str, Any] = {}
-        for key, item in value.items():
-            if _SECRET_KEY_RE.search(str(key)):
-                out[str(key)] = "***"
-            else:
-                out[str(key)] = redact_value(item)
-        return out
-    if isinstance(value, (list, tuple)):
-        return [redact_value(v) for v in value]
-    return value
-
-
 _SECRET_INLINE_RE = re.compile(
     r"(?i)(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
     r"aws[_-]?secret[_-]?access[_-]?key|private[_-]?key)"
@@ -66,9 +49,11 @@ _JSON_SECRET_RE = re.compile(
 )
 _DSN_RE = re.compile(
     r"(?i)((?:postgres(?:ql)?|mysql|mariadb|mssql|oracle|sqlite|mongodb|"
-    r"redis|rediss|amqp|amqps|couchdb|cassandra)"
+    r"redis|rediss|amqp|amqps|couchdb|cassandra|https?)"
     r"(?:\+\w+)?://)([^:@/\s]*):([^@/\s]+)@"
 )
+# Generic userinfo credentials for any scheme (http basic-auth, custom DSNs).
+_URL_USERINFO_RE = re.compile(r"(?i)([a-z][a-z0-9+.-]*://)([^:@/\s]+):([^@/\s]+)@")
 
 
 def redact_message(message: str) -> str:
@@ -79,7 +64,27 @@ def redact_message(message: str) -> str:
     redacted = _JSON_SECRET_RE.sub(r'\1"***"', redacted)
     redacted = _SECRET_INLINE_RE.sub(r"\1=***", redacted)
     redacted = _DSN_RE.sub(r"\1\2:***@", redacted)
+    redacted = _URL_USERINFO_RE.sub(r"\1\2:***@", redacted)
     return redacted
+
+
+def redact_value(value: Any) -> Any:
+    """Recursively redact secrets, sensitive keys, and secret-like strings."""
+    if isinstance(value, SecretValue):
+        return "***"
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for key, item in value.items():
+            if _SECRET_KEY_RE.search(str(key)):
+                out[str(key)] = "***"
+            else:
+                out[str(key)] = redact_value(item)
+        return out
+    if isinstance(value, (list, tuple)):
+        return [redact_value(v) for v in value]
+    if isinstance(value, str):
+        return redact_message(value)
+    return value
 
 
 class RunLogger:

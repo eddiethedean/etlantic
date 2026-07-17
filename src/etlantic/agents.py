@@ -24,6 +24,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.sql",
     "etlantic.spark",
     "etlantic.orchestration",
+    "etlantic.viz",
     "etlantic.secrets",
     "etlantic.testing",
 )
@@ -64,9 +65,11 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 1. Validate before generate/compile: `etlantic validate TARGET --format json`
 2. Plan deterministically: `etlantic plan TARGET --format json`
-3. Compile only from a valid plan: `etlantic compile TARGET --target airflow -o dags/`
+3. Compile only from a valid plan (requires `etlantic-airflow` for `--target airflow`):
+   `etlantic compile TARGET --target airflow -o dags/`
 4. Emit CI diagnostics as SARIF: `etlantic validate TARGET --format sarif`
 5. Use `etlantic.testing` conformance suites for third-party plugins
+6. Diagrams: `Pipeline.to_mermaid()` or `etlantic.viz` / `etlantic viz`
 """
 
 
@@ -91,10 +94,12 @@ description: Validate, plan, compile, and generate ETLantic pipelines safely.
 Use public CLI commands (`validate`, `inspect`, `plan`, `run`, `compile`,
 `generate`, `diff`, `plugin`, `schema`, `reliability`, `viz`, `report`) and
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.secrets`, `.testing`).
+`.viz`, `.secrets`, `.testing`).
 
 Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
+Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never
+in core. Airflow compile needs the optional `etlantic-airflow` package.
 """
 
 
@@ -107,9 +112,11 @@ globs:
 
 # ETLantic
 
-- Use public imports only: dataframe, sql, spark, orchestration, secrets, testing.
+- Use public imports only: dataframe, sql, spark, orchestration, viz, secrets, testing.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
+- Airflow compile requires optional `etlantic-airflow`.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
+- Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.
 """
 

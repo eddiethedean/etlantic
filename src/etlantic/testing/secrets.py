@@ -62,9 +62,28 @@ def assert_missing_secret_fails(
     reference: SecretRef,
 ) -> None:
     """Providers must fail closed when a secret is absent."""
-    raised = False
     try:
-        asyncio.run(_resolve_once(provider, reference, run_id="missing"))
-    except Exception:
-        raised = True
-    assert raised, "Secret provider must fail closed for missing secrets"
+        value = asyncio.run(_resolve_once(provider, reference, run_id="missing"))
+    except (
+        LookupError,
+        KeyError,
+        OSError,
+        FileNotFoundError,
+        RuntimeError,
+        ValueError,
+    ):
+        return
+    except Exception as exc:
+        msg = str(exc).lower()
+        if any(
+            token in msg
+            for token in ("not found", "missing", "unknown", "does not exist", "absent")
+        ):
+            return
+        raise AssertionError(
+            "Missing secret must fail closed with a lookup-style error; "
+            f"got {type(exc).__name__}: {exc}"
+        ) from exc
+    raise AssertionError(
+        f"Secret provider must fail closed for missing secrets; got {value!r}"
+    )
