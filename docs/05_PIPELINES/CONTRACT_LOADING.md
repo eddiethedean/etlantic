@@ -1,5 +1,10 @@
 # Contract Loading
 
+From 0.11, a DTCS artifact may carry a portable Transformation Plan profile.
+Loading reconstructs bounded data-only IR and never imports the original Python
+definition or executes a compiler. Unknown protocol majors and expression
+nodes fail closed.
+
 Contract loading allows ETLantic to construct in-memory models from
 portable contract artifacts.
 

@@ -41,6 +41,11 @@ This declaration answers:
 
 It intentionally does **not** answer how the work is performed.
 
+An accepted future design adds a PySpark-inspired, implementation-agnostic
+definition that plugins compile. See
+[Portable Transformations](PORTABLE_TRANSFORMATIONS.md). This API is not
+available in ETLantic 0.10.
+
 ## Separating Interface from Implementation
 
 Execution is registered independently.
@@ -157,10 +162,12 @@ Read this section in the following order:
 4. `PARAMETERS.md`
 5. `TYPE_ANNOTATIONS.md`
 6. `IMPLEMENTATIONS.md`
-7. `CALLBACKS.md`
-8. `ERROR_HANDLING.md`
-9. `ASYNC.md`
-10. `DTCS.md`
+7. `PORTABLE_TRANSFORMATIONS.md` (accepted future design)
+8. `PORTABLE_FUNCTIONS.md` (proposed future API)
+9. `CALLBACKS.md`
+10. `ERROR_HANDLING.md`
+11. `ASYNC.md`
+12. `DTCS.md`
 
 ## Key Principles
 

@@ -147,10 +147,9 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 
 ## Release
 
-Before tagging a **new** package set (first `etlantic*` upload, or any new
-plugin name), pre-register the nine PyPI projects under the publishing account.
-The `v0.6.1` publish failed with PyPI `429 Too many new projects created`;
-60s spacing between uploads does not clear that quota. See
+The first upload of each new package name counts against PyPI’s new-project
+rate limit (`429 Too many new projects created`). Release CI waits **10 minutes**
+between package publishes. See
 [Release Process](docs/11_DEVELOPMENT/RELEASE_PROCESS.md).
 
 Tag a version that matches `src/etlantic/_version.py` (and every

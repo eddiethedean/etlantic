@@ -290,6 +290,20 @@ SQL fusion, Spark regions, caching, artifact reuse, and other optimizations may
 not cross authorization, tenant, residency, masking, or security-domain
 boundaries.
 
+## DD-028: Portable Transformations Use a Closed Relational Language
+
+**Status:** Proposed
+
+Portable transformation authoring uses a PySpark-inspired DataFrame and Column
+surface backed by the versioned `etlantic.transform/1` IR. ETLantic does not
+trace arbitrary Python or adopt a backend's expression objects as its semantic
+model.
+
+Plugins compile only the operations they advertise and must preserve normative
+semantics or fail during planning. Native transformation implementations remain
+explicit escape hatches. See
+[ADR-013](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md).
+
 ## Adding a Decision
 
 New decisions should include:

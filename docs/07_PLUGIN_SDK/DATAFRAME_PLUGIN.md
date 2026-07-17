@@ -5,6 +5,12 @@ specific dataframe engine.
 
 **Status: shipped in 0.5.0** (`etlantic.dataframe/1`).
 
+!!! note "Future compiler role"
+    The shipped protocol invokes native transformation callables. In 0.12+,
+    dataframe plugins may additionally implement the
+    [portable transformation compiler](PORTABLE_TRANSFORM_COMPILER.md). The two
+    protocols remain separately versioned.
+
 ## Responsibilities
 
 - Materialize logical inputs into native frames

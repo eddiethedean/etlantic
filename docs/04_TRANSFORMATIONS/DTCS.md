@@ -118,6 +118,18 @@ Examples include:
 Planning should fail before execution when required DTCS semantics cannot be
 satisfied.
 
+## Portable Transformation Plans (0.11+)
+
+DTCS already defines the implementation-independent Transformation Plan,
+expressions, functions, semantic actions, and engine capability model.
+ETLantic's proposed `etlantic.transform/1` IR is a concrete, closed realization
+of that DTCS model—not a separate source of transformation meaning.
+
+`@Transformation.portable` provides the PySpark-inspired Python authoring
+surface. Generated DTCS may carry the normalized Transformation Plan, while
+plugins compile it into backend Execution Plans. If ETLantic-specific syntax
+and DTCS semantics disagree, DTCS remains authoritative.
+
 ---
 
 ## Identity and Versioning
@@ -142,6 +154,10 @@ planning rules.
 DTCS describes the logical transformation.
 
 Execution implementations remain separate.
+
+Portable compiler implementations also remain separate: the DTCS artifact
+describes semantic intent, while Polars, Pandas, SQL, and PySpark plugins
+provide backend lowering.
 
 ```python
 @NormalizeCustomers.implementation("polars")

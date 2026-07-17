@@ -57,6 +57,7 @@ A profile may define:
 - SQL dialect or Spark provider
 - Artifact and checkpoint locations
 - Plugin-specific compiler options
+- Portable transformation policy (`require`, `prefer`, or `native`)
 
 Profiles never redefine pipeline contracts.
 
@@ -143,6 +144,22 @@ A different profile might instead select:
 - remote service
 
 The transformation contract does not change.
+
+Beginning with the proposed 0.11 portable kernel, profiles also decide whether
+an eligible step is compiled from its portable definition or executed through
+a native implementation:
+
+```python
+Profile(
+    name="portable-polars",
+    dataframe_engine="polars",
+    portable_transform_policy="require",
+)
+```
+
+`require` forbids native fallback, `prefer` permits an explicit diagnosed
+fallback, and `native` prefers a registered backend implementation. The choice
+must be retained in `plan explain` and run reports.
 
 ## Orchestrator Selection
 

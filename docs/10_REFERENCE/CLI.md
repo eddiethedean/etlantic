@@ -63,6 +63,10 @@ etlantic plan examples/quickstart.py:CustomerPipeline \
   --profile development --explain
 ```
 
+In the proposed 0.11+ surface, explain output also shows portable definition
+fingerprints, selected compiler, operation-level capability decisions, and any
+explicit native fallback. These fields are not emitted by 0.10.
+
 ## `run`
 
 Validate, plan, and execute with the local runtime:

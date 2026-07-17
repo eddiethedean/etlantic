@@ -54,6 +54,7 @@ dataframe = "polars"
 [profiles.local]
 orchestrator = "local"
 dataframe = "polars"
+portable_transform_policy = "prefer"
 
 [profiles.production]
 orchestrator = "airflow"
@@ -97,6 +98,7 @@ A profile may define:
 - Artifact and checkpoint locations
 - Observability configuration
 - Compiler target options
+- Portable transformation policy (`require`, `prefer`, or `native`)
 
 Profiles do not redefine pipeline topology or transformation semantics.
 

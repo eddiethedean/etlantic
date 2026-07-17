@@ -4,6 +4,10 @@ Plugins are the extension mechanism that allows ETLantic to execute
 portable pipeline plans on different technologies without changing pipeline
 definitions.
 
+Beginning with the proposed 0.11+ work, engine plugins may also implement a
+compiler for the closed `etlantic.transform/1` IR. This additional capability
+does not permit plugins to redefine portable operation semantics.
+
 The core ETLantic library is intentionally small. It models, validates,
 plans, generates contracts, and loads contracts. Plugins provide concrete
 runtime behavior.
@@ -24,6 +28,9 @@ Plugins should:
 ETLantic defines **what** a pipeline means.
 
 Plugins define **how** that meaning is realized.
+
+Portable compilers declare exact operation, function, type, and semantic-mode
+versions. A broad claim such as `portable_transform=True` is insufficient.
 
 ```text
 ETLantic Core

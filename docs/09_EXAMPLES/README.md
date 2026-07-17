@@ -79,6 +79,7 @@ commands that go beyond the shipped surface — prefer the runnable guides and
 | Graphviz DOT / HTML lineage | `etlantic.viz` / `etlantic viz` |
 | SparkForge migration adapter | [SparkForge Adapter](SPARKFORGE_ADAPTER.md) |
 | Structured Streaming | Experimental foundation only |
+| Portable PySpark-style transformations | [Portable Transformation](PORTABLE_TRANSFORMATION.md) |
 
 Do not use a design study as an installation or API reference. The
 [capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) and

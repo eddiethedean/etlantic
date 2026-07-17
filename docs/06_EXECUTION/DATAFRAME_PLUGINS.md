@@ -6,6 +6,9 @@ the Pipeline Plan.
 
 **Status: shipped in 0.5.0** for Polars and Pandas.
 
+Portable transformation compilation is a separate accepted 0.11+ design. The
+current 0.10 plugins invoke engine-specific `@implementation()` callables.
+
 ETLantic does **not** depend on a dataframe library. Install plugins
 separately:
 
@@ -39,9 +42,26 @@ def normalize_pandas(customers: pd.DataFrame) -> pd.DataFrame: ...
 
 Select the engine with `Profile.dataframe_engine = "polars"` or `"pandas"`.
 
+## Portable compilation (0.11+)
+
+Dataframe plugins will additionally analyze and compile
+`etlantic.transform/1` definitions:
+
+```python
+@NormalizeCustomers.portable
+def normalize(customers):
+    return customers.select("customer_id", "full_name")
+```
+
+The plugin converts symbolic inputs into native expressions, preserves
+portable semantics, validates native frames at contract boundaries, and
+normalizes named outputs. Operation support is advertised individually and
+unsupported expressions fail during planning.
+
 ## Further reading
 
 - [Polars](POLARS.md)
 - [Pandas](PANDAS.md)
 - [Dataframe Plugin SDK](../07_PLUGIN_SDK/DATAFRAME_PLUGIN.md)
+- [Portable Compiler SDK](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
 - [Known limitations](../10_REFERENCE/KNOWN_ISSUES.md)

@@ -7,6 +7,12 @@ A plugin should not merely "work" with one example pipeline—it should
 demonstrate that it correctly implements the contracts defined by the SDK
 across a broad range of scenarios.
 
+Portable compiler plugins must also run the future
+`etlantic.testing.portable_transform_conformance` suite for every operation,
+function, type, and semantic mode they advertise. Capability claims select
+mandatory fixtures; unsupported behavior produces planning diagnostics rather
+than backend-dependent results.
+
 ## Goals
 
 Testing plugins should:

@@ -6,6 +6,10 @@ logical semantics from DTCS and the Pipeline Plan.
 **Status: shipped in 0.6.0** via the `etlantic-sql` PostgreSQL reference
 plugin. SQLite is supported for local demos only.
 
+Lowering the future portable transformation IR to the existing safe SQL IR is
+planned for 0.15. Current 0.10 SQL transformations use native
+`@implementation("sql")` definitions.
+
 ETLantic does **not** depend on database drivers. Install the plugin
 separately:
 
@@ -41,6 +45,24 @@ def normalize_sql(customers: RelationRef):
 Select the engine with `Profile.sql_engine = "sql"`. Plugins are discovered
 through the `etlantic.sql_plugins` entry point.
 
+## Portable SQL lowering (planned 0.15)
+
+Portable relational and scalar nodes will lower first into ETLantic's typed
+SQL IR and then into dialect SQL:
+
+```text
+etlantic.transform/1
+        ↓
+SqlQuery / typed SQL expressions
+        ↓
+safe dialect compiler
+```
+
+Identifiers remain validated and values remain bound parameters. Portable
+definitions cannot contain trusted SQL fragments or raw `F.expr()` strings.
+Unsupported dialect functions, types, null behavior, or ordering fail during
+planning.
+
 ## SQL→SQL without Python fetch
 
 When adjacent SQL steps and sinks share a database, ETLantic fuses execution
@@ -59,6 +81,7 @@ Unsupported requirements fail at validation or planning (fail closed).
 - [SQL Pushdown](SQL_PUSHDOWN.md)
 - [SQL Plugin SDK](../07_PLUGIN_SDK/SQL_PLUGIN.md)
 - [SQL Dialect](../07_PLUGIN_SDK/SQL_DIALECT.md)
+- [Portable Compiler SDK](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
 - [Migration 0.5 → 0.6](../11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md)
 - [Known limitations](../10_REFERENCE/KNOWN_ISSUES.md)
 - Runnable examples: `examples/sql_to_sql.py`, `sql_boundary_hybrid.py`,

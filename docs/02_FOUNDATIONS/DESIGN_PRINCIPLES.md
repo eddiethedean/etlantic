@@ -1,5 +1,10 @@
 # Design Principles
 
+Portable transformation design follows the same boundary: ETLantic owns a
+closed DTCS-aligned semantic IR, while plugins compile it to backend-native
+operations. Familiar PySpark-style syntax does not make Spark the semantic
+authority, and unsupported behavior fails closed instead of being approximated.
+
 These principles guide every architectural and API decision in
 ETLantic. They are intended to keep the framework focused,
 predictable, and consistent as it evolves.

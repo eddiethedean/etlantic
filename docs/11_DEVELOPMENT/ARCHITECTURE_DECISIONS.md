@@ -39,6 +39,10 @@ ADRs should be stored in:
 docs/11_DEVELOPMENT/adr/
 ```
 
+Current proposal:
+
+- [ADR-013: Closed Portable Transformation IR](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)
+
 ## Foundational ADRs
 
 The initial implementation should formalize at least these records.
@@ -159,4 +163,3 @@ Write an ADR when a change:
 - Is difficult to reverse
 
 Minor refactors and local implementation choices do not require ADRs.
-

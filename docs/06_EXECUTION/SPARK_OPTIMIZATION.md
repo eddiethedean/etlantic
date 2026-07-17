@@ -1,5 +1,10 @@
 # Spark Optimization
 
+From 0.13, portable expressions compile to native Spark Column/DataFrame plans
+that remain visible to Catalyst. Optimizers may rewrite physical expressions
+only while preserving DTCS meaning, validation/security boundaries, and
+logical expression attribution; undeclared UDF fallback is prohibited.
+
 **Status: shipped in 0.7.0** for the local reference path. Deep cluster/AQE
 tuning guides beyond the local provider remain aspirational.
 

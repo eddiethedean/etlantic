@@ -170,6 +170,42 @@ Serialized plans require a versioned schema and canonical representation.
 Providers should support digest or signature verification when plans cross
 trust boundaries.
 
+### Portable transformation definitions
+
+The proposed `etlantic.transform/1` IR adds an analysis input and compiler
+boundary. Portable definitions must be closed, bounded, data-only expression
+graphs.
+
+Python `@Transformation.portable` authoring invokes trusted definition code
+with symbolic values during an explicit trusted import. Static loading,
+validation, inspection, planning, and compilation from serialized artifacts
+must reconstruct data-only IR without importing or invoking that code.
+
+Portable definition controls include:
+
+- prohibit arbitrary Python objects, callables, modules, native dataframe
+  expressions, raw SQL, and executable serialization
+- enforce expression depth, node count, string size, literal size, collection
+  length, and diagnostic budgets
+- represent runtime parameters and secrets by typed references, never captured
+  values
+- reject actions, resource acquisition, data reads, network access, and
+  collection during definition building and planning
+- validate column and relation identifiers before backend lowering
+- require bound parameters for SQL lowering
+- include IR and compiler fingerprints in cache and artifact identities
+- preserve security-domain, validation, retry, and materialization boundaries
+  during expression and region optimization
+- require production plugin allowlists and compiler version policy
+
+Compilers are trusted plugins with host-process authority. A portable IR is not
+a sandbox for its compiler. Capability negotiation and conformance testing make
+compiler behavior inspectable but do not replace operating-system isolation.
+
+See the proposed
+[Portable Transformation IR specification](../specifications/PORTABLE_TRANSFORM_IR_SPEC.md)
+and [compiler protocol](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md).
+
 ## Plugins
 
 Python plugins execute with host-process privileges. Entry-point discovery is a

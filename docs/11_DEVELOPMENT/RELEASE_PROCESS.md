@@ -58,14 +58,13 @@ Tag `vX.Y.Z` publishes nine distributions:
    uv run pytest -q tests/sparkforge -m sparkforge
    ```
 
-7. Pre-register **all nine** PyPI project names under the publishing account
-   **before** tagging when any name is new. The `v0.6.1` publish failed with
-   `429 Too many new projects created`. Spacing uploads (60s+) helps rate
-   limits for *existing* projects; it does **not** clear PyPI’s new-project
-   quota. Create empty projects at https://pypi.org/manage/projects/ (or
-   Trusted Publishing) so the first tag only uploads files.
-8. Confirm repository secret `PYPI_API_TOKEN` is present and scoped to the
-   account that owns those projects.
+7. For a **new** package-name set, expect PyPI’s new-project quota
+   (`429 Too many new projects created`; defaults ~20 creates/hour). PyPI has
+   no empty-project UI — the first upload creates each name. Release CI waits
+   **10 minutes** between package publishes. If the account is already
+   rate-limited, wait for the rolling hour window before tagging/re-running.
+8. Confirm repository secret `PYPI_API_TOKEN` is a **user-scoped** token
+   (project-scoped tokens cannot create brand-new projects).
 9. Prefer tagging only the current release (do not `git push --tags`).
 
 ## Tag and publish (0.10.0 example)
@@ -87,7 +86,8 @@ GitHub Actions workflow
 2. Verifies tag == core + all plugin versions.
 3. Builds all nine wheels/sdists.
 4. Smokes the core wheel (driver-free) and plugin discovery/import.
-5. Publishes to PyPI with paced uploads and retries on transient 429s.
+5. Publishes to PyPI with **10-minute** gaps between packages and retries on
+   transient 429s.
 6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
 
 ## After PyPI succeeds

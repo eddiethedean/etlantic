@@ -31,7 +31,7 @@ See the [Security Model](SECURITY.md).
 │ Authoring and Interchange                                   │
 │                                                              │
 │ ContractModel classes   Transformation classes   Pipelines   │
-│ ODCS documents          DTCS documents            DPCS docs  │
+│ Portable expressions   ODCS / DTCS / DPCS documents          │
 └──────────────────────────────┬───────────────────────────────┘
                                ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -74,6 +74,8 @@ ETLantic supports complementary authoring paths.
 
 - `Data` classes define data contracts.
 - `Transformation` classes define typed interfaces.
+- Portable definitions optionally describe relational behavior once through a
+  PySpark-inspired symbolic API (accepted design for 0.11+).
 - `Pipeline` classes connect sources, steps, sinks, and subpipelines.
 
 ### Contract-first
@@ -105,6 +107,11 @@ The logical model captures portable meaning:
 It excludes resolved credentials, dataframe objects, scheduler tasks, database
 connections, and cluster handles.
 
+Beginning with the proposed 0.11 work, the logical model may also contain a
+closed `etlantic.transform/1` expression graph. This graph is data-only and
+backend-independent; native Polars, Pandas, SQL, and Spark objects remain
+outside core.
+
 ## Validation Architecture
 
 Validation is phased so tools can provide precise diagnostics:
@@ -116,13 +123,15 @@ Validation is phased so tools can provide precise diagnostics:
 3. **Graph validation** — dependencies, ports, cycles, fan-in, fan-out, and
    subpipeline boundaries are valid.
 4. **Compatibility validation** — producer outputs satisfy consumer inputs.
-5. **Profile validation** — bindings and resources are complete.
-6. **Capability validation** — selected plugins can preserve required
+5. **Portable-expression validation** — columns, types, outputs, operations,
+   and bounded structure are valid when a portable definition is present.
+6. **Profile validation** — bindings and resources are complete.
+7. **Capability validation** — selected plugins and compilers can preserve required
    semantics.
-7. **Runtime data validation** — actual inputs and outputs satisfy their data
+8. **Runtime data validation** — actual inputs and outputs satisfy their data
    contracts at configured boundaries.
 
-The first six phases occur before execution. Runtime data validation occurs
+The first seven phases occur before execution. Runtime data validation occurs
 through ContractModel and backend integrations.
 
 ## Planning Architecture
@@ -142,6 +151,7 @@ Resolved PipelinePlan
 The planner resolves:
 
 - Transformation implementations
+- Portable transformation compiler selection and operation requirements
 - Source and sink bindings
 - Orchestrator selection
 - Resource-provider references
@@ -149,6 +159,7 @@ The planner resolves:
 - Artifact boundaries
 - Retry and timeout requirements
 - Backend capability constraints
+- Portable IR and compiler fingerprints
 - SQL or Spark execution regions
 
 Planning must not execute transformations, acquire live credentials, or
@@ -210,6 +221,7 @@ Region formation depends on:
 - Reuse and fan-out
 - Backend capabilities
 - Required materialization
+- Portable-expression compatibility and compiler support
 
 ## Plugin Architecture
 
@@ -220,6 +232,7 @@ Primary extension families are:
 | Extension | Responsibility |
 |---|---|
 | Dataframe plugin | Execute transformation implementations with a dataframe engine |
+| Portable transformation compiler | Compile `etlantic.transform/1` expressions to native backend operations |
 | SQL plugin and dialect | Compile and execute SQL-native regions |
 | PySpark plugin | Build and submit Spark-native regions |
 | Orchestrator plugin | Coordinate or compile pipeline execution |

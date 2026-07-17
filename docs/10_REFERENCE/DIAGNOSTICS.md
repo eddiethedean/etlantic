@@ -42,6 +42,7 @@ PMSRCxxx   Source and import loading
 PMTYPExxx  Type annotations and model introspection
 PMDATAxxx  Data-contract integration
 PMTRNxxx   Transformation definitions and implementations
+PMXFORMxxx Portable transformation authoring, IR, compilers, and execution
 PMPIPExxx  Pipeline topology and wiring
 PMPLANxxx  Planning and capability resolution
 PMPLGxxx   Plugin discovery and compatibility
@@ -135,6 +136,7 @@ Validation may report:
 - Invalid parameters
 - Missing sinks
 - Unsupported subpipeline boundaries
+- Invalid portable expression names, types, outputs, or bounded structure
 
 ## Planning Diagnostics
 
@@ -147,6 +149,21 @@ Planning may report:
 - Unsafe artifact boundary
 - Unsupported orchestrator behavior
 - Incompatible SQL or Spark dialect
+- Unsupported portable operation, function, type, or semantic mode
+- Ambiguous portable/native selection or prohibited fallback
+
+Portable diagnostics use expression paths such as
+`outputs.result.project.full_name` and reserve these ranges:
+
+```text
+PMXFORM1xx authoring and signatures
+PMXFORM2xx names, types, contracts, and outputs
+PMXFORM3xx compiler selection and capabilities
+PMXFORM4xx lowering and semantic mismatch
+PMXFORM5xx portable runtime execution
+PMXFORM8xx security and bounded-input rejection
+PMXFORM9xx internal invariants
+```
 
 ## Execution Diagnostics
 
@@ -204,4 +221,3 @@ Plugins should:
 - [Exceptions](EXCEPTIONS.md)
 - [Pipeline Validation](../05_PIPELINES/PIPELINE_VALIDATION.md)
 - [Error Handling](../04_TRANSFORMATIONS/ERROR_HANDLING.md)
-

@@ -2398,6 +2398,12 @@ Execution Plan
 
 All backend compilation SHALL begin from a Transformation Plan.
 
+An implementation MAY expose a language-specific authoring surface or a
+versioned serialization profile for Transformation Plans. Such a profile SHALL
+preserve this specification's semantics and SHALL NOT become an independent
+semantic authority. ETLantic's proposed `etlantic.transform/1` format is one
+such implementation profile.
+
 ------------------------------------------------------------------------
 
 ## 4. Plan Model

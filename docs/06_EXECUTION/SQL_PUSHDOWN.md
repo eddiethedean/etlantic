@@ -1,5 +1,10 @@
 # SQL Pushdown
 
+In 0.15, eligible portable expression regions become a primary typed input to
+SQL pushdown. Lowering proceeds through the safe ETLantic SQL IR; unsupported
+portable functions or dialect semantics fail during planning and never fall
+back to raw SQL.
+
 **Status: shipped in 0.6.0** as part of SQL-native planning and execution.
 Pushdown applies when a SQL plugin and dialect advertise the required
 capabilities; unsupported features fail closed at planning.

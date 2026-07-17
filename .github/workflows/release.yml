@@ -89,12 +89,16 @@ jobs:
           set -euo pipefail
           TAG="${GITHUB_REF_NAME#v}"
 
+          # Pace new-project creates to stay under PyPI's rolling new-project
+          # quota (defaults ~20/hour). Ten minutes between packages.
+          PUBLISH_GAP_SECONDS=600
+
           publish_pair() {
             local wheel="$1"
             local sdist="$2"
             local attempt=1
             local max_attempts=5
-            local delay=60
+            local delay="$PUBLISH_GAP_SECONDS"
             while true; do
               echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
               if uv publish "$wheel" "$sdist"; then
@@ -102,7 +106,7 @@ jobs:
               fi
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Publish failed after $max_attempts attempts: $wheel"
-                echo "If this is a new-project 429, pre-register the PyPI project name and re-run."
+                echo "If this is a new-project 429, wait for the rolling hour window and re-run."
                 exit 1
               fi
               echo "Publish failed; waiting ${delay}s before retry..."
@@ -116,35 +120,35 @@ jobs:
           publish_pair \
             "dist/etlantic-${TAG}-py3-none-any.whl" \
             "dist/etlantic-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_polars-${TAG}-py3-none-any.whl" \
             "dist/etlantic_polars-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_pandas-${TAG}-py3-none-any.whl" \
             "dist/etlantic_pandas-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_sql-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sql-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_pyspark-${TAG}-py3-none-any.whl" \
             "dist/etlantic_pyspark-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_airflow-${TAG}-py3-none-any.whl" \
             "dist/etlantic_airflow-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_keyring-${TAG}-py3-none-any.whl" \
             "dist/etlantic_keyring-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_sqlmodel-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sqlmodel-${TAG}.tar.gz"
-          sleep 60
+          sleep "$PUBLISH_GAP_SECONDS"
           publish_pair \
             "dist/etlantic_sparkforge-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sparkforge-${TAG}.tar.gz"

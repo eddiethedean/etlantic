@@ -143,6 +143,18 @@ storage, or compilation.
 The backend-specific graph of tasks, statements, stages, and materialization
 boundaries created from a `PipelinePlan`.
 
+## Portable Transformation
+
+A transformation whose relational behavior is represented by ETLantic's
+closed, backend-independent transformation IR and compiled by an engine plugin.
+The proposed authoring API resembles PySpark DataFrame and Column expressions.
+
+## Portable Transformation Compiler
+
+A plugin component that proves support for and compiles a portable
+transformation IR into native Polars, Pandas, SQL, Spark, or other backend
+expressions without changing its normative meaning.
+
 ## Profile
 
 A named runtime configuration that selects bindings, resources, and
@@ -193,6 +205,12 @@ An instantiated transformation within a pipeline graph.
 A typed, declarative description of a data operation. A transformation
 specifies inputs, outputs, and parameters, but not a particular
 execution technology.
+
+## Transformation IR
+
+The proposed immutable, versioned `etlantic.transform/1` representation of
+portable relational and scalar expressions. It contains no source rows,
+resolved secrets, executable closures, or backend-native objects.
 
 ## Validation
 

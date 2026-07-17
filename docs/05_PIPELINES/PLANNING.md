@@ -31,6 +31,7 @@ The planner consumes:
 - DTCS transformation definitions
 - DPCS pipeline semantics
 - Transformation implementations
+- Portable transformation definitions and fingerprints
 - Profile configuration
 - Source and sink bindings
 - Resource-provider references
@@ -76,24 +77,27 @@ Apply environment-specific choices:
 - Resource providers
 - Concurrency and timeout settings
 - Backend compiler options
+- Portable/native selection policy
 
 Profile application may select how the graph is realized. It may not change its
 portable semantics.
 
-### 4. Select Implementations
+### 4. Select Portable or Native Realization
 
-Select an implementation for every executable transformation.
+Select a realization for every executable transformation. From 0.11 onward,
+eligible steps may be compiled from `etlantic.transform/1` or use a registered
+native implementation.
 
 Recommended precedence:
 
 ```text
-Step-specific selection
+Explicit step policy or override
         ↓
-Transformation or role mapping
+Portable definition supported by selected compiler
         ↓
-Profile default
+Registered native implementation
         ↓
-Unambiguous installed default
+Unambiguous installed fallback allowed by policy
 ```
 
 Ambiguity is a planning error.
@@ -113,6 +117,7 @@ Examples:
 - Dynamic mapping
 - SQL functions and data types
 - Spark stateful operations
+- Portable relational operations, scalar functions, types, and semantic modes
 
 ETLantic must not silently approximate mandatory behavior.
 
@@ -205,6 +210,7 @@ The final plan contains:
 - Physical execution units
 - Logical-to-physical mappings
 - Resolved implementations
+- Portable IR fingerprints, compiler identities, and implementation kind
 - Bindings
 - Resource references
 - Execution regions
@@ -224,6 +230,7 @@ A canonical plan hash may include:
 - Contract identities and versions
 - Selected profile
 - Plugin descriptors and versions
+- Portable definition and compiler fingerprints
 - Planner version
 
 It must exclude secret values and incidental process state.

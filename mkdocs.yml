@@ -139,6 +139,8 @@ nav:
       - Type Annotations: 04_TRANSFORMATIONS/TYPE_ANNOTATIONS.md
       - DTCS: 04_TRANSFORMATIONS/DTCS.md
       - Implementations: 04_TRANSFORMATIONS/IMPLEMENTATIONS.md
+      - Portable Transformations (future): 04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md
+      - Portable Functions (future): 04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md
       - Callbacks: 04_TRANSFORMATIONS/CALLBACKS.md
       - Error Handling: 04_TRANSFORMATIONS/ERROR_HANDLING.md
       - Async: 04_TRANSFORMATIONS/ASYNC.md
@@ -195,6 +197,7 @@ nav:
           - Secret Provider: 07_PLUGIN_SDK/SECRET_PROVIDER.md
           - Observability Provider: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
           - Testing Plugins: 07_PLUGIN_SDK/TESTING_PLUGINS.md
+          - Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
           - Distribution: 07_PLUGIN_SDK/DISTRIBUTION.md
       - Visualization (future):
           - Documentation: 08_VISUALIZATION/DOCUMENTATION.md
@@ -230,6 +233,7 @@ nav:
           - PySpark to SQL: 09_EXAMPLES/PYSPARK_TO_SQL.md
           - PySpark to Delta: 09_EXAMPLES/PYSPARK_TO_DELTA.md
           - Streaming PySpark: 09_EXAMPLES/STREAMING_PYSPARK.md
+          - Portable Transformation: 09_EXAMPLES/PORTABLE_TRANSFORMATION.md
   - Reference:
       - Overview: 10_REFERENCE/README.md
       - CLI: 10_REFERENCE/CLI.md
@@ -263,8 +267,10 @@ nav:
           - ETL Reliability Plan: 11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md
           - SQLModel Integration Plan: 11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md
           - SparkForge Adoption: 11_DEVELOPMENT/SPARKFORGE_ADOPTION.md
+          - Portable Transformation Plan: 11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md
   - Specifications:
       - Overview: specifications/README.md
       - DTCS: specifications/DTCS_SPEC.md
       - DPCS: specifications/DPCS_SPEC.md
+      - Portable Transformation IR: specifications/PORTABLE_TRANSFORM_IR_SPEC.md
   - Manifesto: ETLANTIC_MANIFESTO.md

@@ -17,6 +17,9 @@ interfaces.
 
 - [Configuration](CONFIGURATION.md) (`etlantic.toml` fantasy)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (proposed names beyond shipped)
+- [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
+  and [Portable Functions](../04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md)
+  (planned across 0.11+)
 
 See [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) for the
 stability vocabulary used throughout the project.

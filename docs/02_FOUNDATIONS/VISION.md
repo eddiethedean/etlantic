@@ -1,5 +1,10 @@
 # Vision
 
+The 0.11+ roadmap strengthens portability beyond typed interfaces: common
+relational transformation behavior can be authored once through a
+PySpark-inspired symbolic API and compiled by conformant Polars, PySpark,
+Pandas, SQL, and future plugins.
+
 ## Our Mission
 
 ETLantic exists to make data engineering as approachable,

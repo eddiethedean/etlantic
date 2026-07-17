@@ -3,6 +3,11 @@
 **Status: shipped in 0.7.0** (`etlantic.spark/1`). The reference plugin is
 `etlantic-pyspark`.
 
+!!! note "Future compiler role"
+    Compilation of PySpark-inspired `etlantic.transform/1` definitions to
+    native Spark expressions is planned for 0.13 and follows the
+    [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
+
 A **PySpark Plugin** implements the ETLantic PySpark Plugin API for Apache
 Spark execution environments.
 

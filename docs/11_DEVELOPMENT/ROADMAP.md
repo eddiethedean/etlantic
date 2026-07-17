@@ -891,6 +891,156 @@ coordination engine while remaining the medallion-focused facade.
 See [SparkForge Feature Adoption](SPARKFORGE_ADOPTION.md) for the detailed
 feature assessment and adapter sequence.
 
+## 0.11 — Portable Transformation Kernel
+
+### Deliver
+
+- `@Transformation.portable` symbolic definition registration
+- PySpark-inspired DataFrame, Column, and `functions as F` authoring surface
+- immutable `FrameExpr`, `ColumnExpr`, and core relational/scalar nodes
+- `etlantic.transform/1` as ETLantic's concrete DTCS Transformation Plan
+  profile
+- portable type system, column resolution, type inference, and output-contract
+  validation
+- bounded canonical serialization and deterministic fingerprints
+- prohibited action, arbitrary-object, raw SQL, callable, and secret-capture
+  diagnostics
+- `PMXFORMxxx` diagnostic namespace and expression source paths
+- DTCS portable-definition representation and compatibility fixtures
+
+### Acceptance scenarios
+
+- project, filter, with-column, drop, rename, alias, distinct, limit, sorting,
+  comparison, boolean, arithmetic, cast, null, conditional, coalesce, and core
+  string expressions normalize deterministically;
+- a portable definition is validated without source data or backend access;
+- every declared output maps to exactly one typed relational expression;
+- equivalent definitions produce identical canonical IR fingerprints;
+- hostile depth, node count, literal size, executable objects, and secret values
+  fail within configured budgets.
+
+### Exit gate
+
+Portable definitions generate validated, inspectable DTCS-aligned IR but do not
+yet execute through an engine plugin.
+
+## 0.12 — Portable Planning and Polars Compiler
+
+### Deliver
+
+- portable compiler discovery and operation-level capability descriptors
+- profile policy: `require`, `prefer`, or `native`
+- portable/native implementation selection with no silent fallback
+- Pipeline Plan schema fields for implementation kind, IR fingerprint,
+  compiler identity, requirements, and capability decisions
+- `plan explain`, lineage, report, and diagnostic rendering
+- `etlantic-polars` compiler for the 0.11 kernel
+- native `pl.Expr` lowering, eager execution, and `LazyFrame` preservation
+- output-role, validation, ownership, metrics, and materialization integration
+- cache/artifact identities including definition and compiler fingerprints
+
+### Acceptance scenarios
+
+- a pipeline executes a portable definition on Polars without a
+  Polars-specific transformation callable;
+- adjacent portable Polars steps remain lazy until a declared boundary;
+- unsupported functions fail during planning with an exact expression path;
+- plans and reports explain compiler selection and any allowed native fallback;
+- serialized plans contain no compiled closures, Polars objects, parameter
+  values, source rows, or resolved secrets.
+
+### Exit gate
+
+The kernel has one complete execution path and planning treats portable
+compilation as a first-class, deterministic implementation kind.
+
+## 0.13 — PySpark Compiler and Relational Expansion
+
+### Deliver
+
+- `etlantic-pyspark` compiler using native Spark DataFrame and Column
+  expressions
+- explicit prohibition of automatic Python and Pandas UDF fallback
+- join, union-by-name, grouping, aggregation, deduplication, and complete sort
+  semantics
+- relation-scoped column resolution and collision diagnostics
+- aggregate typing, null behavior, and empty-input rules
+- Polars implementations for the expanded relational operation set
+- shared Polars/PySpark semantic fixtures and differential execution tests
+
+### Acceptance scenarios
+
+- one portable multi-input aggregate pipeline produces contract-equivalent
+  results on Polars and PySpark;
+- Spark plans remain Catalyst-visible and contain no undeclared UDF fallback;
+- join null matching, duplicate columns, sort null placement, and empty
+  aggregates follow the normative portable semantics;
+- lazy regions preserve logical step and expression attribution.
+
+### Exit gate
+
+Two independent lazy compilers prove that the portable model is neither
+Polars-specific nor merely a PySpark wrapper.
+
+## 0.14 — Pandas Compiler and Conformance SDK
+
+### Deliver
+
+- `etlantic-pandas` compiler for every honestly supported kernel and relational
+  capability
+- index-neutral, eager execution semantics and explicit ownership copies
+- nullable dtype and optional Arrow interchange handling
+- public `etlantic.testing.portable_transform_conformance` suite
+- capability-selected mandatory fixtures for operations, functions, types, and
+  semantic modes
+- property tests for canonicalization, type promotion, and three-valued logic
+- differential datasets covering nulls, NaN, extremes, decimals, Unicode,
+  timestamps, ordering, joins, and empty inputs
+- third-party compiler documentation and compatibility policy
+
+### Acceptance scenarios
+
+- Pandas passes every fixture associated with each capability it advertises;
+- unsupported lazy or type semantics fail at planning rather than degrading;
+- plugin CI fails when a capability is claimed without its conformance cases;
+- normalized results remain comparable across Polars, PySpark, and Pandas.
+
+### Exit gate
+
+Portable compiler conformance becomes a public SDK contract suitable for
+third-party engines.
+
+## 0.15 — Safe SQL Lowering and Advanced Expressions
+
+### Deliver
+
+- lowering from `etlantic.transform/1` to the existing typed ETLantic SQL IR
+- dialect capability mapping, safe identifiers, and bound parameters
+- SQL region/CTE fusion with logical expression attribution
+- prohibition of trusted raw SQL fragments in portable definitions
+- window specification and native window-function lowering
+- carefully gated date/time and initial array, map, and struct families
+- full compiler compatibility matrix and native-to-portable migration guide
+- runnable portable examples across supported reference engines
+
+### Acceptance scenarios
+
+- supported portable definitions compile to parameterized SQL and match the
+  reference semantic corpus;
+- no literal or parameter value is interpolated into generated SQL;
+- dialect gaps fail at planning without raw SQL or UDF approximation;
+- each advanced function ships only with normative semantics, two compiler
+  implementations, capability vocabulary, and shared fixtures;
+- existing native implementations remain compatible and selectable explicitly.
+
+### Exit gate
+
+Portable transformations span dataframe, distributed, and relational engines
+with an auditable, secure compiler model.
+
+See the
+[Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md).
+
 ## 1.0 — Stable Foundation
 
 ### Public stability
@@ -933,6 +1083,8 @@ The release candidate must demonstrate:
 10. Plugin conformance and production trust-policy enforcement.
 11. Security-boundary preservation through planning and optimization.
 12. A representative SparkForge pipeline using ETLantic underneath.
+13. One portable definition with conformant Polars, PySpark, Pandas, and SQL
+    realizations for their advertised capability intersection.
 
 ### Exit gate
 

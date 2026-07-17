@@ -1,5 +1,10 @@
 # DPCS
 
+DPCS continues to own pipeline topology. Portable transformation expressions
+belong to referenced DTCS Transformation Plans; they are not duplicated into
+the DPCS graph. Plans retain links from each step to its selected portable or
+native realization.
+
 ## Overview
 
 ETLantic adopts the **Data Pipeline Contract Standard (DPCS)** as the

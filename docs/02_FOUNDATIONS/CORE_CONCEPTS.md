@@ -57,6 +57,24 @@ class NormalizeCustomers(Transformation):
 The declaration defines ports and parameters. DTCS defines its portable
 semantics. It does not commit the transformation to a dataframe engine.
 
+### Portable Definition (0.11+ design)
+
+A portable definition describes common relational behavior once using
+PySpark-inspired symbolic DataFrame and Column expressions:
+
+```python
+from etlantic.transform import functions as F
+
+
+@NormalizeCustomers.portable
+def normalize(customers, minimum_age):
+    return customers.filter(F.col("age") >= minimum_age)
+```
+
+ETLantic normalizes this definition into the closed
+`etlantic.transform/1` IR. Plugins compile that IR to native operations. The
+definition does not process data and is not a native implementation.
+
 ## Implementation
 
 An implementation satisfies a transformation for a specific execution
@@ -70,6 +88,9 @@ def normalize_polars(customers, minimum_age):
 
 One transformation may have multiple implementations. The planner selects a
 compatible implementation for the chosen profile.
+
+Native implementations remain the explicit escape hatch for behavior outside
+the portable language or for approved backend-specific optimization.
 
 ## Port
 
@@ -140,6 +161,7 @@ A profile binds portable names to an environment:
 - Resource providers
 - Concurrency limits
 - Backend options
+- Portable-versus-native implementation policy
 
 Profiles may choose how a pipeline runs. They may not change what the pipeline
 means.
@@ -167,6 +189,7 @@ A capability is a feature a plugin can preserve, such as:
 - Dynamic task mapping
 - SQL window functions
 - Spark watermarks
+- Portable transformation operations, functions, types, and semantic modes
 
 Planning compares required semantics with available capabilities.
 
@@ -178,6 +201,7 @@ by planning.
 It contains:
 
 - Resolved implementations
+- Portable definition and compiler fingerprints when selected
 - Resolved bindings
 - Dependency order
 - Execution regions

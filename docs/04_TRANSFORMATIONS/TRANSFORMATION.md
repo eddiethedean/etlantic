@@ -9,6 +9,9 @@ the work is executed.
 Execution implementations are registered separately, allowing the same
 transformation contract to run on different execution engines.
 
+The accepted 0.11+ design also permits a single portable relational definition
+that compatible plugins compile. This API is not available in 0.10.
+
 ## Design Goals
 
 A transformation should:
@@ -18,6 +21,7 @@ A transformation should:
 - Clearly declare inputs, outputs, and parameters.
 - Generate a DTCS artifact.
 - Support multiple interchangeable implementations.
+- Optionally carry one backend-independent portable definition.
 
 ## Basic Example
 
@@ -81,6 +85,29 @@ def normalize(customers, minimum_age):
 
 The transformation contract remains unchanged while execution varies.
 
+## Portable Definition (0.11+)
+
+```python
+from etlantic.transform import functions as F
+
+
+@NormalizeCustomers.portable
+def normalize(customers, minimum_age):
+    return (
+        customers
+        .filter(F.col("age") >= minimum_age)
+        .select("customer_id", "full_name")
+    )
+```
+
+The function receives symbolic inputs during definition building and produces
+an immutable transformation IR. It never receives source rows. Engine plugins
+compile supported operations to Polars, Pandas, SQL, PySpark, or future native
+expressions.
+
+See [Portable Transformations](PORTABLE_TRANSFORMATIONS.md) and the
+[function reference](PORTABLE_FUNCTIONS.md).
+
 ## Synchronous and Asynchronous Execution
 
 ETLantic supports both:
@@ -121,6 +148,8 @@ ETLantic validates:
 - Output contract compatibility
 - Parameter types
 - Implementation signatures
+- Portable expression names, types, outputs, and bounded structure
+- Compiler operation and semantic capabilities
 - Plugin capability requirements
 
 Validation occurs before execution planning.
@@ -135,6 +164,7 @@ During planning, ETLantic resolves:
 - Runtime bindings
 - Execution profiles
 - Plugin selection
+- Portable compiler selection and native fallback policy
 - Validation requirements
 
 ## Best Practices
@@ -144,6 +174,8 @@ During planning, ETLantic resolves:
 - Separate interface from implementation.
 - Prefer typed parameters over unstructured dictionaries.
 - Support multiple execution engines where practical.
+- Prefer portable definitions for common relational behavior once the feature
+  ships; use native implementations for explicit backend-specific behavior.
 
 ## Anti-Patterns
 
@@ -156,8 +188,9 @@ Avoid:
 
 ## Key Principle
 
-> A Transformation describes **what** a data operation does. Implementations
-describe **how** it runs.
+> A Transformation declares its typed contract. A portable definition may
+> describe backend-independent relational behavior, while plugins and native
+> implementations determine how that behavior runs.
 
 ## Next Step
 

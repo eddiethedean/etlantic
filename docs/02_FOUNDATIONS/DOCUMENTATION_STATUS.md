@@ -74,7 +74,10 @@ HTML lineage exporters (`etlantic.viz`), `etlantic-keyring`,
 
 **Still accepted design until later milestones:** managed Spark providers
 (Databricks/EMR/Connect), Dagster/Prefect compilers, and remaining Plugin SDK
-surfaces.
+surfaces. Portable transformations are sequenced across 0.11-0.15:
+PySpark-inspired symbolic authoring and IR, Polars compilation, PySpark and
+relational expansion, Pandas/conformance, then safe SQL lowering and advanced
+expressions.
 
 ## Normative Authority
 

@@ -1,5 +1,10 @@
 # Pipeline Validation
 
+For portable steps in 0.11+, validation additionally resolves referenced
+columns, infers expression types and nullability, verifies named outputs against
+contracts, enforces IR budgets, and checks exact compiler capabilities before
+execution.
+
 Pipeline validation ensures that a pipeline is **correct before it executes**.
 
 One of ETLantic's core design goals is to detect modeling mistakes during

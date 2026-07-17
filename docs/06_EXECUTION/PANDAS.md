@@ -3,6 +3,9 @@
 **Status: shipped in 0.5.0** as the compatibility dataframe backend
 (`etlantic-pandas`).
 
+The portable transformation compiler described below is planned for 0.14 and
+is not part of the current 0.10 plugin.
+
 ## Install
 
 ```bash
@@ -19,6 +22,15 @@ pip install 'etlantic-pandas[arrow]'  # optional
 - Object-dtype ambiguity produces structured warnings
 - Arrow interchange is used when PyArrow is installed; otherwise a documented
   fallback copies values and records the conversion
+
+## Portable compiler (planned 0.14)
+
+The Pandas compiler will lower supported `etlantic.transform/1` expressions to
+DataFrame and Series operations while declaring eager execution and ownership
+copies honestly. Portable behavior cannot depend on a meaningful Pandas index.
+
+Where Pandas cannot preserve a required type, null, ordering, or lazy semantic,
+planning fails instead of approximating the operation.
 
 ## Example
 

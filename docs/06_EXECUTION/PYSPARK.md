@@ -13,6 +13,11 @@ model. ODCS, DTCS, DPCS, contracts, transformation interfaces, lineage, and
 validation semantics remain portable regardless of whether execution occurs on
 Spark, SQL, Polars, Pandas, or another backend.
 
+ETLantic's proposed portable transformation syntax is deliberately inspired by
+PySpark's DataFrame and Column APIs. It uses ETLantic symbolic objects and
+semantics rather than importing PySpark into core. The PySpark compiler is
+planned for 0.13; current 0.10 execution uses native implementations.
+
 ## Goals
 
 The PySpark backend should:
@@ -72,6 +77,24 @@ def normalize_customers(...):
 
 The planner selects the Spark implementation only when its capability
 requirements are satisfied.
+
+## Portable compiler (planned 0.13)
+
+```python
+from etlantic.transform import functions as F
+
+
+@NormalizeCustomers.portable
+def normalize(customers, lowercase_email):
+    email = F.lower(F.col("email"))
+    return customers.withColumn("email", email)
+```
+
+The PySpark plugin will compile this IR to native Spark DataFrame and Column
+expressions so Catalyst can inspect and optimize it. Automatic Python or
+Pandas UDF fallback is forbidden. If Spark cannot preserve an ETLantic
+semantic, planning rejects the step or requires an explicit native
+implementation policy.
 
 ## Planner Selection
 
@@ -175,7 +198,7 @@ Execution environments should not affect logical pipeline semantics.
 
 Avoid:
 
-- Embedding Spark code in pipeline definitions.
+- Embedding native Spark code in portable definitions or pipeline declarations.
 - Calling Spark actions unnecessarily.
 - Using Python UDFs when native expressions exist.
 - Bypassing contract validation.

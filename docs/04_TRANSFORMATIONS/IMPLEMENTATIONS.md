@@ -26,6 +26,25 @@ def normalize(customers, minimum_age):
     ...
 ```
 
+## Portable Definitions (Future Design)
+
+ETLantic plans to support one closed, PySpark-inspired relational definition
+that engine plugins compile:
+
+```python
+from etlantic.transform import functions as F
+
+
+@NormalizeCustomers.portable
+def normalize(customers, minimum_age):
+    return customers.filter(F.col("age") >= minimum_age)
+```
+
+This surface is not available in 0.10. Native `@implementation()` registration
+will remain supported for optimized and non-portable behavior. See
+[Portable Transformations](PORTABLE_TRANSFORMATIONS.md) for the accepted
+design.
+
 ## Why Separate Them?
 
 Keeping implementations separate allows:

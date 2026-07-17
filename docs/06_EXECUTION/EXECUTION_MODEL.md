@@ -27,6 +27,10 @@ External runtime
 PipelineRunReport, diagnostics, events, and lineage
 ```
 
+For portable steps, the planned implementation includes a portable IR
+fingerprint and selected compiler. Compilation produces backend-native
+expressions without placing live compiled objects in the serialized plan.
+
 ## Execution Responsibilities
 
 ETLantic coordinates:
@@ -50,6 +54,7 @@ Plugins implement:
 - Backend cancellation
 - Artifact transfer
 - Platform-specific observability
+- Portable transformation compilation for capabilities they advertise
 
 ## Execution Units
 
