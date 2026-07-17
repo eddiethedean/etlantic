@@ -1,0 +1,14 @@
+{
+  "actions": [
+    "dtcs:project",
+    "dtcs:with_fields"
+  ],
+  "fingerprint": "e4c5f9708068bef194a86b0f5834b0629874377f868fae239411ac50ef8ec1ef",
+  "functions": [
+    "dtcs:to_string"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-conversion/1"
+  ]
+}

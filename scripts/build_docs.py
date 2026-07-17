@@ -10,9 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-_MKDOCS_COMMANDS = frozenset(
-    {"build", "serve", "gh-deploy", "get-deps", "new", "help"}
-)
+_MKDOCS_COMMANDS = frozenset({"build", "serve", "gh-deploy", "get-deps", "new", "help"})
 
 
 def main(argv: list[str] | None = None) -> int:

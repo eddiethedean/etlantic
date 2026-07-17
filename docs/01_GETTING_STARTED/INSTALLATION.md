@@ -1,6 +1,6 @@
 # Installation
 
-ETLantic 0.10.0 provides the typed modeling kernel, contract interoperability
+ETLantic 0.11.0 provides the typed modeling kernel, contract interoperability
 (ODCS/DTCS/DPCS), multi-phase validation, profiles, deterministic planning,
 a local runtime that executes plans with Python callables, in-memory
 artifacts, and stdlib JSON/CSV bindings, plus optional Polars, Pandas, SQL,
@@ -15,14 +15,14 @@ PySpark, and Airflow plugins. Structured Streaming APIs are experimental.
 
 ```bash
 python3.11 -m pip install --upgrade pip
-python3.11 -m pip install 'etlantic>=0.10.0'
+python3.11 -m pip install 'etlantic>=0.11.0'
 etlantic --version
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add 'etlantic>=0.10.0'
+uv add 'etlantic>=0.11.0'
 uv run etlantic --version
 ```
 
@@ -36,7 +36,7 @@ python -c "import etlantic; print(etlantic.__version__)"
 
 ```powershell
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic>=0.10.0'
+py -3.11 -m pip install 'etlantic>=0.11.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -128,7 +128,7 @@ uv sync --group sqlmodel
 ## Upgrade
 
 ```bash
-python -m pip install --upgrade 'etlantic>=0.10.0'
+python -m pip install --upgrade 'etlantic>=0.11.0'
 # or
 uv lock --upgrade-package etlantic
 ```

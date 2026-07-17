@@ -278,8 +278,11 @@ def main() -> None:
     if "RUNTIME_CONFIGURATION.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing RUNTIME_CONFIGURATION.md")
     api_ref = (ROOT / "docs/10_REFERENCE/API_REFERENCE.md").read_text(encoding="utf-8")
-    if "Available in ETLantic 0.10" not in api_ref:
-        raise SystemExit("API_REFERENCE.md must claim Available in ETLantic 0.10")
+    major_minor = ".".join(package_version.split(".")[:2])
+    if f"Available in ETLantic {major_minor}" not in api_ref:
+        raise SystemExit(
+            f"API_REFERENCE.md must claim Available in ETLantic {major_minor}"
+        )
     for mod in ("etlantic.spark", "etlantic.orchestration", "etlantic.viz"):
         if mod not in api_ref:
             raise SystemExit(f"API_REFERENCE.md missing {mod}")

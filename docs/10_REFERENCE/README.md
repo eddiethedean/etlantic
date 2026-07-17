@@ -13,7 +13,8 @@ interfaces.
 - [Diagnostics](DIAGNOSTICS.md)
 - [Exceptions](EXCEPTIONS.md)
 - DTCS 3.0 Transformation Plan / Rich Portable Analytics models through
-  `dtcs>=0.13` (ETLantic authoring and compilers remain future)
+  `dtcs>=0.13`; ETLantic `@Transformation.portable` authoring ships in 0.11
+  (compilers remain future)
 
 ## Future design / proposed 1.0
 

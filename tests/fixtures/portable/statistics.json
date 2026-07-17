@@ -1,0 +1,14 @@
+{
+  "actions": [
+    "dtcs:aggregate"
+  ],
+  "fingerprint": "31b93f61db0800f7092ada854a7e63cdfc037b0e3c79878fb5388a66bfffb84e",
+  "functions": [
+    "dtcs:variance"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-relational/1",
+    "dtcs:profile/portable-statistics/1"
+  ]
+}

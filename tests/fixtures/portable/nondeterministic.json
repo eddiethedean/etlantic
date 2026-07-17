@@ -1,0 +1,15 @@
+{
+  "actions": [
+    "dtcs:project",
+    "dtcs:with_fields"
+  ],
+  "fingerprint": "5799716e9089f4d5200af21fe1725283b96aadc360dc6bd5568b865736c85f52",
+  "functions": [
+    "dtcs:to_string",
+    "dtcs:uuid"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-nondeterministic/1"
+  ]
+}

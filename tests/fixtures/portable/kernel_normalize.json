@@ -1,0 +1,10 @@
+{
+  "planIdentity": "dtcs.transform-plan/2",
+  "profile": "dtcs:profile/portable-relational-kernel/2",
+  "actions": [
+    "dtcs:filter",
+    "dtcs:with_fields",
+    "dtcs:project"
+  ],
+  "fingerprint": "4da8f7caccfac00a41cdafde193e14bbb5ab838eabe6ba495fb62462274e1229"
+}

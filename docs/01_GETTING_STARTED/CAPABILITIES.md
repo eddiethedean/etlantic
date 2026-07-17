@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-ETLantic 0.10.0 is an alpha release. This page is the shortest answer to
+ETLantic 0.11.0 is an alpha release. This page is the shortest answer to
 "What can I use today?"
 
-## Available in 0.10
+## Available in 0.11
 
 | Capability | Status |
 |---|---|
@@ -41,9 +41,10 @@ ETLantic 0.10.0 is an alpha release. This page is the shortest answer to
 | Optional OpenTelemetry adapter | Available (`etlantic[otel]`) |
 | Agent guidance generators | Available |
 | SparkForge migration adapter | Available (`etlantic-sparkforge`) |
-| DTCS 3.0 Transformation Plan models and Rich Portable Analytics profiles | Available through `dtcs>=0.13` (`dtcs.transform-plan/2`; v1 readable); ETLantic full authoring planned for 0.11, compilers 0.12–0.15 |
+| DTCS 3.0 Transformation Plan models and Rich Portable Analytics profiles | Available through `dtcs>=0.13` |
+| `@Transformation.portable` / `etlantic.transform` authoring → `dtcs.transform-plan/2` | Available (compilers remain 0.12–0.15) |
 
-## Not included in 0.10
+## Not included in 0.11
 
 | Capability | Status |
 |---|---|
@@ -55,7 +56,6 @@ ETLantic 0.10.0 is an alpha release. This page is the shortest answer to
 | FastAPI control plane | Continues in 1.1 |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
-| PySpark-inspired `@Transformation.portable` authoring | Planned for 0.11 (full DTCS 3.0 facade → `dtcs.transform-plan/2`) |
 | Portable Polars compiler | Planned for 0.12 |
 | Portable PySpark compiler and relational compiler claims | Planned for 0.13 |
 | Portable Pandas compiler and conformance SDK | Planned for 0.14 |

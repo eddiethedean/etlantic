@@ -7,35 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-17
+
+### Added
+
+- `@Transformation.portable` symbolic authoring over `etlantic.transform`
+  (`FrameExpr`, `ColumnExpr`, `functions as F`, `Window`, complex/lambda helpers)
+- Emission of validated, fingerprint-stable `dtcs.transform-plan/2` plans for
+  Portable Relational and Rich Portable Analytics profile families
+- `Transformation.to_transform_plan()` / `portable_fingerprint()` APIs
+- `PMXFORM` authoring diagnostics and definition budgets
+- Golden portable fixtures under `tests/fixtures/portable/`
+
 ### Documentation
 
-- Added a current-version user guide and isolated design proposals from the
-  installable 0.10 learning path
-- Added runnable file, Polars, Pandas, SQL, PySpark, Airflow, and CI guides
-- Added production-readiness, support, governance, conduct, deprecation, and
-  reproducible-performance guidance
-- Added runnable-document companion validation to the documentation gate
-- Corrected the quickstart CLI boundary for process-local memory storage
-- Expanded core public API behavioral contracts and docstrings
-- Updated the DTCS authority boundary for specification 2.0.0 and toolkit
-  0.12.0; the Portable Relational Profile is now upstream-published while
-  ETLantic authoring/compiler integration remains future work
-- Updated the complete portable-transformation documentation set with exact
-  DTCS 2.0 action, function, operator, value-state, and profile mappings;
-  synchronized examples, backend guides, Plugin SDK requirements, security,
-  compatibility, architecture, and the 0.11–0.15 roadmap
-- Integrated published DTCS 3.0.0 / `dtcs` 0.13.0 across portable plans and
-  docs: Rich Portable Analytics profiles, `dtcs.transform-plan/2` (v1
-  readable), publication records, IR profile, roadmap readiness gates,
-  compatibility matrix, and dependency floor (ETLantic portable authoring
-  still planned for 0.11–0.15)
-- Refined roadmap 0.11 to full portable authoring scope: facade → validated
-  `dtcs.transform-plan/2` for Portable Relational and Rich Portable Analytics;
-  compilers and profile graduation remain 0.12–0.15
+- Marked portable authoring as shipped in 0.11; compilers remain 0.12–0.15
+- Refined roadmap 0.11 to full authoring scope and marked the milestone shipped
 
 ### Changed
 
-- Raised the DTCS toolkit dependency floor from 0.12 to 0.13
+- Package version set to 0.11.0 across core and optional plugins
+- Raised the DTCS toolkit dependency floor from 0.12 to 0.13 (carried from
+  unreleased 0.10 docs integration)
 
 ## [0.10.0] - 2026-07-17
 
@@ -401,6 +394,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.11.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.11.0
 [0.10.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.10.0
 [0.9.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.9.0
 [0.8.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.8.0

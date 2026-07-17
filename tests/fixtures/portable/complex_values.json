@@ -1,0 +1,16 @@
+{
+  "actions": [
+    "dtcs:project",
+    "dtcs:with_fields"
+  ],
+  "fingerprint": "d7f35dec5df8c0f22342375bada924a9b5afc0c865ae1be2633bb1f0f8c8f4d1",
+  "functions": [
+    "dtcs:array",
+    "dtcs:size",
+    "dtcs:to_string"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-complex-values/1"
+  ]
+}

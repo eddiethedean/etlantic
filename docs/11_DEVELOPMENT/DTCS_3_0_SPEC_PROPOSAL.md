@@ -23,9 +23,9 @@
 |---|---|
 | Depend on `dtcs>=0.13` | Required |
 | Author/validate/serialize plans via public `dtcs` models | Available through the toolkit |
-| `@Transformation.portable` / `etlantic.transform` | Planned 0.11+ |
+| `@Transformation.portable` / `etlantic.transform` | Shipped in 0.11 |
 | Backend compilers claiming 3.0 profiles | Planned 0.12–0.15 |
-| Prefer `dtcs.transform-plan/2` for new portable IR | Planned with 0.11 full authoring |
+| Prefer `dtcs.transform-plan/2` for new portable IR | Shipped with 0.11 full authoring |
 
 ## 1. Executive summary (original proposal)
 

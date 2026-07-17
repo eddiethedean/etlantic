@@ -1,9 +1,9 @@
 # Portable Transformation Function Reference
 
-!!! warning "Proposed 0.11+ API—not available in ETLantic 0.10"
-    This reference inventories the planned PySpark-inspired portable API. A
-    function becomes supported only when its semantics, IR node, capability,
-    and conformance fixtures are accepted.
+!!! success "Available in ETLantic 0.11 (authoring)"
+    Facade methods lower to published DTCS identifiers and emit profile
+    requirements on the portable plan. Compiler claims for each profile remain
+    planned for 0.12–0.15.
 
 Portable functions are imported through one stable namespace:
 

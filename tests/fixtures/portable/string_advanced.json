@@ -1,0 +1,15 @@
+{
+  "actions": [
+    "dtcs:project",
+    "dtcs:with_fields"
+  ],
+  "fingerprint": "e5d53f832f69643239c98f6ec86c4bab32cbc830669c1bcfa02e7608f9f7506e",
+  "functions": [
+    "dtcs:regex_replace",
+    "dtcs:trim"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-string-advanced/1"
+  ]
+}

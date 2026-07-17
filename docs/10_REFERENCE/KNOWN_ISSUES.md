@@ -2,9 +2,9 @@
 
 - The project is alpha and does not promise 1.0 API stability.
 - Portable `@Transformation.portable` definitions and
-  `etlantic.transform/1` compilers are planned for 0.11+ and are not available
-  in 0.10. DTCS 3.0 plan models and profiles are published through
-  `dtcs>=0.13` (`dtcs.transform-plan/2`; v1 readable), but current plugins
+  `etlantic.transform/1` authoring is available in 0.11; compilers are planned for 0.12+ and are not available
+  in 0.11 for execution. Authoring emits `dtcs.transform-plan/2` through
+  `@Transformation.portable`; current plugins
   still require native `@implementation(engine)` callables.
 - The planned PySpark-inspired syntax will intentionally support a closed
   subset; actions, arbitrary Python tracing, raw SQL expressions, and silent
@@ -46,7 +46,7 @@
 - Generated plans should be regenerated after incompatible schema changes
   rather than edited by hand.
 - Docs on `main` may briefly lead a published tag; pin
-  `etlantic==0.10.0` (or the version you evaluated) in production installs.
+  `etlantic==0.11.0` (or the version you evaluated) in production installs.
 
 Release-specific fixes and changes are recorded in the
 [changelog](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md).

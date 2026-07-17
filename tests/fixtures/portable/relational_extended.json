@@ -1,0 +1,12 @@
+{
+  "actions": [
+    "dtcs:intersect",
+    "dtcs:project"
+  ],
+  "fingerprint": "37bd9d8cbafe9fc0c62e8299ec92e470c09030aa637525e02640a61e3237090e",
+  "functions": [],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-relational-extended/1"
+  ]
+}

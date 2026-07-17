@@ -895,7 +895,7 @@ feature assessment and adapter sequence.
 
 ## 0.11 — Portable Authoring and Transformation Plan
 
-**Status: planned — not released in 0.10.**
+**Status: shipped in 0.11.0.**
 
 **DTCS readiness gate: satisfied upstream.** DTCS 3.0 and `dtcs` 0.13 publish
 `dtcs.transform-plan/2` (v1 readable), Portable Relational profiles, Rich

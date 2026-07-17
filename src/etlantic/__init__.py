@@ -1,7 +1,8 @@
 """ETLantic — typed, contract-driven data pipeline modeling.
 
-0.10 adds the optional SparkForge migration adapter (``etlantic-sparkforge``)
-that maps medallion pipelines onto existing ETLantic models without introducing
+0.11 adds ``@Transformation.portable`` authoring through ``etlantic.transform``,
+emitting ``dtcs.transform-plan/2``. Optional SparkForge migration adapter
+(``etlantic-sparkforge``) remains available without introducing
 bronze/silver/gold into core. Structured Streaming APIs remain experimental.
 """
 

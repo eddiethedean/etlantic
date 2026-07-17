@@ -4,7 +4,7 @@ Status: Internal project plan
 DTCS plan protocol: `dtcs.transform-plan/2` (v1 readable)  
 ETLantic authoring profile: `etlantic.transform/1`  
 Compiler protocol: `etlantic.transform-compiler/1`  
-Current release boundary: not available in 0.10
+Current release boundary: authoring shipped in 0.11.0; compilers from 0.12
 DTCS baseline: specification 3.0.0 / toolkit `dtcs>=0.13`
 
 ## Outcome

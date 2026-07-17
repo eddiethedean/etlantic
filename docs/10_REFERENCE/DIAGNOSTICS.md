@@ -165,6 +165,19 @@ PMXFORM8xx security and bounded-input rejection
 PMXFORM9xx internal invariants
 ```
 
+Shipped authoring codes in 0.11 include:
+
+| Code | Meaning |
+|---|---|
+| `PMXFORM101` | Portable definition signature mismatch or excluded `F.expr` |
+| `PMXFORM110` | Return value is not a `FrameExpr` / output mapping |
+| `PMXFORM201` | Declared output missing from portable return value |
+| `PMXFORM202` | Undeclared output returned |
+| `PMXFORM203` | Single `FrameExpr` return with multiple outputs |
+| `PMXFORM801`–`803` | Callable / binary / secret capture rejection |
+| `PMXFORM810`–`812` | Document size / node count / depth budget exceeded |
+| `PMXFORM901` | Unexpected plan protocol identity |
+
 ## Execution Diagnostics
 
 Execution findings should distinguish:

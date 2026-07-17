@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.10.0.** Signatures and docstrings below
+> **Status: Available in ETLantic 0.11.0.** Signatures and docstrings below
 > are generated from the package source.
 
 ## Start here by persona
@@ -32,12 +32,10 @@ from etlantic import (
 
 ## Authoring
 
-!!! note "Proposed 0.11+ portable authoring API"
+!!! note "Portable authoring (0.11)"
     `etlantic.transform`, `@Transformation.portable`, symbolic DataFrame and
-    Column objects, and `functions as F` are accepted future design and are not
-    importable in ETLantic 0.10. They will normalize to published DTCS 3.0
-    `dtcs.transform-plan/2` models (v1 readable) rather than define independent
-    semantics. See
+    Column objects, and `functions as F` are available and normalize to published
+    DTCS 3.0 `dtcs.transform-plan/2` models. Compilers remain 0.12+. See
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).
 
 ### Core behavioral contracts

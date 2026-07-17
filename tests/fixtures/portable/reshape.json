@@ -1,0 +1,12 @@
+{
+  "actions": [
+    "dtcs:explode",
+    "dtcs:project"
+  ],
+  "fingerprint": "0e6cb6d50c65b9ec285c0ae30f58a6ef92e74f18ad7a4018750c20dba70cbbc8",
+  "functions": [],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-reshape/1"
+  ]
+}

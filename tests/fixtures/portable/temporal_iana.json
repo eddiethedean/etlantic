@@ -1,0 +1,15 @@
+{
+  "actions": [
+    "dtcs:project",
+    "dtcs:with_fields"
+  ],
+  "fingerprint": "649b80f5e89842db9087610ec3cbcb068b4be3985c771000e0fabedd16027494",
+  "functions": [
+    "dtcs:at_iana_timezone",
+    "dtcs:to_string"
+  ],
+  "planIdentity": "dtcs.transform-plan/2",
+  "profiles": [
+    "dtcs:profile/portable-temporal-iana/1"
+  ]
+}

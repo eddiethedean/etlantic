@@ -1,9 +1,8 @@
 # Portable Transformations
 
-!!! warning "Accepted 0.11+ design—not available in ETLantic 0.10"
-    This chapter defines the intended authoring experience for portable
-    transformations. The API is a design contract for implementation work, not
-    a currently importable surface.
+!!! success "Available in ETLantic 0.11"
+    `@Transformation.portable` and `etlantic.transform` emit validated
+    `dtcs.transform-plan/2` IR. Backend compilers remain planned for 0.12+.
 
 A portable transformation expresses dataframe logic once and lets ETLantic
 plugins compile it for Polars, Pandas, SQL, PySpark, and future engines.

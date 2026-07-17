@@ -25,7 +25,7 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-**0.10.0** ships validation, profiles, an immutable secret-free
+**0.11.0** ships validation, profiles, an immutable secret-free
 `PipelinePlan`, local Python execution, runtime secret resolution, run reports,
 memory/callable/JSON/CSV storage, a versioned dataframe protocol with Polars
 and Pandas plugins, a versioned SQL protocol with the `etlantic-sql`
@@ -47,11 +47,9 @@ Structured Streaming APIs are experimental.
 Many chapters still describe the intended 1.0 product. Design studies under
 Examples are not a promise that every illustrated API is already available.
 
-Portable PySpark-inspired transformation authoring is accepted future design
-sequenced across 0.11-0.15. Its semantics are already published by DTCS 3.0
-through `dtcs.transform-plan/2` and the portable/Rich Analytics profiles
-(DTCS 2.0 plan v1 remains readable); the ETLantic facade and compilers are not
-shipped. Start with
+Portable PySpark-inspired authoring ships in 0.11 via `@Transformation.portable`
+and `etlantic.transform`, emitting `dtcs.transform-plan/2`. Compilers remain
+sequenced across 0.12-0.15. Start with
 [Portable Transformations](04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) for
 the proposed UX and the [roadmap](11_DEVELOPMENT/ROADMAP.md) for delivery
 phases; it is not a 0.10 importable API.

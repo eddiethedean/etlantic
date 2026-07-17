@@ -133,6 +133,7 @@ class Transformation:
 
     __ports__: ClassVar[tuple[PortDefinition, ...]] = ()
     __implementations__: ClassVar[dict[str, ImplementationRecord]] = {}
+    __portable__: ClassVar[Any | None] = None
     _definition_error: ClassVar[str | None] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -140,6 +141,7 @@ class Transformation:
         if cls is Transformation:
             return
         cls.__implementations__ = {}
+        cls.__portable__ = None
         try:
             cls.__ports__ = tuple(_collect_ports(cls))
             cls._definition_error = None
@@ -210,6 +212,67 @@ class Transformation:
             return fn
 
         return decorator
+
+    @classmethod
+    def portable(cls, fn: F) -> F:
+        """Register a portable symbolic definition for this transformation.
+
+        The callable is invoked with symbolic ``FrameExpr`` inputs and
+        ``ParameterRef`` parameters during trusted import. It must return a
+        ``FrameExpr`` or a mapping of declared output names to ``FrameExpr``.
+
+        Native :meth:`implementation` callables remain available as escape
+        hatches. Portable definitions emit ``dtcs.transform-plan/2`` and do not
+        execute data.
+        """
+        from etlantic.transform.dtcs_builder import invoke_portable
+        from etlantic.transform.protocol import PortableDefinitionRecord
+
+        try:
+            definition = invoke_portable(cls, fn)
+            build_error = None
+        except Exception as exc:
+            definition = None
+            build_error = str(exc)
+            # Fail closed at registration time for authoring errors.
+            raise ModelDefinitionError(build_error) from exc
+
+        cls.__portable__ = PortableDefinitionRecord(
+            callable=fn,
+            definition=definition,
+            build_error=build_error,
+        )
+        return fn
+
+    @classmethod
+    def portable_definition(cls) -> Any | None:
+        """Return the cached :class:`~etlantic.transform.PortableDefinition`, if any."""
+        record = cls.__portable__
+        if record is None:
+            return None
+        return record.definition
+
+    @classmethod
+    def to_transform_plan(cls) -> dict[str, Any]:
+        """Return the portable ``dtcs.transform-plan/2`` document.
+
+        Raises:
+            ModelDefinitionError: If no portable definition is registered.
+        """
+        definition = cls.portable_definition()
+        if definition is None:
+            msg = f"{cls.__name__} has no portable definition registered"
+            raise ModelDefinitionError(msg)
+        return dict(definition.plan)
+
+    @classmethod
+    def portable_fingerprint(cls) -> str:
+        """Return the portable plan fingerprint."""
+        definition = cls.portable_definition()
+        if definition is None:
+            msg = f"{cls.__name__} has no portable definition registered"
+            raise ModelDefinitionError(msg)
+        return definition.fingerprint
 
     @classmethod
     def to_dtcs(cls) -> dict[str, Any]:

@@ -12,14 +12,10 @@ Define datasets, transformations, and pipelines as typed Python classes.
 Validate and plan them once. Run locally today; swap Polars, Pandas, or SQL
 backends without rewriting the logical pipeline.
 
-**Status:** Alpha **0.10.0** — local runtime + optional
-Polars/Pandas/SQL/PySpark/Airflow plugins. Structured Streaming is
-experimental.
-
-DTCS 3.0 portable Transformation Plan semantics are available through
-`dtcs>=0.13` (`dtcs.transform-plan/2`; v1 readable). ETLantic's PySpark-inspired
-`@Transformation.portable` facade and cross-engine compilers are planned for
-0.11–0.15 and are not 0.10 APIs.
+**Status:** Alpha **0.11.0** — local runtime + optional
+Polars/Pandas/SQL/PySpark/Airflow plugins, plus portable
+`@Transformation.portable` authoring to `dtcs.transform-plan/2`. Structured
+Streaming is experimental. Portable compilers remain planned for 0.12–0.15.
 
 ## Install
 

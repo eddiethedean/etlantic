@@ -6,7 +6,7 @@ ETLantic catches incompatible data-pipeline wiring **before** you process
 data. Define typed datasets, transformations, and pipelines in Python;
 validate and plan them once; run locally or through optional engine plugins.
 
-> **Project status:** Alpha **0.10.0**. See [Capabilities](CAPABILITIES.md)
+> **Project status:** Alpha **0.11.0**. See [Capabilities](CAPABILITIES.md)
 > for the shipped boundary and [Evaluator brief](EVALUATOR.md) for
 > decision-makers. How to read status labels:
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).

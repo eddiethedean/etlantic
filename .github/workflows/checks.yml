@@ -348,4 +348,4 @@ jobs:
           done
           echo "Smoke testing: $SF with $CORE"
           uv run --isolated --no-project --with "$CORE" --with "$SF" \
-            python -c "import etlantic_sparkforge as s; import etlantic; assert s.__version__ == etlantic.__version__ == '0.10.0'; print(s.__version__)"
+            python -c "import etlantic_sparkforge as s; import etlantic; assert s.__version__ == etlantic.__version__ == '0.11.0'; print(s.__version__)"
