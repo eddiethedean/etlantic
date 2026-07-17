@@ -1,20 +1,33 @@
-# DTCS 3.0 Rich Portable Analytics Proposal
+# DTCS 3.0 Rich Portable Analytics Publication Record
 
-- Status: Draft proposal for DTCS 3.0.0
-- Proposed specification version: `3.0.0`
-- Baseline: DTCS 2.0.0 and `dtcs` 0.12.0
-- Proposed plan protocol: `dtcs.transform-plan/2`
+- Status: Published in DTCS specification 3.0.0 and `dtcs` toolkit 0.13.0
+- Published plan protocol: `dtcs.transform-plan/2` (v1 remains readable)
+- Baseline retained: DTCS 2.0.0 identifiers and `dtcs.transform-plan/1`
+- Related ETLantic milestones: 0.11–0.15
 - Owner: DTCS publisher and maintainers
 - Primary consumer: ETLantic portable transformations
 
-!!! info "Proposal—not published DTCS behavior"
-    This document proposes normative DTCS 3.0 changes. It does not alter DTCS
-    2.0 or make the identifiers below available in the current `dtcs` package.
-    Implementations must not advertise these capabilities until the
-    specification, registries, schemas, package, and conformance fixtures are
-    published.
+!!! success "Proposal adopted upstream"
+    DTCS 3.0.0 and `dtcs` 0.13.0 are published. Canonical SPEC:
+    [DTCS SPEC.md](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md).
+    Rich Portable Analytics (Chapter 27) adds lambda Expressions, advanced
+    string/regex, conversion, statistics, complex values, reshape, extended
+    relational, IANA temporal, nondeterministic, and window v2 families as
+    independently claimable profiles. Sections below preserve the original
+    proposal as a design record; treat identifiers and profile statuses as
+    authoritative only when they match the published registries.
 
-## 1. Executive summary
+## ETLantic integration posture
+
+| Surface | Status in ETLantic 0.10 |
+|---|---|
+| Depend on `dtcs>=0.13` | Required |
+| Author/validate/serialize plans via public `dtcs` models | Available through the toolkit |
+| `@Transformation.portable` / `etlantic.transform` | Planned 0.11+ |
+| Backend compilers claiming 3.0 profiles | Planned 0.12–0.15 |
+| Prefer `dtcs.transform-plan/2` for new portable IR | Planned with 0.11 kernel |
+
+## 1. Executive summary (original proposal)
 
 DTCS 2.0 establishes a capable portable relational foundation: canonical
 Transformation Plans, structured expressions, joins, unions, aggregation,

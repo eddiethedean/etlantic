@@ -7,8 +7,8 @@ This table describes the declared compatibility of ETLantic 0.10.0.
 | Python | 3.11, 3.12, 3.13 |
 | Pydantic | `>=2.12,<3` |
 | ContractModel | `>=0.1.2` |
-| DTCS specification | `2.0.0` (`dtcsVersion: "2.0.0"`) |
-| DTCS toolkit | `>=0.12,<1` |
+| DTCS specification | `3.0.0` (`dtcsVersion: "3.0.0"`; 2.0.0 / 1.0.0 remain readable) |
+| DTCS toolkit | `>=0.13,<1` |
 | DPCS toolkit | `>=0.13,<1` |
 | Pipeline plan schema | `etlantic.plan/1` |
 | Dataframe protocol | `etlantic.dataframe/1` |
@@ -22,7 +22,7 @@ This table describes the declared compatibility of ETLantic 0.10.0.
 | SQLModel bridge | `etlantic-sqlmodel==0.10.0` |
 | SparkForge adapter | `etlantic-sparkforge==0.10.0` |
 | Orchestration protocol | `etlantic.orchestration/1` |
-| DTCS Transformation Plan protocol | Published in DTCS 2.0 / `dtcs` 0.12 as `dtcs.transform-plan/1`; ETLantic authoring not shipped |
+| DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring not shipped |
 | Portable authoring profile | Not shipped; proposed `etlantic.transform/1` |
 | Portable compiler protocol | Not shipped; proposed `etlantic.transform-compiler/1` for 0.12+ |
 | Package stability | Alpha |
@@ -33,35 +33,23 @@ This table describes the declared compatibility of ETLantic 0.10.0.
 DTCS publication does not mean the ETLantic facade or plugin compilers are
 already implemented. Compatibility is tracked independently:
 
-| DTCS 2.0 profile | Standard status | ETLantic 0.10 status |
+| DTCS profile | Spec status | ETLantic 0.10 status |
 |---|---|---|
-| `dtcs:profile/portable-relational-kernel/1` | Published | planned for 0.11 |
-| `dtcs:profile/portable-relational/1` | Published | planned across 0.11–0.13 |
-| `dtcs:profile/portable-window/1` | Experimental | planned for 0.15+ |
-| `dtcs:profile/portable-complex-types/1` | Experimental | planned for 0.15+ |
+| `dtcs:profile/portable-relational-kernel/1` | Published (2.0) | planned for 0.11 |
+| `dtcs:profile/portable-relational/1` | Published (2.0) | planned across 0.11–0.13 |
+| `dtcs:profile/portable-window/1` | Experimental (2.0) | planned for 0.15+ |
+| `dtcs:profile/portable-complex-types/1` | Experimental (2.0) | planned for 0.15+ |
+| `dtcs:profile/portable-relational-kernel/2` | Candidate (3.0) | planned with 0.11+ plan v2 |
+| `dtcs:profile/portable-relational/2` | Candidate (3.0) | planned across 0.11–0.13 |
+| `dtcs:profile/portable-string-advanced/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-conversion/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-statistics/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-complex-values/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-reshape/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-relational-extended/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-temporal-iana/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-nondeterministic/1` | Experimental (3.0) | planned for 0.15+ |
+| `dtcs:profile/portable-window/2` | Candidate (3.0) | planned for 0.15+ |
 
-Plugins will claim exact profiles or individual registered capabilities only
-after passing the associated conformance fixtures. Similar backend behavior is
-not a compatibility claim.
-
-## Backend dependency ranges
-
-Package metadata is authoritative; these are the 0.10 reference ranges:
-
-| Integration | Backend range / boundary |
-|---|---|
-| Polars | `polars>=1.0,<2` |
-| Pandas | `pandas>=2.0,<3` |
-| SQL | `sqlalchemy>=2.0,<3`; PostgreSQL reference, SQLite demos only |
-| PySpark | `pyspark>=3.5,<4` |
-| Airflow | Compiler emits Python DAG source; Airflow is not imported by the plugin package |
-| SQLModel | `sqlmodel>=0.0.22,<1` |
-| SparkForge | IR adapter only; no live SparkForge dependency in 0.10 |
-
-The package metadata in `pyproject.toml` is authoritative for dependency
-ranges. During the 0.x series, public APIs and persistent formats may change.
-Breaking changes must be called out in the changelog with an upgrade path.
-
-Portable compiler compatibility will be tracked independently across core,
-Pipeline Plan schema, DTCS plan/package version, ETLantic authoring profile,
-compiler protocol/package, and advertised operation/function versions.
+See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+[DTCS 3.0 publication record](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).

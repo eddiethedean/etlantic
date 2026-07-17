@@ -5,7 +5,7 @@
     consuming DTCS Transformation Plans. It is not a currently importable SDK.
 
 A portable transformation compiler translates a validated
-`dtcs.transform-plan/1` into backend-native expressions without changing its
+`dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
 DTCS-defined meaning.
 
 ## Boundary
@@ -69,7 +69,7 @@ TransformCompilerInfo(
     version="...",
     engine="polars",
     compiler_protocol="etlantic.transform-compiler/1",
-    dtcs_plan_versions=("dtcs.transform-plan/1",),
+    dtcs_plan_versions=("dtcs.transform-plan/2", "dtcs.transform-plan/1"),
     capabilities=TransformCapabilities(...),
 )
 ```

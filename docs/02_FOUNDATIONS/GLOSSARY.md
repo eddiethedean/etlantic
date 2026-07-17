@@ -209,7 +209,7 @@ execution technology.
 ## Transformation IR
 
 The immutable, versioned DTCS Transformation Plan representation of portable
-relational and scalar expressions, proposed as `dtcs.transform-plan/1`. Public
+relational and scalar expressions, published as `dtcs.transform-plan/2` (v1 readable). Public
 canonical models belong to the `dtcs` package. It contains no source rows,
 resolved secrets, executable closures, or backend-native objects.
 

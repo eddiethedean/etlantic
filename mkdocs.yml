@@ -229,7 +229,7 @@ nav:
           - Portable Transformation Plan: 11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md
           - DTCS Portable Evolution: 11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md
           - DTCS 2.0 Publication Record: 11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md
-          - DTCS 3.0 Spec Proposal: 11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md
+          - DTCS 3.0 Publication Record: 11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md
   - Visualization:
       - Overview: 08_VISUALIZATION/README.md
       - Mermaid: 08_VISUALIZATION/MERMAID.md
@@ -294,7 +294,7 @@ nav:
       - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
   - Standards:
       - Overview: specifications/README.md
-      - DTCS 2.0 (canonical): specifications/DTCS.md
+      - DTCS 3.0 (canonical): specifications/DTCS.md
       - DTCS 1.0 archive: specifications/DTCS_SPEC.md
       - DPCS: specifications/DPCS_SPEC.md
       - DTCS Portable Transformation Profile: specifications/PORTABLE_TRANSFORM_IR_SPEC.md

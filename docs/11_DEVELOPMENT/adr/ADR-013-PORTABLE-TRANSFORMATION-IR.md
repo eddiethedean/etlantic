@@ -110,7 +110,7 @@ and raw strings weaken typing, lineage, parameter safety, and diagnostics.
 The change is additive to transformation authoring. Existing transformations,
 steps, pipelines, and native implementations continue to work.
 
-The feature requires `dtcs.transform-plan/1`, an `etlantic.transform/1`
+The feature requires `dtcs.transform-plan/2` (v1 readable), an `etlantic.transform/1`
 authoring profile, an `etlantic.transform-compiler/1` plugin protocol, DTCS
 package releases, and a versioned `PipelinePlan` schema change. Older plugins remain usable for native
 implementations but cannot claim portable compilation.

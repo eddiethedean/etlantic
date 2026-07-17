@@ -394,17 +394,18 @@ versioning and compatibility gates.
 The ETLantic integration profile
 [Portable Transformation IR specification](../specifications/PORTABLE_TRANSFORM_IR_SPEC.md)
 collects requirements for nulls, casts, arithmetic, strings, timestamps, joins,
-ordering, and aggregation. DTCS 2.0 now supplies the normative Portable
-Relational semantics and `dtcs` 0.12 supplies canonical models. Remaining
-ETLantic-specific requirements govern authoring and compiler integration. A
-plugin must preserve published DTCS meaning or reject the operation during
-planning.
+ordering, and aggregation. DTCS 3.0 / `dtcs` 0.13 supply the normative Portable
+Relational and Rich Portable Analytics semantics plus canonical models
+(`dtcs.transform-plan/2`, with v1 readable). Remaining ETLantic-specific
+requirements govern authoring and compiler integration. A plugin must preserve
+published DTCS meaning or reject the operation during planning.
 
 See the [DTCS evolution plan](../11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md) for
 the cross-project specification and package release workflow.
-The adopted action, function, expression, capability, and conformance work is
-recorded in the
-[DTCS 2.0 Portable Relational Publication Record](../11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md).
+Publication records:
+
+- [DTCS 2.0 Portable Relational](../11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md)
+- [DTCS 3.0 Rich Portable Analytics](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md)
 
 ## Related documents
 
@@ -412,5 +413,5 @@ recorded in the
 - [Portable Transformation IR specification](../specifications/PORTABLE_TRANSFORM_IR_SPEC.md)
 - [Portable compiler plugin protocol](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
 - [Implementation plan](../11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md)
-- [DTCS 3.0 Rich Portable Analytics Proposal](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md)
+- [DTCS 3.0 Rich Portable Analytics Publication Record](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md)
 - [Architecture decision](../11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)

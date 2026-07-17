@@ -172,9 +172,10 @@ trust boundaries.
 
 ### Portable transformation definitions
 
-The published DTCS 2.0 Transformation Plan adds an analysis input for
+The published DTCS 3.0 Transformation Plan adds an analysis input for
 ETLantic's planned compiler boundary. Portable definitions must normalize to
-closed, bounded, data-only `dtcs.transform-plan/1` expression graphs.
+closed, bounded, data-only `dtcs.transform-plan/2` expression graphs
+(v1 remains readable).
 
 Python `@Transformation.portable` authoring invokes trusted definition code
 with symbolic values during an explicit trusted import. Static loading,

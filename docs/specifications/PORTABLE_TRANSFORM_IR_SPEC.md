@@ -1,7 +1,7 @@
 # ETLantic Profile for DTCS Portable Transformation Plans
 
-Status: ETLantic integration profile draft over published DTCS 2.0 semantics
-DTCS plan identifier: `dtcs.transform-plan/1`  
+Status: ETLantic integration profile draft over published DTCS 3.0 semantics
+DTCS plan identifier: `dtcs.transform-plan/2` (v1 remains readable)  
 ETLantic authoring profile: `etlantic.transform/1`  
 Target milestones: 0.11 kernel through 0.15 advanced lowering
 
@@ -20,10 +20,12 @@ backend APIs, or arbitrary Python translation. Where this document and DTCS
 conflict, DTCS is authoritative and this profile must be corrected or
 versioned.
 
-DTCS 2.0.0 and `dtcs` 0.12.0 are normative for Transformation Plan, Portable
-Relational Profile, registry, and conformance semantics. The key words MUST,
-MUST NOT, SHOULD, SHOULD NOT, and MAY in this document apply only to ETLantic's
-authoring and compiler integration. They do not redefine published DTCS meaning.
+DTCS 3.0.0 and `dtcs` 0.13.0 are normative for Transformation Plan, Portable
+Relational and Rich Portable Analytics profiles, registry, and conformance
+semantics. DTCS 2.0.0 identifiers and `dtcs.transform-plan/1` remain readable.
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY in this document
+apply only to ETLantic's authoring and compiler integration. They do not
+redefine published DTCS meaning.
 
 ## 2. Architectural boundary
 
@@ -46,7 +48,8 @@ DTCS Transformation Contract
             ↓
 DTCS Transformation Plan semantics
             ↓
-DTCS `dtcs.transform-plan/1` representation
+DTCS `dtcs.transform-plan/2` representation
+(v1 remains readable)
             ↓
 Backend Execution Plan
 ```
@@ -60,7 +63,7 @@ A serialized definition has this conceptual shape:
 
 ```json
 {
-  "protocol": "dtcs.transform-plan/1",
+  "protocol": "dtcs.transform-plan/2",
   "transformation_id": "example.NormalizeCustomers",
   "inputs": {
     "customers": {
@@ -90,11 +93,13 @@ A serialized definition has this conceptual shape:
 Canonical serialization MUST sort mapping keys, preserve expression-list
 order, omit runtime values, and reject non-data objects. Fingerprints MUST be
 computed from canonical semantic content rather than display metadata.
+Compilers that claim only plan v1 MUST reject plans that require lambda
+nodes or other v2-only constructs.
 
 ## 4. Type system
 
-The IR uses the DTCS 2.0 logical type vocabulary, independent of
-backend-specific types:
+The IR uses the DTCS logical type vocabulary (2.0 retained in 3.0), independent
+of backend-specific types:
 
 ```text
 boolean
@@ -156,13 +161,17 @@ as literals.
 
 ## 6. Structured expressions
 
-DTCS 2.0 defines exactly five structured expression node kinds:
+DTCS 2.0 defines five structured expression node kinds:
 
 - `literal`
 - `fieldRef`
 - `unary`
 - `binary`
 - `call`
+
+DTCS 3.0 adds `lambda` for bounded higher-order expression bodies. Plan v2 MAY
+contain lambda nodes; plan v1 MUST NOT. Lambda parameters bind with
+`fieldRef` `scope: "lambda"` and MUST NOT capture undeclared outer names.
 
 Aliases, sort direction, aggregate context, and window placement are expressed
 by their containing action rather than by inventing additional expression node
@@ -176,7 +185,8 @@ expressions and `repr()`-based serialization are forbidden.
 
 ## 7. Relational expressions
 
-The DTCS 2.0 dataset Semantic Actions are `project`, `select`, `filter`,
+The DTCS dataset Semantic Actions (2.0 retained; 3.0 adds reshape/set families
+via profiles) include `project`, `select`, `filter`,
 `with_fields`, `rename_fields`, `drop_fields`, `aggregate`, `group`, `join`,
 `sort`, `union`, `distinct`, `deduplicate`, `limit`, `partition`, `window`, and
 `derive`. Field Semantic Actions are `lowercase`, `uppercase`, `capitalize`,

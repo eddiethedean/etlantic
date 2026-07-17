@@ -5,15 +5,17 @@
 - Published plan protocol: `dtcs.transform-plan/1`
 - Related ETLantic milestones: 0.11-0.15
 - Proposal owner: DTCS publisher and maintainers
+- Superseded as current authority by: DTCS 3.0.0 / `dtcs` 0.13.0
+  ([publication record](DTCS_3_0_SPEC_PROPOSAL.md))
 
 !!! success "Proposal adopted upstream"
-    DTCS 2.0.0 now includes structured expressions, operator and profile
+    DTCS 2.0.0 published structured expressions, operator and profile
     registries, widened action/function catalogs, canonical Transformation Plan
-    serialization, and semantic-family conformance profiles. The `dtcs` 0.12.0
-    package is ETLantic's public model and conformance dependency. Sections
-    below preserve the original problem statement and requirements as a design
-    record; identifiers described as draft should be read against the published
-    DTCS registries.
+    serialization (`dtcs.transform-plan/1`), and semantic-family conformance
+    profiles. The `dtcs` 0.12.0 package first shipped those models. Current
+    ETLantic depends on `dtcs>=0.13`, which retains 2.0 semantics and adds
+    DTCS 3.0 Rich Portable Analytics. Sections below preserve the original
+    problem statement and requirements as a design record.
 
 ## 1. Original problem statement
 

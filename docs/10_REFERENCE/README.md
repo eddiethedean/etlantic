@@ -12,8 +12,8 @@ interfaces.
 - [Known Limitations](KNOWN_ISSUES.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Exceptions](EXCEPTIONS.md)
-- DTCS 2.0 Transformation Plan / Portable Relational models through
-  `dtcs>=0.12` (ETLantic authoring and compilers remain future)
+- DTCS 3.0 Transformation Plan / Rich Portable Analytics models through
+  `dtcs>=0.13` (ETLantic authoring and compilers remain future)
 
 ## Future design / proposed 1.0
 

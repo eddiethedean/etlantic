@@ -1,9 +1,9 @@
 # Contract Generation
 
 The proposed 0.11 DTCS generation path may include canonical
-`dtcs.transform-plan/1` content and its fingerprint. Generated artifacts remain
-data-only, deterministic, bounded, and free of native compiled objects,
-runtime parameter values, source rows, and secrets.
+`dtcs.transform-plan/2` content and its fingerprint (v1 readable). Generated
+artifacts remain data-only, deterministic, bounded, and free of native compiled
+objects, runtime parameter values, source rows, and secrets.
 
 Contract generation is one of ETLantic's defining capabilities.
 

@@ -296,9 +296,9 @@ boundaries.
 
 Portable transformation authoring uses a PySpark-inspired DataFrame and Column
 surface. The versioned `etlantic.transform/1` authoring profile normalizes to
-the published DTCS 2.0 `dtcs.transform-plan/1`; it is not a competing semantic
-IR. ETLantic does not trace arbitrary Python or adopt a backend's expression
-objects as its semantic model.
+the published DTCS 3.0 `dtcs.transform-plan/2` (v1 readable); it is not a
+competing semantic IR. ETLantic does not trace arbitrary Python or adopt a
+backend's expression objects as its semantic model.
 
 Plugins compile only the operations they advertise and must preserve normative
 semantics or fail during planning. Native transformation implementations remain

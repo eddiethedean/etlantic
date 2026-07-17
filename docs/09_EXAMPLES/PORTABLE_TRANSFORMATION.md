@@ -91,8 +91,8 @@ spark_profile = Profile(
 )
 ```
 
-Both profiles select a plugin compiler for the same `dtcs.transform-plan/1`
-generated through the `etlantic.transform/1` authoring profile.
+Both profiles select a plugin compiler for the same `dtcs.transform-plan/2`
+(v1 readable) generated through the `etlantic.transform/1` authoring profile.
 
 ## Expected plan evidence
 
@@ -100,7 +100,7 @@ generated through the `etlantic.transform/1` authoring profile.
 {
   "step": "normalized",
   "implementation_kind": "portable_compiled",
-  "portable_protocol": "dtcs.transform-plan/1",
+  "portable_protocol": "dtcs.transform-plan/2",
   "authoring_profile": "etlantic.transform/1",
   "compiler_engine": "polars",
   "requirements": {

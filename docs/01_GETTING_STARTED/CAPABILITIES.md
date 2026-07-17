@@ -41,7 +41,7 @@ ETLantic 0.10.0 is an alpha release. This page is the shortest answer to
 | Optional OpenTelemetry adapter | Available (`etlantic[otel]`) |
 | Agent guidance generators | Available |
 | SparkForge migration adapter | Available (`etlantic-sparkforge`) |
-| DTCS 2.0 Transformation Plan models and Portable Relational Profile | Available through `dtcs>=0.12`; ETLantic authoring/compiler integration remains future |
+| DTCS 3.0 Transformation Plan models and Rich Portable Analytics profiles | Available through `dtcs>=0.13` (`dtcs.transform-plan/2`; v1 readable); ETLantic authoring/compiler integration remains future |
 
 ## Not included in 0.10
 

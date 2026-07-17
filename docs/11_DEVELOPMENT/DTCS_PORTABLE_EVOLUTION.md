@@ -4,10 +4,10 @@ Status: Internal standards and release plan
 Owner: ETLantic/DTCS publisher and maintainers  
 Applies to: ETLantic 0.11+
 
-The adopted change record is
-[DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md).
-Remaining rich dataframe gaps are proposed for the next standard generation in
-[DTCS 3.0 Rich Portable Analytics Proposal](DTCS_3_0_SPEC_PROPOSAL.md).
+The adopted change records are
+[DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md)
+and
+[DTCS 3.0 Rich Portable Analytics Publication Record](DTCS_3_0_SPEC_PROPOSAL.md).
 
 ## Decision
 
@@ -132,7 +132,7 @@ Three identifiers remain distinct:
 
 | Boundary | Identifier | Authority |
 |---|---|---|
-| Transformation semantics and plan schema | `dtcs.transform-plan/1` | DTCS |
+| Transformation semantics and plan schema | `dtcs.transform-plan/2` (v1 readable) | DTCS |
 | Python authoring profile | `etlantic.transform/1` | ETLantic |
 | Compiler plugin protocol | `etlantic.transform-compiler/1` | ETLantic Plugin SDK |
 
@@ -231,7 +231,7 @@ from dtcs.validation import validate_transformation_plan
 ```
 
 The illustrative Python import names above must be verified against the public
-`dtcs` 0.12 API before implementation; the underlying DTCS 2.0 plan,
+`dtcs` 0.13 API before implementation; the underlying DTCS 2.0 and 3.0 plan,
 registries, profiles, validation, and conformance semantics are published.
 ETLantic must depend only on public DTCS imports and must not duplicate their
 Pydantic/dataclass models.
@@ -242,15 +242,16 @@ Each ETLantic portable milestone begins with a DTCS readiness gate:
 
 | ETLantic | DTCS prerequisite | Current state |
 |---|---|---|
-| 0.11 | canonical kernel plan, types, expressions, serialization, validation | published in DTCS 2.0 / `dtcs` 0.12 |
+| 0.11 | canonical kernel plan, types, expressions, serialization, validation | published in DTCS 2.0/3.0 / `dtcs` 0.13 (`transform-plan/1` and `/2`) |
 | 0.12 | exact compiler capability requirements | published; ETLantic explain integration remains |
-| 0.13 | joins, unions, grouping, aggregation, and ordering semantics | published in `portable-relational/1` |
+| 0.13 | joins, unions, grouping, aggregation, and ordering semantics | published in `portable-relational/1` (+ candidate `/2`) |
 | 0.14 | validation and conformance foundation | published; ETLantic plugin-facing fixture packaging remains |
-| 0.15 | windows, complex types, and advanced function semantics | window and complex profiles published as experimental; SQL rules and additional functions remain |
+| 0.15 | windows, complex types, and advanced function semantics | 2.0 experimental profiles + 3.0 Rich Portable Analytics families published; ETLantic compilers remain |
 
-ETLantic selects `dtcs>=0.12,<1` for the published DTCS 2.0 foundation.
-Dependency bounds must never be treated as compiler-profile compatibility
-before CI passes the corresponding cross-project fixtures.
+ETLantic selects `dtcs>=0.13,<1` for the published DTCS 3.0 foundation
+(retaining 2.0 readability). Dependency bounds must never be treated as
+compiler-profile compatibility before CI passes the corresponding
+cross-project fixtures.
 
 ## Governance artifacts
 

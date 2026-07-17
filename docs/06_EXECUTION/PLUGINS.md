@@ -11,7 +11,7 @@ portable pipeline plans on different technologies without changing pipeline
 definitions.
 
 Beginning with the planned 0.11+ work, engine plugins may also implement a
-compiler for the closed, published DTCS 2.0 Transformation Plan. This
+compiler for the closed, published DTCS 3.0 Transformation Plan. This
 additional capability does not permit plugins to redefine portable operation
 semantics.
 

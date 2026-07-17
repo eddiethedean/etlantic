@@ -24,13 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   DTCS 2.0 action, function, operator, value-state, and profile mappings;
   synchronized examples, backend guides, Plugin SDK requirements, security,
   compatibility, architecture, and the 0.11–0.15 roadmap
-- Added a DTCS 3.0 specification proposal covering the remaining rich
-  dataframe portability gaps, plan v2, governed semantic-family profiles,
-  migrations, security budgets, and cross-engine conformance requirements
+- Integrated published DTCS 3.0.0 / `dtcs` 0.13.0 across portable plans and
+  docs: Rich Portable Analytics profiles, `dtcs.transform-plan/2` (v1
+  readable), publication records, IR profile, roadmap readiness gates,
+  compatibility matrix, and dependency floor (ETLantic portable authoring
+  still planned for 0.11–0.15)
 
 ### Changed
 
-- Raised the DTCS toolkit dependency floor from 0.11 to 0.12
+- Raised the DTCS toolkit dependency floor from 0.12 to 0.13
 
 ## [0.10.0] - 2026-07-17
 

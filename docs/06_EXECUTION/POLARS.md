@@ -26,7 +26,7 @@ pip install 'etlantic-polars[arrow]'  # optional
 ## Portable compiler (planned 0.12)
 
 The Polars compiler is the first planned executable lowering for
-`dtcs.transform-plan/1`. Its initial claim targets
+`dtcs.transform-plan/2` (v1 readable). Its initial claim targets
 `dtcs:profile/portable-relational-kernel/1`; later relational claims require
 every associated DTCS fixture. It will:
 

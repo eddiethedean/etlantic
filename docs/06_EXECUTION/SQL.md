@@ -51,7 +51,7 @@ Portable relational and scalar nodes will lower first into ETLantic's typed
 SQL IR and then into dialect SQL:
 
 ```text
-dtcs.transform-plan/1
+dtcs.transform-plan/2
         ↓
 SqlQuery / typed SQL expressions
         ↓

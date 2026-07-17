@@ -29,7 +29,7 @@ def normalize(customers, minimum_age):
 ## Portable definitions (planned 0.11+)
 
 ETLantic plans to expose one closed, PySpark-inspired relational definition
-that normalizes to the published DTCS 2.0 `dtcs.transform-plan/1` protocol and
+that normalizes to the published DTCS 3.0 `dtcs.transform-plan/2` protocol (v1 readable) and
 engine plugins compile:
 
 ```python

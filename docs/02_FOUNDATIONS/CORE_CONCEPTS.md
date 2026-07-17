@@ -77,9 +77,9 @@ def normalize(customers, minimum_age):
 ```
 
 ETLantic will normalize this definition into the canonical DTCS Transformation
-Plan (`dtcs.transform-plan/1`) through the public `dtcs` package. Plugins
-will compile that plan to native operations. The definition does not process
-data and is not a native implementation.
+Plan (`dtcs.transform-plan/2`, with v1 readable) through the public `dtcs`
+package. Plugins will compile that plan to native operations. The definition
+does not process data and is not a native implementation.
 
 ## Implementation
 

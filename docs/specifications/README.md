@@ -3,15 +3,19 @@
 This directory contains normative specifications owned by the ETLantic
 ecosystem.
 
-- [DTCS 2.0 Specification](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md)
-  is the canonical transformation-semantics specification. Version 2.0.0 adds
-  the Portable Relational Profile and `dtcs.transform-plan/1`.
+- [DTCS 3.0 Specification](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md)
+  is the canonical transformation-semantics specification. Version 3.0.0
+  supersedes 2.0.0 and adds Rich Portable Analytics with
+  `dtcs.transform-plan/2` and independently claimable semantic-family
+  profiles.
+- [DTCS in this docs site](DTCS.md) summarizes the current authority and
+  profile inventory for ETLantic readers.
 - [Vendored DTCS 1.0 snapshot](DTCS_SPEC.md) is retained only for historical
   comparison and must not be treated as current authority.
 - [DPCS 1.0 Specification](DPCS_SPEC.md) defines pipeline-contract semantics.
-- [Portable Transformation IR](PORTABLE_TRANSFORM_IR_SPEC.md) now records
-  ETLantic's authoring and compiler requirements on top of the published DTCS
-  2.0 plan/profile semantics. The canonical models live in `dtcs>=0.12`; the
+- [Portable Transformation IR](PORTABLE_TRANSFORM_IR_SPEC.md) records
+  ETLantic's authoring and compiler requirements on top of published DTCS
+  plan/profile semantics. The canonical models live in `dtcs>=0.13`; the
   ETLantic authoring API is not implemented in ETLantic 0.10.
 
 ODCS is an external standard and is not copied into this repository. See the
@@ -39,5 +43,7 @@ vendored `DTCS_SPEC.md` supports local documentation navigation and may lag the
 publisher's latest revision; when they differ, the published DTCS repository is
 authoritative.
 
-The publication history and remaining ETLantic integration gaps are tracked in
-the [DTCS Portable Relational Publication Record](../11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md).
+Publication history:
+
+- [DTCS 2.0 Portable Relational Publication Record](../11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md)
+- [DTCS 3.0 Rich Portable Analytics Publication Record](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md)

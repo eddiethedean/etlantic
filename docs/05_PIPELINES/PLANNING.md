@@ -85,9 +85,9 @@ portable semantics.
 ### 4. Select Portable or Native Realization
 
 Select a realization for every executable transformation. From 0.11 onward,
-eligible steps may compile a `dtcs.transform-plan/1` produced by the
-`etlantic.transform/1` authoring profile, or use a registered native
-implementation.
+eligible steps may compile a `dtcs.transform-plan/2` produced by the
+`etlantic.transform/1` authoring profile (v1 readable), or use a registered
+native implementation.
 
 Recommended precedence:
 

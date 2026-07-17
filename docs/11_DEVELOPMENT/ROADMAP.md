@@ -897,11 +897,13 @@ feature assessment and adapter sequence.
 
 **Status: planned — not released in 0.10.**
 
-**DTCS readiness gate: satisfied upstream.** DTCS 2.0 and `dtcs` 0.12 publish
-`dtcs.transform-plan/1`, the portable type and value-state model, structured
-expressions, Semantic Actions/Functions, profiles, serialization, validation,
+**DTCS readiness gate: satisfied upstream.** DTCS 3.0 and `dtcs` 0.13 publish
+`dtcs.transform-plan/2` (with `dtcs.transform-plan/1` readable), the portable
+type and value-state model, structured expressions including bounded lambdas,
+Semantic Actions/Functions, 2.0 and 3.0 profiles, serialization, validation,
 and conformance support. ETLantic must consume those public models without
-forking their semantics.
+forking their semantics. The 0.11 kernel targets
+`dtcs:profile/portable-relational-kernel/1` (and may emit plan v2).
 
 ### Deliver
 
@@ -943,10 +945,10 @@ yet execute through an engine plugin.
 
 **Status: planned — not released in 0.10.**
 
-**DTCS readiness gate: satisfied upstream.** DTCS 2.0 defines exact profile,
-action, function, operator, type, mode, and limit claims; `dtcs` 0.12 provides
-the validation/conformance foundation. ETLantic still must integrate those
-claims into planning and explain output.
+**DTCS readiness gate: satisfied upstream.** DTCS 3.0 / `dtcs` 0.13 define
+exact profile, action, function, operator, type, mode, and limit claims for
+both Portable Relational and Rich Portable Analytics families. ETLantic still
+must integrate those claims into planning and explain output.
 
 ### Deliver
 
@@ -980,10 +982,10 @@ compilation as a first-class, deterministic implementation kind.
 
 **Status: planned — not released in 0.10.**
 
-**DTCS readiness gate: semantics published upstream.** DTCS 2.0 defines joins
-(including semi, anti, cross, null-safe, and collision policy), union modes,
-grouping, aggregation, sorting, deduplication, and limit determinism. The
-remaining gate is ETLantic and plugin passage of the canonical fixtures.
+**DTCS readiness gate: semantics published upstream.** DTCS 2.0/3.0 define
+joins (including semi, anti, cross, null-safe, and collision policy), union
+modes, grouping, aggregation, sorting, deduplication, and limit determinism.
+The remaining gate is ETLantic and plugin passage of the canonical fixtures.
 
 ### Deliver
 
@@ -1016,7 +1018,7 @@ Polars-specific nor merely a PySpark wrapper.
 
 **Status: planned — not released in 0.10.**
 
-**DTCS readiness gate: foundation published upstream.** `dtcs` 0.12 publishes
+**DTCS readiness gate: foundation published upstream.** `dtcs` 0.13 publishes
 validation and conformance support. ETLantic must expose a public compiler
 suite that consumes it without plugin dependence on ETLantic internals.
 
@@ -1050,11 +1052,12 @@ third-party engines.
 
 **Status: planned — not released in 0.10.**
 
-**DTCS readiness gate: partially satisfied upstream.** DTCS 2.0 publishes the
-experimental `dtcs:profile/portable-window/1` and
-`dtcs:profile/portable-complex-types/1`, plus date/time semantics. SQL-specific
-lowering rules and any additional function families still require normative
-DTCS entries before ETLantic claims them.
+**DTCS readiness gate: satisfied upstream for semantics.** DTCS 3.0 publishes
+experimental/candidate Rich Portable Analytics families (`portable-window/2`,
+`portable-complex-values/1`, string-advanced, conversion, statistics, reshape,
+temporal-IANA, nondeterministic, and peers) plus the 2.0 experimental window
+and complex-types profiles. ETLantic still must integrate compiler claims,
+SQL lowering rules, and shared conformance before advertising these families.
 
 ### Deliver
 
@@ -1085,7 +1088,9 @@ with an auditable, secure compiler model.
 See the
 [Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md).
 The required standards work is detailed in the
-[DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md).
+[DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md)
+and
+[DTCS 3.0 Rich Portable Analytics Publication Record](DTCS_3_0_SPEC_PROPOSAL.md).
 
 ## 1.0 — Stable Foundation
 

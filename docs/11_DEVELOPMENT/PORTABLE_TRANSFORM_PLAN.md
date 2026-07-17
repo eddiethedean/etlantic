@@ -1,10 +1,11 @@
 # Portable Transformation Implementation Plan
 
 Status: Internal project plan  
-DTCS plan protocol: `dtcs.transform-plan/1`  
+DTCS plan protocol: `dtcs.transform-plan/2` (v1 readable)  
 ETLantic authoring profile: `etlantic.transform/1`  
 Compiler protocol: `etlantic.transform-compiler/1`  
 Current release boundary: not available in 0.10
+DTCS baseline: specification 3.0.0 / toolkit `dtcs>=0.13`
 
 ## Outcome
 
@@ -64,13 +65,15 @@ not become the portable model.
 
 See [DTCS and Portable Transformation Evolution](DTCS_PORTABLE_EVOLUTION.md)
 for the coordinated specification/package release workflow.
-The proposed normative additions are enumerated in the
-[DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md).
+Normative DTCS foundations are recorded in:
+
+- [DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md)
+- [DTCS 3.0 Rich Portable Analytics Publication Record](DTCS_3_0_SPEC_PROPOSAL.md)
 
 ## 0.11 preparation: decisions and fixtures
 
-DTCS readiness is satisfied by DTCS 2.0 / `dtcs` 0.12. This phase consumes the
-published `dtcs.transform-plan/1` models and
+DTCS readiness is satisfied by DTCS 3.0 / `dtcs` 0.13. This phase consumes the
+published `dtcs.transform-plan/2` models (v1 readable) and
 `dtcs:profile/portable-relational-kernel/1`; it does not mint parallel ETLantic
 semantics.
 
@@ -217,8 +220,10 @@ family at a time. Each addition requires specification text, two compilers,
 shared fixtures, capability identifiers, and explain rendering.
 
 The starting standards are the experimental
-`dtcs:profile/portable-window/1` and
-`dtcs:profile/portable-complex-types/1`. ETLantic authoring aliases normalize
+`dtcs:profile/portable-window/1` /
+`dtcs:profile/portable-complex-types/1` families and the DTCS 3.0 Rich
+Portable Analytics profiles (`portable-window/2`, `portable-complex-values/1`,
+string-advanced, reshape, and peers). ETLantic authoring aliases normalize
 arrays to DTCS lists and structs to DTCS objects.
 
 ## DTCS and Pipeline Plan integration
@@ -229,7 +234,7 @@ without changing its content. An illustrative ETLantic integration block is:
 ```yaml
 implementation:
   portableDefinition:
-    protocol: dtcs.transform-plan/1
+    protocol: dtcs.transform-plan/2
     authoringProfile: etlantic.transform/1
     fingerprint: sha256:...
     plan: {}

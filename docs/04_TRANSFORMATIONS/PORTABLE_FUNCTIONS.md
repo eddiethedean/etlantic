@@ -12,7 +12,7 @@ from etlantic.transform import functions as F
 ```
 
 Each public function maps to a DTCS Function or Operator registry identifier.
-ETLantic does not assign independent semantics. DTCS 2.0 / `dtcs` 0.12 publish
+ETLantic does not assign independent semantics. DTCS 2.0/3.0 / `dtcs` 0.13 publish
 the following mappings.
 
 ## Construction and conditional expressions
@@ -45,9 +45,13 @@ the following mappings.
 
 DTCS 2.0 publishes `trim`, `lowercase`, `uppercase`, `capitalize`, and
 `normalize_whitespace` as field-targeted Semantic Actions. Only `lower` and
-`upper` are also general expression Functions. Therefore `F.trim(...)` is not
-part of the strict DTCS 2.0 expression facade; ETLantic may expose a dedicated
-field-shaping method only if it maps without inventing expression semantics.
+`upper` are also general expression Functions in the 2.0 kernel.
+
+DTCS 3.0 profile `dtcs:profile/portable-string-advanced/1` publishes expression
+Functions including `dtcs:trim`, `dtcs:ltrim`, `dtcs:rtrim`,
+`dtcs:normalize_whitespace`, `dtcs:split`, regex helpers, and related string
+ops. The planned ETLantic facade may expose `F.trim` / `F.split` / regex
+helpers only when the profile is selected and the compiler claims it.
 
 ## Numeric and conversion functions
 
@@ -193,21 +197,29 @@ object/struct logical types plus `field`, `index`, and `element_at` access.
 `map_keys`, `map_values`, and higher-order collection lambdas are not in the
 published standard catalog and remain excluded until standardized.
 
-## Published DTCS 2.0 gaps
+## DTCS 3.0 advanced families (published; ETLantic not yet claiming)
 
-These familiar PySpark functions are intentionally not claimed by the strict
-ETLantic facade because no equivalent DTCS 2.0 standard entry exists:
+DTCS 3.0 / `dtcs` 0.13 publish independently claimable profiles that cover many
+formerly excluded PySpark-like surfaces. ETLantic must not advertise these
+facade methods until the corresponding compiler claims the profile and
+conformance fixtures pass:
 
-- `split`, `regexp_extract`, and `regexp_replace`
-- `stddev`, `variance`, covariance, and correlation
-- array/map/struct constructors and `explode`
-- random values and UUID generation
-- arbitrary `F.expr(...)` SQL text
+| Planned facade examples | DTCS 3.0 profile |
+|---|---|
+| `F.trim`, `F.split`, regex extract/replace | `portable-string-advanced/1` |
+| strict `F.cast` / parse helpers beyond `try_cast` | `portable-conversion/1` |
+| `F.stddev`, `F.variance`, correlation | `portable-statistics/1` |
+| array/map/struct constructors, lambdas, explode | `portable-complex-values/1` + `portable-reshape/1` |
+| `intersect` / `except`, sample, pivot | `portable-relational-extended/1` |
+| IANA timezone helpers | `portable-temporal-iana/1` |
+| `F.rand`, UUID | `portable-nondeterministic/1` |
+| `ntile`, `percent_rank`, … | `portable-window/2` |
 
-They require a future DTCS registry revision or an explicitly namespaced,
-non-portable extension. Native implementations remain the escape hatch.
-The proposed standard additions and their required semantics are collected in
-the [DTCS 3.0 Rich Portable Analytics Proposal](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).
+`F.expr(...)` SQL text remains permanently excluded from portable definitions.
+Native `@Transformation.implementation(...)` remains the escape hatch.
+
+See the
+[DTCS 3.0 Rich Portable Analytics Publication Record](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).
 
 ## Determinism
 
