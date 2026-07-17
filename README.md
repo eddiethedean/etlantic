@@ -147,15 +147,22 @@ the `dev` dependency group (pytest, ruff, mkdocs) by default.
 
 ## Release
 
-Tag a version that matches `src/etlantic/_version.py`, then push the tag:
+Before tagging a **new** package set (first `etlantic*` upload, or any new
+plugin name), pre-register the nine PyPI projects under the publishing account.
+The `v0.6.1` publish failed with PyPI `429 Too many new projects created`;
+60s spacing between uploads does not clear that quota. See
+[Release Process](docs/11_DEVELOPMENT/RELEASE_PROCESS.md).
+
+Tag a version that matches `src/etlantic/_version.py` (and every
+`packages/*/pyproject.toml`), then push **only that tag**:
 
 ```bash
-git tag v0.10.0
+git tag -a v0.10.0 -m "ETLantic 0.10.0"
 git push origin v0.10.0
 ```
 
-GitHub Actions runs checks and publishes to PyPI using the `PYPI_API_TOKEN`
-repository secret. Publish steps wait 60 seconds between packages.
+Do not use `git push --tags`. GitHub Actions runs checks and publishes to PyPI
+using the `PYPI_API_TOKEN` repository secret.
 
 ## License
 

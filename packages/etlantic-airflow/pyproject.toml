@@ -6,9 +6,26 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
     "etlantic>=0.10.0,<1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/eddiethedean/etlantic"
+Documentation = "https://github.com/eddiethedean/etlantic/tree/main/docs"
+Repository = "https://github.com/eddiethedean/etlantic"
+Issues = "https://github.com/eddiethedean/etlantic/issues"
+Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
 
 [project.entry-points."etlantic.orchestrator_plugins"]
 airflow = "etlantic_airflow:create_plugin"

@@ -15,18 +15,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Write / Delta capability compatibility helpers (fail closed)
 - Representative ecommerce IR fixture and semantic parity suite
 - Migration guide `docs/11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md`
+- Runnable docs guides for Airflow compile and SparkForge adapter
+- Docs status SSOT via CAPABILITIES + expanded `scripts/check_docs.py` guards
 
 ### Changed
 
 - Package version advances to 0.10 (SparkForge Migration Preview)
 - Plugin packages require `etlantic>=0.10.0,<1.0`
 - SparkForge adoption checklist prerequisites marked complete
+- Release workflow paces PyPI uploads (60s between packages)
+- Install docs prefer from-source until `v0.10.0` wheels exist on PyPI
+- Agent guidance lists `etlantic.viz` and optional `etlantic-airflow` for compile
+
+### Fixed
+
+- Schema history refuses row-like metadata by key (no substring false positives)
+- Core `redact_message` / `redact_value` cover HTTPS basic-auth and string leaves
+- SparkForge report adapter redacts free-text errors, Bearer tokens, and DSNs
+- `strict_delta=False` emits warnings for missing Delta capabilities (PMSF323)
+- SparkForge IR missing step names emit `PMSF310` instead of raising `KeyError`
+- Retry policy mapping clamps `max_attempts` to at least 1
+- Unknown validation policy names fail closed (`KeyError`) instead of inventing
+  empty policies
+- Testing helpers harden write-semantics, orchestrator secret scans, and missing
+  secret fail-closed behavior
+- Adapter stops importing private `_PipelineNamespace`
+- Docs SSOT: Graphviz/HTML/lineage, Spark, Airflow, and Mermaid status drift
 
 ### Upgrade notes
 
 - Install `etlantic-sparkforge` (or `etlantic[sparkforge]`) for the adapter
 - ETLantic core remains free of bronze / silver / gold types
 - Full SparkForge engine retirement remains a progressive path (see migration guide)
+- Prefer `git tag v0.10.0 && git push origin v0.10.0` (not `git push --tags`)
 
 ## [0.9.0] - 2026-07-17
 
@@ -348,6 +369,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.10.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.10.0
+[0.9.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.9.0
+[0.8.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.8.0
+[0.7.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.7.0
 [0.6.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.6.1
 [0.6.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.5.0

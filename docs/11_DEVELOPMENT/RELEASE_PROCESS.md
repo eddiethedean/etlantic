@@ -1,6 +1,6 @@
 # Release Process
 
-ETLantic releases must coordinate the core package, Plugin SDK, generated
+ETLantic releases must coordinate the core package, optional plugins, generated
 artifacts, compatibility policy, and documentation.
 
 ## Versioning
@@ -11,36 +11,93 @@ ETLantic follows Semantic Versioning after 1.0:
 - Minor: backward-compatible capabilities
 - Major: incompatible public API or persistent-format changes
 
-During 0.x, breaking changes remain possible but must be documented.
+During 0.x, breaking changes remain possible but must be documented. Official
+plugin packages currently share the core minor version (for example `0.10.0`).
 
-## Release Scope
+## Packages published on each tag
 
-A release may affect:
+Tag `vX.Y.Z` publishes nine distributions:
 
-- Authoring API
-- Plugin SDK
-- `PipelinePlan` schema
-- Configuration
-- CLI
-- Supported ODCS, DTCS, and DPCS versions
-- Built-in or separately released plugins
-
-These version surfaces should not be conflated.
+| PyPI name | Source |
+|---|---|
+| `etlantic` | repo root |
+| `etlantic-polars` | `packages/etlantic-polars` |
+| `etlantic-pandas` | `packages/etlantic-pandas` |
+| `etlantic-sql` | `packages/etlantic-sql` |
+| `etlantic-pyspark` | `packages/etlantic-pyspark` |
+| `etlantic-airflow` | `packages/etlantic-airflow` |
+| `etlantic-keyring` | `packages/etlantic-keyring` |
+| `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` |
+| `etlantic-sparkforge` | `packages/etlantic-sparkforge` |
 
 ## Pre-Release Checklist
 
-1. Confirm milestone scope.
-2. Resolve release-blocking issues.
-3. Review public API changes.
-4. Review ADRs and deprecations.
-5. Run all tests and plugin conformance suites.
-6. Build documentation.
-7. Verify generated examples.
-8. Run security and dependency checks.
-9. Verify the release gate in the
-   [Security Model](../02_FOUNDATIONS/SECURITY.md).
-10. Run performance regression checks.
-11. Prepare release notes and migration guidance.
+1. Confirm milestone scope against [ROADMAP](ROADMAP.md) and
+   [CAPABILITIES](../01_GETTING_STARTED/CAPABILITIES.md).
+2. Resolve release-blocking issues; `main` CI must be green.
+3. Confirm every package version and `__version__` equals the intended tag
+   (no `v` prefix). Extras pins use `==X.Y.Z`.
+4. Update
+   [CHANGELOG.md](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md)
+   (Added / Changed / Fixed / Upgrade notes) and migration guide when needed.
+5. Confirm
+   [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md)
+   lists the current alpha line.
+6. Run local gates:
+
+   ```bash
+   uv sync --locked
+   uv run ruff check .
+   uv run ruff format --check .
+   uv run pytest -q -m "not sparkforge"
+   uv run python scripts/check_docs.py
+   uv run python scripts/check_agent_guidance.py
+   uv run python scripts/check_release.py
+   NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+   uv sync --locked --group sparkforge
+   uv run pytest -q tests/sparkforge -m sparkforge
+   ```
+
+7. Pre-register **all nine** PyPI project names under the publishing account
+   **before** tagging when any name is new. The `v0.6.1` publish failed with
+   `429 Too many new projects created`. Spacing uploads (60s+) helps rate
+   limits for *existing* projects; it does **not** clear PyPI’s new-project
+   quota. Create empty projects at https://pypi.org/manage/projects/ (or
+   Trusted Publishing) so the first tag only uploads files.
+8. Confirm repository secret `PYPI_API_TOKEN` is present and scoped to the
+   account that owns those projects.
+9. Prefer tagging only the current release (do not `git push --tags`).
+
+## Tag and publish (0.10.0 example)
+
+```bash
+# On a clean main matching the intended commit:
+git status
+git pull --ff-only origin main
+
+# Tag must match src/etlantic/_version.py (and every plugin package).
+git tag -a v0.10.0 -m "ETLantic 0.10.0"
+git push origin v0.10.0
+```
+
+GitHub Actions workflow
+[release.yml](https://github.com/eddiethedean/etlantic/blob/main/.github/workflows/release.yml):
+
+1. Runs the full checks matrix.
+2. Verifies tag == core + all plugin versions.
+3. Builds all nine wheels/sdists.
+4. Smokes the core wheel (driver-free) and plugin discovery/import.
+5. Publishes to PyPI with paced uploads and retries on transient 429s.
+6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
+
+## After PyPI succeeds
+
+1. Verify `pip install etlantic==0.10.0` and plugin extras from a clean venv.
+2. Create or confirm the GitHub Release for `v0.10.0`.
+3. Flip install honesty banners in `README.md` and
+   `docs/01_GETTING_STARTED/INSTALLATION.md` from “from-source until wheels
+   exist” to normal `pip install` guidance (follow-up commit).
+4. Monitor issues for install / import regressions.
 
 ## Compatibility Matrix
 
@@ -48,7 +105,7 @@ Release notes should state:
 
 | Surface | Supported versions |
 |---|---|
-| Python | Project-defined range |
+| Python | Project-defined range (`>=3.11`) |
 | ContractModel | Compatible range |
 | ODCS | Supported specification versions |
 | DTCS | Supported specification versions |
@@ -82,24 +139,23 @@ The release pipeline should:
 
 Recommended order:
 
-1. Publish to TestPyPI.
-2. Install and smoke-test from TestPyPI.
-3. Create the signed release tag.
-4. Publish to PyPI.
-5. Create the GitHub release.
-6. Publish versioned documentation.
-7. Announce plugin compatibility updates.
+1. Pre-register new PyPI project names (see checklist).
+2. Optionally publish to TestPyPI and smoke-test.
+3. Create the annotated release tag and push **that tag only**.
+4. Let GitHub Actions publish to PyPI after checks.
+5. Confirm the GitHub release and documentation links.
+6. Announce plugin compatibility updates.
 
 ## Plugin Releases
 
-Plugins should be independently versioned. A core release must not require every
-plugin to release simultaneously unless the SDK compatibility range changes.
+Plugins are separately installable and declare `etlantic>=X.Y.Z,<1.0`. A core
+release should not require third-party plugins to release simultaneously unless
+the SDK compatibility range changes.
 
 Official plugin releases should declare:
 
 - Supported ETLantic versions
-- Plugin SDK version
-- Backend versions
+- Backend versions (when applicable)
 - Capability changes
 - Migration requirements
 
@@ -136,6 +192,6 @@ After publishing:
 - Verify package installation.
 - Verify documentation links.
 - Monitor issue reports.
-- Update the development version.
+- Update install banners once wheels are live.
 - Open follow-up issues for deferred work.
 - Record lessons from release incidents.

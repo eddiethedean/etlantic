@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   checks:
@@ -64,6 +64,7 @@ jobs:
           uv build --package etlantic-keyring --out-dir dist
           uv build --package etlantic-sqlmodel --out-dir dist
           uv build --package etlantic-sparkforge --out-dir dist
+          ls -la dist/
 
       - name: Smoke test core wheel
         run: |
@@ -81,107 +82,70 @@ jobs:
           print('core ok, driver-free')
           "
 
-      - name: Publish core to PyPI
+      - name: Publish packages to PyPI (paced + 429 retry)
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
+          set -euo pipefail
           TAG="${GITHUB_REF_NAME#v}"
-          uv publish "dist/etlantic-${TAG}-py3-none-any.whl" \
+
+          publish_pair() {
+            local wheel="$1"
+            local sdist="$2"
+            local attempt=1
+            local max_attempts=5
+            local delay=60
+            while true; do
+              echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
+              if uv publish "$wheel" "$sdist"; then
+                return 0
+              fi
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "Publish failed after $max_attempts attempts: $wheel"
+                echo "If this is a new-project 429, pre-register the PyPI project name and re-run."
+                exit 1
+              fi
+              echo "Publish failed; waiting ${delay}s before retry..."
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+
+          # Hatchling normalizes dashes to underscores in artifact filenames.
+          publish_pair \
+            "dist/etlantic-${TAG}-py3-none-any.whl" \
             "dist/etlantic-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish Polars plugin to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_polars-${TAG}-py3-none-any.whl" \
             "dist/etlantic_polars-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish Pandas plugin to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_pandas-${TAG}-py3-none-any.whl" \
             "dist/etlantic_pandas-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish SQL plugin to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_sql-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sql-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish PySpark plugin to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_pyspark-${TAG}-py3-none-any.whl" \
             "dist/etlantic_pyspark-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish Airflow plugin to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_airflow-${TAG}-py3-none-any.whl" \
             "dist/etlantic_airflow-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish keyring package to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_keyring-${TAG}-py3-none-any.whl" \
             "dist/etlantic_keyring-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish sqlmodel package to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_sqlmodel-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sqlmodel-${TAG}.tar.gz"
-
-      - name: Wait before next package publish
-        run: sleep 60
-
-      - name: Publish sparkforge package to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          uv publish \
+          sleep 60
+          publish_pair \
             "dist/etlantic_sparkforge-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sparkforge-${TAG}.tar.gz"
 
@@ -194,9 +158,25 @@ jobs:
           SQL="dist/etlantic_sql-${TAG}-py3-none-any.whl"
           SPARK="dist/etlantic_pyspark-${TAG}-py3-none-any.whl"
           AIRFLOW="dist/etlantic_airflow-${TAG}-py3-none-any.whl"
+          KEYRING="dist/etlantic_keyring-${TAG}-py3-none-any.whl"
+          SQLMODEL="dist/etlantic_sqlmodel-${TAG}-py3-none-any.whl"
+          SPARKFORGE="dist/etlantic_sparkforge-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project \
-            --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" --with "$SPARK" --with "$AIRFLOW" \
+            --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
+            --with "$SPARK" --with "$AIRFLOW" --with "$KEYRING" \
+            --with "$SQLMODEL" --with "$SPARKFORGE" \
             python -c "
+          import etlantic
+          import etlantic_polars
+          import etlantic_pandas
+          import etlantic_sql
+          import etlantic_pyspark
+          import etlantic_airflow
+          import etlantic_keyring
+          import etlantic_sqlmodel
+          import etlantic_sparkforge
+          assert etlantic.__version__ == '$TAG'
+          assert etlantic_sparkforge.__version__ == '$TAG'
           from etlantic.dataframe.discovery import discover_dataframe_plugins
           from etlantic.sql.discovery import discover_sql_plugins
           from etlantic.spark.discovery import discover_spark_plugins
@@ -209,5 +189,35 @@ jobs:
           assert 'pyspark' in spark, spark
           orch = discover_orchestrator_plugins()
           assert 'airflow' in orch, orch
-          print('ok', sorted(found), sorted(sql), sorted(spark), sorted(orch))
+          print('ok', etlantic.__version__, sorted(found), sorted(sql), sorted(spark), sorted(orch))
           "
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          # Extract the matching CHANGELOG section for release notes.
+          python3 - "$VER" <<'PY' > /tmp/release-notes.md
+          import re
+          import sys
+          from pathlib import Path
+
+          tag = sys.argv[1]
+          text = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          pattern = rf"^## \[{re.escape(tag)}\].*?(?=^## \[|\Z)"
+          match = re.search(pattern, text, flags=re.M | re.S)
+          body = match.group(0).strip() if match else f"ETLantic {tag}"
+          print(body)
+          PY
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub release $TAG already exists"
+          else
+            gh release create "$TAG" \
+              --title "ETLantic ${VER}" \
+              --notes-file /tmp/release-notes.md \
+              "dist/etlantic-${VER}-py3-none-any.whl" \
+              "dist/etlantic-${VER}.tar.gz"
+          fi
