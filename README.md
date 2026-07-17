@@ -2,6 +2,12 @@
 
 # ETLantic
 
+[![CI](https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml/badge.svg)](https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/etlantic.svg)](https://pypi.org/project/etlantic/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/etlantic.svg)](https://pypi.org/project/etlantic/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 Catch incompatible data-pipeline wiring before you process data.
 
 Define datasets, transformations, and pipelines as typed Python classes.
@@ -12,23 +18,9 @@ backends without rewriting the logical pipeline.
 Polars/Pandas/SQL/PySpark/Airflow plugins. Structured Streaming is
 experimental.
 
-> **Install note:** Until a matching `v0.10.0` tag is published to PyPI, prefer
-> installing from source (below). Anonymous `pip install etlantic` may fail if
-> wheels are not yet uploaded.
+## Install
 
-## Install (from source — works today)
-
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
-
-```bash
-git clone https://github.com/eddiethedean/etlantic.git
-cd etlantic
-uv sync
-uv run python -c "import etlantic; print(etlantic.__version__)"
-uv run python examples/quickstart.py
-```
-
-### Optional when wheels are on PyPI
+Requires Python 3.11+.
 
 ```bash
 pip install etlantic
@@ -36,6 +28,18 @@ pip install etlantic
 pip install etlantic-polars etlantic-pandas etlantic-sql
 pip install etlantic-pyspark etlantic-airflow
 pip install etlantic-keyring etlantic-sqlmodel etlantic-sparkforge
+```
+
+### From source
+
+Requires [uv](https://docs.astral.sh/uv/).
+
+```bash
+git clone https://github.com/eddiethedean/etlantic.git
+cd etlantic
+uv sync
+uv run python -c "import etlantic; print(etlantic.__version__)"
+uv run python examples/quickstart.py
 ```
 
 ## Quick example

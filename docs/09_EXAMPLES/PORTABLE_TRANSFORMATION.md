@@ -117,6 +117,28 @@ Both profiles select a plugin compiler for the same
 The real plan uses stable identities and fingerprints. It does not include
 runtime parameter values or source rows.
 
+## Expected outputs
+
+Sample input (`customers`):
+
+```text
+customer_id  first_name  last_name  email                 age  lifetime_value
+1            Ada         Lovelace   Ada@Example.com       36   12000.0
+2            Grace       Hopper     grace@example.com     17   2500.0
+3            Katherine   Johnson    k.johnson@example.com 42   800.0
+```
+
+With `minimum_age=18`, the curated sink (`result` / `curated_customers`) is:
+
+```text
+customer_id  full_name            email                  segment
+1            Ada Lovelace         ada@example.com        platinum
+3            Katherine Johnson    k.johnson@example.com  standard
+```
+
+Grace is filtered out by age. Segment thresholds are platinum ≥ 10000,
+gold ≥ 1000, otherwise standard. Email is trimmed and lowercased.
+
 ## Acceptance assertions
 
 The eventual runnable example must prove:

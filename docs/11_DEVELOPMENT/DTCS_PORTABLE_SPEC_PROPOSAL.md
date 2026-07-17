@@ -122,13 +122,123 @@ defines one. This proposal defines a canonical data-only representation:
     "types": "..."
   },
   "transformation": "example:normalize-customers",
-  "inputs": {},
-  "parameters": {},
-  "actions": [],
-  "outputs": {},
+  "inputs": {
+    "customers": {
+      "contractId": "example:raw-customer"
+    }
+  },
+  "parameters": {
+    "minimum_age": {
+      "type": {"kind": "int64"},
+      "default": 18
+    }
+  },
+  "actions": [
+    {
+      "id": "dtcs:filter",
+      "input": "customers",
+      "predicate": {
+        "op": "dtcs:gte",
+        "args": [
+          {"field": "age"},
+          {"parameter": "minimum_age"}
+        ]
+      }
+    },
+    {
+      "id": "dtcs:project",
+      "fields": [
+        {"name": "customer_id", "expr": {"field": "customer_id"}},
+        {
+          "name": "full_name",
+          "expr": {
+            "fn": "dtcs:concat_ws",
+            "args": [
+              {"literal": " "},
+              {"field": "first_name"},
+              {"field": "last_name"}
+            ]
+          }
+        },
+        {
+          "name": "email",
+          "expr": {
+            "fn": "dtcs:lower",
+            "args": [
+              {
+                "fn": "dtcs:trim",
+                "args": [{"field": "email"}]
+              }
+            ]
+          }
+        },
+        {
+          "name": "segment",
+          "expr": {
+            "fn": "dtcs:case_when",
+            "args": [
+              {
+                "when": {
+                  "op": "dtcs:gte",
+                  "args": [
+                    {"field": "lifetime_value"},
+                    {"literal": 10000}
+                  ]
+                },
+                "then": {"literal": "platinum"}
+              },
+              {
+                "when": {
+                  "op": "dtcs:gte",
+                  "args": [
+                    {"field": "lifetime_value"},
+                    {"literal": 1000}
+                  ]
+                },
+                "then": {"literal": "gold"}
+              },
+              {"otherwise": {"literal": "standard"}}
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "result": {
+      "contractId": "example:customer",
+      "from": "project"
+    }
+  },
   "rules": [],
-  "lineage": [],
-  "requirements": {},
+  "lineage": [
+    {
+      "output": "result.customer_id",
+      "inputs": ["customers.customer_id"]
+    },
+    {
+      "output": "result.full_name",
+      "inputs": ["customers.first_name", "customers.last_name"]
+    },
+    {
+      "output": "result.email",
+      "inputs": ["customers.email"]
+    },
+    {
+      "output": "result.segment",
+      "inputs": ["customers.lifetime_value"]
+    }
+  ],
+  "requirements": {
+    "actions": ["dtcs:filter", "dtcs:project"],
+    "operators": ["dtcs:gte"],
+    "functions": [
+      "dtcs:concat_ws",
+      "dtcs:lower",
+      "dtcs:trim",
+      "dtcs:case_when"
+    ]
+  },
   "extensions": {}
 }
 ```
