@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-The proposed `etlantic.transform/1` work adds a portable transformation
+The proposed DTCS Transformation Plan work adds a portable transformation
 compiler role to engine plugins. See
 [Portable Transformation Compiler](PORTABLE_TRANSFORM_COMPILER.md). It is
 planned across ETLantic 0.11-0.15 and is not shipped in 0.10.

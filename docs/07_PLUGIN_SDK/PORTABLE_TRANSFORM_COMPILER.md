@@ -74,8 +74,11 @@ TransformCompilerInfo(
 )
 ```
 
-Capabilities list exact operation/function versions, portable types, semantic
-modes, maximum supported IR size, lazy/eager behavior, and artifact ownership.
+Capabilities are an ETLantic adapter over the DTCS Engine Capability Model.
+They list exact registered Semantic Action/Function versions, portable types,
+semantic modes, maximum supported plan size, lazy/eager behavior, and artifact
+ownership. Plans and reports preserve the originating DTCS capability
+identifiers.
 
 ## Support reports
 

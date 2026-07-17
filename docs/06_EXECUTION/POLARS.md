@@ -26,7 +26,7 @@ pip install 'etlantic-polars[arrow]'  # optional
 ## Portable compiler (planned 0.12)
 
 The Polars compiler is the first planned executable lowering for
-`etlantic.transform/1`. It will:
+`dtcs.transform-plan/1`. It will:
 
 - lower portable columns to native `pl.Expr` values
 - lower relational nodes to `DataFrame` and `LazyFrame` operations

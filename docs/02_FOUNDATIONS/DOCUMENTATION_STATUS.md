@@ -87,6 +87,9 @@ The source of truth depends on the subject:
 |---|---|
 | Data-contract meaning | Upstream ODCS specification |
 | Transformation-contract meaning | `DTCS_SPEC.md` |
+| Portable Transformation Plan meaning and canonical models | DTCS specification and public `dtcs` package |
+| PySpark-inspired portable authoring UX | ETLantic `etlantic.transform/1` profile |
+| Portable compiler lifecycle | ETLantic Plugin SDK |
 | Pipeline-contract meaning | `DPCS_SPEC.md` |
 | ContractModel behavior | ContractModel project |
 | ETLantic architecture and API | This documentation until code and tests supersede it |
@@ -94,6 +97,11 @@ The source of truth depends on the subject:
 
 Integration guides explain how ETLantic uses a standard; they do not
 replace normative specifications.
+
+ETLantic and DTCS share a publisher, so portable requirements may drive
+coordinated DTCS specification and package releases. Until a DTCS change is
+published and included in ETLantic's compatible dependency range, it remains a
+proposal rather than normative shipped behavior.
 
 ## Requirement Language
 

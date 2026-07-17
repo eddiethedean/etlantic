@@ -4,6 +4,9 @@ Status: Internal standards and release plan
 Owner: ETLantic/DTCS publisher and maintainers  
 Applies to: ETLantic 0.11+
 
+The formal change draft is
+[DTCS Change Proposal: Rich Portable Relational Transformations](DTCS_PORTABLE_SPEC_PROPOSAL.md).
+
 ## Decision
 
 DTCS is the normative and executable semantic kernel for portable
@@ -25,14 +28,85 @@ ETLantic provides:
 Plugins consume a validated DTCS Transformation Plan. They do not consume an
 independent ETLantic expression model.
 
+## Published DTCS baseline assessment
+
+The published `SPEC.md` already provides the architectural spine required by
+portable transformations:
+
+- Chapter 13 makes the Transformation Plan the authoritative semantic IR.
+- Chapter 14 defines Engine Capability Models and mandatory capability
+  matching.
+- Chapter 15 requires compilers to consume validated Transformation Plans and
+  produce backend Execution Plans.
+- Chapter 17 makes Semantic Actions the only standardized mechanism for
+  modifying datasets.
+- Chapter 18 defines typed, null-aware, deterministic Functions.
+- Chapters 22-26 define registries, conformance, security, independent
+  versioning, and governance.
+- Appendix A publishes concrete `dtcs:` identifiers and distinguishes null,
+  missing, and invalid values.
+
+ETLantic must use these existing concepts directly. The portable initiative is
+primarily an expansion and concretization of DTCS registries/profiles plus an
+ergonomic ETLantic authoring facade—not the creation of a new semantic system.
+
+### Current standard-library coverage
+
+The published Semantic Action library already includes `dtcs:project`,
+`dtcs:select`, `dtcs:filter`, `dtcs:aggregate`, `dtcs:group`, `dtcs:join`,
+`dtcs:sort`, `dtcs:union`, `dtcs:partition`, and `dtcs:derive`.
+
+The Function library already includes `dtcs:lower`, `dtcs:upper`,
+`dtcs:concat`, `dtcs:substr`, `dtcs:replace`, `dtcs:coalesce`, `dtcs:length`,
+portable conversions, numeric min/max/abs, containment, and null/missing
+predicates.
+
+ETLantic's initial portable facade should map to these identifiers wherever
+their published parameter and result semantics are sufficient.
+
+### Gaps for the PySpark-inspired surface
+
+Rich portable authoring requires DTCS proposals for at least:
+
+- expression-bearing project and filter action parameters
+- add/replace column, rename, drop, distinct, deduplicate, and limit actions
+- join types, arbitrary join predicates, collision handling, and null-safe keys
+- union-by-name and missing-column policy
+- multi-key sorting, direction, and null placement
+- multiple aggregate expressions, aliases, and empty-input behavior
+- boolean/comparison/arithmetic operators with precise type promotion
+- strict and tolerant casts
+- conditional expressions
+- richer string/date/time functions
+- windows and frame boundaries
+- action/function capability identifiers at the granularity compilers need
+- canonical serialized Transformation Plan and conformance-profile schemas
+
+These gaps should be addressed in DTCS before ETLantic advertises the matching
+portable syntax as standard. Experimental vendor extensions may incubate a
+design, but ETLantic must label them and must not present them as standard
+`dtcs:` behavior.
+
+### Value-state correction
+
+Portable semantics must distinguish DTCS value states:
+
+- null: present with a null payload
+- missing: `{"$dtcs": "missing"}`
+- invalid: `{"$dtcs": "invalid"}` with optional reason
+
+ETLantic and its compilers must not collapse missing or invalid into null.
+Function and action behavior follows the registry's declared semantics for all
+three states.
+
 ## Publishing authority
 
 ETLantic and DTCS share a publisher. The publisher can evolve the DTCS
 specification and `dtcs` package when portable transformation requirements
 expose missing concepts or ambiguous semantics.
 
-Shared authority reduces coordination latency; it does not remove compatibility
-discipline. Every standards change still requires:
+Shared authority reduces coordination latency; it does not remove the DTCS
+governance requirements in Chapter 26. Every standards change still requires:
 
 - explicit normative specification text
 - a versioned DTCS schema and Python package release
@@ -40,6 +114,11 @@ discipline. Every standards change still requires:
 - ETLantic dependency-range and adapter updates
 - compiler capability and conformance updates
 - migration guidance for breaking changes
+
+Normative proposals include a problem statement, proposed solution,
+compatibility impact, migration considerations, and affected artifacts; they
+undergo technical review before adoption. Published documents and identifiers
+remain immutable.
 
 ETLantic documentation must not describe unpublished DTCS behavior as if it
 were already normative.
@@ -181,4 +260,3 @@ Every portable feature proposal should link:
 This chain keeps standards meaning, authoring ergonomics, and backend execution
 aligned while allowing both projects to evolve quickly under shared
 publishing authority.
-

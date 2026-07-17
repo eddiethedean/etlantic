@@ -64,6 +64,8 @@ not become the portable model.
 
 See [DTCS and Portable Transformation Evolution](DTCS_PORTABLE_EVOLUTION.md)
 for the coordinated specification/package release workflow.
+The proposed normative additions are enumerated in the
+[DTCS Portable Relational Change Proposal](DTCS_PORTABLE_SPEC_PROPOSAL.md).
 
 ## 0.11 preparation: decisions and fixtures
 
@@ -71,6 +73,9 @@ Deliver:
 
 - accept ADR-013 and the IR specification
 - freeze kernel operation names and portable type vocabulary
+- map every facade operation to a published `dtcs:` Semantic Action, Function,
+  Rule, or reviewed extension proposal
+- audit published DTCS null, missing, and invalid behavior against each backend
 - define canonical JSON examples before Python classes
 - create semantic truth tables and edge-case fixtures
 - define diagnostic code allocation and source-path format
@@ -90,6 +95,7 @@ Deliver:
 - column references, literals, alias, comparison, boolean, arithmetic, strict
   cast, null predicates, conditional, coalesce, concat, and basic strings
 - prohibited action and boolean-conversion errors
+- preservation of distinct DTCS null, missing, and invalid values
 - deterministic serialization and fingerprints
 - definition validation and output binding
 

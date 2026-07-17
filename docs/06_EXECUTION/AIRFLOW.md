@@ -4,8 +4,8 @@
 
 Future Airflow artifacts may carry tasks whose step logic was compiled from a
 portable definition. The Airflow compiler consumes the resolved Pipeline Plan;
-it does not reinterpret `etlantic.transform/1` or choose a different native
-fallback.
+it does not reinterpret the DTCS Transformation Plan or choose a different
+native fallback.
 
 The Airflow plugin enables ETLantic to execute validated **Pipeline Plans**
 using Apache Airflow.

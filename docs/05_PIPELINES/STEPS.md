@@ -1,8 +1,8 @@
 # Steps
 
 A step may eventually be realized either by a native registered implementation
-or by compiling its transformation's portable `etlantic.transform/1`
-definition. This 0.11+ choice does not change step identity, bindings, output
+or by compiling its transformation's portable DTCS Transformation Plan. This
+0.11+ choice does not change step identity, bindings, output
 references, or graph topology.
 
 A `Step` is a concrete instance of a `Transformation` inside a `Pipeline`.

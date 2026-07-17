@@ -25,8 +25,8 @@ pip install 'etlantic-pandas[arrow]'  # optional
 
 ## Portable compiler (planned 0.14)
 
-The Pandas compiler will lower supported `etlantic.transform/1` expressions to
-DataFrame and Series operations while declaring eager execution and ownership
+The Pandas compiler will lower supported DTCS Transformation Plan expressions
+to DataFrame and Series operations while declaring eager execution and ownership
 copies honestly. Portable behavior cannot depend on a meaningful Pandas index.
 
 Where Pandas cannot preserve a required type, null, ordering, or lazy semantic,

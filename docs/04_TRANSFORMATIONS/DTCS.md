@@ -122,8 +122,9 @@ satisfied.
 
 DTCS already defines the implementation-independent Transformation Plan,
 expressions, functions, semantic actions, and engine capability model.
-ETLantic's proposed `etlantic.transform/1` IR is a concrete, closed realization
-of that DTCS model—not a separate source of transformation meaning.
+The proposed `dtcs.transform-plan/1` package model is the concrete, closed
+realization of that DTCS model. `etlantic.transform/1` is its ergonomic
+authoring profile—not a separate source of transformation meaning.
 
 `@Transformation.portable` provides the PySpark-inspired Python authoring
 surface. Generated DTCS may carry the normalized Transformation Plan, while

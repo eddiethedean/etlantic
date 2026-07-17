@@ -108,7 +108,7 @@ It excludes resolved credentials, dataframe objects, scheduler tasks, database
 connections, and cluster handles.
 
 Beginning with the proposed 0.11 work, the logical model may also contain a
-closed `etlantic.transform/1` expression graph. This graph is data-only and
+closed `dtcs.transform-plan/1` expression graph. This graph is data-only and
 backend-independent; native Polars, Pandas, SQL, and Spark objects remain
 outside core.
 
@@ -238,7 +238,7 @@ Primary extension families are:
 | Extension | Responsibility |
 |---|---|
 | Dataframe plugin | Execute transformation implementations with a dataframe engine |
-| Portable transformation compiler | Compile `etlantic.transform/1` expressions to native backend operations |
+| Portable transformation compiler | Compile DTCS Transformation Plans to native backend operations |
 | SQL plugin and dialect | Compile and execute SQL-native regions |
 | PySpark plugin | Build and submit Spark-native regions |
 | Orchestrator plugin | Coordinate or compile pipeline execution |

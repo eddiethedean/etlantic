@@ -1,6 +1,6 @@
-# ETLantic Portable Transformation IR Specification
+# ETLantic Profile for DTCS Portable Transformation Plans
 
-Status: Proposed normative specification  
+Status: Proposed DTCS profile and requirements draft
 DTCS plan identifier: `dtcs.transform-plan/1`  
 ETLantic authoring profile: `etlantic.transform/1`  
 Target milestones: 0.11 kernel through 0.15 advanced lowering
@@ -20,8 +20,9 @@ backend APIs, or arbitrary Python translation. Where this document and DTCS
 conflict, DTCS is authoritative and this profile must be corrected or
 versioned.
 
-The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY express normative
-requirements.
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY express requirements
+proposed for the DTCS profile. They become normative only through the DTCS
+change, review, and publication process.
 
 ## 2. Architectural boundary
 
@@ -203,20 +204,24 @@ remain associated with the output through compilation and reporting.
 
 ### 9.1 Nulls
 
-Boolean expressions use three-valued logic: true, false, and null. Filtering
-retains only rows whose predicate evaluates to true. False and null predicates
-are removed.
+Portable evaluation distinguishes DTCS null, missing, and invalid value states.
+Boolean expressions additionally have true and false values. Filtering retains
+only rows whose predicate evaluates to true. The DTCS registry entry for the
+filter action defines the treatment of false, null, missing, and invalid
+predicates; compilers MUST NOT collapse those states.
 
 Equality with null produces null. Authors use `isNull()` and `isNotNull()` for
 null predicates. Plugins MUST NOT rewrite `value == null` into `is null`.
 
-NaN is not null. Floating-point NaN behavior MUST be declared separately by
+Missing and invalid are not null and MUST NOT be coerced to null unless a
+standard registry entry explicitly defines that behavior. NaN is also not
+null. Floating-point NaN behavior MUST be declared separately by
 each operation whose backend behavior differs.
 
 ### 9.2 Boolean operators
 
-`and`, `or`, and `not` operate according to three-valued truth tables. Plugins
-MUST NOT use host-language truthiness.
+`and`, `or`, and `not` operate according to DTCS-registered truth tables that
+cover null, missing, and invalid. Plugins MUST NOT use host-language truthiness.
 
 ### 9.3 Numeric operations
 

@@ -71,9 +71,10 @@ def normalize(customers, minimum_age):
     return customers.filter(F.col("age") >= minimum_age)
 ```
 
-ETLantic normalizes this definition into the closed
-`etlantic.transform/1` IR. Plugins compile that IR to native operations. The
-definition does not process data and is not a native implementation.
+ETLantic normalizes this definition into the canonical DTCS Transformation
+Plan (`dtcs.transform-plan/1`) through the public `dtcs` package. Plugins
+compile that plan to native operations. The definition does not process data
+and is not a native implementation.
 
 ## Implementation
 

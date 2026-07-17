@@ -4,7 +4,7 @@
 `etlantic-pyspark`.
 
 !!! note "Future compiler role"
-    Compilation of PySpark-inspired `etlantic.transform/1` definitions to
+    Compilation of DTCS plans produced by PySpark-inspired portable definitions to
     native Spark expressions is planned for 0.13 and follows the
     [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
 

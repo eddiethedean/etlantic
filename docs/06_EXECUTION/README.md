@@ -2,7 +2,7 @@
 
 !!! note "Portable transformations are a 0.11+ design"
     ETLantic 0.10 executes registered native implementations. Future engine
-    plugins will also compile the closed `etlantic.transform/1` IR described in
+    plugins will also compile closed DTCS Transformation Plans described in
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).
 
 Execution is the final stage of the ETLantic lifecycle.

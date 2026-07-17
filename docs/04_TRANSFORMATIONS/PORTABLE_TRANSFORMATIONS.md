@@ -268,14 +268,18 @@ standardized and released in DTCS before ETLantic exposes them. Shared
 publishing authority shortens the feedback loop but does not remove explicit
 versioning and compatibility gates.
 
-The normative
+The proposed ETLantic DTCS profile
 [Portable Transformation IR specification](../specifications/PORTABLE_TRANSFORM_IR_SPEC.md)
-defines nulls, casts, arithmetic, strings, timestamps, joins, ordering, and
-aggregation behavior. A plugin must preserve that meaning or reject the
+collects requirements for nulls, casts, arithmetic, strings, timestamps, joins,
+ordering, and aggregation. Those requirements become authoritative through
+DTCS publication. A plugin must preserve the published meaning or reject the
 operation during planning.
 
 See the [DTCS evolution plan](../11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md) for
 the cross-project specification and package release workflow.
+The concrete action, function, expression, capability, and conformance changes
+are proposed in the
+[DTCS Portable Relational Change Proposal](../11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md).
 
 ## Related documents
 

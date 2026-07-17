@@ -26,9 +26,14 @@ surface that constructs those DTCS models directly.
 and parameter objects to construct the IR. It never processes data.
 
 Backend plugins compile supported IR nodes to native expressions. Plugins must
-preserve normative ETLantic semantics or reject the definition during
+preserve normative DTCS semantics or reject the definition during
 planning. Silent approximation, raw SQL fallback, and automatic UDF fallback
 are prohibited.
+
+Portable operations and functions use registered `dtcs:` identifiers. DTCS
+distinctions among null, missing, and invalid are preserved. ETLantic facade
+syntax without a sufficient published DTCS definition remains experimental or
+unavailable.
 
 Native `@Transformation.implementation(engine)` registration remains available
 for optimized or non-portable behavior. The planner records whether it selected

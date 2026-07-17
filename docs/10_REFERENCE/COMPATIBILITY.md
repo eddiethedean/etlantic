@@ -21,7 +21,9 @@ This table describes the declared compatibility of ETLantic 0.10.0.
 | SQLModel bridge | `etlantic-sqlmodel==0.10.0` |
 | SparkForge adapter | `etlantic-sparkforge==0.10.0` |
 | Orchestration protocol | `etlantic.orchestration/1` |
-| Portable transform protocol | Not shipped; proposed `etlantic.transform/1` for 0.11+ |
+| DTCS Transformation Plan protocol | Not shipped; proposed `dtcs.transform-plan/1` for 0.11+ |
+| Portable authoring profile | Not shipped; proposed `etlantic.transform/1` |
+| Portable compiler protocol | Not shipped; proposed `etlantic.transform-compiler/1` for 0.12+ |
 | Package stability | Alpha |
 | Plugin SDK stability | Protocol stable within 0.8; third-party SDK still evolving |
 
@@ -30,5 +32,5 @@ ranges. During the 0.x series, public APIs and persistent formats may change.
 Breaking changes must be called out in the changelog with an upgrade path.
 
 Portable compiler compatibility will be tracked independently across core,
-Pipeline Plan schema, DTCS profile, transform protocol, compiler package, and
-advertised operation/function versions.
+Pipeline Plan schema, DTCS plan/package version, ETLantic authoring profile,
+compiler protocol/package, and advertised operation/function versions.

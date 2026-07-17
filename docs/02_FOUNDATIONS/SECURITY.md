@@ -172,9 +172,9 @@ trust boundaries.
 
 ### Portable transformation definitions
 
-The proposed `etlantic.transform/1` IR adds an analysis input and compiler
-boundary. Portable definitions must be closed, bounded, data-only expression
-graphs.
+The proposed DTCS Transformation Plan adds an analysis input and compiler
+boundary. Portable definitions must normalize to closed, bounded, data-only
+DTCS expression graphs.
 
 Python `@Transformation.portable` authoring invokes trusted definition code
 with symbolic values during an explicit trusted import. Static loading,

@@ -13,8 +13,8 @@ defined by ODCS, DTCS, and DPCS.
 Compilation occurs after planning and before execution.
 
 The future portable transformation compiler performs a nested, narrower form
-of compilation: it lowers `etlantic.transform/1` expressions to native Polars,
-Pandas, SQL, or Spark expressions. The portable IR remains the semantic source
+of compilation: it lowers DTCS Transformation Plan expressions to native
+Polars, Pandas, SQL, or Spark expressions. The DTCS plan remains the semantic source
 of truth and its fingerprint remains in the plan.
 
 ## Goals

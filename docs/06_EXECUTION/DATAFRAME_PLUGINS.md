@@ -45,7 +45,7 @@ Select the engine with `Profile.dataframe_engine = "polars"` or `"pandas"`.
 ## Portable compilation (0.11+)
 
 Dataframe plugins will additionally analyze and compile
-`etlantic.transform/1` definitions:
+DTCS Transformation Plans produced by portable definitions:
 
 ```python
 @NormalizeCustomers.portable

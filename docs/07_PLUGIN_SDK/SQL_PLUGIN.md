@@ -5,7 +5,7 @@
 `etlantic.sql_plugins` entry point.
 
 !!! note "Future portable lowering"
-    Lowering `etlantic.transform/1` into the safe SQL IR is planned for 0.15 and
+    Lowering DTCS Transformation Plans into the safe SQL IR is planned for 0.15 and
     follows the [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
 
 A **SQL Plugin** implements the ETLantic SQL Plugin API for a specific SQL

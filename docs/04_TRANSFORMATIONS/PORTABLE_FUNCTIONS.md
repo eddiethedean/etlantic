@@ -11,6 +11,26 @@ Portable functions are imported through one stable namespace:
 from etlantic.transform import functions as F
 ```
 
+Each public function maps to a DTCS Function registry identifier. ETLantic does
+not assign independent semantics. Existing standard mappings include:
+
+| ETLantic facade | DTCS identifier |
+|---|---|
+| `F.lower` | `dtcs:lower` |
+| `F.upper` | `dtcs:upper` |
+| `F.concat` | `dtcs:concat` |
+| `F.substring` | `dtcs:substr` |
+| `F.replace` | `dtcs:replace` |
+| `F.coalesce` | `dtcs:coalesce` |
+| `F.length` | `dtcs:length` |
+| `F.abs` | `dtcs:abs` |
+| `F.is_null` / `Column.isNull` | `dtcs:is_null` |
+| `F.is_missing` | `dtcs:is_missing` |
+
+Facade functions whose semantics are not yet present in the published DTCS
+registry remain proposals until a reviewed DTCS registry/specification release
+defines them.
+
 ## Support levels
 
 | Level | Meaning |
@@ -27,7 +47,7 @@ from etlantic.transform import functions as F
 | `F.col(name)` | Reference a column | qualified and unqualified resolution |
 | `F.lit(value)` | Safe bounded literal | normalized portable type |
 | `F.when(condition, value)` | Begin conditional expression | ordered first-match evaluation |
-| `F.coalesce(*values)` | First non-null value | SQL-style null semantics |
+| `F.coalesce(*values)` | Registry-defined coalescing | DTCS null/missing/invalid semantics |
 | `F.concat(*values)` | Concatenate strings or collections | explicit type rules |
 | `F.concat_ws(separator, *values)` | Join string values | normative null handling |
 | `F.lower(value)` | Lowercase string | Unicode behavior declared |

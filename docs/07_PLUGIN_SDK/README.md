@@ -3,7 +3,7 @@
 !!! note "Portable transformation compiler proposal"
     The proposed
     [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md)
-    defines how plugins will compile the future `etlantic.transform/1` IR. It
+    defines how plugins will compile future DTCS Transformation Plans. It
     is not part of ETLantic 0.10.
 
 The Plugin SDK enables developers to extend ETLantic with new execution

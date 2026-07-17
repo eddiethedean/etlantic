@@ -5,7 +5,7 @@ portable pipeline plans on different technologies without changing pipeline
 definitions.
 
 Beginning with the proposed 0.11+ work, engine plugins may also implement a
-compiler for the closed `etlantic.transform/1` IR. This additional capability
+compiler for the closed DTCS Transformation Plan. This additional capability
 does not permit plugins to redefine portable operation semantics.
 
 The core ETLantic library is intentionally small. It models, validates,

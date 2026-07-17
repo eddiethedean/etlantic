@@ -903,7 +903,9 @@ the `dtcs` package before ETLantic exposes the corresponding authoring API.
 - PySpark-inspired DataFrame, Column, and `functions as F` authoring surface
 - immutable `FrameExpr`, `ColumnExpr`, and core relational/scalar nodes
 - `etlantic.transform/1` as ETLantic's concrete DTCS Transformation Plan
-  profile
+  authoring profile over public `dtcs` package models
+- mappings from PySpark-inspired facade methods to registered `dtcs:` Semantic
+  Actions and Functions
 - portable type system, column resolution, type inference, and output-contract
   validation
 - bounded canonical serialization and deterministic fingerprints
@@ -922,6 +924,8 @@ the `dtcs` package before ETLantic exposes the corresponding authoring API.
 - equivalent definitions produce identical canonical IR fingerprints;
 - hostile depth, node count, literal size, executable objects, and secret values
   fail within configured budgets.
+- null, missing, and invalid remain distinct through authoring, planning, and
+  canonical serialization.
 
 ### Exit gate
 
@@ -1058,6 +1062,8 @@ with an auditable, secure compiler model.
 
 See the
 [Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md).
+The required standards work is detailed in the
+[DTCS Portable Relational Change Proposal](DTCS_PORTABLE_SPEC_PROPOSAL.md).
 
 ## 1.0 — Stable Foundation
 

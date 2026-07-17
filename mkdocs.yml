@@ -268,9 +268,11 @@ nav:
           - SQLModel Integration Plan: 11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md
           - SparkForge Adoption: 11_DEVELOPMENT/SPARKFORGE_ADOPTION.md
           - Portable Transformation Plan: 11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md
+          - DTCS Portable Evolution: 11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md
+          - DTCS Portable Spec Proposal: 11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md
   - Specifications:
       - Overview: specifications/README.md
       - DTCS: specifications/DTCS_SPEC.md
       - DPCS: specifications/DPCS_SPEC.md
-      - Portable Transformation IR: specifications/PORTABLE_TRANSFORM_IR_SPEC.md
+      - DTCS Portable Transformation Profile: specifications/PORTABLE_TRANSFORM_IR_SPEC.md
   - Manifesto: ETLANTIC_MANIFESTO.md

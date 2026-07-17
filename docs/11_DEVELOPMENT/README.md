@@ -33,6 +33,7 @@ These pages sequence future work. They are not product user guides:
 - [SparkForge Feature Adoption](SPARKFORGE_ADOPTION.md)
 - [Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md)
 - [DTCS and Portable Transformation Evolution](DTCS_PORTABLE_EVOLUTION.md)
+- [DTCS Portable Relational Change Proposal](DTCS_PORTABLE_SPEC_PROPOSAL.md)
 
 Start with the roadmap for sequencing and the decision records for architectural
 boundaries.

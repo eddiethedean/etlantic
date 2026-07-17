@@ -208,8 +208,9 @@ execution technology.
 
 ## Transformation IR
 
-The proposed immutable, versioned `etlantic.transform/1` representation of
-portable relational and scalar expressions. It contains no source rows,
+The immutable, versioned DTCS Transformation Plan representation of portable
+relational and scalar expressions, proposed as `dtcs.transform-plan/1`. Public
+canonical models belong to the `dtcs` package. It contains no source rows,
 resolved secrets, executable closures, or backend-native objects.
 
 ## Validation
