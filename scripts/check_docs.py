@@ -177,8 +177,7 @@ def main() -> None:
     )
     if (
         "What not to bet on yet" in evaluator
-        and "@Transformation.portable` / `etlantic.transform` (the DTCS"
-        in evaluator
+        and "@Transformation.portable` / `etlantic.transform` (the DTCS" in evaluator
     ):
         raise SystemExit(
             "EVALUATOR.md must not tell readers not to bet on portable authoring "

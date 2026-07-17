@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Documentation
-
-- Adoption pass: portable authoring SSOT, Current 0.11 nav, Quickstart CLI
-  continuation, Migration 0.10→0.11, Ops Pilot, FAQ positioning, transform API
-  / CLI gaps, check_docs gates
-
 ## [0.11.0] - 2026-07-17
 
 ### Added
@@ -47,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refined roadmap 0.11 to full authoring scope and marked the milestone shipped
 - Rolled current-facing docs and install pins from 0.10 → 0.11; hardened
   `scripts/check_docs.py` stale-version gates
+- Adoption pass: portable authoring SSOT, Current 0.11 nav, Quickstart CLI
+  continuation, Migration 0.10→0.11, Ops Pilot, FAQ positioning, transform API
+  / CLI gaps, check_docs gates
 
 ### Changed
 

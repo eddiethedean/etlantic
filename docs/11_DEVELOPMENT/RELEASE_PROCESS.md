@@ -12,7 +12,7 @@ ETLantic follows Semantic Versioning after 1.0:
 - Major: incompatible public API or persistent-format changes
 
 During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.10.0`).
+plugin packages currently share the core minor version (for example `0.11.0`).
 
 ## Packages published on each tag
 
@@ -67,7 +67,7 @@ Tag `vX.Y.Z` publishes nine distributions:
    (project-scoped tokens cannot create brand-new projects).
 9. Prefer tagging only the current release (do not `git push --tags`).
 
-## Tag and publish (0.10.0 example)
+## Tag and publish (0.11.0 example)
 
 ```bash
 # On a clean main matching the intended commit:
@@ -75,8 +75,8 @@ git status
 git pull --ff-only origin main
 
 # Tag must match src/etlantic/_version.py (and every plugin package).
-git tag -a v0.10.0 -m "ETLantic 0.10.0"
-git push origin v0.10.0
+git tag -a v0.11.0 -m "ETLantic 0.11.0"
+git push origin v0.11.0
 ```
 
 GitHub Actions workflow
@@ -92,8 +92,8 @@ GitHub Actions workflow
 
 ## After PyPI succeeds
 
-1. Verify `pip install etlantic==0.10.0` and plugin extras from a clean venv.
-2. Create or confirm the GitHub Release for `v0.10.0`.
+1. Verify `pip install etlantic==0.11.0` and plugin extras from a clean venv.
+2. Create or confirm the GitHub Release for `v0.11.0`.
 3. Confirm install docs remain pip-first (`README.md`,
    `docs/01_GETTING_STARTED/INSTALLATION.md`) and hosted docs
    (`https://etlantic.readthedocs.io/`) build for the tag.
