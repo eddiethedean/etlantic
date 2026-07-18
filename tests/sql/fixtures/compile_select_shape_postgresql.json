@@ -1,0 +1,8 @@
+{
+  "dialect": "postgresql",
+  "text": "SELECT \"customer_id\" FROM \"raw_customers\"",
+  "param_names": [],
+  "has_params": false,
+  "text_contains_select": true,
+  "redacted": {}
+}
