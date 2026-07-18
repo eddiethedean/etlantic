@@ -34,6 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Package version set to 0.13.0 across core and optional plugins
 
+### Upgrade notes
+
+- Pin `etlantic==0.13.0` and matching plugins (`etlantic-polars`,
+  `etlantic-pyspark`, …). Extras pins use `==0.13.0`.
+- Portable join/union/aggregate/sort/dedupe/limit plans that failed planning in
+  0.12 under `portable_transform_policy="require"` now compile on Polars and
+  PySpark when they fit `portable-relational/1`.
+- PySpark portable compilation forbids automatic UDF fallback; keep native
+  `@implementation("pyspark")` when you need UDFs or unclaimed profiles.
+- Public `etlantic.testing.portable_transform_conformance` remains deferred to
+  0.14; private differential fixtures live under `tests/`.
+
 ## [0.12.0] - 2026-07-17
 
 ### Added

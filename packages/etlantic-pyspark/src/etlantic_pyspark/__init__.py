@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from etlantic_pyspark.compiler import (
-    PySparkTransformCompiler,
-    create_transform_compiler,
-)
+from typing import Any
+
 from etlantic_pyspark.plugin import PySparkPlugin, create_plugin
 from etlantic_pyspark.provider import LocalSparkProvider, create_provider
 
@@ -20,3 +18,19 @@ __all__ = [
     "create_provider",
     "create_transform_compiler",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Lazy-load the portable compiler so sparkless_shim imports stay pyspark-free."""
+    if name in {"PySparkTransformCompiler", "create_transform_compiler"}:
+        from etlantic_pyspark.compiler import (
+            PySparkTransformCompiler,
+            create_transform_compiler,
+        )
+
+        exports = {
+            "PySparkTransformCompiler": PySparkTransformCompiler,
+            "create_transform_compiler": create_transform_compiler,
+        }
+        return exports[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -59,7 +59,18 @@ def _join_plan(*, null_safe: bool = False) -> dict[str, Any]:
 
 @pytest.mark.polars
 @pytest.mark.spark
+@pytest.mark.real_pyspark
 def test_differential_null_safe_join() -> None:
+    """Null-safe join differential requires real PySpark.
+
+    sparkless condition joins do not apply ``eqNullSafe`` predicates correctly,
+    so this check is gated like Catalyst acceptance.
+    """
+    import os
+
+    if os.environ.get("SPARKLESS_TEST_MODE", "").lower() != "pyspark":
+        pytest.skip("Set SPARKLESS_TEST_MODE=pyspark for null-safe join differentials")
+
     plan = _join_plan(null_safe=True)
     left_rows = [{"id": 1, "a": 10}, {"id": None, "a": 20}]
     right_rows = [{"id": 1, "b": 100}, {"id": None, "b": 200}]

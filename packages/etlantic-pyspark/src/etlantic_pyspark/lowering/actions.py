@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
-
 from etlantic_pyspark.lowering.expr import lower_agg_expr, lower_expr
+
+
+def _F():
+    from pyspark.sql import functions as F
+
+    return F
+
 
 KERNEL_ACTIONS = frozenset(
     {
@@ -41,16 +45,17 @@ _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
 def apply_action(
-    frame: DataFrame,
+    frame: Any,
     action: dict[str, Any],
     *,
     parameters: dict[str, Any],
     frames: dict[str, Any] | None = None,
-) -> DataFrame:
+) -> Any:
     """Apply one semantic action to a Spark DataFrame."""
     kind = action.get("kind") or {}
     name = kind.get("action")
     params = kind.get("parameters") or {}
+    F = _F()
     if name == "dtcs:filter":
         return frame.filter(lower_expr(params["predicate"], parameters=parameters))
     if name == "dtcs:project":
@@ -126,12 +131,12 @@ def apply_action(
 
 
 def _apply_join(
-    left: DataFrame,
+    left: Any,
     params: dict[str, Any],
     *,
     frames: dict[str, Any],
     parameters: dict[str, Any],
-) -> DataFrame:
+) -> Any:
     how = str(params.get("type") or "inner")
     if how == "outer":
         how = "full"
@@ -178,7 +183,9 @@ def _apply_join(
         for lk, rk in zip(left_on, right_on, strict=True):
             piece = left[lk].eqNullSafe(right[rk])
             cond = piece if cond is None else (cond & piece)
-        return left.join(right, on=cond, how=spark_how)
+        joined = left.join(right, on=cond, how=spark_how)
+        # Match Polars coalesce=True: keep left key names, drop right key cols.
+        return _coalesce_join_keys(joined, left_on=left_on, right_on=right_on)
     if left_on == right_on:
         return left.join(right, on=left_on, how=spark_how)
     cond = None
@@ -186,6 +193,24 @@ def _apply_join(
         piece = left[lk] == right[rk]
         cond = piece if cond is None else (cond & piece)
     return left.join(right, on=cond, how=spark_how)
+
+
+def _coalesce_join_keys(
+    joined: Any, *, left_on: list[str], right_on: list[str]
+) -> Any:
+    """Drop right-side join key columns after a condition join."""
+    drop_cols: list[str] = []
+    columns = set(joined.columns)
+    for lk, rk in zip(left_on, right_on, strict=True):
+        if lk == rk:
+            suffixed = f"{rk}_right"
+            if suffixed in columns:
+                drop_cols.append(suffixed)
+        elif rk in columns:
+            drop_cols.append(rk)
+    if not drop_cols:
+        return joined
+    return joined.drop(*drop_cols)
 
 
 def _as_key_list(key: Any) -> list[str]:
@@ -197,11 +222,11 @@ def _as_key_list(key: Any) -> list[str]:
 
 
 def _apply_union(
-    left: DataFrame,
+    left: Any,
     params: dict[str, Any],
     *,
     frames: dict[str, Any],
-) -> DataFrame:
+) -> Any:
     other_id = params.get("other")
     if other_id not in frames:
         raise KeyError(f"Missing union other frame {other_id!r}")
@@ -213,6 +238,7 @@ def _apply_union(
     if mode == "byName":
         if allow_missing:
             # Align columns by name, filling missing with null.
+            F = _F()
             left_cols = left.columns
             right_cols = other.columns
             all_cols = list(dict.fromkeys([*left_cols, *right_cols]))
@@ -228,11 +254,11 @@ def _apply_union(
 
 
 def _apply_aggregate(
-    frame: DataFrame,
+    frame: Any,
     params: dict[str, Any],
     *,
     parameters: dict[str, Any],
-) -> DataFrame:
+) -> Any:
     group_by = [str(k) for k in (params.get("groupBy") or [])]
     aggregates = params.get("aggregates") or []
     aggs = [
@@ -246,9 +272,10 @@ def _apply_aggregate(
     return frame.groupBy(*group_by).agg(*aggs)
 
 
-def _apply_sort(frame: DataFrame, params: dict[str, Any]) -> DataFrame:
+def _apply_sort(frame: Any, params: dict[str, Any]) -> Any:
     keys = params.get("keys") or params.get("by") or []
     cols = []
+    F = _F()
     for key in keys:
         if isinstance(key, str):
             cols.append(F.col(key).asc_nulls_last())
