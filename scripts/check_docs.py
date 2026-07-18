@@ -196,9 +196,19 @@ def main() -> None:
             "EVALUATOR.md must not tell readers not to bet on portable authoring "
             "while Capabilities marks authoring Available"
         )
-    if "Portable Polars kernel compiler | Yes (0.12)" not in evaluator:
+    if (
+        "Portable Polars compiler (kernel + relational `/1`) | Yes (0.13)"
+        not in evaluator
+        and "Portable Polars kernel compiler | Yes (0.12)" not in evaluator
+    ):
         raise SystemExit(
-            "EVALUATOR.md must list Portable Polars kernel compiler as ready"
+            "EVALUATOR.md must list Portable Polars compiler as ready (0.12+)"
+        )
+    if "Portable PySpark compiler (kernel + relational `/1`) | Yes (0.13)" not in (
+        evaluator
+    ):
+        raise SystemExit(
+            "EVALUATOR.md must list Portable PySpark relational compiler as ready"
         )
     if "end-to-end portable execution on Polars, PySpark" in evaluator:
         raise SystemExit(

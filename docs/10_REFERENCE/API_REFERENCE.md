@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.12.0.** Signatures and docstrings below
+> **Status: Available in ETLantic 0.13.0.** Signatures and docstrings below
 > are generated from the package source.
 
 ## Start here by persona
@@ -108,7 +108,8 @@ configured.
       filters: ["!^_"]
 
 Symbolic only: `FrameExpr` / `ColumnExpr` trees lower to DTCS plans. They are
-not Polars/Pandas/Spark objects. Polars kernel compilation ships in 0.12.
+not Polars/Pandas/Spark objects. Polars + PySpark relational compilation ships
+in 0.13.
 
 ### Portable transform compiler protocol (`etlantic.transform.compiler`)
 

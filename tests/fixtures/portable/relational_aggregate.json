@@ -1,0 +1,19 @@
+{
+  "name": "relational_aggregate",
+  "profile": "dtcs:profile/portable-relational/1",
+  "inputs": {
+    "orders": [
+      {"order_id": 1, "customer_id": 1, "amount": 10.0},
+      {"order_id": 2, "customer_id": 1, "amount": 5.0},
+      {"order_id": 3, "customer_id": 2, "amount": 7.0}
+    ],
+    "customers": [
+      {"customer_id": 1, "region": "east"},
+      {"customer_id": 2, "region": "west"}
+    ]
+  },
+  "expected": [
+    {"region": "east", "total": 15.0},
+    {"region": "west", "total": 7.0}
+  ]
+}

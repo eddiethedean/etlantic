@@ -1,16 +1,16 @@
 # Run a Local PySpark Batch
 
-> **Status: Available in ETLantic 0.12.0.** Structured Streaming remains
+> **Status: Available in ETLantic 0.13.0.** Structured Streaming remains
 > experimental.
 
 ## Prerequisites
 
 - Python 3.11+
 - A Java runtime supported by your PySpark installation
-- `etlantic-pyspark==0.12.0`
+- `etlantic-pyspark==0.13.0`
 
 ```bash
-python -m pip install 'etlantic==0.12.0' 'etlantic-pyspark==0.12.0'
+python -m pip install 'etlantic==0.13.0' 'etlantic-pyspark==0.13.0'
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py

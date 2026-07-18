@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-ETLantic 0.12.0 is alpha. Use this page to scope a controlled evaluation; it is
+ETLantic 0.13.0 is alpha. Use this page to scope a controlled evaluation; it is
 not a production-readiness claim.
 
 ## Supported pilot shape
@@ -20,7 +20,7 @@ isolation, a distributed scheduler, durable control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.12.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.13.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -62,7 +62,7 @@ engine wheels to workers.
 
 ## Shipped / adopter-owned / gap
 
-| Concern | 0.12 status |
+| Concern | 0.13 status |
 |---|---|
 | Typed validate/plan/run | Shipped |
 | Polars kernel portable compile | Shipped |

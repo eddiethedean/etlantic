@@ -1,6 +1,6 @@
 # SQL to SQL
 
-!!! warning "Future design—not a ETLantic 0.11 API guide"
+!!! warning "Future design—not a ETLantic 0.13 API guide"
     This page is a design study. Prefer the runnable examples under
     `examples/sql_*.py` (requires `etlantic-sql`) for shipped 0.6 behavior.
     Use `Profile(sql_engine="sql")` — not a `transformation_engine` field.

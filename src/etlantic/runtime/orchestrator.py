@@ -59,6 +59,7 @@ from etlantic.runtime.logging import RunLogger, redact_message
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
 from etlantic.runtime.spark_exec import (
     acquire_session,
+    execute_portable_spark_step,
     execute_spark_sink,
     execute_spark_source,
     execute_spark_step,
@@ -1190,11 +1191,11 @@ class LocalOrchestrator:
                 impl = None
                 engine = descriptor.engine
                 state.implementation = descriptor.identity
-                if not is_dataframe_engine(engine):
+                if not is_dataframe_engine(engine) and not is_spark_engine(engine):
                     raise NodeExecutionError(
                         redact_message(
                             f"portable_compiled step {node.name!r} requires a "
-                            f"dataframe engine, got {engine!r}"
+                            f"dataframe or spark engine, got {engine!r}"
                         ),
                         node_name=node.name,
                         stage=FailureStage.TRANSFORM.value,
@@ -1204,6 +1205,68 @@ class LocalOrchestrator:
                 impl = self._resolve_implementation(node)
                 engine = impl.engine
                 state.implementation = impl.identity
+
+            if (
+                descriptor is not None
+                and descriptor.kind == "portable_compiled"
+                and is_spark_engine(engine)
+            ):
+                plugin = resolve_spark_plugin(
+                    engine,
+                    plugins=getattr(self.runtime, "spark_plugins", None),
+                )
+                await self._ensure_spark_session(run_id=run_id)
+                for _port_name in inputs:
+                    validations.append(
+                        ValidationResult(
+                            node_name=node.name,
+                            boundary="input_validation",
+                            status="skipped",
+                            message="delegated to portable spark compiler",
+                        )
+                    )
+                result = await execute_portable_spark_step(
+                    plugin=plugin,
+                    descriptor=descriptor,
+                    node=node,
+                    inputs=inputs,
+                    params=params,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                    session_handle=self._spark_session,
+                )
+                output_ports = [p.name for p in node.outputs] or ["result"]
+                port_name = output_ports[0]
+                strategy = self._strategy_for(node.name, port_name)
+                logical = f"{node.name}.{port_name}"
+                ref = ArtifactRef(
+                    identity=artifact_identity(
+                        pipeline_id=self.plan.pipeline_id,
+                        node_name=node.name,
+                        port_name=port_name,
+                        security_domain=self.plan.security_domain,
+                    ),
+                    logical_output=logical,
+                    strategy=strategy,
+                    security_domain=self.plan.security_domain,
+                )
+                consumers_spark = True
+                for edge in graph.edges_from(node.name):
+                    if not is_spark_engine(self._engine_for(edge.consumer_node)):
+                        consumers_spark = False
+                        break
+                stored = result
+                if not consumers_spark and not isinstance(result, list):
+                    stored = plugin.to_records(result, contract_type=node.contract_type)
+                artifacts.put(ref, stored, durable=False)
+                state.records_out = _count(stored) if isinstance(stored, list) else 0
+                state.metadata["spark"] = {
+                    "portable_compiled": True,
+                    "udf_policy": "deny",
+                    "consumers_spark": consumers_spark,
+                }
+                return
 
             if is_dataframe_engine(engine):
                 plugin = resolve_dataframe_plugin(

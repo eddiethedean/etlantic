@@ -11,7 +11,7 @@ plans them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in alpha 0.12.0
+## What is ready in alpha 0.13.0
 
 | Area | Ready? |
 |---|---|
@@ -28,8 +28,9 @@ manager.
 | Airflow / orchestrator compilation | Yes (`etlantic-airflow`) |
 | DTCS 3.0 portable plan models/profiles | Yes (`dtcs>=0.13`) |
 | `@Transformation.portable` authoring | Yes (0.11) |
-| Portable Polars kernel compiler | Yes (0.12) |
-| Portable relational / PySpark / Pandas / SQL compilers | No (0.13–0.15) |
+| Portable Polars compiler (kernel + relational `/1`) | Yes (0.13) |
+| Portable PySpark compiler (kernel + relational `/1`) | Yes (0.13) |
+| Portable Pandas / SQL compilers | No (0.14–0.15) |
 | Multi-tenant durable orchestration | No |
 | Formal SLA / support response times | No |
 
@@ -52,7 +53,7 @@ For a bounded pilot topology and required controls, read
 
 ## Production readiness gate (do not skip)
 
-**ETLantic 0.12.0 is alpha.** Plugin allowlists being “Available” does **not**
+**ETLantic 0.13.0 is alpha.** Plugin allowlists being “Available” does **not**
 mean the product is production-ready.
 
 Do **not** productionize until the security release gate closes (targeted for
@@ -83,15 +84,14 @@ How to read status labels in deeper chapters:
 - Process-local reports as an audit system of record
 - Stable 1.0 compatibility guarantees
 - Managed Databricks/EMR/Connect Spark providers
-- **Portable compilers beyond the Polars kernel** — PySpark, relational,
-  Pandas, and SQL compilers remain planned for 0.13–0.15. Polars **kernel**
-  portable compilation ships in 0.12 (`etlantic-polars`); keep a native
-  `@implementation(...)` for profiles outside that claim set, or for
-  `portable_transform_policy="native"`.
+- **Portable compilers beyond relational `/1`** — Pandas and SQL compilers
+  remain planned for 0.14–0.15. Polars and PySpark claim kernel +
+  `portable-relational/1` in 0.13; keep a native `@implementation(...)` for
+  profiles outside that claim set, or for `portable_transform_policy="native"`.
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.12 |
+| Concern | Status in 0.13 |
 |---|---|
 | License | MIT (core and official plugins) |
 | Supported versions / EOL | Best-effort on current alpha line; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
@@ -105,7 +105,7 @@ How to read status labels in deeper chapters:
 
 ## Recommended evaluation path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.12.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.13.0`
 2. [Quickstart](QUICKSTART.md) or `examples/quickstart.py`
 3. [Capabilities](CAPABILITIES.md)
 4. Optional: `examples/portable_polars_kernel.py` with `etlantic-polars`

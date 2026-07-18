@@ -1,6 +1,6 @@
 # CSV to CSV
 
-!!! warning "Future design—not a ETLantic 0.11 API guide"
+!!! warning "Future design—not a ETLantic 0.13 API guide"
     This page is a design study. It may describe packages, commands, or
     interfaces beyond the shipped API surface. Prefer Current Capabilities,
     the runnable examples under `examples/`, the API reference, and the CLI

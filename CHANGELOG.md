@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-18
+
+### Added
+
+- Polars compiler claims `dtcs:profile/portable-relational/1` (join, union,
+  aggregate, sort, distinct, deduplicate, limit) with mode-exact `analyze()`
+  findings and expression/action paths
+- `etlantic-pyspark` `etlantic.transform_compilers` entry point claiming kernel
+  + relational `/1`; native Column/DataFrame lowering with portable-path UDF deny
+- Orchestrator support for `portable_compiled` Spark steps (provider session,
+  outside region UDF fusion)
+- Private Polars↔PySpark differential corpus and gated `real_pyspark`
+  Catalyst/no-UDF acceptance marker
+- Relational `/1`↔`/2` capability alias matching (metadata compatibility; no
+  candidate `/2` extensions)
+
+### Documentation
+
+- Refined roadmap 0.13 into locked decisions + 0.13a (Polars relational) /
+  0.13b (PySpark + differentials); deferred public conformance to 0.14
+- Updated capabilities, compatibility, Polars/PySpark, and compiler protocol
+  docs for shipped relational claims
+
+### Changed
+
+- Package version set to 0.13.0 across core and optional plugins
+
 ## [0.12.0] - 2026-07-17
 
 ### Added
@@ -465,6 +492,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.13.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.13.0
 [0.12.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.12.0
 [0.11.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.11.0
 [0.10.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.10.0

@@ -7,6 +7,8 @@ from typing import Any
 from etlantic.exceptions import NodeExecutionError
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
+from etlantic.registry import ImplementationDescriptor
+from etlantic.runtime.logging import redact_message
 from etlantic.runtime.state import FailureStage
 from etlantic.spark.discovery import load_spark_plugin, load_spark_provider
 from etlantic.spark.protocol import (
@@ -269,6 +271,112 @@ async def compile_spark_region(
         node_name=region.identity,
     )
     return compiled
+
+
+async def execute_portable_spark_step(
+    *,
+    plugin: SparkPlugin,
+    descriptor: ImplementationDescriptor,
+    node: Node,
+    inputs: dict[str, Any],
+    params: dict[str, Any],
+    plan: PipelinePlan,
+    run_id: str,
+    attempt: int,
+    session_handle: SparkSessionHandle | None = None,
+) -> Any:
+    """Execute a portable_compiled step on Spark without region UDF fusion."""
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+    from etlantic.transform.discovery import (
+        discover_transform_compilers,
+        load_transform_compiler,
+    )
+
+    if session_handle is None or session_handle.session is None:
+        raise NodeExecutionError(
+            redact_message(
+                f"portable Spark step {node.name!r} requires an acquired Spark session"
+            ),
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM302",
+        )
+
+    compiler = None
+    if descriptor.compiler_name:
+        for candidate in discover_transform_compilers().values():
+            info = candidate.info
+            if info.name != descriptor.compiler_name:
+                continue
+            if (
+                descriptor.compiler_version
+                and info.version != descriptor.compiler_version
+            ):
+                continue
+            compiler = candidate
+            break
+    else:
+        compiler = load_transform_compiler(descriptor.engine)
+    if compiler is None:
+        raise NodeExecutionError(
+            redact_message(
+                f"No transform compiler for engine {descriptor.engine!r} "
+                f"on step {node.name}"
+            ),
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM302",
+        )
+    portable_plan = descriptor.portable_plan
+    if not portable_plan:
+        raise NodeExecutionError(
+            redact_message(
+                f"Plan step {node.name} is portable_compiled but missing embedded IR"
+            ),
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM501",
+        )
+
+    compile_ctx = TransformCompileContext(
+        pipeline_id=plan.pipeline_id,
+        plan_id=plan.plan_id,
+        step_name=node.name,
+        profile_name=plan.profile_name,
+        engine=descriptor.engine,
+    )
+    compiled = compiler.compile(
+        portable_plan,
+        context=compile_ctx,
+        requirements=descriptor.requirements,
+    )
+    to_dataframe = getattr(plugin, "_to_dataframe", None)
+    exec_ctx = TransformExecutionContext(
+        run_id=run_id,
+        pipeline_id=plan.pipeline_id,
+        plan_id=plan.plan_id,
+        step_name=node.name,
+        engine=descriptor.engine,
+        attempt=attempt,
+        collect=False,
+        metadata={
+            "spark_session": session_handle.session,
+            "to_dataframe": to_dataframe,
+            "udf_policy": "deny",
+        },
+    )
+    bundle = await compiler.execute(
+        compiled,
+        inputs=inputs,
+        parameters=params,
+        context=exec_ctx,
+    )
+    if len(bundle.valid) == 1:
+        return next(iter(bundle.valid.values()))
+    return dict(bundle.valid)
 
 
 async def execute_spark_step(

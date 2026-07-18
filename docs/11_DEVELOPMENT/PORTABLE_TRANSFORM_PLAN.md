@@ -200,36 +200,37 @@ unsupported non-kernel requirements fail at plan time.
 - PySpark compiler and two-engine differential → **0.13**
 - public conformance SDK → **0.14**
 
-## 0.13: PySpark compiler
+## 0.13a: Polars relational compiler claims
 
-Deliver:
-
-- native Spark Column/DataFrame lowering for advertised claims
-- Catalyst-visible expression verification
-- Spark session and region integration
-- explicit prohibition of UDF fallback
-- type, timezone, null, and ownership conformance
-
-Exit gate: Polars and PySpark pass the same semantic fixture corpus for shared
-claims.
-
-## 0.13: relational compiler claims
-
-This phase targets complete **compiler** conformance with
+Target complete **compiler** conformance with
 `dtcs:profile/portable-relational/1` (authoring already covers the IR in 0.11),
 including every advertised join and union mode rather than generic
-operation-name checks.
+operation-name checks. Claim `/1` only; treat plan `/2` profile requirements
+as metadata aliases (no candidate `/2` extensions).
 
 Deliver:
 
 - join, union-by-name, group-by, aggregation, deduplication, and full ordering
   under execution
-- relation-scoped column resolution at compile time
-- collision diagnostics
+- relation-scoped column resolution at analyze time
+- collision diagnostics and mode-exact `analyze()` findings with paths
 - aggregate typing and empty-input behavior
-- Polars and PySpark implementations first
+- private fixtures under `tests/polars_compiler/`
 
-Exit gate: multi-input and aggregate examples pass differential tests.
+Exit gate: a portable multi-input aggregate pipeline runs on Polars without a
+Polars-specific callable; unsupported modes fail at plan time.
+
+## 0.13b: PySpark compiler and differentials
+
+Deliver:
+
+- native Spark Column/DataFrame lowering for kernel + relational `/1`
+- Catalyst-visible expression verification on a gated real-PySpark job
+- session from provider/execution context; no portable-path UDF fallback
+- private Polars↔PySpark differential corpus (public conformance stays 0.14)
+
+Exit gate: Polars and PySpark pass the same private semantic fixture corpus
+for shared claims.
 
 ## 0.14: Pandas compiler and conformance SDK
 

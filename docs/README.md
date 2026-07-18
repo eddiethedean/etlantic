@@ -25,17 +25,18 @@ as executable interface declarations—to data engineering.
 
 ## Project Status
 
-**0.12.0** ships validation, profiles, an immutable secret-free
+**0.13.0** ships validation, profiles, an immutable secret-free
 `PipelinePlan`, local Python execution, runtime secret resolution, run reports,
 memory/callable/JSON/CSV storage, a versioned dataframe protocol with Polars
 and Pandas plugins, a versioned SQL protocol with the `etlantic-sql`
 PostgreSQL reference plugin, a versioned Spark protocol with the
-`etlantic-pyspark` reference plugin (local provider), and a versioned
-orchestration protocol with the `etlantic-airflow` reference compiler.
-Structured Streaming APIs are experimental.
+`etlantic-pyspark` reference plugin (local provider + portable compiler), and a
+versioned orchestration protocol with the `etlantic-airflow` reference
+compiler. Portable Polars and PySpark compilers claim kernel +
+`portable-relational/1`. Structured Streaming APIs are experimental.
 
 !!! tip "Green path (start here only)"
-    1. [Current 0.12 guide](01_GETTING_STARTED/CURRENT_VERSION.md) — task-based map
+    1. [Current 0.13 guide](01_GETTING_STARTED/CURRENT_VERSION.md) — task-based map
     2. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic`
     3. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — five-minute success
     4. [Capabilities](01_GETTING_STARTED/CAPABILITIES.md) — shipped vs not
@@ -51,9 +52,10 @@ Read **Available** pages and the Green path first. Chapters under
 every illustrated surface is installable.
 
 Portable PySpark-inspired authoring ships in 0.11 via `@Transformation.portable`
-and `etlantic.transform`, emitting `dtcs.transform-plan/2`. **0.12** adds
-planning integration and Polars **kernel** portable execution. Relational and
-other-engine compilers remain 0.13–0.15. Start with
+and `etlantic.transform`, emitting `dtcs.transform-plan/2`. **0.12** added
+planning integration and Polars **kernel** portable execution. **0.13** adds
+Polars + PySpark `portable-relational/1` compilers. Pandas/SQL compilers remain
+0.14–0.15. Start with
 [Portable Transformations](04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).
 
 ## Minimal working example

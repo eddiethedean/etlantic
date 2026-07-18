@@ -52,13 +52,12 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
 - **Adopt incrementally.** The core has no dataframe, SQL, Spark, or Airflow
   dependency. Install only the integrations you need.
 
-> **Project status:** Alpha **0.12.0**. The local runtime and reference plugins
+> **Project status:** Alpha **0.13.0**. The local runtime and reference plugins
 > are available today. Structured Streaming is experimental. Portable
-> transformation authoring and the Polars kernel compiler are available;
-> relational, PySpark, Pandas, and safe SQL portable compilers are planned for
-> 0.13–0.15. See the
-> [capabilities guide](docs/01_GETTING_STARTED/CAPABILITIES.md) before choosing
-> a production architecture.
+> transformation authoring and Polars/PySpark relational compilers are
+> available; Pandas and safe SQL portable compilers are planned for 0.14–0.15.
+> See the [capabilities guide](docs/01_GETTING_STARTED/CAPABILITIES.md) before
+> choosing a production architecture.
 
 ## Quickstart
 
@@ -221,7 +220,7 @@ before mutation.
 
 ## Capability boundary
 
-| Capability | 0.12 |
+| Capability | 0.13 |
 |---|---|
 | Typed modeling, validation, contracts, and deterministic planning | Available |
 | Local Python execution and structured run reports | Available |
@@ -233,9 +232,10 @@ before mutation.
 | Schema drift, reliability, visualization, and SARIF tooling | Available |
 | Production plugin allowlists and runtime secret providers | Available |
 | Portable transformation authoring | Available |
-| Polars portable kernel compiler | Available |
+| Polars + PySpark portable compilers (kernel + relational `/1`) | Available |
 | Structured Streaming | Experimental |
-| Relational, PySpark, Pandas, and safe SQL portable compilers | Planned for 0.13–0.15 |
+| Pandas portable compiler and public conformance SDK | Planned for 0.14 |
+| Safe SQL portable lowering and profile graduation | Planned for 0.15+ |
 
 See [Capabilities and Limitations](docs/01_GETTING_STARTED/CAPABILITIES.md)
 and the [roadmap](docs/11_DEVELOPMENT/ROADMAP.md) for the precise support
@@ -245,7 +245,7 @@ boundary.
 
 - [Hosted documentation](https://etlantic.readthedocs.io/)
 - [Getting Started](docs/01_GETTING_STARTED/README.md)
-- [Current 0.12 User Guide](docs/01_GETTING_STARTED/CURRENT_VERSION.md)
+- [Current 0.13 User Guide](docs/01_GETTING_STARTED/CURRENT_VERSION.md)
 - [Quickstart](docs/01_GETTING_STARTED/QUICKSTART.md)
 - [Core Concepts](docs/02_FOUNDATIONS/CORE_CONCEPTS.md)
 - [Architecture](docs/02_FOUNDATIONS/ARCHITECTURE.md)

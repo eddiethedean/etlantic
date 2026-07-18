@@ -1,7 +1,7 @@
-# ETLantic 0.12 User Guide
+# ETLantic 0.13 User Guide
 
 This is the current, installable ETLantic manual. Every page linked from this
-guide documents behavior available in ETLantic 0.12 unless it is explicitly
+guide documents behavior available in ETLantic 0.13 unless it is explicitly
 marked **Experimental**.
 
 ## Start here
@@ -22,7 +22,7 @@ marked **Experimental**.
 | Run a local Spark batch | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) |
 | Compile a DAG | [Airflow tutorial](../06_EXECUTION/AIRFLOW_TUTORIAL.md) |
 | Author portable transforms | [Portable transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |
-| Run Polars portable kernel (no native impl) | [Portable example](../09_EXAMPLES/PORTABLE_TRANSFORMATION.md) / `examples/portable_polars_kernel.py` |
+| Run Polars/PySpark portable relational (no native impl) | [Portable example](../09_EXAMPLES/PORTABLE_TRANSFORMATION.md) / `examples/portable_polars_kernel.py` |
 | Upgrade from 0.11 | [Migration 0.11 → 0.12](../11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md) |
 | Integrate validation into CI | [CI integration](../06_EXECUTION/CI_INTEGRATION.md) |
 | Evaluate operational boundaries | [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md) |
@@ -34,8 +34,8 @@ marked **Experimental**.
 - [Python API](../10_REFERENCE/API_REFERENCE.md) documents public imports.
 - [CLI reference](../10_REFERENCE/CLI.md) documents installed commands.
 - [Known limitations](../10_REFERENCE/KNOWN_ISSUES.md) documents hard boundaries.
-- Pages under **Design Proposals** / marked **Future design** are not 0.12 APIs
+- Pages under **Design Proposals** / marked **Future design** are not 0.13 APIs
   even when linked from older navigation.
 
-Material under **Design Proposals** is not part of the 0.12 user guide and must
+Material under **Design Proposals** is not part of the 0.13 user guide and must
 not be copied into current applications.

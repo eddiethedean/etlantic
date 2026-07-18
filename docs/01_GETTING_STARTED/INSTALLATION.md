@@ -1,6 +1,6 @@
 # Installation
 
-ETLantic 0.12.0 provides the typed modeling kernel, contract interoperability
+ETLantic 0.13.0 provides the typed modeling kernel, contract interoperability
 (ODCS/DTCS/DPCS), multi-phase validation, profiles, deterministic planning,
 a local runtime that executes plans with Python callables, in-memory
 artifacts, and stdlib JSON/CSV bindings, plus optional Polars, Pandas, SQL,
@@ -17,19 +17,19 @@ For reproducible evaluation, pin the published release:
 
 ```bash
 python3.11 -m pip install --upgrade pip
-python3.11 -m pip install 'etlantic==0.12.0'
+python3.11 -m pip install 'etlantic==0.13.0'
 etlantic --version
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add 'etlantic==0.12.0'
+uv add 'etlantic==0.13.0'
 uv run etlantic --version
 ```
 
-Use `etlantic>=0.12.0,<0.13` only when you intentionally accept compatible
-0.12 patches.
+Use `etlantic>=0.13.0,<0.14` only when you intentionally accept compatible
+0.13 patches.
 
 Verify the import:
 
@@ -41,7 +41,7 @@ python -c "import etlantic; print(etlantic.__version__)"
 
 ```powershell
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.12.0'
+py -3.11 -m pip install 'etlantic==0.13.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -51,14 +51,14 @@ Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
 explicitly (match the core minor):
 
 ```bash
-pip install 'etlantic-polars==0.12.0'     # dataframe + Polars kernel compiler
-pip install 'etlantic-pandas==0.12.0'     # Pandas compatibility plugin
-pip install 'etlantic-sql==0.12.0'        # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.12.0'    # PySpark reference plugin + local provider
-pip install 'etlantic-airflow==0.12.0'    # Airflow DAG compiler
-pip install 'etlantic-keyring==0.12.0'    # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.12.0'   # SQLModel bridge helpers
-pip install 'etlantic-sparkforge==0.12.0' # SparkForge → ETLantic IR adapter
+pip install 'etlantic-polars==0.13.0'     # dataframe + Polars portable compiler
+pip install 'etlantic-pandas==0.13.0'     # Pandas compatibility plugin
+pip install 'etlantic-sql==0.13.0'        # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.13.0'    # PySpark plugin + portable compiler
+pip install 'etlantic-airflow==0.13.0'    # Airflow DAG compiler
+pip install 'etlantic-keyring==0.13.0'    # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.13.0'   # SQLModel bridge helpers
+pip install 'etlantic-sparkforge==0.13.0' # SparkForge → ETLantic IR adapter
 # or extras (resolve to the same minor):
 pip install 'etlantic[polars]'
 pip install 'etlantic[pandas]'
@@ -140,7 +140,7 @@ uv sync --group sqlmodel
 ## Upgrade
 
 ```bash
-python -m pip install --upgrade 'etlantic>=0.12.0'
+python -m pip install --upgrade 'etlantic>=0.13.0'
 # or
 uv lock --upgrade-package etlantic
 ```

@@ -168,8 +168,47 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
         return pl.max_horizontal(args)
     if callee == "dtcs:case_when":
         return _lower_case_when(node, parameters=parameters)
+    # Aggregate callees are only valid inside dtcs:aggregate (see lower_agg_expr).
+    if callee in {
+        "dtcs:sum",
+        "dtcs:average",
+        "dtcs:min",
+        "dtcs:max",
+        "dtcs:count",
+        "dtcs:count_all",
+        "dtcs:count_distinct",
+    }:
+        raise ValueError(
+            f"Aggregate function {callee!r} is only valid inside dtcs:aggregate"
+        )
     # dtcs:cast is conversion-profile only; do not silently no-op.
     raise ValueError(f"Unsupported function {callee!r}")
+
+
+def lower_agg_expr(node: Any, *, parameters: dict[str, Any]) -> pl.Expr:
+    """Lower an aggregate call expression for ``dtcs:aggregate``."""
+    if not isinstance(node, dict) or node.get("kind") != "call":
+        raise ValueError(f"Expected aggregate call expression, got {node!r}")
+    callee = str(node.get("callee") or "")
+    raw_args = list(node.get("args") or [])
+    args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee == "dtcs:sum":
+        return args[0].sum()
+    if callee == "dtcs:average":
+        return args[0].mean()
+    if callee == "dtcs:min":
+        return args[0].min()
+    if callee == "dtcs:max":
+        return args[0].max()
+    if callee == "dtcs:count_all":
+        return pl.len()
+    if callee == "dtcs:count":
+        if not args:
+            return pl.len()
+        return args[0].count()
+    if callee == "dtcs:count_distinct":
+        return args[0].n_unique()
+    raise ValueError(f"Unsupported aggregate function {callee!r}")
 
 
 def _lower_case_when(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:

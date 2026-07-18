@@ -17,7 +17,7 @@ from etlantic.orchestration.protocol import (
 )
 from etlantic.plan.model import PipelinePlan
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 
 def create_plugin() -> AirflowOrchestratorPlugin:

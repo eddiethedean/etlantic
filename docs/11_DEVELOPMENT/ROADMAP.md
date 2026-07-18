@@ -1033,36 +1033,81 @@ Planning treats portable compilation as a first-class, deterministic
 implementation kind, and Polars executes end-to-end for its **advertised
 kernel claim set** only.
 
-## 0.13 — PySpark Compiler and Relational Compiler Claims
+## 0.13 — Relational Compiler Claims (Polars) and PySpark Compiler
 
-**Status: planned — after 0.12.**
+**Status: shipped in 0.13.0.**
 
 **DTCS readiness gate: semantics and authoring published.** Joins, unions,
 grouping, aggregation, sorting, deduplication, and limit determinism are
 authored in 0.11 IR. This phase proves compiler fidelity for
-`portable-relational/1` (and `/2` where claimed) on Polars and PySpark.
+`dtcs:profile/portable-relational/1` on Polars and PySpark.
 
-### Deliver
+**Locked decisions:** sequence **0.13a → 0.13b**; claim
+`portable-relational/1` only (plus kernel `/1`); treat plan requirements for
+`portable-relational/2` as metadata-compatible aliases of `/1` (no candidate
+`/2` extensions); PySpark must claim kernel `/1` + relational `/1`; keep
+`portable_transform_policy` prefer/require/native with **no silent fallback**;
+portable Spark path **forbids** Python/Pandas UDF fallback (native Spark UDF
+policy stays separate); private differential fixtures under `tests/` (public
+`etlantic.testing.portable_transform_conformance` stays **0.14**); default CI
+uses **sparkless**, with a gated real-PySpark job for Catalyst visibility;
+relational `analyze()` rejects unsupported **modes** with action/expression
+paths; portable Spark `execute()` uses the provider session from execution
+context (no region UDF fusion); differential compare uses stable
+normalization (column order, unordered-agg sort keys, SQL-null); IR-in-
+`CompiledTransform` + lower-at-execute remains acceptable; three-state
+missing/invalid literals stay deferred.
 
-- `etlantic-pyspark` compiler using native Spark DataFrame and Column
-  expressions
-- explicit prohibition of automatic Python and Pandas UDF fallback
-- complete compiler claims for join, union-by-name, grouping, aggregation,
-  deduplication, and sort semantics already present in 0.11 IR
-- relation-scoped column resolution and collision diagnostics at compile time
-- aggregate typing, null behavior, and empty-input rules under execution
-- Polars implementations for the same relational claim set
-- shared Polars/PySpark semantic fixtures and differential execution tests
-- complete compiler support for `dtcs:profile/portable-relational/1`
+### Exact relational claim matrix (both engines)
+
+Actions beyond the kernel: `dtcs:join`, `dtcs:union`, `dtcs:aggregate` (with
+`groupBy`), `dtcs:sort`, `dtcs:distinct`, `dtcs:deduplicate`, `dtcs:limit`.
+
+Modes that must pass `analyze()` exactly (fail closed, not “supports join”):
+
+- Join types: `inner`, `left`, `right`, `full`, `semi`, `anti`, `cross`
+- Join: `nullSafe`, `collisionPolicy` (`fail` and authored modes)
+- Union: `byName` / `byPosition`, `allowMissingColumns`
+- Sort: direction + null placement
+- Aggregates: `count_all`, `count`, `count_distinct`, `sum`, `average`,
+  `min`, `max` + empty-input rules
+- Deduplicate: deterministic key retention as authored today
+
+### 0.13a — Polars relational vertical slice
+
+- `etlantic-polars` claims `portable-relational/1` (+ keep kernel `/1`)
+- native `pl.Expr` / frame lowering for the claim matrix above
+- relation-scoped column resolution and collision diagnostics at analyze time
+- private fixtures under `tests/polars_compiler/` and
+  `tests/fixtures/portable/relational_*.json`
+
+### 0.13b — PySpark compiler and differentials
+
+- `etlantic-pyspark` `etlantic.transform_compilers` entry point claiming
+  kernel `/1` + `portable-relational/1`
+- native Spark DataFrame / Column lowering; no automatic UDF fallback
+- session from provider/execution context; portable steps outside region UDF
+  fusion
+- private Polars↔PySpark differential corpus; gated real-PySpark Catalyst /
+  no-UDF acceptance
+
+### Explicitly deferred
+
+- to **0.14:** public `etlantic.testing.portable_transform_conformance`;
+  Pandas compiler
+- to **0.15+:** SQL lowering; Rich Portable Analytics / windows /
+  complex-values / reshape / relational-extended / conversion claims
+- three-state missing/invalid literal fidelity beyond SQL-null
 
 ### Acceptance scenarios
 
 - one portable multi-input aggregate pipeline produces contract-equivalent
   results on Polars and PySpark;
-- Spark plans remain Catalyst-visible and contain no undeclared UDF fallback;
+- Spark plans remain Catalyst-visible (real PySpark gate) and contain no
+  undeclared UDF fallback;
 - join null matching, duplicate columns, sort null placement, and empty
   aggregates follow the normative portable semantics;
-- lazy regions preserve logical step and expression attribution.
+- unsupported relational modes fail during planning with exact action paths.
 
 ### Exit gate
 

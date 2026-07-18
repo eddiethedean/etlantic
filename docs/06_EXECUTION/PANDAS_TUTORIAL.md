@@ -1,12 +1,12 @@
 # Execute with Pandas
 
-> **Status: Available in ETLantic 0.12.0.** This guide uses the same logical
+> **Status: Available in ETLantic 0.13.0.** This guide uses the same logical
 > pipeline as the Polars tutorial.
 
 ## Install and run
 
 ```bash
-python -m pip install 'etlantic==0.12.0' 'etlantic-pandas==0.12.0'
+python -m pip install 'etlantic==0.13.0' 'etlantic-pandas==0.13.0'
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas

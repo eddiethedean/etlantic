@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pyspark"
-version = "0.12.0"
+version = "0.13.0"
 description = "PySpark reference execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.12.0,<1.0",
+    "etlantic>=0.13.0,<1.0",
     "pyspark>=3.5,<4",
 ]
 
@@ -36,6 +36,9 @@ pyspark = "etlantic_pyspark:create_plugin"
 
 [project.entry-points."etlantic.spark_providers"]
 local = "etlantic_pyspark:create_provider"
+
+[project.entry-points."etlantic.transform_compilers"]
+pyspark = "etlantic_pyspark:create_transform_compiler"
 
 [build-system]
 requires = ["hatchling"]

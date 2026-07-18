@@ -1,0 +1,226 @@
+"""Lower DTCS expression nodes to Spark Column expressions."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Any
+
+from pyspark.sql import Column
+from pyspark.sql import functions as F
+
+_BINARY_OPS = {
+    "eq": lambda a, b: a == b,
+    "neq": lambda a, b: a != b,
+    "not_eq": lambda a, b: a != b,
+    "lt": lambda a, b: a < b,
+    "lte": lambda a, b: a <= b,
+    "gt": lambda a, b: a > b,
+    "gte": lambda a, b: a >= b,
+    "add": lambda a, b: a + b,
+    "sub": lambda a, b: a - b,
+    "subtract": lambda a, b: a - b,
+    "mul": lambda a, b: a * b,
+    "multiply": lambda a, b: a * b,
+    "div": lambda a, b: a / b,
+    "divide": lambda a, b: a / b,
+    "modulo": lambda a, b: a % b,
+    "and": lambda a, b: a & b,
+    "or": lambda a, b: a | b,
+    "null_safe_eq": lambda a, b: a.eqNullSafe(b),
+}
+
+_UNARY_OPS = {
+    "not": lambda a: ~a,
+    "negate": lambda a: -a,
+}
+
+
+def unwrap_literal_value(value: Any) -> Any:
+    """Unwrap DTCS typed literal payloads to Python scalars."""
+    if not isinstance(value, dict) or "type" not in value:
+        return value
+    lit_type = str(value.get("type") or "")
+    payload = value.get("value")
+    if lit_type in {"null", "missing", "invalid"}:
+        return None
+    if lit_type == "boolean":
+        return bool(payload)
+    if lit_type == "integer":
+        return int(payload)
+    if lit_type == "decimal":
+        return Decimal(str(payload))
+    if lit_type == "string":
+        return str(payload)
+    raise ValueError(f"Unsupported DTCS literal type {lit_type!r}")
+
+
+def constant_python(node: Any, *, parameters: dict[str, Any]) -> Any:
+    """Extract a Python constant from a literal or parameter fieldRef."""
+    if not isinstance(node, dict):
+        raise ValueError(f"Expected constant expression object, got {type(node)!r}")
+    kind = node.get("kind")
+    if kind == "literal":
+        return unwrap_literal_value(node.get("value"))
+    if kind == "fieldRef" and node.get("scope") == "parameter":
+        target = node.get("target")
+        if target not in parameters:
+            raise KeyError(f"Missing parameter {target!r}")
+        return parameters[target]
+    raise ValueError(f"Expected constant literal/parameter, got kind={kind!r}")
+
+
+def lower_expr(node: Any, *, parameters: dict[str, Any]) -> Column:
+    """Recursively lower a DTCS expression node to a Spark Column."""
+    if not isinstance(node, dict):
+        raise ValueError(f"Expected expression object, got {type(node)!r}")
+    kind = node.get("kind")
+    if kind == "fieldRef":
+        scope = node.get("scope")
+        target = node.get("target")
+        if scope == "parameter":
+            if target not in parameters:
+                raise KeyError(f"Missing parameter {target!r}")
+            return F.lit(parameters[target])
+        return F.col(str(target))
+    if kind == "literal":
+        return F.lit(unwrap_literal_value(node.get("value")))
+    if kind == "binary":
+        op = node.get("op")
+        if op not in _BINARY_OPS:
+            raise ValueError(f"Unsupported binary op {op!r}")
+        left = lower_expr(node["left"], parameters=parameters)
+        right = lower_expr(node["right"], parameters=parameters)
+        return _BINARY_OPS[op](left, right)
+    if kind == "unary":
+        op = node.get("op")
+        if op not in _UNARY_OPS:
+            raise ValueError(f"Unsupported unary op {op!r}")
+        operand = node.get("operand", node.get("expr"))
+        if operand is None:
+            raise ValueError("unary expression missing operand/expr")
+        return _UNARY_OPS[op](lower_expr(operand, parameters=parameters))
+    if kind == "call":
+        return _lower_call(node, parameters=parameters)
+    raise ValueError(f"Unsupported expression kind {kind!r}")
+
+
+def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Column:
+    callee = str(node.get("callee") or "")
+    raw_args = list(node.get("args") or [])
+    args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee == "dtcs:lower":
+        return F.lower(args[0])
+    if callee == "dtcs:upper":
+        return F.upper(args[0])
+    if callee == "dtcs:concat":
+        return F.concat(*args)
+    if callee == "dtcs:concat_ws":
+        sep = constant_python(raw_args[0], parameters=parameters)
+        return F.concat_ws(str(sep), *args[1:])
+    if callee == "dtcs:length":
+        return F.length(args[0])
+    if callee == "dtcs:substr":
+        if len(args) == 2:
+            return F.substring(args[0], args[1], F.lit(2147483647))
+        return F.substring(args[0], args[1], args[2])
+    if callee == "dtcs:replace":
+        search = constant_python(raw_args[1], parameters=parameters)
+        replacement = constant_python(raw_args[2], parameters=parameters)
+        return F.regexp_replace(args[0], str(search), str(replacement))
+    if callee == "dtcs:contains":
+        needle = constant_python(raw_args[1], parameters=parameters)
+        return args[0].contains(str(needle))
+    if callee == "dtcs:starts_with":
+        prefix = constant_python(raw_args[1], parameters=parameters)
+        return args[0].startswith(str(prefix))
+    if callee == "dtcs:ends_with":
+        suffix = constant_python(raw_args[1], parameters=parameters)
+        return args[0].endswith(str(suffix))
+    if callee == "dtcs:coalesce":
+        return F.coalesce(*args)
+    if callee == "dtcs:if_null":
+        return F.when(args[0].isNull(), args[1]).otherwise(args[0])
+    if callee == "dtcs:null_if":
+        return F.when(args[0] == args[1], F.lit(None)).otherwise(args[0])
+    if callee == "dtcs:is_null":
+        return args[0].isNull()
+    if callee == "dtcs:abs":
+        return F.abs(args[0])
+    if callee == "dtcs:round":
+        scale = constant_python(raw_args[1], parameters=parameters)
+        return F.round(args[0], int(scale))
+    if callee == "dtcs:floor":
+        return F.floor(args[0])
+    if callee == "dtcs:ceil":
+        return F.ceil(args[0])
+    if callee == "dtcs:power":
+        return F.pow(args[0], args[1])
+    if callee == "dtcs:sqrt":
+        return F.sqrt(args[0])
+    if callee == "dtcs:least":
+        return F.least(*args)
+    if callee == "dtcs:greatest":
+        return F.greatest(*args)
+    if callee == "dtcs:case_when":
+        return _lower_case_when(node, parameters=parameters)
+    if callee in {
+        "dtcs:sum",
+        "dtcs:average",
+        "dtcs:min",
+        "dtcs:max",
+        "dtcs:count",
+        "dtcs:count_all",
+        "dtcs:count_distinct",
+    }:
+        raise ValueError(
+            f"Aggregate function {callee!r} is only valid inside dtcs:aggregate"
+        )
+    raise ValueError(f"Unsupported function {callee!r}")
+
+
+def lower_agg_expr(node: Any, *, parameters: dict[str, Any]) -> Column:
+    """Lower an aggregate call expression for ``dtcs:aggregate``."""
+    if not isinstance(node, dict) or node.get("kind") != "call":
+        raise ValueError(f"Expected aggregate call expression, got {node!r}")
+    callee = str(node.get("callee") or "")
+    raw_args = list(node.get("args") or [])
+    args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee == "dtcs:sum":
+        return F.sum(args[0])
+    if callee == "dtcs:average":
+        return F.avg(args[0])
+    if callee == "dtcs:min":
+        return F.min(args[0])
+    if callee == "dtcs:max":
+        return F.max(args[0])
+    if callee == "dtcs:count_all":
+        return F.count(F.lit(1))
+    if callee == "dtcs:count":
+        if not args:
+            return F.count(F.lit(1))
+        return F.count(args[0])
+    if callee == "dtcs:count_distinct":
+        return F.countDistinct(args[0])
+    raise ValueError(f"Unsupported aggregate function {callee!r}")
+
+
+def _lower_case_when(node: dict[str, Any], *, parameters: dict[str, Any]) -> Column:
+    args = list(node.get("args") or [])
+    if not args:
+        raise ValueError("case_when requires branches")
+    expr: Column | None = None
+    i = 0
+    while i + 1 < len(args):
+        cond = lower_expr(args[i], parameters=parameters)
+        then = lower_expr(args[i + 1], parameters=parameters)
+        branch = F.when(cond, then)
+        expr = branch if expr is None else expr.when(cond, then)
+        i += 2
+    if i < len(args):
+        otherwise = lower_expr(args[i], parameters=parameters)
+        if expr is None:
+            return otherwise
+        return expr.otherwise(otherwise)
+    if expr is None:
+        raise ValueError("empty case_when")
+    return expr.otherwise(F.lit(None))

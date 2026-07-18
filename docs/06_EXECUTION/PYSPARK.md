@@ -16,7 +16,7 @@ Spark, SQL, Polars, Pandas, or another backend.
 ETLantic's proposed portable transformation syntax is deliberately inspired by
 PySpark's DataFrame and Column APIs. It uses ETLantic symbolic objects and
 semantics rather than importing PySpark into core. The PySpark compiler is
-planned for 0.13; current 0.12 execution uses native implementations.
+ships in 0.13; native `@implementation("pyspark")` remains available.
 
 ## Goals
 
@@ -78,7 +78,7 @@ def normalize_customers(...):
 The planner selects the Spark implementation only when its capability
 requirements are satisfied.
 
-## Portable compiler (planned 0.13)
+## Portable compiler (0.13)
 
 ```python
 from etlantic.transform import functions as F
@@ -90,16 +90,19 @@ def normalize(customers, lowercase_email):
     return customers.withColumn("email", email)
 ```
 
-The PySpark plugin will compile this IR to native Spark DataFrame and Column
-expressions so Catalyst can inspect and optimize it. Automatic Python or
-Pandas UDF fallback is forbidden. If Spark cannot preserve an ETLantic
-semantic, planning rejects the step or requires an explicit native
-implementation policy.
+`etlantic-pyspark` registers an `etlantic.transform_compilers` entry point that
+claims `portable-relational-kernel/1` and `portable-relational/1`. It lowers
+validated `dtcs.transform-plan/2` IR to native Spark DataFrame and Column
+expressions so Catalyst can inspect and optimize them. Automatic Python or
+Pandas UDF fallback is forbidden on the portable path (native
+`@implementation("pyspark")` UDF policy remains separate). Portable steps use
+the provider session from execution context and do **not** participate in
+Spark region UDF fusion. If Spark cannot preserve an ETLantic semantic,
+planning rejects the step or requires an explicit native implementation
+policy.
 
-The 0.13 target is complete
-`dtcs:profile/portable-relational/1` conformance, including semi/anti/cross
-joins, null-safe matching, collision policies, union modes, explicit null
-ordering, and deterministic deduplication requirements.
+Default CI exercises the compiler via sparkless; Catalyst-visible / no-UDF
+acceptance runs under a gated real-PySpark job (`SPARKLESS_TEST_MODE=pyspark`).
 
 ## Planner Selection
 

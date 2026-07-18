@@ -71,7 +71,8 @@ def _seed(runtime: PipelineRuntime) -> None:
 
 
 @pytest.mark.polars
-def test_analyze_rejects_join_requirements() -> None:
+def test_analyze_accepts_relational_join_requirements() -> None:
+    """0.13 Polars claims portable-relational/1 including joins."""
     compiler = create_transform_compiler()
     from etlantic.transform.compiler import TransformPlanningContext
 
@@ -89,8 +90,7 @@ def test_analyze_rejects_join_requirements() -> None:
             "functions": [],
         },
     )
-    assert report.supported is False
-    assert any("dtcs:join" in f.requirement for f in report.findings)
+    assert report.supported is True
 
 
 @pytest.mark.polars
@@ -141,9 +141,8 @@ def test_run_portable_kernel_on_polars() -> None:
 
 
 @pytest.mark.polars
-def test_require_fails_closed_for_join_requirements() -> None:
-    """Joins are outside the 0.12 Polars claim set — planning must fail closed."""
-    from etlantic.exceptions import PipelineValidationError
+def test_require_plans_relational_join() -> None:
+    """Joins are inside the 0.13 Polars claim set — planning must succeed."""
 
     class JoinCustomers(Transformation):
         left: Input[RawCustomer]
@@ -170,8 +169,5 @@ def test_require_fails_closed_for_join_requirements() -> None:
     runtime = PipelineRuntime()
     runtime.register_dataframe_plugin("polars", create_plugin())
     context = PlanningContext.create(profile=profile, registry=runtime.registry)
-
-    with pytest.raises(PipelineValidationError) as exc:
-        plan_pipeline(JoinPipeline, context=context)
-    codes = {d.code for d in (exc.value.report.diagnostics if exc.value.report else ())}
-    assert "PMXFORM301" in codes
+    plan = plan_pipeline(JoinPipeline, context=context)
+    assert plan.implementations["joined"].kind == "portable_compiled"

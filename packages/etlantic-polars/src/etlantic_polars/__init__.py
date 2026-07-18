@@ -28,7 +28,7 @@ from etlantic.dataframe.protocol import (
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 __all__ = [
     "PolarsDataframePlugin",

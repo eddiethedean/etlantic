@@ -32,7 +32,7 @@ from etlantic_sparkforge.runtime_map import (
     selection_from_sparkforge,
 )
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",

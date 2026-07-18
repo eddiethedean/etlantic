@@ -1,6 +1,6 @@
 # Documentation Status and Conventions
 
-ETLantic **0.12.0** implements the typed modeling kernel, contract
+ETLantic **0.13.0** implements the typed modeling kernel, contract
 interoperability, Validation / Pipeline Plan IR, the local runtime /
 operational model, dataframe execution (Polars reference + Pandas
 compatibility), SQL-native execution (`etlantic-sql`), distributed Spark batch
@@ -8,13 +8,13 @@ execution (`etlantic-pyspark`), external orchestration compilation
 (`etlantic-airflow`), CLI/SDK tooling with Graphviz/HTML lineage exporters,
 optional `etlantic-keyring` / `etlantic-sqlmodel`, the SparkForge migration
 adapter (`etlantic-sparkforge`), `@Transformation.portable` /
-`etlantic.transform` authoring to `dtcs.transform-plan/2`, and the Polars
-**kernel** portable compiler (`etlantic-polars`). Structured Streaming APIs
-are experimental. Relational, PySpark, Pandas, and SQL portable compilers
-remain 0.13–0.15—keep `@implementation(...)` for those engines and for
-profiles outside the Polars kernel claim set.
+`etlantic.transform` authoring to `dtcs.transform-plan/2`, and Polars +
+PySpark portable compilers for kernel + `portable-relational/1`. Structured
+Streaming APIs are experimental. Pandas and SQL portable compilers remain
+0.14–0.15—keep `@implementation(...)` for those engines and for profiles
+outside the advertised claim set.
 
-Prefer pages marked **Available in 0.12** and the Green path on the docs home.
+Prefer pages marked **Available in 0.13** and the Green path on the docs home.
 Design Proposals and **Future design** chapters describe intended 1.0 surfaces
 and are not current APIs. Documentation serves three related purposes:
 
@@ -39,7 +39,7 @@ Public pages use these visible statuses:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.12 | Tested against the current package |
+| Available in 0.13 | Tested against the current package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |
@@ -47,14 +47,14 @@ Public pages use these visible statuses:
 | Normative specification | Contract requirements, not package behavior |
 | Internal project plan | Maintainer sequencing and implementation notes |
 
-Unless a chapter says otherwise, user-guide code beyond the shipped 0.12
+Unless a chapter says otherwise, user-guide code beyond the shipped 0.13
 modeling, contracts, validation, planning, local runtime, **dataframe
 plugin**, **SQL plugin**, **PySpark batch**, **Airflow compilation**,
 **CLI/viz tooling**, **SparkForge adapter**, **portable authoring**, and
-**Polars kernel compiler** surface should be read as an **accepted design
-example**, not as evidence of a published package API. The 0.12 surface is
-defined by the package, [API reference](../10_REFERENCE/API_REFERENCE.md),
-tests, and changelog.
+**Polars/PySpark relational compilers** surface should be read as an
+**accepted design example**, not as evidence of a published package API. The
+0.13 surface is defined by the package,
+[API reference](../10_REFERENCE/API_REFERENCE.md), tests, and changelog.
 
 **Shipped in 0.5:** dataframe execution protocol, `etlantic-polars`, and
 `etlantic-pandas` (see Execution → Polars / Pandas and the Dataframe Plugin
@@ -85,12 +85,16 @@ authoring emitting `dtcs.transform-plan/2`.
 selection, and Polars **kernel** portable compilation / execution via
 `etlantic-polars` (`etlantic.transform_compilers`).
 
+**Shipped in 0.13:** Polars + PySpark compilers claim
+`portable-relational/1` (joins, unions, aggregates, sort/dedupe/limit) with
+private differential fixtures; portable Spark path forbids UDF fallback.
+
 **Experimental in 0.7+:** Structured Streaming foundation APIs.
 
 **Still accepted design until later milestones:** managed Spark providers
 (Databricks/EMR/Connect), Dagster/Prefect compilers, remaining Plugin SDK
-surfaces, and portable compilers for relational + PySpark (0.13), Pandas /
-conformance (0.14), and SQL lowering (0.15+).
+surfaces, Pandas portable compiler + public conformance (0.14), and SQL
+lowering / profile graduation (0.15+).
 
 ## Normative Authority
 

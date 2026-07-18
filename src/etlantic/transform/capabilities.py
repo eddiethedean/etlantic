@@ -14,6 +14,8 @@ from etlantic.transform.protocol import (
     DEFAULT_PROFILE,
     KERNEL_PROFILE_V1,
     KERNEL_PROFILE_V2,
+    RELATIONAL_PROFILE_V1,
+    RELATIONAL_PROFILE_V2,
 )
 
 # Profiles that are plan-shape / metadata aliases of the kernel claim.
@@ -22,6 +24,14 @@ _KERNEL_PROFILE_ALIASES = frozenset(
         KERNEL_PROFILE_V1,
         KERNEL_PROFILE_V2,
         DEFAULT_PROFILE,
+    }
+)
+
+# Candidate relational /2 is treated as a metadata alias of claimed /1.
+_RELATIONAL_PROFILE_ALIASES = frozenset(
+    {
+        RELATIONAL_PROFILE_V1,
+        RELATIONAL_PROFILE_V2,
     }
 )
 
@@ -128,7 +138,9 @@ def match_requirements(
     When ``allow_kernel_profile_alias`` is true, requiring kernel ``/2`` (or
     the default plan-v2 profile) is satisfied by a compiler that claims
     ``portable-relational-kernel/1`` only — without granting extra relational
-    ops.
+    ops. Requiring ``portable-relational/2`` is similarly satisfied by a
+    compiler that claims ``portable-relational/1`` only (no candidate
+    extensions).
 
     Empty ``capabilities.actions`` / ``capabilities.functions`` deny any
     required action/function (fail closed).
@@ -139,6 +151,8 @@ def match_requirements(
     claimed_profiles = set(capabilities.profiles)
     if allow_kernel_profile_alias and KERNEL_PROFILE_V1 in claimed_profiles:
         claimed_profiles |= _KERNEL_PROFILE_ALIASES
+    if allow_kernel_profile_alias and RELATIONAL_PROFILE_V1 in claimed_profiles:
+        claimed_profiles |= _RELATIONAL_PROFILE_ALIASES
 
     for profile in req.get("profiles") or ():
         if profile not in claimed_profiles:
@@ -147,6 +161,12 @@ def match_requirements(
                 allow_kernel_profile_alias
                 and profile in _KERNEL_PROFILE_ALIASES
                 and KERNEL_PROFILE_V1 in capabilities.profiles
+            ):
+                continue
+            if (
+                allow_kernel_profile_alias
+                and profile in _RELATIONAL_PROFILE_ALIASES
+                and RELATIONAL_PROFILE_V1 in capabilities.profiles
             ):
                 continue
             findings.append(

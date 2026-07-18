@@ -1,4 +1,4 @@
-"""Polars portable transform compiler (kernel claim only)."""
+"""Polars portable transform compiler (kernel + relational claims)."""
 
 from __future__ import annotations
 
@@ -15,14 +15,20 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformOutputBundle,
     TransformPlanningContext,
+    TransformSupportFinding,
     TransformSupportReport,
 )
-from etlantic.transform.protocol import KERNEL_PROFILE_V1
-from etlantic_polars.lowering.actions import KERNEL_ACTIONS, apply_action
+from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
+from etlantic_polars.lowering.actions import (
+    CLAIMED_ACTIONS,
+    KERNEL_ACTIONS,
+    RELATIONAL_ACTIONS,
+    apply_action,
+)
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
-# Kernel scalar / string / numeric functions claimed in 0.12.
+# Kernel scalar / string / numeric functions claimed in 0.12+.
 KERNEL_FUNCTIONS = frozenset(
     {
         "dtcs:lower",
@@ -48,9 +54,28 @@ KERNEL_FUNCTIONS = frozenset(
         "dtcs:sqrt",
         "dtcs:least",
         "dtcs:greatest",
-        # dtcs:cast is conversion-profile only — not claimed in kernel 0.12.
     }
 )
+
+RELATIONAL_FUNCTIONS = frozenset(
+    {
+        "dtcs:sum",
+        "dtcs:average",
+        "dtcs:min",
+        "dtcs:max",
+        "dtcs:count",
+        "dtcs:count_all",
+        "dtcs:count_distinct",
+    }
+)
+
+CLAIMED_FUNCTIONS = KERNEL_FUNCTIONS | RELATIONAL_FUNCTIONS
+
+_JOIN_TYPES = frozenset(
+    {"inner", "left", "right", "full", "semi", "anti", "cross", "outer"}
+)
+_COLLISION_POLICIES = frozenset({"fail", "suffix", "coalesce"})
+_UNION_MODES = frozenset({"byName", "byPosition"})
 
 
 def create_transform_compiler() -> PolarsTransformCompiler:
@@ -59,13 +84,13 @@ def create_transform_compiler() -> PolarsTransformCompiler:
 
 
 class PolarsTransformCompiler:
-    """Compile ``dtcs.transform-plan/2`` kernel IR to Polars expressions."""
+    """Compile ``dtcs.transform-plan/2`` kernel+relational IR to Polars."""
 
     def __init__(self) -> None:
         caps = TransformCapabilities(
-            profiles=frozenset({KERNEL_PROFILE_V1}),
-            actions=KERNEL_ACTIONS,
-            functions=KERNEL_FUNCTIONS,
+            profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
+            actions=CLAIMED_ACTIONS,
+            functions=CLAIMED_FUNCTIONS,
             lazy=True,
             eager=True,
         )
@@ -93,10 +118,14 @@ class PolarsTransformCompiler:
             requirements_from_plan,
         )
 
-        # Always union caller requirements with plan-derived ones so incomplete
-        # requirement maps cannot fail-open past unclaimed callees/actions.
         req = merge_requirements(requirements, requirements_from_plan(dict(definition)))
-        return match_requirements(req, self._info.capabilities)
+        report = match_requirements(req, self._info.capabilities)
+        findings = list(report.findings)
+        findings.extend(_analyze_modes(definition))
+        return TransformSupportReport(
+            supported=not findings,
+            findings=tuple(findings),
+        )
 
     def compile(
         self,
@@ -176,6 +205,7 @@ class PolarsTransformCompiler:
                 frames[target],
                 action,
                 parameters=dict(parameters),
+                frames=frames,
             )
 
         # Resolve outputs via lineage dependencies ending at output id.
@@ -198,6 +228,70 @@ class PolarsTransformCompiler:
             valid[out_name] = frames[source]
 
         return TransformOutputBundle(valid=valid, metrics={"engine": "polars"})
+
+
+def _analyze_modes(definition: Mapping[str, Any]) -> list[TransformSupportFinding]:
+    findings: list[TransformSupportFinding] = []
+    for action in definition.get("actions") or []:
+        kind = action.get("kind") or {}
+        name = kind.get("action")
+        params = kind.get("parameters") or {}
+        path = str(kind.get("id") or action.get("id") or name or "action")
+        if name == "dtcs:join":
+            how = str(params.get("type") or "inner")
+            if how == "outer":
+                how = "full"
+            if how not in _JOIN_TYPES:
+                findings.append(
+                    TransformSupportFinding(
+                        code="PMXFORM301",
+                        requirement=f"action:dtcs:join:type:{how}",
+                        reason="join type is not implemented",
+                        expression_path=path,
+                    )
+                )
+            collision = str(params.get("collisionPolicy") or "fail")
+            if collision not in _COLLISION_POLICIES:
+                findings.append(
+                    TransformSupportFinding(
+                        code="PMXFORM301",
+                        requirement=f"action:dtcs:join:collisionPolicy:{collision}",
+                        reason="collisionPolicy is not implemented",
+                        expression_path=path,
+                    )
+                )
+            if params.get("predicate") is not None and params.get("leftKey") is None:
+                findings.append(
+                    TransformSupportFinding(
+                        code="PMXFORM301",
+                        requirement="action:dtcs:join:predicate",
+                        reason="predicate joins are not implemented",
+                        expression_path=path,
+                    )
+                )
+        elif name == "dtcs:union":
+            mode = str(params.get("mode") or "byPosition")
+            if mode not in _UNION_MODES:
+                findings.append(
+                    TransformSupportFinding(
+                        code="PMXFORM301",
+                        requirement=f"action:dtcs:union:mode:{mode}",
+                        reason="union mode is not implemented",
+                        expression_path=path,
+                    )
+                )
+        elif name in RELATIONAL_ACTIONS | KERNEL_ACTIONS:
+            continue
+        elif name is not None:
+            findings.append(
+                TransformSupportFinding(
+                    code="PMXFORM301",
+                    requirement=f"action:{name}",
+                    reason="action is not implemented",
+                    expression_path=path,
+                )
+            )
+    return findings
 
 
 def _parameter_names(plan: Mapping[str, Any]) -> tuple[str, ...]:

@@ -1,6 +1,6 @@
 # Portable vs Native Implementations
 
-> **Status: Available in ETLantic 0.12.0.**
+> **Status: Available in ETLantic 0.13.0.**
 
 ## When to use `@Transformation.portable`
 
@@ -37,7 +37,7 @@ def normalize_pandas(rows):
 ```
 
 Common pattern: keep portable authoring for the plan artifact, keep native
-callables for Pandas/SQL/PySpark until 0.13–0.15 compilers land, and use
+callables for Pandas/SQL until 0.14–0.15 compilers land, and use
 Polars portable kernel execution when the claim set fits.
 
 ## Related

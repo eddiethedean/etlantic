@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Shipped in 0.9: GRAPHVIZ, HTML, LINEAGE tooling + CLI/SDK polish.
   // Shipped in 0.11: portable authoring.
   // Shipped in 0.12: PORTABLE_TRANSFORM_COMPILER, portable Polars kernel example.
+  // Shipped in 0.13: Polars + PySpark portable-relational/1 compilers.
   // Experimental in 0.7+: STRUCTURED_STREAMING (separate experimental banner).
   const futureExecutionPages = [
     "PLUGINS",
@@ -80,10 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
   banner.className = "admonition warning";
   banner.dataset.etlanticStatus = "future";
   banner.innerHTML =
-    '<p class="admonition-title">Future design—not an ETLantic 0.12 API guide</p>' +
+    '<p class="admonition-title">Future design—not an ETLantic 0.13 API guide</p>' +
     "<p>This page may contain unshipped packages, commands, or interfaces. " +
     "Use Current Capabilities, the API reference, and the CLI reference for shipped behavior. " +
-    "Polars kernel portable compilation ships in 0.12 via <code>etlantic-polars</code>; " +
-    "relational / PySpark / Pandas / SQL compilers remain 0.13–0.15.</p>";
+    "Polars + PySpark portable-relational compilers ship in 0.13; " +
+    "Pandas / SQL compilers remain 0.14–0.15.</p>";
   article.prepend(banner);
 });

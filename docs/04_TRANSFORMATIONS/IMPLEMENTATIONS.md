@@ -31,7 +31,7 @@ def normalize(customers, minimum_age):
 ETLantic exposes one closed, PySpark-inspired relational definition that
 normalizes to the published DTCS 3.0 `dtcs.transform-plan/2` protocol
 (v1 readable). Engine plugins that **compile** those plans remain 0.12+
-(0.12 = Polars kernel; 0.13 = relational + PySpark):
+(0.12 = Polars kernel; **0.13 = relational + PySpark shipped**):
 
 ```python
 from etlantic.transform import functions as F
@@ -43,9 +43,9 @@ def normalize(customers, minimum_age):
 ```
 
 Portable authoring is available in 0.11+; the Polars **kernel** compiler ships
-in 0.12. Native
-`@implementation()` registration remains required for execution in 0.11 and for
-any profile a compiler has not yet claimed. See
+in 0.12 and relational claims (Polars + PySpark) ship in 0.13. Native
+`@implementation()` registration remains required for engines/profiles a
+compiler has not yet claimed. See
 [Portable Transformations](PORTABLE_TRANSFORMATIONS.md).
 
 Portable support is capability-based. Plugins claim exact DTCS profiles,

@@ -1,8 +1,9 @@
 # Portable Transformation Compiler Protocol
 
-!!! success "Available in ETLantic 0.12"
-    `etlantic.transform-compiler/1` is importable. Polars claims the portable
-    **kernel** profile; relational and multi-engine claims follow in 0.13+.
+!!! success "Available in ETLantic 0.13"
+    `etlantic.transform-compiler/1` is importable. Polars and PySpark claim
+    `portable-relational-kernel/1` and `portable-relational/1`. Pandas/SQL and
+    Rich Portable Analytics compiler claims remain 0.14–0.15+.
 
 A portable transformation compiler translates a validated
 `dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
@@ -94,20 +95,21 @@ A compiler may advertise a subset as individual capabilities. It may advertise
 a profile only when every requirement and DTCS conformance fixture in that
 profile passes.
 
-### Initial Polars claim matrix (0.12)
+### Polars / PySpark claim matrix (0.13)
 
-`etlantic-polars` **must** claim and privately fixture:
+Both `etlantic-polars` and `etlantic-pyspark` **must** claim and privately
+fixture:
 
-| Item | 0.12 requirement |
+| Item | 0.13 requirement |
 |---|---|
-| Profile | `dtcs:profile/portable-relational-kernel/1` |
-| Plan shape | Accept `dtcs.transform-plan/2` (and readable v1); `/2` metadata compatibility without extra relational ops |
-| Actions / ops | Kernel surface covered by golden fixtures such as `tests/fixtures/portable/kernel_normalize.json` (project, filter, with_fields, rename/drop, scalar expressions) |
-| Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) |
+| Profiles | `dtcs:profile/portable-relational-kernel/1` and `dtcs:profile/portable-relational/1` |
+| Plan shape | Accept `dtcs.transform-plan/2` (and readable v1); `/2` profile requirements are metadata aliases of `/1` |
+| Kernel actions | project, filter, with_fields, rename/drop, scalar expressions |
+| Relational actions | join, union, aggregate, sort, distinct, deduplicate, limit with exact modes |
+| Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) with action/expression paths |
 
-`etlantic-polars` **must not** claim in 0.12:
-`portable-relational/1`, Rich Portable Analytics families, windows, or
-complex-value profiles. Those compiler claims belong to 0.13–0.15.
+They **must not** claim Rich Portable Analytics, windows, complex-values,
+reshape, relational-extended, or conversion profiles. Those belong to 0.15+.
 
 ## Support reports
 

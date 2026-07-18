@@ -1,6 +1,6 @@
 # Ops Pilot Guide
 
-> **Status: Available in ETLantic 0.12.0.** Alpha operational checklist—not a
+> **Status: Available in ETLantic 0.13.0.** Alpha operational checklist—not a
 > multi-tenant deployment product.
 
 Use this page for a **bounded pilot**: one team, pinned packages, process
@@ -10,9 +10,9 @@ compliance certification.
 ## Pin matrix
 
 ```bash
-pip install 'etlantic==0.12.0'
+pip install 'etlantic==0.13.0'
 # Only the engines you need:
-pip install 'etlantic-polars==0.12.0'   # or pandas / sql / pyspark / airflow
+pip install 'etlantic-polars==0.13.0'   # or pandas / sql / pyspark / airflow
 ```
 
 Record the exact versions in your lockfile. Production profiles should pin

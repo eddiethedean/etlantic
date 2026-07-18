@@ -3,10 +3,12 @@
 **Status: shipped in 0.7.0** (`etlantic.spark/1`). The reference plugin is
 `etlantic-pyspark`.
 
-!!! note "Future compiler role"
-    Compilation of DTCS plans produced by PySpark-inspired portable definitions to
-    native Spark expressions is planned for 0.13 and follows the
-    [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
+!!! success "Portable compiler (0.13)"
+    `etlantic-pyspark` also registers an `etlantic.transform_compilers` entry
+    point that lowers DTCS portable plans to native Spark expressions. See the
+    [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md). Portable
+    compilation forbids UDF fallback; native `@implementation("pyspark")` UDF
+    policy remains separate.
 
 A **PySpark Plugin** implements the ETLantic PySpark Plugin API for Apache
 Spark execution environments.

@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-ETLantic 0.12.0 is an alpha release. This page is the shortest answer to
+ETLantic 0.13.0 is an alpha release. This page is the shortest answer to
 "What can I use today?"
 
-## Available in 0.12
+## Available in 0.13
 
 | Capability | Status |
 |---|---|
@@ -23,8 +23,9 @@ ETLantic 0.12.0 is an alpha release. This page is the shortest answer to
 | SQL execution protocol (`etlantic.sql/1`) | Available |
 | SQL plugin (PostgreSQL reference) | Available (`etlantic-sql`) |
 | Spark execution protocol (`etlantic.spark/1`) | Available |
-| PySpark plugin + local Spark provider | Available (`etlantic-pyspark`) |
-| Lazy Spark region fusion | Available |
+| PySpark plugin + local Spark provider (native `@implementation`) | Available (`etlantic-pyspark`) |
+| Portable PySpark transform compiler (kernel + relational `/1`) | Available (`etlantic-pyspark`) |
+| Lazy Spark region fusion (native Spark path) | Available |
 | Delta-compatible write intents | Available (fail-closed without Delta) |
 | Structured Streaming foundation | **Experimental** |
 | Orchestration protocol (`etlantic.orchestration/1`) | Available |
@@ -44,10 +45,9 @@ ETLantic 0.12.0 is an alpha release. This page is the shortest answer to
 | DTCS 3.0 Transformation Plan models and Rich Portable Analytics profiles | Available through `dtcs>=0.13` |
 | `@Transformation.portable` / `etlantic.transform` authoring → `dtcs.transform-plan/2` | Available |
 | `Profile.portable_transform_policy` (`prefer` / `require` / `native`) | Available |
-| Portable Polars **kernel** compiler (plan + execute without native callable) | Available (`etlantic-polars`) |
-| Portable PySpark compiler and relational compiler claims | Planned for 0.13 |
+| Portable Polars compiler (kernel + `portable-relational/1`) | Available (`etlantic-polars`) |
 
-## Not included in 0.12
+## Not included in 0.13
 
 | Capability | Status |
 |---|---|
@@ -59,7 +59,7 @@ ETLantic 0.12.0 is an alpha release. This page is the shortest answer to
 | FastAPI control plane | Continues in 1.1 |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
-| Portable PySpark compiler and relational compiler claims | Planned for 0.13 |
+| Public `etlantic.testing.portable_transform_conformance` | Planned for 0.14 |
 | Portable Pandas compiler and conformance SDK | Planned for 0.14 |
 | Portable SQL lowering and profile graduation | Planned for 0.15+ |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |

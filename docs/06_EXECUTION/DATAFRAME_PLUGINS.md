@@ -5,7 +5,7 @@ specific dataframe library while preserving logical semantics from DTCS and
 the Pipeline Plan.
 
 **Status: shipped in 0.5.0** for Polars and Pandas dataframe execution.
-**0.12** adds Polars **kernel** portable compilation via the same
+**0.13** adds Polars **kernel** portable compilation via the same
 `etlantic-polars` package (`etlantic.transform_compilers`).
 
 Native `@implementation()` callables remain available for both engines.
@@ -16,8 +16,8 @@ ETLantic does **not** depend on a dataframe library. Install plugins
 separately:
 
 ```bash
-pip install 'etlantic-polars==0.12.0'
-pip install 'etlantic-pandas==0.12.0'
+pip install 'etlantic-polars==0.13.0'
+pip install 'etlantic-pandas==0.13.0'
 ```
 
 ## Protocol
@@ -45,7 +45,7 @@ def normalize_pandas(customers: pd.DataFrame) -> pd.DataFrame: ...
 
 Select the engine with `Profile.dataframe_engine = "polars"` or `"pandas"`.
 
-## Portable compilation (0.12 Polars kernel)
+## Portable compilation (0.13 Polars kernel)
 
 Transform compilers analyze and compile DTCS Transformation Plans produced by
 portable definitions:

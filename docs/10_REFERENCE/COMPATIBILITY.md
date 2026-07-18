@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This table describes the declared compatibility of ETLantic 0.12.0.
+This table describes the declared compatibility of ETLantic 0.13.0.
 
 | Surface | Supported range or version |
 |---|---|
@@ -13,18 +13,18 @@ This table describes the declared compatibility of ETLantic 0.12.0.
 | Pipeline plan schema | `etlantic.plan/1` |
 | Dataframe protocol | `etlantic.dataframe/1` |
 | SQL protocol | `etlantic.sql/1` |
-| Polars plugin | `etlantic-polars==0.12.0` |
-| Pandas plugin | `etlantic-pandas==0.12.0` |
-| SQL plugin | `etlantic-sql==0.12.0` |
-| PySpark plugin | `etlantic-pyspark==0.12.0` |
-| Airflow plugin | `etlantic-airflow==0.12.0` |
-| Keyring provider | `etlantic-keyring==0.12.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.12.0` |
-| SparkForge adapter | `etlantic-sparkforge==0.12.0` |
+| Polars plugin | `etlantic-polars==0.13.0` |
+| Pandas plugin | `etlantic-pandas==0.13.0` |
+| SQL plugin | `etlantic-sql==0.13.0` |
+| PySpark plugin | `etlantic-pyspark==0.13.0` |
+| Airflow plugin | `etlantic-airflow==0.13.0` |
+| Keyring provider | `etlantic-keyring==0.13.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.13.0` |
+| SparkForge adapter | `etlantic-sparkforge==0.13.0` |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
-| Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars kernel in 0.12) |
+| Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark relational in 0.13) |
 | Package stability | Alpha |
 | Plugin SDK stability | Protocol stable within 0.8; third-party SDK still evolving |
 
@@ -35,12 +35,12 @@ already implemented. Compatibility is tracked independently:
 
 | DTCS profile | Spec status | ETLantic authoring (0.11) | ETLantic compilers |
 |---|---|---|---|
-| `dtcs:profile/portable-relational-kernel/1` | Published (2.0) | shipped (authoring) | shipped (Polars kernel, 0.12) |
-| `dtcs:profile/portable-relational/1` | Published (2.0) | shipped (authoring) | 0.13 Polars + PySpark claims |
+| `dtcs:profile/portable-relational-kernel/1` | Published (2.0) | shipped (authoring) | shipped (Polars + PySpark, 0.12/0.13) |
+| `dtcs:profile/portable-relational/1` | Published (2.0) | shipped (authoring) | shipped (Polars + PySpark, 0.13) |
 | `dtcs:profile/portable-window/1` | Experimental (2.0) | shipped (alias authoring) | 0.15+ two-compiler graduation |
 | `dtcs:profile/portable-complex-types/1` | Experimental (2.0) | shipped (alias authoring) | 0.15+ two-compiler graduation |
 | `dtcs:profile/portable-relational-kernel/2` | Candidate (3.0) | shipped (authoring, plan v2) | shipped (plan-v2 metadata via Polars kernel, 0.12) |
-| `dtcs:profile/portable-relational/2` | Candidate (3.0) | shipped (authoring) | 0.13+ as claimed |
+| `dtcs:profile/portable-relational/2` | Candidate (3.0) | shipped (authoring) | metadata alias of `/1` on Polars + PySpark (0.13); no candidate extensions |
 | `dtcs:profile/portable-string-advanced/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
 | `dtcs:profile/portable-conversion/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
 | `dtcs:profile/portable-statistics/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |

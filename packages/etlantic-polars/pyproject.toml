@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-polars"
-version = "0.12.0"
+version = "0.13.0"
 description = "Polars dataframe execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.12.0,<1.0",
+    "etlantic>=0.13.0,<1.0",
     "polars>=1.0,<2",
 ]
 

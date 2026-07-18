@@ -4,7 +4,7 @@
 (`etlantic-pandas`).
 
 The portable transformation compiler described below is planned for 0.14 and
-is not part of the current 0.12 plugin.
+is not part of the current 0.13 plugin.
 
 ## Install
 

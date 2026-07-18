@@ -1,6 +1,6 @@
 # Five-Minute Quickstart
 
-> **Status: Available in ETLantic 0.12.0.** Every API in this guide is shipped
+> **Status: Available in ETLantic 0.13.0.** Every API in this guide is shipped
 > and the complete example is tested in CI.
 
 This guide defines, validates, plans, and runs a typed pipeline using only the
@@ -19,7 +19,7 @@ core package and in-memory storage.
 ETLantic requires Python 3.11 or newer.
 
 ```bash
-python -m pip install 'etlantic>=0.12.0'
+python -m pip install 'etlantic>=0.13.0'
 etlantic --version
 ```
 
