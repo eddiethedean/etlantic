@@ -15,8 +15,8 @@ Spark, SQL, Polars, Pandas, or another backend.
 
 ETLantic's proposed portable transformation syntax is deliberately inspired by
 PySpark's DataFrame and Column APIs. It uses ETLantic symbolic objects and
-semantics rather than importing PySpark into core. The PySpark compiler is
-ships in 0.13; native `@implementation("pyspark")` remains available.
+semantics rather than importing PySpark into core. The PySpark compiler ships in 0.13; native `@implementation("pyspark")` remains
+available.
 
 ## Goals
 

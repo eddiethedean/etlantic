@@ -35,7 +35,8 @@ CLAIMED_ACTIONS = KERNEL_ACTIONS | RELATIONAL_ACTIONS
 _JOIN_TYPES = frozenset(
     {"inner", "left", "right", "full", "semi", "anti", "cross", "outer"}
 )
-_COLLISION_POLICIES = frozenset({"fail", "suffix", "coalesce"})
+# 0.13 claims fail-closed collision only; suffix/coalesce deferred.
+_COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
@@ -110,11 +111,12 @@ def apply_action(
     if name == "dtcs:sort":
         return _apply_sort(frame, params)
     if name == "dtcs:distinct":
-        return frame.unique(maintain_order=True)
+        # Portable distinct is unordered; do not claim backend retention order.
+        return frame.unique(maintain_order=False)
     if name == "dtcs:deduplicate":
         keys = params.get("keys") or params.get("subset") or []
         subset = [str(k) for k in keys] if keys else None
-        return frame.unique(subset=subset, maintain_order=True)
+        return frame.unique(subset=subset, maintain_order=False)
     if name == "dtcs:limit":
         n = int(params.get("count") if "count" in params else params.get("n", 0))
         return frame.head(n)
@@ -174,7 +176,8 @@ def _apply_join(
 
     key_overlap = set(left_on) | set(right_on)
     non_key_overlap = (left_cols & right_cols) - key_overlap
-    if collision == "fail" and non_key_overlap:
+    # Semi/anti return the left schema only — non-key name overlap is fine.
+    if how not in {"semi", "anti"} and collision == "fail" and non_key_overlap:
         raise ValueError(
             f"Join column collision under fail policy: {sorted(non_key_overlap)}"
         )
@@ -218,9 +221,21 @@ def _apply_union(
         raise ValueError(f"Unsupported union mode {mode!r}")
     allow_missing = bool(params.get("allowMissingColumns") or False)
     if mode == "byPosition":
+        if allow_missing:
+            raise ValueError(
+                "allowMissingColumns is not supported for byPosition unions"
+            )
         return pl.concat([left, other], how="vertical")
-    how = "diagonal" if allow_missing else "vertical"
-    return pl.concat([left, other], how=how)
+    if allow_missing:
+        return pl.concat([left, other], how="diagonal")
+    left_cols = _frame_columns(left)
+    other_cols = _frame_columns(other)
+    if set(left_cols) != set(other_cols):
+        raise ValueError(
+            "byName union without allowMissingColumns requires matching "
+            f"column names; left={sorted(left_cols)} other={sorted(other_cols)}"
+        )
+    return pl.concat([left, other.select(left_cols)], how="vertical")
 
 
 def _apply_aggregate(

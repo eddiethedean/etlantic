@@ -1,10 +1,11 @@
 # Plugin SDK
 
-!!! note "Portable transformation compiler proposal"
-    The proposed
+!!! note "Portable transformation compilers (0.13)"
+    The
     [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md)
-    defines how plugins will compile future DTCS Transformation Plans.
-    Portable compilers are not part of ETLantic 0.11 (authoring is).
+    defines how plugins compile DTCS Transformation Plans. Polars and PySpark
+    ship relational `/1` compilers in 0.13; public conformance suites remain
+    0.14.
 
 The Plugin SDK enables developers to extend ETLantic with new execution
 engines, dataframe backends, storage providers, resource providers,
@@ -14,7 +15,7 @@ ETLantic is intentionally designed around a small, stable core and a rich
 plugin ecosystem. The SDK defines the public interfaces, lifecycle, and
 conformance requirements for building those plugins.
 
-## Public imports (0.12)
+## Public imports (0.13)
 
 Also available: `etlantic.transform` for portable authoring.
 

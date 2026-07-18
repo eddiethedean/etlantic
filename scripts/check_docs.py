@@ -523,6 +523,7 @@ def main() -> None:
         ROOT / "packages/etlantic-sql/src/etlantic_sql/plugin.py",
         ROOT / "packages/etlantic-polars/src/etlantic_polars/__init__.py",
         ROOT / "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+        ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
     ):
         text = component.read_text(encoding="utf-8")
         match = re.search(r'__version__\s*=\s*"([^"]+)"', text)

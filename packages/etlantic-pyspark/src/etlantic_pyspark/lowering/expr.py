@@ -127,13 +127,19 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     if callee == "dtcs:length":
         return _F().length(args[0])
     if callee == "dtcs:substr":
+        # Portable IR is 0-based; Spark substring is 1-based.
+        start = args[1] + 1
         if len(args) == 2:
-            return _F().substring(args[0], args[1], _F().lit(2147483647))
-        return _F().substring(args[0], args[1], args[2])
+            return _F().substring(args[0], start, _F().lit(2147483647))
+        return _F().substring(args[0], start, args[2])
     if callee == "dtcs:replace":
+        import re
+
         search = constant_python(raw_args[1], parameters=parameters)
         replacement = constant_python(raw_args[2], parameters=parameters)
-        return _F().regexp_replace(args[0], str(search), str(replacement))
+        # Literal replace (match Polars); escape regex metacharacters.
+        pattern = re.escape(str(search))
+        return _F().regexp_replace(args[0], pattern, str(replacement))
     if callee == "dtcs:contains":
         needle = constant_python(raw_args[1], parameters=parameters)
         return args[0].contains(str(needle))

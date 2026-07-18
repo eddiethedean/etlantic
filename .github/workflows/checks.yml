@@ -95,6 +95,10 @@ jobs:
       - name: Pytest dataframe suite
         run: uv run pytest -q tests/dataframe -m "${{ matrix.engine }}"
 
+      - name: Pytest Polars portable compiler
+        if: matrix.engine == 'polars'
+        run: uv run pytest -q tests/polars_compiler -m polars
+
       - name: Runnable parity example
         run: uv run python examples/dataframe_parity.py ${{ matrix.engine }}
 
@@ -188,11 +192,47 @@ jobs:
           SPARKLESS_TEST_MODE: sparkless
         run: uv run pytest -q tests/spark -m spark
 
+      - name: Pytest PySpark portable compiler (sparkless)
+        env:
+          SPARKLESS_TEST_MODE: sparkless
+        run: uv run pytest -q tests/pyspark_compiler -m spark
+
       - name: Runnable Spark example
         env:
           SPARKLESS_TEST_MODE: sparkless
           ETLANTIC_SPARK_BACKEND: sparkless
         run: uv run python examples/pyspark_local.py
+
+  portable-differentials:
+    name: Portable Polars ↔ PySpark differentials
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.3"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync Polars + PySpark (sparkless)
+        run: uv sync --locked --group polars --group pyspark
+
+      - name: Discovery smoke (compilers)
+        run: |
+          uv run python -c "
+          from etlantic.transform.discovery import discover_transform_compilers
+          found = discover_transform_compilers()
+          assert set(found) >= {'polars', 'pyspark'}, found
+          print('compilers', sorted(found))
+          "
+
+      - name: Pytest portable differentials (sparkless)
+        env:
+          SPARKLESS_TEST_MODE: sparkless
+        run: uv run pytest -q tests/portable_differential
 
   airflow:
     name: Airflow orchestrator plugin

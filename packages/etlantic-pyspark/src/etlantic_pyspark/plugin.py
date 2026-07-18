@@ -430,7 +430,9 @@ class PySparkPlugin:
         if isinstance(value, list):
             rows = records_to_dicts(value)
             if not rows:
-                return session.createDataFrame([], schema=None)
+                from pyspark.sql.types import StructType
+
+                return session.createDataFrame([], schema=StructType([]))
             return session.createDataFrame(rows)
         if isinstance(value, SparkWrite):
             return self._to_dataframe(session, value.source)

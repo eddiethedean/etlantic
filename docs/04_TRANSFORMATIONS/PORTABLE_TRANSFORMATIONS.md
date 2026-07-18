@@ -88,7 +88,7 @@ shaping, scalar expressions, and canonical plan serialization:
 
 | ETLantic / PySpark-like surface | DTCS 2.0 mapping | Portable behavior |
 |---|---|---|
-| `frame.select(*columns)` | `dtcs:project` rich `fields` | Ordered names and `{expr, as}` projections; unselected fields are dropped |
+| `frame.select(*columns)` | `dtcs:project` rich `fields` | Ordered names and `{expression, name}` projections; unselected fields are dropped |
 | `frame.filter(predicate)` / `.where(...)` | `dtcs:filter` | Retain `true`; discard `false`, `null`, and `missing`; invalid fails or routes explicitly |
 | `frame.withColumn(name, expression)` | `dtcs:with_fields` | Ordered assignment that adds or replaces a field |
 | `frame.withColumns(**expressions)` | One `dtcs:with_fields` | ETLantic convenience for multiple ordered assignments |
@@ -102,10 +102,10 @@ shaping, scalar expressions, and canonical plan serialization:
 
 | ETLantic / PySpark-like surface | DTCS 2.0 mapping | Portable behavior |
 |---|---|---|
-| `frame.distinct()` | `dtcs:distinct` | Full-row distinct |
-| `frame.dropDuplicates(keys, retain=...)` | `dtcs:deduplicate` | Retention policy is required; nondeterministic without ordering |
+| `frame.distinct()` | `dtcs:distinct` | Full-row distinct (unordered) |
+| `frame.dropDuplicates(keys)` | `dtcs:deduplicate` | Key retention; nondeterministic without ordering |
 | `frame.orderBy(*keys)` / `.sort(...)` | `dtcs:sort` | Each key carries expression, direction, and null placement |
-| `frame.limit(count, offset=0)` | `dtcs:limit` | Nondeterministic without a preceding semantic sort |
+| `frame.limit(n)` | `dtcs:limit` | Nondeterministic without a preceding semantic sort |
 | `frame.join(other, on=..., how=...)` | `dtcs:join` | `inner`, `left`, `right`, `full`, `semi`, `anti`, and `cross` |
 | `frame.groupBy(*keys).agg(...)` | `dtcs:aggregate` / `dtcs:group` | Expression lists, optional filter, explicit grouping semantics |
 | `frame.union(other)` | `dtcs:union` positional mode | Positional append with declared duplicate policy |
@@ -121,16 +121,17 @@ to it.
 ```python
 customers.join(
     orders,
-    on=F.col("customers.customer_id") == F.col("orders.customer_id"),
+    on="customer_id",
     how="left",
     null_safe=False,
-    collision_policy="qualify",
+    collision_policy="fail",
 )
 ```
 
 Ordinary equality never matches two null keys. Authors must request
 `null_safe=True` (DTCS `dtcs:null_safe_eq`) when nulls should match. Column-name
-collisions must use an explicit published collision policy; compilers may not
+collisions must use an explicit published collision policy; 0.13 compilers claim
+`fail` only (suffix/coalesce/qualify remain deferred). Compilers may not
 silently apply backend suffix conventions.
 
 Cross joins require `how="cross"` and must not infer a predicate. Semi and anti
@@ -143,9 +144,12 @@ Columns compose through operators and methods:
 ```python
 (F.col("age") >= minimum_age) & F.col("email").isNotNull()
 F.col("total") * F.col("quantity")
-F.try_cast(F.col("created_at"), "datetime")
 F.lower(F.col("email")).alias("email")
 ```
+
+`F.try_cast` and other conversion helpers are not part of the 0.13 kernel claim
+set; use a claimed cast surface or a native implementation until conversion
+profiles ship.
 
 DTCS `trim` is a field-targeted Semantic Action, not a general DTCS 2.0
 expression Function, so the strict facade does not pretend that

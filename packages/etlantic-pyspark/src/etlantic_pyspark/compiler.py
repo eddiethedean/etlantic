@@ -73,7 +73,7 @@ CLAIMED_FUNCTIONS = KERNEL_FUNCTIONS | RELATIONAL_FUNCTIONS
 _JOIN_TYPES = frozenset(
     {"inner", "left", "right", "full", "semi", "anti", "cross", "outer"}
 )
-_COLLISION_POLICIES = frozenset({"fail", "suffix", "coalesce"})
+_COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
@@ -248,7 +248,9 @@ def _default_to_dataframe(session: Any, value: Any) -> Any:
 
         rows = records_to_dicts(value)
         if not rows:
-            return session.createDataFrame([], schema=None)
+            from pyspark.sql.types import StructType
+
+            return session.createDataFrame([], schema=StructType([]))
         return session.createDataFrame(rows)
     raise TypeError(f"Cannot convert {type(value)!r} to Spark DataFrame")
 
@@ -303,6 +305,29 @@ def _analyze_modes(definition: Mapping[str, Any]) -> list[TransformSupportFindin
                         expression_path=path,
                     )
                 )
+            if mode == "byPosition" and bool(params.get("allowMissingColumns")):
+                findings.append(
+                    TransformSupportFinding(
+                        code="PMXFORM301",
+                        requirement="action:dtcs:union:allowMissingColumns",
+                        reason=(
+                            "allowMissingColumns is not supported for byPosition unions"
+                        ),
+                        expression_path=path,
+                    )
+                )
+        elif name == "dtcs:with_fields":
+            for item in params.get("assignments") or []:
+                if isinstance(item, dict) and item.get("window") is not None:
+                    findings.append(
+                        TransformSupportFinding(
+                            code="PMXFORM301",
+                            requirement="action:dtcs:with_fields:window",
+                            reason="with_fields window specs are not implemented",
+                            expression_path=path,
+                        )
+                    )
+                    break
         elif name in RELATIONAL_ACTIONS | KERNEL_ACTIONS:
             continue
         elif name is not None:

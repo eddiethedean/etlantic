@@ -4,7 +4,7 @@
     Parts of this chapter describe intended lifespan / middleware / resource
     injection surfaces that are not fully shipped. Prefer
     [Callbacks](../04_TRANSFORMATIONS/CALLBACKS.md), run reports, and the
-    local runtime APIs documented in the API reference for 0.12 applications.
+    local runtime APIs documented in the API reference for 0.13 applications.
 
 ETLantic provides four distinct mechanisms for inserting reusable behavior
 at well-defined points in modeling and execution:

@@ -132,6 +132,7 @@ jobs:
           assert 'airflow' in orch, orch
           compilers = discover_transform_compilers()
           assert 'polars' in compilers, compilers
+          assert 'pyspark' in compilers, compilers
           print('ok', etlantic.__version__, sorted(found), sorted(sql), sorted(spark), sorted(orch), sorted(compilers))
           "
 

@@ -171,9 +171,9 @@ Profile(
 
 `require` forbids native fallback, `prefer` permits an explicit diagnosed
 fallback, and `native` prefers a registered backend implementation. The choice
-must be retained in `plan explain` and run reports. In 0.12 only Polars
-**kernel** claims are expected to compile; richer profiles need native
-implementations or later compilers.
+must be retained in `plan explain` and run reports. In 0.13 Polars and PySpark
+claim **kernel** + **relational `/1`**; richer profiles (windows, reshape, and
+pandas) still need native implementations or later compilers.
 
 ## Orchestrator Selection
 

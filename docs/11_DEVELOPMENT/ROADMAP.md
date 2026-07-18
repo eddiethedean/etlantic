@@ -1050,7 +1050,8 @@ authored in 0.11 IR. This phase proves compiler fidelity for
 portable Spark path **forbids** Python/Pandas UDF fallback (native Spark UDF
 policy stays separate); private differential fixtures under `tests/` (public
 `etlantic.testing.portable_transform_conformance` stays **0.14**); default CI
-uses **sparkless**, with a gated real-PySpark job for Catalyst visibility;
+uses **sparkless** for Spark suites plus private compiler/differential jobs,
+with a gated real-PySpark env for Catalyst visibility;
 relational `analyze()` rejects unsupported **modes** with action/expression
 paths; portable Spark `execute()` uses the provider session from execution
 context (no region UDF fusion); differential compare uses stable
@@ -1066,7 +1067,7 @@ Actions beyond the kernel: `dtcs:join`, `dtcs:union`, `dtcs:aggregate` (with
 Modes that must pass `analyze()` exactly (fail closed, not “supports join”):
 
 - Join types: `inner`, `left`, `right`, `full`, `semi`, `anti`, `cross`
-- Join: `nullSafe`, `collisionPolicy` (`fail` and authored modes)
+- Join: `nullSafe`, `collisionPolicy` (`fail` in 0.13; other modes deferred)
 - Union: `byName` / `byPosition`, `allowMissingColumns`
 - Sort: direction + null placement
 - Aggregates: `count_all`, `count`, `count_distinct`, `sum`, `average`,

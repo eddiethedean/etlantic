@@ -40,7 +40,8 @@ CLAIMED_ACTIONS = KERNEL_ACTIONS | RELATIONAL_ACTIONS
 _JOIN_TYPES = frozenset(
     {"inner", "left", "right", "full", "semi", "anti", "cross", "outer"}
 )
-_COLLISION_POLICIES = frozenset({"fail", "suffix", "coalesce"})
+# 0.13 claims fail-closed collision only; suffix/coalesce deferred.
+_COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
@@ -82,7 +83,7 @@ def apply_action(
                 raise ValueError(f"Unsupported project field {field!r}")
         return frame.select(*cols)
     if name == "dtcs:with_fields":
-        assignments = []
+        out = frame
         for item in params.get("assignments") or []:
             if item.get("window") is not None:
                 raise ValueError(
@@ -90,8 +91,8 @@ def apply_action(
                     "PySpark relational compiler"
                 )
             expr = lower_expr(item["expression"], parameters=parameters)
-            assignments.append(expr.alias(str(item["name"])))
-        return frame.select("*", *assignments)
+            out = out.withColumn(str(item["name"]), expr)
+        return out
     if name == "dtcs:drop_fields":
         names = [str(n) for n in (params.get("fields") or params.get("names") or [])]
         return frame.drop(*names)
@@ -172,7 +173,8 @@ def _apply_join(
 
     key_overlap = set(left_on) | set(right_on)
     non_key_overlap = (left_cols & right_cols) - key_overlap
-    if collision == "fail" and non_key_overlap:
+    # Semi/anti return the left schema only — non-key name overlap is fine.
+    if how not in {"semi", "anti"} and collision == "fail" and non_key_overlap:
         raise ValueError(
             f"Join column collision under fail policy: {sorted(non_key_overlap)}"
         )
@@ -192,7 +194,8 @@ def _apply_join(
     for lk, rk in zip(left_on, right_on, strict=True):
         piece = left[lk] == right[rk]
         cond = piece if cond is None else (cond & piece)
-    return left.join(right, on=cond, how=spark_how)
+    joined = left.join(right, on=cond, how=spark_how)
+    return _coalesce_join_keys(joined, left_on=left_on, right_on=right_on)
 
 
 def _coalesce_join_keys(joined: Any, *, left_on: list[str], right_on: list[str]) -> Any:
@@ -233,22 +236,26 @@ def _apply_union(
     if mode not in _UNION_MODES:
         raise ValueError(f"Unsupported union mode {mode!r}")
     allow_missing = bool(params.get("allowMissingColumns") or False)
-    if mode == "byName":
+    if mode == "byPosition":
         if allow_missing:
-            # Align columns by name, filling missing with null.
-            F = _F()
-            left_cols = left.columns
-            right_cols = other.columns
-            all_cols = list(dict.fromkeys([*left_cols, *right_cols]))
-            left_sel = [
-                F.col(c) if c in left_cols else F.lit(None).alias(c) for c in all_cols
-            ]
-            right_sel = [
-                F.col(c) if c in right_cols else F.lit(None).alias(c) for c in all_cols
-            ]
-            return left.select(*left_sel).unionByName(other.select(*right_sel))
-        return left.unionByName(other)
-    return left.union(other)
+            raise ValueError(
+                "allowMissingColumns is not supported for byPosition unions"
+            )
+        return left.union(other)
+    if allow_missing:
+        # Align columns by name, filling missing with null.
+        F = _F()
+        left_cols = left.columns
+        right_cols = other.columns
+        all_cols = list(dict.fromkeys([*left_cols, *right_cols]))
+        left_sel = [
+            F.col(c) if c in left_cols else F.lit(None).alias(c) for c in all_cols
+        ]
+        right_sel = [
+            F.col(c) if c in right_cols else F.lit(None).alias(c) for c in all_cols
+        ]
+        return left.select(*left_sel).unionByName(other.select(*right_sel))
+    return left.unionByName(other)
 
 
 def _apply_aggregate(

@@ -34,6 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Package version set to 0.13.0 across core and optional plugins
 
+### Fixed
+
+- PySpark portable joins coalesce unequal keys like Polars (drop right key cols)
+- Join `collisionPolicy` fail-closed to `fail` only (suffix/coalesce deferred)
+- PySpark `with_fields` replaces existing columns instead of duplicating them
+- Polars `unionByName` aligns by name (and fills missing when allowed)
+- Semi/anti joins no longer false-fail on non-key column name overlap
+- PySpark `substr` uses 0-based portable offsets; `replace` is literal
+- Empty Spark DataFrames use an empty `StructType` instead of `schema=None`
+- Analyze rejects `with_fields` windows and `allowMissingColumns` on byPosition
+- CI runs `polars_compiler`, `pyspark_compiler`, and portable differentials
+
 ### Upgrade notes
 
 - Pin `etlantic==0.13.0` and matching plugins (`etlantic-polars`,
