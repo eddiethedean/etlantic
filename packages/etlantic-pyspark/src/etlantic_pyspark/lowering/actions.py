@@ -195,9 +195,7 @@ def _apply_join(
     return left.join(right, on=cond, how=spark_how)
 
 
-def _coalesce_join_keys(
-    joined: Any, *, left_on: list[str], right_on: list[str]
-) -> Any:
+def _coalesce_join_keys(joined: Any, *, left_on: list[str], right_on: list[str]) -> Any:
     """Drop right-side join key columns after a condition join."""
     drop_cols: list[str] = []
     columns = set(joined.columns)
