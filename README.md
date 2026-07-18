@@ -2,7 +2,7 @@
   <img
     src="https://raw.githubusercontent.com/eddiethedean/etlantic/main/docs/theme/assets/etlantic-logo.svg"
     width="148"
-    alt="ETLantic compass rose and pipeline route"
+    alt="ETLantic logo"
   >
 </p>
 
@@ -30,17 +30,15 @@
 
 ---
 
-**Chart your pipeline before the data sets sail.**
-
 ETLantic catches incompatible wiring before data is processed. Define datasets,
 transformations, and pipelines as typed Python classes, then validate, plan,
-run, or compile the same logical route for different execution engines.
+run, or compile the same logical pipeline for different execution engines.
 
 ```text
 Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run or compile
 ```
 
-## Chart the course
+## Why ETLantic?
 
 - **Fail earlier.** Detect broken references, incompatible contracts, missing
   implementations, unsupported capabilities, and untrusted plugins before a
@@ -49,7 +47,7 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
   Polars, Pandas, SQL, PySpark, and orchestration implementations.
 - **Make plans reviewable.** Generate deterministic, immutable, secret-free
   execution plans with stable fingerprints.
-- **Keep a useful logbook.** Produce structured diagnostics, lineage, schema
+- **Preserve evidence.** Produce structured diagnostics, lineage, schema
   observations, and run reports instead of opaque task logs.
 - **Adopt incrementally.** The core has no dataframe, SQL, Spark, or Airflow
   dependency. Install only the integrations you need.
@@ -58,10 +56,11 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
 > are available today. Structured Streaming is experimental. Portable
 > transformation authoring and the Polars kernel compiler are available;
 > relational, PySpark, Pandas, and safe SQL portable compilers are planned for
-> 0.13–0.15. See the [capability chart](docs/01_GETTING_STARTED/CAPABILITIES.md)
-> before choosing a production route.
+> 0.13–0.15. See the
+> [capabilities guide](docs/01_GETTING_STARTED/CAPABILITIES.md) before choosing
+> a production architecture.
 
-## Five-minute launch
+## Quickstart
 
 ETLantic requires Python 3.11 or newer.
 
@@ -144,7 +143,7 @@ structured diagnostic before any transformation or write is attempted.
 The complete tested example is
 [examples/quickstart.py](examples/quickstart.py).
 
-## Navigate with the CLI
+## CLI workflow
 
 The CLI follows the same validate-first lifecycle:
 
@@ -202,25 +201,25 @@ Plugins are discovered through Python entry points and scoped to a runtime
 registry. Production profiles require an explicit plugin allowlist and reject
 untrusted plugins by default.
 
-## From chart to voyage
+## How it works
 
 ETLantic keeps logical intent separate from physical execution:
 
-1. **Chart** typed `Data`, `Transformation`, and `Pipeline` classes.
-2. **Survey** an immutable logical graph without running user code.
+1. **Author** typed `Data`, `Transformation`, and `Pipeline` classes.
+2. **Inspect** an immutable logical graph without running user code.
 3. **Validate** structure, references, contracts, policies, capabilities, and
    plugin trust in ordered phases.
 4. **Plan** engine selections, execution regions, bindings, artifacts, and
    materialization boundaries.
-5. **Set sail** by executing or compiling through small backend protocols.
-6. **Log** step outcomes, diagnostics, lineage, artifacts, and schema
+5. **Execute or compile** the plan through small backend protocols.
+6. **Report** step outcomes, diagnostics, lineage, artifacts, and schema
    observations.
 
 Plans and reports contain secret references, never resolved secret values.
 Secrets are resolved only at runtime. Capability and trust failures occur
 before mutation.
 
-## Current waters
+## Capability boundary
 
 | Capability | 0.12 |
 |---|---|
