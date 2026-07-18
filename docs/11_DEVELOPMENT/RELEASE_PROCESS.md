@@ -58,14 +58,19 @@ Tag `vX.Y.Z` publishes nine distributions:
    uv run pytest -q tests/sparkforge -m sparkforge
    ```
 
-7. For a **new** package-name set, expect PyPI’s new-project quota
-   (`429 Too many new projects created`; defaults ~20 creates/hour). PyPI has
-   no empty-project UI — the first upload creates each name. Release CI waits
-   **10 minutes** between package publishes. If the account is already
+7. Review `scripts/check_release.py` output for **brand-new** PyPI names.
+   PyPI has no empty-project UI — the first upload creates each name and
+   counts against the new-project quota (`429 Too many new projects created`;
+   defaults ~20 creates/hour). Release CI waits **10 minutes only between
+   brand-new project creates**; existing projects upload immediately and
+   already-published filenames are skipped. If the account is already
    rate-limited, wait for the rolling hour window before tagging/re-running.
 8. Confirm repository secret `PYPI_API_TOKEN` is a **user-scoped** token
    (project-scoped tokens cannot create brand-new projects).
 9. Prefer tagging only the current release (do not `git push --tags`).
+10. If a prior tag’s publish job was cancelled mid-way, either re-run that
+    release job until remaining packages land, or proceed to the next tag
+    (new names will be created at the newer version).
 
 ## Tag and publish (0.12.0 example)
 
@@ -87,8 +92,9 @@ GitHub Actions workflow
 3. Builds all nine wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
-5. Publishes to PyPI with **10-minute** gaps between packages, skips files
-   already present via `--check-url`, and retries on transient 429s.
+5. Publishes to PyPI: existing projects upload immediately; **10-minute**
+   gaps only between brand-new project creates; skips files already present
+   via `--check-url`; retries on transient 429s.
 6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
 
 ## After PyPI succeeds
@@ -140,7 +146,8 @@ The release pipeline should:
 
 Recommended order:
 
-1. Pre-register new PyPI project names (see checklist).
+1. Confirm brand-new PyPI names via `scripts/check_release.py` (first upload
+   creates each project; there is no empty-project pre-register UI).
 2. Optionally publish to TestPyPI and smoke-test.
 3. Create the annotated release tag and push **that tag only**.
 4. Let GitHub Actions publish to PyPI after checks.

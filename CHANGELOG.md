@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Documentation
-
-- Treated 0.12.0 as the published current line across guides, banners, support,
-  navigation, migration, and examples
-- Added `examples/portable_polars_kernel.py`, Migration 0.11 → 0.12, maintainers /
-  CODEOWNERS / issue+PR templates, and release smoke-before-publish ordering
-
 ## [0.12.0] - 2026-07-17
 
 ### Added
@@ -29,16 +22,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dtcs:profile/portable-relational-kernel/1` with `pl.Expr` / LazyFrame lowering
 - Runtime path executing portable_compiled dataframe steps without a native
   transformation callable
+- `examples/portable_polars_kernel.py` runnable portable kernel quickstart
 
 ### Documentation
 
 - Refined roadmap 0.12: planning (0.12a) + Polars kernel-only compiler (0.12b);
   locked prefer policy, embedded IR, and 0.13/0.14 deferrals
 - Marked compiler protocol and Polars kernel execution as shipped in 0.12
+- Treated 0.12.0 as the published current line across guides, banners, support,
+  navigation, migration, and examples
+- Added Migration 0.11 → 0.12, maintainers / CODEOWNERS / issue+PR templates,
+  and release smoke-before-publish ordering
 
 ### Changed
 
 - Package version set to 0.12.0 across core and optional plugins
+- Release publish paces only brand-new PyPI project creates (existing projects
+  upload immediately) so partial releases can finish without multi-hour sleeps
 
 ### Fixed
 

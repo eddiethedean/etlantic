@@ -41,6 +41,17 @@ def pypi_exists(name: str, version: str) -> bool:
         raise
 
 
+def pypi_project_exists(name: str) -> bool:
+    url = f"https://pypi.org/pypi/{name}/json"
+    try:
+        with urllib.request.urlopen(url, timeout=20) as resp:
+            return resp.status == 200
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return False
+        raise
+
+
 def main() -> int:
     errors: list[str] = []
     version = version_from(
@@ -78,22 +89,32 @@ def main() -> int:
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")
 
-    missing_projects = [
-        name for name in ("etlantic", *PACKAGES) if not pypi_exists(name, version)
-    ]
+    names = ("etlantic", *PACKAGES)
+    missing_version = [name for name in names if not pypi_exists(name, version)]
+    brand_new = [name for name in names if not pypi_project_exists(name)]
     print(f"Release readiness for {version}")
-    if missing_projects:
+    if brand_new:
         print(
-            "PyPI projects/files not yet published for this version "
-            f"({len(missing_projects)}/{1 + len(PACKAGES)}):"
+            "Brand-new PyPI project names (first upload creates the project; "
+            f"{len(brand_new)}/{len(names)}):"
         )
-        for name in missing_projects:
-            print(f"  - {name}=={version}")
+        for name in brand_new:
+            print(f"  - {name}  (will publish as {name}=={version})")
         print(
-            "Before tagging a first-time name set, pre-register empty projects on "
-            "PyPI to avoid 429 Too many new projects created."
+            "Release CI paces only new-project creates (10 minutes between them). "
+            "Prefer a user-scoped PYPI_API_TOKEN. If the account is already "
+            "rate-limited, wait for the rolling hour window before tagging."
         )
-    else:
+    if missing_version:
+        existing_missing = [n for n in missing_version if n not in brand_new]
+        if existing_missing:
+            print(
+                "Existing PyPI projects missing this version "
+                f"({len(existing_missing)}/{len(names)}):"
+            )
+            for name in existing_missing:
+                print(f"  - {name}=={version}")
+    if not missing_version:
         print(f"All packages already present on PyPI at {version}.")
 
     if errors:
