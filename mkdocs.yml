@@ -324,6 +324,7 @@ nav:
           - Configuration: 10_REFERENCE/CONFIGURATION.md
           - Environment Variables: 10_REFERENCE/ENVIRONMENT_VARIABLES.md
       - Maintainer plans:
+          - 0.18+ Arrow and DataFusion: 11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md
           - FastAPI Integration Plan: 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
           - Schema Drift Plan: 11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md
           - ETL Reliability Plan: 11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md

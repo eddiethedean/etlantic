@@ -1607,6 +1607,133 @@ guide alignment; continuation families remain authorable but unclaimed where
 not graduated; native fallback is explicit and policy-governed; and plans,
 fixtures, reports, and examples contain no secrets or source rows.
 
+## 0.18+ — Standards-Based Interchange and Local Analytics
+
+**Status: planned.** This is a sequenced 0.18-and-later program. Arrow
+interchange is the hard foundation gate. DataFusion graduates only when its
+independent value and semantic-preservation gates pass.
+
+The detailed design and stop/go criteria live in the
+[Arrow and DataFusion Integration Plan](docs/11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md).
+
+### Architectural boundary
+
+ETLantic retains Pydantic / ContractModel and ODCS / DTCS / DPCS as its
+semantic foundation. ETLantic continues to own typed pipeline meaning,
+validation, deterministic planning, trust, reliability, lineage, and
+normalized evidence.
+
+- Arrow is the preferred **physical tabular interchange** at compatible
+  cross-plugin boundaries.
+- `etlantic-datafusion` is a candidate first-party **local analytical engine
+  and portable compiler**, never the scheduler or pipeline planner.
+
+Heavy dependencies remain outside the core wheel. Installing `etlantic` alone
+must not install or import PyArrow or DataFusion.
+
+### Gate A — Versioned Arrow interchange (hard)
+
+#### Deliver
+
+- replace best-effort, invisible dataframe conversion with a versioned,
+  deterministic interchange decision recorded in plans and run evidence
+- distinguish Arrow C Data / Stream in-process exchange, Arrow IPC stream,
+  Arrow IPC file, durable Parquet artifacts, and explicit records/file
+  fallbacks
+- select interchange from producer and consumer capability claims rather than
+  hard-coded engine-name pairs
+- record schema fingerprint, ownership, batching, collection, copy / zero-copy
+  eligibility, fallback reason, and observed conversion evidence
+- preserve ETLantic logical contracts separately from Arrow physical schemas;
+  normalize and diagnose nullability, decimal, temporal/timezone, nested,
+  dictionary, extension-type, and field-order mappings
+- add bounded batch, backpressure, lifetime, branch-isolation, retry, and
+  cleanup rules for Arrow streams and artifacts
+- publish cross-plugin Arrow conformance fixtures and a documented non-Arrow
+  fallback that never silently loses logical semantics
+
+#### Acceptance scenarios
+
+- compatible Polars ↔ Pandas and future plugin boundaries use the planned
+  Arrow mechanism without hidden eager collection
+- unavailable, unsupported, or lossy Arrow conversion produces an explicit
+  plan/report decision and fails before mutation when the contract cannot be
+  preserved
+- “zero copy” is reported only as planned eligibility plus observed evidence,
+  never inferred from plugin identity
+- stream and artifact payloads are bounded; plans, diagnostics, and reports
+  contain no source rows, live Arrow objects, or resolved secret values
+- core tests and imports pass without PyArrow installed
+
+#### Exit gate
+
+Arrow interchange is a public, versioned, capability-driven contract with
+fidelity, ownership, streaming, fallback, and evidence conformance. Existing
+plugins pass it before a new analytical engine is added.
+
+### Gate B — Experimental `etlantic-datafusion` vertical slice
+
+Begins only after Gate A. DataFusion is initially an experimental first-party
+plugin and does not replace Polars as the reference dataframe backend or
+`LocalScheduler` as the execution coordinator.
+
+#### Deliver
+
+- remove fixed dataframe-engine-name assumptions from planning/runtime in
+  favor of registered protocol and capability descriptors
+- add independently installable `etlantic-datafusion` with dataframe runtime
+  and `etlantic.transform_compilers` entry points
+- expose the recommended installation as `pip install "etlantic[datafusion]"`
+  so users do not need to select or assemble adapter/backend dependencies
+- consume and produce Arrow through Gate A boundaries
+- compile the smallest truthful DTCS kernel claim set first: projection,
+  filtering, with-fields, rename/drop, scalar expressions, and supported casts
+- preserve lazy execution until a declared validation, conversion,
+  materialization, or publication boundary
+- normalize schema, diagnostics, metrics, logical-to-physical attribution, and
+  outputs through existing ETLantic protocols
+- publish correctness, import/install cost, memory, conversion, and performance
+  comparisons against local records and Polars using reproducible fixtures
+- expand to joins, unions, grouping, aggregation, sorting, and relational `/1`
+  only after kernel conformance and differential gates pass
+
+#### Non-goals
+
+- replacing ETLantic planning, scheduling, contracts, or reports with
+  DataFusion objects
+- adding DataFusion to core dependencies or exposing its classes in core
+  protocols and serialized plans
+- claiming writes, UDFs, streaming state, or the full DTCS surface in the
+  initial slice
+- making DataFusion the default merely because the integration works
+
+#### Graduation gate
+
+`etlantic-datafusion` graduates from experimental only if it passes dataframe
+and portable conformance, cross-engine differentials, Arrow boundary tests,
+failure/redaction tests, and demonstrates a distinct measured advantage in at
+least one of local analytical performance, streaming/laziness, conversion
+cost, or external interoperability. Otherwise it remains experimental or is
+stopped without changing the core default.
+
+### Program success measures
+
+- fewer copied or silently materialized cross-engine boundaries
+- deterministic Arrow interchange decisions with stable fingerprints
+- no increase in mandatory core dependencies
+- equal or stronger fail-before-mutation, plugin-trust, and redaction behavior
+- DataFusion earns graduation through measured value rather than duplication
+- plugin authoring and runtime behavior remain simpler and more inspectable
+- SDK, CLI, notebook, scheduler, and compiler use remain independent
+
+### Exit rule
+
+Gate A is required for the 0.18 interchange baseline. Gate B may continue
+across later minors and cannot weaken Gate A or the semantic foundation.
+DataFusion ships as recommended only after its graduation gate; a failed
+experiment is removed or remains explicitly experimental without becoming a
+core compatibility obligation.
+
 ## 1.0 — Stable Foundation
 
 ### Public stability
@@ -1651,6 +1778,11 @@ The release candidate must demonstrate:
 12. A representative SparkForge pipeline using ETLantic underneath.
 13. One portable definition with conformant Polars, PySpark, Pandas, and SQL
     realizations for their advertised capability intersection.
+14. A planned cross-plugin Arrow boundary with contract-equivalent results,
+    explicit ownership/collection/copy evidence, and a diagnosed fallback.
+15. Any graduated DataFusion integration passing its 0.18+ conformance,
+    differential, dependency-isolation, and semantic-preservation gates;
+    experiments that did not graduate create no 1.0 compatibility obligation.
 
 ### Exit gate
 

@@ -29,6 +29,20 @@ Pandas and SQL remain kernel + `portable-relational/1` in 0.17. See
 `portable-relational-extended/1`, `portable-temporal-iana/1`,
 `portable-nondeterministic/1`, `portable-window/2`.
 
+## Planned: 0.18+ standards-based interoperability
+
+0.18+ formalizes Arrow as the preferred, versioned physical interchange at
+compatible cross-plugin boundaries while retaining ETLantic contracts and
+plans as the semantic authority.
+
+- Gate A: capability-driven Arrow stream/artifact decisions, fidelity,
+  ownership, fallback, and evidence conformance
+- Gate B: experimental `etlantic-datafusion` runtime + portable kernel
+  compiler, graduating only with conformance and a measured advantage
+
+PyArrow and DataFusion stay out of the core dependency set. See the
+[Arrow and DataFusion Integration Plan](INTEROPERABILITY_FOUNDATION_PLAN.md).
+
 ## Prior: 0.14
 
 ETLantic 0.14.0 completed the first three-engine portable relational baseline

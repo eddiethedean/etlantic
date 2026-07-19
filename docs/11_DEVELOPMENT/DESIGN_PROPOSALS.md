@@ -27,6 +27,7 @@ proposals. It is deliberately separate from the ETLantic 0.14 user guide.
 
 ## Maintainer plans
 
+- [0.18+ Arrow and DataFusion integration](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md)
 - [Schema drift](SCHEMA_DRIFT_PLAN.md)
 - [Reliability](ETL_RELIABILITY_PLAN.md)

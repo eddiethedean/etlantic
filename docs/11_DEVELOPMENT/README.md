@@ -44,6 +44,7 @@ released.
 
 These pages sequence future work. They are not product user guides:
 
+- [0.18+ Arrow and DataFusion Integration Plan](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md)
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md)
 - [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md)

@@ -334,6 +334,7 @@ plugin distributions.
 |---|---|
 | `etlantic-polars` | `polars`, optional `pyarrow` |
 | `etlantic-pandas` | `pandas`, optional `pyarrow` |
+| `etlantic-datafusion` (0.18+ candidate) | `datafusion`, Arrow support supplied by the plugin dependency stack |
 | Shared Arrow interchange extra | `pyarrow` |
 
 Polars should remain the reference dataframe backend. Pandas should remain a
@@ -342,6 +343,17 @@ core.
 
 PyArrow is valuable for cross-backend tabular interchange and Parquet, but its
 binary size makes it unsuitable as a core dependency.
+
+From 0.18+, Arrow is the preferred physical interchange only at compatible,
+planned cross-plugin boundaries. Core retains a non-Arrow path and must not
+import PyArrow. Plans record the selected Arrow C stream, IPC, Parquet, or
+fallback mechanism; Arrow schemas do not replace ETLantic logical contracts.
+
+`etlantic-datafusion` is an experimental first-party plugin candidate, not a
+core dependency or automatic replacement for Polars. It graduates only after
+dataframe and portable conformance plus measured performance, streaming, or
+interoperability value. DataFusion classes and plans must not appear in core
+protocols or serialized ETLantic plans.
 
 ### SQL plugins
 
@@ -620,6 +632,7 @@ them in the core project's optional-dependency table.
 | Polars | Separate plugin | Adopt as reference backend |
 | Pandas | Separate plugin | Adopt as compatibility backend |
 | PyArrow | Plugin/interchange extra | Adopt where interchange requires it |
+| DataFusion | Separate experimental plugin | Evaluate in `etlantic-datafusion`; graduate only with measured value |
 | SQLAlchemy Core | SQL plugin | Adopt |
 | SQLModel | Separate integration | Adopt for typed persistence and model generation, not SQL execution |
 | Alembic | SQLModel/SQL provider extra | Adopt for explicit reviewed migrations |
