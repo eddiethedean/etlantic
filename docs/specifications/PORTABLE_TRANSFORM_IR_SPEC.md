@@ -20,7 +20,7 @@ backend APIs, or arbitrary Python translation. Where this document and DTCS
 conflict, DTCS is authoritative and this profile must be corrected or
 versioned.
 
-DTCS 3.0.0 and `dtcs` 0.13.0 are normative for Transformation Plan, Portable
+DTCS 3.0.0 and `dtcs` 0.14.0 are normative for Transformation Plan, Portable
 Relational and Rich Portable Analytics profiles, registry, and conformance
 semantics. DTCS 2.0.0 identifiers and `dtcs.transform-plan/1` remain readable.
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY in this document

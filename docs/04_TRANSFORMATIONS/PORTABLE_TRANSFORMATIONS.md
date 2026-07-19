@@ -1,9 +1,10 @@
 # Portable Transformations
 
-!!! success "Available in ETLantic 0.11 (authoring) / 0.12 (Polars kernel execution)"
+!!! success "Available in ETLantic 0.11 (authoring) / 0.12–0.14 (relational compilers)"
     `@Transformation.portable` and `etlantic.transform` emit validated
-    `dtcs.transform-plan/2` IR. Polars executes **kernel** portable plans in
-    0.12; richer profiles need native implementations or 0.13–0.15 compilers.
+    `dtcs.transform-plan/2` IR. Polars, PySpark, and Pandas execute kernel +
+    `portable-relational/1` plans in 0.12–0.14; richer profiles and SQL
+    lowering need native implementations or 0.15+ compilers.
 
 A portable transformation expresses dataframe logic once and lets ETLantic
 plugins compile it for Polars, Pandas, SQL, PySpark, and future engines.
@@ -130,7 +131,7 @@ customers.join(
 
 Ordinary equality never matches two null keys. Authors must request
 `null_safe=True` (DTCS `dtcs:null_safe_eq`) when nulls should match. Column-name
-collisions must use an explicit published collision policy; 0.13 compilers claim
+collisions must use an explicit published collision policy; 0.13–0.14 compilers claim
 `fail` only (suffix/coalesce/qualify remain deferred). Compilers may not
 silently apply backend suffix conventions.
 
@@ -147,7 +148,7 @@ F.col("total") * F.col("quantity")
 F.lower(F.col("email")).alias("email")
 ```
 
-`F.try_cast` and other conversion helpers are not part of the 0.13 kernel claim
+`F.try_cast` and other conversion helpers are not part of the 0.14 kernel claim
 set; use a claimed cast surface or a native implementation until conversion
 profiles ship.
 

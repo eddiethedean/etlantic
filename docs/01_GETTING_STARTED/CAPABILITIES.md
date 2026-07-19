@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-ETLantic 0.13.0 is an alpha release. This page is the shortest answer to
+ETLantic 0.14.0 is an alpha release. This page is the shortest answer to
 "What can I use today?"
 
-## Available in 0.13
+## Available in 0.14
 
 | Capability | Status |
 |---|---|
@@ -19,6 +19,8 @@ ETLantic 0.13.0 is an alpha release. This page is the shortest answer to
 | Dataframe execution protocol (`etlantic.dataframe/1`) | Available |
 | Polars plugin (eager + lazy preservation) | Available (`etlantic-polars`) |
 | Pandas plugin (eager compatibility) | Available (`etlantic-pandas`) |
+| Portable Pandas compiler (kernel + relational `/1`, eager-only) | Available (`etlantic-pandas`) |
+| Public `etlantic.testing.portable_transform_conformance` | Available |
 | Optional Arrow interchange | Available when PyArrow is installed |
 | SQL execution protocol (`etlantic.sql/1`) | Available |
 | SQL plugin (PostgreSQL reference) | Available (`etlantic-sql`) |
@@ -46,8 +48,11 @@ ETLantic 0.13.0 is an alpha release. This page is the shortest answer to
 | `@Transformation.portable` / `etlantic.transform` authoring → `dtcs.transform-plan/2` | Available |
 | `Profile.portable_transform_policy` (`prefer` / `require` / `native`) | Available |
 | Portable Polars compiler (kernel + `portable-relational/1`) | Available (`etlantic-polars`) |
+| Portable PySpark compiler (kernel + `portable-relational/1`) | Available (`etlantic-pyspark`) |
+| Portable Pandas compiler (kernel + `portable-relational/1`, eager) | Available (`etlantic-pandas`) |
+| Public portable transform conformance suite | Available (`etlantic.testing.run_portable_transform_conformance_suite`) |
 
-## Not included in 0.13
+## Not included in 0.14
 
 | Capability | Status |
 |---|---|
@@ -59,8 +64,6 @@ ETLantic 0.13.0 is an alpha release. This page is the shortest answer to
 | FastAPI control plane | Continues in 1.1 |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
-| Public `etlantic.testing.portable_transform_conformance` | Planned for 0.14 |
-| Portable Pandas compiler and conformance SDK | Planned for 0.14 |
 | Portable SQL lowering and profile graduation | Planned for 0.15+ |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 

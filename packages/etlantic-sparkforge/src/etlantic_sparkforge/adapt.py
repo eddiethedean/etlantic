@@ -410,7 +410,7 @@ def adapt_pipeline(
         layer_by_node=layer_by_node,
         diagnostics=tuple(diagnostics),
         metadata={
-            "adapter_version": "0.13.0",
+            "adapter_version": "0.14.0",
             "source_name": spec.name,
             "schema": spec.schema,
         },

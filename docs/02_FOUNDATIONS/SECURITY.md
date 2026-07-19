@@ -234,8 +234,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.13.0",
-        "etlantic-airflow": "==0.13.0",
+        "etlantic-polars": "==0.14.0",
+        "etlantic-airflow": "==0.14.0",
     },
 )
 ```
@@ -245,7 +245,7 @@ See [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md).
 !!! note "Future design (1.0)"
     A proposed `etlantic.toml` `[plugins.security]` block may eventually mirror
     the same allowlist semantics. Do not configure TOML as if it is loaded in
-    0.13—use `Profile.plugin_allowlist`.
+    0.14—use `Profile.plugin_allowlist`.
 
 Controls should include:
 

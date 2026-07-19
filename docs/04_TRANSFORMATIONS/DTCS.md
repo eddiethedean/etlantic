@@ -124,7 +124,7 @@ DTCS 3.0.0 defines the implementation-independent Transformation Plan
 (`dtcs.transform-plan/2`), Rich Portable Analytics profiles, expressions
 (including bounded lambdas), functions, semantic actions, and engine
 capability model. DTCS 2.0 identifiers and `dtcs.transform-plan/1` remain
-readable. The `dtcs` 0.13.0 toolkit publishes the canonical models and
+readable. The `dtcs` 0.14.0 toolkit publishes the canonical models and
 conformance surfaces. ETLantic depends on `dtcs>=0.13,<1`.
 
 What remains proposed is ETLantic's `etlantic.transform/1` ergonomic authoring

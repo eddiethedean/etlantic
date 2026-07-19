@@ -26,12 +26,36 @@ from etlantic.dataframe.protocol import (
 )
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
+
+__all__ = [
+    "PandasDataframePlugin",
+    "PandasTransformCompiler",
+    "__version__",
+    "create_plugin",
+    "create_transform_compiler",
+]
 
 
 def create_plugin() -> PandasDataframePlugin:
     """Entry-point factory."""
     return PandasDataframePlugin()
+
+
+def __getattr__(name: str) -> Any:
+    """Lazy-load the portable compiler so dataframe imports stay light."""
+    if name in {"PandasTransformCompiler", "create_transform_compiler"}:
+        from etlantic_pandas.compiler import (
+            PandasTransformCompiler,
+            create_transform_compiler,
+        )
+
+        exports = {
+            "PandasTransformCompiler": PandasTransformCompiler,
+            "create_transform_compiler": create_transform_compiler,
+        }
+        return exports[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class PandasDataframePlugin:

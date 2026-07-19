@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-19
+
+### Added
+
+- `etlantic-pandas` portable transform compiler claiming kernel +
+  `portable-relational/1` (eager-only, index-neutral) with
+  `etlantic.transform_compilers` entry point `pandas`
+- Public `etlantic.testing.portable_transform_conformance` suite with
+  capability-selected fixtures and
+  `run_portable_transform_conformance_suite`
+- Hypothesis property tests for capability matching, null-aware boolean
+  semantics, and compile fingerprint stability
+- Expanded Polars ↔ Pandas differentials (Unicode/ordering, unequal-key joins)
+- CI runs pandas compiler suites, public conformance for Polars/Pandas/PySpark,
+  and three-engine differentials
+
+### Documentation
+
+- Marked roadmap 0.14 shipped; updated capabilities, Pandas, testing plugins,
+  and compiler protocol docs for the public conformance SDK
+
+### Changed
+
+- Package version set to 0.14.0 across core and optional plugins
+
+### Upgrade notes
+
+- Pin `etlantic==0.14.0` and matching plugins. Extras pins use `==0.14.0`.
+- Third-party transform compilers should run
+  `run_portable_transform_conformance_suite` against their advertised claims.
+- Pandas portable plans that previously required native `@implementation`
+  under `portable_transform_policy="require"` now compile when they fit
+  kernel + relational `/1`.
+
 ## [0.13.0] - 2026-07-18
 
 ### Added
@@ -516,6 +550,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.14.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.14.0
 [0.13.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.13.0
 [0.12.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.12.0
 [0.11.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.11.0

@@ -197,18 +197,25 @@ def main() -> None:
             "while Capabilities marks authoring Available"
         )
     if (
-        "Portable Polars compiler (kernel + relational `/1`) | Yes (0.13)"
+        "Portable Polars compiler (kernel + relational `/1`) | Yes (0.13"
         not in evaluator
         and "Portable Polars kernel compiler | Yes (0.12)" not in evaluator
     ):
         raise SystemExit(
             "EVALUATOR.md must list Portable Polars compiler as ready (0.12+)"
         )
-    if "Portable PySpark compiler (kernel + relational `/1`) | Yes (0.13)" not in (
+    if "Portable PySpark compiler (kernel + relational `/1`) | Yes (0.13" not in (
         evaluator
     ):
         raise SystemExit(
             "EVALUATOR.md must list Portable PySpark relational compiler as ready"
+        )
+    if (
+        "Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14)"
+        not in (evaluator)
+    ):
+        raise SystemExit(
+            "EVALUATOR.md must list Portable Pandas relational compiler as ready"
         )
     if "end-to-end portable execution on Polars, PySpark" in evaluator:
         raise SystemExit(
@@ -524,6 +531,7 @@ def main() -> None:
         ROOT / "packages/etlantic-polars/src/etlantic_polars/__init__.py",
         ROOT / "packages/etlantic-polars/src/etlantic_polars/compiler.py",
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+        ROOT / "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
     ):
         text = component.read_text(encoding="utf-8")
         match = re.search(r'__version__\s*=\s*"([^"]+)"', text)

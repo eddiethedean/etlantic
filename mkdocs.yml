@@ -104,7 +104,7 @@ nav:
   - Home: README.md
   - Learn:
       - Overview: 01_GETTING_STARTED/README.md
-      - Current 0.13 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.14 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md

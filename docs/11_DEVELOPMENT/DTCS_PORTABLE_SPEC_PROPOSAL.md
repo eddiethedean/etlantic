@@ -5,7 +5,7 @@
 - Published plan protocol: `dtcs.transform-plan/1`
 - Related ETLantic milestones: 0.11-0.15
 - Proposal owner: DTCS publisher and maintainers
-- Superseded as current authority by: DTCS 3.0.0 / `dtcs` 0.13.0
+- Superseded as current authority by: DTCS 3.0.0 / `dtcs` 0.14.0
   ([publication record](DTCS_3_0_SPEC_PROPOSAL.md))
 
 !!! success "Proposal adopted upstream"

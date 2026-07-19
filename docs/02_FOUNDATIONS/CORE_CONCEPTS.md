@@ -61,10 +61,10 @@ semantics. It does not commit the transformation to a dataframe engine.
 
 !!! success "Available in ETLantic 0.11 (authoring)"
     `etlantic.transform` and `@Transformation.portable` author to
-    `dtcs.transform-plan/2`. Polars + PySpark relational compilation ships in
-    0.13; Pandas/SQL portable compilers remain 0.14+. Native
-    `@Transformation.implementation(...)` remains available for engines and
-    profiles outside the advertised compiler claim set.
+    `dtcs.transform-plan/2`. Polars, PySpark, and Pandas relational
+    compilation ships in 0.13–0.14; safe SQL portable lowering remains 0.15+.
+    Native `@Transformation.implementation(...)` remains available for engines
+    and profiles outside the advertised compiler claim set.
 
 A portable definition describes common relational behavior once using
 PySpark-inspired symbolic DataFrame and Column expressions:

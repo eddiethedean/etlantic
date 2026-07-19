@@ -1,4 +1,4 @@
-"""Private Polars ↔ PySpark differential corpus (0.13b)."""
+"""Private Polars ↔ PySpark ↔ Pandas differential corpus (0.14)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 pytest.importorskip("polars")
+pytest.importorskip("pandas")
 pytest.importorskip("sparkless")
 
 from etlantic import (
@@ -23,6 +24,7 @@ from etlantic import (
 )
 from etlantic.registry import PlanningContext
 from etlantic.transform import functions as F
+from etlantic_pandas import create_plugin as create_pandas_plugin
 from etlantic_polars import create_plugin as create_polars_plugin
 from etlantic_pyspark import create_plugin as create_spark_plugin
 from etlantic_pyspark import create_provider
@@ -121,12 +123,29 @@ def _run_spark() -> list[dict[str, Any]]:
     return _normalize_rows(list(runtime.memory.get("curated") or []))
 
 
+def _run_pandas() -> list[dict[str, Any]]:
+    profile = Profile(
+        name="pandas-diff",
+        dataframe_engine="pandas",
+        portable_transform_policy="require",
+    )
+    runtime = PipelineRuntime()
+    runtime.register_dataframe_plugin("pandas", create_pandas_plugin())
+    _seed(runtime)
+    context = PlanningContext.create(profile=profile, registry=runtime.registry)
+    report = RelationalPipeline.run(profile=profile, runtime=runtime, context=context)
+    assert report.status is RunStatus.SUCCEEDED
+    return _normalize_rows(list(runtime.memory.get("curated") or []))
+
+
 @pytest.mark.polars
+@pytest.mark.pandas
 @pytest.mark.spark
 def test_differential_aggregate_pipeline() -> None:
     polars_rows = _run_polars()
     spark_rows = _run_spark()
-    assert polars_rows == spark_rows
+    pandas_rows = _run_pandas()
+    assert polars_rows == spark_rows == pandas_rows
     assert polars_rows == [
         {"region": "east", "total": 15.0},
         {"region": "west", "total": 7.0},

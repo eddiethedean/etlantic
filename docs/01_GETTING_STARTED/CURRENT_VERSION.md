@@ -1,7 +1,7 @@
-# ETLantic 0.13 User Guide
+# ETLantic 0.14 User Guide
 
 This is the current, installable ETLantic manual. Every page linked from this
-guide documents behavior available in ETLantic 0.13 unless it is explicitly
+guide documents behavior available in ETLantic 0.14 unless it is explicitly
 marked **Experimental**.
 
 ## Start here
@@ -34,8 +34,8 @@ marked **Experimental**.
 - [Python API](../10_REFERENCE/API_REFERENCE.md) documents public imports.
 - [CLI reference](../10_REFERENCE/CLI.md) documents installed commands.
 - [Known limitations](../10_REFERENCE/KNOWN_ISSUES.md) documents hard boundaries.
-- Pages under **Design Proposals** / marked **Future design** are not 0.13 APIs
+- Pages under **Design Proposals** / marked **Future design** are not 0.14 APIs
   even when linked from older navigation.
 
-Material under **Design Proposals** is not part of the 0.13 user guide and must
+Material under **Design Proposals** is not part of the 0.14 user guide and must
 not be copied into current applications.

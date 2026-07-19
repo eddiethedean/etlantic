@@ -99,6 +99,13 @@ jobs:
         if: matrix.engine == 'polars'
         run: uv run pytest -q tests/polars_compiler -m polars
 
+      - name: Pytest Pandas portable compiler
+        if: matrix.engine == 'pandas'
+        run: uv run pytest -q tests/pandas_compiler -m pandas
+
+      - name: Public portable transform conformance
+        run: uv run pytest -q tests/portable_conformance -m "${{ matrix.engine }}"
+
       - name: Runnable parity example
         run: uv run python examples/dataframe_parity.py ${{ matrix.engine }}
 
@@ -197,6 +204,11 @@ jobs:
           SPARKLESS_TEST_MODE: sparkless
         run: uv run pytest -q tests/pyspark_compiler -m spark
 
+      - name: Public portable transform conformance (sparkless)
+        env:
+          SPARKLESS_TEST_MODE: sparkless
+        run: uv run pytest -q tests/portable_conformance -m spark
+
       - name: Runnable Spark example
         env:
           SPARKLESS_TEST_MODE: sparkless
@@ -204,7 +216,7 @@ jobs:
         run: uv run python examples/pyspark_local.py
 
   portable-differentials:
-    name: Portable Polars ↔ PySpark differentials
+    name: Portable Polars ↔ PySpark ↔ Pandas differentials
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -217,15 +229,15 @@ jobs:
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Sync Polars + PySpark (sparkless)
-        run: uv sync --locked --group polars --group pyspark
+      - name: Sync Polars + Pandas + PySpark (sparkless)
+        run: uv sync --locked --group polars --group pandas --group pyspark
 
       - name: Discovery smoke (compilers)
         run: |
           uv run python -c "
           from etlantic.transform.discovery import discover_transform_compilers
           found = discover_transform_compilers()
-          assert set(found) >= {'polars', 'pyspark'}, found
+          assert set(found) >= {'polars', 'pyspark', 'pandas'}, found
           print('compilers', sorted(found))
           "
 
@@ -233,6 +245,12 @@ jobs:
         env:
           SPARKLESS_TEST_MODE: sparkless
         run: uv run pytest -q tests/portable_differential
+
+      - name: Public conformance against all three compilers
+        env:
+          SPARKLESS_TEST_MODE: sparkless
+        run: |
+          uv run pytest -q tests/portable_conformance -m "polars or pandas or spark"
 
   airflow:
     name: Airflow orchestrator plugin

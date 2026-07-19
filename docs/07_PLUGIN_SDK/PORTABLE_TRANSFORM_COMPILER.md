@@ -1,9 +1,11 @@
 # Portable Transformation Compiler Protocol
 
-!!! success "Available in ETLantic 0.13"
-    `etlantic.transform-compiler/1` is importable. Polars and PySpark claim
-    `portable-relational-kernel/1` and `portable-relational/1`. Pandas/SQL and
-    Rich Portable Analytics compiler claims remain 0.14–0.15+.
+!!! success "Available in ETLantic 0.14"
+    `etlantic.transform-compiler/1` is importable. Polars, PySpark, and Pandas
+    claim `portable-relational-kernel/1` and `portable-relational/1`. Third
+    parties must pass `run_portable_transform_conformance_suite` for every
+    advertised claim. Safe SQL and Rich Portable Analytics compiler claims
+    remain 0.15+.
 
 A portable transformation compiler translates a validated
 `dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
@@ -95,17 +97,18 @@ A compiler may advertise a subset as individual capabilities. It may advertise
 a profile only when every requirement and DTCS conformance fixture in that
 profile passes.
 
-### Polars / PySpark claim matrix (0.13)
+### Polars / PySpark / Pandas claim matrix (0.13–0.14)
 
-Both `etlantic-polars` and `etlantic-pyspark` **must** claim and privately
-fixture:
+`etlantic-polars`, `etlantic-pyspark`, and `etlantic-pandas` **must** claim
+and pass the public conformance fixtures for:
 
-| Item | 0.13 requirement |
+| Item | 0.13–0.14 requirement |
 |---|---|
 | Profiles | `dtcs:profile/portable-relational-kernel/1` and `dtcs:profile/portable-relational/1` |
 | Plan shape | Accept `dtcs.transform-plan/2` (and readable v1); `/2` profile requirements are metadata aliases of `/1` |
 | Kernel actions | project, filter, with_fields, rename/drop, scalar expressions |
 | Relational actions | join, union, aggregate, sort, distinct, deduplicate, limit with exact modes |
+| Modes | Eager required; Pandas additionally `lazy=False`; join `collisionPolicy` **fail** only |
 | Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) with action/expression paths |
 
 They **must not** claim Rich Portable Analytics, windows, complex-values,
@@ -240,12 +243,15 @@ process privileges.
 
 ## Conformance
 
-**0.12** uses private Polars kernel fixtures under `packages/etlantic-polars`
-and core tests. The **public** suite lands in **0.14**:
+**0.14** ships the public suite:
 
 ```python
-from etlantic.testing import portable_transform_conformance
+from etlantic.testing import run_portable_transform_conformance_suite
+
+run_portable_transform_conformance_suite(create_transform_compiler())
 ```
+
+Also available as `etlantic.testing.portable_transform_conformance`.
 
 Required fixture families (public suite):
 
@@ -262,8 +268,8 @@ Required fixture families (public suite):
 - secret and parameter redaction
 - cross-engine result equivalence
 
-Fixtures are grouped by the published DTCS profiles. A plugin claiming the
-kernel or relational profile runs the entire corresponding family. Window and
+Fixtures are selected from advertised capabilities. Claiming a profile or
+operation without its mandatory fixture family fails the suite. Window and
 complex-types fixtures remain experimental and require two independent
 conforming compilers before their DTCS profiles can graduate from experimental
 status.

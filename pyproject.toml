@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.13.0"
+version = "0.14.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -29,22 +29,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.13.0"]
-pandas = ["etlantic-pandas==0.13.0"]
-sql = ["etlantic-sql==0.13.0"]
-postgresql = ["etlantic-sql==0.13.0"]
-pyspark = ["etlantic-pyspark==0.13.0"]
-spark = ["etlantic-pyspark==0.13.0"]
-airflow = ["etlantic-airflow==0.13.0"]
-keyring = ["etlantic-keyring==0.13.0"]
-sqlmodel = ["etlantic-sqlmodel==0.13.0"]
-sparkforge = ["etlantic-sparkforge==0.13.0"]
+polars = ["etlantic-polars==0.14.0"]
+pandas = ["etlantic-pandas==0.14.0"]
+sql = ["etlantic-sql==0.14.0"]
+postgresql = ["etlantic-sql==0.14.0"]
+pyspark = ["etlantic-pyspark==0.14.0"]
+spark = ["etlantic-pyspark==0.14.0"]
+airflow = ["etlantic-airflow==0.14.0"]
+keyring = ["etlantic-keyring==0.14.0"]
+sqlmodel = ["etlantic-sqlmodel==0.14.0"]
+sparkforge = ["etlantic-sparkforge==0.14.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 dataframes = [
-    "etlantic-polars==0.13.0",
-    "etlantic-pandas==0.13.0",
+    "etlantic-polars==0.14.0",
+    "etlantic-pandas==0.14.0",
 ]
 
 [project.scripts]
@@ -59,6 +59,7 @@ Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.100,<7",
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.6,<10",
     "mkdocstrings[python]>=0.29,<1",

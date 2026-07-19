@@ -1117,12 +1117,12 @@ Polars-specific nor merely a PySpark wrapper.
 
 ## 0.14 — Pandas Compiler and Conformance SDK
 
-**Status: planned — after 0.13.**
+**Status: shipped in 0.14.0.**
 
 **DTCS readiness gate: foundation published upstream.** `dtcs` 0.13 publishes
-validation and conformance support. ETLantic must expose a public compiler
-suite that consumes 0.11 IR and DTCS fixtures without plugin dependence on
-ETLantic internals.
+validation and conformance support. ETLantic exposes a public compiler suite
+that consumes 0.11 IR and capability-selected fixtures without plugin
+dependence on ETLantic internals.
 
 ### Deliver
 

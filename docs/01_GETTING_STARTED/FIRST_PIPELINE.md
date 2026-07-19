@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.13.0.** This tutorial uses the local
+> **Status: Available in ETLantic 0.14.0.** This tutorial uses the local
 > Python runtime and in-memory storage. It does not require a dataframe or SQL
 > plugin.
 

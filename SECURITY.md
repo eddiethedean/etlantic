@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.13.0 is an alpha release. Security reports concerning the
+ETLantic 0.14.0 is an alpha release. Security reports concerning the
 published package, contract loading, planning, local runtime, storage
 bindings, secret handling, dataframe, SQL, and PySpark plugins,
 documentation, or repository automation are welcome.
@@ -9,7 +9,8 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.13.x | Current alpha line; best-effort security fixes |
+| 0.14.x | Current alpha line; best-effort security fixes |
+| 0.13.x | Critical fixes only when practical |
 | 0.12.x | Critical fixes only when practical |
 | 0.11.x | Critical fixes only when practical |
 | 0.10.x | Critical fixes only when practical |

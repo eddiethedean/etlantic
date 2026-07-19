@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pandas"
-version = "0.13.0"
+version = "0.14.0"
 description = "Pandas dataframe execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.13.0,<1.0",
+    "etlantic>=0.14.0,<1.0",
     "pandas>=2.0,<3",
 ]
 
@@ -33,6 +33,9 @@ arrow = ["pyarrow>=14"]
 
 [project.entry-points."etlantic.dataframe_plugins"]
 pandas = "etlantic_pandas:create_plugin"
+
+[project.entry-points."etlantic.transform_compilers"]
+pandas = "etlantic_pandas:create_transform_compiler"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,10 +1,7 @@
 # Pandas Plugin
 
 **Status: shipped in 0.5.0** as the compatibility dataframe backend
-(`etlantic-pandas`).
-
-The portable transformation compiler described below is planned for 0.14 and
-is not part of the current 0.13 plugin.
+(`etlantic-pandas`). Portable transform compiler shipped in **0.14**.
 
 ## Install
 
@@ -23,22 +20,19 @@ pip install 'etlantic-pandas[arrow]'  # optional
 - Arrow interchange is used when PyArrow is installed; otherwise a documented
   fallback copies values and records the conversion
 
-## Portable compiler (planned 0.14)
+## Portable compiler (shipped 0.14)
 
-The Pandas compiler will lower supported DTCS Transformation Plan expressions
-to DataFrame and Series operations while declaring eager execution and ownership
-copies honestly. Portable behavior cannot depend on a meaningful Pandas index.
+The Pandas compiler lowers `dtcs.transform-plan/2` kernel and
+`portable-relational/1` IR to DataFrame / Series operations. It declares
+`eager=True` and `lazy=False`, ignores Pandas indexes as semantic input, and
+registers the `etlantic.transform_compilers` entry point `pandas`.
 
-It will claim individual capabilities or the published kernel/relational
-profiles only after passing every required DTCS fixture. Eager execution does
-not prevent conformance, but it must be declared in planning and ownership
-metadata.
-
-Where Pandas cannot preserve a required type, null, ordering, or lazy semantic,
-planning fails instead of approximating the operation.
+Claimed modes match the 0.13 Polars/PySpark matrix (join `collisionPolicy`
+`fail` only). Unsupported modes fail during `analyze()` with action paths.
+Third-party and reference compilers must pass
+`etlantic.testing.run_portable_transform_conformance_suite`.
 
 ## Example
 
-```bash
-uv run --group dataframes python examples/dataframe_parity.py pandas
-```
+See [Pandas Tutorial](PANDAS_TUTORIAL.md) and
+[Portable Transformation](../09_EXAMPLES/PORTABLE_TRANSFORMATION.md).

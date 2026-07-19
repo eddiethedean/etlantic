@@ -12,11 +12,11 @@ defined by ODCS, DTCS, and DPCS.
 
 Compilation occurs after planning and before execution.
 
-The portable transformation compilers (Polars and PySpark relational `/1` in
-0.13; Pandas later) perform a nested, narrower form
-of compilation: they lower DTCS Transformation Plan expressions to native
-Polars, Pandas, SQL, or Spark expressions. The DTCS plan remains the semantic source
-of truth and its fingerprint remains in the plan.
+The portable transformation compilers (Polars, PySpark, and Pandas relational
+`/1` in 0.13–0.14) perform a nested, narrower form of compilation: they lower
+DTCS Transformation Plan expressions to native Polars, Pandas, or Spark
+expressions. Safe SQL portable lowering remains 0.15+. The DTCS plan remains
+the semantic source of truth and its fingerprint remains in the plan.
 
 ## Goals
 

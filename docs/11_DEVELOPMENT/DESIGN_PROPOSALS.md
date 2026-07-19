@@ -1,7 +1,7 @@
 # Design Proposals
 
 This section contains **unshipped** APIs, historical plans, and normative
-proposals. It is deliberately separate from the ETLantic 0.13 user guide.
+proposals. It is deliberately separate from the ETLantic 0.14 user guide.
 
 !!! warning "Not current API documentation"
     Do not copy unshipped interfaces from these pages into a 0.12 application.

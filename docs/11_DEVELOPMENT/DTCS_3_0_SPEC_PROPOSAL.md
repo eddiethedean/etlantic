@@ -1,6 +1,6 @@
 # DTCS 3.0 Rich Portable Analytics Publication Record
 
-- Status: Published in DTCS specification 3.0.0 and `dtcs` toolkit 0.13.0
+- Status: Published in DTCS specification 3.0.0 and `dtcs` toolkit 0.14.0
 - Published plan protocol: `dtcs.transform-plan/2` (v1 remains readable)
 - Baseline retained: DTCS 2.0.0 identifiers and `dtcs.transform-plan/1`
 - Related ETLantic milestones: 0.11–0.15
@@ -8,7 +8,7 @@
 - Primary consumer: ETLantic portable transformations
 
 !!! success "Proposal adopted upstream"
-    DTCS 3.0.0 and `dtcs` 0.13.0 are published. Canonical SPEC:
+    DTCS 3.0.0 and `dtcs` 0.14.0 are published. Canonical SPEC:
     [DTCS SPEC.md](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md).
     Rich Portable Analytics (Chapter 27) adds lambda Expressions, advanced
     string/regex, conversion, statistics, complex values, reshape, extended

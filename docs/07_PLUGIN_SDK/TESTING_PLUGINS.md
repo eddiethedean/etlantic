@@ -14,6 +14,7 @@ they implement the public protocols correctly.
 | Orchestrator conformance | `etlantic.testing.run_orchestrator_conformance_suite` | `OrchestratorPlugin` |
 | Secret conformance | `etlantic.testing.run_secret_conformance_suite` | `SecretProvider` |
 | Write-semantics parity | `etlantic.testing.run_write_semantics_parity_suite` | Cross-engine write modes |
+| Portable transform compiler | `etlantic.testing.run_portable_transform_conformance_suite` | `TransformCompiler` plugins |
 
 Example:
 
@@ -24,10 +25,16 @@ run_conformance_suite(my_plugin, engine="my-engine", sample_rows=rows)
 ```
 
 ```python
-from etlantic.testing import run_sql_conformance_suite
+from etlantic.testing import run_portable_transform_conformance_suite
+from my_engine import create_transform_compiler
 
-run_sql_conformance_suite(my_sql_plugin)
+run_portable_transform_conformance_suite(create_transform_compiler())
 ```
+
+The portable suite is also importable as
+`etlantic.testing.portable_transform_conformance`. It selects mandatory
+fixtures from the exact profiles, actions, and functions a compiler
+advertises. Claiming a capability without its fixture family fails the suite.
 
 ## Philosophy
 
@@ -48,19 +55,16 @@ SDK Conformance Suite
 A plugin that passes the matching suite should behave predictably with
 ETLantic planning and runtime.
 
-## Future design
+## Compatibility policy
 
-Portable transform compiler conformance
-(`etlantic.testing.portable_transform_conformance`) is the **public** suite
-planned for **0.14**. Do not require it for 0.11 plugins. **0.12** uses
-private Polars kernel fixtures only.
-
-The public suite will consume the conformance foundation published by `dtcs`
-0.13 and select fixtures from the exact DTCS profiles a compiler advertises:
-kernel, relational, experimental window, and experimental complex types.
+- Claim only capabilities your compiler passes in the public suite.
+- Pin `etlantic` (and this suite) to the minor you certified against.
+- Fail closed at `analyze()` for unsupported modes; do not degrade silently.
+- Keep plans, explain payloads, and diagnostics secret-free.
 
 ## Next Step
 
 See [Dataframe Plugin](DATAFRAME_PLUGIN.md), [SQL Plugin](SQL_PLUGIN.md),
-[Orchestrator Plugin](ORCHESTRATOR_PLUGIN.md), and
+[Orchestrator Plugin](ORCHESTRATOR_PLUGIN.md),
+[Portable Transformation Compiler](PORTABLE_TRANSFORM_COMPILER.md), and
 [Secret Provider](SECRET_PROVIDER.md) for protocol details.
