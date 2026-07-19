@@ -3,7 +3,7 @@
 This is the current manual for published ETLantic **0.18.0**. Core onboarding
 paths below are available in 0.18; linked reference and design pages may also
 describe Experimental, partial, or future work and retain their own status
-labels. ETLantic 0.18.0 is production/stable only within the documented
+labels. ETLantic 0.18.0 is **stable** only within the documented
 single-tenant reference deployment boundary.
 
 ## Start here
@@ -11,10 +11,11 @@ single-tenant reference deployment boundary.
 1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.18.0`
 2. [Run the five-minute quickstart](QUICKSTART.md)
 3. [Build your first pipeline](FIRST_PIPELINE.md)
-4. [Check current capabilities](CAPABILITIES.md)
+4. [Choose an engine](ENGINE_SELECTION.md)
 
-After first success: [What's new in 0.18](WHATS_NEW_0_18.md),
-[Compare](COMPARE.md), or an [engine tutorial](ENGINE_SELECTION.md).
+After first success: [Capabilities](CAPABILITIES.md),
+[What's new in 0.18](WHATS_NEW_0_18.md), [Compare](COMPARE.md), or
+[Upgrade](UPGRADE.md).
 
 ## Choose your next task
 

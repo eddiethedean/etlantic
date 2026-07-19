@@ -16,9 +16,17 @@ uv run python examples/quickstart.py
 python examples/quickstart.py
 ```
 
-The example defines contracts, registers a local Python implementation, runs
-the pipeline with in-memory storage, prints the run report, and prints the
-curated records.
+Validates, plans, and runs with in-memory storage; prints `succeeded` and
+curated records (matches [Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md)).
+
+## Sample multi-file project (docs / local)
+
+```bash
+uv run python -m examples.sample_project.run_local
+```
+
+Same story split across `contracts.py`, `transforms.py`, `pipeline.py`, and
+`run_local.py`. See [Sample project](../docs/09_EXAMPLES/SAMPLE_PROJECT.md).
 
 ## Portable Polars / Pandas (docs / local)
 

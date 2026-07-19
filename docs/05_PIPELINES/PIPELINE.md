@@ -2,7 +2,7 @@
 
 A `Pipeline` defines the logical composition of a complete data workflow.
 
-A pipeline connects typed sources, transformations, and sinks into a directed
+A pipeline connects typed extracts, transformations, and loads into a directed
 graph. Like FastAPI's application object, a `Pipeline` is primarily declarative:
 it describes the workflow, while execution is delegated to pluggable runtime
 engines.
@@ -48,12 +48,12 @@ threading, orchestration, or execution engines.
 
 A pipeline consists of:
 
-- Sources
+- Extracts (read typed data into the graph)
 - Transformations
-- Sinks
+- Loads (publish typed data out of the graph)
 
 ```text
-Source
+Extract
    │
    ▼
 Transformation
@@ -62,10 +62,13 @@ Transformation
 Transformation
    │
    ▼
-Sink
+Load
 ```
 
 Each connection is typed through data contracts.
+
+> **Migration note:** Public `Source` / `Sink` aliases were removed in 0.16.
+> Use `Extract` / `Load`. See [SOURCES.md](SOURCES.md) and [SINKS.md](SINKS.md).
 
 ## Graph Semantics
 
@@ -82,15 +85,15 @@ The planner identifies:
 - Execution order
 - Parallel opportunities
 
-## Sources
+## Extracts
 
-Sources introduce data into the graph.
+Extracts introduce data into the graph.
 
 ```python
 customers: Extract[RawCustomer] = Extract(asset="customer_source")
 ```
 
-Every source declares the contract of the data it produces.
+Every extract declares the contract of the data it produces.
 
 ## Transformations
 
@@ -104,9 +107,9 @@ normalized = NormalizeCustomers.step(
 
 Each transformation becomes a graph node.
 
-## Sinks
+## Loads
 
-Sinks publish data outside the pipeline.
+Loads publish data outside the pipeline.
 
 ```python
 warehouse: Load[Customer] = Load(
@@ -115,7 +118,7 @@ warehouse: Load[Customer] = Load(
 )
 ```
 
-ETLantic validates sink compatibility before execution.
+ETLantic validates load compatibility before execution.
 
 ## Planning
 
@@ -141,9 +144,10 @@ The same pipeline may execute using different plugins, including:
 - Local Python
 - Polars
 - Pandas
-- Airflow
-- Dagster
-- Prefect
+- SQL
+- PySpark
+- Airflow (compile)
+- Prefect (direct execution)
 - Future execution engines
 
 The logical pipeline remains unchanged.
@@ -168,8 +172,8 @@ The generated DPCS artifact is the portable representation.
 ETLantic validates:
 
 - Graph correctness
-- Required sources
-- Required sinks
+- Required extracts
+- Required loads
 - Contract compatibility
 - Version compatibility
 - Transformation implementations
@@ -219,5 +223,5 @@ Avoid:
 
 ## Next Step
 
-Continue with **EXTRACTS.md** to learn how typed sources introduce data into a
-pipeline.
+Continue with [EXTRACTS.md](EXTRACTS.md) to learn how typed extracts introduce
+data into a pipeline.

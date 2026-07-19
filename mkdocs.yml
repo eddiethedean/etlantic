@@ -109,16 +109,23 @@ nav:
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
-      - Compare: 01_GETTING_STARTED/COMPARE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
-      - Capabilities and Limitations: 01_GETTING_STARTED/CAPABILITIES.md
+      - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
+      - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
-      - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
-      - Current 0.18 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
+      - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
       - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
       - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
+      - Current 0.18 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+  - Evaluate:
+      - Capabilities and Limitations: 01_GETTING_STARTED/CAPABILITIES.md
+      - Compare: 01_GETTING_STARTED/COMPARE.md
+      - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
+      - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
+      - Security: 02_FOUNDATIONS/SECURITY.md
   - Release notes:
       - What's new in 0.18: 01_GETTING_STARTED/WHATS_NEW_0_18.md
       - What's new in 0.17: 01_GETTING_STARTED/WHATS_NEW_0_17.md
@@ -131,7 +138,6 @@ nav:
       - Core Concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
       - Validation Everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
       - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
-      - Security: 02_FOUNDATIONS/SECURITY.md
       - Glossary: 02_FOUNDATIONS/GLOSSARY.md
       - Philosophy (optional):
           - Vision: 02_FOUNDATIONS/VISION.md
@@ -178,6 +184,7 @@ nav:
       - Sinks (deprecated): 05_PIPELINES/SINKS.md
   - Integrations and Execution:
       - Overview: 06_EXECUTION/README.md
+      - Storage today: 06_EXECUTION/STORAGE_TODAY.md
       - Tutorials:
           - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
           - Polars: 06_EXECUTION/POLARS_TUTORIAL.md
@@ -189,7 +196,6 @@ nav:
           - CI integration: 06_EXECUTION/CI_INTEGRATION.md
           - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md
           - Controlled pilot: 06_EXECUTION/PILOT_WALKTHROUGH.md
-          - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
           - Performance guidance: 11_DEVELOPMENT/PERFORMANCE.md
           - Ops pilot: 06_EXECUTION/OPS_PILOT.md
       - Deployment: 06_EXECUTION/DEPLOYMENT.md
@@ -238,6 +244,7 @@ nav:
   - Examples:
       - Runnable Guides:
           - Overview: 09_EXAMPLES/README.md
+          - Sample multi-file project: 09_EXAMPLES/SAMPLE_PROJECT.md
           - Prefect Direct Execution: 09_EXAMPLES/PREFECT_RUN.md
           - Airflow Compile: 09_EXAMPLES/AIRFLOW_COMPILE.md
           - SparkForge Adapter: 09_EXAMPLES/SPARKFORGE_ADAPTER.md
@@ -256,8 +263,12 @@ nav:
       - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
       - Exceptions: 10_REFERENCE/EXCEPTIONS.md
       - API Reference: 10_REFERENCE/API_REFERENCE.md
+      - API — Authoring: 10_REFERENCE/API_AUTHORING.md
+      - API — Plan and runtime: 10_REFERENCE/API_PLAN_RUNTIME.md
+      - API — Protocols: 10_REFERENCE/API_PROTOCOLS.md
   - Project:
       - Overview: 11_DEVELOPMENT/README.md
+      - Upgrade hub: 01_GETTING_STARTED/UPGRADE.md
       - Migration 0.17 → 0.18: 11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md
       - Migration 0.16 → 0.17: 11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md
       - Documentation audit 0.18: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_18.md

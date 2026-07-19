@@ -1,145 +1,70 @@
 # Plugin SDK Overview
 
-The published DTCS 3.0 Transformation Plan model supports ETLantic's portable
-transformation compiler role for engine plugins. See
-[Portable Transformation Compiler](PORTABLE_TRANSFORM_COMPILER.md). Reference
-compilers and the public conformance suite are available in ETLantic 0.15.
+> **Status: Available in ETLantic 0.18.0** for the shipped protocols below.
+> Future protocols are listed only in the appendix—do not treat them as APIs.
 
-For the canonical package-from-zero workflow, start with
+For the package-from-zero workflow, start with
 [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md).
+
+The Plugin SDK defines public interfaces used to extend ETLantic without
+modifying core. Core owns modeling, validation, planning, contract
+coordination, lifecycle semantics, and result normalization. Plugins provide
+concrete runtime behavior.
+
+## Shipped protocols (use these)
+
+| Protocol | Guide | Typical package |
+|---|---|---|
+| Dataframe | [DATAFRAME_PLUGIN](DATAFRAME_PLUGIN.md) | `etlantic-polars`, `etlantic-pandas` |
+| SQL | [SQL_PLUGIN](SQL_PLUGIN.md) | `etlantic-sql` |
+| PySpark | [PYSPARK_PLUGIN](PYSPARK_PLUGIN.md) | `etlantic-pyspark` |
+| Orchestrator / scheduler | [ORCHESTRATOR_PLUGIN](ORCHESTRATOR_PLUGIN.md) | `etlantic-airflow`, `etlantic-prefect` |
+| Secret provider | [SECRET_PROVIDER](SECRET_PROVIDER.md) | `etlantic-keyring` |
+| Portable transform compiler | [PORTABLE_TRANSFORM_COMPILER](PORTABLE_TRANSFORM_COMPILER.md) | engine packages above |
+| Testing / conformance | [TESTING_PLUGINS](TESTING_PLUGINS.md) | `etlantic.testing` |
 
 Compiler support is expressed through exact DTCS profiles, actions, functions,
 operators, types, and modes. Plugin identity alone never implies portable
 coverage.
 
-The ETLantic Plugin SDK defines the public interfaces used to extend
-ETLantic without modifying its core.
-
-The core framework is responsible for modeling, validation, planning, contract
-coordination, common lifecycle semantics, and result normalization. Plugins
-provide concrete runtime behavior for execution, storage, orchestration,
-resources, and other extension points.
-
-## Purpose
-
-The Plugin SDK exists to:
-
-- Keep the core framework small and stable.
-- Enable independent plugin development.
-- Support multiple execution technologies.
-- Preserve portable pipeline semantics.
-- Encourage a healthy ecosystem of community plugins.
-
-## Architecture
+## Architecture (shipped)
 
 ```text
 ETLantic Core
         │
         ▼
-Validation
+Validation → Planning → PipelinePlan
         │
         ▼
-Planning
-        │
-        ▼
-Pipeline Plan (IR)
-        │
-        ▼
-Plugin SDK
-        │
- ┌──────┼────────────────────────────────────────┐
- ▼      ▼         ▼         ▼         ▼          ▼
-Execution Dataframe Storage Resource Registry Orchestration
- Plugins   Plugins   Plugins  Plugins  Plugins    Plugins
+Shipped plugins: dataframe / SQL / Spark / orchestrator / secrets / compilers
 ```
 
 Every plugin consumes or contributes to planning, compilation, or execution of
 a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
 
-## Core Principles
+## Core principles
 
-The SDK is built around a few simple principles:
+- **Stable interfaces** within 0.x compatibility rules
+- **Capability driven** — plugins declare what they support
+- **Portable semantics** — preserve ODCS, DTCS, and DPCS meaning
+- **Honest capabilities** — unsupported semantics fail during planning
+- **Secret safety** — plans contain references, never resolved credentials
 
-- **Stable interfaces** — Public APIs evolve carefully.
-- **Capability driven** — Plugins declare what they support.
-- **Portable semantics** — Plugins preserve ODCS, DTCS, and DPCS semantics.
-- **Independent versioning** — Plugins evolve independently of the core.
-- **Loose coupling** — Plugins depend on the SDK, not each other's private APIs.
-- **Honest capabilities** — Unsupported semantics fail during planning.
-- **Logical traceability** — Physical work maps back to logical identities.
-- **Secret safety** — Plans contain references, never resolved credentials.
+## Appendix — future / not shipped
 
-## Plugin Lifecycle
+These categories appear in older design pages and are **not** installable
+protocols in 0.18.0:
 
-Every plugin follows the same high-level lifecycle:
+- General storage plugins (Snowflake, S3, Iceberg, …) — see
+  [Storage today](../06_EXECUTION/STORAGE_TODAY.md)
+- Resource providers
+- Registry plugins / approval workflows
+- Observability provider protocol (beyond today's OTEL optional hooks)
 
-1. Discovery
-2. Registration
-3. Capability declaration
-4. Validation
-5. Planning participation
-6. Runtime execution or service provision
-7. Diagnostics
-8. Cleanup
-
-## Plugin Categories
-
-ETLantic currently defines several plugin categories:
-
-- Execution Plugins
-- Dataframe Plugins
-- Orchestration Plugins
-- Storage Plugins
-- Resource Providers
-- Registry Plugins
-
-Additional categories require a demonstrated responsibility that cannot be
-expressed cleanly through the existing SDK. New categories should not be added
-merely to mirror every external technology.
-
-## Capability Matching
-
-Planning selects plugins based on declared capabilities.
-
-Examples include:
-
-- Async execution
-- Parallel execution
-- Streaming
-- Retry support
-- Transactions
-- Checkpoints
-- Approval workflows
-
-If a plugin cannot satisfy mandatory requirements, planning fails before
-execution.
-
-## Version Compatibility
-
-Plugins should publish compatibility information for:
-
-- ETLantic
-- ODCS
-- DTCS
-- DPCS
-
-This allows the ecosystem to evolve while maintaining predictable behavior.
-
-## Best Practices
-
-- Build plugins against the public SDK only.
-- Keep implementations focused on one responsibility.
-- Preserve observable pipeline behavior.
-- Emit structured diagnostics.
-- Document capabilities clearly.
-
-## Key Principle
-
-> ETLantic provides the portable execution model. The Plugin SDK enables
-> implementations to extend that model while preserving its semantics and
-> interoperability.
+See [STORAGE_PLUGIN](STORAGE_PLUGIN.md), [RESOURCE_PROVIDER](RESOURCE_PROVIDER.md),
+and [OBSERVABILITY_PROVIDER](OBSERVABILITY_PROVIDER.md) (Future design banners).
 
 ## Next Step
 
-Continue with [Dataframe Plugin](DATAFRAME_PLUGIN.md) to explore the first
-concrete SDK extension interface.
+Continue with [Building a Plugin](BUILDING_A_PLUGIN.md) or a shipped protocol
+page above.

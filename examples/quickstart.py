@@ -53,7 +53,11 @@ class CustomerPipeline(Pipeline):
     )
 
 
-def run_example() -> tuple[PipelineRuntime, object]:
+def main() -> None:
+    validation = CustomerPipeline.validate(profile="development")
+    validation.raise_for_errors()
+    CustomerPipeline.plan(profile="development")
+
     runtime = PipelineRuntime()
     runtime.memory.seed(
         "customer_source",
@@ -62,12 +66,12 @@ def run_example() -> tuple[PipelineRuntime, object]:
             RawCustomer(customer_id=2, first_name="Grace", last_name="Hopper"),
         ],
     )
+
     report = CustomerPipeline.run(profile="development", runtime=runtime)
-    return runtime, report
+    print(report.status.value)
+    for customer in runtime.memory.get("customer_sink"):
+        print(customer.model_dump())
 
 
 if __name__ == "__main__":
-    runtime, report = run_example()
-    print(report.to_text())
-    for customer in runtime.memory.get("customer_sink"):
-        print(customer.model_dump())
+    main()

@@ -2,16 +2,19 @@
 
 ## Green path
 
-1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic`
+1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.18.0`
 2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
-3. Runnable scripts below
+3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
+4. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
+5. Runnable scripts below
 
-Pages under **Design Studies** are aspirational and may show APIs that are not
-shipped.
+Pages under **Design Studies** are aspirational stubs—not installable tutorials.
 
 ## Runnable guides (docs)
 
+- [Sample multi-file project](SAMPLE_PROJECT.md) — `examples/sample_project/`
 - [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — JSON and CSV
+- [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) — secrets, schema, SARIF
 - [Polars](../06_EXECUTION/POLARS_TUTORIAL.md)
 - [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md)
 - [SQL](../06_EXECUTION/SQL_TUTORIAL.md)

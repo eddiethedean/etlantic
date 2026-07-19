@@ -43,7 +43,8 @@ remains the interchange/runtime companion for ODCS documents.
 **Data Pipeline Contract Standard.**
 
 A portable specification describing the logical topology of a pipeline:
-sources, transformations, sinks, and their relationships.
+extracts, transformations, loads, and their relationships. Wire formats may
+still say sources/sinks; authoring uses `Extract` / `Load`.
 
 ## DTCS
 

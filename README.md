@@ -17,15 +17,15 @@
   <a href="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml"><img src="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/v/etlantic.svg" alt="PyPI"></a>
   <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/pyversions/etlantic.svg" alt="Python versions"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-d6a84b.svg" alt="MIT license"></a>
+  <a href="https://github.com/eddiethedean/etlantic/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d6a84b.svg" alt="MIT license"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
 </p>
 
 <p align="center">
   <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
-  <a href="docs/01_GETTING_STARTED/QUICKSTART.md">Quickstart</a> ·
-  <a href="docs/01_GETTING_STARTED/CAPABILITIES.md">Capabilities</a> ·
-  <a href="ROADMAP.md">Roadmap</a>
+  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
+  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/">Capabilities</a> ·
+  <a href="https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md">Roadmap</a>
 </p>
 
 ---
@@ -73,29 +73,27 @@ and evidence from source to publication.
 - **Adopt incrementally.** The core has no dataframe, SQL, Spark, or Airflow
   dependency. Install only the integrations you need.
 
-> **Project status:** **0.18.0 is production/stable for documented
-> single-tenant reference deployments.** Structured Streaming remains
-> experimental. Multi-tenant isolation, deployment topology, compliance,
-> SBOM/signing, and advanced supply-chain controls remain adopter-owned.
-> See [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md),
-> [Evaluator](docs/01_GETTING_STARTED/EVALUATOR.md), and
-> [Production readiness](docs/06_EXECUTION/PRODUCTION_READINESS.md).
+> **Project status:** **0.18.0 is stable for documented single-tenant
+> reference deployments** (see Capabilities and Evaluator). Structured
+> Streaming remains experimental. Multi-tenant isolation, compliance
+> attestations, and SBOM/signing remain adopter-owned or roadmap (0.20+).
+> See [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/),
+> [Evaluator](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/EVALUATOR/), and
+> [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/).
 
 ## Green path
 
-1. [Install](docs/01_GETTING_STARTED/INSTALLATION.md) — `pip install 'etlantic==0.18.0'`
-2. [Quickstart](docs/01_GETTING_STARTED/QUICKSTART.md) — five-minute success
-3. [First Pipeline](docs/01_GETTING_STARTED/FIRST_PIPELINE.md) — CLI validate/plan
-4. [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) — then an engine tutorial or [Compare](docs/01_GETTING_STARTED/COMPARE.md)
+1. [Install](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/) — `pip install 'etlantic==0.18.0'`
+2. [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) — five-minute success
+3. [First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/) — CLI validate/plan
+4. [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/) — then an engine tutorial; diligence: [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/) or [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/)
 
 ## Quickstart
 
 ETLantic requires Python 3.11 or newer.
 
 ```bash
-pip install etlantic
-# Prefer an exact pin in 0.x:
-pip install 'etlantic==0.18.0'
+pip install etlantic==0.18.0
 python -m etlantic --version
 # equivalent: etlantic --version
 ```
@@ -182,7 +180,7 @@ Change the sink contract to an incompatible type and `validate()` returns a
 structured diagnostic before any transformation or write is attempted.
 
 The complete tested example is
-[examples/quickstart.py](examples/quickstart.py).
+[examples/quickstart.py](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py).
 
 ## CLI workflow
 
@@ -294,22 +292,22 @@ before mutation.
 | Structured Streaming | Experimental |
 | Advanced portable profile graduation | **Available** on Polars + PySpark (0.17); Pandas/SQL baseline only |
 
-See [Capabilities and Limitations](docs/01_GETTING_STARTED/CAPABILITIES.md)
-and the [roadmap](ROADMAP.md) for the precise support
+See [Capabilities and Limitations](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
+and the [roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) for the precise support
 boundary.
 
 ## Documentation
 
 - [Hosted documentation](https://etlantic.readthedocs.io/)
-- [Getting Started](docs/01_GETTING_STARTED/README.md)
-- [Quickstart](docs/01_GETTING_STARTED/QUICKSTART.md)
-- [Compare](docs/01_GETTING_STARTED/COMPARE.md) — vs dbt, Airflow, Prefect, Pandera
-- [Evaluator brief](docs/01_GETTING_STARTED/EVALUATOR.md)
-- [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md)
-- [Production readiness](docs/06_EXECUTION/PRODUCTION_READINESS.md)
-- [Security](docs/02_FOUNDATIONS/SECURITY.md)
-- [Contributing](CONTRIBUTING.md)
-- [Roadmap](ROADMAP.md)
+- [Getting Started](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/)
+- [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
+- [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/) — vs dbt, Airflow, Prefect, Pandera
+- [Evaluator brief](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/EVALUATOR/)
+- [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
+- [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/)
+- [Security](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/)
+- [Contributing](https://github.com/eddiethedean/etlantic/blob/main/CONTRIBUTING.md)
+- [Roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
 ## Development
 
@@ -327,9 +325,9 @@ uv run ruff format --check .
 uv run mkdocs serve
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for package-specific test groups and
+See [CONTRIBUTING.md](https://github.com/eddiethedean/etlantic/blob/main/CONTRIBUTING.md) for package-specific test groups and
 development conventions.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/eddiethedean/etlantic/blob/main/LICENSE)

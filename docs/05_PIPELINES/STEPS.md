@@ -137,7 +137,7 @@ Load(input=normalized.result, asset="warehouse.customers")
 ```
 
 A step result becomes a published table or dataset only when connected to a
-`Sink` or an explicit persistence policy.
+`Load` or an explicit persistence policy.
 
 ### Named results
 
@@ -201,7 +201,7 @@ The transformation itself remains defined by DTCS.
 - Use descriptive step names.
 - Override only necessary parameters.
 - Let outputs feed downstream inputs.
-- Use a `Sink` only when the result must be published.
+- Use a `Load` only when the result must be published.
 
 ## Anti-Patterns
 

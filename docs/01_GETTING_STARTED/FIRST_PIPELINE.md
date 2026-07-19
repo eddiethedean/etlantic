@@ -118,7 +118,7 @@ PMPIPE210: The step "curated" expects RawCustomer on "input", but received Custo
 
 Restore `Load[Customer]` before continuing.
 
-### Inspect, validate, and plan from the 0.17 CLI
+### Inspect, validate, and plan from the CLI
 
 With the complete quickstart saved as `pipeline.py`, run:
 
@@ -128,8 +128,12 @@ etlantic validate pipeline.py:CustomerPipeline --profile development --format js
 etlantic plan pipeline.py:CustomerPipeline --profile development --format json
 ```
 
-Use the same profile throughout a workflow. These commands import definitions
-but do not inherit in-memory records seeded by a different Python process.
+!!! warning "CLI process boundaries"
+    These commands import definitions but do not inherit in-memory records
+    seeded by a different Python process. Prefer the same `--profile` for
+    validate, plan, and run (`development` here). If you omit `--profile`,
+    `etlantic plan` defaults to `local` while `etlantic run` defaults to
+    `development`.
 
 ## Generate portable contracts
 
@@ -200,5 +204,7 @@ compilers, and managed cloud Spark providers remain outside the shipped
 boundary. Keep core and optional plugin minors matched—for this guide, pin
 both to `0.18.0`. See [Capabilities](CAPABILITIES.md).
 
-Continue with [Project Structure](PROJECT_STRUCTURE.md) or run the complete
-repository example in `examples/quickstart.py`.
+Continue with [Engine selection](ENGINE_SELECTION.md), or continue diligence
+with [Capabilities](CAPABILITIES.md). For a production profile starter, see
+[`prod.example.json`](prod.example.json). The repository companion for this
+tutorial is `examples/quickstart.py`.

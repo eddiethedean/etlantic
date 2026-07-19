@@ -1,9 +1,12 @@
 """ETLantic — typed, contract-driven data pipeline modeling.
 
-0.11 adds ``@Transformation.portable`` authoring through ``etlantic.transform``,
-emitting ``dtcs.transform-plan/2``. Optional SparkForge migration adapter
+Public authoring surfaces include ``Data``, ``Transformation`` (including
+``@Transformation.portable`` / ``etlantic.transform`` → ``dtcs.transform-plan/2``),
+``Pipeline``, ``Extract``, and ``Load``. Optional SparkForge migration adapter
 (``etlantic-sparkforge``) remains available without introducing
 bronze/silver/gold into core. Structured Streaming APIs remain experimental.
+Versioned tabular interchange Gate A (``etlantic.interchange/1``) ships in
+0.18 for Polars↔Pandas boundaries.
 """
 
 from __future__ import annotations

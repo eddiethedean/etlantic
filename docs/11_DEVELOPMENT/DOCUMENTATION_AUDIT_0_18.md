@@ -1,63 +1,80 @@
-> Status: Maintained audit for ETLantic 0.18.0 documentation adoption cut.
+> Status: Maintained audit for ETLantic 0.18.0 documentation adoption cut
+> (updated after public-adoption remediation).
 
 # Critical Documentation Audit — ETLantic 0.18
 
 This audit records the documentation condition after the 0.18 adoption
-remediation. It succeeds
+remediation **and** the follow-up adoption-hygiene pass. It succeeds
 [DOCUMENTATION_AUDIT_0_17.md](DOCUMENTATION_AUDIT_0_17.md) as the maintained
 release artifact. Reassess when release posture or public package behavior
 changes.
 
 ## Executive Summary
 
-- **Overall documentation quality: Good (after remediation; was Fair).**
+- **Overall documentation quality: Fair → Good (after remediation).**
 - **Would I personally trust this project based on the documentation?** Yes,
   for evaluation and documented single-tenant reference deployments, after
-  validating selected plugins against Capabilities and Production readiness.
-- **Why?** The green path is one four-step sequence; adopter-facing 0.17 labels
-  were corrected; ROADMAP_SUMMARY attributes portable graduation to 0.17 and
-  Gate A interchange to 0.18; Design Studies live under “not shipped”; a Gate A
-  runnable example and production profile starter exist; Compare / Engine
-  selection / Cookbook pages reduce category confusion.
+  reading Capabilities, Evaluator, and Production readiness.
+- **Why?** Critical factual errors (impossible plugin pin, Sink/Source as
+  current vocabulary, unbannered storage catalogs) are fixed; green path
+  next-steps point at Engine selection; design studies are stubs; Evaluate
+  section separates diligence from Learn; Upgrade hub and Storage today exist.
+
+Earlier self-rating of “Good” before this pass was **too generous** against
+FastAPI/Pydantic/dbt onboarding craft. Honesty was already strong; hygiene
+was not.
 
 ## Remediated in this cut
 
-1. ROADMAP_SUMMARY factual attribution (0.17 portable vs 0.18 Gate A)
-2. FAQ / Evaluator / SECURITY / PRODUCTION_READINESS / DEPLOYMENT 0.18 labels
-3. CAPABILITIES “Not included” contradiction for advanced portable profiles
-4. Docs home and README landing status walls collapsed; canonical green path
-5. CLI validate/plan vs Python seeded-run clarification
-6. Design Studies moved under Design Proposals (not shipped) in `mkdocs.yml`
-7. Plugin SDK and Integrations nav overview-first; migrations archived
-8. `examples/interchange_polars_pandas.py` + docs companion; CI in portable job
-9. `profiles/prod.example.json` linked from Capabilities / Evaluator / Cookbook
-10. Compare, Engine selection, Cookbook pages
-11. Extract/Load vocabulary on Pipelines / Architecture / Glossary
-12. SQL examples use public `sqlalchemy.create_engine` (not `plugin._get_engine`)
-13. `scripts/test_core.sh` + CONTRIBUTING shortcut
-14. Diagnostics catalog generator; API author essentials + `reliability_runtime`
-15. `check_docs.py` bans adopter-facing “Status in 0.17” / ROADMAP misattribution
-16. Future Plugin SDK pages carry Future design banners; CONFIGURATION rebased
+1. `OPTIONAL_PACKAGES.md` pin corrected to `etlantic>=0.18.0,<0.19`
+2. `PIPELINE.md` / `STEPS.md` / Glossary use Extract/Load authoring vocabulary
+3. `STORAGE_PLUGINS.md` Future stub + new `STORAGE_TODAY.md`
+4. Green path: Install → Quickstart → First Pipeline → **Engine selection**
+5. `examples/quickstart.py` matches validate → plan → run
+6. Core-first `INSTALLATION.md` with JVM note for PySpark
+7. CLI memory/profile callouts on Quickstart and First Pipeline
+8. Stale 0.17 success banners refreshed on key adopter pages
+9. README/docs home lead with bounded **stable** claim (not orphan “production”)
+10. Design studies stubbed (no copy-paste deprecated APIs)
+11. Learn nav slimmed; **Evaluate** section added; Design Proposals remain labeled not shipped
+12. Upgrade hub, Ops examples, Portable failure cookbook, Gate A FAQ
+13. API reference split (hub + Authoring / Plan-runtime / Protocols)
+14. Plugin SDK overview is shipped-first with Future appendix
+15. Performance pages framed for 0.18; 0.10 baselines labeled historical
+16. Multi-file `examples/sample_project/`
+17. Root `__init__.py` docstring no longer opens on “0.11 adds…”
 
-## Remaining / follow-up
+## Remaining debt (not blocking 0.18 docs gate)
 
-- Full Google-style Examples on every public symbol (partial: Pipeline /
-  Transformation essentials improved)
-- Exhaustive human-curated diagnostic meanings for every generated code
-- Slim multi-file sample project beyond single scripts
-- Interim SBOM/signing adopter guidance while Gaps remain
-- Broader CI execution of `file_storage.py` / `portable_*.py` (docs now label
-  CI vs local accurately)
+- Refresh quantitative performance baselines on current 0.18.x
+- Further demote Design Proposals (search-only / collapsed theme)
+- Versioned docs site per release
+- Broader typed Returns on public Pipeline methods (`Any` cleanup is code)
 
-## Adoption readiness (post-cut target)
+## Release documentation gate checklist
 
-| Category | Target |
-|---|---|
-| Clarity | 8 |
-| Completeness | 8 |
-| Discoverability | 7 |
-| Learnability | 8 |
-| API documentation | 7 |
-| Examples | 8 |
-| Contributor experience | 8 |
-| Professionalism | 8 |
+Before tagging a minor/patch docs cut:
+
+- [ ] Grep adopter pages for impossible pins (`<0.18` style empty ranges)
+- [ ] Grep for teaching `Source`/`Sink` as current (exclude migration/deprecated pages)
+- [ ] Confirm green path step 4 is Engine selection (not Capabilities-only)
+- [ ] Confirm Design studies are stubs or behind Future banners with no runnable deprecated code
+- [ ] Confirm `examples/quickstart.py` matches QUICKSTART expected output
+- [ ] Confirm Storage today exists and STORAGE_PLUGINS is Future-bannered
+- [ ] Run `uv run python scripts/check_docs.py` and `uv run python scripts/build_docs.py`
+- [ ] Update this audit’s executive summary if scores change
+
+## Adoption readiness (post-remediation estimate)
+
+| Category | Score |
+|---|---:|
+| Clarity | 7 |
+| Completeness | 7 |
+| Discoverability | 6 |
+| Learnability | 7 |
+| API Documentation | 6 |
+| Examples | 7 |
+| Contributor Experience | 7 |
+| Professionalism | 7 |
+
+Blended ~**6.8 / 10** — honest and newly navigable; still not FastAPI-class reference UX.

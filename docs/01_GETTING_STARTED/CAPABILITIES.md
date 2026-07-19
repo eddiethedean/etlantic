@@ -1,6 +1,6 @@
 # Current Capabilities and Limitations
 
-ETLantic **0.18.0** is **production/stable** for documented
+ETLantic **0.18.0** is **stable** for documented
 single-tenant reference deployments. Experimental features remain
 experimental, and multi-tenant isolation, deployment topology, compliance,
 SBOM/signing, and advanced supply-chain controls remain adopter-owned. This
@@ -121,29 +121,16 @@ fail-closed). Never put secrets in plans, reports, or CI logs. See
 [Evaluator brief](EVALUATOR.md).
 
 ```bash
-pip install etlantic                 # core only — no engines
-pip install etlantic-polars          # Polars reference plugin
-pip install etlantic-pandas          # Pandas compatibility plugin
-pip install etlantic-sql             # PostgreSQL SQL reference plugin
-pip install etlantic-pyspark         # PySpark reference plugin
-pip install etlantic-airflow         # Airflow DAG compiler
-pip install etlantic-prefect         # Prefect direct-execution scheduler
-pip install etlantic-keyring         # OS keyring secret provider
-pip install etlantic-sqlmodel        # SQLModel contract bridge
-pip install etlantic-sparkforge      # SparkForge → ETLantic adapter
-pip install 'etlantic[polars]'
-pip install 'etlantic[pandas]'
-pip install 'etlantic[dataframes]'   # polars + pandas
-pip install 'etlantic[sql]'          # alias: postgresql
-pip install 'etlantic[pyspark]'      # alias: spark
-pip install 'etlantic[airflow]'
-pip install 'etlantic[prefect]'
-pip install 'etlantic[keyring]'
-pip install 'etlantic[sqlmodel]'
-pip install 'etlantic[sparkforge]'
-pip install 'etlantic[otel]'         # alias: observability
-pip install 'etlantic[arrow]'
-pip install 'etlantic-polars[arrow]'
+pip install 'etlantic==0.18.0'                 # core only — no engines
+pip install 'etlantic-polars==0.18.0'          # Polars reference plugin
+pip install 'etlantic-pandas==0.18.0'          # Pandas compatibility plugin
+pip install 'etlantic-sql==0.18.0'             # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.18.0'         # PySpark reference plugin
+pip install 'etlantic-airflow==0.18.0'         # Airflow DAG compiler
+pip install 'etlantic-prefect==0.18.0'         # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.18.0'         # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.18.0'        # SQLModel contract bridge
+pip install 'etlantic-sparkforge==0.18.0'      # SparkForge → ETLantic adapter
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.
@@ -154,5 +141,6 @@ installed. Medallion bronze/silver/gold types are never part of core.
 
 ## Next Step
 
-Continue with [Quickstart](QUICKSTART.md), or read the
-[Evaluator brief](EVALUATOR.md) if you are assessing the project for adoption.
+Continue diligence with the [Evaluator brief](EVALUATOR.md), pick an engine in
+[Engine selection](ENGINE_SELECTION.md), or see [Storage today](../06_EXECUTION/STORAGE_TODAY.md)
+for local persistence boundaries.

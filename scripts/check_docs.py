@@ -521,6 +521,7 @@ def main() -> None:
         "INTERCHANGE_POLARS_PANDAS.md",
         "CONTRACT_FIRST_TUTORIAL.md",
         "PREFECT_RUN.md",
+        "SAMPLE_PROJECT.md",
         "README.md",
     }
     for path in (ROOT / "docs/09_EXAMPLES").glob("*.md"):
@@ -640,14 +641,24 @@ def main() -> None:
     if "RUNTIME_CONFIGURATION.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing RUNTIME_CONFIGURATION.md")
     api_ref = (ROOT / "docs/10_REFERENCE/API_REFERENCE.md").read_text(encoding="utf-8")
+    api_corpus = "\n".join(
+        [
+            api_ref,
+            (ROOT / "docs/10_REFERENCE/API_AUTHORING.md").read_text(encoding="utf-8"),
+            (ROOT / "docs/10_REFERENCE/API_PLAN_RUNTIME.md").read_text(
+                encoding="utf-8"
+            ),
+            (ROOT / "docs/10_REFERENCE/API_PROTOCOLS.md").read_text(encoding="utf-8"),
+        ]
+    )
     major_minor = ".".join(package_version.split(".")[:2])
     if f"Available in ETLantic {major_minor}" not in api_ref:
         raise SystemExit(
             f"API_REFERENCE.md must claim Available in ETLantic {major_minor}"
         )
     for mod in ("etlantic.spark", "etlantic.orchestration", "etlantic.viz"):
-        if mod not in api_ref:
-            raise SystemExit(f"API_REFERENCE.md missing {mod}")
+        if mod not in api_corpus:
+            raise SystemExit(f"API reference pages missing {mod}")
 
     banner_js = (ROOT / "docs/theme/javascripts/status-banner.js").read_text(
         encoding="utf-8"

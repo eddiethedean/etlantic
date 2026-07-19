@@ -1,178 +1,56 @@
-# Storage Plugins
+# Storage Plugins (Design Proposal)
 
-Storage plugins provide ETLantic with a portable way to read from and write
-to persistent storage systems.
+> **Status: Future design — not shipped.** This page is a design study.
+> Do not treat the catalogs below as installable product.
+>
+> **Storage today:** memory, callable, JSON, CSV, and no-write backends, plus
+> engine-specific I/O. See [Storage Today](STORAGE_TODAY.md) and
+> [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
 
-Rather than embedding storage-specific APIs into pipeline definitions, storage
-plugins translate logical source and sink bindings into operations for concrete
-storage technologies.
+## Intent (aspirational)
 
-Pipeline authors describe **what** data should be read or written. Storage
-plugins determine **how** those operations are performed.
-
-## Goals
-
-Storage plugins should:
-
-- Preserve data contract semantics.
-- Support multiple storage technologies.
-- Hide storage-specific APIs from pipeline authors.
-- Be interchangeable through execution profiles.
-- Expose capabilities for planning.
-- Keep storage concerns outside pipeline definitions.
-
-## Philosophy
+A future storage plugin protocol would translate logical extract/load assets
+into operations for concrete storage technologies, without embedding
+storage-specific APIs into pipeline definitions.
 
 ```text
 Pipeline Plan
       │
       ▼
- Storage Plugin
+ Storage Plugin (future)
       │
  ┌────┼─────────────────────────┐
  ▼    ▼            ▼            ▼
-CSV  PostgreSQL   S3       Delta Lake
+ … candidate backends (not shipped) …
 ```
 
-Storage is an implementation concern, not a modeling concern.
+## Candidate backends (not available)
 
-## Responsibilities
+The following are **design targets only** — none of these are first-party
+ETLantic storage plugins in 0.18.0:
 
-Storage plugins are responsible for:
+- Parquet as a portable storage plugin
+- MySQL / SQLite / DuckDB as storage plugins (SQL engine plugin is separate)
+- Snowflake / BigQuery
+- Delta Lake / Apache Iceberg
+- Amazon S3 / Azure Blob / Google Cloud Storage
 
-- Reading sources
-- Writing sinks
-- Managing connections
-- Handling authentication
-- Optimizing transfers
-- Reporting storage diagnostics
+What ships instead: [Storage Today](STORAGE_TODAY.md).
 
-They are **not** responsible for:
+## Authoring shape (when shipped)
 
-- Pipeline planning
-- Contract validation
-- Transformation semantics
-- Graph execution
-
-## Supported Storage Systems
-
-ETLantic is designed to support plugins for:
-
-- Local files
-- CSV
-- Parquet
-- JSON
-- PostgreSQL
-- MySQL
-- SQLite
-- DuckDB
-- Snowflake
-- BigQuery
-- Delta Lake
-- Apache Iceberg
-- Amazon S3
-- Azure Blob Storage
-- Google Cloud Storage
-- Future storage systems
-
-## Source Integration
-
-A source declares a logical binding.
+Extracts and loads would keep logical assets; profiles would map them:
 
 ```python
-customers = Extract[Customer](
-    asset="customers",
-)
-```
-
-The storage plugin resolves that binding into a physical location.
-
-## Sink Integration
-
-A sink publishes through the same abstraction.
-
-```python
-warehouse = Load[Customer](
+customers: Extract[Customer] = Extract(asset="customers")
+warehouse: Load[Customer] = Load(
     input=normalized.result,
     asset="warehouse.customers",
 )
 ```
 
-The selected storage plugin determines how the write occurs.
+## Related
 
-## Resource Bindings
-
-Profiles map logical bindings to runtime resources.
-
-Development:
-
-```text
-customers -> ./data/customers.parquet
-```
-
-Production:
-
-```text
-customers -> s3://company/raw/customers/
-```
-
-The pipeline definition remains unchanged.
-
-## Capabilities
-
-Storage plugins should declare capabilities such as:
-
-- Read support
-- Write support
-- Transactions
-- Streaming
-- Partitioning
-- Versioning
-- Compression
-- Batch operations
-
-Planning compares required capabilities against those provided by the plugin.
-
-## Validation
-
-Storage plugins cooperate with ContractModel and DataContractModel to ensure
-published and retrieved data satisfies the declared contracts.
-
-## Error Handling
-
-Plugins should report structured diagnostics for:
-
-- Missing resources
-- Authentication failures
-- Network failures
-- Permission errors
-- Serialization failures
-- Write conflicts
-
-## Best Practices
-
-- Keep bindings logical.
-- Store credentials outside contracts.
-- Preserve contract semantics.
-- Declare capabilities explicitly.
-- Use profiles for environment-specific configuration.
-
-## Anti-Patterns
-
-Avoid:
-
-- Embedding filesystem paths in pipeline models.
-- Hard-coding cloud SDKs into transformations.
-- Returning storage-specific objects from public APIs.
-- Coupling contracts to one storage technology.
-
-## Key Principle
-
-> Storage plugins provide the physical persistence layer for ETLantic while
-preserving the portable, storage-independent semantics defined by pipeline,
-transformation, and data contracts.
-
-## Next Step
-
-Continue with [Resource Providers](RESOURCE_PLUGINS.md) to learn how execution
-resources are acquired, managed, and shared across plugins.
+- [Storage Today](STORAGE_TODAY.md) — shipped backends
+- [Storage plugin SDK (future)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
+- [Resource Providers (future)](RESOURCE_PLUGINS.md)

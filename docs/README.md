@@ -42,29 +42,30 @@ as executable interface declarations—to data engineering.
 
 ## Project status
 
-**ETLantic 0.18.0** models, validates, and plans typed Python data pipelines,
+**ETLantic 0.18.0** is **stable** for documented single-tenant reference
+deployments. It models, validates, and plans typed Python data pipelines,
 then runs them locally or through optional engine plugins.
 
 - **Use today:** single-tenant reference deployments (see [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)).
 - **Not included:** multi-tenant control plane, managed Spark, unrestricted
-  enterprise compliance attestations.
+  enterprise compliance attestations, SBOM/signing (roadmap 0.20+ / adopter-owned).
 - **Experimental:** Structured Streaming.
 
 [Install](01_GETTING_STARTED/INSTALLATION.md) ·
 [Quickstart](01_GETTING_STARTED/QUICKSTART.md) ·
-[Capabilities](01_GETTING_STARTED/CAPABILITIES.md) ·
-[Compare](01_GETTING_STARTED/COMPARE.md)
+[Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) ·
+[Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
 
 !!! tip "Green path (start here only)"
     1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.18.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — five-minute success
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — contracts, validation, CLI
-    4. [Capabilities](01_GETTING_STARTED/CAPABILITIES.md) — then Evaluator or an engine tutorial
+    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
-    Pages marked **Future design** are not APIs. [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
-    is the single source of truth. Persona paths below are optional after first
-    success. Design studies under Examples are aspirational—not installable
-    APIs.
+    Diligence (after first success): [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
+    [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md).
+    Pages marked **Future design** are not APIs. Design studies under Examples
+    are aspirational—not installable APIs.
 
 ## Minimal working example
 

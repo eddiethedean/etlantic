@@ -1,10 +1,11 @@
 # Plugins
 
-!!! warning "Future design overview—not a 0.10 operator manual"
-    This page sketches a broad plugin catalog (including unshipped backends such
-    as Dagster/Prefect/Kafka). For shipped protocols, use the Execution and
-    Plugin SDK pages for dataframe, SQL, Spark, orchestrator, secrets, and
-    testing. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+!!! warning "Future design overview — not an operator manual"
+    This page sketches a broad plugin catalog (including unshipped backends
+    such as Dagster/Kafka and aspirational storage). For **shipped** protocols,
+    use [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) and
+    [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md). For storage that
+    exists today, see [Storage today](STORAGE_TODAY.md).
 
 Plugins are the extension mechanism that allows ETLantic to execute
 portable pipeline plans on different technologies without changing pipeline

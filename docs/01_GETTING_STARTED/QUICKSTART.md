@@ -1,8 +1,8 @@
 # 5–10 Minute Quickstart
 
-> **Status: Available in ETLantic 0.18.0.** The path below is
-> production/stable within the documented single-tenant reference deployment
-> boundary. See [Capabilities](CAPABILITIES.md) for that boundary.
+> **Status: Available in ETLantic 0.18.0.** Stable within the documented
+> single-tenant reference deployment boundary. See
+> [Capabilities](CAPABILITIES.md) for that boundary.
 
 In one file, you will validate, plan, and run a typed pipeline using core
 ETLantic and in-memory storage.
@@ -99,6 +99,12 @@ if __name__ == "__main__":
 The module-level definitions let the CLI import the pipeline later. The main
 guard prevents imports from seeding or running it.
 
+!!! note "Memory is process-local"
+    `runtime.memory.seed(...)` only affects this Python process. A separate
+    `etlantic run pipeline.py:CustomerPipeline` starts with an empty memory
+    store. Use in-process `Pipeline.run` for memory tutorials, or bind assets
+    to JSON/CSV/SQL for CLI `run`.
+
 ## 3. Run
 
 ```bash
@@ -116,10 +122,12 @@ succeeded
 You have now checked the graph before processing data, produced a deterministic
 secret-free plan, and executed the selected local implementation.
 
-The repository companion is `examples/quickstart.py`.
+The repository companion is `examples/quickstart.py` (same validate → plan →
+run story).
 
 ## Next
 
 Continue with [Your First Pipeline](FIRST_PIPELINE.md) for CLI
-`inspect`/`validate`/`plan`, an intentional broken-wiring diagnostic, generated
-contracts, and durable-storage guidance.
+`inspect`/`validate`/`plan`, an intentional broken-wiring diagnostic, and
+generated contracts. Then pick an engine in
+[Engine selection](ENGINE_SELECTION.md).

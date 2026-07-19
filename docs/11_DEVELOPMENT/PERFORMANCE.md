@@ -1,15 +1,13 @@
 # Performance Guidance
 
-ETLantic 0.17 makes no capacity, throughput, or latency claims beyond the
-documented smoke baselines. Those results prove that a small reference harness
-completed in one recorded environment; they are not production sizing data.
+> **Status: Available in ETLantic 0.18.0 framing.** ETLantic publishes **no**
+> capacity, throughput, or latency claims for production sizing.
 
-See [Performance Baselines](PERFORMANCE_RESULTS.md) for the current evidence,
-environment details, and reporting requirements.
+Recorded smoke baselines (historical, ETLantic **0.10.0**) prove only that a
+small harness completed in one environment. They are not production evidence.
+See [Performance Baselines](PERFORMANCE_RESULTS.md).
 
 ## Run the local harness
-
-The repository includes a dataframe correctness and timing harness:
 
 ```bash
 uv sync --group dataframes
@@ -17,18 +15,22 @@ uv run python benchmarks/dataframe_scale.py polars
 uv run python benchmarks/dataframe_scale.py pandas
 ```
 
-Record the commit, Python and dependency versions, hardware, operating system,
-dataset shape, warm-ups, samples, median, p95, and raw results. Do not compare
-results from unlike environments as if they were controlled benchmarks.
+Record commit, Python and dependency versions, hardware, OS, dataset shape,
+warm-ups, samples, median, p95, and raw results. Do not compare unlike
+environments as controlled benchmarks.
 
 ## Measure your workload
 
 Benchmark representative graphs, data shapes, I/O, concurrency, and failure
-paths on the engines and infrastructure you will deploy. ETLantic plans are
-data-only coordination artifacts: plan construction is free of backend
-execution, but not literally zero-cost. Planning does not read source rows or
-execute transformations. Execution cost belongs primarily to the selected
-dataframe, SQL, Spark, storage, and orchestration backends.
+paths on the engines you will deploy. Plans are data-only coordination
+artifacts: construction does not read source rows or execute transformations.
+Execution cost belongs primarily to selected backends.
 
-Separate validation and planning overhead from backend execution and I/O when
-reporting results. See [Benchmark Design](BENCHMARKS.md) for methodology.
+Separate validation/planning overhead from backend execution and I/O. See
+[Benchmark Design](BENCHMARKS.md).
+
+## Evaluator note
+
+Until representative 0.18+ baselines are published, treat performance as
+**adopter-measured**. Do not infer warehouse throughput from framework smoke
+timings.

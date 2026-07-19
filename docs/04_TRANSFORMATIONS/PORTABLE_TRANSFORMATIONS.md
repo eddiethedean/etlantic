@@ -1,6 +1,6 @@
 # Portable Transformations
 
-!!! success "Available in ETLantic 0.17"
+!!! success "Available since ETLantic 0.17 (docs target 0.18.0)"
     `@Transformation.portable` and `etlantic.transform` emit validated
     `dtcs.transform-plan/2` IR. Polars, PySpark, and Pandas execute kernel +
     `portable-relational/1` plans in 0.12–0.14; safe SQL lowering for that

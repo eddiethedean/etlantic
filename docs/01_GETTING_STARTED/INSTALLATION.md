@@ -1,19 +1,13 @@
 # Installing ETLantic 0.18.0
 
-ETLantic 0.18.0 provides the typed modeling kernel, contract interoperability
-(ODCS/DTCS/DPCS), multi-phase validation, profiles, deterministic planning,
-a local runtime that executes plans with Python callables, in-memory
-artifacts, and stdlib JSON/CSV bindings, plus optional Polars, Pandas, SQL,
-PySpark, and Airflow plugins. Structured Streaming APIs are experimental.
-
 ## Requirements
 
 - Python 3.11 or newer
-- ContractModel as a companion package (installed automatically with ETLantic)
+- ContractModel (installed automatically with ETLantic)
 
-## Recommended: install from PyPI
+## Install core (2 minutes)
 
-For reproducible evaluation, pin the published release:
+Pin the published release for reproducible evaluation:
 
 ```bash
 python3.11 -m pip install --upgrade pip
@@ -28,11 +22,6 @@ uv add 'etlantic==0.18.0'
 uv run etlantic --version
 ```
 
-Use `etlantic>=0.18.0,<0.19` when you intentionally accept compatible 0.18.x
-patches.
-
-Verify the import:
-
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"
 ```
@@ -43,13 +32,19 @@ python -c "import etlantic; print(etlantic.__version__)"
 py -3.11 -m pip install --upgrade pip
 py -3.11 -m pip install 'etlantic==0.18.0'
 py -3.11 -m etlantic --version
-# equivalent: etlantic --version
 ```
 
-### Optional engine plugins
+## Next Step
+
+Continue with [Quickstart](QUICKSTART.md). Optional engines and contributor
+checkout are below—skip them until after first success.
+
+---
+
+## Optional engine plugins
 
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
-explicitly (match the core minor):
+explicitly and **match the core minor** (`0.18.0` with `0.18.0`):
 
 ```bash
 pip install 'etlantic-polars==0.18.0'     # dataframe + Polars portable compiler
@@ -61,54 +56,43 @@ pip install 'etlantic-prefect==0.18.0'    # Prefect direct-execution scheduler
 pip install 'etlantic-keyring==0.18.0'    # OS keyring secret provider
 pip install 'etlantic-sqlmodel==0.18.0'   # SQLModel bridge helpers
 pip install 'etlantic-sparkforge==0.18.0' # SparkForge → ETLantic IR adapter
-# or extras (resolve to the same minor):
-pip install 'etlantic[polars]'
-pip install 'etlantic[pandas]'
-pip install 'etlantic[dataframes]'   # polars + pandas
-pip install 'etlantic[sql]'          # alias: postgresql
-pip install 'etlantic[pyspark]'      # alias: spark
-pip install 'etlantic[airflow]'
-pip install 'etlantic[prefect]'
-pip install 'etlantic[keyring]'
-pip install 'etlantic[sqlmodel]'
-pip install 'etlantic[sparkforge]'
-pip install 'etlantic[otel]'         # alias: observability
-pip install 'etlantic[arrow]'
 ```
+
+Extras resolve to the same minor line (`etlantic[polars]`, `[pandas]`,
+`[dataframes]`, `[sql]` / `[postgresql]`, `[pyspark]` / `[spark]`, `[airflow]`,
+`[prefect]`, `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`).
 
 Verify discovery after installing Polars:
 
 ```bash
 etlantic plugin list --kind transform_compiler --format json
-# expect an entry for the polars transform compiler
 ```
 
-For SQL, set a connection URL (PostgreSQL is the reference; SQLite is
-demo-only). The URL below is an **example placeholder**—do not commit real
-credentials:
+### PySpark / JVM
+
+`etlantic-pyspark` requires a working JVM (`JAVA_HOME`). If Spark fails at
+import or session start, see [Troubleshooting](TROUBLESHOOTING.md).
+
+### SQL connection URL
+
+PostgreSQL is the reference; SQLite is demo-only. The URL below is a
+**placeholder**—do not commit real credentials:
 
 ```bash
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
-# or for a local demo:
+# local demo:
 export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
 ```
 
-Select SQL with `Profile(sql_engine="sql")`. The SQL reference plugin does not
-implement `MERGE` (`sql_merge=False`).
+Select SQL with `Profile(sql_engine="sql")`. The reference plugin does not
+implement `MERGE` (`sql_merge=False`). Select Spark with
+`Profile(spark_engine="pyspark")`.
 
-Select Spark with `Profile(spark_engine="pyspark")` and
-`@Transformation.implementation("pyspark")`. See
-[Migration 0.6 → 0.7](../11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md).
-
-Airflow compilation is available via `etlantic-airflow` (`compile_plan` /
-`etlantic compile … --target airflow`). Optional Prefect direct execution is
-available via `etlantic-prefect` (`ExecutionScheduler`, local MVP). Dagster and
-other platforms remain future.
+Airflow: `etlantic compile … --target airflow` via `etlantic-airflow`.
+Prefect: direct execution via `etlantic-prefect` (local MVP). Dagster remains
+future.
 
 ## Repository checkout (contributors)
-
-The commands above are the wheel-user flow. Use a repository checkout only
-when contributing to ETLantic or running repository-only examples:
 
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
@@ -118,21 +102,9 @@ uv run python -c "import etlantic; print(etlantic.__version__)"
 uv run python examples/quickstart.py
 ```
 
-`uv sync` creates `.venv`, installs the package in editable mode, and installs
-the `dev` group (pytest, ruff, mkdocs).
-
-### Editable install with pip (no uv)
-
-```bash
-git clone https://github.com/eddiethedean/etlantic.git
-cd etlantic
-python3.11 -m venv .venv
-source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install -e .
-python -c "import etlantic; print(etlantic.__version__)"
-```
-
-From a checkout, optional plugins use uv groups:
+`uv sync` creates `.venv`, installs editable core, and the `dev` group.
+Editable `pip install -e .` alone does **not** install optional plugins or
+dev tools—prefer `uv sync` or add groups explicitly:
 
 ```bash
 uv sync --group dataframes   # polars + pandas
@@ -145,84 +117,61 @@ uv sync --group keyring
 uv sync --group sqlmodel
 ```
 
-## Upgrade
-
-```bash
-python -m pip install --upgrade 'etlantic>=0.18.0,<0.19'
-# or pin the published release exactly:
-python -m pip install --upgrade 'etlantic==0.18.0'
-# or
-uv lock --upgrade-package etlantic
-```
-
-Review the
-[changelog](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md)
-and migration guides under
-[Development](../11_DEVELOPMENT/README.md) before upgrading between 0.x
-releases because breaking changes remain possible.
-
-## Development Setup
+### Editable install with pip (no uv)
 
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-uv sync
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
+python3.11 -m venv .venv
+source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
 ```
 
-### Common commands
+## Upgrade
+
+Prefer the [Upgrade hub](UPGRADE.md). Quick pin:
+
+```bash
+python -m pip install --upgrade 'etlantic==0.18.0'
+```
+
+## Development commands
 
 | Command | Purpose |
 |---|---|
 | `uv sync` | Create/update `.venv` from `uv.lock` |
-| `uv sync --group dataframes` | Also install Polars and Pandas plugins |
-| `uv sync --group pyspark` | Also install the PySpark plugin + sparkless |
-| `uv sync --group airflow` | Also install the Airflow orchestrator plugin |
-| `uv sync --group prefect` | Also install the Prefect scheduler plugin |
-| `uv sync --group sql` | Also install the SQL plugin |
-| `uv sync --group sparkforge` | Also install the SparkForge adapter |
-| `uv sync --group keyring` | Also install the keyring provider |
-| `uv sync --group sqlmodel` | Also install the SQLModel bridge |
-| `uv lock` | Refresh the lockfile after dependency changes |
 | `uv run pytest` | Run tests |
 | `uv run ruff check .` | Lint |
 | `uv run python scripts/check_docs.py` | Docs consistency gate |
-| `uv run python scripts/build_docs.py` | Build the documentation site (`--strict`, no Material advisory) |
+| `uv run python scripts/build_docs.py` | Build docs (`--strict`) |
 | `uv run mkdocs serve` | Preview docs locally |
 
-## Repository Layout
+## Repository layout
 
 ```text
 pyproject.toml
 uv.lock
-.python-version
 src/etlantic/
 packages/etlantic-polars/
 packages/etlantic-pandas/
 packages/etlantic-sql/
 packages/etlantic-pyspark/
 packages/etlantic-airflow/
+packages/etlantic-prefect/
+packages/etlantic-keyring/
+packages/etlantic-sqlmodel/
 packages/etlantic-sparkforge/
 tests/
 examples/
 docs/
 ```
 
-## Installation Problems
+## Installation problems
 
-See [Troubleshooting](TROUBLESHOOTING.md) for Python-version errors, version
-mismatches, missing plugins, and stale virtual environments.
+See [Troubleshooting](TROUBLESHOOTING.md) for Python-version errors, core/plugin
+minor skew, missing plugins, JVM issues, and stale virtual environments.
 
-## Dependency Philosophy
+## Dependency philosophy
 
-ETLantic keeps the core install small. Dataframe engines, SQL drivers,
-orchestrators, and storage clients belong in optional plugins—not the base
-package.
-
-See [Dependency Strategy](../11_DEVELOPMENT/DEPENDENCY_STRATEGY.md).
-
-## Next Step
-
-Continue with [Quickstart](QUICKSTART.md).
+ETLantic keeps the core install small. Engines and orchestrators belong in
+optional plugins. See [Dependency Strategy](../11_DEVELOPMENT/DEPENDENCY_STRATEGY.md).
