@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: Available in ETLantic 0.10.** ETLantic does **not** load
+> **Status: Available in ETLantic 0.18.0.** ETLantic does **not** load
 > `etlantic.toml` today. Configure profiles, bindings, and engines in Python.
 > Only the environment variables listed here are read by shipped code.
 
@@ -17,8 +17,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": ">=0.10,<1",
-        "etlantic-sql": ">=0.10,<1",
+        "etlantic-polars": "==0.18.0",
+        "etlantic-sql": "==0.18.0",
     },
     assets={"customer_source": "customers"},
 )
@@ -56,7 +56,7 @@ protocol. JSON console logging is available without OTel. See
 
 ## Not shipped
 
-Do not configure these as if they exist in 0.10:
+Do not configure these as if they exist in 0.18:
 
 - `etlantic.toml` / `ETLANTIC_CONFIG`
 - `ETLANTIC_PROFILE` auto-loading

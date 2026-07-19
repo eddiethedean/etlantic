@@ -5,7 +5,7 @@
     <p>Model data pipelines in Python, validate them as contracts, and run them where your engines already are.</p>
     <div class="etlantic-hero__actions">
       <a class="md-button md-button--primary" href="01_GETTING_STARTED/QUICKSTART/">Quickstart</a>
-      <a class="md-button" href="01_GETTING_STARTED/CAPABILITIES/">Capabilities</a>
+      <a class="md-button" href="01_GETTING_STARTED/INSTALLATION/">Installation</a>
     </div>
   </div>
 </div>
@@ -120,6 +120,7 @@ class CustomerPipeline(Pipeline):
 
 def main() -> None:
     CustomerPipeline.validate(profile="development").raise_for_errors()
+    CustomerPipeline.plan(profile="development")
     runtime = PipelineRuntime()
     runtime.memory.seed(
         "customer_source",
@@ -133,8 +134,11 @@ if __name__ == "__main__":
     main()
 ```
 
-Copy into a file and run with Python after `pip install etlantic`, or use
-`examples/quickstart.py`. From these declarations ETLantic can also generate
+Copy into a file and run with Python after `pip install 'etlantic==0.18.0'`.
+The PyPI wheel does **not** include `examples/`; from a checkout use
+[`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py).
+Prefer the full [Quickstart](01_GETTING_STARTED/QUICKSTART.md) (includes
+`plan()`). From these declarations ETLantic can also generate
 ODCS / DTCS / DPCS contracts, Mermaid lineage, and a secret-free
 `PipelinePlan`. Optional plugins add Polars, Pandas, SQL, PySpark, and Airflow
 compilation.
@@ -198,8 +202,10 @@ Follow the **Green path** above for first success. Optional persona forks:
 
 Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
 [Quickstart](01_GETTING_STARTED/QUICKSTART.md) → then
-[Capabilities](01_GETTING_STARTED/CAPABILITIES.md). Runnable code:
-`examples/quickstart.py`, `examples/file_storage.py`.
+[Capabilities](01_GETTING_STARTED/CAPABILITIES.md). Paste the Quickstart file,
+or from a checkout run
+[`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py)
+/ [`file_storage.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py).
 
 ### I want to understand the idea
 
@@ -220,7 +226,8 @@ Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
 
 1. [Execution Model](06_EXECUTION/EXECUTION_MODEL.md)
 2. [Local Python](06_EXECUTION/LOCAL_PYTHON.md)
-3. [Secrets Management](06_EXECUTION/SECRETS_MANAGEMENT.md) (env + file only)
+3. [Secrets Management](06_EXECUTION/SECRETS_MANAGEMENT.md) (env + file; optional
+   `etlantic-keyring`)
 4. [Polars](06_EXECUTION/POLARS.md) / [Pandas](06_EXECUTION/PANDAS.md)
 5. [SQL](06_EXECUTION/SQL.md)
 6. [Run Reports](06_EXECUTION/RUN_REPORTS.md)
@@ -252,10 +259,13 @@ These pages describe intended 1.0 workflows. They are **not** current API guides
 4. [SQL overview](06_EXECUTION/SQL.md)
 5. [Compatibility](10_REFERENCE/COMPATIBILITY.md)
 
-### I want other plugins (future)
+### I want to extend plugins (shipped protocols)
 
-1. [Plugin SDK overview](07_PLUGIN_SDK/README.md) (future design)
+1. [Plugin SDK overview](07_PLUGIN_SDK/README.md) — shipped dataframe, SQL,
+   Spark, orchestration, and transform-compiler protocols
 2. [Testing Plugins](07_PLUGIN_SDK/TESTING_PLUGINS.md)
+3. Future (not shipped): broader storage/resource/observability protocol catalogs —
+   see [Storage today](06_EXECUTION/STORAGE_TODAY.md) vs Future-bannered pages
 
 ### I am integrating or migrating SparkForge
 

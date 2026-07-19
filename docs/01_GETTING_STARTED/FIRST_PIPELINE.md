@@ -205,6 +205,9 @@ boundary. Keep core and optional plugin minors matched—for this guide, pin
 both to `0.18.0`. See [Capabilities](CAPABILITIES.md).
 
 Continue with [Engine selection](ENGINE_SELECTION.md), or continue diligence
-with [Capabilities](CAPABILITIES.md). For a production profile starter, see
-[`prod.example.json`](prod.example.json). The repository companion for this
-tutorial is `examples/quickstart.py`.
+with [Capabilities](CAPABILITIES.md). For a production profile starter, copy the
+JSON from [Production profile starter](prod.example.json) (or the embedded block
+in [Capabilities](CAPABILITIES.md#ci-starter)) into your own
+`profiles/prod.json`—that file is **not** installed with the PyPI package.
+From a git checkout, the companion script is
+[`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py).

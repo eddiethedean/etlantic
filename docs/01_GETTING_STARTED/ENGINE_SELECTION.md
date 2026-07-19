@@ -24,8 +24,10 @@ Start with core local Python. Add one engine at a time.
 1. **One engine first.** Do not combine SQL + Spark + dataframes until a single
    engine path works under `validate` and `plan`.
 2. **Pin the minor in 0.x.** Keep every `etlantic-*` package on `0.18.x`.
-3. **Production profiles need allowlists.** Copy
-   [profiles/prod.example.json](prod.example.json).
+3. **Production profiles need allowlists.** Create `profiles/prod.json` from the
+   embedded JSON in [Capabilities → CI starter](CAPABILITIES.md#ci-starter), or
+   from [prod.example.json](prod.example.json) in a checkout. Trim the allowlist
+   to engines you install (not installed with the PyPI wheel).
 4. **Airflow is compile-only.** `etlantic-airflow` writes DAG artifacts; install
    Apache Airflow separately where DAGs load.
 5. **Memory demos need Python seeding.** CLI `run` does not share process-local

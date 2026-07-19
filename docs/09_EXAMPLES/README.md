@@ -31,6 +31,11 @@ Pages under **Design Studies** are aspirational stubs—not installable tutorial
 
 ## Runnable scripts (repository `examples/`)
 
+!!! note "Clone required"
+    `examples/` is **not** installed with the PyPI wheel. Commands below need a
+    git checkout (`uv run …`). Pip-only users: paste the
+    [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) or open scripts on GitHub.
+
 Scripts marked **(CI)** run in `.github/workflows/checks.yml`. Others are
 documented and copy-paste runnable locally. Repository index:
 [examples/README.md on GitHub](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md).

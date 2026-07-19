@@ -7,7 +7,7 @@
 
 | Recipe | Link |
 |---|---|
-| Five-minute local pipeline | [Quickstart](QUICKSTART.md) / `examples/quickstart.py` |
+| Five-minute local pipeline | [Quickstart](QUICKSTART.md) (paste); checkout: [`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py) |
 | CLI inspect / validate / plan | [First Pipeline](FIRST_PIPELINE.md) |
 | JSON and CSV storage | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 
@@ -25,7 +25,7 @@
 | Recipe | Link |
 |---|---|
 | SARIF validate in CI | [CI integration](../06_EXECUTION/CI_INTEGRATION.md) |
-| Production profile + allowlist | [profiles/prod.example.json](prod.example.json), [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) |
+| Production profile + allowlist | [CI starter JSON](CAPABILITIES.md#ci-starter) / [prod.example.json](prod.example.json), [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) |
 | Bounded production checklist | [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md) |
 | Ops pilot | [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 

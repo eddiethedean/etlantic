@@ -190,17 +190,34 @@ Install the matching plugin and set the corresponding profile engine
 
 | Need | Install | Example |
 |---|---|---|
-| Polars portable kernel | `pip install etlantic-polars` or `uv sync --group dataframes` | `examples/portable_polars_kernel.py` |
-| Polars / Pandas native | `pip install etlantic-polars etlantic-pandas` or `uv sync --group dataframes` | `examples/dataframe_parity.py` |
-| SQL | `pip install etlantic-sql` or `uv sync --group sql` | `examples/sql_to_sql.py` |
-| PySpark | `pip install etlantic-pyspark` or `uv sync --group pyspark` | `examples/pyspark_local.py` |
-| Airflow compile | `pip install etlantic-airflow` or `uv sync --group airflow` | `examples/airflow_compile.py` |
-| SparkForge adapter | `pip install etlantic-sparkforge` or `uv sync --group sparkforge` | `tests/sparkforge/` |
+| Polars portable kernel | `pip install 'etlantic-polars==0.18.0'` or `uv sync --group dataframes` | checkout `examples/portable_polars_kernel.py` |
+| Polars / Pandas native | `pip install 'etlantic-polars==0.18.0' 'etlantic-pandas==0.18.0'` or `uv sync --group dataframes` | checkout `examples/dataframe_parity.py` |
+| Polars ↔ Pandas Gate A | same as above | checkout `examples/interchange_polars_pandas.py` |
+| SQL | `pip install 'etlantic-sql==0.18.0'` or `uv sync --group sql` | checkout `examples/sql_to_sql.py` |
+| PySpark | `pip install 'etlantic-pyspark==0.18.0'` or `uv sync --group pyspark` | checkout `examples/pyspark_local.py` |
+| Airflow compile | `pip install 'etlantic-airflow==0.18.0'` or `uv sync --group airflow` | checkout `examples/airflow_compile.py` |
+| SparkForge adapter | `pip install 'etlantic-sparkforge==0.18.0'` or `uv sync --group sparkforge` | `tests/sparkforge/` |
 
 Airflow compilation is available via `etlantic-airflow`. The shipped
 `etlantic-prefect` local MVP is a direct-execution scheduler
 (`ExecutionScheduler`), not a DAG compiler. Prefect deployment/serve and
 Dagster compilers are not shipped.
+
+## Gate A / Polars ↔ Pandas interchange fails
+
+Gate A (`etlantic.interchange/1`) is **Available in 0.18.0** for Polars ↔
+Pandas boundaries only.
+
+| Symptom | Fix |
+|---|---|
+| Plugin not discovered | Install `etlantic-polars==0.18.0` **and** `etlantic-pandas==0.18.0`; match core minor |
+| Plan fails closed on descriptor / mechanism | Both plugins must advertise compatible `interchange_mechanisms`; see Plugin SDK |
+| Expecting PySpark or SQL Gate A | Out of scope in 0.18 — stay on Polars↔Pandas or keep a single engine |
+| Treating Arrow helpers as Gate A | Best-effort Arrow conversion is **not** the Gate A contract; use planned descriptors / evidence |
+| `examples/interchange_polars_pandas.py` missing | Script is checkout-only; paste from docs or clone the repo |
+
+See [Interchange Gate A FAQ](INTERCHANGE_GATE_A_FAQ.md) and
+[Polars ↔ Pandas Interchange](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md).
 
 ## PySpark fails before ETLantic executes a step
 

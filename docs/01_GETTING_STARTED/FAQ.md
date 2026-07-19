@@ -24,12 +24,12 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ## Is ETLantic 0.18 production-supported?
 
-Yes, within a bounded scope. ETLantic 0.18.0 is production/stable for the
-documented single-tenant reference deployments in
+ETLantic **0.18.0** is **stable** for documented single-tenant reference
+deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
 isolation, deployment topology, compliance, and advanced supply-chain controls
-remain adopter-owned; this is not an unrestricted production claim.
+remain adopter-owned.
 
 ------------------------------------------------------------------------
 
@@ -162,8 +162,8 @@ Examples include:
 - Polars / Pandas (optional plugins)
 - SQL (`etlantic-sql`)
 - PySpark (`etlantic-pyspark`)
-- Airflow (`etlantic-airflow`) and other orchestrator plugins
-- Optional SQLModel / keyring packages in 0.9+
+- Airflow compile (`etlantic-airflow`) and Prefect local scheduler (`etlantic-prefect`)
+- Optional SQLModel / keyring packages (`etlantic-sqlmodel`, `etlantic-keyring`)
 
 The transformation contract and pipeline wiring remain unchanged; native
 implementation bodies may still differ by engine.
@@ -177,7 +177,7 @@ ETLantic is dataframe-engine neutral.
 Install `etlantic-polars` or `etlantic-pandas` and set
 `Profile.dataframe_engine` accordingly. Prefer Polars when you need lazy
 preservation or portable relational compilation; use Pandas when you need the
-Pandas ecosystem (eager portable relational compilation is available in 0.14).
+Pandas ecosystem (eager portable relational compilation is available).
 SQL is available via `etlantic-sql` and `Profile.sql_engine="sql"`. Spark is
 available via `etlantic-pyspark` and `Profile.spark_engine="pyspark"`.
 
@@ -295,7 +295,7 @@ ETLantic generates or exposes:
 
 -   contract documentation
 -   pipeline documentation
--   lineage diagrams (including Graphviz DOT and HTML exporters in 0.9+)
+-   lineage diagrams (including Graphviz DOT and HTML exporters)
 -   Mermaid graphs
 -   execution plans
 
@@ -325,8 +325,10 @@ ETLantic is intended for:
 
 ## Where should I go next?
 
-1. [Quickstart](QUICKSTART.md) or [Your First Pipeline](FIRST_PIPELINE.md)
+1. [Installation](INSTALLATION.md) → [Quickstart](QUICKSTART.md) →
+   [First Pipeline](FIRST_PIPELINE.md) → [Engine selection](ENGINE_SELECTION.md)
 2. [Capabilities](CAPABILITIES.md) for the shipped boundary
-3. Runnable examples under `examples/` (see [Examples](../09_EXAMPLES/README.md))
+3. Runnable examples from a checkout (see [Examples](../09_EXAMPLES/README.md));
+   pip users stay on paste-ready Quickstart
 4. [CLI reference](../10_REFERENCE/CLI.md) for `etlantic validate|plan|run|compile|viz`
 5. Foundations (philosophy / architecture) when you want deeper design context

@@ -150,8 +150,26 @@ Use `etlantic.testing.run_conformance_suite(plugin, engine=..., sample_rows=...)
 to exercise discovery, materialization, validation, schema inspection, and
 ownership helpers. See [Testing Plugins](TESTING_PLUGINS.md).
 
+## Gate A tabular interchange capabilities
+
+> **Available in ETLantic 0.18.0.** Gate A covers **Polars ↔ Pandas** only.
+
+Advertise supported mechanisms on `PluginCapabilities.interchange_mechanisms`
+using the vocabulary in `etlantic.interchange.tabular.InterchangeMechanism`
+(for example `arrow_c_data`, `records_fallback`). Planning selects a mechanism
+via `select_mechanism` and records an `InterchangeDescriptor` under schema
+`etlantic.interchange/1`.
+
+Do **not** treat best-effort Arrow conversion helpers as Gate A evidence.
+Prove capability honesty with
+`etlantic.testing.run_tabular_interchange_conformance_smoke(producer_caps, consumer_caps)`.
+
+See [API — Plan and Runtime](../10_REFERENCE/API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1)
+and [Interchange Gate A FAQ](../01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md).
+
 ## See also
 
 - Shipped references: `packages/etlantic-polars`, `packages/etlantic-pandas`
 - [Dataframe Plugins (execution)](../06_EXECUTION/DATAFRAME_PLUGINS.md)
-- Runnable parity example: `examples/dataframe_parity.py`
+- Runnable parity example (checkout): `examples/dataframe_parity.py`
+- Gate A example (checkout): `examples/interchange_polars_pandas.py`

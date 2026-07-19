@@ -1,6 +1,7 @@
 # What's New in ETLantic 0.15
 
-> **Status: Available in ETLantic 0.15.0.**
+> **Status: Historical release notes for ETLantic 0.15.0.** Current line is
+> **0.18.0** — see [What's new in 0.18](WHATS_NEW_0_18.md).
 
 ETLantic 0.15 ships **Safe SQL Lowering** for the portable kernel and
 `portable-relational/1` claim set, prefers the **Extract / Load / asset**

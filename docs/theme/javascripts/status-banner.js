@@ -86,6 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
     "<p>This page may contain unshipped packages, commands, or interfaces. " +
     "Use Current Capabilities, the API reference, and the CLI reference for shipped behavior. " +
     "Polars, PySpark, Pandas, and SQL portable-relational compilers are shipped. " +
-    "Advanced 0.17 profiles are shipped on Polars and PySpark; see the compiler matrix for exact claims.</p>";
+    "Advanced profiles (string-advanced, window, reshape, …) are shipped on Polars and PySpark; see the compiler matrix for exact claims.</p>";
   article.prepend(banner);
 });

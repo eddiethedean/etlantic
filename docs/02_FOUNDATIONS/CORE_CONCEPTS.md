@@ -147,22 +147,23 @@ class CustomerPipeline(Pipeline):
 DPCS defines the portable pipeline contract. The Python class is the preferred
 code-first authoring surface.
 
-## Source, Step, and Sink
+## Extract, Step, and Load
 
-### Source
+### Extract
 
-A `Extract[T]` introduces a logical dataset into the graph. Its binding says
-where an environment obtains the data.
+An `Extract[T]` introduces a logical dataset into the graph. Its `asset=`
+name says where an environment obtains the data. (On the wire graph, extract
+nodes still use kind `"source"`.)
 
 ### Step
 
 A `Step` is one use of a reusable transformation inside a pipeline. Two steps
 may use the same transformation with different inputs or parameters.
 
-### Sink
+### Load
 
 A `Load[T]` publishes data governed by `T`. A storage plugin performs the
-physical write.
+physical write. (On the wire graph, load nodes still use kind `"sink"`.)
 
 ## Subpipeline
 
@@ -174,8 +175,8 @@ steps.
 
 ## Logical Graph
 
-The logical graph is the user-visible topology of sources, steps, outputs,
-sinks, dependencies, and contracts.
+The logical graph is the user-visible topology of extracts, steps, outputs,
+loads, dependencies, and contracts.
 
 It is stable across execution backends.
 
@@ -185,7 +186,7 @@ A profile binds portable names to an environment:
 
 - Orchestrator
 - Default transformation engine
-- Source and sink implementations
+- Extract and Load asset bindings
 - Resource providers
 - Concurrency limits
 - Backend options

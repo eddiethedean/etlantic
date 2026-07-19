@@ -122,8 +122,11 @@ succeeded
 You have now checked the graph before processing data, produced a deterministic
 secret-free plan, and executed the selected local implementation.
 
-The repository companion is `examples/quickstart.py` (same validate → plan →
-run story).
+!!! note "Repository examples require a checkout"
+    The PyPI wheel does **not** include `examples/`. After `pip install`, use
+    the paste above. From a git checkout, the companion is
+    [`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py)
+    (same validate → plan → run story). Contributors: `uv run python examples/quickstart.py`.
 
 ## Next
 

@@ -6,19 +6,22 @@
     `@implementation(...)` for the advertised claim set. Safe SQL portable
     lowering for that claim set also shipped in **0.15** (`etlantic-sql`).
 
-Runnable companion:
+Runnable companion (checkout required — not in the PyPI wheel):
 [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).
 
 ```bash
 pip install 'etlantic==0.18.0' 'etlantic-polars==0.18.0'
-python examples/portable_polars_kernel.py
+# from a checkout:
+uv run python examples/portable_polars_kernel.py
 ```
 
-To exercise the 0.17 advanced profile families on both Polars and PySpark, use
-[`examples/portable_wave17.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_wave17.py):
+To exercise advanced profile families on **Polars** (string-advanced +
+window/1), use
+[`examples/portable_wave17.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_wave17.py)
+(Polars-only companion):
 
 ```bash
-uv sync --group dataframes --group pyspark
+uv sync --group dataframes
 uv run python examples/portable_wave17.py
 ```
 

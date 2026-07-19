@@ -1,5 +1,8 @@
 # What's New in 0.16
 
+> **Status: Historical release notes for ETLantic 0.16.0.** Current line is
+> **0.18.0** — see [What's new in 0.18](WHATS_NEW_0_18.md).
+
 ETLantic 0.16.0 completes authoring vocabulary cleanup and ships an optional
 Prefect direct-execution scheduler.
 

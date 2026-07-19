@@ -1,6 +1,6 @@
 # Testing Plugins
 
-> **Status: Available in ETLantic 0.9+** via `etlantic.testing`.
+> **Status: Available in ETLantic 0.18.0** via `etlantic.testing`.
 
 Testing helpers provide conformance suites so third-party plugins can prove
 they implement the public protocols correctly.
@@ -15,6 +15,7 @@ they implement the public protocols correctly.
 | Secret conformance | `etlantic.testing.run_secret_conformance_suite` | `SecretProvider` |
 | Write-semantics parity | `etlantic.testing.run_write_semantics_parity_suite` | Cross-engine write modes |
 | Portable transform compiler | `etlantic.testing.run_portable_transform_conformance_suite` | `TransformCompiler` plugins |
+| Tabular interchange smoke (Gate A) | `etlantic.testing.run_tabular_interchange_conformance_smoke` | Producer/consumer `PluginCapabilities` for `etlantic.interchange/1` |
 
 Example:
 
@@ -29,6 +30,13 @@ from etlantic.testing import run_portable_transform_conformance_suite
 from my_engine import create_transform_compiler
 
 run_portable_transform_conformance_suite(create_transform_compiler())
+```
+
+```python
+from etlantic.testing import run_tabular_interchange_conformance_smoke
+
+descriptor = run_tabular_interchange_conformance_smoke(producer_caps, consumer_caps)
+assert descriptor.schema == "etlantic.interchange/1"
 ```
 
 The portable suite is also importable as
@@ -58,7 +66,7 @@ ETLantic planning and runtime.
 ## Compatibility policy
 
 - Claim only capabilities your compiler passes in the public suite.
-- Pin `etlantic` (and this suite) to the minor you certified against.
+- Pin `etlantic` (and this suite) to the minor you certified against (`==0.18.0`).
 - Fail closed at `analyze()` for unsupported modes; do not degrade silently.
 - Keep plans, explain payloads, and diagnostics secret-free.
 

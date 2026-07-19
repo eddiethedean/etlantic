@@ -1,8 +1,12 @@
 # Runnable Examples
 
-These examples use APIs and dependencies shipped in ETLantic **0.18.0**. Install
-with `pip install etlantic==0.18.0` (plus matching `==0.18.0` optional engine
-packages), or from a checkout with `uv sync` and `uv run python …`.
+These examples use APIs and dependencies shipped in ETLantic **0.18.0**.
+
+**Clone required.** The PyPI wheel does **not** include `examples/`. After
+`pip install etlantic==0.18.0`, use the paste-ready
+[Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md) (or open scripts on
+GitHub). Commands below assume a **repository checkout** with `uv sync` /
+`uv run`, after installing matching `==0.18.0` optional packages as needed.
 
 **CI vs local:** `.github/workflows/checks.yml` runs the scripts marked
 **(CI)** below. Scripts marked **(docs / local)** are copy-paste runnable and
@@ -12,8 +16,6 @@ documented, but are not executed on every PR matrix job.
 
 ```bash
 uv run python examples/quickstart.py
-# or, after pip install etlantic:
-python examples/quickstart.py
 ```
 
 Validates, plans, and runs with in-memory storage; prints `succeeded` and
@@ -41,7 +43,7 @@ uv run python examples/portable_wave17.py
 Authors with `@Transformation.portable`, plans with
 `portable_transform_policy="require"`, and executes through the shipped Polars
 or Pandas compilers (Pandas is eager-only / index-neutral). The Wave 17 example
-demonstrates advanced families shipped on Polars and PySpark.
+demonstrates advanced families on **Polars** (string-advanced + window/1).
 
 ## Polars ↔ Pandas interchange (CI)
 
@@ -58,7 +60,7 @@ Gate A demo: a Polars step feeds a Pandas step across a planned
 ## JSON and CSV storage (docs / local)
 
 ```bash
-python examples/file_storage.py
+uv run python examples/file_storage.py
 ```
 
 Runs tested `json_to_json()` and `csv_to_csv()` workflows using built-in
@@ -68,8 +70,8 @@ storage bindings.
 
 ```bash
 # requires etlantic-polars / etlantic-pandas
-python examples/dataframe_parity.py polars
-python examples/dataframe_parity.py pandas
+uv run --group dataframes python examples/dataframe_parity.py polars
+uv run --group dataframes python examples/dataframe_parity.py pandas
 ```
 
 Runs the same logical pipeline against either dataframe plugin via
@@ -79,10 +81,10 @@ Runs the same logical pipeline against either dataframe plugin via
 
 ```bash
 # requires etlantic-sql
-python examples/sql_to_sql.py
-python examples/sql_boundary_hybrid.py
-python examples/sql_transactional_write.py
-python examples/sql_failure_recovery.py
+uv run --group sql python examples/sql_to_sql.py
+uv run --group sql python examples/sql_boundary_hybrid.py
+uv run --group sql python examples/sql_transactional_write.py
+uv run --group sql python examples/sql_failure_recovery.py
 ```
 
 Runs SQL-native pipelines. Defaults to in-memory SQLite for demos; set
@@ -92,7 +94,7 @@ Runs SQL-native pipelines. Defaults to in-memory SQLite for demos; set
 
 ```bash
 # requires etlantic-pyspark
-python examples/pyspark_local.py
+uv run --group pyspark python examples/pyspark_local.py
 ```
 
 Runs a batch Spark pipeline with the local provider via
@@ -102,7 +104,7 @@ Runs a batch Spark pipeline with the local provider via
 
 ```bash
 # requires etlantic-airflow
-python examples/airflow_compile.py
+uv run --group airflow python examples/airflow_compile.py
 ```
 
 Runs a pipeline locally, then compiles the same plan to an Airflow DAG module
@@ -112,7 +114,7 @@ via `compile_plan(..., target="airflow")`.
 
 ```bash
 # requires etlantic-prefect
-python examples/prefect_run.py
+uv run --group prefect python examples/prefect_run.py
 ```
 
 Runs an already-resolved plan through the shipped Prefect 3

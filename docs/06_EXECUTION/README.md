@@ -1,13 +1,14 @@
 # Execution
 
-!!! success "Portable Polars + PySpark + Pandas relational compilation ships in 0.14"
-    ETLantic executes registered native implementations and, when
+!!! success "Available in ETLantic 0.18.0"
+    Portable Polars + PySpark + Pandas relational compilation (shipped since
+    0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
+    executes registered native implementations and, when
     `Profile.portable_transform_policy` is `prefer` or `require`, can compile
     and run Polars/PySpark/Pandas DTCS plans through `etlantic-polars` /
     `etlantic-pyspark` / `etlantic-pandas` without a native
     `@implementation(...)` for the advertised kernel +
-    `portable-relational/1` claim set. Safe SQL portable lowering for that
-    claim set shipped in **0.15**. See
+    `portable-relational/1` claim set. See
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
     and
     [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).

@@ -1,9 +1,11 @@
 # Vision
 
-The 0.11+ roadmap strengthens portability beyond typed interfaces: common
-relational transformation behavior can be authored once through a
-PySpark-inspired symbolic API and compiled by conformant Polars, PySpark,
-Pandas, SQL, and future plugins.
+ETLantic provides one portable model: typed contracts, portable
+transformations, deterministic plans, and interchangeable engines. In 0.18,
+that includes Gate A versioned tabular interchange for Polars ↔ Pandas
+boundaries. Common relational transformation behavior can be authored once
+through a PySpark-inspired symbolic API and compiled by conformant Polars,
+PySpark, Pandas, SQL, and future plugins.
 
 ## Our Mission
 

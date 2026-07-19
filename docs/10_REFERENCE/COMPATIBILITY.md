@@ -12,6 +12,7 @@ This table describes the declared compatibility of ETLantic 0.18.0.
 | DPCS toolkit | `>=0.13,<1` |
 | Pipeline plan schema | `etlantic.plan/1` |
 | Dataframe protocol | `etlantic.dataframe/1` |
+| Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
 | Polars plugin | `etlantic-polars==0.18.0` |
 | Pandas plugin | `etlantic-pandas==0.18.0` |
@@ -26,8 +27,8 @@ This table describes the declared compatibility of ETLantic 0.18.0.
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
-| Package stability | Production/Stable for documented single-tenant reference deployments |
-| Plugin SDK stability | Protocol stable within 0.8; third-party SDK still evolving |
+| Package stability | Stable for documented single-tenant reference deployments (not unrestricted enterprise production) |
+| Plugin SDK stability | Shipped protocols stable within the 0.18 minor; third-party plugins must pin and re-run conformance |
 
 ## Tested versus declared
 

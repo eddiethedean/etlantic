@@ -2,17 +2,18 @@
 
 ## Requirements
 
-- Python 3.11 or newer
+- Python 3.11, 3.12, or 3.13
 - ContractModel (installed automatically with ETLantic)
 
 ## Install core (2 minutes)
 
-Pin the published release for reproducible evaluation:
+Pin the published release for reproducible evaluation. Prefer `python -m pip`
+so you use the interpreter you intend (any supported 3.11+):
 
 ```bash
-python3.11 -m pip install --upgrade pip
-python3.11 -m pip install 'etlantic==0.18.0'
-etlantic --version
+python -m pip install --upgrade pip
+python -m pip install 'etlantic==0.18.0'
+python -m etlantic --version
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
@@ -44,7 +45,9 @@ checkout are below—skip them until after first success.
 ## Optional engine plugins
 
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
-explicitly and **match the core minor** (`0.18.0` with `0.18.0`):
+explicitly and **match the core minor** (`0.18.0` with `0.18.0`).
+
+**Primary install (separate packages):**
 
 ```bash
 pip install 'etlantic-polars==0.18.0'     # dataframe + Polars portable compiler
@@ -58,9 +61,19 @@ pip install 'etlantic-sqlmodel==0.18.0'   # SQLModel bridge helpers
 pip install 'etlantic-sparkforge==0.18.0' # SparkForge → ETLantic IR adapter
 ```
 
-Extras resolve to the same minor line (`etlantic[polars]`, `[pandas]`,
-`[dataframes]`, `[sql]` / `[postgresql]`, `[pyspark]` / `[spark]`, `[airflow]`,
-`[prefect]`, `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`).
+**Equivalent extras** (same packages, same pins):
+
+```bash
+pip install 'etlantic[polars]==0.18.0'
+pip install 'etlantic[pandas]==0.18.0'
+pip install 'etlantic[dataframes]==0.18.0'   # polars + pandas
+pip install 'etlantic[sql]==0.18.0'          # alias: [postgresql]
+pip install 'etlantic[pyspark]==0.18.0'      # alias: [spark]
+pip install 'etlantic[airflow]==0.18.0'
+pip install 'etlantic[prefect]==0.18.0'
+```
+
+Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`.
 
 Verify discovery after installing Polars:
 
@@ -122,7 +135,7 @@ uv sync --group sqlmodel
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-python3.11 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 ```

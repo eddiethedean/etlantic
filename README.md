@@ -74,7 +74,7 @@ and evidence from source to publication.
   dependency. Install only the integrations you need.
 
 > **Project status:** **0.18.0 is stable for documented single-tenant
-> reference deployments** (see Capabilities and Evaluator). Structured
+> reference deployments** (not unrestricted enterprise production). Structured
 > Streaming remains experimental. Multi-tenant isolation, compliance
 > attestations, and SBOM/signing remain adopter-owned or roadmap (0.20+).
 > See [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/),
@@ -180,7 +180,10 @@ Change the sink contract to an incompatible type and `validate()` returns a
 structured diagnostic before any transformation or write is attempted.
 
 The complete tested example is
-[examples/quickstart.py](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py).
+[examples/quickstart.py](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py)
+(requires a repository checkout—the PyPI wheel does not include `examples/`).
+Prefer the paste-ready [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
+after `pip install`.
 
 ## CLI workflow
 
@@ -219,15 +222,16 @@ for the complete command surface.
 
 ## Choose an engine
 
-Start with the core package, then add engines as needed (pin the minor in 0.x):
+Start with the core package, then add engines as needed (pin the minor in 0.x).
+**Primary form** installs the optional package directly; extras are equivalent:
 
 ```bash
-pip install 'etlantic[polars]==0.18.0'
-pip install 'etlantic[pandas]==0.18.0'
-pip install 'etlantic[sql]==0.18.0'
-pip install 'etlantic[pyspark]==0.18.0'
-pip install 'etlantic[airflow]==0.18.0'
-pip install 'etlantic[prefect]==0.18.0'
+pip install 'etlantic-polars==0.18.0'    # equivalent: etlantic[polars]==0.18.0
+pip install 'etlantic-pandas==0.18.0'    # equivalent: etlantic[pandas]==0.18.0
+pip install 'etlantic-sql==0.18.0'       # equivalent: etlantic[sql]==0.18.0
+pip install 'etlantic-pyspark==0.18.0'   # equivalent: etlantic[pyspark]==0.18.0
+pip install 'etlantic-airflow==0.18.0'   # equivalent: etlantic[airflow]==0.18.0
+pip install 'etlantic-prefect==0.18.0'   # equivalent: etlantic[prefect]==0.18.0
 ```
 
 | Integration | Package | Purpose |
@@ -290,7 +294,7 @@ before mutation.
 | Public portable transform conformance SDK | Available |
 | Versioned tabular interchange (Polars↔Pandas Gate A) | Available |
 | Structured Streaming | Experimental |
-| Advanced portable profile graduation | **Available** on Polars + PySpark (0.17); Pandas/SQL baseline only |
+| Advanced portable profile graduation | **Available** on Polars + PySpark (since 0.17; current in 0.18); Pandas/SQL baseline only |
 
 See [Capabilities and Limitations](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
 and the [roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) for the precise support

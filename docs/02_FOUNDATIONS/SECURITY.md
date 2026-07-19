@@ -671,8 +671,8 @@ production = Profile(
     name="production",
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": ">=0.10.0,<1.0",
-        "etlantic-sql": ">=0.10.0,<1.0",
+        "etlantic-polars": "==0.18.0",
+        "etlantic-sql": "==0.18.0",
     },
 )
 ```
@@ -680,7 +680,7 @@ production = Profile(
 !!! note "Future design (1.0)"
     A proposed TOML security policy block may eventually participate in
     planning (document size limits, filesystem roots, network allowlists).
-    That configuration surface is **not** loaded in 0.10. Proposed names live
+    That configuration surface is **not** loaded in 0.18. Proposed names live
     under [Configuration](../10_REFERENCE/CONFIGURATION.md).
 
 Security policy participates in planning. Secret values do not.

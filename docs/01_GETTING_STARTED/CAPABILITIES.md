@@ -11,12 +11,19 @@ page is the shortest answer to "What can I use today?"
 Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md)):
 
-1. Core + local/file storage (`examples/quickstart.py`, `examples/file_storage.py`)
+1. Core + local/file storage ([Quickstart](QUICKSTART.md) paste, or checkout
+   [`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py)
+   / [`file_storage.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py))
 2. Optional one engine: Polars **or** Pandas **or** SQL **or** local PySpark
-3. Explicit production `Profile` JSON with `plugin_allowlist`
+3. Explicit production `Profile` JSON with `plugin_allowlist` (trim to engines you install)
 4. CI `validate --format sarif` + reviewed `plan` JSON
 5. No multi-tenant sharing of a process; no unresolved security Gaps from the
    [Security](../02_FOUNDATIONS/SECURITY.md) chapter
+
+!!! note "Examples are not in the wheel"
+    `pip install etlantic` does **not** install `examples/` or a ready-made
+    `profiles/` tree. Use the paste-ready Quickstart, copy the profile JSON
+    below, or clone the repository and run scripts with `uv run`.
 
 ## Available in 0.18
 
@@ -102,20 +109,54 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 
 ## CI starter
 
-Copy the starter allowlist profile, then validate and plan:
+Production profiles require a non-empty `Profile.plugin_allowlist` in an
+explicit Profile JSON file (the built-in `production` name is empty and
+fail-closed). Never put secrets in plans, reports, or CI logs.
+
+**Pip users:** create `profiles/prod.json` yourself (the package does not ship
+this file). Start from the JSON below, then **trim `plugin_allowlist` to the
+engines you actually install**.
+
+**Checkout users:** you can also copy the docs companion:
 
 ```bash
+mkdir -p profiles
 cp docs/01_GETTING_STARTED/prod.example.json profiles/prod.json
-# edit assets and allowlist for your pipeline
+# edit assets and trim allowlist for your pipeline
+```
+
+Starter profile (trim allowlist to one engine for first success):
+
+```json
+{
+  "name": "prod-example",
+  "security_domain": "production",
+  "orchestrator": "local",
+  "dataframe_engine": "polars",
+  "portable_transform_policy": "require",
+  "validation_policy": "strict",
+  "allow_trusted_sql": false,
+  "plugin_allowlist": {
+    "local": null,
+    "etlantic-polars": "==0.18.0"
+  },
+  "assets": {},
+  "secrets": {},
+  "secret_providers": {}
+}
+```
+
+Full multi-engine allowlist companion (docs only):
+[prod.example.json](prod.example.json).
+
+Then validate and plan:
+
+```bash
 etlantic validate path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format sarif
 etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format json
 ```
 
-Production profiles require a non-empty `Profile.plugin_allowlist` in an
-explicit Profile JSON file (the built-in `production` name is empty and
-fail-closed). Never put secrets in plans, reports, or CI logs. See
-[profiles/prod.example.json](prod.example.json),
-[Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
+See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
 [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md),
 [Ops Pilot](../06_EXECUTION/OPS_PILOT.md), and the
 [Evaluator brief](EVALUATOR.md).

@@ -45,6 +45,7 @@ from etlantic import (
 | `PipelineRunReport` | `etlantic.reports` | Structured run outcomes |
 | `SecretRef` | `etlantic.secrets` | Runtime-only secret reference |
 | `BackfillRequest` | `etlantic.reliability_runtime` | Reliability backfill request helper |
+| Gate A tabular types | `etlantic.interchange.tabular` | Descriptors, mechanism selection, fidelity, evidence (`etlantic.interchange/1`) |
 
 Optional plugins document factories in package READMEs. See
 [Optional Packages](OPTIONAL_PACKAGES.md).
@@ -52,7 +53,7 @@ Optional plugins document factories in package READMEs. See
 ## Generated API pages
 
 - [Authoring](API_AUTHORING.md) — contracts, transformations, pipelines, ports
-- [Plan and runtime](API_PLAN_RUNTIME.md) — validation, profiles, plan, runtime, storage, secrets, interchange
+- [Plan and runtime](API_PLAN_RUNTIME.md) — validation, profiles, plan, runtime, storage, secrets, contract interchange, **Gate A tabular interchange**
 - [Protocols](API_PROTOCOLS.md) — dataframe, SQL, Spark, orchestration, viz, testing, reliability
 
 ## Core behavioral contracts
@@ -78,8 +79,9 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.18.0 is published as Production/Stable. Public compatibility follows
-the documented 0.x deprecation policy; minor releases may still include
+ETLantic 0.18.0 is **stable** for documented single-tenant reference
+deployments (not unrestricted enterprise production). Public compatibility
+follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
 [compatibility matrix](COMPATIBILITY.md) before upgrading. Narrative CLI docs:
 [CLI](CLI.md).

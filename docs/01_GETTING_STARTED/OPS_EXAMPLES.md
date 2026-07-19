@@ -38,8 +38,9 @@ etlantic validate path/to/pipeline.py:MyPipeline \
   --format sarif > etlantic.sarif
 ```
 
-Production profiles require a non-empty `plugin_allowlist`. Starter:
-[`prod.example.json`](prod.example.json). See
+Production profiles require a non-empty `plugin_allowlist`. Starter JSON:
+[CI starter](CAPABILITIES.md#ci-starter) / [prod.example.json](prod.example.json)
+(not installed with the PyPI wheel—create `profiles/prod.json` yourself). See
 [CI integration](../06_EXECUTION/CI_INTEGRATION.md).
 
 ## Related

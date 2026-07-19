@@ -90,7 +90,27 @@
 
 ## Contract interchange
 
+ODCS / DTCS / DPCS loading, diffs, and bundle helpers:
+
 ::: etlantic.interchange
+    options:
+      show_root_heading: true
+      members_order: source
+      filters: ["!^_"]
+
+## Gate A tabular interchange (`etlantic.interchange/1`)
+
+> **Available in ETLantic 0.18.0.** Versioned, capability-driven tabular
+> interchange for **Polars ↔ Pandas** boundaries. PySpark/SQL Gate A pairs are
+> not in scope yet. Legacy Arrow-assisted helpers (when PyArrow is installed)
+> are **not** the Gate A contract.
+
+Planner and runtime use descriptors, mechanism selection, fidelity checks, and
+evidence types from `etlantic.interchange.tabular`. Adopter guides:
+[Interchange Gate A FAQ](../01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md),
+[Polars ↔ Pandas example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md).
+
+::: etlantic.interchange.tabular
     options:
       show_root_heading: true
       members_order: source

@@ -1,9 +1,8 @@
 # Project Structure
 
-A well-organized ETLantic project separates **modeling** from
-**execution**. Your Python classes define contracts and pipelines, while
-runtime configuration and generated artifacts remain outside your source
-code.
+An ETLantic project separates **modeling** from **execution**. Your Python
+classes define contracts and pipelines, while runtime configuration and
+generated artifacts remain outside your source code.
 
 ## Recommended Layout
 
@@ -29,10 +28,10 @@ customer-pipeline/
 │       │
 │       ├── implementations/
 │       │   ├── local/
-│       │   ├── polars/          # optional (0.5+)
-│       │   ├── pandas/          # optional (0.5+)
-│       │   ├── sql/             # optional (0.6+)
-│       │   ├── spark/           # optional (0.7+, etlantic-pyspark)
+│       │   ├── polars/          # optional plugin
+│       │   ├── pandas/          # optional plugin
+│       │   ├── sql/             # optional plugin
+│       │   ├── spark/           # optional (etlantic-pyspark)
 │       │   # airflow compile lives in tooling / CI, not under implementations/
 │       │
 │       ├── pipelines/
@@ -192,5 +191,5 @@ existing implementations.
 
 ## Next Step
 
-Continue with **FAQ.md** for answers to common questions about
+Continue with [FAQ](FAQ.md) for answers to common questions about
 ETLantic's architecture and philosophy.

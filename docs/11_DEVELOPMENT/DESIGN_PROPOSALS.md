@@ -3,6 +3,12 @@
 This section contains **unshipped** APIs, historical plans, and normative
 proposals. It is deliberately separate from the ETLantic 0.18 user guide.
 
+!!! danger "Do not start here"
+    This section is **not** the user guide. Pages here are unshipped APIs,
+    historical plans, or aspirational design studies. Start with
+    [Installation](../01_GETTING_STARTED/INSTALLATION.md) →
+    [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) instead.
+
 !!! warning "Not current API documentation"
     Do not copy unshipped interfaces from these pages into a production
     application. Start with the

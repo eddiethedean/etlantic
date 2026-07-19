@@ -110,18 +110,25 @@ How to read status labels in deeper chapters:
 
 ## Recommended evaluation path
 
+Follow this path **after** the green path (Install → Quickstart → First Pipeline
+→ Engine selection), or as an enterprise diligence track:
+
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.18.0`
-2. [Quickstart](QUICKSTART.md) or `examples/quickstart.py`
+2. [Quickstart](QUICKSTART.md) (paste-ready; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
-4. [Capabilities](CAPABILITIES.md)
-5. Optional: `examples/interchange_polars_pandas.py` (0.18 Gate A) with
-   `etlantic[dataframes]==0.18.0`
-6. Optional engine examples: portable kernels, SQL, PySpark, Airflow compile,
-   Prefect
-7. [Migration 0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md)
-8. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
-9. Production path: copy [profiles/prod.example.json](prod.example.json)
-   and see [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md)
+4. [Engine selection](ENGINE_SELECTION.md)
+5. [Capabilities](CAPABILITIES.md)
+6. Optional Gate A: checkout
+   [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
+   with `etlantic-polars` + `etlantic-pandas` at `==0.18.0`
+7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
+   Airflow compile, Prefect)
+8. [Migration 0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md)
+9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
+10. Production path: create `profiles/prod.json` from
+    [CI starter](CAPABILITIES.md#ci-starter) /
+    [prod.example.json](prod.example.json) and see
+    [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md)
 
 ## Support channel
 

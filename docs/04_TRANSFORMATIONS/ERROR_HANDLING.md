@@ -1,6 +1,6 @@
 # Error Handling
 
-!!! success "Available in ETLantic 0.14"
+!!! success "Available in ETLantic 0.18"
     Structured diagnostics, validation failures, runtime
     `NodeExecutionError` paths, callback `FailureAction` results, and
     `Profile.retry_max_attempts` retry intent are shipped. Retry execution is

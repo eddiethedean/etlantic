@@ -1,10 +1,10 @@
 # Security Policy
 
-ETLantic 0.18.0 is production/stable for documented single-tenant reference
-deployments. Security reports concerning the published package, contract
-loading, planning, local runtime, storage bindings, secret handling,
-dataframe, SQL, and PySpark plugins, documentation, or repository automation
-are welcome.
+ETLantic 0.18.0 is **stable** for documented single-tenant reference
+deployments (not unrestricted enterprise production). Security reports
+concerning the published package, contract loading, planning, local runtime,
+storage bindings, secret handling, dataframe, SQL, and PySpark plugins,
+documentation, or repository automation are welcome.
 
 ## Supported Versions
 

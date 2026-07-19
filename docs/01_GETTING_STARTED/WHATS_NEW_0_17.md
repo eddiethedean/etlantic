@@ -1,9 +1,12 @@
 # What's New in 0.17
 
+> **Status: Historical release notes for ETLantic 0.17.0.** Current line is
+> **0.18.0** — see [What's new in 0.18](WHATS_NEW_0_18.md).
+
 ETLantic 0.17.0 expanded portable transform coverage with platform
 discoverability and multi-family graduation on Polars and PySpark. It is
-published as production/stable within the bounded single-tenant reference
-envelope documented in [Capabilities](CAPABILITIES.md).
+**stable** for documented single-tenant reference deployments (see
+[Capabilities](CAPABILITIES.md)).
 
 ## Gate A — Platform
 

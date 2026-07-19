@@ -1,8 +1,8 @@
 # Support
 
-ETLantic **0.18.x** is production/stable for documented single-tenant
-reference deployments. Community support has **no formal SLA** or guaranteed
-response time.
+ETLantic **0.18.0** is **stable** for documented single-tenant reference
+deployments (not unrestricted enterprise production). Community support has
+**no formal SLA** or guaranteed response time.
 
 ## What we support
 
@@ -27,5 +27,5 @@ response time.
    data, no private plans)
 3. Prefer SARIF/JSON validate output over screenshots of secrets
 
-Read the maintainer [support policy](docs/11_DEVELOPMENT/SUPPORT.md) when
-present. Never paste credentials into GitHub.
+Read the maintainer [support policy](docs/11_DEVELOPMENT/SUPPORT.md).
+Never paste credentials into GitHub.
