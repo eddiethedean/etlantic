@@ -10,12 +10,12 @@ from contractmodel import ContractModel
 from tests.conftest import Customer, RawCustomer
 
 from etlantic import (
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
     diff_pipelines,
     graphs_equivalent,
@@ -59,9 +59,9 @@ def test_parameterized_transform_round_trips(tmp_path: Path) -> None:
         result: Output[Customer]
 
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="src")
+        raw: Extract[RawCustomer] = Extract(asset="src")
         normalized = Normalize.step(customers=raw, minimum_age=21)
-        curated: Sink[Customer] = Sink(input=normalized.result, binding="sink")
+        curated: Load[Customer] = Load(input=normalized.result, asset="sink")
 
     write_contracts(Pipe, tmp_path)
     loaded = load_bundle(tmp_path)
@@ -77,9 +77,9 @@ def test_float_datetime_contracts_export(tmp_path: Path) -> None:
         result: Output[Event]
 
     class Pipe(Pipeline):
-        raw: Source[Event] = Source(binding="src")
+        raw: Extract[Event] = Extract(asset="src")
         passed = PassThrough.step(events=raw)
-        out: Sink[Event] = Sink(input=passed.result, binding="sink")
+        out: Load[Event] = Load(input=passed.result, asset="sink")
 
     write_contracts(Pipe, tmp_path)
     assert any((tmp_path / "data").glob("*.odcs.yaml"))
@@ -104,9 +104,9 @@ def test_published_id_compatibility_across_odcs_load(tmp_path: Path) -> None:
     )
 
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="src")
+        raw: Extract[RawCustomer] = Extract(asset="src")
         normalized = loaded_norm.step(customers=raw)
-        curated: Sink[Customer] = Sink(input=normalized.result, binding="sink")
+        curated: Load[Customer] = Load(input=normalized.result, asset="sink")
 
     report = Pipe.validate()
     assert report.valid, report.codes()
@@ -114,13 +114,13 @@ def test_published_id_compatibility_across_odcs_load(tmp_path: Path) -> None:
 
 def test_nested_subpipeline_validation_runs() -> None:
     class BadChild(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
-        curated: Sink[Customer] = Sink(input=raw, binding="curated")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
+        curated: Load[Customer] = Load(input=raw, asset="curated")
 
     class Parent(Pipeline):
-        src: Source[RawCustomer] = Source(binding="src")
+        src: Extract[RawCustomer] = Extract(asset="src")
         child = BadChild.subpipeline(raw=src)
-        out: Sink[Customer] = Sink(input=child.curated, binding="out")
+        out: Load[Customer] = Load(input=child.curated, asset="out")
 
     report = Parent.validate()
     assert not report.valid
@@ -129,8 +129,8 @@ def test_nested_subpipeline_validation_runs() -> None:
 
 def test_stale_graph_build_error_cleared() -> None:
     class Looper(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
-        out: Sink[RawCustomer] = Sink(input=raw, binding="out")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
+        out: Load[RawCustomer] = Load(input=raw, asset="out")
 
     Looper._graph_build_error = "stale cyclic error"  # type: ignore[attr-defined]
     Looper._cached_graph = None  # type: ignore[attr-defined]
@@ -154,12 +154,12 @@ def test_bundle_rejects_published_id_collision(tmp_path: Path) -> None:
             result: Output[CustomerB]
 
         class Pipe(Pipeline):
-            a: Source[CustomerA] = Source(binding="a")
-            b: Source[CustomerB] = Source(binding="b")
+            a: Extract[CustomerA] = Extract(asset="a")
+            b: Extract[CustomerB] = Extract(asset="b")
             left = Left.step(customers=a)
             right = Right.step(customers=b)
-            out_a: Sink[CustomerA] = Sink(input=left.result, binding="out_a")
-            out_b: Sink[CustomerB] = Sink(input=right.result, binding="out_b")
+            out_a: Load[CustomerA] = Load(input=left.result, asset="out_a")
+            out_b: Load[CustomerB] = Load(input=right.result, asset="out_b")
 
         with pytest.raises(BundleError) as exc:
             write_contracts(Pipe, tmp_path / "bundle")

@@ -4,8 +4,9 @@
     `etlantic.transform-compiler/1` is importable. Polars, PySpark, and Pandas
     claim `portable-relational-kernel/1` and `portable-relational/1`. Third
     parties must pass `run_portable_transform_conformance_suite` for every
-    advertised claim. Safe SQL and Rich Portable Analytics compiler claims
-    remain 0.15+.
+    advertised claim. Safe SQL lowering for that claim set is the **0.15**
+    exit gate; Rich Portable Analytics / advanced family claims remain 0.15
+    continuation work afterward.
 
 A portable transformation compiler translates a validated
 `dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
@@ -112,7 +113,8 @@ and pass the public conformance fixtures for:
 | Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) with action/expression paths |
 
 They **must not** claim Rich Portable Analytics, windows, complex-values,
-reshape, relational-extended, or conversion profiles. Those belong to 0.15+.
+reshape, relational-extended, or conversion profiles. Those graduate under the
+0.15 continuation backlog (not the 0.15 SQL exit gate).
 
 ## Support reports
 
@@ -212,11 +214,14 @@ Compile to dataframe and series operations. Declare eager execution, copying,
 index treatment, and unsupported operations precisely. Portable semantics must
 not depend on a meaningful Pandas index.
 
-### SQL
+### SQL (0.15 exit gate)
 
-Lower into the safe ETLantic SQL IR before dialect compilation. Use bound
-parameters, validate identifiers, retain relation lineage, and prohibit trusted
-SQL fragments in portable definitions.
+Lower kernel + `portable-relational/1` into the existing typed
+`etlantic.sql/1` IR before dialect compilation. Use bound parameters, validate
+identifiers, retain relation lineage, and prohibit trusted SQL fragments in
+portable definitions. Under `require`, fail when the dialect cannot claim the
+profile; under `prefer`, select an explicit native SQL implementation only —
+never silent portable emulation or an implicit dataframe-engine fallback.
 
 ### PySpark
 

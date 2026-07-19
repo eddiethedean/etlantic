@@ -8,13 +8,13 @@ from sqlalchemy import text
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import (
@@ -42,9 +42,9 @@ def pass_sql(items: RelationRef):
 
 
 class TxPipeline(Pipeline):
-    src: Source[Item] = Source(binding="items_src")
+    src: Extract[Item] = Extract(asset="items_src")
     step = Pass.step(items=src)
-    dst: Sink[Item] = Sink(input=step.result, binding="items_dst")
+    dst: Load[Item] = Load(input=step.result, asset="items_dst")
 
 
 def main() -> None:

@@ -107,14 +107,14 @@ def normalize(customers: pl.LazyFrame,
 
 ```python
 class CustomerPipeline(Pipeline):
-    raw = Source[RawCustomer](binding="customers_input")
+    raw = Extract[RawCustomer](binding="customers_input")
 
     normalized = NormalizeCustomers.step(
         customers=raw,
         lowercase_email=True,
     )
 
-    curated = Sink[Customer](
+    curated = Load[Customer](
         input=normalized.result,
         binding="customers_output",
     )

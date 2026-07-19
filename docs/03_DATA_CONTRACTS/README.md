@@ -131,7 +131,7 @@ from etlantic import Pipeline, Sink, Source
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
+    raw: Extract[RawCustomer] = Extract(
         binding="customer_csv",
     )
 
@@ -139,7 +139,7 @@ class CustomerPipeline(Pipeline):
         customers=raw,
     )
 
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
         binding="customer_warehouse",
     )

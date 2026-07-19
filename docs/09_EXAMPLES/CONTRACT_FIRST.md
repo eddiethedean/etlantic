@@ -441,8 +441,8 @@ from .transformations import NormalizeCustomers
 
 
 class CustomerCuration(Pipeline):
-    raw_customers: Source[RawCustomer] = Source(
-        binding="customers_input",
+    raw_customers: Extract[RawCustomer] = Extract(
+        asset="customers_input",
     )
 
     normalize = NormalizeCustomers.step(
@@ -451,9 +451,9 @@ class CustomerCuration(Pipeline):
         trim_whitespace=True,
     )
 
-    curated_customers: Sink[Customer] = Sink(
+    curated_customers: Load[Customer] = Load(
         input=normalize.result,
-        binding="customers_output",
+        asset="customers_output",
     )
 ```
 
@@ -581,7 +581,7 @@ local = Profile(
     name="local",
     orchestrator="local-python",
     dataframe_engine="polars",
-    bindings={
+    assets={
         "customers_input": {
             "plugin": "csv",
             "path": "data/customers.csv",

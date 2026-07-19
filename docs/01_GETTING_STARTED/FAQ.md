@@ -114,9 +114,11 @@ ETLantic ships `@Transformation.portable` / `etlantic.transform` authoring
 `portable_transform_policy` is `prefer` or `require` and `etlantic-polars` is
 installed. **0.13** shipped Polars and PySpark `portable-relational/1`
 compilers; **0.14** shipped the eager Pandas compiler. Safe SQL portable
-lowering remains planned for 0.15+—register native `@implementation()` for SQL
-and for profiles outside the advertised claim set. Native implementations
-remain the escape hatch outside the portable claim.
+lowering for that claim set is the **0.15** exit gate—register native
+`@implementation("sql")` today, and keep native implementations for profiles
+outside the advertised claim set. Advanced families graduate later (0.15
+continuation). Native implementations remain the escape hatch outside the
+portable claim.
 
 ------------------------------------------------------------------------
 

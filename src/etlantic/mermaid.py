@@ -34,9 +34,9 @@ def graph_to_mermaid(graph: LogicalGraph) -> str:
 
 def _node_label(name: str, kind: NodeKind, transformation_name: str | None) -> str:
     if kind is NodeKind.SOURCE:
-        return f"Source: {name}"
+        return f"Extract: {name}"
     if kind is NodeKind.SINK:
-        return f"Sink: {name}"
+        return f"Load: {name}"
     if kind is NodeKind.SUBPIPELINE:
         return f"Subpipeline: {name}"
     if transformation_name:

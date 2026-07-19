@@ -8,13 +8,13 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import explain_plan, plan_pipeline
@@ -71,9 +71,9 @@ def normalize_pandas(customers: Any) -> Any:
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def _seed_runtime(runtime: PipelineRuntime) -> None:
@@ -155,10 +155,10 @@ def test_polars_lazy_preserved_until_sink(polars_plugin) -> None:
         return lf  # stay lazy
 
     class LazyPipeline(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="customers")
+        raw: Extract[RawCustomer] = Extract(asset="customers")
         a = LazyNormalize.step(customers=raw)
         b = Mid.step(customers=a.result)
-        curated: Sink[Customer] = Sink(input=b.result, binding="curated")
+        curated: Load[Customer] = Load(input=b.result, asset="curated")
 
     runtime = PipelineRuntime()
     runtime.register_dataframe_plugin("polars", polars_plugin)

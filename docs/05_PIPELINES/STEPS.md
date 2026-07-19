@@ -129,10 +129,10 @@ These concepts must remain distinct:
 normalized.result
     Result produced within this pipeline run.
 
-Source(binding="warehouse.customers")
+Extract(asset="warehouse.customers")
     Dataset loaded from an external binding.
 
-Sink(input=normalized.result, binding="warehouse.customers")
+Load(input=normalized.result, asset="warehouse.customers")
     Explicit publication of a result.
 ```
 

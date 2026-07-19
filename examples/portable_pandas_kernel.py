@@ -19,14 +19,14 @@ from typing import Any
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import explain_plan, plan_pipeline
@@ -63,9 +63,9 @@ def normalize(customers, minimum_age):
 
 
 class PortablePandasPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def run_example() -> tuple[PipelineRuntime, object, dict[str, Any]]:

@@ -1,6 +1,6 @@
 """Sample pipeline fixture for CLI tests."""
 
-from etlantic import Data, Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 
 
 class Row(Data):
@@ -18,6 +18,6 @@ def identity_local(rows: list[Row]) -> list[Row]:
 
 
 class SamplePipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     step = Identity.step(rows=raw)
-    out: Sink[Row] = Sink(input=step.result, binding="out")
+    out: Load[Row] = Load(input=step.result, asset="out")

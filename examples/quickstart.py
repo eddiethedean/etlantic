@@ -7,12 +7,12 @@ Run with:
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
     Transformation,
 )
 
@@ -45,11 +45,11 @@ def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 
 

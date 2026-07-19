@@ -55,8 +55,9 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
 > **Project status:** Alpha **0.14.0**. The local runtime and reference plugins
 > are available today. Structured Streaming is experimental. Portable
 > transformation authoring and Polars/PySpark/Pandas relational compilers plus
-> the public conformance SDK are available; safe SQL portable lowering is
-> planned for 0.15+. See the
+> the public conformance SDK are available; safe SQL portable lowering for that
+> claim set is the **0.15** exit gate (advanced profiles follow as 0.15
+> continuation). See the
 > [capabilities guide](docs/01_GETTING_STARTED/CAPABILITIES.md) before choosing
 > a production architecture.
 
@@ -78,8 +79,8 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
+    Load,
+    Extract,
     Transformation,
 )
 
@@ -112,11 +113,11 @@ def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 
 
@@ -248,7 +249,8 @@ before mutation.
 | Polars + PySpark + Pandas portable compilers (kernel + relational `/1`) | Available |
 | Public portable transform conformance SDK | Available |
 | Structured Streaming | Experimental |
-| Safe SQL portable lowering and profile graduation | Planned for 0.15+ |
+| Safe SQL portable lowering (kernel + relational `/1`) | Planned for **0.15** (exit gate) |
+| Advanced portable profile graduation | Planned for **0.15 continuation** (after SQL gate) |
 
 See [Capabilities and Limitations](docs/01_GETTING_STARTED/CAPABILITIES.md)
 and the [roadmap](ROADMAP.md) for the precise support

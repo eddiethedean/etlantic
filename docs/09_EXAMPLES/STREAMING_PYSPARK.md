@@ -214,8 +214,8 @@ from .transformations import AggregateCustomerOrders
 
 
 class CustomerOrderStreamingPipeline(Pipeline):
-    orders: Source[OrderEvent] = Source(
-        binding="order_events",
+    orders: Extract[OrderEvent] = Extract(
+        asset="order_events",
     )
 
     aggregates = AggregateCustomerOrders.step(
@@ -224,14 +224,14 @@ class CustomerOrderStreamingPipeline(Pipeline):
         window_duration="1 hour",
     )
 
-    curated: Sink[CustomerOrderWindow] = Sink(
+    curated: Load[CustomerOrderWindow] = Load(
         input=aggregates.result,
-        binding="customer_order_windows",
+        asset="customer_order_windows",
     )
 
-    quarantine: Sink[RejectedOrderEvent] = Sink(
+    quarantine: Load[RejectedOrderEvent] = Load(
         input=orders.invalid,
-        binding="rejected_order_events",
+        asset="rejected_order_events",
     )
 ```
 
@@ -256,7 +256,7 @@ production = Profile(
         },
         "checkpoint": "customer-order-stream",
     },
-    bindings={
+    assets={
         "order_events": {
             "plugin": "kafka-json",
             "resource": "orders_kafka",

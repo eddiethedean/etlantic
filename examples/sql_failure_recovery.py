@@ -7,12 +7,12 @@ import sys
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import PipelineValidationError
@@ -40,9 +40,9 @@ def identity_sql(rows: RelationRef):
 
 
 class MergePipeline(Pipeline):
-    src: Source[Row] = Source(binding="t")
+    src: Extract[Row] = Extract(asset="t")
     step = Identity.step(rows=src)
-    sink: Sink[Row] = Sink(input=step.result, binding="out")
+    sink: Load[Row] = Load(input=step.result, asset="out")
 
 
 def main() -> None:

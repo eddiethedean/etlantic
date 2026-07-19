@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PlanningContext,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.capabilities import PluginCapabilities
@@ -34,21 +34,21 @@ def _pass_local(items):  # type: ignore[no-untyped-def]
 
 
 class GoodPipeline(Pipeline):
-    raw: Source[Item] = Source(binding="in")
+    raw: Extract[Item] = Extract(asset="in")
     step = Pass.step(items=raw)
-    out: Sink[Item] = Sink(input=step.result, binding="out")
+    out: Load[Item] = Load(input=step.result, asset="out")
 
 
 class BadInvalidWire(Pipeline):
-    raw: Source[Item] = Source(binding="in")
+    raw: Extract[Item] = Extract(asset="in")
     step = Pass.step(items=raw)
-    out: Sink[Item] = Sink(input=step.rejected, binding="out")
+    out: Load[Item] = Load(input=step.rejected, asset="out")
 
 
 class UnboundPipeline(Pipeline):
-    raw: Source[Item] = Source(binding="missing_binding")
+    raw: Extract[Item] = Extract(asset="missing_binding")
     step = Pass.step(items=raw)
-    out: Sink[Item] = Sink(input=step.result, binding="also_missing")
+    out: Load[Item] = Load(input=step.result, asset="also_missing")
 
 
 class NoImplTransform(Transformation):
@@ -57,21 +57,21 @@ class NoImplTransform(Transformation):
 
 
 class NoImplPipeline(Pipeline):
-    raw: Source[Item] = Source(binding="in")
+    raw: Extract[Item] = Extract(asset="in")
     step = NoImplTransform.step(items=raw)
-    out: Sink[Item] = Sink(input=step.result, binding="out")
+    out: Load[Item] = Load(input=step.result, asset="out")
 
 
 class ChildPipeline(Pipeline):
-    raw: Source[Item] = Source(binding="child_in")
+    raw: Extract[Item] = Extract(asset="child_in")
     step = Pass.step(items=raw)
-    out: Sink[Item] = Sink(input=step.result, binding="child_out")
+    out: Load[Item] = Load(input=step.result, asset="child_out")
 
 
 class ParentWithChild(Pipeline):
-    raw: Source[Item] = Source(binding="in")
+    raw: Extract[Item] = Extract(asset="in")
     child = ChildPipeline.subpipeline(raw=raw)
-    out: Sink[Item] = Sink(input=child.out, binding="out")
+    out: Load[Item] = Load(input=child.out, asset="out")
 
 
 def test_validation_phases_present() -> None:
@@ -131,7 +131,7 @@ def test_strict_policy_requires_implementations() -> None:
         policy=STRICT_POLICY,
         profile=Profile(
             name="strict-local",
-            bindings={"in": "x", "out": "y"},
+            assets={"in": "x", "out": "y"},
             validation_policy="strict",
         ),
     )
@@ -142,7 +142,7 @@ def test_subpipeline_inherits_parent_strict_bindings() -> None:
     # Parent provides bindings for its own ports but not child_in/child_out.
     profile = Profile(
         name="parent",
-        bindings={"in": "src", "out": "dst"},
+        assets={"in": "src", "out": "dst"},
         validation_policy="strict",
     )
     report = ParentWithChild.validate(profile=profile, policy=STRICT_POLICY)

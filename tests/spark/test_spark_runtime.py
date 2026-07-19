@@ -8,13 +8,13 @@ from etlantic import (
     SPARK_PROTOCOL_VERSION,
     STREAMING_STABILITY,
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
     explain_plan,
     plan_pipeline,
@@ -119,9 +119,9 @@ def normalize_pyspark(customers):
 
 
 class CustomerSparkPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="customer_sink")
+    curated: Load[Customer] = Load(input=normalized.result, asset="customer_sink")
 
 
 def test_region_fusion_preserves_step_identities() -> None:

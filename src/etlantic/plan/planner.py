@@ -270,7 +270,8 @@ def _build_plan(
         name: plugin.version for name, plugin in context.registry.plugins.items()
     }
 
-    profile_snapshot = profile.to_dict()
+    # Fingerprint-stable: emit pre-0.15 bindings-only shape (no assets key).
+    profile_snapshot = profile.to_plan_snapshot()
     execution_settings = {
         "orchestrator": profile.orchestrator,
         "concurrency": profile.concurrency,

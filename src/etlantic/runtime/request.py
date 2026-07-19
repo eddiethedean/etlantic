@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
@@ -227,28 +227,92 @@ class RunSelection:
         }
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class RunRequest:
     """Portable request describing how to execute a pipeline."""
 
-    selection: RunSelection = field(default_factory=RunSelection.all)
-    intent: RunIntent = RunIntent.STANDARD
-    materialization: MaterializationPolicy = MaterializationPolicy.DEFAULT
-    retry: RetryPolicy = field(default_factory=RetryPolicy)
-    timeout: TimeoutPolicy = field(default_factory=TimeoutPolicy)
-    cancellation: CancellationPolicy = field(default_factory=CancellationPolicy)
-    parameter_overrides: dict[str, dict[str, Any]] = field(default_factory=dict)
-    binding_overrides: dict[str, str] = field(default_factory=dict)
-    implementation_overrides: dict[str, str] = field(default_factory=dict)
-    invalidation: InvalidationMode = InvalidationMode.NONE
-    no_write: bool = False
-    metadata: dict[str, Any] = field(default_factory=dict)
+    selection: RunSelection
+    intent: RunIntent
+    materialization: MaterializationPolicy
+    retry: RetryPolicy
+    timeout: TimeoutPolicy
+    cancellation: CancellationPolicy
+    parameter_overrides: dict[str, dict[str, Any]]
+    # Internal store; prefer ``asset_overrides``.
+    binding_overrides: dict[str, str]
+    implementation_overrides: dict[str, str]
+    invalidation: InvalidationMode
+    no_write: bool
+    metadata: dict[str, Any]
 
-    def __post_init__(self) -> None:
-        if self.intent is RunIntent.VALIDATE or self.no_write:
-            object.__setattr__(self, "no_write", True)
+    def __init__(
+        self,
+        selection: RunSelection | None = None,
+        intent: RunIntent = RunIntent.STANDARD,
+        materialization: MaterializationPolicy = MaterializationPolicy.DEFAULT,
+        retry: RetryPolicy | None = None,
+        timeout: TimeoutPolicy | None = None,
+        cancellation: CancellationPolicy | None = None,
+        parameter_overrides: dict[str, dict[str, Any]] | None = None,
+        binding_overrides: dict[str, str] | None = None,
+        asset_overrides: dict[str, str] | None = None,
+        implementation_overrides: dict[str, str] | None = None,
+        invalidation: InvalidationMode = InvalidationMode.NONE,
+        no_write: bool = False,
+        metadata: dict[str, Any] | None = None,
+        *,
+        _warn_legacy_overrides: bool = True,
+    ) -> None:
+        from etlantic._compat import warn_binding_overrides
+
+        assets_map = {str(k): str(v) for k, v in dict(asset_overrides or {}).items()}
+        bindings_map = {
+            str(k): str(v) for k, v in dict(binding_overrides or {}).items()
+        }
+        if assets_map and bindings_map and assets_map != bindings_map:
+            raise ValueError(
+                "RunRequest asset_overrides and binding_overrides disagree. "
+                "Provide only asset_overrides= (preferred) or identical maps."
+            )
+        if bindings_map and not assets_map and _warn_legacy_overrides:
+            warn_binding_overrides(stacklevel=3)
+        store = assets_map or bindings_map
+        object.__setattr__(
+            self,
+            "selection",
+            selection if selection is not None else RunSelection.all(),
+        )
+        object.__setattr__(self, "intent", intent)
+        object.__setattr__(self, "materialization", materialization)
+        object.__setattr__(self, "retry", retry if retry is not None else RetryPolicy())
+        object.__setattr__(
+            self, "timeout", timeout if timeout is not None else TimeoutPolicy()
+        )
+        object.__setattr__(
+            self,
+            "cancellation",
+            cancellation if cancellation is not None else CancellationPolicy(),
+        )
+        object.__setattr__(self, "parameter_overrides", dict(parameter_overrides or {}))
+        object.__setattr__(self, "binding_overrides", store)
+        object.__setattr__(
+            self, "implementation_overrides", dict(implementation_overrides or {})
+        )
+        object.__setattr__(self, "invalidation", invalidation)
+        object.__setattr__(
+            self,
+            "no_write",
+            True if intent is RunIntent.VALIDATE or no_write else no_write,
+        )
+        object.__setattr__(self, "metadata", dict(metadata or {}))
+
+    @property
+    def asset_overrides(self) -> dict[str, str]:
+        """Preferred public view of node → logical asset overrides."""
+        return dict(self.binding_overrides)
 
     def to_dict(self) -> dict[str, Any]:
+        overrides = dict(self.binding_overrides)
         return {
             "selection": self.selection.to_dict(),
             "intent": self.intent.value,
@@ -257,7 +321,8 @@ class RunRequest:
             "timeout": self.timeout.to_dict(),
             "cancellation": self.cancellation.to_dict(),
             "parameter_overrides": dict(self.parameter_overrides),
-            "binding_overrides": dict(self.binding_overrides),
+            "asset_overrides": overrides,
+            "binding_overrides": dict(overrides),
             "implementation_overrides": dict(self.implementation_overrides),
             "invalidation": self.invalidation.value,
             "no_write": self.no_write,

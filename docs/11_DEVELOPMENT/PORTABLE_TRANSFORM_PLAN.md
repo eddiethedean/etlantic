@@ -6,7 +6,8 @@ ETLantic authoring profile: `etlantic.transform/1`
 Compiler protocol: `etlantic.transform-compiler/1`  
 Current release boundary: authoring shipped in 0.11.0; planning + Polars kernel
 compiler shipped in 0.12.0
-DTCS baseline: specification 3.0.0 / toolkit `dtcs>=0.13`
+DTCS baseline: specification 3.0.0 / toolkit content floor `dtcs` 0.14.0 where
+specs say so; ETLantic install pin remains `dtcs>=0.13,<1`
 
 ## Outcome
 
@@ -125,7 +126,8 @@ does not execute through compilers.
 
 Candidate and Experimental profiles are authorable and fingerprintable in 0.11;
 they are not graduated to Standard until **two independent compilers** pass
-shared conformance (0.13+ for relational; 0.15+ for advanced families).
+shared conformance (0.13+ for relational; 0.15 continuation for advanced
+families after the SQL exit gate).
 
 ### Tests
 
@@ -245,28 +247,42 @@ Deliver:
 Exit gate: Pandas passes every fixture associated with its advertised
 capabilities and does not claim unsupported lazy behavior.
 
-## 0.15: SQL lowering and profile graduation
+## 0.15: Safe SQL Lowering (mandatory vertical slice)
+
+**Claim set:** kernel + `portable-relational/1` only.
+**Target IR:** existing typed `etlantic.sql/1`.
+**Reference dialect:** PostgreSQL via `etlantic-sql`.
 
 Deliver:
 
 - portable IR to ETLantic SQL IR lowering
-- safe identifier and bound-literal handling
-- CTE/region fusion while retaining logical identities
-- dialect capability mapping
-- no trusted fragments in portable definitions
-- cross-engine database integration fixtures
-- two-compiler graduation path for Rich Portable Analytics and related
-  Candidate/Experimental families already authored in 0.11
+- safe identifier and bound-parameter handling (no interpolation)
+- CTE/region fusion while retaining logical step/expression identities
+- dialect capability mapping with fail-closed `analyze()` / planning
+- no trusted raw SQL fragments in portable definitions
+- public conformance fixtures for the SQL realization
+- `require` fails when SQL cannot claim the profile; `prefer` may select an
+  explicit native SQL implementation only (never silent portable emulation)
 
-Exit gate: supported portable definitions compile to safe SQL and match the
-reference result corpus; graduated families meet two-compiler criteria.
+Exit gate: kernel + relational `/1` portable definitions compile to
+parameterized SQL, match the shared semantic corpus against PostgreSQL
+fixtures, pass the security corpus, and leave native SQL selectable. Advanced
+family graduation is **not** required to close 0.15.
 
-## 0.15+: graduating advanced families
+See [Roadmap summary](ROADMAP_SUMMARY.md) §0.15.
+
+## 0.15 continuation: graduating advanced families
 
 Compiler claims for windows, arrays, maps, structs, and advanced functions ship
-one semantic family at a time. Each graduation requires two compilers, shared
-fixtures, capability identifiers, and explain rendering. Authoring for these
-families already exists in 0.11; this work is execution and conformance only.
+**after** the SQL vertical slice, one semantic family at a time. Each
+graduation requires two compilers, shared fixtures, capability identifiers,
+explain rendering, and a migration note. Authoring for these families already
+exists in 0.11; this work is execution and conformance only.
+
+This continuation is **not** part of the 0.15 exit gate and is not a separate
+0.16 minor. Suggested order (adjust if DTCS readiness blocks): window →
+string-advanced → conversion → complex-types/values → statistics → reshape →
+relational-extended → temporal-IANA → nondeterministic.
 
 Starting standards remain the experimental
 `dtcs:profile/portable-window/1` /

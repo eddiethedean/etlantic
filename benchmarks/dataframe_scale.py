@@ -7,13 +7,13 @@ from dataclasses import dataclass
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import PlanningContext
@@ -48,9 +48,9 @@ def scale_pandas(rows):
 
 
 class BenchPipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     scaled = Scale.step(rows=raw)
-    out: Sink[Row] = Sink(input=scaled.result, binding="out")
+    out: Load[Row] = Load(input=scaled.result, asset="out")
 
 
 @dataclass

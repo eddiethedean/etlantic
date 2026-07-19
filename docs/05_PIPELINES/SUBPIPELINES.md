@@ -33,7 +33,7 @@ Subpipelines support:
 
 ```python
 class CustomerCurationPipeline(Pipeline):
-    raw = Source[RawCustomer](
+    raw = Extract[RawCustomer](
         binding="raw.customers",
     )
 
@@ -41,7 +41,7 @@ class CustomerCurationPipeline(Pipeline):
         customers=raw,
     )
 
-    curated = Sink[Customer](
+    curated = Load[Customer](
         input=normalized.result,
         binding="curated.customers",
     )

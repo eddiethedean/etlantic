@@ -11,9 +11,10 @@ adapter (`etlantic-sparkforge`), `@Transformation.portable` /
 `etlantic.transform` authoring to `dtcs.transform-plan/2`, and Polars +
 PySpark portable compilers for kernel + `portable-relational/1`. Structured
 Streaming APIs are experimental. Pandas eager portable compilation ships in
-0.14; safe SQL portable lowering remains planned for 0.15+. Keep
-`@implementation(...)` for SQL and for profiles outside the advertised claim
-set.
+0.14; safe SQL portable lowering for that claim set is the **0.15** exit gate.
+Advanced profiles graduate later under the 0.15 continuation backlog. Keep
+`@implementation(...)` for SQL today and for profiles outside the advertised
+claim set.
 
 Prefer pages marked **Available in 0.14** and the Green path on the docs home.
 Design Proposals and **Future design** chapters describe intended 1.0 surfaces
@@ -100,7 +101,8 @@ Polars, PySpark, and Pandas.
 
 **Still accepted design until later milestones:** managed Spark providers
 (Databricks/EMR/Connect), Dagster/Prefect compilers, remaining Plugin SDK
-surfaces, and SQL lowering / profile graduation (0.15+).
+surfaces, SQL lowering (**0.15** exit gate), and advanced profile graduation
+(0.15 continuation).
 
 ## Normative Authority
 
@@ -110,7 +112,7 @@ The source of truth depends on the subject:
 |---|---|
 | Data-contract meaning | Upstream ODCS specification |
 | Transformation-contract meaning | [DTCS 3.0 specification](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md) |
-| Portable Transformation Plan meaning and canonical models | DTCS 3.0 specification and `dtcs>=0.13` |
+| Portable Transformation Plan meaning and canonical models | DTCS 3.0 specification / `dtcs` 0.14.0 content floor; install pin `dtcs>=0.13,<1` |
 | PySpark-inspired portable authoring UX | ETLantic `etlantic.transform/1` profile |
 | Portable compiler lifecycle | ETLantic Plugin SDK (`etlantic.transform-compiler/1`) |
 | Pipeline-contract meaning | `DPCS_SPEC.md` |

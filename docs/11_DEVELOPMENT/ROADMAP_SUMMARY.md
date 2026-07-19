@@ -18,18 +18,34 @@ ETLantic 0.14.0 completed the first three-engine portable relational baseline:
 See [What's New in 0.14](../01_GETTING_STARTED/WHATS_NEW_0_14.md) and
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for the shipped boundary.
 
-## Next: 0.15
+## Next: 0.15 (Safe SQL Lowering)
 
-The planned 0.15 milestone focuses on safe portable SQL lowering:
+Alongside Safe SQL Lowering, 0.15 also prefers the **Extract / Load / asset**
+authoring vocabulary (`Source` / `Sink` / `binding=` warn; remove in 0.16).
+See [Migration 0.14 → 0.15](MIGRATION_0_14_TO_0_15.md).
 
-- lower portable plans into ETLantic's typed SQL IR;
-- preserve safe identifiers and bound parameters;
+The **mandatory** 0.15 milestone is safe portable SQL lowering for the
+already-shipped claim set (kernel + `portable-relational/1`):
+
+- lower portable plans into ETLantic's typed `etlantic.sql/1` IR;
+- preserve safe identifiers and bound parameters (no interpolation);
 - fail at planning for dialect gaps instead of using raw SQL or UDF
   approximations;
-- graduate richer portable profiles only after two independent compilers pass
-  shared conformance fixtures.
+- keep `require` fail-closed and allow `prefer` to select an **explicit
+  native** SQL implementation only — never silent portable emulation;
+- extend public conformance fixtures to the SQL realization;
+- keep PostgreSQL via `etlantic-sql` as the reference dialect.
 
-Native SQL implementations remain the supported path until that work ships.
+Native `@implementation("sql")` remains the supported SQL path until those
+portable SQL claims ship.
+
+### 0.15 continuation (not the 0.15 exit gate)
+
+Richer portable profiles (window, string-advanced, conversion, complex
+types/values, statistics, reshape, relational-extended, temporal-IANA,
+nondeterministic) graduate **one family at a time** only after two independent
+compilers pass shared fixtures. That work is sequenced after the SQL vertical
+slice; it is not a separate 0.16 milestone and is not required to close 0.15.
 
 ## Toward 1.0
 

@@ -8,14 +8,14 @@ pytest.importorskip("pandas")
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import plan_pipeline
@@ -54,10 +54,10 @@ def _agg(orders, customers):
 
 
 class RelationalPipeline(Pipeline):
-    orders: Source[Order] = Source(binding="orders")
-    customers: Source[Customer] = Source(binding="customers")
+    orders: Extract[Order] = Extract(asset="orders")
+    customers: Extract[Customer] = Extract(asset="customers")
     aggregated = AggregateOrders.step(orders=orders, customers=customers)
-    curated: Sink[AggOut] = Sink(input=aggregated.result, binding="curated")
+    curated: Load[AggOut] = Load(input=aggregated.result, asset="curated")
 
 
 def _seed(runtime: PipelineRuntime) -> None:

@@ -8,13 +8,13 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import PipelineValidationError
@@ -57,9 +57,9 @@ def normalize_sql(customers: RelationRef):
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="raw_customers")
+    raw: Extract[RawCustomer] = Extract(asset="raw_customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated_customers")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated_customers")
 
 
 class Row(Data):
@@ -77,9 +77,9 @@ def identity_sql(rows: RelationRef):
 
 
 class MergeProbePipeline(Pipeline):
-    src: Source[Row] = Source(binding="t")
+    src: Extract[Row] = Extract(asset="t")
     step = Identity.step(rows=src)
-    sink: Sink[Row] = Sink(input=step.result, binding="out")
+    sink: Load[Row] = Load(input=step.result, asset="out")
 
 
 def test_sql_conformance(sql_plugin) -> None:

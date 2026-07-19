@@ -224,12 +224,12 @@ from etlantic import Pipeline, Sink, Source
 
 
 class CustomerOrderWarehousePipeline(Pipeline):
-    customers: Source[Customer] = Source(
-        binding="customers_spark",
+    customers: Extract[Customer] = Extract(
+        asset="customers_spark",
     )
 
-    orders: Source[Order] = Source(
-        binding="orders_spark",
+    orders: Extract[Order] = Extract(
+        asset="orders_spark",
     )
 
     summary = BuildCustomerOrderSummary.step(
@@ -238,9 +238,9 @@ class CustomerOrderWarehousePipeline(Pipeline):
         included_status="paid",
     )
 
-    warehouse: Sink[CustomerOrderSummary] = Sink(
+    warehouse: Load[CustomerOrderSummary] = Load(
         input=summary.result,
-        binding="customer_summary_sql",
+        asset="customer_summary_sql",
     )
 ```
 
@@ -256,7 +256,7 @@ local = Profile(
     name="local",
     orchestrator="local-python",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_spark": {
             "plugin": "parquet",
             "path": "data/customers",
@@ -748,7 +748,7 @@ production = Profile(
     name="production",
     orchestrator="airflow",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_spark": {
             "plugin": "delta",
             "table": "raw.customers",

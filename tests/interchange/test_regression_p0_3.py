@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from etlantic import Data, Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 from etlantic.identity import identity_slug
 from etlantic.interchange.bundle import BundleError, generate_contracts
 from etlantic.interchange.diff import diff_pipelines, diff_transformations
@@ -45,10 +45,10 @@ class CollisionTransform(Transformation):
 
 
 class CollisionPipeline(Pipeline):
-    a: Source[Left] = Source(binding="a")
-    b: Source[Right] = Source(binding="b")
+    a: Extract[Left] = Extract(asset="a")
+    b: Extract[Right] = Extract(asset="b")
     step = CollisionTransform.step(left=a, right=b)
-    out: Sink[Left] = Sink(input=step.result, binding="out")
+    out: Load[Left] = Load(input=step.result, asset="out")
 
 
 def test_annotation_for_dtcs_types() -> None:

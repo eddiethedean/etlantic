@@ -62,9 +62,10 @@ semantics. It does not commit the transformation to a dataframe engine.
 !!! success "Available in ETLantic 0.11 (authoring)"
     `etlantic.transform` and `@Transformation.portable` author to
     `dtcs.transform-plan/2`. Polars, PySpark, and Pandas relational
-    compilation ships in 0.13–0.14; safe SQL portable lowering remains 0.15+.
-    Native `@Transformation.implementation(...)` remains available for engines
-    and profiles outside the advertised compiler claim set.
+    compilation ships in 0.13–0.14; safe SQL portable lowering for that claim
+    set is the **0.15** exit gate. Native
+    `@Transformation.implementation(...)` remains available for engines and
+    profiles outside the advertised compiler claim set.
 
 A portable definition describes common relational behavior once using
 PySpark-inspired symbolic DataFrame and Column expressions:
@@ -116,11 +117,11 @@ A pipeline is a portable logical graph:
 
 ```python
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 ```
 
@@ -131,7 +132,7 @@ code-first authoring surface.
 
 ### Source
 
-A `Source[T]` introduces a logical dataset into the graph. Its binding says
+A `Extract[T]` introduces a logical dataset into the graph. Its binding says
 where an environment obtains the data.
 
 ### Step
@@ -141,7 +142,7 @@ may use the same transformation with different inputs or parameters.
 
 ### Sink
 
-A `Sink[T]` publishes data governed by `T`. A storage plugin performs the
+A `Load[T]` publishes data governed by `T`. A storage plugin performs the
 physical write.
 
 ## Subpipeline

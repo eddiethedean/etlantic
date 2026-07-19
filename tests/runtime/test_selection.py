@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from etlantic import Data, Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 from etlantic.runtime.request import RunSelection
 
 
@@ -16,10 +16,10 @@ class T(Transformation):
 
 
 class P(Pipeline):
-    a: Source[Row] = Source(binding="a")
+    a: Extract[Row] = Extract(asset="a")
     b = T.step(rows=a)
     c = T.step(rows=b.result)
-    d: Sink[Row] = Sink(input=c.result, binding="d")
+    d: Load[Row] = Load(input=c.result, asset="d")
 
 
 def test_selection_forms() -> None:

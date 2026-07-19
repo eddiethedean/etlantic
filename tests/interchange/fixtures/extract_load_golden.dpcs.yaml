@@ -1,0 +1,41 @@
+dpcsVersion: 1.0.0
+id: extract-load-golden
+name: ExtractLoadGoldenPipeline
+version: 0.15.0
+interface:
+  inputs:
+  - id: raw
+    name: raw
+    contractRef: odcs:customerrow
+    purpose: Pipeline source 'raw'
+    etlantic:binding: raw_customers
+  outputs:
+  - id: out
+    name: out
+    contractRef: odcs:customerrow
+    purpose: Pipeline sink 'out'
+    etlantic:binding: curated_customers
+contractReferences:
+- id: dtcs:tests.fixtures.extract_load_golden_pipeline:NormalizeCustomerRow
+  type: dtcs
+  location: transformations/tests.fixtures.extract_load_golden_pipeline__normalizecustomerrow.dtcs.yaml
+- id: odcs:customerrow
+  type: odcs
+  location: data/customerrow.odcs.yaml
+steps:
+- id: normalized
+  type: dtcs:transform
+  contractRef: dtcs:tests.fixtures.extract_load_golden_pipeline:NormalizeCustomerRow
+  inputs:
+  - id: rows
+  outputs:
+  - id: result
+graph:
+  edges: []
+dataFlow:
+- from: interface.inputs.raw
+  to: steps.normalized.inputs.rows
+  dataset: raw.result
+- from: steps.normalized.outputs.result
+  to: interface.outputs.out
+  dataset: normalized.result

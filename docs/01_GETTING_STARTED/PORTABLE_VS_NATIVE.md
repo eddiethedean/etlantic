@@ -8,7 +8,7 @@
 |---|---|
 | One closed relational definition for Polars / PySpark / Pandas within kernel + `portable-relational/1` | `@Transformation.portable` |
 | Local Python / memory demos | `@Transformation.implementation("local")` |
-| SQL execution today | Native `@implementation("sql")` (portable SQL lowering is planned for **0.15+**) |
+| SQL execution today | Native `@implementation("sql")` (safe portable SQL lowering is the **0.15** exit gate) |
 | Ops outside advertised claims (UDFs, unclaimed profiles, Pandas index semantics) | Native `@implementation(...)` |
 | Force native only | `Profile(portable_transform_policy="native")` |
 | Fail if portable cannot compile | `Profile(portable_transform_policy="require")` |
@@ -43,9 +43,12 @@ def normalize_sql(rows):
     ...
 ```
 
-Keep native SQL implementations **today**; safe portable SQL lowering is
-planned for 0.15+. Keep native callables for profiles outside the advertised
-claim set (see the
+Keep native SQL implementations **today**; safe portable SQL lowering for
+kernel + `portable-relational/1` is the **0.15** exit gate. Until that ships,
+`prefer` may select an explicit native `@implementation("sql")` only — never
+silent portable emulation. Keep native callables for profiles outside the
+advertised claim set; advanced families graduate later under the 0.15
+continuation backlog (see the
 [portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md)).
 
 ## Related

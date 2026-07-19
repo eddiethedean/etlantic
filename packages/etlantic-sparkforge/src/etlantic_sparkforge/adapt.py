@@ -8,11 +8,11 @@ from typing import Any
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.capabilities import PluginCapabilities
@@ -148,7 +148,7 @@ def adapt_profile(
         spark_engine=spark_engine,
         sql_engine=sql_engine,
         validation_policy=f"sparkforge-{spec.schema}",
-        bindings=resolved_bindings,
+        assets=resolved_bindings,
         resources={"schema": spec.schema},
         required_spark_capabilities=required_spark,
         metadata={
@@ -255,9 +255,9 @@ def adapt_pipeline(
     for step in ordered:
         if step.kind is StepKind.BRONZE_RULES:
             binding = step.table_name or step.name
-            source = Source[AdaptedRow](binding=binding)
+            source = Extract[AdaptedRow](asset=binding, _compat_warn=False)
             ns[step.name] = source
-            annotations[step.name] = Source[AdaptedRow]
+            annotations[step.name] = Extract[AdaptedRow]
             members[step.name] = source
             step_map[step.name] = f"source:{step.name}"
             layer_by_node[step.name] = step.layer.value
@@ -298,7 +298,7 @@ def adapt_pipeline(
             transform_cls = _make_passthrough_transformation(
                 step.name, transform_ref=step.transform_ref
             )
-            if isinstance(upstream, Source):
+            if isinstance(upstream, Extract):
                 step_inst = transform_cls.step(rows=upstream)
             else:
                 step_inst = transform_cls.step(rows=upstream.result)
@@ -359,9 +359,11 @@ def adapt_pipeline(
                     },
                 )
             )
-            sink = Sink[AdaptedRow](input=step_inst.result, binding=binding)
+            sink = Load[AdaptedRow](
+                input=step_inst.result, asset=binding, _compat_warn=False
+            )
             ns[sink_name] = sink
-            annotations[sink_name] = Sink[AdaptedRow]
+            annotations[sink_name] = Load[AdaptedRow]
             members[sink_name] = sink
             step_map[sink_name] = f"sink:{sink_name}"
             layer_by_node[sink_name] = step.layer.value
@@ -390,8 +392,7 @@ def adapt_pipeline(
     register_validation_policy(policy)
     profile = adapt_profile(spec)
     if delta_ops and not strict_delta:
-        profile = replace(
-            profile,
+        profile = profile.with_updates(
             required_spark_capabilities=tuple(
                 dict.fromkeys((*profile.required_spark_capabilities, "spark_delta"))
             ),

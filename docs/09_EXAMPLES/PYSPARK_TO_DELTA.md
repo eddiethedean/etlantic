@@ -184,12 +184,12 @@ from etlantic import Pipeline, Sink, Source
 
 
 class CustomerOrderDeltaPipeline(Pipeline):
-    customers: Source[Customer] = Source(
-        binding="customers_delta",
+    customers: Extract[Customer] = Extract(
+        asset="customers_delta",
     )
 
-    orders: Source[Order] = Source(
-        binding="orders_delta",
+    orders: Extract[Order] = Extract(
+        asset="orders_delta",
     )
 
     summary = BuildCustomerOrderSummary.step(
@@ -198,9 +198,9 @@ class CustomerOrderDeltaPipeline(Pipeline):
         included_status="paid",
     )
 
-    curated: Sink[CustomerOrderSummary] = Sink(
+    curated: Load[CustomerOrderSummary] = Load(
         input=summary.result,
-        binding="customer_summary_delta",
+        asset="customer_summary_delta",
     )
 ```
 
@@ -216,7 +216,7 @@ local = Profile(
     name="local",
     orchestrator="local-python",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_delta": {
             "plugin": "delta",
             "path": "lakehouse/raw/customers/",
@@ -732,7 +732,7 @@ databricks = Profile(
     name="databricks",
     orchestrator="airflow",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_delta": {
             "plugin": "delta",
             "resource": "unity_catalog",

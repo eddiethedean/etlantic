@@ -1,6 +1,6 @@
 """Graph validation and Mermaid tests."""
 
-from etlantic import Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Extract, Input, Load, Output, Pipeline, Transformation
 from tests.conftest import Customer, RawCustomer
 
 
@@ -16,10 +16,10 @@ class Echo(Transformation):
 
 def test_missing_input_diagnostic() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         # intentionally omit customers binding via a broken step — use empty by hacking
         normalized = NormalizeCustomers.step()  # type: ignore[call-arg]
-        out: Sink[Customer] = Sink(input=normalized.result, binding="out")
+        out: Load[Customer] = Load(input=normalized.result, asset="out")
 
     report = Pipe.validate()
     assert not report.valid
@@ -28,13 +28,13 @@ def test_missing_input_diagnostic() -> None:
 
 def test_cycle_diagnostic() -> None:
     class Pipe(Pipeline):
-        raw: Source[Customer] = Source(binding="raw")
+        raw: Extract[Customer] = Extract(asset="raw")
         a = Echo.step(customers=raw)
         b = Echo.step(customers=a.result)
         # create cycle by wiring a sink-like self reference is hard with authoring API;
         # build a cycle by making b feed a — not expressible cleanly in class body
         # after a is defined. Instead mutate graph validation via crafted class:
-        out: Sink[Customer] = Sink(input=b.result, binding="out")
+        out: Load[Customer] = Load(input=b.result, asset="out")
 
     # Force a cyclic edge set by validating a synthetic scenario through
     # the public graph and then checking acyclic happy path is valid.
@@ -61,12 +61,12 @@ def test_cycle_diagnostic() -> None:
 
 def test_mermaid_contains_nodes_and_edges() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = NormalizeCustomers.step(customers=raw)
-        out: Sink[Customer] = Sink(input=normalized.result, binding="out")
+        out: Load[Customer] = Load(input=normalized.result, asset="out")
 
     text = Pipe.to_mermaid()
     assert text.startswith("flowchart LR")
-    assert "Source: raw" in text
+    assert "Extract: raw" in text
     assert "NormalizeCustomers" in text
-    assert "Sink: out" in text
+    assert "Load: out" in text

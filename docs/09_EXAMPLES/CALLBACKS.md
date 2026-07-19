@@ -415,8 +415,8 @@ from .transformations import NormalizeCustomers
 
 
 class CustomerCallbackPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
-        binding="customers_input",
+    raw: Extract[RawCustomer] = Extract(
+        asset="customers_input",
         on_read_failure=handle_source_failure,
         on_invalid_data=handle_invalid_customers,
     )
@@ -427,15 +427,15 @@ class CustomerCallbackPipeline(Pipeline):
         on_retry=log_retry,
     )
 
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customers_output",
+        asset="customers_output",
         on_write_failure=notify_write_failure,
     )
 
-    quarantine: Sink[RejectedCustomer] = Sink(
+    quarantine: Load[RejectedCustomer] = Load(
         input=raw.invalid,
-        binding="customer_quarantine",
+        asset="customer_quarantine",
     )
 
     callbacks = {
@@ -471,7 +471,7 @@ local = Profile(
         "retry_delay_seconds": 2,
         "callback_failure_policy": "fail-closed",
     },
-    bindings={
+    assets={
         "customers_input": {
             "plugin": "csv",
             "path": "data/customers.csv",

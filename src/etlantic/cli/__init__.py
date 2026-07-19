@@ -223,6 +223,7 @@ def inspect_cmd(
                 "name": n.name,
                 "kind": n.kind.value,
                 "binding": n.binding,
+                "asset": n.binding,
                 "transformation": n.transformation_name,
             }
             for n in graph.nodes

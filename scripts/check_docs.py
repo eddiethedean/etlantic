@@ -238,6 +238,12 @@ def main() -> None:
         raise SystemExit("Missing docs/11_DEVELOPMENT/MIGRATION_0_12_TO_0_13.md")
     if not (ROOT / "docs/11_DEVELOPMENT/MIGRATION_0_13_TO_0_14.md").exists():
         raise SystemExit("Missing docs/11_DEVELOPMENT/MIGRATION_0_13_TO_0_14.md")
+    if not (ROOT / "docs/11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md").exists():
+        raise SystemExit("Missing docs/11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md")
+    if not (ROOT / "docs/05_PIPELINES/EXTRACTS.md").exists():
+        raise SystemExit("Missing docs/05_PIPELINES/EXTRACTS.md")
+    if not (ROOT / "docs/05_PIPELINES/LOADS.md").exists():
+        raise SystemExit("Missing docs/05_PIPELINES/LOADS.md")
     if not (ROOT / "docs/01_GETTING_STARTED/WHATS_NEW_0_14.md").exists():
         raise SystemExit("Missing docs/01_GETTING_STARTED/WHATS_NEW_0_14.md")
     if not (ROOT / "examples/portable_polars_kernel.py").exists():
@@ -253,9 +259,14 @@ def main() -> None:
         "MIGRATION_0_11_TO_0_12.md",
         "MIGRATION_0_12_TO_0_13.md",
         "MIGRATION_0_13_TO_0_14.md",
+        "MIGRATION_0_14_TO_0_15.md",
     ):
         if migration not in mkdocs_text:
             raise SystemExit(f"mkdocs.yml missing {migration} nav entry")
+    if "05_PIPELINES/EXTRACTS.md" not in mkdocs_text:
+        raise SystemExit("mkdocs.yml missing EXTRACTS.md nav entry")
+    if "05_PIPELINES/LOADS.md" not in mkdocs_text:
+        raise SystemExit("mkdocs.yml missing LOADS.md nav entry")
     if "Design Proposals:" in mkdocs_text and mkdocs_text.find(
         "Design Proposals:"
     ) < mkdocs_text.find("  - Reference:"):

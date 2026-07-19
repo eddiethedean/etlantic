@@ -23,7 +23,7 @@ def test_profile_templates() -> None:
 def test_profile_round_trip(tmp_path: Path) -> None:
     profile = development_profile(
         name="demo",
-        bindings={"customers": "csv://customers"},
+        assets={"customers": "csv://customers"},
         secrets={
             "token": SecretRef(provider="env-secrets", name="api", key="token"),
         },

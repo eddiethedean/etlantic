@@ -310,12 +310,12 @@ from .transformations import BuildCustomerOrderSummary
 
 
 class CustomerOrderSparkPipeline(Pipeline):
-    customers: Source[Customer] = Source(
-        binding="customers_sql",
+    customers: Extract[Customer] = Extract(
+        asset="customers_sql",
     )
 
-    orders: Source[Order] = Source(
-        binding="orders_sql",
+    orders: Extract[Order] = Extract(
+        asset="orders_sql",
     )
 
     summary = BuildCustomerOrderSummary.step(
@@ -324,9 +324,9 @@ class CustomerOrderSparkPipeline(Pipeline):
         included_status="paid",
     )
 
-    output: Sink[CustomerOrderSummary] = Sink(
+    output: Load[CustomerOrderSummary] = Load(
         input=summary.result,
-        binding="summary_output",
+        asset="summary_output",
     )
 ```
 
@@ -344,7 +344,7 @@ local_spark = Profile(
     name="local-spark",
     orchestrator="local-python",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_sql": {
             "plugin": "jdbc",
             "resource": "source_database",
@@ -825,7 +825,7 @@ databricks = Profile(
     name="databricks",
     orchestrator="airflow",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_sql": {
             "plugin": "jdbc",
             "resource": "crm_database",
@@ -862,7 +862,7 @@ emr = Profile(
     name="emr",
     orchestrator="airflow",
     transformation_engine="pyspark",
-    bindings={
+    assets={
         "customers_sql": {
             "plugin": "jdbc",
             "resource": "crm_database",

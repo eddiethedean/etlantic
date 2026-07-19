@@ -9,11 +9,11 @@ from contractmodel import DataContract
 from tests.conftest import Customer, RawCustomer
 
 from etlantic import (
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
     diff_data_contracts,
     graphs_equivalent,
@@ -33,9 +33,9 @@ class NormalizeCustomers(Transformation):
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="customer_sink")
+    curated: Load[Customer] = Load(input=normalized.result, asset="customer_sink")
 
 
 def test_code_first_generate_is_byte_stable(tmp_path: Path) -> None:

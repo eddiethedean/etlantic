@@ -295,13 +295,13 @@ from .transformations import BuildCustomerProfiles
 
 
 class CustomerProfilePipeline(Pipeline):
-    customers: Source[CustomerApiRecord] = Source(
-        binding="customer_api",
+    customers: Extract[CustomerApiRecord] = Extract(
+        asset="customer_api",
         on_retry=log_retry,
     )
 
-    accounts: Source[CustomerAccount] = Source(
-        binding="customer_accounts",
+    accounts: Extract[CustomerAccount] = Extract(
+        asset="customer_accounts",
         on_retry=log_retry,
     )
 
@@ -310,9 +310,9 @@ class CustomerProfilePipeline(Pipeline):
         accounts=accounts,
     )
 
-    output: Sink[CustomerProfile] = Sink(
+    output: Load[CustomerProfile] = Load(
         input=profiles.result,
-        binding="customer_profiles",
+        asset="customer_profiles",
         on_retry=log_retry,
     )
 
@@ -343,7 +343,7 @@ production = Profile(
         "maximum_attempts": 3,
         "retry_delay_seconds": 2,
     },
-    bindings={
+    assets={
         "customer_api": {
             "plugin": "http-json",
             "resource": "customer_service",

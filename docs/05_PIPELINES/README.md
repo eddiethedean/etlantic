@@ -31,16 +31,16 @@ from etlantic import Pipeline, Sink, Source
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
 
     normalized = NormalizeCustomers.step(
         customers=raw,
         minimum_age=18,
     )
 
-    warehouse: Sink[Customer] = Sink(
+    warehouse: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 ```
 
@@ -131,9 +131,9 @@ Generated artifacts are deterministic and suitable for version control.
 Read this section in the following order:
 
 1. [Pipeline](PIPELINE.md)
-2. [Sources](SOURCES.md)
+2. [Sources](EXTRACTS.md)
 3. [Steps](STEPS.md)
-4. [Sinks](SINKS.md)
+4. [Sinks](LOADS.md)
 5. [Subpipelines](SUBPIPELINES.md)
 6. [DPCS](DPCS.md)
 7. [Pipeline Validation](PIPELINE_VALIDATION.md)

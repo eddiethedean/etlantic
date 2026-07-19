@@ -8,12 +8,12 @@ from pathlib import Path
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -35,9 +35,9 @@ def normalize(rows: list[Row]) -> list[Row]:
 
 
 class FilePipeline(Pipeline):
-    source: Source[Row] = Source(binding="file_source")
+    source: Extract[Row] = Extract(asset="file_source")
     normalized = Normalize.step(rows=source)
-    sink: Sink[Row] = Sink(input=normalized.result, binding="file_sink")
+    sink: Load[Row] = Load(input=normalized.result, asset="file_sink")
 
 
 def run_files(source: Path, sink: Path, provider: str) -> object:

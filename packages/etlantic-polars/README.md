@@ -42,6 +42,6 @@ Entry point: `etlantic.transform_compilers` →
 Runnable example: `examples/portable_polars_kernel.py` in the ETLantic repo.
 
 Windows, complex-values, conversion, and Rich Portable Analytics compiler
-claims remain later (0.15+). See the
+claims remain later (0.15 continuation after the SQL exit gate). See the
 [compiler protocol](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
 and [compatibility matrix](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/).

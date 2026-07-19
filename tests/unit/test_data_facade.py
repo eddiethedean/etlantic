@@ -6,7 +6,7 @@ import warnings
 
 from contractmodel import ContractModel
 
-from etlantic import Data, Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 
 
 class Customer(Data):
@@ -20,9 +20,9 @@ class Normalize(Transformation):
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[Customer] = Source(binding="customers")
+    raw: Extract[Customer] = Extract(asset="customers")
     normalized = Normalize.step(customers=raw)
-    out: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    out: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def test_data_is_contract_model() -> None:

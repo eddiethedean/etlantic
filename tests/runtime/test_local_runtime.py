@@ -9,7 +9,9 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
@@ -18,8 +20,6 @@ from etlantic import (
     RunStatus,
     SecretRef,
     SecretValue,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -63,17 +63,17 @@ def audit_local(rows: list[Row]) -> list[Row]:
 
 
 class SimplePipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     normalized = Normalize.step(rows=raw)
-    out: Sink[Row] = Sink(input=normalized.result, binding="out")
+    out: Load[Row] = Load(input=normalized.result, asset="out")
 
 
 class ParallelPipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     normalized = Normalize.step(rows=raw)
     audited = Audit.step(rows=raw)
     doubled = Double.step(rows=normalized.result)
-    out: Sink[Row] = Sink(input=doubled.result, binding="out")
+    out: Load[Row] = Load(input=doubled.result, asset="out")
 
 
 def test_local_memory_pipeline_runs() -> None:
@@ -104,9 +104,9 @@ def test_json_csv_round_trip(tmp_path: Path) -> None:
     )
 
     class FilePipeline(Pipeline):
-        raw: Source[Row] = Source(binding="file_in")
+        raw: Extract[Row] = Extract(asset="file_in")
         normalized = Normalize.step(rows=raw)
-        out: Sink[Row] = Sink(input=normalized.result, binding="file_out")
+        out: Load[Row] = Load(input=normalized.result, asset="file_out")
 
     context = PlanningContext.create(profile="development")
     context.registry.register_binding(

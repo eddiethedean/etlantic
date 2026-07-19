@@ -181,8 +181,8 @@ from .transformations import NormalizeCustomers
 
 
 class CustomerCsvPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
-        binding="customers_input",
+    raw: Extract[RawCustomer] = Extract(
+        asset="customers_input",
     )
 
     normalized = NormalizeCustomers.step(
@@ -190,9 +190,9 @@ class CustomerCsvPipeline(Pipeline):
         lowercase_email=True,
     )
 
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customers_output",
+        asset="customers_output",
     )
 ```
 
@@ -222,7 +222,7 @@ local = Profile(
     name="local",
     orchestrator="local-python",
     dataframe_engine="polars",
-    bindings={
+    assets={
         "customers_input": {
             "plugin": "csv",
             "path": "data/customers.csv",

@@ -9,8 +9,10 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Inject,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
@@ -19,8 +21,6 @@ from etlantic import (
     RunStatus,
     SchemaDriftPolicy,
     SecretRef,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.lifecycle.callbacks import FailureAction
@@ -55,15 +55,15 @@ class NoImpl(Transformation):
 
 
 class SimplePipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     normalized = Normalize.step(rows=raw)
-    out: Sink[Row] = Sink(input=normalized.result, binding="out")
+    out: Load[Row] = Load(input=normalized.result, asset="out")
 
 
 class MissingImplPipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     step = NoImpl.step(rows=raw)
-    out: Sink[Row] = Sink(input=step.result, binding="out")
+    out: Load[Row] = Load(input=step.result, asset="out")
 
 
 def test_missing_implementation_fails_closed() -> None:
@@ -188,9 +188,9 @@ def test_resource_injection_and_cleanup() -> None:
         return rows
 
     class InjectPipeline(Pipeline):
-        raw: Source[Row] = Source(binding="rows")
+        raw: Extract[Row] = Extract(asset="rows")
         counted = Counter.step(rows=raw)
-        out: Sink[Row] = Sink(input=counted.result, binding="out")
+        out: Load[Row] = Load(input=counted.result, asset="out")
 
     async def provide_db(_ctx):
         from contextlib import asynccontextmanager
@@ -220,9 +220,9 @@ def test_continue_failure_action_soft_skips_step() -> None:
         raise RuntimeError("boom")
 
     class BoomPipeline(Pipeline):
-        raw: Source[Row] = Source(binding="rows")
+        raw: Extract[Row] = Extract(asset="rows")
         step = Boom.step(rows=raw)
-        out: Sink[Row] = Sink(input=step.result, binding="out")
+        out: Load[Row] = Load(input=step.result, asset="out")
 
     runtime = PipelineRuntime()
     runtime.callbacks.on_step_failed(lambda _ctx: FailureAction.CONTINUE)
@@ -329,11 +329,11 @@ def test_continue_allows_independent_sibling() -> None:
         return list(rows)
 
     class BranchPipeline(Pipeline):
-        raw: Source[Row] = Source(binding="rows")
+        raw: Extract[Row] = Extract(asset="rows")
         boom = Boom.step(rows=raw)
         ok = Ok.step(rows=raw)
-        out_boom: Sink[Row] = Sink(input=boom.result, binding="out_boom")
-        out_ok: Sink[Row] = Sink(input=ok.result, binding="out_ok")
+        out_boom: Load[Row] = Load(input=boom.result, asset="out_boom")
+        out_ok: Load[Row] = Load(input=ok.result, asset="out_ok")
 
     runtime = PipelineRuntime()
     runtime.callbacks.on_step_failed(lambda _ctx: FailureAction.CONTINUE)
@@ -364,11 +364,11 @@ def test_skip_abandons_dependents_not_siblings() -> None:
         return list(rows)
 
     class BranchPipeline(Pipeline):
-        raw: Source[Row] = Source(binding="rows")
+        raw: Extract[Row] = Extract(asset="rows")
         boom = Boom.step(rows=raw)
         ok = Ok.step(rows=raw)
-        out_boom: Sink[Row] = Sink(input=boom.result, binding="out_boom")
-        out_ok: Sink[Row] = Sink(input=ok.result, binding="out_ok")
+        out_boom: Load[Row] = Load(input=boom.result, asset="out_boom")
+        out_ok: Load[Row] = Load(input=ok.result, asset="out_ok")
 
     runtime = PipelineRuntime()
     runtime.callbacks.on_step_failed(lambda _ctx: FailureAction.SKIP)

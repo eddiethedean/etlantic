@@ -10,7 +10,7 @@ core package and in-memory storage.
 
 | Term | Meaning in this guide |
 |---|---|
-| **Binding** | Logical name for a source or sink (`binding="customer_source"`). The runtime resolves it to storage (here, in-memory). |
+| **Asset** | Logical name for an extract or load (`asset="customer_source"`). The runtime resolves it to storage (here, in-memory). Plan/DPCS wire fields still say `binding`. |
 | **Profile** | Named environment for planning and running. These docs use `development` for the built-in local runtime. Pass the same name to `validate`, `plan`, and `run`. CLI defaults differ (`plan` → `local`, `run` → `development`)—pass `--profile development` to keep them aligned. |
 | **Implementation** | Engine-specific body registered with `@Transformation.implementation("local")` (or `"polars"` / `"pandas"` after installing those plugins). |
 
@@ -37,8 +37,8 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
+    Load,
+    Extract,
     Transformation,
 )
 
@@ -71,11 +71,11 @@ def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 
 
@@ -139,11 +139,11 @@ class WrongCustomer(Data):
 
 
 class BrokenPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[WrongCustomer] = Sink(
+    curated: Load[WrongCustomer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 
 

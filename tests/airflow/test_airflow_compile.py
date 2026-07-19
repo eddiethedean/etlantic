@@ -8,13 +8,13 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
     compile_plan,
     plan_pipeline,
@@ -51,9 +51,9 @@ def normalize_local(customers):
 
 
 class CustomerAirflowPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="customer_sink")
+    curated: Load[Customer] = Load(input=normalized.result, asset="customer_sink")
 
 
 @pytest.fixture

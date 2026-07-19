@@ -5,8 +5,9 @@
   `etlantic.transform/1` authoring are available since 0.11. **0.13** shipped
   Polars and PySpark compilers for `portable-relational/1`; **0.14** shipped
   the eager Pandas compiler (joins, aggregates, unions, sort/dedupe/limit).
-  Richer profiles (windows, complex values) and safe SQL portable lowering
-  remain native-or-later until 0.15+.
+  Safe SQL portable lowering for that claim set is the **0.15** exit gate;
+  richer profiles (windows, complex values, …) remain native-or-later until
+  they graduate under the 0.15 continuation backlog.
 - The planned PySpark-inspired syntax will intentionally support a closed
   subset; actions, arbitrary Python tracing, raw SQL expressions, and silent
   UDF fallback are excluded.

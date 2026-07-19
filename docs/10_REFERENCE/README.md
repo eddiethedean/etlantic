@@ -23,8 +23,8 @@ interfaces.
 
 - [Configuration](CONFIGURATION.md) (`etlantic.toml` fantasy)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (proposed names beyond shipped)
-- Safe SQL portable lowering and richer profile graduation planned for 0.15+ —
-  see
+- Safe SQL portable lowering planned for the **0.15** exit gate; richer
+  profile graduation follows as **0.15 continuation** — see
   [Portable Transform Compiler](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
   for the shipped protocol and claim matrix. Authoring docs live under
   [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).

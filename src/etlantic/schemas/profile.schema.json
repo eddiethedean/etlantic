@@ -21,6 +21,7 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "assets": { "type": "object", "additionalProperties": { "type": "string" } },
     "bindings": { "type": "object", "additionalProperties": { "type": "string" } },
     "implementation_overrides": {
       "type": "object",

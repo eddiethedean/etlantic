@@ -58,7 +58,8 @@ and `etlantic.transform`, emitting `dtcs.transform-plan/2`. **0.12** added
 planning integration and Polars **kernel** portable execution. **0.13** shipped
 Polars and PySpark `portable-relational/1` compilers; **0.14** shipped the
 Pandas eager compiler and public conformance SDK. Safe SQL portable lowering
-remains planned for 0.15+. Start with
+for that claim set is the **0.15** exit gate; advanced profiles follow as 0.15
+continuation work. Start with
 [Portable Transformations](04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md).
 
 ## Minimal working example
@@ -70,8 +71,8 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
+    Load,
+    Extract,
     Transformation,
 )
 
@@ -104,11 +105,11 @@ def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 
 

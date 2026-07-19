@@ -8,15 +8,15 @@ pytest.importorskip("pandas")
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
     PipelineRuntime,
     Profile,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import explain_plan, plan_pipeline
@@ -54,9 +54,9 @@ def _normalize(customers, minimum_age):
 
 
 class PortablePandasPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def _seed(runtime: PipelineRuntime) -> None:

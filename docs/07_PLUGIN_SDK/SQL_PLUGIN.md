@@ -5,8 +5,9 @@
 `etlantic.sql_plugins` entry point.
 
 !!! note "Future portable lowering"
-    Lowering DTCS Transformation Plans into the safe SQL IR is planned for 0.15 and
-    follows the [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
+    Lowering DTCS Transformation Plans (kernel + `portable-relational/1`) into
+    the safe SQL IR is the **0.15** exit gate. See the
+    [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
 
 A **SQL Plugin** implements the ETLantic SQL Plugin API for a specific SQL
 execution environment.
@@ -622,7 +623,7 @@ parse arbitrary query output.
 A SQL source plugin should support logical bindings such as:
 
 ```python
-Source[Customer](
+Extract[Customer](
     binding="customers_source",
 )
 ```
@@ -644,7 +645,7 @@ Queries used as source bindings must still declare the output contract.
 A SQL sink plugin should write only data compatible with its declared contract.
 
 ```python
-Sink[CustomerSummary](
+Load[CustomerSummary](
     input=summary.result,
     binding="customer_summary_sink",
 )

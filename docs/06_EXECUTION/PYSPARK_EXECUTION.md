@@ -241,7 +241,7 @@ PySpark-compatible sources may include:
 - Hive-compatible tables
 - Catalog-managed tables
 
-Sources remain logical `Source[T]` bindings in the pipeline.
+Sources remain logical `Extract[T]` bindings in the pipeline.
 
 The profile and storage plugins resolve them into Spark reads.
 

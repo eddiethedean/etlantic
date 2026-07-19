@@ -1096,7 +1096,8 @@ Modes that must pass `analyze()` exactly (fail closed, not “supports join”):
 
 - to **0.14:** public `etlantic.testing.portable_transform_conformance`;
   Pandas compiler
-- to **0.15+:** SQL lowering; Rich Portable Analytics / windows /
+- to **0.15:** safe SQL lowering for kernel + `portable-relational/1`
+- to **0.15 continuation:** Rich Portable Analytics / windows /
   complex-values / reshape / relational-extended / conversion claims
 - three-state missing/invalid literal fidelity beyond SQL-null
 
@@ -1150,42 +1151,79 @@ dependence on ETLantic internals.
 Portable compiler conformance becomes a public SDK contract suitable for
 third-party engines.
 
-## 0.15 — Safe SQL Lowering and Profile Graduation
+## 0.15 — Safe SQL Lowering
 
 **Status: planned — after 0.14.**
 
-**DTCS readiness gate: authoring complete upstream of compilers.** Rich
-Portable Analytics and related families are already expressible in 0.11 IR.
-This phase adds SQL lowering and graduates Candidate/Experimental families
-only when two independent compilers pass their conformance fixtures.
+**Headline:** lower already-shipped portable claims (kernel +
+`portable-relational/1`) into the existing typed `etlantic.sql/1` IR, with
+PostgreSQL via `etlantic-sql` as the reference dialect. Polars, PySpark, and
+Pandas remain the three dataframe/distributed compilers; SQL becomes the
+fourth realization for that claim intersection.
 
-### Deliver
+**Second 0.15 theme (authoring vocabulary):** prefer `Extract` / `Load` /
+`asset=` and `Profile.assets` while retaining plan/DPCS/plugin wire names
+(`binding`, source/sink kinds). Legacy `Source` / `Sink` / `binding=` warn in
+0.15 and are removed in 0.16. See
+[Migration 0.14 → 0.15](docs/11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md). This
+theme does **not** replace the Safe SQL Lowering exit gate below.
 
-- lowering from `etlantic.transform/1` / plan v2 to the existing typed
-  ETLantic SQL IR
-- dialect capability mapping, safe identifiers, and bound parameters
-- SQL region/CTE fusion with logical expression attribution
-- prohibition of trusted raw SQL fragments in portable definitions
-- compiler claims and native lowering for window, complex-value, advanced
-  string, conversion, statistics, reshape, temporal-IANA, and related families
-- full compiler compatibility matrix and native-to-portable migration guide
-- runnable portable examples across supported reference engines
+**DTCS readiness:** rich facade authoring for Candidate/Experimental families
+already exists in 0.11 IR. Those families are **not** part of the 0.15 exit
+gate; they graduate later under
+[0.15 continuation (profile graduation)](#015-continuation-profile-graduation).
+
+### Goals
+
+- Lower `etlantic.transform/1` / `dtcs.transform-plan/2` into the existing
+  typed ETLantic SQL IR (not a competing SQL-shaped portable dialect)
+- Bound parameters and validated identifiers only — no literal interpolation
+- Dialect capability mapping; unsupported ops fail in `analyze()` / planning
+- SQL region / CTE fusion with logical step and expression attribution retained
+- Forbid trusted raw SQL fragments in portable definitions
+- Extend public `etlantic.testing` conformance so SQL claims are fixture-gated
+  like Polars / Pandas / PySpark
+- Document the SQL column in the portable compiler matrix and draft
+  0.14 → 0.15 migration / What’s New notes when the slice ships
+
+### Non-goals
+
+- Production readiness, SLA, HA, or multi-tenant isolation (remain 1.0)
+- Graduating window, complex-value, reshape, statistics, or related advanced
+  families in the 0.15 exit gate
+- Replacing native `@implementation("sql")` as the supported SQL path until
+  portable SQL claims pass
+- Inventing portable SQL semantics outside DTCS
+- Managed cloud Spark providers or SQL dialects beyond the documented
+  reference set
+
+### Exit gate (all must be true)
+
+1. Kernel + `portable-relational/1` portable definitions compile to
+   parameterized SQL IR and match the shared semantic corpus against
+   PostgreSQL reference fixtures.
+2. Security corpus (injection payloads, hostile identifiers, parameter
+   redaction) fails closed; no literal or parameter value is interpolated into
+   generated SQL.
+3. Dialect gaps produce planning diagnostics (`PMXFORM*`); never raw SQL or
+   UDF approximation of portable semantics.
+4. `portable_transform_policy=require` fails when SQL cannot claim the needed
+   profile; `prefer` may select an **explicit native** SQL implementation,
+   never silent portable emulation via pushdown fallbacks.
+5. Native SQL implementations remain selectable and tested.
+6. Docs and matrix updated: SQL claims in the portable compiler matrix;
+   CAPABILITIES / What’s New / migration notes for 0.14 → 0.15.
 
 ### Acceptance scenarios
 
-- supported portable definitions compile to parameterized SQL and match the
-  reference semantic corpus;
-- no literal or parameter value is interpolated into generated SQL;
-- dialect gaps fail at planning without raw SQL or UDF approximation;
-- each advanced family ships compiler claims only with normative semantics,
-  two compiler implementations, capability vocabulary, and shared fixtures;
-- existing native implementations remain compatible and selectable explicitly.
-
-### Exit gate
-
-Portable transformations span dataframe, distributed, and relational engines
-with an auditable, secure compiler model, and graduated profiles meet
-two-compiler criteria.
+- A portable kernel + relational `/1` definition plans and runs on SQL with
+  the same fixture outcomes as the Polars/Pandas/PySpark corpus intersection.
+- Hostile identifier and injection fixtures never produce interpolated SQL.
+- An unsupported dialect capability under `require` fails at planning with a
+  stable diagnostic; under `prefer`, an explicit native SQL impl may be chosen
+  when registered.
+- `PipelinePlan` embeds bounded portable IR and compiler identity without live
+  compiled objects or secrets.
 
 See the
 [Portable Transformation Implementation Plan](docs/11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md).
@@ -1193,6 +1231,41 @@ The required standards work is detailed in the
 [DTCS 2.0 Portable Relational Publication Record](docs/11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md)
 and
 [DTCS 3.0 Rich Portable Analytics Publication Record](docs/11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).
+
+## 0.15 continuation (profile graduation)
+
+**Status: planned — after the 0.15 SQL exit gate.** Not a separate minor
+number and not part of the 0.15 exit gate.
+
+Candidate/Experimental families remain expressible in authored IR. Each
+family graduates **one at a time** only when:
+
+- DTCS normative semantics and capability identifiers are published;
+- shared conformance fixtures exist;
+- **two independent compilers** pass those fixtures;
+- migration / compatibility notes are published.
+
+Suggested order (adjust only if DTCS readiness blocks a family):
+
+| Family | Status relative to 0.15 exit gate |
+|---|---|
+| `portable-window/1` (+ `/2` when normative) | Not in 0.15 exit gate |
+| `portable-string-advanced/1` | Not in 0.15 exit gate |
+| `portable-conversion/1` | Not in 0.15 exit gate |
+| `portable-complex-types/1` | Not in 0.15 exit gate |
+| `portable-complex-values/1` | Not in 0.15 exit gate |
+| `portable-statistics/1` | Not in 0.15 exit gate |
+| `portable-reshape/1` | Not in 0.15 exit gate |
+| `portable-relational-extended/1` | Not in 0.15 exit gate |
+| `portable-temporal-iana/1` | Not in 0.15 exit gate |
+| `portable-nondeterministic/1` | Not in 0.15 exit gate (policy-gated) |
+
+### Continuation exit rule (per family)
+
+Compiler claims ship only with normative semantics, two compiler
+implementations, capability vocabulary, shared fixtures, and a short
+native-to-portable migration note. Until a family graduates, keep native
+`@implementation(...)` for that behavior.
 
 ## 1.0 — Stable Foundation
 

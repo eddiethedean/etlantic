@@ -8,12 +8,12 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PlanningContext,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import plan_from_json, plan_pipeline, plan_to_json
@@ -32,9 +32,9 @@ class Identity(Transformation):
 
 
 class Sample(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     step = Identity.step(rows=raw)
-    out: Sink[Row] = Sink(input=step.result, binding="out")
+    out: Load[Row] = Load(input=step.result, asset="out")
 
 
 def test_secret_ref_round_trip_on_binding() -> None:
@@ -47,7 +47,7 @@ def test_secret_ref_round_trip_on_binding() -> None:
             secret_ref=SecretRef(provider="env-secrets", name="rows", key="token"),
         )
     )
-    profile = Profile(name="sec", bindings={"out": "memory"})
+    profile = Profile(name="sec", assets={"out": "memory"})
     plan = plan_pipeline(
         Sample,
         context=PlanningContext.create(profile=profile, registry=registry),

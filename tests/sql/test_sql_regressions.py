@@ -6,13 +6,13 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import NodeExecutionError
@@ -50,9 +50,9 @@ def make_local(items: list[Item]) -> list[Item]:
 
 
 class PythonToSqlPipeline(Pipeline):
-    src: Source[Item] = Source(binding="mem_items")
+    src: Extract[Item] = Extract(asset="mem_items")
     made = LocalMake.step(items=src)
-    dst: Sink[Item] = Sink(input=made.result, binding="sql_dst")
+    dst: Load[Item] = Load(input=made.result, asset="sql_dst")
 
 
 class FailWriteNorm(Transformation):
@@ -66,9 +66,9 @@ def fail_norm(customers: RelationRef):
 
 
 class FailWritePipeline(Pipeline):
-    raw: Source[Item] = Source(binding="raw_items")
+    raw: Extract[Item] = Extract(asset="raw_items")
     step = FailWriteNorm.step(customers=raw)
-    curated: Sink[Item] = Sink(input=step.result, binding="missing_dst")
+    curated: Load[Item] = Load(input=step.result, asset="missing_dst")
 
 
 def test_invalid_write_intent_fails_closed(sql_plugin) -> None:

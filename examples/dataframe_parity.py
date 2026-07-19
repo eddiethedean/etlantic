@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import PlanningContext
@@ -55,9 +55,9 @@ def normalize_pandas(customers):
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def run_with_engine(engine: str):

@@ -12,13 +12,13 @@ from sqlalchemy import text
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import explain_plan
@@ -57,9 +57,9 @@ def normalize_sql(customers: RelationRef):
 
 
 class CustomerSqlPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="raw_customers")
+    raw: Extract[RawCustomer] = Extract(asset="raw_customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated_customers")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated_customers")
 
 
 def main() -> None:

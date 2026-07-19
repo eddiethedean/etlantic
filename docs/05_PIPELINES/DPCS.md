@@ -105,7 +105,7 @@ from etlantic import Pipeline, Sink, Source
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
+    raw: Extract[RawCustomer] = Extract(
         binding="raw.customers",
     )
 
@@ -113,7 +113,7 @@ class CustomerPipeline(Pipeline):
         customers=raw,
     )
 
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
         binding="curated.customers",
     )
@@ -218,13 +218,13 @@ Internal steps should not automatically become public API.
 ETLantic sources and sinks map naturally to pipeline boundaries.
 
 ```python
-raw: Source[RawCustomer] = Source(
+raw: Extract[RawCustomer] = Extract(
     binding="raw.customers",
 )
 ```
 
 ```python
-curated: Sink[Customer] = Sink(
+curated: Load[Customer] = Load(
     input=normalized.result,
     binding="curated.customers",
 )
@@ -276,13 +276,13 @@ The DTCS transformation contract remains independently versioned and reusable.
 ETLantic derives a directed graph from typed connections.
 
 ```text
-Source[RawCustomer]
+Extract[RawCustomer]
         │
         ▼
 NormalizeCustomers
         │
         ▼
-Sink[Customer]
+Load[Customer]
 ```
 
 DPCS records logical dependencies, not a particular scheduling algorithm.

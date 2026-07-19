@@ -27,7 +27,7 @@ Controlled pilot only (see [Evaluator](EVALUATOR.md) and
 | Profiles and deterministic, secret-free pipeline plans | Available |
 | `@Transformation.portable` / `etlantic.transform` → `dtcs.transform-plan/2` | Available |
 | `Profile.portable_transform_policy` (`prefer` / `require` / `native`) | Available |
-| DTCS 3.0 plan models / Rich Portable Analytics profiles | Available (`dtcs>=0.13`) |
+| DTCS 3.0 plan models / Rich Portable Analytics profiles | Available (install `dtcs>=0.13,<1`; normative content floor `dtcs` 0.14.0 where specs say so) |
 
 ### Local execution and storage
 
@@ -87,7 +87,8 @@ Controlled pilot only (see [Evaluator](EVALUATOR.md) and
 | FastAPI control plane | Continues in 1.1 |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
-| Portable SQL lowering and profile graduation | Planned for 0.15+ |
+| Portable SQL lowering (kernel + `portable-relational/1`) | Planned for **0.15** (exit gate) |
+| Advanced portable profile graduation (window, reshape, …) | Planned for **0.15 continuation** after the SQL gate (not the 0.15 exit gate) |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 
 ## CI starter

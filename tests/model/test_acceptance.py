@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from etlantic import (
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
 )
 from tests.conftest import Customer, Metrics, Order, RawCustomer, Rejection
@@ -35,18 +35,18 @@ class EnrichOrders(Transformation):
 
 def test_multi_source_multi_output_without_backend() -> None:
     class MultiPipeline(Pipeline):
-        raw_customers: Source[RawCustomer] = Source(binding="customers")
-        raw_orders: Source[Order] = Source(binding="orders")
+        raw_customers: Extract[RawCustomer] = Extract(asset="customers")
+        raw_orders: Extract[Order] = Extract(asset="orders")
         normalized = NormalizeCustomers.step(customers=raw_customers)
         validated = ValidateCustomers.step(customers=normalized.result)
         enriched = EnrichOrders.step(
             orders=raw_orders,
             customers=validated.valid,
         )
-        good: Sink[Customer] = Sink(input=validated.valid, binding="good")
-        bad: Sink[Rejection] = Sink(input=validated.rejected, binding="bad")
-        stats: Sink[Metrics] = Sink(input=validated.metrics, binding="stats")
-        orders_out: Sink[Order] = Sink(input=enriched.result, binding="orders_out")
+        good: Load[Customer] = Load(input=validated.valid, asset="good")
+        bad: Load[Rejection] = Load(input=validated.rejected, asset="bad")
+        stats: Load[Metrics] = Load(input=validated.metrics, asset="stats")
+        orders_out: Load[Order] = Load(input=enriched.result, asset="orders_out")
 
     graph = MultiPipeline.inspect()
     assert graph.node_names() == (
@@ -66,10 +66,10 @@ def test_multi_source_multi_output_without_backend() -> None:
 
 def test_downstream_references_named_output_port() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = NormalizeCustomers.step(customers=raw)
         validated = ValidateCustomers.step(customers=normalized.result)
-        out: Sink[Customer] = Sink(input=validated.valid, binding="out")
+        out: Load[Customer] = Load(input=validated.valid, asset="out")
 
     edges = Pipe.inspect().edges
     assert any(
@@ -88,12 +88,12 @@ def test_downstream_references_named_output_port() -> None:
 
 def test_two_instances_of_same_transformation_are_distinct() -> None:
     class Pipe(Pipeline):
-        raw_a: Source[RawCustomer] = Source(binding="a")
-        raw_b: Source[RawCustomer] = Source(binding="b")
+        raw_a: Extract[RawCustomer] = Extract(asset="a")
+        raw_b: Extract[RawCustomer] = Extract(asset="b")
         first = NormalizeCustomers.step(customers=raw_a, minimum_age=18)
         second = NormalizeCustomers.step(customers=raw_b, minimum_age=21)
-        out_a: Sink[Customer] = Sink(input=first.result, binding="out_a")
-        out_b: Sink[Customer] = Sink(input=second.result, binding="out_b")
+        out_a: Load[Customer] = Load(input=first.result, asset="out_a")
+        out_b: Load[Customer] = Load(input=second.result, asset="out_b")
 
     graph = Pipe.inspect()
     assert graph.node_map()["first"].identity != graph.node_map()["second"].identity
@@ -101,7 +101,7 @@ def test_two_instances_of_same_transformation_are_distinct() -> None:
         graph.node_map()["first"].transformation_id
         == graph.node_map()["second"].transformation_id
     )
-    # Each sink wires to the correct step instance
+    # Each load wires to the correct step instance
     producers = {
         (e.consumer_node, e.producer_node)
         for e in graph.edges
@@ -113,9 +113,9 @@ def test_two_instances_of_same_transformation_are_distinct() -> None:
 
 def test_incompatible_wiring_names_both_endpoints() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
-        # Sink expects Customer but receives RawCustomer
-        bad: Sink[Customer] = Sink(input=raw.result, binding="bad")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
+        # Load expects Customer but receives RawCustomer
+        bad: Load[Customer] = Load(input=raw.result, asset="bad")
 
     report = Pipe.validate()
     assert not report.valid
@@ -130,9 +130,9 @@ def test_incompatible_wiring_names_both_endpoints() -> None:
 
 def test_inspect_is_deterministic() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = NormalizeCustomers.step(customers=raw)
-        out: Sink[Customer] = Sink(input=normalized.result, binding="out")
+        out: Load[Customer] = Load(input=normalized.result, asset="out")
 
     g1 = Pipe.inspect()
     g2 = Pipe.inspect()

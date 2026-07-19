@@ -8,14 +8,14 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     RunRequest,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import PipelineExecutionError
@@ -52,9 +52,9 @@ def normalize_local(rows: list[Row]) -> list[Row]:
 
 
 class SimplePipeline(Pipeline):
-    raw: Source[Row] = Source(binding="rows")
+    raw: Extract[Row] = Extract(asset="rows")
     normalized = Normalize.step(rows=raw)
-    out: Sink[Row] = Sink(input=normalized.result, binding="out")
+    out: Load[Row] = Load(input=normalized.result, asset="out")
 
 
 def test_freshness_check() -> None:
@@ -223,9 +223,9 @@ def test_retry_safety_blocks_unsafe_retry() -> None:
         raise RuntimeError("boom")
 
     class BoomPipeline(Pipeline):
-        raw: Source[Row] = Source(binding="rows")
+        raw: Extract[Row] = Extract(asset="rows")
         step = Boom.step(rows=raw)
-        out: Sink[Row] = Sink(input=step.result, binding="out")
+        out: Load[Row] = Load(input=step.result, asset="out")
 
     runtime = PipelineRuntime()
     runtime.memory.seed("rows", [Row(id=1, name="a")])

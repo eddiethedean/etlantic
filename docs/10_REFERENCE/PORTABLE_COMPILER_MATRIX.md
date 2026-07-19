@@ -45,10 +45,12 @@ and fails during analysis.
   rejected.
 - Polars and PySpark preserve backend-visible lazy operations where supported.
 - Windows, complex values/types, reshape, advanced conversion/statistics, and
-  extended relational profiles are not claimed.
+  extended relational profiles are not claimed (0.15 continuation backlog).
 - There is no portable SQL compiler in 0.14.0. `etlantic-sql` implements the
-  separate `etlantic.sql/1` execution protocol; portable SQL lowering remains
-  future work.
+  separate `etlantic.sql/1` execution protocol; safe portable SQL lowering for
+  kernel + `portable-relational/1` is the **0.15** exit gate (SQL column to be
+  added when that slice ships). Until then, use native
+  `@implementation("sql")`.
 - Unsupported actions, functions, modes, and profiles must fail closed during
   support analysis. Compilers do not silently fall back to UDFs or raw SQL.
 

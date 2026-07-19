@@ -183,8 +183,8 @@ from .transformations import NormalizeCustomers
 
 
 class CustomerAirflowPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
-        binding="customers_input",
+    raw: Extract[RawCustomer] = Extract(
+        asset="customers_input",
     )
 
     normalized = NormalizeCustomers.step(
@@ -192,9 +192,9 @@ class CustomerAirflowPipeline(Pipeline):
         lowercase_email=True,
     )
 
-    curated: Sink[Customer] = Sink(
+    curated: Load[Customer] = Load(
         input=normalized.result,
-        binding="customers_output",
+        asset="customers_output",
     )
 ```
 
@@ -224,7 +224,7 @@ production = Profile(
         "timeout_seconds": 3600,
         "max_active_runs": 1,
     },
-    bindings={
+    assets={
         "customers_input": {
             "plugin": "s3-parquet",
             "resource": "data_lake",

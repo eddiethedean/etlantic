@@ -78,7 +78,7 @@ and write behavior.
 Pipelines reference logical bindings rather than physical locations.
 
 ```python
-customers = Source[Customer](
+customers = Extract[Customer](
     binding="customers",
 )
 ```

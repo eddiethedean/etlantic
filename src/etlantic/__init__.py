@@ -65,7 +65,7 @@ from etlantic.orchestration import (
     compile_plan,
     discover_orchestrator_plugins,
 )
-from etlantic.pipeline import Pipeline, Sink, Source, SubpipelineInstance
+from etlantic.pipeline import Extract, Load, Pipeline, Sink, Source, SubpipelineInstance
 from etlantic.plan import (
     ArtifactRef,
     ArtifactStrategy,
@@ -186,6 +186,7 @@ __all__ = [
     "ETLanticError",
     "Edge",
     "Emit",
+    "Extract",
     "FailureAction",
     "FreshnessExpectation",
     "IdempotencyDeclaration",
@@ -194,6 +195,7 @@ __all__ = [
     "Inject",
     "Input",
     "JsonStorage",
+    "Load",
     "LogicalGraph",
     "MaterializationIntent",
     "MaterializationMode",

@@ -1,6 +1,6 @@
 """Subpipeline embedding tests."""
 
-from etlantic import Input, Output, Pipeline, Sink, Source, Transformation
+from etlantic import Extract, Input, Load, Output, Pipeline, Transformation
 from tests.conftest import Customer, RawCustomer
 
 
@@ -10,9 +10,9 @@ class NormalizeCustomers(Transformation):
 
 
 class CustomerCurationPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="raw.customers")
+    raw: Extract[RawCustomer] = Extract(asset="raw.customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated.customers")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated.customers")
 
 
 class ScoreCustomers(Transformation):
@@ -22,10 +22,10 @@ class ScoreCustomers(Transformation):
 
 def test_subpipeline_embeds_and_exposes_sink_ports() -> None:
     class AnalyticsPipeline(Pipeline):
-        customers_in: Source[RawCustomer] = Source(binding="inbound")
+        customers_in: Extract[RawCustomer] = Extract(asset="inbound")
         customers = CustomerCurationPipeline.subpipeline(raw=customers_in)
         scored = ScoreCustomers.step(customers=customers.curated)
-        out: Sink[Customer] = Sink(input=scored.result, binding="scored")
+        out: Load[Customer] = Load(input=scored.result, asset="scored")
 
     graph = AnalyticsPipeline.inspect()
     assert "customers" in graph.node_names()

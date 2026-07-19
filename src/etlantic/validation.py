@@ -169,15 +169,22 @@ def _phase_reference(
             )
             if not resolved:
                 sym = node_symbol(pid, node.name, kind=node.kind.value)
+                role = (
+                    "Extract"
+                    if node.kind.value == "source"
+                    else "Load"
+                    if node.kind.value == "sink"
+                    else "Node"
+                )
                 diagnostics.append(
                     Diagnostic(
                         code="PMPLAN201",
                         severity=Severity.ERROR,
                         message=(
-                            f'Binding "{node.binding}" on "{node.name}" is not '
-                            f"resolved in the profile or registry."
+                            f"{role} '{node.name}' has no asset resolution for "
+                            f"'{node.binding}' in profile '{context.profile.name}'."
                         ),
-                        path=("pipeline", node.name, "binding"),
+                        path=("pipeline", node.name, "asset"),
                         source=SourceLocation(
                             object_ref=sym.as_object_ref(),
                             symbol=sym.identity,
@@ -185,11 +192,14 @@ def _phase_reference(
                         actions=(
                             DiagnosticAction(
                                 kind="add_binding",
-                                title=f'Add binding "{node.binding}" to the profile',
+                                title=f'Add asset "{node.binding}" to the profile',
                                 edit_suggestion=(
-                                    f'profile.bindings["{node.binding}"] = "..."'
+                                    f'profile.assets["{node.binding}"] = "..."'
                                 ),
-                                arguments={"binding": node.binding},
+                                arguments={
+                                    "binding": node.binding,
+                                    "asset": node.binding,
+                                },
                             ),
                         ),
                     )
@@ -684,14 +694,14 @@ def _validate_graph(
                             help="Bind a Source, Step output, or OutputRef.",
                         )
                     )
-        from etlantic.pipeline import Sink, SubpipelineInstance
+        from etlantic.pipeline import Load, SubpipelineInstance
 
-        if isinstance(member, Sink) and (name, "input") not in edge_keys:
+        if isinstance(member, Load) and (name, "input") not in edge_keys:
             diagnostics.append(
                 Diagnostic(
                     code="PMPIPE201",
                     severity=Severity.ERROR,
-                    message=f'Could not resolve input for sink "{name}".',
+                    message=f'Could not resolve input for load "{name}".',
                     path=("pipeline", name, "input"),
                 )
             )

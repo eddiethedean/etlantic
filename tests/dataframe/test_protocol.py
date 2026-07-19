@@ -6,11 +6,11 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.capabilities import PluginCapabilities, negotiate_capabilities
@@ -56,9 +56,9 @@ def _identity_pandas(rows):  # pragma: no cover - planning-only
 
 
 class _LocalPipeline(Pipeline):
-    raw: Source[_Row] = Source(binding="rows")
+    raw: Extract[_Row] = Extract(asset="rows")
     step = _Identity.step(rows=raw)
-    out: Sink[_Row] = Sink(input=step.result, binding="out")
+    out: Load[_Row] = Load(input=step.result, asset="out")
 
 
 class _PolarsOnly(Transformation):
@@ -72,9 +72,9 @@ def _polars_only(rows):  # pragma: no cover
 
 
 class _PolarsPipeline(Pipeline):
-    raw: Source[_Row] = Source(binding="rows")
+    raw: Extract[_Row] = Extract(asset="rows")
     step = _PolarsOnly.step(rows=raw)
-    out: Sink[_Row] = Sink(input=step.result, binding="out")
+    out: Load[_Row] = Load(input=step.result, asset="out")
 
 
 class _PandasOnly(Transformation):
@@ -88,9 +88,9 @@ def _pandas_only(rows):  # pragma: no cover
 
 
 class _PandasPipeline(Pipeline):
-    raw: Source[_Row] = Source(binding="rows")
+    raw: Extract[_Row] = Extract(asset="rows")
     step = _PandasOnly.step(rows=raw)
-    out: Sink[_Row] = Sink(input=step.result, binding="out")
+    out: Load[_Row] = Load(input=step.result, asset="out")
 
 
 def test_protocol_version() -> None:

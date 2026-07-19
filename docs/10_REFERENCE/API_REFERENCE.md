@@ -22,8 +22,8 @@ from etlantic import (
     Parameter,
     Pipeline,
     PipelineRuntime,
-    Sink,
-    Source,
+    Load,
+    Extract,
     Transformation,
 )
 ```

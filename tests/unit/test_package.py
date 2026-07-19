@@ -14,6 +14,8 @@ def test_root_exports() -> None:
         "Pipeline",
         "Transformation",
         "Data",
+        "Extract",
+        "Load",
         "Source",
         "Sink",
         "PipelinePlan",

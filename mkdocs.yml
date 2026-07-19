@@ -9,6 +9,7 @@ docs_dir: docs
 # Theme notes under docs/theme/ are maintainer-facing, not site pages.
 exclude_docs: |
   theme/README.md
+  11_DEVELOPMENT/CURSOR_EXTRACT_LOAD_MIGRATION_PROMPT.md
 
 validation:
   omitted_files: warn
@@ -154,9 +155,11 @@ nav:
   - Pipelines:
       - Overview: 05_PIPELINES/README.md
       - Pipeline: 05_PIPELINES/PIPELINE.md
-      - Sources: 05_PIPELINES/SOURCES.md
+      - Extracts: 05_PIPELINES/EXTRACTS.md
       - Steps: 05_PIPELINES/STEPS.md
-      - Sinks: 05_PIPELINES/SINKS.md
+      - Loads: 05_PIPELINES/LOADS.md
+      - Sources (deprecated): 05_PIPELINES/SOURCES.md
+      - Sinks (deprecated): 05_PIPELINES/SINKS.md
       - Subpipelines: 05_PIPELINES/SUBPIPELINES.md
       - DPCS: 05_PIPELINES/DPCS.md
       - Validation: 05_PIPELINES/PIPELINE_VALIDATION.md
@@ -270,6 +273,7 @@ nav:
       - Migration 0.11 → 0.12: 11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md
       - Migration 0.12 → 0.13: 11_DEVELOPMENT/MIGRATION_0_12_TO_0_13.md
       - Migration 0.13 → 0.14: 11_DEVELOPMENT/MIGRATION_0_13_TO_0_14.md
+      - Migration 0.14 → 0.15: 11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md
       - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
       - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
       - Testing: 11_DEVELOPMENT/TESTING.md

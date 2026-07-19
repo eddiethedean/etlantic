@@ -396,12 +396,12 @@ from .transformations import BuildCustomerOrderSummary
 
 
 class CustomerOrderPipeline(Pipeline):
-    customers: Source[Customer] = Source(
-        binding="customers_source",
+    customers: Extract[Customer] = Extract(
+        asset="customers_source",
     )
 
-    orders: Source[Order] = Source(
-        binding="orders_source",
+    orders: Extract[Order] = Extract(
+        asset="orders_source",
     )
 
     summary = BuildCustomerOrderSummary.step(
@@ -410,9 +410,9 @@ class CustomerOrderPipeline(Pipeline):
         included_status="paid",
     )
 
-    warehouse: Sink[CustomerOrderSummary] = Sink(
+    warehouse: Load[CustomerOrderSummary] = Load(
         input=summary.result,
-        binding="customer_order_summary_sink",
+        asset="customer_order_summary_sink",
     )
 ```
 
@@ -430,7 +430,7 @@ local_sql = Profile(
     name="local-sql",
     orchestrator="local-python",
     sql_engine="sql",
-    bindings={
+    assets={
         "customers_source": {
             "plugin": "sqlite",
             "resource": "source_database",
@@ -1152,7 +1152,7 @@ production_sql = Profile(
     orchestrator="airflow",
     sql_engine="sql",
     sql_pushdown="automatic",
-    bindings={
+    assets={
         "customers_source": {
             "plugin": "postgresql",
             "resource": "crm_database",
@@ -1191,7 +1191,7 @@ warehouse_sql = Profile(
     orchestrator="airflow",
     sql_engine="sql",
     sql_pushdown="required",
-    bindings={
+    assets={
         "customers_source": {
             "plugin": "snowflake",
             "resource": "analytics_warehouse",

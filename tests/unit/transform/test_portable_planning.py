@@ -9,12 +9,12 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import PipelineValidationError
@@ -71,9 +71,9 @@ def _normalize_native(customers):
 
 
 class KernelPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="out")
+    curated: Load[Customer] = Load(input=normalized.result, asset="out")
 
 
 class StubKernelCompiler:
@@ -246,9 +246,9 @@ def _pandas_only_native(customers):
 
 
 class PandasOnlyPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = PandasOnlyNormalize.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="out")
+    curated: Load[Customer] = Load(input=normalized.result, asset="out")
 
 
 def test_prefer_portable_before_native_autopick(

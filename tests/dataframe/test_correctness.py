@@ -9,13 +9,13 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.dataframe.discovery import discover_dataframe_plugins
@@ -59,9 +59,9 @@ def normalize_polars(customers):  # type: ignore[no-untyped-def]
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def _seed(runtime: PipelineRuntime) -> None:
@@ -119,12 +119,12 @@ def test_fan_out_keeps_in_memory_not_durable() -> None:
         return lf
 
     class FanOutPipeline(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="customers")
+        raw: Extract[RawCustomer] = Extract(asset="customers")
         normalized = NormalizeCustomers.step(customers=raw)
         left = Branch.step(customers=normalized.result)
         right = Branch.step(customers=normalized.result)
-        sink_l: Sink[Customer] = Sink(input=left.result, binding="left")
-        sink_r: Sink[Customer] = Sink(input=right.result, binding="right")
+        sink_l: Load[Customer] = Load(input=left.result, asset="left")
+        sink_r: Load[Customer] = Load(input=right.result, asset="right")
 
     runtime = PipelineRuntime()
     _seed(runtime)
@@ -167,9 +167,9 @@ def test_multi_output_port_collect_and_validation() -> None:
         return {"good": good, "bad": bad}
 
     class MultiOutPipeline(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="customers")
+        raw: Extract[RawCustomer] = Extract(asset="customers")
         split = Split.step(customers=raw)
-        curated: Sink[Customer] = Sink(input=split.good, binding="curated")
+        curated: Load[Customer] = Load(input=split.good, asset="curated")
 
     runtime = PipelineRuntime()
     _seed(runtime)

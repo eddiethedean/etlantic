@@ -8,13 +8,13 @@ from sqlalchemy import text
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.registry import (
@@ -52,10 +52,10 @@ def python_touch(rows: list[Row]) -> list[Row]:
 
 
 class HybridPipeline(Pipeline):
-    src: Source[Row] = Source(binding="src_rows")
+    src: Extract[Row] = Extract(asset="src_rows")
     from_sql = SqlRead.step(rows=src)
     touched = PythonTouch.step(rows=from_sql.result)
-    out: Sink[Row] = Sink(input=touched.result, binding="out_rows")
+    out: Load[Row] = Load(input=touched.result, asset="out_rows")
 
 
 def main() -> None:

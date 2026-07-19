@@ -10,15 +10,15 @@ pytest.importorskip("polars")
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
     PipelineRuntime,
     Profile,
     RunStatus,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.plan import explain_plan, plan_pipeline
@@ -55,9 +55,9 @@ def _normalize(customers, minimum_age):
 
 
 class PortablePolarsPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
 
 def _seed(runtime: PipelineRuntime) -> None:
@@ -156,10 +156,10 @@ def test_require_plans_relational_join() -> None:
         )
 
     class JoinPipeline(Pipeline):
-        raw_left: Source[RawCustomer] = Source(binding="left")
-        raw_right: Source[Customer] = Source(binding="right")
+        raw_left: Extract[RawCustomer] = Extract(asset="left")
+        raw_right: Extract[Customer] = Extract(asset="right")
         joined = JoinCustomers.step(left=raw_left, right=raw_right)
-        out: Sink[Customer] = Sink(input=joined.result, binding="out")
+        out: Load[Customer] = Load(input=joined.result, asset="out")
 
     profile = Profile(
         name="polars-portable",

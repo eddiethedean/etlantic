@@ -8,14 +8,14 @@ import pytest
 
 from etlantic import (
     Data,
+    Extract,
     Input,
+    Load,
     Output,
     Pipeline,
     PipelinePlan,
     PlanningContext,
     SecretRef,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.exceptions import PipelineValidationError
@@ -53,19 +53,19 @@ class Audit(Transformation):
 
 
 class CustomerPipeline(Pipeline):
-    raw: Source[Customer] = Source(binding="customers")
+    raw: Extract[Customer] = Extract(asset="customers")
     normalized = Normalize.step(customers=raw)
     enriched = Enrich.step(customers=normalized.result)
-    out: Sink[Customer] = Sink(input=enriched.result, binding="curated")
+    out: Load[Customer] = Load(input=enriched.result, asset="curated")
 
 
 class ParallelPipeline(Pipeline):
     """raw fans out to step then audit; audit is declared after step."""
 
-    raw: Source[Customer] = Source(binding="customers")
+    raw: Extract[Customer] = Extract(asset="customers")
     step = Normalize.step(customers=raw)
     audit = Audit.step(customers=raw)
-    out: Sink[Customer] = Sink(input=step.result, binding="curated")
+    out: Load[Customer] = Load(input=step.result, asset="curated")
 
 
 def test_plan_is_deterministic() -> None:
@@ -216,9 +216,9 @@ def test_invalid_pipeline_does_not_plan() -> None:
         result: Output[Customer]
 
     class BrokenPipeline(Pipeline):
-        raw: Source[Customer] = Source(binding="customers")
+        raw: Extract[Customer] = Extract(asset="customers")
         broken = Broken.step()  # type: ignore[call-arg]
-        out: Sink[Customer] = Sink(input=raw, binding="out")
+        out: Load[Customer] = Load(input=raw, asset="out")
 
     report = BrokenPipeline.validate()
     assert report.has_errors

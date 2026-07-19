@@ -26,13 +26,13 @@ manager.
 | PySpark plugin (`etlantic-pyspark`) | Yes (local provider; batch production path) |
 | Structured Streaming | Experimental |
 | Airflow / orchestrator compilation | Yes (`etlantic-airflow`) |
-| DTCS 3.0 portable plan models/profiles | Yes (`dtcs>=0.13`) |
+| DTCS 3.0 portable plan models/profiles | Yes (install `dtcs>=0.13,<1`; content floor `dtcs` 0.14.0) |
 | `@Transformation.portable` authoring | Yes (0.11) |
 | Portable Polars compiler (kernel + relational `/1`) | Yes (0.13+) |
 | Portable PySpark compiler (kernel + relational `/1`) | Yes (0.13+) |
 | Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14) |
 | Public portable transform conformance suite | Yes (0.14) |
-| Portable SQL compiler | No (0.15+) |
+| Portable SQL compiler (kernel + relational `/1`) | No (0.15 exit gate) |
 | Multi-tenant durable orchestration | No |
 | Formal SLA / support response times | No |
 
@@ -86,10 +86,11 @@ How to read status labels in deeper chapters:
 - Process-local reports as an audit system of record
 - Stable 1.0 compatibility guarantees
 - Managed Databricks/EMR/Connect Spark providers
-- **Portable compilers beyond relational `/1`** — SQL and richer profiles
-  remain planned for 0.15+. Polars, PySpark, and Pandas claim kernel +
-  `portable-relational/1` in 0.13–0.14; keep a native `@implementation(...)`
-  for profiles outside that claim set, or for
+- **Portable SQL and advanced profiles** — Polars, PySpark, and Pandas claim
+  kernel + `portable-relational/1` in 0.13–0.14. Safe SQL lowering for that
+  claim set is the **0.15** exit gate; richer profiles graduate one family at
+  a time afterward (0.15 continuation). Keep a native `@implementation(...)`
+  for SQL today and for profiles outside the advertised claim set, or for
   `portable_transform_policy="native"`.
 
 ## Enterprise readiness matrix

@@ -6,9 +6,9 @@ logical semantics from DTCS and the Pipeline Plan.
 **Status: shipped in 0.6.0** via the `etlantic-sql` PostgreSQL reference
 plugin. SQLite is supported for local demos only.
 
-Lowering the future portable transformation IR to the existing safe SQL IR is
-planned for 0.15. Current 0.14 SQL transformations use native
-`@implementation("sql")` definitions.
+Safe portable SQL lowering for the already-shipped claim set (kernel +
+`portable-relational/1`) is the **0.15** exit gate. Current 0.14 SQL
+transformations use native `@implementation("sql")` definitions.
 
 ETLantic does **not** depend on database drivers. Install the plugin
 separately:
@@ -45,10 +45,11 @@ def normalize_sql(customers: RelationRef):
 Select the engine with `Profile.sql_engine = "sql"`. Plugins are discovered
 through the `etlantic.sql_plugins` entry point.
 
-## Portable SQL lowering (planned 0.15)
+## Portable SQL lowering (planned 0.15 exit gate)
 
-Portable relational and scalar nodes will lower first into ETLantic's typed
-SQL IR and then into dialect SQL:
+Portable kernel and `portable-relational/1` nodes will lower first into
+ETLantic's typed `etlantic.sql/1` IR and then into dialect SQL (PostgreSQL via
+`etlantic-sql` is the reference):
 
 ```text
 dtcs.transform-plan/2
@@ -61,13 +62,21 @@ safe dialect compiler
 Identifiers remain validated and values remain bound parameters. Portable
 definitions cannot contain trusted SQL fragments or raw `F.expr()` strings.
 Unsupported dialect functions, types, null behavior, or ordering fail during
-planning.
+planning with `PMXFORM*` diagnostics — never via raw SQL or UDF approximation.
 
-Window and complex-type lowering follows the experimental
-`dtcs:profile/portable-window/1` and
-`dtcs:profile/portable-complex-types/1`. A SQL dialect compiler advertises only
-the exact profile or capabilities it passes; syntactic SQL support alone is
-not sufficient.
+Policy when portable SQL cannot claim the needed profile:
+
+- `portable_transform_policy="require"` fails closed at planning;
+- `prefer` may select an **explicit native** `@implementation("sql")` only —
+  never silent portable emulation, and never an implicit fall-back to Polars
+  or another dataframe engine;
+- `native` prefers a registered SQL implementation.
+
+Advanced families (window, complex types/values, reshape, …) are **not** part
+of the 0.15 exit gate. They graduate later under the 0.15 continuation
+backlog, one family at a time, only when a dialect compiler advertises the
+exact profile and passes shared fixtures. Syntactic SQL support alone is not
+sufficient.
 
 ## SQL→SQL without Python fetch
 

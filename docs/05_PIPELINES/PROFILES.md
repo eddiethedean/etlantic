@@ -44,9 +44,9 @@ A profile may define:
 - Execution engine
 - Orchestrator
 - Dataframe backend
-- Resource bindings
-- Source bindings
-- Sink bindings
+- Resource / logical asset maps (`assets`, preferred over legacy `bindings`)
+- Extract asset resolution
+- Load asset resolution
 - Secret providers
 - Validation mode
 - Logging configuration
@@ -101,28 +101,33 @@ SQL plugin (`etlantic-sql`). Do not set `dataframe_engine` to `"sql"`.
 
 Planning uses the selected profile when generating a Pipeline Plan.
 
-## Resource Bindings
+## Logical assets
 
-Profiles resolve logical bindings into physical resources.
+Profiles resolve logical asset names into physical resources. Prefer
+`Profile(assets=...)` in 0.15; `bindings=` remains a warned alias until 0.16.
+Public profile JSON may emit both `assets` and mirrored `bindings`; plan
+`profile_snapshot` keeps the fingerprint-stable bindings-only shape.
 
 Pipeline:
 
 ```python
-customers = Source[Customer](
-    binding="customers",
+from etlantic import Extract
+
+customers = Extract[Customer](
+    asset="customers",
 )
 ```
 
 Development profile:
 
-```text
-customers -> ./data/customers.csv
+```python
+Profile(name="development", assets={"customers": "./data/customers.csv"})
 ```
 
 Production profile:
 
-```text
-customers -> warehouse.customer_table
+```python
+Profile(name="production", assets={"customers": "warehouse.customer_table"})
 ```
 
 The pipeline definition remains unchanged.
@@ -170,11 +175,14 @@ Profile(
 ```
 
 `require` forbids native fallback, `prefer` permits an explicit diagnosed
-fallback, and `native` prefers a registered backend implementation. The choice
-must be retained in `plan explain` and run reports. Polars and PySpark shipped
-**kernel** + **relational `/1`** claims in 0.13; eager Pandas shipped the same
-claims in 0.14. Richer profiles such as windows and reshape still need native
-implementations or later compilers.
+native fallback, and `native` prefers a registered backend implementation.
+The choice must be retained in `plan explain` and run reports. Prefer never
+silently emulates portable semantics (including under SQL: no implicit Polars
+or other engine switch). Polars and PySpark shipped **kernel** +
+**relational `/1`** claims in 0.13; eager Pandas shipped the same claims in
+0.14. Safe SQL lowering for that claim set is the **0.15** exit gate. Richer
+profiles such as windows and reshape still need native implementations until
+they graduate under the 0.15 continuation backlog.
 
 ## Orchestrator Selection
 
@@ -278,13 +286,13 @@ Profiles are not part of the portable pipeline contract.
 
 DPCS records execution requirements.
 
-Profiles provide environment-specific bindings that satisfy those requirements.
+Profiles provide environment-specific assets that satisfy those requirements.
 
 ## Best Practices
 
 - Keep profiles small and focused.
 - Store secrets externally.
-- Use stable logical bindings.
+- Use stable logical asset names.
 - Maintain separate profiles for development and production.
 - Validate profiles before planning.
 

@@ -66,6 +66,7 @@ def logical_graph_to_ir(graph: LogicalGraph) -> GraphIR:
             kind=node.kind.value,
             metadata={
                 "binding": node.binding,
+                "asset": node.binding,
                 "transformation": node.transformation_name,
             },
         )

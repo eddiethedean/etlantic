@@ -7,12 +7,12 @@ from types import MappingProxyType
 import pytest
 
 from etlantic import (
+    Extract,
     Input,
+    Load,
     Output,
     Parameter,
     Pipeline,
-    Sink,
-    Source,
     Transformation,
 )
 from etlantic.model import LogicalGraph, Node, NodeKind
@@ -32,14 +32,14 @@ class EchoCustomer(Transformation):
 
 def test_ambiguous_output_ref_is_invalid() -> None:
     class Pipe(Pipeline):
-        a: Source[Customer] = Source(binding="a")
-        b: Source[Customer] = Source(binding="b")
+        a: Extract[Customer] = Extract(asset="a")
+        b: Extract[Customer] = Extract(asset="b")
         echoed = EchoCustomer.step(
             customers=OutputRef(
                 node_name="", port_name="result", contract_type=Customer
             )
         )
-        out: Sink[Customer] = Sink(input=echoed.result, binding="out")
+        out: Load[Customer] = Load(input=echoed.result, asset="out")
 
     report = Pipe.validate()
     assert not report.valid
@@ -48,14 +48,14 @@ def test_ambiguous_output_ref_is_invalid() -> None:
 
 def test_unknown_subpipeline_binding_is_invalid() -> None:
     class Child(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = NormalizeCustomers.step(customers=raw)
-        curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+        curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 
     class Parent(Pipeline):
-        src: Source[RawCustomer] = Source(binding="src")
+        src: Extract[RawCustomer] = Extract(asset="src")
         child = Child.subpipeline(typo=src)
-        out: Sink[Customer] = Sink(input=child.curated, binding="out")
+        out: Load[Customer] = Load(input=child.curated, asset="out")
 
     report = Parent.validate()
     assert not report.valid
@@ -65,14 +65,14 @@ def test_unknown_subpipeline_binding_is_invalid() -> None:
 
 def test_invalid_producer_port_is_invalid() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
-        out: Sink[RawCustomer] = Sink(
+        raw: Extract[RawCustomer] = Extract(asset="raw")
+        out: Load[RawCustomer] = Load(
             input=OutputRef(
                 node_name="raw",
                 port_name="nope",
                 contract_type=RawCustomer,
             ),
-            binding="out",
+            asset="out",
         )
 
     report = Pipe.validate()
@@ -92,21 +92,21 @@ def test_transformation_inherits_parent_inputs() -> None:
     assert [p.name for p in ChildNormalize.outputs()] == ["result"]
 
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = ChildNormalize.step(customers=raw)
-        out: Sink[Customer] = Sink(input=normalized.result, binding="out")
+        out: Load[Customer] = Load(input=normalized.result, asset="out")
 
     assert Pipe.validate().valid
 
 
 def test_pipeline_inherits_parent_members() -> None:
     class BasePipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
         normalized = NormalizeCustomers.step(customers=raw)
-        out: Sink[Customer] = Sink(input=normalized.result, binding="out")
+        out: Load[Customer] = Load(input=normalized.result, asset="out")
 
     class ExtPipe(BasePipe):
-        extra: Source[Customer] = Source(binding="extra")
+        extra: Extract[Customer] = Extract(asset="extra")
 
     names = ExtPipe.inspect().node_names()
     assert "raw" in names
@@ -133,8 +133,8 @@ def test_parameter_with_default_stores_value() -> None:
 
 def test_cyclic_subpipeline_nesting_is_diagnostic() -> None:
     class Pipe(Pipeline):
-        raw: Source[RawCustomer] = Source(binding="raw")
-        out: Sink[RawCustomer] = Sink(input=raw.result, binding="out")
+        raw: Extract[RawCustomer] = Extract(asset="raw")
+        out: Load[RawCustomer] = Load(input=raw.result, asset="out")
 
     from etlantic.pipeline import _building_graphs
 

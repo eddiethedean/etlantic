@@ -86,6 +86,7 @@ def explain_plan(plan: PipelinePlan) -> dict[str, Any]:
                     else None
                 ),
                 "binding": node.binding,
+                "asset": node.binding,
                 "outputs": out_res,
             }
         )

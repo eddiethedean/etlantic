@@ -2,8 +2,13 @@
 
 !!! success "Available in ETLantic 0.11 (authoring)"
     Facade methods lower to published DTCS identifiers and emit profile
-    requirements on the portable plan. Compiler claims for each profile remain
-    planned for 0.12–0.15.
+    requirements on the portable plan. **Authoring is not the same as
+    executable support:** advertise a method as runnable only when a compiler
+    claims the matching profile (see the
+    [portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md)).
+    Kernel + `portable-relational/1` execute on Polars / PySpark / Pandas in
+    0.13–0.14; safe SQL lowering for that claim set is the **0.15** exit gate;
+    advanced families graduate under the 0.15 continuation backlog.
 
 Portable functions are imported through one stable namespace:
 
@@ -12,8 +17,10 @@ from etlantic.transform import functions as F
 ```
 
 Each public function maps to a DTCS Function or Operator registry identifier.
-ETLantic does not assign independent semantics. DTCS 2.0/3.0 / `dtcs` 0.13 publish
-the following mappings.
+ETLantic does not assign independent semantics. Published DTCS 3.0 / toolkit
+`dtcs` 0.14.0 is the current normative *content* floor where specs say so;
+ETLantic's install pin remains `dtcs>=0.13,<1` (do not treat the pin as a
+content version claim).
 
 ## Construction and conditional expressions
 
@@ -199,10 +206,11 @@ published standard catalog and remain excluded until standardized.
 
 ## DTCS 3.0 advanced families (published; ETLantic not yet claiming)
 
-DTCS 3.0 / `dtcs` 0.13 publish independently claimable profiles that cover many
-formerly excluded PySpark-like surfaces. ETLantic must not advertise these
-facade methods until the corresponding compiler claims the profile and
-conformance fixtures pass:
+DTCS 3.0 publishes independently claimable profiles that cover many formerly
+excluded PySpark-like surfaces. Facade methods may exist for IR authoring;
+ETLantic must not advertise them as **executable** until the corresponding
+compiler claims the profile and conformance fixtures pass (0.15 continuation,
+not the 0.15 SQL exit gate):
 
 | Planned facade examples | DTCS 3.0 profile |
 |---|---|

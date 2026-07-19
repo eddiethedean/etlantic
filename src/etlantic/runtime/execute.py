@@ -71,7 +71,20 @@ def _merge_plan_policies(request: RunRequest, plan: PipelinePlan) -> RunRequest:
 
     if retry is request.retry and timeout is request.timeout:
         return request
-    return replace(request, retry=retry, timeout=timeout)
+    return RunRequest(
+        selection=request.selection,
+        intent=request.intent,
+        materialization=request.materialization,
+        retry=retry,
+        timeout=timeout,
+        cancellation=request.cancellation,
+        parameter_overrides=dict(request.parameter_overrides),
+        asset_overrides=dict(request.binding_overrides),
+        implementation_overrides=dict(request.implementation_overrides),
+        invalidation=request.invalidation,
+        no_write=request.no_write,
+        metadata=dict(request.metadata),
+    )
 
 
 async def arun_pipeline(

@@ -77,19 +77,19 @@ already implemented. Compatibility is tracked independently:
 |---|---|---|---|
 | `dtcs:profile/portable-relational-kernel/1` | Published (2.0) | shipped (authoring) | shipped (Polars + PySpark + Pandas, 0.12–0.14) |
 | `dtcs:profile/portable-relational/1` | Published (2.0) | shipped (authoring) | shipped (Polars + PySpark + Pandas, 0.13–0.14) |
-| `dtcs:profile/portable-window/1` | Experimental (2.0) | shipped (alias authoring) | 0.15+ two-compiler graduation |
-| `dtcs:profile/portable-complex-types/1` | Experimental (2.0) | shipped (alias authoring) | 0.15+ two-compiler graduation |
+| `dtcs:profile/portable-window/1` | Experimental (2.0) | shipped (alias authoring) | 0.15 continuation (two-compiler graduation; not 0.15 exit gate) |
+| `dtcs:profile/portable-complex-types/1` | Experimental (2.0) | shipped (alias authoring) | 0.15 continuation (two-compiler graduation; not 0.15 exit gate) |
 | `dtcs:profile/portable-relational-kernel/2` | Candidate (3.0) | shipped (authoring, plan v2) | shipped (plan-v2 metadata via Polars kernel, 0.12) |
 | `dtcs:profile/portable-relational/2` | Candidate (3.0) | shipped (authoring) | metadata alias of `/1` on Polars + PySpark + Pandas (0.13–0.14); no candidate extensions |
-| `dtcs:profile/portable-string-advanced/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-conversion/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-statistics/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-complex-values/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-reshape/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-relational-extended/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-temporal-iana/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-nondeterministic/1` | Experimental (3.0) | shipped (authoring) | 0.15+ graduation |
-| `dtcs:profile/portable-window/2` | Candidate (3.0) | shipped (authoring) | 0.15+ graduation |
+| `dtcs:profile/portable-string-advanced/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-conversion/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-statistics/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-complex-values/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-reshape/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-relational-extended/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-temporal-iana/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
+| `dtcs:profile/portable-nondeterministic/1` | Experimental (3.0) | shipped (authoring) | 0.15 continuation (policy-gated; not 0.15 exit gate) |
+| `dtcs:profile/portable-window/2` | Candidate (3.0) | shipped (authoring) | 0.15 continuation (not 0.15 exit gate) |
 
 See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
 [DTCS 3.0 publication record](../11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).

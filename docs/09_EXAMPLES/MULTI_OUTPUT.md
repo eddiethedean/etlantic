@@ -308,27 +308,27 @@ from .transformations import ValidateAndNormalizeCustomers
 
 
 class CustomerValidationPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(
-        binding="customers_input",
+    raw: Extract[RawCustomer] = Extract(
+        asset="customers_input",
     )
 
     classified = ValidateAndNormalizeCustomers.step(
         customers=raw,
     )
 
-    valid_customers: Sink[Customer] = Sink(
+    valid_customers: Load[Customer] = Load(
         input=classified.valid,
-        binding="valid_customers_output",
+        asset="valid_customers_output",
     )
 
-    rejected_customers: Sink[RejectedCustomer] = Sink(
+    rejected_customers: Load[RejectedCustomer] = Load(
         input=classified.rejected,
-        binding="rejected_customers_output",
+        asset="rejected_customers_output",
     )
 
-    validation_metrics: Sink[ValidationMetrics] = Sink(
+    validation_metrics: Load[ValidationMetrics] = Load(
         input=classified.metrics,
-        binding="validation_metrics_output",
+        asset="validation_metrics_output",
     )
 ```
 
@@ -346,7 +346,7 @@ local = Profile(
     name="local",
     orchestrator="local-python",
     dataframe_engine="polars",
-    bindings={
+    assets={
         "customers_input": {
             "plugin": "csv",
             "path": "data/customers.csv",

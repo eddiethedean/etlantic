@@ -4,7 +4,7 @@
     `@Transformation.portable` authoring shipped in 0.11. This guide runs a
     kernel or relational plan on Polars/PySpark/Pandas without a native
     `@implementation(...)` for the advertised claim set. Safe SQL portable
-    lowering remains 0.15+.
+    lowering for that claim set is the **0.15** exit gate.
 
 Runnable companion:
 [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).
@@ -25,8 +25,8 @@ from etlantic import (
     Pipeline,
     PipelineRuntime,
     Profile,
-    Sink,
-    Source,
+    Load,
+    Extract,
     Transformation,
 )
 from etlantic.plan import explain_plan, plan_pipeline
@@ -63,9 +63,9 @@ def normalize(customers, minimum_age):
 
 
 class PortablePolarsPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customers")
+    raw: Extract[RawCustomer] = Extract(asset="customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Sink[Customer] = Sink(input=normalized.result, binding="curated")
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated")
 ```
 
 Inspect the emitted plan (no engine required):
@@ -135,8 +135,11 @@ when no compiler is discoverable).
 
 ## What remains future
 
-- Safe SQL portable lowering (0.15+)
-- Portable SQL lowering (0.15+)
+- Safe SQL portable lowering for kernel + `portable-relational/1` (**0.15**
+  exit gate)
+- Advanced portable profile graduation (window, reshape, …) under the **0.15
+  continuation** backlog after the SQL gate
 
-Keep `@implementation("pyspark")` / `"pandas"` / `"sql"` for those engines
-until their compilers ship.
+Polars, PySpark, and Pandas relational compilers already ship in 0.13–0.14.
+Keep `@implementation("sql")` until the portable SQL compiler ships; keep
+native callables for profiles outside the advertised claim set.

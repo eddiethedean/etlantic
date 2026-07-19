@@ -28,16 +28,16 @@ ETLantic uses pipeline definitions to:
 from etlantic import Pipeline, Sink, Source
 
 class CustomerPipeline(Pipeline):
-    raw: Source[RawCustomer] = Source(binding="customer_source")
+    raw: Extract[RawCustomer] = Extract(asset="customer_source")
 
     normalized = NormalizeCustomers.step(
         customers=raw,
         minimum_age=18,
     )
 
-    warehouse: Sink[Customer] = Sink(
+    warehouse: Load[Customer] = Load(
         input=normalized.result,
-        binding="customer_sink",
+        asset="customer_sink",
     )
 ```
 
@@ -87,7 +87,7 @@ The planner identifies:
 Sources introduce data into the graph.
 
 ```python
-customers: Source[RawCustomer] = Source(binding="customer_source")
+customers: Extract[RawCustomer] = Extract(asset="customer_source")
 ```
 
 Every source declares the contract of the data it produces.
@@ -109,9 +109,9 @@ Each transformation becomes a graph node.
 Sinks publish data outside the pipeline.
 
 ```python
-warehouse: Sink[Customer] = Sink(
+warehouse: Load[Customer] = Load(
     input=normalized.result,
-    binding="customer_sink",
+    asset="customer_sink",
 )
 ```
 
@@ -219,5 +219,5 @@ Avoid:
 
 ## Next Step
 
-Continue with **SOURCES.md** to learn how typed sources introduce data into a
+Continue with **EXTRACTS.md** to learn how typed sources introduce data into a
 pipeline.

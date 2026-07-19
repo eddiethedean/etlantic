@@ -157,9 +157,9 @@ expressions without changing its normative meaning.
 
 ## Profile
 
-A named runtime configuration that selects bindings, resources, and
-execution settings for a pipeline without changing its logical
-definition.
+A named runtime configuration that selects logical assets (prefer
+`assets=`), resources, and execution settings for a pipeline without
+changing its logical definition.
 
 ## Resource
 
@@ -171,10 +171,16 @@ connection, object storage client, or API client.
 A Plugin SDK component that acquires, scopes, injects, and cleans up runtime
 resources.
 
+## Load
+
+Typed pipeline publication boundary (`Load[T]`). Declares a logical **asset**
+name resolved by a profile. Receives data from upstream transformations and
+publishes it through an execution plugin. Deprecated alias: `Sink`. Wire/plan
+field remains `binding`.
+
 ## Sink
 
-A pipeline node that receives data produced by upstream transformations
-and writes or publishes it through an execution plugin.
+Deprecated alias of [Load](#load) (removed in 0.16).
 
 ## Secret Provider
 
@@ -191,10 +197,22 @@ version policy. It never contains the resolved secret value.
 A runtime-only sensitive wrapper whose display is redacted and whose ordinary
 serialization is prohibited.
 
+## Extract
+
+Typed pipeline entry boundary (`Extract[T]`). Declares a logical **asset**
+name resolved by a profile and introduces data from an external system.
+Deprecated alias: `Source`. Graph kind remains `"source"`; DPCS retains
+`etlantic:binding`.
+
+## Asset
+
+Public authoring name for a logical extract/load identifier (`asset=`).
+Profiles prefer `Profile.assets`. Serialized plans and plugins still use
+`binding` for stability.
+
 ## Source
 
-A pipeline node that introduces data into a pipeline from an external
-system.
+Deprecated alias of [Extract](#extract) (removed in 0.16).
 
 ## Step
 

@@ -32,7 +32,7 @@ from etlantic.interchange.policy import DEFAULT_DPCS_VERSION, check_dpcs_version
 from etlantic.interchange.provenance import ArtifactProvenance, ProvenanceKind
 from etlantic.interchange.security import read_text_bounded, resolve_safe_path
 from etlantic.model import LogicalGraph, NodeKind
-from etlantic.pipeline import Sink, Source
+from etlantic.pipeline import Extract, Load
 from etlantic.refs import OutputRef
 
 
@@ -266,13 +266,15 @@ def pipeline_from_dpcs(
         str(step["id"]): {} for step in doc.get("steps") or []
     }
     sink_inputs: dict[str, Any] = {}
-    source_nodes: dict[str, Source] = {}
+    source_nodes: dict[str, Extract] = {}
 
     for entry in doc.get("interface", {}).get("inputs") or []:
         name = str(entry["id"])
         contract = _resolve_odcs_type(entry.get("contractRef"), odcs_types)
         binding = entry.get("etlantic:binding") or name
-        source_nodes[name] = Source(binding=str(binding), contract_type=contract)
+        source_nodes[name] = Extract(
+            asset=str(binding), contract_type=contract, _compat_warn=False
+        )
 
     for item in flow:
         src = str(item["from"])
@@ -303,7 +305,7 @@ def pipeline_from_dpcs(
     for name, source in source_nodes.items():
         namespace[name] = source
         if source.contract_type is not None:
-            annotations[name] = Source[source.contract_type]  # type: ignore[index]
+            annotations[name] = Extract[source.contract_type]  # type: ignore[index]
 
     for step in doc.get("steps") or []:
         step_id = str(step["id"])
@@ -318,26 +320,27 @@ def pipeline_from_dpcs(
         producer = sink_inputs.get(name)
         if producer is None:
             raise DpcsError(
-                f"Sink {name!r} has no inbound data flow.",
+                f"Load {name!r} has no inbound data flow.",
                 report=ValidationReport.from_diagnostics(
                     [
                         Diagnostic(
                             code="PMGEN213",
                             severity=Severity.ERROR,
-                            message=f"Sink {name!r} has no inbound data flow.",
+                            message=f"Load {name!r} has no inbound data flow.",
                             path=("dpcs", "interface", "outputs", name),
                         )
                     ]
                 ),
             )
         binding = entry.get("etlantic:binding") or name
-        namespace[name] = Sink(
+        namespace[name] = Load(
             input=producer,
-            binding=str(binding),
+            asset=str(binding),
             contract_type=contract,
+            _compat_warn=False,
         )
         if contract is not None:
-            annotations[name] = Sink[contract]  # type: ignore[index]
+            annotations[name] = Load[contract]  # type: ignore[index]
 
     namespace["__annotations__"] = annotations
     dynamic_name = class_name or _safe_class_name(str(doc.get("name") or doc["id"]))
@@ -561,7 +564,7 @@ def _resolve_odcs_type(ref: Any, odcs_types: dict[str, type[Any]]) -> type[Any] 
 def _parse_endpoint(
     endpoint: str,
     *,
-    source_nodes: dict[str, Source],
+    source_nodes: dict[str, Extract],
     transform_types: dict[str, type[Any]],
     step_defs: dict[str, dict[str, Any]],
 ) -> Any:

@@ -125,7 +125,8 @@ DTCS 3.0.0 defines the implementation-independent Transformation Plan
 (including bounded lambdas), functions, semantic actions, and engine
 capability model. DTCS 2.0 identifiers and `dtcs.transform-plan/1` remain
 readable. The `dtcs` 0.14.0 toolkit publishes the canonical models and
-conformance surfaces. ETLantic depends on `dtcs>=0.13,<1`.
+conformance surfaces (current normative *content* floor). ETLantic's install
+pin remains `dtcs>=0.13,<1` and is not itself a content-version claim.
 
 What remains proposed is ETLantic's `etlantic.transform/1` ergonomic authoring
 profile and its backend compiler integrations—not DTCS Transformation Plan

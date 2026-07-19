@@ -52,7 +52,8 @@ context.registry.register_binding(
 )
 ```
 
-The binding names must match the `Source` and `Sink` declarations. Use
+The binding names must match the `Extract` / `Load` `asset=` declarations
+(registry descriptors still use the wire field `binding=`). Use
 `provider="csv"` for CSV files. The complete source is
 [`examples/file_storage.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py).
 

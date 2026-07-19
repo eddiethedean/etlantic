@@ -3,8 +3,9 @@
 !!! success "Available in ETLantic 0.11 (authoring) / 0.12–0.14 (relational compilers)"
     `@Transformation.portable` and `etlantic.transform` emit validated
     `dtcs.transform-plan/2` IR. Polars, PySpark, and Pandas execute kernel +
-    `portable-relational/1` plans in 0.12–0.14; richer profiles and SQL
-    lowering need native implementations or 0.15+ compilers.
+    `portable-relational/1` plans in 0.12–0.14; safe SQL lowering for that
+    claim set is the **0.15** exit gate; richer profiles need native
+    implementations until they graduate under the 0.15 continuation backlog.
 
 A portable transformation expresses dataframe logic once and lets ETLantic
 plugins compile it for Polars, Pandas, SQL, PySpark, and future engines.

@@ -1,4 +1,4 @@
-"""Pipeline authoring: Source, Sink, Pipeline, and subpipelines."""
+"""Pipeline authoring: Extract, Load, Pipeline, and subpipelines."""
 
 from __future__ import annotations
 
@@ -8,6 +8,11 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, ClassVar, TypeVar
 
+from etlantic._compat import (
+    resolve_asset_identifier,
+    warn_binding_property,
+    warn_source_sink_name,
+)
 from etlantic.contracts import is_data_contract_type
 from etlantic.identity import contract_id, node_id, pipeline_id
 from etlantic.model import (
@@ -24,7 +29,7 @@ from etlantic.transformation import Step
 T = TypeVar("T")
 
 _subpipeline_key_counter = itertools.count(1)
-_source_key_counter = itertools.count(1)
+_extract_key_counter = itertools.count(1)
 _building_graphs: set[type[Any]] = set()
 
 
@@ -37,7 +42,7 @@ def _class_annotations(cls: type[Any]) -> dict[str, Any]:
 
 
 class _TypedFactory:
-    """Callable ``Source[T]`` / ``Sink[T]`` factory that also works as an annotation."""
+    """Callable ``Extract[T]`` / ``Load[T]`` factory that also works as an annotation."""
 
     __slots__ = ("__args__", "__origin__", "contract_type", "origin")
 
@@ -55,28 +60,66 @@ class _TypedFactory:
         return f"{self.origin.__name__}[{name}]"
 
 
-@dataclass
-class Source:
-    """A typed logical data origin in a pipeline."""
+class Extract:
+    """A typed logical entry boundary that introduces data into a pipeline.
 
-    binding: str
-    contract_type: type[Any] | None = None
-    name: str | None = None
-    pipeline_id: str | None = None
-    producer_key: str = field(
-        default_factory=lambda: f"source-{next(_source_key_counter)}"
+    Constructing an ``Extract`` never reads data. Profiles resolve the logical
+    ``asset`` name to an environment-specific provider at plan/runtime time.
+    """
+
+    __slots__ = (
+        "asset",
+        "contract_type",
+        "name",
+        "pipeline_id",
+        "producer_key",
     )
+
+    def __init__(
+        self,
+        asset: str | None = None,
+        *,
+        binding: str | None = None,
+        contract_type: type[Any] | None = None,
+        name: str | None = None,
+        pipeline_id: str | None = None,
+        producer_key: str | None = None,
+        _compat_warn: bool = True,
+    ) -> None:
+        self.asset = resolve_asset_identifier(
+            asset=asset,
+            binding=binding,
+            warn=_compat_warn,
+            stacklevel=3,
+        )
+        self.contract_type = contract_type
+        self.name = name
+        self.pipeline_id = pipeline_id
+        self.producer_key = producer_key or f"source-{next(_extract_key_counter)}"
 
     def __class_getitem__(cls, item: type[Any]) -> _TypedFactory:
         return _TypedFactory(cls, item)
 
+    def __repr__(self) -> str:
+        ctype = getattr(self.contract_type, "__name__", self.contract_type)
+        return (
+            f"{type(self).__name__}(asset={self.asset!r}, "
+            f"contract_type={ctype!r}, name={self.name!r})"
+        )
+
+    @property
+    def binding(self) -> str:
+        """Deprecated alias for :attr:`asset` (removed in 0.16)."""
+        warn_binding_property(stacklevel=2)
+        return self.asset
+
     @property
     def result(self) -> OutputRef[Any]:
-        """Default output reference for this source."""
+        """Default output reference for this extract."""
         return self.as_output_ref()
 
     def as_output_ref(self, *, default_port: str = "result") -> OutputRef[Any]:
-        """Return an OutputRef for this source's produced dataset."""
+        """Return an OutputRef for this extract's produced dataset."""
         name = self.name or ""
         return OutputRef(
             node_name=name,
@@ -87,38 +130,144 @@ class Source:
             producer_key=self.producer_key,
         )
 
-    def bind(self, name: str, *, pipeline_id: str | None = None) -> Source:
-        """Return a source bound to a node name within a pipeline."""
-        return Source(
-            binding=self.binding,
+    def bind(self, name: str, *, pipeline_id: str | None = None) -> Extract:
+        """Return an extract bound to a node name within a pipeline."""
+        return type(self)(
+            asset=self.asset,
             contract_type=self.contract_type,
             name=name,
             pipeline_id=pipeline_id,
             producer_key=self.producer_key,
+            _compat_warn=False,
         )
 
 
-@dataclass
-class Sink:
-    """A typed logical data destination in a pipeline."""
+class Load:
+    """A typed logical publication boundary that receives data from a pipeline.
 
-    input: Any
-    binding: str
-    contract_type: type[Any] | None = None
-    name: str | None = None
-    pipeline_id: str | None = None
+    Constructing a ``Load`` never writes data. Profiles resolve the logical
+    ``asset`` name to an environment-specific provider at plan/runtime time.
+    """
+
+    __slots__ = (
+        "asset",
+        "contract_type",
+        "input",
+        "name",
+        "pipeline_id",
+    )
+
+    def __init__(
+        self,
+        input: Any = None,
+        asset: str | None = None,
+        *,
+        binding: str | None = None,
+        contract_type: type[Any] | None = None,
+        name: str | None = None,
+        pipeline_id: str | None = None,
+        _compat_warn: bool = True,
+    ) -> None:
+        self.input = input
+        self.asset = resolve_asset_identifier(
+            asset=asset,
+            binding=binding,
+            warn=_compat_warn,
+            stacklevel=3,
+        )
+        self.contract_type = contract_type
+        self.name = name
+        self.pipeline_id = pipeline_id
 
     def __class_getitem__(cls, item: type[Any]) -> _TypedFactory:
         return _TypedFactory(cls, item)
 
-    def bind(self, name: str, *, pipeline_id: str | None = None) -> Sink:
-        """Return a sink bound to a node name within a pipeline."""
-        return Sink(
+    def __repr__(self) -> str:
+        ctype = getattr(self.contract_type, "__name__", self.contract_type)
+        return (
+            f"{type(self).__name__}(asset={self.asset!r}, "
+            f"contract_type={ctype!r}, name={self.name!r})"
+        )
+
+    @property
+    def binding(self) -> str:
+        """Deprecated alias for :attr:`asset` (removed in 0.16)."""
+        warn_binding_property(stacklevel=2)
+        return self.asset
+
+    def bind(self, name: str, *, pipeline_id: str | None = None) -> Load:
+        """Return a load bound to a node name within a pipeline."""
+        return type(self)(
             input=self.input,
-            binding=self.binding,
+            asset=self.asset,
             contract_type=self.contract_type,
             name=name,
             pipeline_id=pipeline_id,
+            _compat_warn=False,
+        )
+
+
+class Source(Extract):
+    """Deprecated alias for :class:`Extract` (removed in 0.16)."""
+
+    def __init__(
+        self,
+        asset: str | None = None,
+        *,
+        binding: str | None = None,
+        contract_type: type[Any] | None = None,
+        name: str | None = None,
+        pipeline_id: str | None = None,
+        producer_key: str | None = None,
+        _compat_warn: bool = True,
+    ) -> None:
+        if _compat_warn:
+            warn_source_sink_name(
+                legacy_name="Source",
+                replacement="Extract",
+                used_binding=binding is not None and asset is None,
+                stacklevel=3,
+            )
+        super().__init__(
+            asset=asset,
+            binding=binding,
+            contract_type=contract_type,
+            name=name,
+            pipeline_id=pipeline_id,
+            producer_key=producer_key,
+            _compat_warn=False,
+        )
+
+
+class Sink(Load):
+    """Deprecated alias for :class:`Load` (removed in 0.16)."""
+
+    def __init__(
+        self,
+        input: Any = None,
+        asset: str | None = None,
+        *,
+        binding: str | None = None,
+        contract_type: type[Any] | None = None,
+        name: str | None = None,
+        pipeline_id: str | None = None,
+        _compat_warn: bool = True,
+    ) -> None:
+        if _compat_warn:
+            warn_source_sink_name(
+                legacy_name="Sink",
+                replacement="Load",
+                used_binding=binding is not None and asset is None,
+                stacklevel=3,
+            )
+        super().__init__(
+            input=input,
+            asset=asset,
+            binding=binding,
+            contract_type=contract_type,
+            name=name,
+            pipeline_id=pipeline_id,
+            _compat_warn=False,
         )
 
 
@@ -192,7 +341,7 @@ class _PipelineNamespace(dict[str, Any]):
         if (
             not key.startswith("_")
             and key not in self
-            and isinstance(value, (Source, Sink, Step, SubpipelineInstance))
+            and isinstance(value, (Extract, Load, Step, SubpipelineInstance))
         ):
             self._member_order.append(key)
         super().__setitem__(key, value)
@@ -223,7 +372,7 @@ class _PipelineMeta(type):
 class Pipeline(metaclass=_PipelineMeta):
     """Declarative typed pipeline graph.
 
-    Subclasses declare ``Source``, transformation ``Step``, ``Sink``, and
+    Subclasses declare ``Extract``, transformation ``Step``, ``Load``, and
     optional subpipeline members. Importing a pipeline does not execute it.
     """
 
@@ -476,7 +625,7 @@ class Pipeline(metaclass=_PipelineMeta):
 
 
 def _annotation_contract(cls: type[Any], name: str) -> type[Any] | None:
-    """Extract a contract type from a Source[T] / Sink[T] class annotation."""
+    """Extract a contract type from an Extract[T] / Load[T] class annotation."""
     annotations = _class_annotations(cls)
     annotation = annotations.get(name)
     if annotation is None:
@@ -495,8 +644,8 @@ def _annotation_contract(cls: type[Any], name: str) -> type[Any] | None:
 
 
 def _collect_pipeline_members(cls: type[Pipeline]) -> dict[str, Any]:
-    """Collect Source/Step/Sink/Subpipeline members across the class MRO."""
-    member_types = (Source, Sink, Step, SubpipelineInstance)
+    """Collect Extract/Step/Load/Subpipeline members across the class MRO."""
+    member_types = (Extract, Load, Step, SubpipelineInstance)
     # Bases first (excluding Pipeline/object), then the concrete class last so
     # subclass attributes override inherited ones by name.
     bases = [
@@ -542,23 +691,26 @@ def _collect_pipeline_members(cls: type[Pipeline]) -> dict[str, Any]:
     for name in ordered_names:
         value = raw_values[name]
         owner = _member_owner(cls, name)
-        if isinstance(value, Source):
+        if isinstance(value, Extract) and not isinstance(value, Load):
             contract = value.contract_type or _annotation_contract(owner or cls, name)
-            members[name] = Source(
-                binding=value.binding,
+            # Quiet rebuild: preserve concrete Source/Extract type without warnings.
+            members[name] = type(value)(
+                asset=value.asset,
                 contract_type=contract,
                 name=name,
                 pipeline_id=pid,
                 producer_key=value.producer_key,
+                _compat_warn=False,
             )
-        elif isinstance(value, Sink):
+        elif isinstance(value, Load):
             contract = value.contract_type or _annotation_contract(owner or cls, name)
-            members[name] = Sink(
+            members[name] = type(value)(
                 input=value.input,
-                binding=value.binding,
+                asset=value.asset,
                 contract_type=contract,
                 name=name,
                 pipeline_id=pid,
+                _compat_warn=False,
             )
         elif isinstance(value, (Step, SubpipelineInstance)):
             members[name] = value.bind_name(name, pipeline_id=pid)
@@ -585,7 +737,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
     # First pass: create nodes
     for name, member in members.items():
         nid = node_id(pid, name)
-        if isinstance(member, Source):
+        if isinstance(member, Extract) and not isinstance(member, Load):
             ctype = member.contract_type
             cid = contract_id(ctype) if ctype is not None else None
             nodes.append(
@@ -595,7 +747,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
                     identity=nid,
                     contract_type=ctype,
                     contract_id=cid,
-                    binding=member.binding,
+                    binding=member.asset,
                     outputs=(
                         PortSpec(
                             name="result",
@@ -654,7 +806,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
                     parameters=params,
                 )
             )
-        elif isinstance(member, Sink):
+        elif isinstance(member, Load):
             ctype = member.contract_type
             cid = contract_id(ctype) if ctype is not None else None
             nodes.append(
@@ -664,7 +816,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
                     identity=nid,
                     contract_type=ctype,
                     contract_id=cid,
-                    binding=member.binding,
+                    binding=member.asset,
                     inputs=(
                         PortSpec(
                             name="input",
@@ -739,7 +891,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
                         else None,
                     )
                 )
-        elif isinstance(member, Sink):
+        elif isinstance(member, Load):
             producer = _resolve_binding_ref(
                 member.input, members=members, pipeline_cls=cls, port_hint="input"
             )
@@ -819,7 +971,11 @@ def _resolve_binding_ref(
                 and value.port_name in member.output_refs
             ):
                 return member.output_refs[value.port_name]
-            if isinstance(member, Source) and member.producer_key == value.producer_key:
+            if (
+                isinstance(member, Extract)
+                and not isinstance(member, Load)
+                and member.producer_key == value.producer_key
+            ):
                 return member.as_output_ref()
             if (
                 isinstance(member, SubpipelineInstance)
@@ -844,16 +1000,21 @@ def _resolve_binding_ref(
         # Stale producer_key must not fall through to fuzzy matching.
         return None
 
-    if isinstance(value, Source):
+    if isinstance(value, Extract) and not isinstance(value, Load):
         if value.name:
             for member in members.values():
-                if isinstance(member, Source) and member.name == value.name:
+                if (
+                    isinstance(member, Extract)
+                    and not isinstance(member, Load)
+                    and member.name == value.name
+                ):
                     return member.as_output_ref()
         matches = [
             member.as_output_ref()
             for member in members.values()
-            if isinstance(member, Source)
-            and member.binding == value.binding
+            if isinstance(member, Extract)
+            and not isinstance(member, Load)
+            and member.asset == value.asset
             and (
                 value.contract_type is None
                 or member.contract_type is value.contract_type
@@ -879,7 +1040,11 @@ def _resolve_binding_ref(
                     or candidate.contract_type is value.contract_type
                 ):
                     matches.append(candidate)
-            elif isinstance(member, Source) and value.port_name in {"result", "output"}:
+            elif (
+                isinstance(member, Extract)
+                and not isinstance(member, Load)
+                and value.port_name in {"result", "output"}
+            ):
                 if (
                     value.contract_type is None
                     or member.contract_type is value.contract_type

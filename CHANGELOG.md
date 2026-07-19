@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Clarified the 0.15 roadmap: **Safe SQL Lowering** (kernel +
+  `portable-relational/1`) is the mandatory exit gate; advanced portable
+  profile graduation is sequenced afterward as **0.15 continuation**, not
+  mixed into the 0.15 exit criteria.
+- **Authoring vocabulary (second 0.15 theme):** prefer `Extract` / `Load` /
+  `asset=` and `Profile.assets` / `RunRequest.asset_overrides`. Legacy
+  `Source` / `Sink` / `binding=` / `Profile.bindings` /
+  `RunRequest.binding_overrides` emit `DeprecationWarning` and are scheduled
+  for removal in **0.16**. Plan/DPCS/plugin wire names (`binding`,
+  `NodeKind` source/sink, `etlantic:binding`) remain unchanged for fingerprint
+  and protocol stability. See
+  `docs/11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md`.
+
 ## [0.14.0] - 2026-07-18
 
 ### Added
