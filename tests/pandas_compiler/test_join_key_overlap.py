@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-import pandas as pd
 import pytest
+
+pytest.importorskip("pandas")
+
+import pandas as pd
 
 from etlantic_pandas.lowering.actions import apply_action
 
