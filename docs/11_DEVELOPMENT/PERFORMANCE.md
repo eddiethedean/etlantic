@@ -1,6 +1,6 @@
 # Performance Guidance
 
-> **Status: Available in ETLantic 0.20.0 framing.** ETLantic publishes **no**
+> **Status: Available in ETLantic 0.21.0 framing.** ETLantic publishes **no**
 > capacity, throughput, or latency claims for production sizing.
 
 Recorded smoke baselines (historical, ETLantic **0.10.0**) prove only that a

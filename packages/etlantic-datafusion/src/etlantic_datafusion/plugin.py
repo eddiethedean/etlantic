@@ -8,7 +8,7 @@ from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.protocol import DataframePluginInfo
 from etlantic.interchange.tabular import InterchangeMechanism
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 
 class DataFusionPlugin:

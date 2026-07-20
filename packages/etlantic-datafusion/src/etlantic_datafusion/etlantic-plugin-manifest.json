@@ -4,7 +4,7 @@
     "portable",
     "experimental"
   ],
-  "digest": "sha256:74b48e6234f9b3994e153ebd79367170fbe25b77aabb4c45fe6fa83101ba5588",
+  "digest": "sha256:9ba68b7149cf6e1b044be77befe51daf1b14b0aa7e467f674f51a939ab714cfd",
   "entries": [
     {
       "capabilities": [
@@ -37,5 +37,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.20.0"
+  "version": "0.21.0"
 }

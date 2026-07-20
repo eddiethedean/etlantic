@@ -34,7 +34,7 @@ from etlantic_polars.lowering.actions import (
     apply_action,
 )
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 # Kernel scalar / string / numeric functions claimed in 0.12+.
 KERNEL_FUNCTIONS = frozenset(

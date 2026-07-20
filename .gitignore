@@ -27,3 +27,6 @@ examples/_file_storage_out/
 examples/_generated_*.py
 tmp_cli_contracts/
 tmp_/
+
+# Local durable workspace (reports, artifacts, schema history)
+.etlantic/

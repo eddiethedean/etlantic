@@ -15,7 +15,7 @@ validate and plan them once; run locally or through optional engine plugins.
 
 ## Five-minute path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.20.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.21.0`
 2. [Quickstart](QUICKSTART.md) — copy, run, see Ada Lovelace
 3. [First Pipeline](FIRST_PIPELINE.md) — CLI `inspect` / `validate` / `plan`
 4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
@@ -74,7 +74,7 @@ PipelinePlan (secret-free, deterministic)
 Run locally  |  Compile (Airflow)  |  Generate contracts
 ```
 
-ETLantic 0.20.0 can execute registered Python implementations with its local
+ETLantic 0.21.0 can execute registered Python implementations with its local
 runtime and optional Polars/Pandas/SQL/PySpark plugins, compile plans to
 Airflow DAGs via `etlantic-airflow`, execute plans through the Prefect local
 MVP, and compile supported portable transformation families without native

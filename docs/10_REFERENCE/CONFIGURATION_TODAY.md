@@ -1,6 +1,6 @@
-# Configuration in 0.20.0
+# Configuration in 0.21.0
 
-ETLantic 0.20.0 configures execution with a `Profile` object or a JSON profile
+ETLantic 0.21.0 configures execution with a `Profile` object or a JSON profile
 document. It does **not** load `etlantic.toml`.
 
 ## Profile fields
@@ -92,7 +92,7 @@ from `DATABASE_PASSWORD_TOKEN`. Applications may instantiate
 `EnvSecretProvider(prefix="ETLANTIC_SECRET_")` themselves and register it on a
 runtime, but `ETLANTIC_SECRET_*` is not an ambient core convention.
 
-ETLantic 0.20.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
+ETLantic 0.21.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
 `ETLANTIC_PROJECT`, logging overrides, or output-format overrides. Names on
 [Environment Variables](ENVIRONMENT_VARIABLES.md) are proposed unless this
 page lists them as shipped.

@@ -1,6 +1,6 @@
 # Controlled Pilot Walkthrough
 
-ETLantic 0.20.0 is production/stable for the documented single-tenant reference
+ETLantic 0.21.0 is production/stable for the documented single-tenant reference
 deployment. Use this walkthrough with pinned dependencies, explicit rollback,
 and reviewed plans. Multi-tenant topology, compliance/SBOM/signing, and
 advanced supply-chain controls remain adopter-owned; this is not an
@@ -12,7 +12,7 @@ Create an isolated Python 3.11–3.13 environment and pin core plus only the
 plugins the pilot needs:
 
 ```bash
-python -m pip install "etlantic==0.20.0" "etlantic-polars==0.20.0"
+python -m pip install "etlantic==0.21.0" "etlantic-polars==0.21.0"
 etlantic --help
 ```
 
@@ -76,7 +76,7 @@ write_profile(
         dataframe_engine="polars",
         security_domain="production",
         validation_policy="strict",
-        plugin_allowlist={"etlantic-polars": "==0.20.0"},
+        plugin_allowlist={"etlantic-polars": "==0.21.0"},
         assets={
             "customer_source": "reviewed-source",
             "customer_sink": "reviewed-sink",

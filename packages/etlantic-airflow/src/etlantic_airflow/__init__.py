@@ -5,7 +5,7 @@ from __future__ import annotations
 from etlantic_airflow.loader import load_compiled_module, load_compiled_pipeline
 from etlantic_airflow.plugin import AirflowOrchestratorPlugin, create_plugin
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 __all__ = [
     "AirflowOrchestratorPlugin",

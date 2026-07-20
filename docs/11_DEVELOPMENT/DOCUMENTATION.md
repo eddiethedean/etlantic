@@ -6,7 +6,7 @@ Documentation is part of the public API.
 
 Every page describing product behavior must be one of:
 
-- **Available in 0.20** (or the first shipped milestone when still current)
+- **Available in 0.21** (or the first shipped milestone when still current)
 - **Experimental**
 - **Partially available**
 - **Future design**

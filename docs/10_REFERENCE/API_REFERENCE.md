@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.20.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.21.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -81,7 +81,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.20.0 is **stable** for documented single-tenant reference
+ETLantic 0.21.0 is **stable** for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and

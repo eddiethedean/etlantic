@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from etlantic.reports.file_store import FileReportStore, compare_reports
 from etlantic.reports.model import (
     REPORT_SCHEMA,
     ArtifactResult,
@@ -22,6 +23,7 @@ __all__ = [
     "REPORT_SCHEMA",
     "ArtifactResult",
     "BackendRunReference",
+    "FileReportStore",
     "PipelineRunReport",
     "ReportStore",
     "RunDiagnostic",
@@ -31,6 +33,7 @@ __all__ = [
     "StateTransitionResult",
     "StepRunReport",
     "ValidationResult",
+    "compare_reports",
     "render_html",
     "render_text",
 ]

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-datafusion"
-version = "0.20.0"
+version = "0.21.0"
 description = "Experimental DataFusion dataframe + portable transform plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.20.0,<0.21",
+    "etlantic>=0.21.0,<0.22",
 ]
 # Optional heavy deps for a future graduated runtime (not required to import stubs):
 # datafusion>=40,<50 ; pyarrow>=14

@@ -1,4 +1,4 @@
-# Installing ETLantic 0.20.0
+# Installing ETLantic 0.21.0
 
 ## Requirements
 
@@ -13,14 +13,14 @@ when installing with pip (`python -m venv .venv` then activate it). Prefer
 
 ```bash
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.20.0'
+python -m pip install 'etlantic==0.21.0'
 python -m etlantic --version
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add 'etlantic==0.20.0'
+uv add 'etlantic==0.21.0'
 uv run etlantic --version
 ```
 
@@ -32,7 +32,7 @@ python -c "import etlantic; print(etlantic.__version__)"
 
 ```powershell
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.20.0'
+py -3.11 -m pip install 'etlantic==0.21.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -51,29 +51,29 @@ explicitly and **match the core minor** (`0.20.0` with `0.20.0`).
 **Primary install (separate packages):**
 
 ```bash
-pip install 'etlantic-polars==0.20.0'     # dataframe + Polars portable compiler
-pip install 'etlantic-pandas==0.20.0'     # dataframe + Pandas portable compiler
-pip install 'etlantic-sql==0.20.0'        # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.20.0'    # PySpark plugin + portable compiler
-pip install 'etlantic-airflow==0.20.0'    # Airflow DAG compiler
-pip install 'etlantic-prefect==0.20.0'    # Prefect direct-execution scheduler
-pip install 'etlantic-keyring==0.20.0'    # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.20.0'   # SQLModel bridge helpers
-pip install 'etlantic-sparkforge==0.20.0' # SparkForge → ETLantic IR adapter
+pip install 'etlantic-polars==0.21.0'     # dataframe + Polars portable compiler
+pip install 'etlantic-pandas==0.21.0'     # dataframe + Pandas portable compiler
+pip install 'etlantic-sql==0.21.0'        # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.21.0'    # PySpark plugin + portable compiler
+pip install 'etlantic-airflow==0.21.0'    # Airflow DAG compiler
+pip install 'etlantic-prefect==0.21.0'    # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.21.0'    # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.21.0'   # SQLModel bridge helpers
+pip install 'etlantic-sparkforge==0.21.0' # SparkForge → ETLantic IR adapter
 ```
 
 **Equivalent extras** (same packages, same pins):
 
 ```bash
-pip install 'etlantic[polars]==0.20.0'
-pip install 'etlantic[pandas]==0.20.0'
-pip install 'etlantic[dataframes]==0.20.0'   # polars + pandas
-pip install 'etlantic[sql]==0.20.0'          # alias: [postgresql]
-pip install 'etlantic[pyspark]==0.20.0'      # alias: [spark]
-pip install 'etlantic[airflow]==0.20.0'
-pip install 'etlantic[prefect]==0.20.0'
+pip install 'etlantic[polars]==0.21.0'
+pip install 'etlantic[pandas]==0.21.0'
+pip install 'etlantic[dataframes]==0.21.0'   # polars + pandas
+pip install 'etlantic[sql]==0.21.0'          # alias: [postgresql]
+pip install 'etlantic[pyspark]==0.21.0'      # alias: [spark]
+pip install 'etlantic[airflow]==0.21.0'
+pip install 'etlantic[prefect]==0.21.0'
 # Experimental Gate B stub (not graduated; not recommended):
-pip install 'etlantic[datafusion]==0.20.0'
+pip install 'etlantic[datafusion]==0.21.0'
 ```
 
 Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`.
@@ -161,7 +161,7 @@ Install pytest, ruff, and mkdocs manually or switch to `uv sync --locked`.
 Prefer the [Upgrade hub](UPGRADE.md). Quick pin:
 
 ```bash
-python -m pip install --upgrade 'etlantic==0.20.0'
+python -m pip install --upgrade 'etlantic==0.21.0'
 ```
 
 ## Development commands

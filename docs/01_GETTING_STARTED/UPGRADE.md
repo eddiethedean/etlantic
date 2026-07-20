@@ -5,12 +5,13 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.20.0** — choose your guide:
+**ETLantic 0.21.0** — choose your guide:
 
 | Current version | Start here |
 |---|---|
-| 0.19.x | [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) |
-| 0.18.x | [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md), then [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) |
+| 0.20.x | [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) |
+| 0.19.x | [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md), then [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) |
+| 0.18.x | [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md), then follow the chain to 0.21 |
 | ≤ 0.17 | Follow the [migration chain](#migration-chain-newest-first) below |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
@@ -21,6 +22,7 @@ interchange descriptors. Review
 
 | From → To | Guide |
 |---|---|
+| 0.20 → 0.21 | [MIGRATION_0_20_TO_0_21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) |
 | 0.19 → 0.20 | [MIGRATION_0_19_TO_0_20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) |
 | 0.18 → 0.19 | [MIGRATION_0_18_TO_0_19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) |
 | 0.17 → 0.18 | [MIGRATION_0_17_TO_0_18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) |
@@ -61,6 +63,19 @@ interchange descriptors. Review
 
 See [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) for examples and
 [Security](../02_FOUNDATIONS/SECURITY.md) for the full trust model.
+
+## 0.21 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Ephemeral-only report store | Default durable `.etlantic/reports` workspace; `--ephemeral` for process-local |
+| Implicit project layout | Optional `etlantic.toml` + `profiles/`; `etlantic init` scaffolds |
+| Legacy profile `bindings` | Structured `assets` descriptors; `--accept-legacy-bindings` for migration only |
+| Ad hoc profile JSON paths | `etlantic profile validate/show/diff/migrate` |
+| `reliability plan-diff` | `etlantic plan diff` |
+| Human-only plan explain | `etlantic plan explain --format human` |
+
+See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) for CLI and workspace details.
 
 ## Checklist
 

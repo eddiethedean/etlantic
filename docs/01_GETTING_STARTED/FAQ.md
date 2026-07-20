@@ -200,7 +200,7 @@ Yes. Keep core and optional plugins on the same minor release. For a
 reproducible 0.20.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.20.0' 'etlantic-polars==0.20.0'
+python -m pip install 'etlantic==0.21.0' 'etlantic-polars==0.21.0'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or

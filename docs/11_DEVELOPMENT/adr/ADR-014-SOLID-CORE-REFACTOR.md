@@ -50,5 +50,5 @@ uv run python examples/quickstart.py
 ## Consequences
 
 - God modules shrink; new engines register via `EngineFamily` + `EngineExecutor`
-- No user-facing API migration for 0.20.x
+- No user-facing API migration for 0.21.x
 - Plugin packages (`etlantic-polars`, etc.) deferred to a follow-on effort

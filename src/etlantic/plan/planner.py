@@ -1301,13 +1301,18 @@ def _resolve_bindings(
         if node.binding in context.registry.bindings:
             resolved[node.name] = context.registry.bindings[node.binding]
             continue
-        provider = context.profile.bindings.get(node.binding, "memory")
+        provider_raw = context.profile.bindings.get(node.binding, "memory")
+        from etlantic.bindings import parse_asset_descriptor
+
+        parsed = parse_asset_descriptor(provider_raw)
         secret = context.profile.secrets.get(node.binding)
         resolved[node.name] = BindingDescriptor(
             binding=node.binding,
-            provider=provider,
+            provider=parsed.provider,
             kind="source" if node.kind is NodeKind.SOURCE else "sink",
+            location=parsed.location,
             secret_ref=secret,
+            metadata=dict(parsed.metadata or {}),
         )
     return resolved
 

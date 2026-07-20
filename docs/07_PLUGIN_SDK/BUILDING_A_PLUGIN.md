@@ -92,7 +92,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.20.0,<0.21",
+    "etlantic>=0.21.0,<0.22",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [

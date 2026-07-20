@@ -31,7 +31,7 @@ from etlantic.dataframe.protocol import (
 from etlantic.interchange.tabular import InterchangeMechanism
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 __all__ = [
     "PandasDataframePlugin",

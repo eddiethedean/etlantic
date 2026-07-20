@@ -17,7 +17,7 @@ from etlantic.runtime.scheduler import (
     SchedulingContext,
 )
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 
 def _prefect_future_id(fut: Any, *, run_id: str, name: str) -> str:

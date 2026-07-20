@@ -33,7 +33,7 @@ from etlantic.interchange.tabular import InterchangeMechanism
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 __all__ = [
     "PolarsDataframePlugin",

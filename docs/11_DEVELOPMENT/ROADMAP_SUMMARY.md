@@ -1,8 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.20.0** is stable for documented single-tenant reference
-deployments (trust, isolation, and safe I/O on top of the 0.19 contract
-freeze). Milestones describe
+ETLantic **0.21.0** ships the cohesive CLI and authoring experience. Milestones describe
 capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -38,11 +36,19 @@ Gate A = **0.18.0** (interchange baseline). DataFusion remains a
 **non-blocking** Gate B experiment (`etlantic-datafusion` Experimental;
 not graduated).
 
+## Shipped: 0.21
+
+ETLantic **0.21.0** shipped **Cohesive CLI and Authoring Experience**:
+`init`, `doctor`, profile commands, durable workspace, declarative assets,
+`plan diff`, and cross-invocation reports. See
+[What's New in 0.21](../01_GETTING_STARTED/WHATS_NEW_0_21.md) and
+[Exit gate 0.21](EXIT_GATE_0_21.md).
+
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
-trust/isolation gates (**0.20.0**), conformance across reference engines, and
-complete migration guides. Remaining pre-1.0 work includes cohesive CLI (0.21) and plugin SDK RC (0.22).
+trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), and
+plugin SDK RC (0.22).
 TransformationModel incubation is deferred to post-1.0 phases.
 
 > **Production use is supported only within the documented reference

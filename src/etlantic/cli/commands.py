@@ -10,7 +10,7 @@ import typer
 
 from etlantic.cli.cmds.compile import register_compile_commands
 from etlantic.cli.cmds.context import CliContext, emit_payload, report_to_payload
-from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.cli.context import get_cli_context
 from etlantic.plan.planner import plan_pipeline_with_report
 from etlantic.profile import resolve_profile
 from etlantic.registry import PlanningContext
@@ -31,10 +31,21 @@ from etlantic.viz import (
 def register_commands(
     app: typer.Typer,
     *,
-    load_target: Any,
-    runtime: PipelineRuntime,
+    context_factory: Any,
 ) -> None:
     """Attach 0.9 CLI commands onto the root Typer app."""
+
+    def _ctx(ctx: typer.Context) -> CliContext:
+        cli = get_cli_context(ctx)
+        return cli
+
+    def load_target(target: str) -> Any:
+        return context_factory().load_target(target)
+
+    def runtime(ctx: typer.Context | None = None) -> Any:
+        if ctx is not None:
+            return get_cli_context(ctx).runtime
+        return context_factory().runtime
 
     plugin_app = typer.Typer(help="Inspect discovered plugins.")
     schema_app = typer.Typer(help="Schema drift and history operations.")
@@ -45,7 +56,7 @@ def register_commands(
     app.add_typer(reliability_app, name="reliability")
     app.add_typer(viz_app, name="viz")
 
-    register_compile_commands(app, CliContext(load_target=load_target, runtime=runtime))
+    register_compile_commands(app, context_factory)
 
     @plugin_app.command("list")
     def plugin_list_cmd(
@@ -450,6 +461,7 @@ def register_commands(
 
     @reliability_app.command("plan-diff")
     def plan_diff_cmd(
+        ctx: typer.Context,
         left_target: str = typer.Argument(...),
         right_target: str = typer.Argument(...),
         profile: str = typer.Option("local", "--profile", "-p"),
@@ -460,8 +472,19 @@ def register_commands(
         ),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
+        """Deprecated: use ``etlantic plan diff`` instead."""
+        import warnings
+
+        warnings.warn(
+            "reliability plan-diff is deprecated; use `etlantic plan diff`",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        cli = get_cli_context(ctx)
         resolved = resolve_profile(profile, allow_adhoc_profile=allow_adhoc_profile)
-        context = PlanningContext.create(profile=resolved, registry=runtime.registry)
+        context = PlanningContext.create(
+            profile=resolved, registry=cli.runtime.registry
+        )
         left_plan, left_report = plan_pipeline_with_report(
             load_target(left_target), context=context
         )

@@ -7,7 +7,8 @@ from typing import Any
 
 import typer
 
-from etlantic.cli.cmds.context import CliContext, emit_payload, report_to_payload
+from etlantic.cli.cmds.context import emit_payload, report_to_payload
+from etlantic.cli.context import CliContext, get_cli_context
 from etlantic.diagnostics.sarif import validation_report_to_sarif
 from etlantic.interchange.bundle import write_contracts
 from etlantic.interchange.diff import (
@@ -17,16 +18,19 @@ from etlantic.interchange.diff import (
 )
 from etlantic.orchestration.compile import OrchestrationCompilationError, compile_plan
 from etlantic.plan.planner import plan_pipeline_with_report
-from etlantic.profile import resolve_profile
 from etlantic.registry import PlanningContext
 
 
-def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
-    load_target = ctx.load_target
-    runtime = ctx.runtime
+def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
+    def _cli(ctx: typer.Context) -> CliContext:
+        try:
+            return get_cli_context(ctx)
+        except RuntimeError:
+            return context_factory()
 
     @app.command("compile")
     def compile_cmd(
+        ctx: typer.Context,
         target: str = typer.Argument(..., help="module:Class or path.py:Class"),
         orch_target: str = typer.Option("airflow", "--target", "-t"),
         output: str = typer.Option("dags", "--output", "-o"),
@@ -37,11 +41,26 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
             help="Allow unknown bare profile names (fail-closed by default).",
         ),
         fmt: str = typer.Option("json", "--format"),
+        preview: bool = typer.Option(False, "--preview"),
     ) -> None:
         """Compile a planned pipeline to an external orchestrator artifact."""
-        pipeline_cls = load_target(target)
-        resolved = resolve_profile(profile, allow_adhoc_profile=allow_adhoc_profile)
-        diags = runtime.ensure_plugins_for_profile(resolved)
+        cli = _cli(ctx)
+        pipeline_cls = cli.load_target(target)
+        resolved, source = cli.resolve_profile(
+            profile, allow_adhoc_profile=allow_adhoc_profile
+        )
+        cli.emit_mutation_preamble(
+            command="compile",
+            target=target,
+            profile=resolved,
+            profile_source=source,
+            write_intent=f"write artifacts to {output}",
+            preview=preview,
+            fmt=fmt if preview else "human",
+        )
+        if preview:
+            raise typer.Exit(0)
+        diags = cli.runtime.ensure_plugins_for_profile(resolved)
         from etlantic.diagnostics import Severity
 
         errors = [d for d in diags if d.severity is Severity.ERROR]
@@ -61,7 +80,9 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
                 fmt=fmt,
             )
             raise typer.Exit(1)
-        context = PlanningContext.create(profile=resolved, registry=runtime.registry)
+        context = PlanningContext.create(
+            profile=resolved, registry=cli.runtime.registry
+        )
         plan, report = plan_pipeline_with_report(pipeline_cls, context=context)
         if plan is None:
             payload = report_to_payload(report)
@@ -104,6 +125,7 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
 
     @app.command("generate")
     def generate_cmd(
+        ctx: typer.Context,
         target: str = typer.Argument(..., help="module:Class or path.py:Class"),
         output: str = typer.Option("contracts", "--output", "-o"),
         fmt: str = typer.Option("json", "--format"),
@@ -114,7 +136,8 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
         ),
     ) -> None:
         """Generate ODCS/DTCS/DPCS contract bundles for a pipeline."""
-        pipeline_cls = load_target(target)
+        cli = _cli(ctx)
+        pipeline_cls = cli.load_target(target)
         bundle = write_contracts(pipeline_cls, output)
         payload: dict[str, Any] = {
             "ok": True,
@@ -151,6 +174,7 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
 
     @app.command("diff")
     def diff_cmd(
+        ctx: typer.Context,
         previous: str = typer.Argument(
             ..., help="Previous artifact (module:Class or path)"
         ),
@@ -163,12 +187,13 @@ def register_compile_commands(app: typer.Typer, ctx: CliContext) -> None:
         fmt: str = typer.Option("json", "--format", help="human|json|sarif"),
     ) -> None:
         """Diff contracts or pipelines and emit diagnostics."""
+        cli = _cli(ctx)
 
         def _load_side(target: str) -> Any:
             path = Path(target)
             if path.exists() and path.is_file():
                 return path
-            return load_target(target)
+            return cli.load_target(target)
 
         def _sniff_kind(path: Path) -> str:
             name = path.name.lower()

@@ -40,8 +40,22 @@ def diagnostics_to_sarif(
                     }
                 }
             ]
+        properties: dict[str, Any] = {}
         if diagnostic.phase:
-            result["properties"] = {"phase": diagnostic.phase}
+            properties["phase"] = diagnostic.phase
+        if diagnostic.help:
+            properties["help"] = diagnostic.help
+        if diagnostic.actions:
+            properties["actions"] = [
+                {
+                    "kind": a.kind,
+                    "title": a.title,
+                    "edit_suggestion": a.edit_suggestion,
+                }
+                for a in diagnostic.actions
+            ]
+        if properties:
+            result["properties"] = properties
         results.append(result)
     return {
         "version": "2.1.0",

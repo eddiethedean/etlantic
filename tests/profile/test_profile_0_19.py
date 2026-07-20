@@ -53,22 +53,27 @@ def test_resolve_adhoc_opt_in() -> None:
 def test_legacy_bindings_warns(tmp_path: Path) -> None:
     path = tmp_path / "legacy.json"
     path.write_text(
-        '{"name":"legacy","bindings":{"customers":"csv://x"}}',
+        '{"name":"legacy","security_mode":"development","bindings":{"customers":"csv://x"}}',
         encoding="utf-8",
     )
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         loaded = Profile.from_dict(
-            __import__("json").loads(path.read_text(encoding="utf-8"))
+            __import__("json").loads(path.read_text(encoding="utf-8")),
+            accept_legacy_bindings=True,
         )
     assert any("PMCFG110" in str(w.message) for w in caught)
     assert loaded.assets["customers"] == "csv://x"
 
 
 def test_legacy_bindings_fail_closed() -> None:
-    with pytest.raises(ValueError, match="PMCFG110"):
+    with pytest.raises(ValueError, match="PMCFG111"):
         Profile.from_dict(
-            {"name": "legacy", "bindings": {"a": "b"}},
+            {"name": "legacy", "security_mode": "development", "bindings": {"a": "b"}},
+        )
+    with pytest.raises(ValueError, match="PMCFG111"):
+        Profile.from_dict(
+            {"name": "legacy", "security_mode": "development", "bindings": {"a": "b"}},
             accept_legacy_bindings=False,
         )
 

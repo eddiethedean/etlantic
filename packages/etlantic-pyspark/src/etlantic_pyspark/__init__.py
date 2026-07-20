@@ -7,7 +7,7 @@ from typing import Any
 from etlantic_pyspark.plugin import PySparkPlugin, create_plugin
 from etlantic_pyspark.provider import LocalSparkProvider, create_provider
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 __all__ = [
     "LocalSparkProvider",

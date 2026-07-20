@@ -7,7 +7,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.20 reference envelope |
+| `stable` | Supported within the documented 0.21 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `private` | Underscore modules / internal helpers — do not import |

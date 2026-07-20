@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-07-20
+
+### Added
+- Cohesive CLI journey: `init`, `doctor`, `profile validate/show/diff/migrate`
+- Durable workspace defaults (`.etlantic/reports`, `.etlantic/artifacts`) with `--ephemeral` escape hatch
+- Optional `etlantic.toml` project config with `profiles/` fallback
+- Structured profile assets (`json://path` and `{provider, location}` objects)
+- `plan diff` and human `plan explain --format human`
+- `report list`; cross-invocation `report show`/`export` from file store
+- Global CLI options: `--verbose`, `--quiet`, `--color`, `--non-interactive`, `--workspace`
+- Documented exit code taxonomy; mutation preamble via `--preview`
+- Library modules: `etlantic.workspace`, `etlantic.project`, `etlantic.bindings`
+- Docs: What's New 0.21, Migration 0.20→0.21, Exit gate 0.21
+
 ### Changed
-- Require ContractModel `>=0.2,<0.3` (ODCS `v3.1.0` only; aligns with CCM wire identity `contractmodel.ccm/1`)
+- Official package versions align at 0.21.0; plugins require `etlantic>=0.21.0,<0.22`
+- Legacy profile JSON `bindings` fail closed unless `--accept-legacy-bindings`
+- Production profile metadata uses strict extension namespaces by default
+- `FileReportStore` exported from `etlantic.reports`
+- CLI refactored into shared `CliContext` with unified output helpers
+
+### Deprecated
+- `reliability plan-diff` in favor of `plan diff`
+
+### Migration
+- See `docs/11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md`
 
 ## [0.20.0] - 2026-07-19
 
@@ -774,6 +798,7 @@ compliance, and supply-chain controls remain outside that support claim. See
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.21.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.21.0
 [0.20.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.20.0
 [0.19.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.19.0
 [0.18.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.18.0

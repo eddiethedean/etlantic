@@ -25,7 +25,24 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "assets": { "type": "object", "additionalProperties": { "type": "string" } },
+    "assets": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "required": ["provider"],
+            "properties": {
+              "provider": {"type": "string"},
+              "location": {"type": "string"},
+              "metadata": {"type": "object"}
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
     "bindings": {
       "type": "object",
       "additionalProperties": { "type": "string" },

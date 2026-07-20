@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.20.0 is **stable** for documented single-tenant reference
+ETLantic 0.21.0 is **stable** for documented single-tenant reference
 deployments (not unrestricted enterprise production). Security reports
 concerning the published package, contract loading, planning, local runtime,
 storage bindings, secret handling, dataframe, SQL, and PySpark plugins,
@@ -10,12 +10,13 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.20.x | Current supported stable line; security fixes are released on this line |
-| 0.19.x | Not actively maintained; upgrade to 0.20.x |
-| 0.18.x | Not actively maintained; upgrade to 0.20.x |
-| 0.17.x and earlier | Not actively maintained; upgrade to 0.20.x |
+| 0.21.x | Current supported stable line; security fixes are released on this line |
+| 0.21.x | Not actively maintained; upgrade to 0.21.x |
+| 0.19.x | Not actively maintained; upgrade to 0.21.x |
+| 0.18.x | Not actively maintained; upgrade to 0.21.x |
+| 0.17.x and earlier | Not actively maintained; upgrade to 0.21.x |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.20.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.21.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability

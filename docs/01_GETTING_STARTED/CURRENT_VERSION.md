@@ -3,12 +3,12 @@
 This is the current manual for published ETLantic **0.20.0**. Core onboarding
 paths below are available in 0.20; linked reference and design pages may also
 describe Experimental, partial, or future work and retain their own status
-labels. ETLantic 0.20.0 is **stable** only within the documented
+labels. ETLantic 0.21.0 is **stable** only within the documented
 single-tenant reference deployment boundary.
 
 ## Start here
 
-1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.20.0`
+1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.21.0`
 2. [Run the five-minute quickstart](QUICKSTART.md)
 3. [Build your first pipeline](FIRST_PIPELINE.md)
 4. [Choose an engine](ENGINE_SELECTION.md)

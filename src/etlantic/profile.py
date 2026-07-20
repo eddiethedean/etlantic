@@ -16,9 +16,9 @@ _BINDINGS_REMOVED = (
     "Profile(bindings=...) was removed in ETLantic 0.16. Use assets= instead. "
     "See docs/11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md."
 )
-_LEGACY_BINDINGS_DIAGNOSTIC = (
-    "PMCFG110: Profile JSON used legacy 'bindings'; prefer 'assets'. "
-    "See docs/11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md."
+_LEGACY_BINDINGS_REJECTED = (
+    "PMCFG111: Profile JSON used legacy 'bindings'. Rename to 'assets' or pass "
+    "--accept-legacy-bindings / accept_legacy_bindings=True."
 )
 _UNKNOWN_PROFILE = (
     "PMCFG100: Unknown profile name {name!r}. Use a built-in template "
@@ -29,13 +29,15 @@ _UNKNOWN_PROFILE = (
 
 def _normalize_assets(
     *,
-    assets: dict[str, str] | None,
-    bindings: dict[str, str] | None = None,
+    assets: dict[str, Any] | None,
+    bindings: dict[str, Any] | None = None,
     allow_legacy_bindings: bool = False,
 ) -> dict[str, str]:
     """Normalize public assets= into the internal asset→provider store."""
-    assets_map = {str(k): str(v) for k, v in dict(assets or {}).items()}
-    bindings_map = {str(k): str(v) for k, v in dict(bindings or {}).items()}
+    from etlantic.bindings import normalize_assets_map
+
+    assets_map = normalize_assets_map(dict(assets or {})) if assets else {}
+    bindings_map = normalize_assets_map(dict(bindings or {})) if bindings else {}
     if bindings_map and not allow_legacy_bindings:
         raise TypeError(_BINDINGS_REMOVED)
     if assets_map and bindings_map and assets_map != bindings_map:
@@ -261,18 +263,24 @@ class Profile:
         return data
 
     @classmethod
+    def from_plan_snapshot(cls, data: dict[str, Any]) -> Profile:
+        """Rehydrate a profile embedded in a frozen plan (bindings wire shape)."""
+        snap = dict(data)
+        if "assets" not in snap and "bindings" in snap:
+            snap["assets"] = dict(snap.get("bindings") or {})
+        return cls.from_dict(snap)
+
+    @classmethod
     def from_dict(
         cls,
         data: dict[str, Any],
         *,
-        accept_legacy_bindings: bool = True,
+        accept_legacy_bindings: bool = False,
     ) -> Profile:
         """Deserialize a profile mapping.
 
-        Accepts legacy JSON ``bindings`` keys for one-time loading of saved
-        profiles; new writes via :meth:`to_dict` emit ``assets`` only. Legacy
-        ``bindings`` loads emit diagnostic ``PMCFG110`` (and raise when
-        ``accept_legacy_bindings`` is False).
+        Legacy JSON ``bindings`` keys require ``accept_legacy_bindings=True``
+        in 0.21+ (use ``profile migrate`` to rewrite to ``assets``).
         """
         import warnings
 
@@ -294,8 +302,12 @@ class Profile:
         has_bindings = "bindings" in data and data.get("bindings") is not None
         if has_bindings and not has_assets:
             if not accept_legacy_bindings:
-                raise ValueError(_LEGACY_BINDINGS_DIAGNOSTIC)
-            warnings.warn(_LEGACY_BINDINGS_DIAGNOSTIC, UserWarning, stacklevel=2)
+                raise ValueError(_LEGACY_BINDINGS_REJECTED)
+            warnings.warn(
+                "PMCFG110: legacy 'bindings' loaded; migrate to 'assets'.",
+                UserWarning,
+                stacklevel=2,
+            )
         store = _normalize_assets(
             assets=dict(data.get("assets") or {}) if has_assets else None,
             bindings=dict(data.get("bindings") or {}) if has_bindings else None,
@@ -357,7 +369,10 @@ class Profile:
             safe_io=dict(data.get("safe_io") or {}),
             outbound=dict(data.get("outbound") or {}),
             require_plugin_probe=bool(data.get("require_plugin_probe", False)),
-            metadata=_validated_profile_metadata(data.get("metadata") or {}),
+            metadata=_validated_profile_metadata(
+                data.get("metadata") or {},
+                strict=data.get("security_mode") == "production",
+            ),
         )
 
     def with_updates(self, **kwargs: Any) -> Profile:
@@ -387,12 +402,16 @@ class Profile:
         return Profile.from_dict(current)
 
 
-def _validated_profile_metadata(raw: Any) -> dict[str, Any]:
+def _validated_profile_metadata(
+    raw: Any, *, strict: bool | None = None
+) -> dict[str, Any]:
     """Copy profile metadata and enforce extension size/depth budgets."""
     from etlantic.extensions import validate_extension_metadata
 
     metadata = dict(raw or {})
-    validate_extension_metadata(metadata, path="metadata", strict=False)
+    if strict is None:
+        strict = False
+    validate_extension_metadata(metadata, path="metadata", strict=strict)
     return metadata
 
 
@@ -552,6 +571,9 @@ def resolve_profile(
         if not path.is_file():
             raise FileNotFoundError(f"Profile JSON path not found: {path}")
         return load_profile(path)
+    profiles_path = Path("profiles") / f"{key}.json"
+    if profiles_path.is_file():
+        return load_profile(profiles_path)
     if key in PROFILE_TEMPLATES:
         return PROFILE_TEMPLATES[key]
     if allow_adhoc_profile:
@@ -580,7 +602,11 @@ def write_profile(profile: Profile, path: str | Path) -> Path:
     return resolved.resolve()
 
 
-def load_profile(path: str | Path) -> Profile:
+def load_profile(
+    path: str | Path,
+    *,
+    accept_legacy_bindings: bool = False,
+) -> Profile:
     """Load a profile from a JSON file.
 
     Args:
@@ -603,4 +629,4 @@ def load_profile(path: str | Path) -> Profile:
     data = json.loads(text)
     if not isinstance(data, dict):
         raise ValueError("Profile document must be a JSON object")
-    return Profile.from_dict(data)
+    return Profile.from_dict(data, accept_legacy_bindings=accept_legacy_bindings)

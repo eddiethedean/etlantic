@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "classes": ["stable", "provisional", "experimental", "private"],
   "sdk_root_stable": [
     "Data",
@@ -32,6 +32,9 @@
   "sdk_root_provisional": ["DataContractModel"],
   "sdk_root_experimental": [],
   "cli_stable": [
+    "init",
+    "doctor",
+    "profile",
     "validate",
     "inspect",
     "plan",

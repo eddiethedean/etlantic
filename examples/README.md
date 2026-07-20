@@ -3,10 +3,10 @@
 These examples use APIs and dependencies shipped in ETLantic **0.20.0**.
 
 **Clone required.** The PyPI wheel does **not** include `examples/`. After
-`pip install etlantic==0.20.0`, use the paste-ready
+`pip install etlantic==0.21.0`, use the paste-ready
 [Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md) (or open scripts on
 GitHub). Commands below assume a **repository checkout** with `uv sync` /
-`uv run`, after installing matching `==0.20.0` optional packages as needed.
+`uv run`, after installing matching `==0.21.0` optional packages as needed.
 
 **CI vs local:** `.github/workflows/checks.yml` runs the scripts marked
 **(CI)** below. Scripts marked **(docs / local)** are copy-paste runnable and

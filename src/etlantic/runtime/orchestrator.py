@@ -459,8 +459,11 @@ class LocalOrchestrator:
             raise PipelineCancelledError(
                 "Run cancelled", run_id=run_id, report=report, code="PMEXEC409"
             ) from exc
-        except PipelineExecutionError:
+        except PipelineExecutionError as exc:
             status = RunStatus.FAILED
+            report = getattr(exc, "report", None)
+            if report is not None:
+                self.runtime.reports.put(report)
             raise
         except Exception as exc:
             status = RunStatus.FAILED

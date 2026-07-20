@@ -1,6 +1,6 @@
 # Execution
 
-!!! success "Available in ETLantic 0.20.0"
+!!! success "Available in ETLantic 0.21.0"
     Portable Polars + PySpark + Pandas relational compilation (shipped since
     0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
     executes registered native implementations and, when

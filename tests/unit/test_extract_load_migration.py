@@ -69,7 +69,10 @@ def test_profile_assets_ok() -> None:
 
 
 def test_profile_from_dict_reads_legacy_bindings() -> None:
-    profile = Profile.from_dict({"name": "demo", "bindings": {"raw": "memory"}})
+    profile = Profile.from_dict(
+        {"name": "demo", "security_mode": "development", "bindings": {"raw": "memory"}},
+        accept_legacy_bindings=True,
+    )
     assert profile.assets == {"raw": "memory"}
     assert "bindings" not in profile.to_dict()
 

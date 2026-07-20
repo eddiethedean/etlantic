@@ -1,6 +1,6 @@
 # Run a File-Backed Pipeline
 
-> **Status: Available in ETLantic 0.20.0.** The companion script is exercised
+> **Status: Available in ETLantic 0.21.0.** The companion script is exercised
 > by CI.
 
 Use file storage when a pipeline must survive process boundaries. Unlike
@@ -15,10 +15,10 @@ import-safe pipeline modules.
 ## Prerequisites
 
 Repository examples are not installed with the PyPI wheel. Clone a matching
-release checkout (prefer the `v0.20.0` tag) and use `uv`:
+release checkout (prefer the `v0.21.0` tag) and use `uv`:
 
 ```bash
-git clone --branch v0.20.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.21.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync
 uv run python examples/file_storage.py

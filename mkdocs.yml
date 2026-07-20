@@ -110,7 +110,7 @@ nav:
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
-      - Current 0.20 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.21 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
@@ -129,6 +129,7 @@ nav:
       - Security: 02_FOUNDATIONS/SECURITY.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.21: 01_GETTING_STARTED/WHATS_NEW_0_21.md
       - What's new in 0.20: 01_GETTING_STARTED/WHATS_NEW_0_20.md
       - What's new in 0.19: 01_GETTING_STARTED/WHATS_NEW_0_19.md
       - What's new in 0.18: 01_GETTING_STARTED/WHATS_NEW_0_18.md
@@ -260,7 +261,7 @@ nav:
       - Overview: 10_REFERENCE/README.md
       - CLI: 10_REFERENCE/CLI.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.20.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.21.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
       - Surface inventory: 10_REFERENCE/SURFACE_INVENTORY.md
@@ -277,6 +278,8 @@ nav:
       - ContractModel upgrade plan: 11_DEVELOPMENT/CONTRACTMODEL_UPGRADE_PLAN.md
       - TransformationModel incubation plan: 11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md
       - Upgrade hub: 01_GETTING_STARTED/UPGRADE.md
+      - Migration 0.20 → 0.21: 11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md
+      - Exit gate 0.21: 11_DEVELOPMENT/EXIT_GATE_0_21.md
       - Migration 0.19 → 0.20: 11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md
       - Exit gate 0.20: 11_DEVELOPMENT/EXIT_GATE_0_20.md
       - Migration 0.18 → 0.19: 11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md

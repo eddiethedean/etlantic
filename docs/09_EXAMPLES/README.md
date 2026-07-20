@@ -2,7 +2,7 @@
 
 ## Green path
 
-1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.20.0`
+1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.21.0`
 2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
 3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
 4. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)

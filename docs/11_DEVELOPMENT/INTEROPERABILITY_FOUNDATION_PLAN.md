@@ -195,7 +195,7 @@ flowchart TD
   A1 --> A2[A2 MechanismSelection]
   A2 --> A3[A3 FidelityAndEvidence]
   A3 --> A4[A4 PolarsPandasConformance]
-  A4 --> R180[v0.20.0 Exit]
+  A4 --> R180[v0.21.0 Exit]
   R180 --> B[GateB DataFusionExperiment]
 ```
 

@@ -1,6 +1,6 @@
 # Third-Party Portable Compiler Tutorial
 
-ETLantic 0.20.0 discovers portable transformation compilers through the
+ETLantic 0.21.0 discovers portable transformation compilers through the
 `etlantic.transform_compilers` entry-point group. A compiler analyzes,
 compiles, and executes DTCS transformation plans under
 `etlantic.transform-compiler/1`.
@@ -23,7 +23,7 @@ Start with a core range matching the minor release you test:
 name = "etlantic-acme"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["etlantic>=0.20.0,<0.21", "acme-frame>=2,<3"]
+dependencies = ["etlantic>=0.21.0,<0.22", "acme-frame>=2,<3"]
 
 [project.entry-points."etlantic.transform_compilers"]
 acme = "etlantic_acme:create_transform_compiler"
@@ -186,7 +186,7 @@ oracle.
 
 ## 5. Verify discovery
 
-Install the wheel into an isolated environment with ETLantic 0.20.0, then:
+Install the wheel into an isolated environment with ETLantic 0.21.0, then:
 
 ```python
 from etlantic.transform.discovery import discover_transform_compilers
@@ -201,7 +201,7 @@ See [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md),
 [Testing Plugins](TESTING_PLUGINS.md).
 # Third-Party Portable Compiler Tutorial
 
-> **Status: Available in ETLantic 0.20.0.**
+> **Status: Available in ETLantic 0.21.0.**
 
 Build a transform compiler that claims DTCS profiles, registers through entry
 points, and proves its claims with the public conformance suite.
@@ -228,7 +228,7 @@ than `fail`).
 myengine = "my_compiler.plugin:create_transform_compiler"
 ```
 
-Depend on a matching ETLantic minor (`etlantic>=0.20.0,<0.21` for official
+Depend on a matching ETLantic minor (`etlantic>=0.21.0,<0.22` for official
 0.20 plugins).
 
 ## 3. Run the public conformance suite

@@ -7,5 +7,5 @@ dataframe engine. Graduates only after conformance, differentials, Gate A
 Arrow boundaries, and a measured advantage.
 
 ```bash
-pip install 'etlantic[datafusion]==0.20.0'
+pip install 'etlantic[datafusion]==0.21.0'
 ```

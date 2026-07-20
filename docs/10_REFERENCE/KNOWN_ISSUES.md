@@ -1,6 +1,6 @@
 # Known Limitations
 
-- ETLantic **0.20.x** is production/stable for documented single-tenant
+- ETLantic **0.21.x** is production/stable for documented single-tenant
   reference deployments, but 0.x releases may still introduce breaking API
   changes between minor versions until 1.0.
 - Portable `@Transformation.portable` definitions and
@@ -60,7 +60,7 @@
 - Generated plans should be regenerated after incompatible schema changes
   rather than edited by hand.
 - Docs on `main` may briefly lead a published tag; pin
-  `etlantic==0.20.0` (or the version you evaluated) in production installs.
+  `etlantic==0.21.0` (or the version you evaluated) in production installs.
 
 Release-specific fixes and changes are recorded in the
 [changelog](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md).

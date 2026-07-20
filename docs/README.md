@@ -34,7 +34,7 @@ as executable interface declarations—to data engineering.
 
 ## Project status
 
-**ETLantic 0.20.0** is **stable** for documented single-tenant reference
+**ETLantic 0.21.0** is **stable** for documented single-tenant reference
 deployments. It models, validates, and plans typed Python data pipelines,
 then runs them locally or through optional engine plugins.
 
@@ -50,12 +50,13 @@ then runs them locally or through optional engine plugins.
 [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
 
 !!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.20.0`
+    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.21.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — five-minute success
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — contracts, validation, CLI
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
     Diligence (after first success): [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
+    [What's new in 0.21](01_GETTING_STARTED/WHATS_NEW_0_21.md),
     [What's new in 0.20](01_GETTING_STARTED/WHATS_NEW_0_20.md),
     [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md).
     Pages marked **Future design** are not APIs. Design studies under Examples
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Copy into a file and run with Python after `pip install 'etlantic==0.20.0'`.
+Copy into a file and run with Python after `pip install 'etlantic==0.21.0'`.
 The PyPI wheel does **not** include `examples/`; from a checkout use
 [`examples/quickstart.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/quickstart.py).
 Prefer the full [Quickstart](01_GETTING_STARTED/QUICKSTART.md) (includes

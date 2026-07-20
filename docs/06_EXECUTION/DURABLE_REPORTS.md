@@ -1,18 +1,27 @@
 # Durable Run Reports
 
-`PipelineRuntime` uses an in-memory `ReportStore` by default. Use the shipped
-`FileReportStore` when reports must survive process boundaries.
+As of **0.21.0**, the CLI uses a durable `FileReportStore` at
+`.etlantic/reports/` by default. Pass `--ephemeral` for process-local behavior.
 
-## Persist reports during execution
+## CLI (default durable path)
 
-In 0.14.0, `FileReportStore` lives in `etlantic.reports.file_store`; it is not
-re-exported from the `etlantic.reports` package root.
+```bash
+etlantic run pipeline.py:SamplePipeline --profile development
+etlantic report list
+etlantic report show <run_id>
+```
+
+Reports survive separate shell invocations without stdout redirection.
+
+## Persist reports during SDK execution
+
+`FileReportStore` is exported from `etlantic.reports`:
 
 ```python
 from pathlib import Path
 
 from etlantic import PipelineRuntime
-from etlantic.reports.file_store import FileReportStore
+from etlantic.reports import FileReportStore
 from package.pipeline import CustomerPipeline
 
 store = FileReportStore(Path(".etlantic/reports"))
@@ -40,16 +49,9 @@ references, and operational metadata.
 
 ## CLI process boundaries
 
-The CLI runtime's default report store is process-local. A report created by:
-
-```bash
-etlantic run package.pipeline:CustomerPipeline --profile development
-```
-
-is not available to a later `etlantic report show` or `report export` process.
-Those commands do not automatically discover `.etlantic/reports`. Persist from
-Python with `PipelineRuntime(reports=FileReportStore(...))`, or export the
-report JSON as part of the process that produced it.
+Use `--ephemeral` when you intentionally want process-local report storage
+(0.20 behavior). Otherwise `report show`, `export`, and `list` read from
+`.etlantic/reports/` automatically.
 
 ## Compare persisted reports
 

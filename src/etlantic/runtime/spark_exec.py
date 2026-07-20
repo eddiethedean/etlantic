@@ -307,7 +307,7 @@ async def execute_portable_spark_step(
 
     profile = getattr(plan, "profile_snapshot", None)
     if isinstance(profile, dict):
-        profile = Profile.from_dict(profile)
+        profile = Profile.from_plan_snapshot(profile)
     elif not isinstance(profile, Profile):
         profile = resolve_profile(getattr(plan, "profile_name", None))
 
