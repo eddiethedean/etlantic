@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global CLI options: `--verbose`, `--quiet`, `--color`, `--non-interactive`, `--workspace`
 - Documented exit code taxonomy; mutation preamble via `--preview`
 - Library modules: `etlantic.workspace`, `etlantic.project`, `etlantic.bindings`
-- Docs: What's New 0.21, Migration 0.20→0.21, Exit gate 0.21
+- Docs: What's New 0.21, Migration 0.20→0.21, Exit gate 0.21, Best Practices, Documentation Audit 0.21
 
 ### Changed
 - Official package versions align at 0.21.0; plugins require `etlantic>=0.21.0,<0.22`
@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production profile metadata uses strict extension namespaces by default
 - `FileReportStore` exported from `etlantic.reports`
 - CLI refactored into shared `CliContext` with unified output helpers
+- Docs golden path converges on `etlantic init`; in-memory demo renamed to `examples/memory_customers.py`
+- Public agent CLI list includes `init`, `doctor`, and `profile`
+
+### Fixed
+- SECURITY / SUPPORT version banners and plugin-minor troubleshooting advice
+- Evaluator / Production Readiness / Security residual-risk narrative consistency
+- README CLI default profile (`development`) and docs build link to AGENTS.md
 
 ### Deprecated
 - `reliability plan-diff` in favor of `plan diff`
