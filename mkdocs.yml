@@ -313,6 +313,7 @@ nav:
       - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
       - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
       - ADR-013 Portable Transform IR: 11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
+      - ADR-014 SOLID Core Refactor: 11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
       - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
       - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
   - Design Proposals (not shipped):
