@@ -65,11 +65,30 @@ real PySpark + Airflow import CI. See
 [What's New in 0.23](../01_GETTING_STARTED/WHATS_NEW_0_23.md) and
 [Exit gate 0.23](EXIT_GATE_0_23.md).
 
+## Next: 0.24
+
+ETLantic **0.24** is **Programmatic Authoring and Lossless JSON** (planned).
+Class and functional authoring become two views of one canonical
+`PipelineDefinition`. A new wire document `etlantic.pipeline/1` is the
+lossless authoring codec — distinct from resolved `etlantic.plan/1` and from
+ODCS/DTCS/DPCS.
+
+Sequenced work packages: WP1 definition model → WP2 codecs/schema → WP3
+functional builders ∥ WP4 lifecycle-on-definitions → WP5 artifact codec
+consistency → WP6 CLI JSON targets and docs.
+
+A JSON-loaded pipeline validates, plans, and runs without its originating
+Python class after referenced implementations and plugins resolve under normal
+trust policy. Executable code and secrets stay outside serialization.
+
+See [ROADMAP.md](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#024--programmatic-authoring-and-lossless-json).
+
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
-trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), and
-Plugin SDK with frozen `/1` protocols (post-0.22 RC feedback).
+trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
+frozen `/1` protocols (post-0.22 RC feedback), and 0.24 functional/JSON
+authoring convergence, then compatibility burn-in (0.25–0.98).
 TransformationModel incubation is deferred to post-1.0 phases.
 
 > **Production use is supported only within the documented reference

@@ -29,8 +29,10 @@
 
 ## Residual / follow-ups (0.24+)
 
+- **0.24** Programmatic Authoring and Lossless JSON (`PipelineDefinition`,
+  `etlantic.pipeline/1`, functional builders, CLI JSON targets)
+- **0.25–0.98** Compatibility burn-in (upgrade fixtures, protocol `/1` freeze)
 - Multi-worker control plane / distributed scheduler
 - Storage / Resource / Observability protocol catalogs
 - Declaring unrestricted multi-tenant enterprise production
-- Protocol `/1` freeze (0.22 RC follow-up)
 - Full pyright fail-suite CI for `tests/typing/fail`

@@ -2033,7 +2033,190 @@ partial failure, concurrency, cancellation, and resource pressure.
 All stable reference paths have measured budgets, failure-injection coverage,
 documented scale limits, and deterministic terminal-state semantics.
 
-## 0.24–0.98 — Compatibility Burn-In
+## 0.24 — Programmatic Authoring and Lossless JSON
+
+**Status: planned — after 0.23.0.**
+
+**Objective:** make every ETLantic modeling workflow available without class
+declarations, and make every public semantic artifact safely, canonically, and
+losslessly round-trip through JSON.
+
+Class-based authoring remains a first-class convenience API. The functional
+API and class API are two views over the same canonical object model; neither
+may have capabilities, validation rules, identities, or runtime semantics that
+the other cannot express.
+
+### Prerequisites already shipped (0.23)
+
+- Class authoring (`Pipeline`, `Transformation`, ports, `Extract`/`Load`) and
+  lifecycle entry points that take `type[Pipeline]`
+- Resolved execution IR: `etlantic.plan/1` with codecs, fingerprint, upgrade,
+  and JSON Schema (`pipeline-plan.schema.json`)
+- Run reports: `etlantic.run_report/1` codecs and schema
+- Profile JSON load/write, ODCS / DTCS / DPCS interchange, and portable
+  transform-plan IR (`dtcs.transform-plan/2`)
+- Production fail-closed plugin trust, Safe I/O, and secret-free plans/reports
+
+### Hard distinctions (do not overload)
+
+| Artifact | Role in 0.24 |
+|---|---|
+| `etlantic.pipeline/1` | **New** unresolved, data-only pipeline definition (authoring complete) |
+| `etlantic.plan/1` | Resolved execution IR — lossy for authoring (no parameter values, no Python `contract_type`, limited nesting) — **not** the round-trip substrate |
+| ODCS / DTCS / DPCS | External interchange; may feed or emit definitions, but DPCS that regenerates Python classes is not `pipeline/1` |
+| Portable transform plan | Transformation IR only; not a full pipeline definition |
+
+### Work packages (sequenced)
+
+#### WP1 — Canonical `PipelineDefinition` model
+
+**In scope**
+
+- public `PipelineDefinition` protocol and immutable data model for topology,
+  ports, parameters (including values), extracts, loads, steps, nested
+  subpipelines, profile refs, policies, reliability declarations, provenance,
+  extensions, and stable identities
+- normalize class-authored pipelines into that model without requiring the
+  originating class for subsequent lifecycle calls
+- declaration-independent identities (prefer published ids over
+  `module:qualname` for wire documents)
+
+**Out of scope**
+
+- CLI JSON targets, full builder UX, schema migrations tooling
+
+#### WP2 — `etlantic.pipeline/1` codecs and JSON Schema
+
+**In scope**
+
+- uniform `to_dict` / `from_dict` / `to_json` / `from_json` (+ bounded file
+  helpers) for pipeline definitions
+- packaged JSON Schema with explicit `schema: "etlantic.pipeline/1"`
+- canonical JSON, deterministic fingerprint, golden fixtures, and
+  property-based round-trip tests across supported Python versions
+- unknown-field / unknown-version diagnostics; never silently discard input
+
+**Out of scope**
+
+- redesigning ODCS/DTCS/DPCS; executing deserialized defs beyond stub wiring
+  needed for codec tests
+
+#### WP3 — Functional authoring surface
+
+**In scope**
+
+- public constructors and immutable builders for data contracts,
+  transformations, inputs, outputs, parameters, extracts, loads, steps,
+  subpipelines, profiles, and complete pipelines
+- incremental graph assembly, composition, cloning, and updates without
+  metaclasses, decorators, or dynamically generated user classes
+- parity tests: every documented class primitive has a functional equivalent
+  with the same diagnostics and logical fingerprint
+
+**Out of scope**
+
+- replacing or deprecating the class API; AI-assisted authoring; LSP
+
+#### WP4 — Lifecycle on definitions + separate resolve phase
+
+**In scope**
+
+- validate, inspect, plan, run, compile, generate, visualize, and diff accept
+  `PipelineDefinition` (or a thin adapter) without the originating class
+- reconstruct a data-only definition from JSON that enters the normal lifecycle
+  after referenced implementations, providers, and plugins are resolved
+- structured diagnostics for missing references, incompatible registry
+  entries, and untrusted plugins
+
+**Out of scope**
+
+- new execution engines; weakening production `plugin_allowlist` fail-closed
+  behavior
+
+#### WP5 — Artifact codec consistency
+
+**In scope**
+
+- align Profile, reliability, policy, and extension codecs with the same
+  unknown-field / schema-id / secret-free rules used by `pipeline/1`
+- document which public semantic artifacts are wire-stable in 0.24 versus
+  remaining internal
+
+**Out of scope**
+
+- rewriting ContractModel / ODCS / DTCS / DPCS toolkits
+
+#### WP6 — CLI envelope and documentation
+
+**In scope**
+
+- export a Python-authored pipeline to `etlantic.pipeline/1` JSON
+- accept a definition JSON document as a CLI TARGET (alongside `module:Class`)
+- SDK and CLI round trips produce the same canonical document and diagnostics
+- document the functional API as a complete authoring path (not internal graph
+  helpers)
+- What's New / Migration / Exit Gate 0.24
+
+**Out of scope**
+
+- pickle/executable payloads; embedding resolved secrets; remote federation
+
+### Non-goals
+
+- replacing `etlantic.plan/1` or requiring a plan-schema reset
+- treating DPCS YAML as the lossless authoring codec
+- serializing Python callables, closures, import-time expressions, dataframe
+  objects, sessions, connections, scheduler handles, or backend-native plans
+- multi-tenant control plane, LSP, or unrestricted enterprise production claims
+- protocol `/1` freeze (remains a 0.22 RC follow-up under burn-in)
+
+### Serialization and security boundary
+
+- JSON contains data and stable references only
+- deserialization performs no arbitrary imports, plugin loading, secret
+  resolution, network access, storage access, or user-code execution
+- registry and plugin resolution is a separate, policy-governed phase and
+  continues to fail closed under production allowlists
+- parsers enforce document-size, nesting, collection, string, and reference
+  resolution limits (extend Safe I/O / interchange budgets)
+- canonical JSON is deterministic and secret-free; source formatting and Python
+  class syntax are not part of the round-trip guarantee
+- hostile documents, executable payloads, unresolved references, and plaintext
+  secrets fail closed without partial pipeline construction
+
+### Acceptance scenarios
+
+- a user can author and run a representative multi-source, multi-output,
+  parameterized pipeline using functions and immutable builders without
+  declaring an ETLantic class
+- every documented class-based authoring primitive has a documented functional
+  equivalent with the same diagnostics and resulting logical fingerprint
+- equivalent class-authored and functionally authored pipelines normalize to
+  semantically equivalent logical graphs and byte-identical canonical JSON
+- `pipeline → JSON → PipelineDefinition → JSON` is byte-stable and preserves
+  the logical fingerprint across supported Python versions
+- a deserialized pipeline validates and plans without the original Python
+  pipeline class
+- a deserialized pipeline runs when all referenced implementations, providers,
+  and plugins are present and trusted, and fails with structured diagnostics
+  when they are not
+- ODCS, DTCS, and DPCS bundles generated before and after a JSON round trip are
+  semantically equivalent
+- unknown future schema versions, hostile documents, executable payloads,
+  unresolved references, and secret values fail closed without partial
+  construction
+- CLI and SDK round trips produce the same canonical document and diagnostics
+
+### Exit gate
+
+ETLantic has one canonical, data-only pipeline definition equally authorable
+through classes, functions, and JSON. All in-scope public semantic state has a
+versioned JSON representation and supported reverse conversion.
+`PipelineDefinition` enters validate → plan → compile/generate/viz/run without
+access to its originating class, while executable code and secrets remain
+outside serialization. WP1–WP6 acceptance scenarios and docs gates pass.
+
+## 0.25–0.98 — Compatibility Burn-In
 
 **Objective:** allow only bounded, evidence-backed additions while the frozen
 contracts accumulate real adoption and upgrade history.
