@@ -497,8 +497,8 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Sync pyspark group
-        run: uv sync --locked --group pyspark
+      - name: Sync pyspark and dataframe groups
+        run: uv sync --locked --group pyspark --group dataframes
 
       - name: Real PySpark tests
         env:
