@@ -79,7 +79,7 @@ Legacy **`bindings`** keys fail closed with `PMCFG111` unless
 - `orchestrator`: `local`, `airflow`, `prefect`, etc.
 
 Keep plugin package versions on the **same minor** as core (`0.22.x` with
-`0.21.0` core).
+`0.22.0` core).
 
 ### Optional 0.20 trust controls
 

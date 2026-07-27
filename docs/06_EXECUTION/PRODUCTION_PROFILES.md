@@ -1,6 +1,6 @@
 # Production Profiles
 
-ETLantic 0.21.0 treats production configuration as an explicit trust boundary
+ETLantic 0.22.0 treats production configuration as an explicit trust boundary
 via `Profile.security_mode == "production"`. The built-in `production` profile
 is a template, not a deployable setup.
 

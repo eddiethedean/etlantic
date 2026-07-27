@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-ETLantic 0.21.0 is production/stable for the documented single-tenant reference
+ETLantic 0.22.0 is production/stable for the documented single-tenant reference
 deployment on this page. Experimental features remain experimental. Broader
 deployment topology, multi-tenancy, compliance attestations beyond shipped
 SBOM digests/GitHub attestations, and advanced supply-chain programs remain

@@ -1,6 +1,6 @@
 # Controlled Pilot Walkthrough
 
-ETLantic 0.21.0 is production/stable for the documented single-tenant reference
+ETLantic 0.22.0 is production/stable for the documented single-tenant reference
 deployment. Use this walkthrough with pinned dependencies, explicit rollback,
 and reviewed plans. Multi-tenant topology, compliance/SBOM/signing, and
 advanced supply-chain controls remain adopter-owned; this is not an

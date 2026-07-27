@@ -1,7 +1,7 @@
 # Portable Compiler Matrix
 
 This matrix records the portable transformation claims shipped in ETLantic
-0.21.0. It is narrower than each backend's native capabilities.
+0.22.0. It is narrower than each backend's native capabilities.
 
 ## Compiler claims
 

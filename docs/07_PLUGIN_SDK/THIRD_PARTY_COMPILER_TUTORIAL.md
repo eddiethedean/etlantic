@@ -1,6 +1,6 @@
 # Third-Party Portable Compiler Tutorial
 
-ETLantic 0.21.0 discovers portable transformation compilers through the
+ETLantic 0.22.0 discovers portable transformation compilers through the
 `etlantic.transform_compilers` entry-point group. A compiler analyzes,
 compiles, and executes DTCS transformation plans under
 `etlantic.transform-compiler/1`.
@@ -186,7 +186,7 @@ oracle.
 
 ## 5. Verify discovery
 
-Install the wheel into an isolated environment with ETLantic 0.21.0, then:
+Install the wheel into an isolated environment with ETLantic 0.22.0, then:
 
 ```python
 from etlantic.transform.discovery import discover_transform_compilers

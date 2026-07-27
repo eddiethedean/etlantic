@@ -1,6 +1,6 @@
 # Ops Pilot Guide
 
-> **Status: Production/stable in ETLantic 0.21.0 for the documented
+> **Status: Production/stable in ETLantic 0.22.0 for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
 > product.
 
