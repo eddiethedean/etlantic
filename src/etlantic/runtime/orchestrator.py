@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import inspect
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, get_args, get_origin
@@ -48,6 +49,7 @@ from etlantic.reports.model import (
 )
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import AttemptContext, RunContext, StepContext
+from etlantic.runtime.faults import FaultBoundary, maybe_inject
 from etlantic.runtime.dataframe_exec import (
     execute_dataframe_step,
     is_dataframe_engine,
@@ -179,6 +181,15 @@ def _observe_records_schema(
 
 
 @dataclass
+class _RunPersistenceState:
+    """Tracks publication vs report persistence for terminal semantics (0.23)."""
+
+    publication_committed: bool = False
+    report_persisted: bool = False
+    terminal_reports_written: int = 0
+
+
+@dataclass
 class _NodeState:
     node: Node
     status: StepStatus = StepStatus.PENDING
@@ -214,6 +225,48 @@ class LocalOrchestrator:
     wave_runner: Any | None = field(default=None, repr=False)
     # Optional caller-supplied run id (scheduler plugins should thread this).
     run_id: str | None = field(default=None)
+    _persistence: _RunPersistenceState = field(
+        default_factory=_RunPersistenceState, repr=False
+    )
+
+    def _mark_publication(self) -> None:
+        self._persistence.publication_committed = True
+
+    def _persist_report(self, report: PipelineRunReport) -> None:
+        """Persist a terminal report once, with fault-injection and gap detection."""
+        maybe_inject(FaultBoundary.REPORT_PERSIST)
+        try:
+            self.runtime.reports.put(report)
+        except Exception as exc:
+            if self._persistence.publication_committed:
+                failed_report = replace(
+                    report,
+                    status=RunStatus.FAILED,
+                    diagnostics=tuple(
+                        list(report.diagnostics)
+                        + [
+                            RunDiagnostic(
+                                code="PMEXEC410",
+                                severity="error",
+                                message=(
+                                    "Data publication succeeded but run report "
+                                    "persistence failed; run marked failed."
+                                ),
+                            )
+                        ]
+                    ),
+                )
+                with contextlib.suppress(Exception):
+                    self.runtime.reports.put(failed_report)
+                report = failed_report
+            raise PipelineExecutionError(
+                redact_message(str(exc)),
+                run_id=report.run_id,
+                report=report,
+                code="PMEXEC410",
+            ) from exc
+        self._persistence.report_persisted = True
+        self._persistence.terminal_reports_written += 1
 
     def __post_init__(self) -> None:
         self._executor_registry = get_executor_registry()
@@ -290,6 +343,7 @@ class LocalOrchestrator:
         url = meta.get("url") or meta.get("destination") or meta.get("webhook")
         if url is None:
             return
+        maybe_inject(FaultBoundary.OUTBOUND, step_name=step)
         decision = assert_outbound_allowed(str(url), policy, run_id=run_id)
         if decision.event is not None:
             self.runtime.events.emit(decision.event)
@@ -435,7 +489,7 @@ class LocalOrchestrator:
                 artifacts=artifacts,
                 status=status,
             )
-            self.runtime.reports.put(report)
+            self._persist_report(report)
             raise PipelineTimeoutError(
                 redact_message(str(exc)),
                 run_id=run_id,
@@ -455,7 +509,7 @@ class LocalOrchestrator:
                 artifacts=artifacts,
                 status=status,
             )
-            self.runtime.reports.put(report)
+            self._persist_report(report)
             raise PipelineCancelledError(
                 "Run cancelled", run_id=run_id, report=report, code="PMEXEC409"
             ) from exc
@@ -463,7 +517,7 @@ class LocalOrchestrator:
             status = RunStatus.FAILED
             report = getattr(exc, "report", None)
             if report is not None:
-                self.runtime.reports.put(report)
+                self._persist_report(report)
             raise
         except Exception as exc:
             status = RunStatus.FAILED
@@ -484,7 +538,7 @@ class LocalOrchestrator:
                 artifacts=artifacts,
                 status=status,
             )
-            self.runtime.reports.put(report)
+            self._persist_report(report)
             raise PipelineExecutionError(
                 redact_message(str(exc)),
                 run_id=run_id,
@@ -492,6 +546,7 @@ class LocalOrchestrator:
                 code="PMEXEC500",
             ) from exc
         finally:
+            maybe_inject(FaultBoundary.CLEANUP)
             # Drop run-scoped SQL staging tables when present.
             import contextlib
 
@@ -602,7 +657,7 @@ class LocalOrchestrator:
         status: RunStatus,
     ) -> PipelineRunReport:
         ended = datetime.now(UTC)
-        selected = set(self.plan.selected_nodes or [n.name for n in nodes])
+        selected = set(self.plan.selected_nodes or list(nodes.keys()))
         return PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -920,6 +975,12 @@ class LocalOrchestrator:
     ) -> None:
         node = state.node
         if node.kind is NodeKind.SOURCE:
+            maybe_inject(FaultBoundary.EXTRACT, step_name=node.name)
+        elif node.kind is NodeKind.SINK:
+            maybe_inject(FaultBoundary.LOAD, step_name=node.name)
+        elif node.kind is NodeKind.STEP:
+            maybe_inject(FaultBoundary.TRANSFORM, step_name=node.name)
+        if node.kind is NodeKind.SOURCE:
             if is_spark_engine(self._engine_for(node.name)):
                 plugin = resolve_spark_plugin(
                     "pyspark",
@@ -1176,6 +1237,7 @@ class LocalOrchestrator:
                         status="succeeded",
                     )
                 )
+                self._mark_publication()
                 return
             # SQL-region sink with Python list payload: load directly into target.
             if is_sql_engine(self._engine_for(node.name)) and isinstance(payload, list):
@@ -1246,6 +1308,7 @@ class LocalOrchestrator:
                         status="succeeded",
                     )
                 )
+                self._mark_publication()
                 return
             # SQL IR into a non-sql storage sink must not silently ignore the IR.
             if isinstance(payload, (RelationRef, SqlQuery)):
@@ -1278,6 +1341,7 @@ class LocalOrchestrator:
                     status="succeeded",
                 )
             )
+            self._mark_publication()
             return
 
         if node.kind is NodeKind.STEP:

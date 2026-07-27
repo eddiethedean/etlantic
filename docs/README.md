@@ -34,7 +34,7 @@ as executable interface declarations—to data engineering.
 
 ## Project status
 
-**ETLantic 0.22.0** is **stable** for documented single-tenant reference
+**ETLantic 0.23.0** is **stable** for documented single-tenant reference
 deployments. It models, validates, and plans typed Python data pipelines,
 then runs them locally or through optional engine plugins.
 
@@ -50,7 +50,7 @@ then runs them locally or through optional engine plugins.
 [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)
 
 !!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.22.0`
+    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.23.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `etlantic init` (five-minute success)
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
@@ -67,7 +67,7 @@ then runs them locally or through optional engine plugins.
 The canonical first success is CLI-first:
 
 ```bash
-pip install 'etlantic==0.22.0'
+pip install 'etlantic==0.23.0'
 mkdir my-pipeline && cd my-pipeline
 etlantic init --with-toml
 etlantic validate pipeline.py:SamplePipeline --profile development

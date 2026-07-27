@@ -30,7 +30,7 @@ class FileReportStore:
         if self.policy is None:
             self.policy = SafeIoPolicy.for_root(self.root)
         for path in sorted(self.root.rglob("*.json")):
-            if path.name.endswith(".lock"):
+            if path.name.endswith(".lock") or path.suffix == ".tmp":
                 continue
             try:
                 assert_safe_load_path(path)
@@ -45,6 +45,9 @@ class FileReportStore:
                 continue
 
     def put(self, report: PipelineRunReport) -> None:
+        from etlantic.runtime.faults import FaultBoundary, maybe_inject
+
+        maybe_inject(FaultBoundary.REPORT_PERSIST)
         self._memory.put(report)
         assert self.policy is not None
         path = self.root / f"{report.run_id}.json"

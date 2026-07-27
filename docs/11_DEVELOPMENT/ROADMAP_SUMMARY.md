@@ -54,6 +54,16 @@ public conformance (including Spark), curated `import etlantic as etl`,
 [What's New in 0.22](../01_GETTING_STARTED/WHATS_NEW_0_22.md) and
 [Exit gate 0.22](EXIT_GATE_0_22.md).
 
+## Shipped: 0.23
+
+ETLantic **0.23.0** shipped **Runtime Resilience and Performance Budgets**:
+committed microbenchmark baselines with CI gates, public fault injection,
+SafeIoPolicy-unified persistence proofs, cancellation/timeout terminal
+semantics, interchange evidence reconciliation, write-mode retry matrix, and
+real PySpark + Airflow import CI. See
+[What's New in 0.23](../01_GETTING_STARTED/WHATS_NEW_0_23.md) and
+[Exit gate 0.23](EXIT_GATE_0_23.md).
+
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed

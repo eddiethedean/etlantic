@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
   banner.className = "admonition warning";
   banner.dataset.etlanticStatus = "future";
   banner.innerHTML =
-    '<p class="admonition-title">Future design—not an ETLantic 0.22 API guide</p>' +
+    '<p class="admonition-title">Future design—not an ETLantic 0.23 API guide</p>' +
     "<p>This page may contain unshipped packages, commands, or interfaces. " +
     "Use Current Capabilities, the API reference, and the CLI reference for shipped behavior. " +
     "Polars, PySpark, Pandas, and SQL portable-relational compilers are shipped. " +

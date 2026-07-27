@@ -137,6 +137,10 @@ class FileSchemaHistoryProvider:
 
     def record(self, observation: SchemaObservation) -> None:
         assert_no_row_payload(observation)
+        fp = observation.schema.fingerprint()
+        existing = self._memory.history(observation.subject_id)
+        if any(o.schema.fingerprint() == fp for o in existing):
+            return
         self._memory.record(observation)
         assert self.policy is not None
         path = self._subject_path(observation.subject_id)

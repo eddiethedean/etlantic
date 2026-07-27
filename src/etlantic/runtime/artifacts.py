@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from etlantic.io_policy import SafeIoPolicy, write_json_safe
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.storage.protocol import as_records, records_to_dicts
 
@@ -20,6 +21,7 @@ class ArtifactStore:
     """
 
     workspace: Path | None = None
+    policy: SafeIoPolicy | None = None
     _values: dict[str, Any] = field(default_factory=dict)
     _refs: dict[str, ArtifactRef] = field(default_factory=dict)
     _ownership: dict[str, str] = field(default_factory=dict)
@@ -51,9 +53,13 @@ class ArtifactStore:
                 self.workspace
                 / f"{ref.identity.replace(':', '_').replace('/', '_')}.json"
             )
-            path.write_text(
-                json.dumps(records_to_dicts(value), indent=2, sort_keys=True),
-                encoding="utf-8",
+            if self.policy is None:
+                self.policy = SafeIoPolicy.for_root(self.workspace)
+            write_json_safe(
+                path,
+                records_to_dicts(value),
+                self.policy,
+                run_id=ref.identity,
             )
             self._values[ref.identity] = value
 

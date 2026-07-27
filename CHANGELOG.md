@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-07-27
+
+### Added
+- Performance benchmark baselines (`etlantic.benchmark_baseline/1`) and CI gate (`scripts/check_benchmarks.py`)
+- Public fault injection API (`etlantic.testing.faults`) with orchestrator/report/store hooks
+- Interchange evidence reconciliation (`reconcile_interchange_evidence`, planned `evidence_refs`)
+- Resilience test suites: fault injection, cancellation, timeout, store concurrency, write-mode matrix
+- Real PySpark CI job and Airflow import version matrix (`airflow-runtime` dependency group)
+- Docs: What's New 0.23, Migration 0.22→0.23, Exit Gate 0.23
+
+### Changed
+- Artifacts, schema history, and reliability file providers use `SafeIoPolicy` consistently
+- Orchestrator terminal paths persist exactly one report; publication/report gap → `PMEXEC410`
+- Official package versions align at 0.23.0; plugins require `etlantic>=0.23.0,<0.24`
+
 ## [0.22.0] - 2026-07-21
 
 ### Added
@@ -827,6 +842,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.23.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.23.0
 [0.22.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.22.0
 [0.21.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.21.0
 [0.20.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.20.0

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sqlmodel"
-version = "0.22.0"
+version = "0.23.0"
 description = "ContractModel ↔ SQLModel bridge for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.22.0,<0.23",
+    "etlantic>=0.23.0,<0.24",
     "sqlmodel>=0.0.22,<1",
 ]
 

@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This table describes the declared compatibility of ETLantic 0.22.0.
+This table describes the declared compatibility of ETLantic 0.23.0.
 
 | Surface | Supported range or version |
 |---|---|
@@ -14,34 +14,36 @@ This table describes the declared compatibility of ETLantic 0.22.0.
 | Dataframe protocol | `etlantic.dataframe/1` |
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
-| Polars plugin | `etlantic-polars==0.22.0` |
-| Pandas plugin | `etlantic-pandas==0.22.0` |
-| SQL plugin | `etlantic-sql==0.22.0` |
-| PySpark plugin | `etlantic-pyspark==0.22.0` |
-| Airflow plugin | `etlantic-airflow==0.22.0` |
-| Prefect scheduler | `etlantic-prefect==0.22.0` |
-| Keyring provider | `etlantic-keyring==0.22.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.22.0` |
-| SparkForge adapter | `etlantic-sparkforge==0.22.0` |
+| Polars plugin | `etlantic-polars==0.23.0` |
+| Pandas plugin | `etlantic-pandas==0.23.0` |
+| SQL plugin | `etlantic-sql==0.23.0` |
+| PySpark plugin | `etlantic-pyspark==0.23.0` |
+| Airflow plugin | `etlantic-airflow==0.23.0` |
+| Prefect scheduler | `etlantic-prefect==0.23.0` |
+| Keyring provider | `etlantic-keyring==0.23.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.23.0` |
+| SparkForge adapter | `etlantic-sparkforge==0.23.0` |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Stable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Shipped protocols stable within the 0.22 minor; third-party plugins must pin and re-run conformance |
+| Plugin SDK stability | Shipped protocols stable within the 0.23 minor; third-party plugins must pin and re-run conformance |
 
 ## Tested versus declared
 
 The core CI matrix runs linting and the core test suite on Ubuntu, Windows, and
 macOS with Python 3.11, 3.12, and 3.13. This is the broadest tested platform
-surface for 0.22.0.
+surface for 0.23.0.
 
 Optional plugin jobs run primarily on Ubuntu with Python 3.11. Polars and
 Pandas each have dedicated dataframe/compiler/conformance jobs. SQL runs
 against SQLite and PostgreSQL 16. PySpark compiler and differential coverage
 uses the sparkless compatibility backend by default; real JVM PySpark checks
-are a separate opt-in path. Airflow, Prefect, keyring, SQLModel, and SparkForge
-also have dedicated Ubuntu/3.11 jobs.
+run in the dedicated `real-pyspark` CI job (0.23). Airflow compile import is
+tested across 2.8.x–2.10.x via `airflow-runtime`; Prefect, keyring, SQLModel,
+and SparkForge also have dedicated Ubuntu/3.11 jobs. Microbenchmark regression
+gate runs on Ubuntu/3.11 (`scripts/check_benchmarks.py`).
 
 Package metadata declares these backend dependency ranges:
 
@@ -54,6 +56,7 @@ Package metadata declares these backend dependency ranges:
 | `etlantic-sqlmodel` | `sqlmodel>=0.0.22,<1` |
 | `etlantic-keyring` | `keyring` (no narrower range declared) |
 | `etlantic-airflow` | No Apache Airflow runtime dependency; it compiles DAG source |
+| `airflow-runtime` (uv group, 0.23) | `etlantic-airflow` only; CI installs `apache-airflow` 2.8.x–2.10.x separately for import matrix |
 | `etlantic-prefect` | `prefect>=3,<4` |
 | `etlantic[otel]` / `[observability]` | `opentelemetry-api>=1.36,<2` |
 | `etlantic[arrow]` | `pyarrow>=14` |
@@ -61,11 +64,11 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.22.0` plus every official plugin to `==0.22.0`.
+`etlantic==0.23.0` plus every official plugin to `==0.23.0`.
 
 Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.22.0` depends on `etlantic-polars==0.22.0`. Official
-plugin source metadata accepts core `etlantic>=0.22.0,<0.23`, which is
+`etlantic[polars]==0.23.0` depends on `etlantic-polars==0.23.0`. Official
+plugin source metadata accepts core `etlantic>=0.23.0,<0.23`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

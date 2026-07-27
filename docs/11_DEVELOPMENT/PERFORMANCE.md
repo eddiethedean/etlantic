@@ -1,36 +1,34 @@
 # Performance Guidance
 
-> **Status: Available in ETLantic 0.22.0 framing.** ETLantic publishes **no**
-> capacity, throughput, or latency claims for production sizing.
+> **Status: ETLantic 0.23.0.** ETLantic publishes **measured microbenchmark
+> envelopes** for modeling/planning/discovery coordination and **no** production
+> throughput or warehouse sizing claims.
 
-Recorded smoke baselines (historical, ETLantic **0.10.0**) prove only that a
-small harness completed in one environment. They are not production evidence.
-See [Performance Baselines](PERFORMANCE_RESULTS.md).
+## 0.23 measured envelopes (coordination only)
 
-## Run the local harness
+| Scenario | Baseline p95 (s) | Notes |
+|---|---|---|
+| `modeling.plan_small` | 0.025 | Sample pipeline plan |
+| `modeling.validate_small` | 0.015 | Sample pipeline validate |
+| `discovery.enabled` | 0.05 | Coordinator with runtime groups |
+| `interchange.reconcile` | 0.00005 | Descriptor vs evidence compare |
+
+Source: `benchmarks/baselines/core.json`. CI enforces via
+`scripts/check_benchmarks.py`. These limits bound **framework overhead**, not
+engine execution.
+
+## Run harnesses locally
 
 ```bash
+uv run python scripts/check_benchmarks.py
 uv sync --group dataframes
 uv run python benchmarks/dataframe_scale.py polars
-uv run python benchmarks/dataframe_scale.py pandas
+uv run python benchmarks/dataframe_scale.py pandas --json
 ```
 
-Record commit, Python and dependency versions, hardware, OS, dataset shape,
-warm-ups, samples, median, p95, and raw results. Do not compare unlike
-environments as controlled benchmarks.
-
-## Measure your workload
-
-Benchmark representative graphs, data shapes, I/O, concurrency, and failure
-paths on the engines you will deploy. Plans are data-only coordination
-artifacts: construction does not read source rows or execute transformations.
-Execution cost belongs primarily to selected backends.
-
-Separate validation/planning overhead from backend execution and I/O. See
-[Benchmark Design](BENCHMARKS.md).
+See [Benchmark Design](BENCHMARKS.md) and [Performance Baselines](PERFORMANCE_RESULTS.md).
 
 ## Evaluator note
 
-Until representative 0.18+ baselines are published, treat performance as
-**adopter-measured**. Do not infer warehouse throughput from framework smoke
-timings.
+Do not infer warehouse throughput from framework microbenchmarks. Measure your
+graphs, data shapes, I/O, concurrency, and failure paths on deployed engines.

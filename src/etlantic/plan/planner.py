@@ -23,6 +23,7 @@ from etlantic.interchange.tabular import (
     InterchangeMechanism,
     select_mechanism,
 )
+from etlantic.interchange.tabular.reconcile import interchange_evidence_refs
 from etlantic.model import LogicalGraph, Node, NodeKind
 from etlantic.plan.artifacts import (
     ArtifactRef,
@@ -1078,6 +1079,12 @@ def _interchange_descriptor(
         copy_eligibility = CopyEligibility.ELIGIBLE
     else:
         copy_eligibility = CopyEligibility.UNKNOWN
+    schema_fingerprint = _interchange_schema_fingerprint(
+        producer_engine,
+        consumer_engine,
+        mechanism,
+        contract_id,
+    )
     return InterchangeDescriptor(
         schema=INTERCHANGE_SCHEMA,
         mechanism=mechanism,
@@ -1085,18 +1092,17 @@ def _interchange_descriptor(
         consumer_engine=consumer_engine,
         producer_caps=tuple(sorted(producer_caps)),
         consumer_caps=tuple(sorted(consumer_caps)),
-        schema_fingerprint=_interchange_schema_fingerprint(
-            producer_engine,
-            consumer_engine,
-            mechanism,
-            contract_id,
-        ),
+        schema_fingerprint=schema_fingerprint,
         ownership="copied" if copied else "shared",
         batching="collected",
         collection=True,
         copy_eligibility=copy_eligibility,
         fallback_reason=fallback_reason,
-        evidence_refs=(),
+        evidence_refs=interchange_evidence_refs(
+            schema_fingerprint=schema_fingerprint,
+            mechanism=mechanism,
+            copy_eligibility=copy_eligibility,
+        ),
     )
 
 

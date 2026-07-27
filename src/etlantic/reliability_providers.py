@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.io_policy import SafeIoPolicy, read_text_safe, write_json_safe
+
 
 @dataclass(frozen=True, slots=True)
 class QualityObservation:
@@ -156,14 +158,19 @@ class FileRefProvider:
     """JSON file reference for reliability evidence (not a full remote store)."""
 
     path: Path
+    policy: SafeIoPolicy | None = None
 
     def read(self) -> dict[str, Any]:
         if not self.path.exists():
             return {}
-        return json.loads(self.path.read_text(encoding="utf-8"))
+        if self.policy is None:
+            self.policy = SafeIoPolicy.for_root(self.path.parent)
+        _resolved, text, _events = read_text_safe(
+            self.path, self.policy, run_id="reliability-read"
+        )
+        return json.loads(text)
 
     def write(self, data: dict[str, Any]) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        if self.policy is None:
+            self.policy = SafeIoPolicy.for_root(self.path.parent)
+        write_json_safe(self.path, data, self.policy, run_id="reliability-write")

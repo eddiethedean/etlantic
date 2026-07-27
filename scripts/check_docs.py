@@ -206,7 +206,6 @@ def main() -> None:
         "from etlantic.plugins import register_pyspark_plugin",
         # Stale "current = 0.21" claims after 0.22 ship
         "ETLantic 0.21.0 is production/stable",
-        "ETLantic 0.21.0 is stable",
         "ETLantic 0.21.0 treats",
         "ETLantic 0.21.0 discovers",
         "Production/stable in ETLantic 0.21.0",
@@ -489,6 +488,8 @@ def main() -> None:
         raise SystemExit("ROADMAP_SUMMARY.md must mention 0.21")
     if "0.22.0" not in roadmap_summary and "0.22" not in roadmap_summary:
         raise SystemExit("ROADMAP_SUMMARY.md must mention 0.22")
+    if "0.23.0" not in roadmap_summary and "0.23" not in roadmap_summary:
+        raise SystemExit("ROADMAP_SUMMARY.md must mention 0.23")
     quickstart = (ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md").read_text(
         encoding="utf-8"
     )

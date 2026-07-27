@@ -38,6 +38,17 @@ from etlantic.testing.write_semantics import (
     assert_write_intent_parity,
     run_write_semantics_parity_suite,
 )
+from etlantic.testing.faults import (
+    FaultBoundary,
+    FaultSpec,
+    FaultTrigger,
+    clear_faults,
+    fault_injection_enabled,
+    maybe_inject,
+    register_faults,
+    reset_fault_counts,
+    with_faults,
+)
 
 # Module alias matching documented import path.
 from . import portable_transform_conformance as portable_transform_conformance
@@ -53,6 +64,15 @@ __all__ = [
     "assert_secret_provider_info",
     "assert_spark_plugin_info",
     "assert_sql_plugin_info",
+    "FaultBoundary",
+    "FaultSpec",
+    "FaultTrigger",
+    "clear_faults",
+    "fault_injection_enabled",
+    "maybe_inject",
+    "register_faults",
+    "reset_fault_counts",
+    "with_faults",
     "assert_write_intent_parity",
     "normalize_rows",
     "portable_transform_conformance",

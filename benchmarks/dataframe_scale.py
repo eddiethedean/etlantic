@@ -60,6 +60,14 @@ class BenchResult:
     seconds: float
     status: str
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "engine": self.engine,
+            "rows": self.rows,
+            "seconds": self.seconds,
+            "status": self.status,
+        }
+
 
 def run_benchmark(engine: str, *, rows: int = 50_000, warmups: int = 1) -> BenchResult:
     """Run a single-engine scale pipeline and return timing."""
@@ -83,11 +91,16 @@ def run_benchmark(engine: str, *, rows: int = 50_000, warmups: int = 1) -> Bench
 
 
 if __name__ == "__main__":
+    import json
     import sys
 
     engine = sys.argv[1] if len(sys.argv) > 1 else "polars"
+    emit_json = "--json" in sys.argv
     result = run_benchmark(engine)
-    print(
-        f"engine={result.engine} rows={result.rows} "
-        f"seconds={result.seconds:.4f} status={result.status}"
-    )
+    if emit_json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(
+            f"engine={result.engine} rows={result.rows} "
+            f"seconds={result.seconds:.4f} status={result.status}"
+        )

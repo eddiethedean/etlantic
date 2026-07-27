@@ -49,8 +49,10 @@ class CallbackRegistry:
         return self.on("step_failed", handler)
 
     async def emit(self, event: str, context: Any) -> list[Any]:
+        from etlantic.runtime.faults import FaultBoundary, maybe_inject
         from etlantic.runtime.invoke import maybe_await
 
+        maybe_inject(FaultBoundary.CALLBACK)
         results: list[Any] = []
         for handler in self._handlers.get(event, ()):
             results.append(await maybe_await(handler, context))

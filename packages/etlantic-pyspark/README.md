@@ -4,10 +4,10 @@ PySpark reference execution plugin **and** portable transform compiler for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.20.
 
 ```bash
-pip install 'etlantic==0.22.0' 'etlantic-pyspark==0.22.0'
+pip install 'etlantic==0.23.0' 'etlantic-pyspark==0.23.0'
 # or: pip install 'etlantic[pyspark]'
 # optional Delta Lake support:
-pip install 'etlantic-pyspark[delta]==0.22.0'
+pip install 'etlantic-pyspark[delta]==0.23.0'
 ```
 
 ## Native Spark plugin

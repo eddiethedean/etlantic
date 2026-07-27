@@ -4,6 +4,42 @@ ETLantic benchmarks measure modeling, validation, planning, and
 coordination overhead. They do not claim ownership of Pandas, Polars, SQL, or
 Spark engine performance.
 
+## Baseline schema (0.23)
+
+Committed baselines live under `benchmarks/baselines/` using
+`etlantic.benchmark_baseline/1`:
+
+```json
+{
+  "schema": "etlantic.benchmark_baseline/1",
+  "scenarios": {
+    "modeling.plan_small": {
+      "median_seconds": 0.012,
+      "p95_seconds": 0.025,
+      "tolerance_ratio": 0.15
+    }
+  }
+}
+```
+
+CI gate:
+
+```bash
+uv run python scripts/check_benchmarks.py
+```
+
+Refresh baselines after reviewed changes:
+
+```bash
+ETLANTIC_BENCHMARK_UPDATE=1 uv run python scripts/check_benchmarks.py
+```
+
+Microbenchmark modules:
+
+- `benchmarks/modeling/microbench.py` — plan + validate on sample pipeline
+- `benchmarks/discovery/microbench.py` — plugin discovery coordinator
+- `benchmarks/interchange/microbench.py` — evidence reconciliation
+
 ## Dataframe scale harness (0.5)
 
 A lightweight correctness/timing harness lives at

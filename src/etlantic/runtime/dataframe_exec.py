@@ -17,6 +17,7 @@ from etlantic.dataframe.protocol import (
 )
 from etlantic.exceptions import NodeExecutionError
 from etlantic.interchange.tabular.execute import boundary_for_input
+from etlantic.interchange.tabular.reconcile import build_interchange_evidence
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
 from etlantic.registry import ImplementationDescriptor
@@ -192,6 +193,7 @@ async def execute_dataframe_step(
 
     materialized: dict[str, Any] = {}
     interchange_mechanisms: list[str] = []
+    interchange_observations: list[dict[str, Any]] = []
     for port_name, value in inputs.items():
         contract = None
         for port in node.inputs:
@@ -203,6 +205,7 @@ async def execute_dataframe_step(
             input_context = replace(context, interchange=interchange)
             if interchange is not None:
                 interchange_mechanisms.append(interchange.mechanism.value)
+            value_before = value
             frame = plugin.materialize_input(
                 value,
                 contract_type=contract,
@@ -227,6 +230,25 @@ async def execute_dataframe_step(
                     code="PMEXEC330",
                 )
             materialized[port_name] = frame
+            if interchange is not None:
+                evidence = build_interchange_evidence(
+                    descriptor=interchange,
+                    value_before=value_before,
+                    value_after=frame,
+                    mechanism_observed=interchange.mechanism.value,
+                )
+                interchange_observations.append(
+                    {
+                        "port": port_name,
+                        "evidence_id": evidence.evidence_id,
+                        "mechanism": evidence.mechanism.value,
+                        "copy_observed": evidence.copy_observed,
+                        "zero_copy_reported": evidence.zero_copy_reported,
+                        "fallback_reason": evidence.fallback_reason,
+                        "cleanup_status": evidence.cleanup_status,
+                        "notes": evidence.notes,
+                    }
+                )
             _ = diags
         except NodeExecutionError:
             raise
@@ -392,6 +414,8 @@ async def execute_dataframe_step(
             bundle.metrics.extras["interchange_mechanisms"] = list(
                 interchange_mechanisms
             )
+    if interchange_observations:
+        bundle.metrics.extras["interchange_evidence"] = interchange_observations
     bundle.metrics.ownership = context.ownership.value
     bundle.metrics.invalid_count = invalid_count or None
     bundle.metrics.rejected_count = rejected_count or None

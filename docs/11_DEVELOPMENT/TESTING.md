@@ -39,6 +39,16 @@ uv run pytest -m spark
 
 SPARKLESS_TEST_MODE=pyspark uv run pytest -m real_pyspark
 
+CI also runs the `real-pyspark` job (Java 17, Ubuntu) on `@pytest.mark.real_pyspark`.
+
+```bash
+uv sync --group airflow --group airflow-runtime
+uv run pytest -m airflow tests/airflow/test_airflow_compile.py::test_optional_airflow_import_of_generated_dag
+```
+
+The `airflow-import` CI matrix pins Apache Airflow **2.8.x**, **2.9.x**, and
+**2.10.x** and imports compiled fixture DAGs via `load_compiled_pipeline()`.
+
 uv sync --group prefect
 uv run pytest -m prefect
 ```

@@ -24,6 +24,11 @@ from etlantic.interchange.tabular.mechanisms import (
     SCHEMA,
     InterchangeMechanism,
 )
+from etlantic.interchange.tabular.reconcile import (
+    ReconciliationResult,
+    build_interchange_evidence,
+    reconcile_interchange_evidence,
+)
 from etlantic.interchange.tabular.select import select_mechanism
 from etlantic.interchange.tabular.validate import validate_descriptor
 
@@ -42,6 +47,9 @@ __all__ = [
     "MappingIssue",
     "check_mapping_fidelity",
     "evaluate_fidelity",
+    "ReconciliationResult",
+    "build_interchange_evidence",
+    "reconcile_interchange_evidence",
     "select_mechanism",
     "validate_descriptor",
 ]
