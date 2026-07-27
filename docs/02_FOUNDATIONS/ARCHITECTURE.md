@@ -51,7 +51,7 @@ See the [Security Model](SECURITY.md).
 │                                                              │
 │ Profiles • bindings • capabilities • execution regions       │
 │ resources • materialization boundaries                       │
-│ Gate A interchange descriptors (Polars ↔ Pandas, 0.18)       │
+│ Gate A interchange descriptors (Polars ↔ Pandas; shipped 0.18, current) │
 └──────────────────────────────┬───────────────────────────────┘
                                ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -191,7 +191,7 @@ The planner resolves:
 - Portable transformation compiler selection and operation requirements
 - Extract and Load asset bindings
 - Gate A tabular interchange descriptors when engines cross at a boundary
-  (`etlantic.interchange/1`, Polars ↔ Pandas in 0.18)
+  (`etlantic.interchange/1`, Polars ↔ Pandas; Gate A shipped in 0.18, still current)
 - Orchestrator selection
 - Resource-provider references
 - Execution modes

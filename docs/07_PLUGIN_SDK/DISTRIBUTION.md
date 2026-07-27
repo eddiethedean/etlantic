@@ -40,20 +40,33 @@ Execution Dataframe Storage   Resource
 
 Plugins should be distributed as standard Python packages.
 
-Recommended naming convention:
+### Published packages (0.24)
 
-- etlantic-airflow
-- etlantic-polars
-- etlantic-pandas
-- etlantic-postgres
-- etlantic-s3
-- etlantic-keyring
-- etlantic-secrets-aws
-- etlantic-secrets-azure
-- etlantic-secrets-gcp
-- etlantic-secrets-vault
+Install matching minors while ETLantic is pre-1.0:
 
-Third-party plugins should follow a consistent naming convention where practical.
+- `etlantic-polars`
+- `etlantic-pandas`
+- `etlantic-sql`
+- `etlantic-pyspark`
+- `etlantic-airflow`
+- `etlantic-prefect`
+- `etlantic-keyring`
+- `etlantic-sqlmodel`
+- `etlantic-sparkforge`
+- `etlantic-datafusion` (experimental Gate B stub)
+- `etlantic-fastapi` (authoring/service reference adapter)
+
+### Naming convention (examples only — not published)
+
+Third-party and future plugins should follow a consistent naming pattern.
+These names are **illustrative only** and are **not** available on PyPI today:
+
+- `etlantic-postgres`
+- `etlantic-s3`
+- `etlantic-secrets-aws`
+- `etlantic-secrets-azure`
+- `etlantic-secrets-gcp`
+- `etlantic-secrets-vault`
 
 ## Installation
 

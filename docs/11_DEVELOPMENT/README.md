@@ -20,14 +20,15 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.23 → 0.24](MIGRATION_0_23_TO_0_24.md)
+- [Exit gate 0.24](EXIT_GATE_0_24.md)
 - [Migration 0.22 → 0.23](MIGRATION_0_22_TO_0_23.md)
 - [Exit gate 0.23](EXIT_GATE_0_23.md)
-- [Migration 0.21 → 0.22](MIGRATION_0_21_TO_0_22.md)
-- [Exit gate 0.22](EXIT_GATE_0_22.md)
 - [Upgrade hub (cumulative)](../01_GETTING_STARTED/UPGRADE.md)
 
 ## Documentation audits
 
+- [Maintained 0.24 Documentation Audit](DOCUMENTATION_AUDIT_0_24.md)
 - [Maintained 0.23 Documentation Audit](DOCUMENTATION_AUDIT_0_23.md)
 - [Maintained 0.21 Documentation Audit](DOCUMENTATION_AUDIT_0_21.md)
 - [Maintained 0.20 Documentation Audit](DOCUMENTATION_AUDIT_0_20.md)
@@ -36,22 +37,8 @@ released.
 
 ## Migration archive
 
-- [Migration 0.19 → 0.20](MIGRATION_0_19_TO_0_20.md)
-- [Exit gate 0.20](EXIT_GATE_0_20.md)
-- [Migration 0.17 → 0.18](MIGRATION_0_17_TO_0_18.md)
-- [Migration 0.16 → 0.17](MIGRATION_0_16_TO_0_17.md)
-- [Migration 0.15 → 0.16](MIGRATION_0_15_TO_0_16.md)
-- [Migration 0.4 → 0.5](MIGRATION_0_4_TO_0_5.md)
-- [Migration 0.5 → 0.6](MIGRATION_0_5_TO_0_6.md)
-- [Migration 0.6 → 0.7](MIGRATION_0_6_TO_0_7.md)
-- [Migration 0.7 → 0.8](MIGRATION_0_7_TO_0_8.md)
-- [Migration 0.8 → 0.9](MIGRATION_0_8_TO_0_9.md)
-- [Migration 0.9 → 0.10](MIGRATION_0_9_TO_0_10.md)
-- [Migration 0.10 → 0.11](MIGRATION_0_10_TO_0_11.md)
-- [Migration 0.11 → 0.12](MIGRATION_0_11_TO_0_12.md)
-- [Migration 0.12 → 0.13](MIGRATION_0_12_TO_0_13.md)
-- [Migration 0.13 → 0.14](MIGRATION_0_13_TO_0_14.md)
-- [Migration 0.14 → 0.15](MIGRATION_0_14_TO_0_15.md)
+Historical migrations, design studies, and maintainer plans are indexed in
+[Archive index](ARCHIVE_INDEX.md) (not product docs).
 
 ## Decisions
 

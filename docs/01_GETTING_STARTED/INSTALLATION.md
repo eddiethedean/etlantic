@@ -1,5 +1,11 @@
 # Installing ETLantic 0.24.0
 
+!!! tip "PyPI user vs contributor clone"
+    | Audience | Path |
+    |---|---|
+    | **First-time / PyPI** | Sections below through [Quickstart](QUICKSTART.md). Use `python -m pip` and `python -m etlantic`. |
+    | **Contributor / monorepo** | Skip to [Repository checkout](#repository-checkout-contributors) and use `uv sync`. Do not mix `uv run` example commands with a pip-only install. |
+
 ## Requirements
 
 - Python 3.11, 3.12, or 3.13

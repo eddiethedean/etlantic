@@ -28,7 +28,17 @@ def field_spec(
     nullable: bool = False,
     required: bool = True,
 ) -> FieldSpec:
-    """Construct a contract field."""
+    """Construct a contract field.
+
+    Args:
+        name: Field name on the embedded contract.
+        type: Logical type string (for example ``"string"`` or ``"int64"``).
+        nullable: Whether null values are allowed.
+        required: Whether the field must be present.
+
+    Returns:
+        An immutable ``FieldSpec``.
+    """
     return FieldSpec(name=name, type=type, nullable=nullable, required=required)
 
 
@@ -247,7 +257,36 @@ def pipeline_definition(
     metadata: Mapping[str, Any] | None = None,
     fingerprint: bool = True,
 ) -> PipelineDefinition:
-    """Construct a complete PipelineDefinition."""
+    """Construct a complete ``PipelineDefinition`` (``etlantic.pipeline/1``).
+
+    Args:
+        pipeline_id: Stable pipeline identity string.
+        pipeline_name: Human-readable name.
+        version: Optional authoring version label.
+        contracts: Embedded data-contract definitions.
+        transformations: Transformation definitions referenced by step nodes.
+        nodes: Extract, step, and load nodes.
+        edges: Port-to-port wiring between nodes.
+        profile_ref: Optional default profile name for later resolution.
+        policy_refs: Opaque policy references (not secrets).
+        reliability: Reliability metadata mapping.
+        provenance: Provenance metadata (defaults to functional authoring).
+        extensions: Extension bag for forward-compatible fields.
+        metadata: Free-form metadata (must not contain secret values).
+        fingerprint: When True, seal with a SHA-256 fingerprint.
+
+    Returns:
+        An immutable ``PipelineDefinition``, optionally fingerprinted.
+
+    Raises:
+        TypeError: If nested builders receive invalid types (via constructors).
+
+    Example:
+        >>> from etlantic.authoring import pipeline_definition
+        >>> defn = pipeline_definition("demo", "Demo", fingerprint=False)
+        >>> defn.schema
+        'etlantic.pipeline/1'
+    """
     defn = PipelineDefinition(
         schema=PIPELINE_SCHEMA,
         pipeline_id=pipeline_id,

@@ -158,7 +158,15 @@ def canonical_pipeline_json(defn: PipelineDefinition) -> str:
 
 
 def pipeline_fingerprint(defn: PipelineDefinition) -> str:
-    """Compute a stable SHA-256 fingerprint of the canonical definition."""
+    """Compute a stable SHA-256 fingerprint of the canonical definition.
+
+    Args:
+        defn: Pipeline definition to hash (fingerprint field is ignored in the
+            canonical payload).
+
+    Returns:
+        Hex-encoded SHA-256 digest of the canonical JSON form.
+    """
     payload = canonical_pipeline_json(defn).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
@@ -166,7 +174,16 @@ def pipeline_fingerprint(defn: PipelineDefinition) -> str:
 def pipeline_to_dict(
     defn: PipelineDefinition, *, with_fingerprint: bool = True
 ) -> dict[str, Any]:
-    """Serialize a definition, optionally embedding its fingerprint."""
+    """Serialize a definition, optionally embedding its fingerprint.
+
+    Args:
+        defn: Definition to serialize.
+        with_fingerprint: When True, set ``fingerprint`` to the recomputed
+            digest (recommended for interchange).
+
+    Returns:
+        A JSON-friendly mapping suitable for ``pipeline_from_dict``.
+    """
     data = defn.to_dict()
     if with_fingerprint:
         data["fingerprint"] = pipeline_fingerprint(defn)
@@ -179,7 +196,16 @@ def pipeline_to_json(
     indent: int | None = 2,
     with_fingerprint: bool = True,
 ) -> str:
-    """Serialize a definition to JSON text."""
+    """Serialize a definition to JSON text.
+
+    Args:
+        defn: Definition to serialize.
+        indent: Pretty-print indent, or ``None`` for compact canonical JSON.
+        with_fingerprint: Forwarded to ``pipeline_to_dict``.
+
+    Returns:
+        UTF-8 JSON text (trailing newline when ``indent`` is not ``None``).
+    """
     data = pipeline_to_dict(defn, with_fingerprint=with_fingerprint)
     if indent is None:
         return json.dumps(
@@ -189,7 +215,18 @@ def pipeline_to_json(
 
 
 def verify_pipeline_fingerprint(defn: PipelineDefinition) -> None:
-    """Recompute fingerprint and compare to ``defn.fingerprint``."""
+    """Recompute fingerprint and compare to ``defn.fingerprint``.
+
+    Args:
+        defn: Definition whose embedded fingerprint must match.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If the embedded fingerprint does not match the recomputed
+            digest.
+    """
     expected = pipeline_fingerprint(defn)
     if defn.fingerprint != expected:
         raise ValueError(
@@ -203,7 +240,23 @@ def pipeline_from_dict(
     *,
     verify: bool = True,
 ) -> PipelineDefinition:
-    """Deserialize a definition from a mapping."""
+    """Deserialize a definition from a mapping.
+
+    Args:
+        data: ``etlantic.pipeline/1`` document (may be upgraded from prior
+            minors via the codec upgrade path).
+        verify: When True, require a matching fingerprint and supported schema.
+
+    Returns:
+        An immutable ``PipelineDefinition``.
+
+    Raises:
+        TypeError: If ``data`` is not a mapping.
+        ValueError: If forbidden keys, fingerprint mismatch, or missing
+            fingerprint when ``verify=True``.
+        UnsupportedPipelineSchemaError: If the schema is unsupported after
+            upgrade when ``verify=True``.
+    """
     if not isinstance(data, dict):
         raise TypeError(
             f"PipelineDefinition document must be a mapping, got {type(data)!r}"
@@ -232,7 +285,19 @@ def pipeline_from_dict(
 
 
 def pipeline_from_json(text: str, *, verify: bool = True) -> PipelineDefinition:
-    """Deserialize a definition from JSON text (inert — no imports or I/O)."""
+    """Deserialize a definition from JSON text (inert — no imports or I/O).
+
+    Args:
+        text: JSON document text.
+        verify: Forwarded to ``pipeline_from_dict``.
+
+    Returns:
+        An immutable ``PipelineDefinition``.
+
+    Raises:
+        ValueError: If the payload exceeds size budget, is invalid JSON, or
+            is not a JSON object.
+    """
     if len(text.encode("utf-8")) > DEFAULT_MAX_BYTES:
         raise ValueError("Pipeline definition JSON exceeds read budget")
     try:
@@ -250,7 +315,16 @@ def write_pipeline_json(
     *,
     indent: int | None = 2,
 ) -> Path:
-    """Write canonical definition JSON to ``path``."""
+    """Write canonical definition JSON to ``path``.
+
+    Args:
+        defn: Definition to write (fingerprint is embedded).
+        path: Destination file path.
+        indent: Pretty-print indent, or ``None`` for compact JSON.
+
+    Returns:
+        The resolved ``Path`` written.
+    """
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(pipeline_to_json(defn, indent=indent), encoding="utf-8")
@@ -263,6 +337,19 @@ def read_pipeline_json(
     verify: bool = True,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> PipelineDefinition:
-    """Read a definition JSON document from disk under Safe I/O budgets."""
+    """Read a definition JSON document from disk under Safe I/O budgets.
+
+    Args:
+        path: Path to an ``etlantic.pipeline/1`` JSON file.
+        verify: Forwarded to ``pipeline_from_json``.
+        max_bytes: Maximum bytes to read (Safe I/O budget).
+
+    Returns:
+        An immutable ``PipelineDefinition``.
+
+    Raises:
+        ValueError: On size, JSON, fingerprint, or schema failures.
+        OSError: If the file cannot be read.
+    """
     _resolved, text = read_text_bounded(path, max_bytes=max_bytes)
     return pipeline_from_json(text, verify=verify)

@@ -346,6 +346,50 @@ ETLantic is intended for:
 
 ------------------------------------------------------------------------
 
+## How do I author pipelines without classes (builders / JSON)?
+
+ETLantic 0.24 ships programmatic authoring: functional builders,
+`PipelineDefinition`, and lossless `etlantic.pipeline/1` JSON. Class
+`Pipeline` subclasses, builders, and JSON documents normalize to the same
+definition and feed the same validate/plan/run path.
+
+Start with
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md). From a
+clone, `examples/pipeline_definition_json.py` shows builders → JSON →
+`etlantic validate`.
+
+------------------------------------------------------------------------
+
+## Why does `from etlantic import SomeError` warn?
+
+Specialist root exports demoted in 0.22 (including most exception types) remain
+as pre-1.0 compatibility aliases and emit a **one-time** demotion warning.
+Prefer owning modules:
+
+```python
+from etlantic.exceptions import DataValidationError, PipelineValidationError
+```
+
+Curated root symbols (`Data`, `Pipeline`, `Transformation`, …) do not warn.
+See [Exceptions](../10_REFERENCE/EXCEPTIONS.md) and
+[Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
+
+------------------------------------------------------------------------
+
+## What is the difference between profile name and `security_mode`?
+
+A profile **name** (for example `development`, `prod-example`) is how you
+select a profile file or object. Production **fail-closed trust** keys off
+`security_mode="production"` (and `plugin_allowlist`), **not** the profile
+name or `security_domain`.
+
+A profile named `production` that still has `security_mode: "development"`
+does **not** enable production trust. See
+[Profile primer](../05_PIPELINES/PROFILE_PRIMER.md) and
+[Capabilities](CAPABILITIES.md).
+
+------------------------------------------------------------------------
+
 ## Where should I go next?
 
 1. [Installation](INSTALLATION.md) → [Quickstart](QUICKSTART.md) →

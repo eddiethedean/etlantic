@@ -21,7 +21,7 @@ ETLantic is intentionally designed around a small, stable core and a rich
 plugin ecosystem. The SDK defines the public interfaces, lifecycle, and
 conformance requirements for building those plugins.
 
-## Public imports (0.23)
+## Public imports (0.24)
 
 Recommended application and tutorial style:
 
@@ -39,6 +39,8 @@ stay import-safe until accessed:
 - `etl.spark` / `etlantic.spark` — Spark protocol + discovery
 - `etl.orchestration` / `etlantic.orchestration` — orchestrator protocol + `compile_plan`
 - `etl.transform` / `etlantic.transform` — portable authoring
+- `etl.authoring` / `etlantic.authoring` — `PipelineDefinition`, builders, JSON codecs
+- `etl.service` / `etlantic.service` — authoring/service facade (HTTP adapters optional)
 - `etl.secrets` / `etlantic.secrets` — secret refs / providers
 - `etl.viz` / `etlantic.viz` — Graphviz DOT / HTML / lineage export
 - `etl.testing` / `etlantic.testing` — conformance suites (dataframe, SQL, Spark,

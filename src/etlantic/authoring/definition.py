@@ -347,7 +347,11 @@ class NodeDefinition:
 
 @dataclass(frozen=True, slots=True)
 class PipelineDefinition:
-    """Immutable, unresolved, authoring-complete pipeline model."""
+    """Immutable, unresolved, authoring-complete pipeline model.
+
+    Shared by class authoring, functional builders, JSON documents, and visual
+    editors. Distinct from resolved ``etlantic.plan/1`` (``PipelinePlan``).
+    """
 
     pipeline_id: str
     pipeline_name: str
@@ -366,7 +370,12 @@ class PipelineDefinition:
     metadata: Mapping[str, Any] = field(default_factory=_empty_map)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a JSON-friendly dict (includes fingerprint when set)."""
+        """Serialize to a JSON-friendly dict (includes fingerprint when set).
+
+        Returns:
+            Mapping suitable for JSON codecs. Prefer
+            ``etlantic.authoring.pipeline_to_dict`` when sealing a fingerprint.
+        """
         return {
             "schema": self.schema,
             "pipeline_id": self.pipeline_id,
@@ -387,7 +396,22 @@ class PipelineDefinition:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PipelineDefinition:
-        """Deserialize from a dict. Does not verify fingerprint or schema upgrade."""
+        """Deserialize from a dict without fingerprint verify or schema upgrade.
+
+        Args:
+            data: Mapping with at least ``pipeline_id`` and ``pipeline_name``.
+
+        Returns:
+            An immutable ``PipelineDefinition``.
+
+        Raises:
+            KeyError: If required keys are missing.
+            TypeError: If nested values have unexpected types.
+
+        Note:
+            Prefer ``etlantic.authoring.pipeline_from_dict`` for verified
+            interchange (upgrade + fingerprint).
+        """
         defn = cls(
             schema=str(data.get("schema") or PIPELINE_SCHEMA),
             pipeline_id=str(data["pipeline_id"]),
@@ -426,7 +450,14 @@ class PipelineDefinition:
         return defn
 
     def with_fingerprint(self, fingerprint: str) -> PipelineDefinition:
-        """Return a copy with ``fingerprint`` set."""
+        """Return a copy with ``fingerprint`` set.
+
+        Args:
+            fingerprint: SHA-256 hex digest from ``pipeline_fingerprint``.
+
+        Returns:
+            A new frozen ``PipelineDefinition`` with the fingerprint sealed.
+        """
         return PipelineDefinition(
             schema=self.schema,
             pipeline_id=self.pipeline_id,

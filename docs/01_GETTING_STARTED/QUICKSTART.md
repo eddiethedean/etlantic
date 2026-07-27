@@ -3,16 +3,32 @@
 > **Status: Available in ETLantic 0.24.0.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 
+!!! tip "PyPI vs clone"
+    This page is for **PyPI installs**. Repository `examples/` scripts need a
+    git checkout and `uv` — see [Installation](INSTALLATION.md).
+
 ## 1. Install
 
 ETLantic requires Python 3.11 or newer. Prefer `python -m` so PATH issues do not
 block you.
+
+**Unix / macOS:**
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.24.0'
 python -m etlantic --version
+```
+
+**Windows (PowerShell):**
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -3.11 -m pip install --upgrade pip
+py -3.11 -m pip install 'etlantic==0.24.0'
+py -3.11 -m etlantic --version
 ```
 
 ## 2. Initialize a project
@@ -25,8 +41,16 @@ mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
 
+`--with-toml` writes a minimal `etlantic.toml` (project name + default profile)
+so later CLI invocations resolve project settings without extra flags. You can
+omit it for a profile-JSON-only scaffold.
+
 This creates `pipeline.py` (`SamplePipeline`), `profiles/development.json`,
 sample `data/sample.json`, and `.etlantic/` workspace directories.
+
+The generated profile uses `dataframe_engine: "local"` — the built-in local
+Python runtime (not Polars/Pandas). Add those engines later via
+[Engine selection](ENGINE_SELECTION.md).
 
 ## 3. Validate and run (first success)
 
@@ -41,8 +65,10 @@ No Python-side seed is required: the generated profile maps assets to
 
 ### What success looks like
 
-- `validate` prints a report with no errors (add `--format json` for machines).
-- `run` prints a run status of **`succeeded`**.
+- `validate` exits 0 and prints a report with no errors (add `--format json`
+  for machines). Typical text output includes a summary line with **0 errors**.
+- `run` prints a run status of **`succeeded`** (look for `status: succeeded` or
+  equivalent in the run summary).
 - `data/out.json` contains Ada and Grace (identity transform on the sample).
 
 Expected shape:
@@ -63,10 +89,10 @@ Expected shape:
 Optional later: `python -m etlantic doctor --profile development`,
 `inspect`, `plan`, and `report list`.
 
-## 4. Aha — catch a bad change before write
+## 4. Required aha — catch a bad change before write
 
-Edit `pipeline.py` and change the `Row` contract so `name` becomes `full_name`
-(or delete a required field). Re-validate:
+Do not skip this step. Edit `pipeline.py` and change the `Row` contract so
+`name` becomes `full_name` (or delete a required field). Re-validate:
 
 ```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development

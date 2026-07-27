@@ -56,9 +56,12 @@ You should see `succeeded` and Ada/Grace sample rows (identity transform).
 Next: change the transform in [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md)
 or try [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
-The PyPI wheel does **not** include `examples/`; from a checkout an optional
-in-memory SDK demo is
-[`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).
+!!! note "PyPI vs clone"
+    **PyPI users:** stay on Installation → Quickstart → First Pipeline. The
+    wheel does **not** include `examples/`.
+    **Contributors / clone users:** after `uv sync`, optional demos live under
+    [`examples/`](https://github.com/eddiethedean/etlantic/tree/main/examples)
+    (see [examples/README](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md)).
 
 ## The Architecture in One View
 

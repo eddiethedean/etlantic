@@ -23,7 +23,7 @@ ETLanticError
 ```
 
 ```python
-from etlantic import (
+from etlantic.exceptions import (
     DataValidationError,
     ModelDefinitionError,
     NodeExecutionError,
@@ -34,6 +34,9 @@ from etlantic import (
     ETLanticError,
 )
 ```
+
+Root `from etlantic import …` exception aliases still work pre-1.0 but emit a
+one-time demotion warning — prefer `etlantic.exceptions`.
 
 ## Base Exception
 

@@ -1,6 +1,17 @@
 # Current Capabilities and Limitations
 
-## Residual evaluation lead
+## What you can do in 0.24
+
+Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
+PySpark extras; compile Airflow DAGs; author via classes, functional builders,
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.24.0** is a **Beta**
+(PyPI) release for documented single-tenant pilots.
+
+**Canonical first success:** follow the
+[Quickstart](QUICKSTART.md) (`pip install` → `init` → validate → run). Do not
+start from repository `examples/` unless you have cloned the repo.
+
+## Limits (read before production)
 
 | Topic | 0.24 |
 |---|---|
@@ -9,21 +20,17 @@
 | Support | Community; **no SLA** |
 | Not included | Multi-tenant control plane; unrestricted enterprise production |
 
-ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for documented
-single-tenant reference deployments. Experimental features remain
-experimental, and multi-tenant isolation, deployment topology, compliance,
-advanced multi-tenant control planes remain adopter-owned; 0.24 adds
-programmatic authoring, lossless `etlantic.pipeline/1` JSON, and a thin
-FastAPI reference adapter. This page is the shortest answer to "What can I use today?"
+Experimental features remain experimental. Multi-tenant isolation, deployment
+topology, compliance, and advanced control planes remain adopter-owned. This
+page answers "What can I use today?" after the green path.
 
 ## Recommended bounded production deployment
 
 Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md)):
 
-1. Core + local/file storage ([Quickstart](QUICKSTART.md) paste, or checkout
-   [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py)
-   / [`file_storage.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py))
+1. Core + local/file storage via the [Quickstart](QUICKSTART.md) paste
+   (`python -m etlantic init --with-toml` in an empty directory)
 2. Optional one engine: Polars **or** Pandas **or** SQL **or** local PySpark
 3. Explicit production `Profile` JSON with `plugin_allowlist` (trim to engines you install)
 4. CI `validate --format sarif` + reviewed `plan` JSON
@@ -32,8 +39,9 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 
 !!! note "Examples are not in the wheel"
     `pip install etlantic` does **not** install `examples/` or a ready-made
-    `profiles/` tree. Use the paste-ready Quickstart, copy the profile JSON
-    below, or clone the repository and run scripts with `uv run`.
+    `profiles/` tree. Use the paste-ready Quickstart (or the profile JSON
+    below). Repository checkout demos such as `memory_customers.py` and
+    `file_storage.py` require a clone and are optional after first success.
 
 ## Available in 0.24
 

@@ -2,10 +2,16 @@
 
 These examples use APIs and dependencies shipped in ETLantic **0.24.0**.
 
-**Clone required.** The PyPI wheel does **not** include `examples/`. After
-`pip install etlantic==0.24.0`, use the CLI [Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md) (`etlantic init`) (or open scripts on
-GitHub). Commands below assume a **repository checkout** with `uv sync` /
-`uv run`, after installing matching `==0.24.0` optional packages as needed.
+**Which path am I on?**
+
+| Audience | Start here |
+|---|---|
+| **PyPI / first-time user** | [Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md) — `pip install` → `python -m etlantic init` → validate → run. Do **not** copy commands from this page yet. |
+| **Contributor / evaluator with a clone** | `uv sync --locked`, then the scripts below. |
+
+**Clone required.** The PyPI wheel does **not** include `examples/`. Commands
+below assume a **repository checkout** with `uv sync` / `uv run`, after
+installing matching `==0.24.0` optional packages as needed.
 
 **CI vs local:** `.github/workflows/checks.yml` runs the scripts marked
 **(CI)** below. Scripts marked **(docs / local)** are copy-paste runnable and
@@ -18,8 +24,8 @@ uv run python examples/memory_customers.py
 ```
 
 Validates, plans, and runs with in-memory storage; prints `succeeded` and
-curated records. This is an in-memory SDK demo, **not** the docs Quickstart
-(`etlantic init`).
+curated records. This is an in-memory SDK demo for clone users — **not** the
+docs Quickstart (`python -m etlantic init`).
 
 ## PipelineDefinition / JSON authoring (CI)
 

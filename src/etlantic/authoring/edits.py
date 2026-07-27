@@ -28,13 +28,25 @@ EditOp = Literal[
 
 @dataclass(frozen=True, slots=True)
 class EditCommand:
-    """An immutable edit applied to a PipelineDefinition."""
+    """An immutable edit applied to a PipelineDefinition.
+
+    Attributes:
+        op: Edit operation name (``add_node``, ``remove_node``, ``connect``,
+            ``disconnect``, ``update_node``, ``clone``, ``move``).
+        path: Optional path segments for the target (for example node name).
+        payload: Operation-specific fields (must not contain secret values).
+    """
 
     op: EditOp
     path: tuple[str, ...] = ()
     payload: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize this command to a JSON-friendly dict.
+
+        Returns:
+            Mapping with ``op``, ``path``, and ``payload``.
+        """
         return {
             "op": self.op,
             "path": list(self.path),
@@ -43,6 +55,18 @@ class EditCommand:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EditCommand:
+        """Deserialize an edit command.
+
+        Args:
+            data: Mapping with ``op`` and optional ``path`` / ``payload``.
+                Legacy ``op: "update"`` is accepted as ``update_node``.
+
+        Returns:
+            An immutable ``EditCommand``.
+
+        Raises:
+            KeyError: If ``op`` is missing.
+        """
         op = str(data["op"])
         if op == "update":
             op = "update_node"
@@ -55,13 +79,24 @@ class EditCommand:
 
 @dataclass(frozen=True, slots=True)
 class EditResult:
-    """Result of applying an edit command."""
+    """Result of applying an edit command.
+
+    Attributes:
+        definition: Updated immutable definition (fingerprinted).
+        fingerprint: SHA-256 fingerprint of ``definition``.
+        concurrency_token: Optimistic-concurrency token (same as fingerprint).
+    """
 
     definition: PipelineDefinition
     fingerprint: str
     concurrency_token: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the result including the definition document.
+
+        Returns:
+            Mapping with fingerprint, concurrency token, and definition dict.
+        """
         from etlantic.authoring.serialize import pipeline_to_dict
 
         return {
@@ -77,7 +112,21 @@ def apply_edit(
     *,
     expected_token: str | None = None,
 ) -> EditResult:
-    """Apply an immutable edit; fails closed on concurrency token mismatch."""
+    """Apply an immutable edit; fails closed on concurrency token mismatch.
+
+    Args:
+        defn: Current pipeline definition.
+        command: Edit to apply.
+        expected_token: When set, must equal the current fingerprint or the
+            edit is rejected (optimistic concurrency).
+
+    Returns:
+        ``EditResult`` with the updated fingerprinted definition.
+
+    Raises:
+        ValueError: On concurrency mismatch, unknown nodes, unsupported ops,
+            or invalid ``update_node`` / ``move`` payloads.
+    """
     current_fp = defn.fingerprint or pipeline_fingerprint(defn)
     if expected_token is not None and expected_token != current_fp:
         raise ValueError(

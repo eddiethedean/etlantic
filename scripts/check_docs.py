@@ -345,9 +345,13 @@ def main() -> None:
             "EVALUATOR.md must not deny Polars portable execution after 0.12"
         )
     if "MIGRATION_0_11_TO_0_12.md" not in (
-        ROOT / "docs/11_DEVELOPMENT/README.md"
+        ROOT / "docs/11_DEVELOPMENT/ARCHIVE_INDEX.md"
     ).read_text(encoding="utf-8"):
-        raise SystemExit("Development README missing Migration 0.11 → 0.12")
+        raise SystemExit("Archive index missing Migration 0.11 → 0.12")
+    if "ARCHIVE_INDEX.md" not in (ROOT / "docs/11_DEVELOPMENT/README.md").read_text(
+        encoding="utf-8"
+    ):
+        raise SystemExit("Development README must link Archive index")
     if not (ROOT / "docs/11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md").exists():
         raise SystemExit("Missing docs/11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md")
     if not (ROOT / "docs/11_DEVELOPMENT/MIGRATION_0_12_TO_0_13.md").exists():
@@ -402,6 +406,11 @@ def main() -> None:
     if not (ROOT / "src/etlantic/py.typed").exists():
         raise SystemExit("Missing src/etlantic/py.typed")
     mkdocs_text = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    archive_index = (ROOT / "docs/11_DEVELOPMENT/ARCHIVE_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    if "ARCHIVE_INDEX.md" not in mkdocs_text:
+        raise SystemExit("mkdocs.yml missing Archive index nav entry")
     for migration in (
         "MIGRATION_0_11_TO_0_12.md",
         "MIGRATION_0_12_TO_0_13.md",
@@ -413,8 +422,13 @@ def main() -> None:
         "MIGRATION_0_18_TO_0_19.md",
         "MIGRATION_0_19_TO_0_20.md",
     ):
-        if migration not in mkdocs_text:
-            raise SystemExit(f"mkdocs.yml missing {migration} nav entry")
+        if migration not in mkdocs_text and migration not in archive_index:
+            raise SystemExit(
+                f"mkdocs.yml / Archive index missing {migration} "
+                "(nav entry or archive index link required)"
+            )
+        if migration not in archive_index:
+            raise SystemExit(f"Archive index missing {migration}")
     whats_new_nav = f"WHATS_NEW_{major_minor_for_notes.replace('.', '_')}.md"
     if whats_new_nav not in mkdocs_text:
         raise SystemExit(f"mkdocs.yml missing {whats_new_nav} nav entry")
@@ -1272,7 +1286,7 @@ def main() -> None:
         check=True,
     )
 
-    # Curated stable-surface docstring gate (Pipeline + Profile public methods).
+    # Curated stable-surface docstring gate (Pipeline, Profile, authoring, service).
     import inspect
 
     def _doc_has_sections(
@@ -1304,8 +1318,19 @@ def main() -> None:
         )
 
     sys.path.insert(0, str(ROOT / "src"))
+    from etlantic.authoring.builders import pipeline_definition
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.edits import EditCommand, apply_edit
+    from etlantic.authoring.serialize import (
+        pipeline_fingerprint,
+        pipeline_from_dict,
+        pipeline_to_dict,
+        read_pipeline_json,
+        write_pipeline_json,
+    )
     from etlantic.pipeline import Pipeline
     from etlantic.profile import Profile
+    from etlantic.service import AuthoringService
 
     curated = {
         Pipeline: (
@@ -1325,6 +1350,24 @@ def main() -> None:
             "to_plan_snapshot",
             "from_plan_snapshot",
         ),
+        PipelineDefinition: (
+            "to_dict",
+            "from_dict",
+            "with_fingerprint",
+        ),
+        EditCommand: ("to_dict", "from_dict"),
+        AuthoringService: (
+            "negotiation",
+            "catalog",
+            "put_definition",
+            "get_definition",
+            "apply_edit",
+            "validate",
+            "plan",
+            "submit_run",
+            "cancel_run",
+            "job_status",
+        ),
     }
     require_raises = {
         (Pipeline, "validate"),
@@ -1335,6 +1378,33 @@ def main() -> None:
         (Pipeline, "from_dpcs"),
         (Profile, "from_dict"),
         (Profile, "from_plan_snapshot"),
+        (PipelineDefinition, "from_dict"),
+        (EditCommand, "from_dict"),
+        (AuthoringService, "negotiation"),
+        (AuthoringService, "catalog"),
+        (AuthoringService, "put_definition"),
+        (AuthoringService, "get_definition"),
+        (AuthoringService, "apply_edit"),
+        (AuthoringService, "validate"),
+        (AuthoringService, "plan"),
+        (AuthoringService, "submit_run"),
+        (AuthoringService, "cancel_run"),
+        (AuthoringService, "job_status"),
+    }
+    curated_functions = {
+        "etlantic.authoring.pipeline_definition": pipeline_definition,
+        "etlantic.authoring.apply_edit": apply_edit,
+        "etlantic.authoring.pipeline_fingerprint": pipeline_fingerprint,
+        "etlantic.authoring.pipeline_to_dict": pipeline_to_dict,
+        "etlantic.authoring.pipeline_from_dict": pipeline_from_dict,
+        "etlantic.authoring.write_pipeline_json": write_pipeline_json,
+        "etlantic.authoring.read_pipeline_json": read_pipeline_json,
+    }
+    function_require_raises = {
+        "etlantic.authoring.apply_edit",
+        "etlantic.authoring.pipeline_from_dict",
+        "etlantic.authoring.read_pipeline_json",
+        "etlantic.authoring.pipeline_definition",
     }
     failures: list[str] = []
     for cls, names in curated.items():
@@ -1350,6 +1420,16 @@ def main() -> None:
                     f"{cls.__name__}.{name} missing docstring sections: "
                     + ", ".join(missing)
                 )
+    for qualname, fn in curated_functions.items():
+        missing = _doc_has_sections(
+            inspect.getdoc(fn),
+            need_args=_has_non_self_params(fn),
+            need_raises=qualname in function_require_raises,
+        )
+        if missing:
+            failures.append(
+                f"{qualname} missing docstring sections: " + ", ".join(missing)
+            )
     if failures:
         raise SystemExit(
             "Stable-surface docstring gate failed:\n- " + "\n- ".join(failures)

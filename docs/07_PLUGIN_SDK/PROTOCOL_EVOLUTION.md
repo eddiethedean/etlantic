@@ -1,9 +1,10 @@
 # Protocol Evolution Policy
 
-> **Status: Ships with ETLantic 0.22 RC.** Protocol `/1` families are
-> **freeze-eligible**, not frozen, until external feedback cycles and the
-> exit-gate checklist in
-> [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md) are satisfied.
+> **Status (0.24.0):** Protocol `/1` families ship and are **freeze-eligible**.
+> Freeze closure is planned across Compatibility Burn-In (**0.25–0.26**), not
+> claimed frozen in 0.24. See
+> [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md) evidence and the
+> [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md).
 
 This document is the normative policy for evolving ETLantic plugin protocols
 (`etlantic.dataframe/1`, `etlantic.sql/1`, `etlantic.spark/1`,

@@ -26,6 +26,7 @@ and introduces lossless `etlantic.pipeline/1` JSON.
 
 ```bash
 python -m pip install 'etlantic==0.24.0'
+mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic generate pipeline.py:SamplePipeline \
   --kind definition -o pipeline.json

@@ -60,7 +60,9 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
 ## Quickstart
 
 Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
-`--force`).
+`--force`). On Windows PowerShell, activate with
+`.\.venv\Scripts\Activate.ps1` and prefer `py -3.11 -m …` (see
+[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -83,8 +85,11 @@ The CLI defaults to `development` when `--profile` is omitted (or your project's
 `default_profile`). Prefer an explicit profile in scripts and CI.
 
 Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/).
-From a checkout, an optional in-memory SDK demo is
-[`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).
+
+> **After first success (clone only):** repository demos under `examples/`
+> (for example
+> [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
+> require a git checkout — they are **not** in the PyPI wheel.
 
 > **Status:** ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.

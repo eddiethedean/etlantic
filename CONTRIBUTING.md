@@ -2,9 +2,13 @@
 
 Thank you for your interest in ETLantic.
 
-Full contributor guidance lives in the documentation:
+**Canonical contributor guide (single source of truth):**
 
 **[docs/11_DEVELOPMENT/CONTRIBUTING.md](docs/11_DEVELOPMENT/CONTRIBUTING.md)**
+
+Use that page for setup, the full CI-equivalent checklist (including
+`tests/authoring`, FastAPI package tests, and `pipeline_definition_json.py`),
+coding standards, and PR expectations. This root file is a short pointer only.
 
 ## Quick start
 
@@ -23,48 +27,10 @@ uv run python scripts/check_docs.py
 uv run python scripts/check_agent_guidance.py
 ```
 
-## CI-equivalent local checks
-
-Baseline:
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-./scripts/test_core.sh
-uv run python scripts/check_docs.py
-uv run python scripts/check_agent_guidance.py
-uv run python scripts/check_release.py
-uv run python scripts/check_surface_inventory.py
-uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
-uv run etlantic validate examples/memory_customers.py:CustomerPipeline --format sarif > /tmp/etlantic.sarif
-uv run python examples/memory_customers.py
-uv run python scripts/build_docs.py
-```
-
-`./scripts/test_core.sh` runs the same non-plugin pytest marker expression CI uses for the core job.
-
-Portable dataframe examples (requires the dataframes group):
-
-```bash
-uv sync --locked --group dataframes
-uv run python examples/portable_polars_kernel.py
-uv run python examples/portable_pandas_kernel.py
-```
-
-Prefect direct execution (optional):
-
-```bash
-uv sync --locked --group prefect
-uv run pytest -q tests/prefect -m prefect
-uv run python examples/prefect_run.py
-```
-
-SparkForge (optional):
-
-```bash
-uv sync --locked --group sparkforge
-uv run pytest -q tests/sparkforge -m sparkforge
-```
+For core, plugin, or release-impacting changes, run the **CI-equivalent checks**
+section in
+[docs/11_DEVELOPMENT/CONTRIBUTING.md](docs/11_DEVELOPMENT/CONTRIBUTING.md)
+(do not rely on an abbreviated list here).
 
 Fork the repository, branch from `main`, and open a pull request against
 `main`. Please report security issues privately per [SECURITY.md](SECURITY.md).
