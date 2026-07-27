@@ -80,7 +80,14 @@ codec upgrade fixtures, Plugin SDK `/1` freeze evidence, and a published 1.0
 removal inventory. Not a control-plane or GUI release — see the full
 [0.25 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#025--compatibility-burn-in-first-slice).
 
-## Then: 0.26–0.98 → 0.99 → 1.0
+## Then: 0.26
+
+**Compatibility Burn-In (second slice):** dual-minor upgrade proof
+(0.24→0.25 and 0.25→0.26), complete public wire fixture matrix, freeze
+closure, and first-wave 1.0 removal execution — see
+[0.26 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#026--compatibility-burn-in-second-slice).
+
+## Then: 0.27–0.98 → 0.99 → 1.0
 
 Continued compatibility burn-in, then RC and Stable Foundation. Production
 FastAPI control API remains **1.1**; registry/workspaces **1.2**.
@@ -89,9 +96,9 @@ FastAPI control API remains **1.1**; registry/workspaces **1.2**.
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
-frozen `/1` protocols (0.25 freeze decision), and 0.24 functional/JSON
-authoring convergence, then compatibility burn-in (**0.25** first slice,
-0.26–0.98 continued). TransformationModel incubation is deferred to post-1.0
+frozen `/1` protocols (0.25–0.26 freeze closure), and 0.24 functional/JSON
+authoring convergence, then compatibility burn-in (**0.25** / **0.26** slices,
+0.27–0.98 continued). TransformationModel incubation is deferred to post-1.0
 phases.
 
 > **Production use is supported only within the documented reference

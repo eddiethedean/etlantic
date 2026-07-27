@@ -1,8 +1,8 @@
 # Roadmap
 
 **Current release:** ETLantic **0.24.0** (Beta / PyPI). Milestones 0.21–0.24
-are shipped; **0.25** (compatibility burn-in, first slice) is planned, then
-0.26–0.98 continued burn-in toward 0.99 RC. See
+are shipped; **0.25** (burn-in first slice) and **0.26** (burn-in second
+slice) are planned, then 0.27–0.98 continued burn-in toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2349,8 +2349,8 @@ internals.
 **Objective:** prove that the contracts shipped through 0.24 — especially
 `etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —
 can survive a real minor upgrade without a wire-schema reset. 0.25 is the
-first named slice of the broader compatibility burn-in band (0.26–0.98
-continue the same discipline toward 0.99 RC).
+first named slice of the broader compatibility burn-in band; **0.26** is the
+second slice; 0.27–0.98 continue the same discipline toward 0.99 RC.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Production
 FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain
@@ -2455,17 +2455,121 @@ artifact), a Plugin SDK `/1` freeze decision on record, a 1.0 removal
 inventory, and migration/docs gates. No wire-schema reset. Control plane and
 GUI remain out of scope.
 
-## 0.26–0.98 — Continued Compatibility Burn-In
+## 0.26 — Compatibility Burn-In (Second Slice)
+
+**Status: planned — after 0.25.0.**
+
+**Objective:** prove **two consecutive** minor upgrade paths without a
+wire-schema reset (**0.24 → 0.25** and **0.25 → 0.26**), close remaining
+freeze/fixture gaps from 0.25, and execute the first wave of 1.0 removal
+candidates with migrations — not a control-plane or GUI milestone.
+
+### Prerequisites from 0.25
+
+- Documented `0.24 → 0.25` upgrade path with `pipeline/1` (and sibling)
+  reader/writer fixtures in CI
+- Plugin SDK `/1` freeze decision recorded (freeze **or** published blockers)
+- Published 1.0 removal inventory (tickets + migration notes; no removals yet)
+
+### Work packages
+
+#### WP1 — Second consecutive upgrade path
+
+**In scope**
+
+- golden old↔new fixtures for **0.25 → 0.26** across every schema/protocol
+  range covered in 0.25
+- CI gate that treats an undocumented incompatible change as a release blocker
+- document unsupported downgrade behavior for the dual-minor window
+
+**Out of scope**
+
+- schema resets; inventing new wire formats
+
+#### WP2 — Complete public wire fixture matrix
+
+**In scope**
+
+- finish old-reader/new-writer coverage for any public versioned artifact still
+  missing after 0.25 (plan, run report, profile, capabilities, interchange,
+  authoring catalog envelopes as applicable)
+- single inventory table of supported schema ranges in docs/reference
+
+**Out of scope**
+
+- Gate B / DataFusion graduation; new interchange physical boundaries
+
+#### WP3 — Freeze closure
+
+**In scope**
+
+- if 0.25 froze Plugin SDK `/1`: lock conformance suite versions and reject
+  provisional core protocol drifts
+- if 0.25 left blockers: clear them or re-scope with an explicit 0.27+ plan
+  (no silent “freeze-eligible forever”)
+
+**Out of scope**
+
+- new Storage / Resource / Observability protocol catalogs
+
+#### WP4 — First-wave 1.0 removal execution
+
+**In scope**
+
+- remove or hard-deprecate the highest-priority inventory items with
+  migrations, diagnostics, and What's New / Migration 0.25→0.26 notes
+- keep the inventory current; no new indefinite aliases
+
+**Out of scope**
+
+- completing the entire 1.0 removal list (later burn-in / 0.99)
+
+#### WP5 — Authoring parity completion (bounded)
+
+**In scope**
+
+- close remaining class ↔ functional parity edge cases and nested-subpipeline
+  edit gaps that were deferred in 0.25 as non-blocking
+- keep parity fingerprints in CI
+
+**Out of scope**
+
+- production GUI, LSP, AI authoring, FastAPI 1.1 control plane
+
+### Non-goals
+
+- production FastAPI control plane / multi-tenant API (1.1)
+- registry, workspaces, durable job store (1.2)
+- shipping a GUI, LSP, or AI authoring surface
+- new engines/orchestrators, expanded streaming, DataFusion graduation
+- replacing `etlantic.plan/1` or requiring a wire-schema reset
+
+### Acceptance scenarios
+
+- CI proves **0.24 → 0.25** and **0.25 → 0.26** without a wire-schema reset
+- public wire schemas in the 0.26 inventory have old↔new fixtures (or an
+  explicit “N/A / not versioned” rationale)
+- Plugin SDK `/1` is frozen, or remaining blockers are cleared/rescheduled
+  with owners
+- at least one inventory removal/hard-deprecation ships with a migration path
+- What's New / Migration 0.25→0.26 / Exit Gate 0.26 pass docs gates
+
+### Exit gate
+
+0.26.0 ships the second consecutive upgrade proof, a completed public wire
+fixture matrix (or documented exceptions), freeze closure, first-wave
+deprecation execution, and migration/docs gates. Control plane and GUI remain
+out of scope.
+
+## 0.27–0.98 — Continued Compatibility Burn-In
 
 **Objective:** continue bounded, evidence-backed additions while frozen
-contracts accumulate further adoption and upgrade history after the 0.25
-first slice.
+contracts accumulate further adoption and upgrade history after the 0.25 and
+0.26 burn-in slices.
 
 ### Deliver
 
-- exercise at least two consecutive minor upgrade paths without requiring a
-  wire-schema reset (0.24→0.25 counts as the first; continue through later
-  minors)
+- keep exercising consecutive minor upgrade paths without a wire-schema reset
 - maintain old-reader/new-writer and new-reader/old-writer fixtures for every
   supported schema and protocol range
 - require migrations for all intentional breaking changes and keep the 1.0

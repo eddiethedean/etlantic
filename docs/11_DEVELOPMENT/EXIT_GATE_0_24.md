@@ -33,5 +33,10 @@ unless noted otherwise:
 - Cross-artifact codec matrix for plan/report/profile (0.25 WP2)
 - Plugin SDK `/1` freeze evidence (0.25 WP3)
 - 1.0 removal inventory (0.25 WP4)
-- Broader functional parity / nested subpipeline polish only when fixture-blocking (0.25 WP5)
-- Production FastAPI Control API (**1.1**, not 0.25)
+- Fixture-blocking functional parity / nested subpipeline polish (0.25 WP5)
+
+Follow-ons in **[0.26 — second slice](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#026--compatibility-burn-in-second-slice)**:
+dual-minor upgrade proof, complete fixture matrix, freeze closure, first-wave
+removal execution, remaining authoring parity.
+
+- Production FastAPI Control API (**1.1**, not 0.25/0.26)
