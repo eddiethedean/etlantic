@@ -65,11 +65,25 @@ class SafeIoPolicy:
     def from_dict(cls, data: dict[str, Any] | None) -> SafeIoPolicy:
         data = dict(data or {})
         roots = tuple(Path(p) for p in (data.get("approved_roots") or ()))
+        symlink_policy = str(data.get("symlink_policy") or "reject")
+        overwrite_policy = str(data.get("overwrite_policy") or "atomic_replace")
+        allowed_symlink = {"reject", "follow_within_root"}
+        allowed_overwrite = {"reject", "allow", "atomic_replace"}
+        if symlink_policy not in allowed_symlink:
+            raise ValueError(
+                f"Invalid symlink_policy {symlink_policy!r}; "
+                f"expected one of {sorted(allowed_symlink)}"
+            )
+        if overwrite_policy not in allowed_overwrite:
+            raise ValueError(
+                f"Invalid overwrite_policy {overwrite_policy!r}; "
+                f"expected one of {sorted(allowed_overwrite)}"
+            )
         return cls(
             approved_roots=roots,
             max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
-            symlink_policy=str(data.get("symlink_policy") or "reject"),  # type: ignore[arg-type]
-            overwrite_policy=str(data.get("overwrite_policy") or "atomic_replace"),  # type: ignore[arg-type]
+            symlink_policy=symlink_policy,  # type: ignore[arg-type]
+            overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
             require_regular_files=bool(data.get("require_regular_files", True)),
             enable_locking=bool(data.get("enable_locking", True)),
             lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),

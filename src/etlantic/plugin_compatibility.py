@@ -1,16 +1,16 @@
-"""Plugin compatibility report for independently installed packages (0.22).
+"""Plugin compatibility report for independently installed packages.
 
 ``etlantic plugin compatibility`` evaluates a plugin's static
 :class:`~etlantic.plugin_manifest.PluginManifest` against the installed core
-without importing private modules. Checks cover protocol ranges, capability
-vocabulary major, plan schema, Python requires, core pin, and allowlist
-status.
+without importing private modules. Checks cover protocol ranges, entry
+protocol versions, capability vocabulary major, plan schema, Python requires,
+core pin, and allowlist status (including optional version pins).
 """
 
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, distribution, version
 from typing import Any
@@ -49,6 +49,8 @@ COMPAT_CORE_PIN = "PMPLUG448"
 COMPAT_ALLOWLIST = "PMPLUG449"
 COMPAT_MISSING_FIELDS = "PMPLUG450"
 
+AllowlistInput = Mapping[str, str | None] | Sequence[str] | None
+
 _KNOWN_CORE_PROTOCOLS: dict[str, str] = {
     "etlantic.dataframe": DATAFRAME_PROTOCOL_VERSION,
     "etlantic.sql": SQL_PROTOCOL_VERSION,
@@ -57,6 +59,16 @@ _KNOWN_CORE_PROTOCOLS: dict[str, str] = {
     "etlantic.transform-compiler": TRANSFORM_COMPILER_PROTOCOL,
     "etlantic.scheduler": SCHEDULER_PROTOCOL,
 }
+
+
+def _normalize_allowlist(
+    allowlist: AllowlistInput,
+) -> dict[str, str | None] | None:
+    if allowlist is None:
+        return None
+    if isinstance(allowlist, Mapping):
+        return {str(k): (None if v is None else str(v)) for k, v in allowlist.items()}
+    return {str(name): None for name in allowlist}
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,17 +192,19 @@ def evaluate_manifest(
     *,
     python_requires: str | None = None,
     core_requires: str | None = None,
-    allowlist: Sequence[str] | None = None,
+    allowlist: AllowlistInput = None,
     advertised_vocabulary: str | None = None,
 ) -> CompatibilityRow:
     """Evaluate a parsed manifest against the installed core.
 
     ``allowlist`` is the profile's ``plugin_allowlist``. ``None`` means no
-    profile context (reported as ``unknown``); an empty sequence means the
-    profile has no allowlist (``not_required`` for non-production use).
+    profile context (reported as ``unknown``); an empty mapping/sequence means
+    the profile has no allowlist (``not_required`` for non-production use).
+    Mapping values are optional version pins (PEP 440 specifiers).
     """
     findings: list[CompatibilityFinding] = []
     core_ver = _core_version()
+    allowlist_map = _normalize_allowlist(allowlist)
 
     # Required fields.
     missing: list[str] = []
@@ -228,19 +242,28 @@ def evaluate_manifest(
                 )
             )
             continue
-        compatible = manifest.protocol_compatible(core_proto)
+        range_ok = manifest.protocol_compatible(core_proto)
+        entry_matches = protocol_id == core_proto
+        compatible = range_ok and entry_matches
+        if not entry_matches:
+            message = (
+                f"Entry protocol {protocol_id!r} does not match core {core_proto!r}."
+            )
+        else:
+            message = (
+                f"Protocol range {manifest.protocol_range!r} "
+                f"{'admits' if range_ok else 'rejects'} core {core_proto!r}."
+            )
         findings.append(
             CompatibilityFinding(
                 code=COMPAT_PROTOCOL,
                 ok=compatible,
-                message=(
-                    f"Protocol range {manifest.protocol_range!r} "
-                    f"{'admits' if compatible else 'rejects'} core {core_proto!r}."
-                ),
+                message=message,
                 detail={
                     "protocol": protocol_id,
                     "core_protocol": core_proto,
                     "protocol_range": manifest.protocol_range,
+                    "entry_matches_core": entry_matches,
                 },
             )
         )
@@ -314,13 +337,11 @@ def evaluate_manifest(
             )
         )
 
-    if allowlist is None:
+    if allowlist_map is None:
         allowlist_status = "unknown"
-    elif not allowlist:
+    elif not allowlist_map:
         allowlist_status = "not_required"
-    elif manifest.package in allowlist:
-        allowlist_status = "allowed"
-    else:
+    elif manifest.package not in allowlist_map:
         allowlist_status = "blocked"
         findings.append(
             CompatibilityFinding(
@@ -330,9 +351,39 @@ def evaluate_manifest(
                     f"Package {manifest.package!r} is not in the profile "
                     "plugin_allowlist."
                 ),
-                detail={"allowlist": list(allowlist)},
+                detail={"allowlist": sorted(allowlist_map)},
             )
         )
+    else:
+        pin = allowlist_map[manifest.package]
+        if pin:
+            plugin_ver = manifest.version or ""
+            try:
+                pin_ok = Version(plugin_ver) in SpecifierSet(pin)
+            except (InvalidVersion, InvalidSpecifier):
+                # Allow exact equality for non-specifier pins like "0.23.0".
+                pin_ok = plugin_ver == pin.lstrip("=")
+            if pin_ok:
+                allowlist_status = "allowed"
+            else:
+                allowlist_status = "blocked"
+                findings.append(
+                    CompatibilityFinding(
+                        code=COMPAT_ALLOWLIST,
+                        ok=False,
+                        message=(
+                            f"Package {manifest.package!r} version "
+                            f"{plugin_ver!r} does not satisfy allowlist pin "
+                            f"{pin!r}."
+                        ),
+                        detail={
+                            "allowlist_pin": pin,
+                            "plugin_version": plugin_ver,
+                        },
+                    )
+                )
+        else:
+            allowlist_status = "allowed"
 
     # If every finding so far is ok and we have no hard failures, emit a
     # summary OK finding for greppable reports.
@@ -357,7 +408,7 @@ def evaluate_manifest(
         capability_vocabulary=CAPABILITY_VOCABULARY_VERSION,
         python_requires=python_requires,
         core_requires=core_requires,
-        allowlist_status=allowlist_status if allowlist is not None else "unknown",
+        allowlist_status=allowlist_status if allowlist_map is not None else "unknown",
         ok=ok,
         findings=tuple(findings),
     )
@@ -368,7 +419,7 @@ def evaluate_manifest_text(
     *,
     python_requires: str | None = None,
     core_requires: str | None = None,
-    allowlist: Sequence[str] | None = None,
+    allowlist: AllowlistInput = None,
     verify_digest: bool = True,
 ) -> CompatibilityRow:
     """Evaluate a raw manifest JSON document (fixture-friendly)."""
@@ -425,7 +476,7 @@ def _etlantic_requirement_from_dist(dist_name: str) -> tuple[str | None, str | N
 def evaluate_installed_plugin(
     package: str,
     *,
-    allowlist: Sequence[str] | None = None,
+    allowlist: AllowlistInput = None,
     verify_digest: bool = True,
 ) -> CompatibilityRow:
     """Load an installed package's manifest and evaluate compatibility."""
@@ -446,6 +497,15 @@ def evaluate_installed_plugin(
             message = "; ".join(d.message for d in diagnostics) or (
                 f"Could not load manifest for {package!r}."
             )
+        allowlist_map = _normalize_allowlist(allowlist)
+        if allowlist_map is None:
+            allowlist_status = "unknown"
+        elif not allowlist_map:
+            allowlist_status = "not_required"
+        elif package in allowlist_map:
+            allowlist_status = "allowed"
+        else:
+            allowlist_status = "blocked"
         return CompatibilityRow(
             package=package,
             plugin_version=None,
@@ -456,13 +516,7 @@ def evaluate_installed_plugin(
             capability_vocabulary=CAPABILITY_VOCABULARY_VERSION,
             python_requires=python_requires,
             core_requires=core_requires,
-            allowlist_status="unknown"
-            if allowlist is None
-            else (
-                "allowed"
-                if package in allowlist
-                else ("not_required" if not allowlist else "blocked")
-            ),
+            allowlist_status=allowlist_status,
             ok=False,
             findings=(CompatibilityFinding(code=code, ok=False, message=message),),
         )
@@ -477,7 +531,7 @@ def evaluate_installed_plugin(
 def build_compatibility_report(
     packages: Iterable[str],
     *,
-    allowlist: Sequence[str] | None = None,
+    allowlist: AllowlistInput = None,
 ) -> CompatibilityReport:
     """Build a multi-plugin compatibility report for installed packages."""
     rows = tuple(

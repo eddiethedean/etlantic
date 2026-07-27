@@ -23,6 +23,7 @@ This table describes the declared compatibility of ETLantic 0.23.0.
 | Keyring provider | `etlantic-keyring==0.23.0` |
 | SQLModel bridge | `etlantic-sqlmodel==0.23.0` |
 | SparkForge adapter | `etlantic-sparkforge==0.23.0` |
+| DataFusion plugin | `etlantic-datafusion==0.23.0` (**Experimental** Gate B stub; no graduated claims) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |

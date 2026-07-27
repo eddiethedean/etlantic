@@ -119,6 +119,35 @@ def test_allowlist_block_fails() -> None:
     assert row.allowlist_status == "blocked"
 
 
+def test_allowlist_pin_mismatch_fails() -> None:
+    row = evaluate_manifest_text(
+        _manifest(),
+        allowlist={"etlantic-echo": "==0.22.0"},
+    )
+    assert not row.ok
+    assert row.allowlist_status == "blocked"
+
+
+def test_entry_protocol_mismatch_under_star_fails() -> None:
+    row = evaluate_manifest_text(
+        _manifest(
+            protocol_range="*",
+            entries=[
+                {
+                    "group": "etlantic.dataframe_plugins",
+                    "name": "echo",
+                    "target": "etlantic_echo:create_plugin",
+                    "protocol": "etlantic.dataframe/99",
+                    "engine": "echo",
+                    "capabilities": ["dataframe"],
+                }
+            ],
+        ),
+    )
+    assert not row.ok
+    assert any(f.code == COMPAT_PROTOCOL and not f.ok for f in row.findings)
+
+
 def test_cli_compatibility_json_unknown_package() -> None:
     result = runner.invoke(
         app,

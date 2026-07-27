@@ -30,7 +30,7 @@ class DataFusionTransformCompiler:
             profiles=frozenset(),
             actions=frozenset(),
             functions=frozenset(),
-            lazy=True,
+            lazy=False,
             eager=False,
         ),
     )
@@ -43,8 +43,8 @@ class DataFusionTransformCompiler:
         requirements: Mapping[str, Sequence[str]] | None = None,
     ) -> TransformSupportReport:
         raise NotImplementedError(
-            "etlantic-datafusion portable compiler is experimental; no claims "
-            "experimental as of 0.20.0"
+            "etlantic-datafusion portable compiler is an experimental stub as of "
+            "0.23.0; no graduated claims"
         )
 
     def compile(

@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from etlantic._version import __version__
 from etlantic.capabilities import PluginCapabilities
 from etlantic.diagnostics import Diagnostic
 from etlantic.profile import Profile, resolve_profile
@@ -205,7 +206,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="local",
             kind="runtime",
-            version="0.20.0",
+            version=__version__,
             engine="local",
             capabilities=local_caps,
         )
@@ -214,7 +215,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="null",
             kind="runtime",
-            version="0.20.0",
+            version=__version__,
             engine="null",
             capabilities=null_caps,
         )
@@ -223,7 +224,7 @@ def builtin_stub_registry() -> RegistryBundle:
         PluginDescriptor(
             name="env-secrets",
             kind="secret_provider",
-            version="0.20.0",
+            version=__version__,
             engine="env",
             capabilities=PluginCapabilities(
                 engine="env",

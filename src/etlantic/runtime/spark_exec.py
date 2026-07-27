@@ -8,7 +8,6 @@ from etlantic.exceptions import NodeExecutionError
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
 from etlantic.registry import ImplementationDescriptor
-from etlantic.runtime.faults import FaultBoundary, maybe_inject_async
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.state import FailureStage
 from etlantic.spark.discovery import load_spark_plugin, load_spark_provider
@@ -471,7 +470,7 @@ async def execute_spark_sink(
     enable_delta: bool = False,
 ) -> SparkExecutionResult:
     """Publish a Spark/Delta sink with fail-closed write modes."""
-    await maybe_inject_async(FaultBoundary.LOAD, step_name=node.name)
+    # LOAD injection is owned by LocalOrchestrator (once per logical sink).
     try:
         mode = SparkWriteMode(write_mode)
     except ValueError as exc:

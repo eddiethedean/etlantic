@@ -1,15 +1,11 @@
 {
   "capabilities": [
-    "dataframe",
-    "portable",
     "experimental"
   ],
-  "digest": "sha256:4e3d0d2155169d07777898357a993f56d2445c5746fd1ce0989727ceae636d32",
+  "digest": "sha256:0419c5d7cdb4084a86afd79833602f588e66840bf64efb75ce2aabd2e9c136d7",
   "entries": [
     {
       "capabilities": [
-        "dataframe",
-        "lazy",
         "experimental"
       ],
       "engine": "datafusion",
@@ -20,7 +16,6 @@
     },
     {
       "capabilities": [
-        "portable",
         "experimental"
       ],
       "engine": "datafusion",

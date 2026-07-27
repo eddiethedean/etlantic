@@ -132,7 +132,7 @@ def main() -> int:
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")
 
-    names = ("etlantic", *PACKAGES)
+    names = ("etlantic", *PACKAGES, *EXPERIMENTAL_PACKAGES)
     missing_version = [name for name in names if not pypi_exists(name, version)]
     brand_new = [name for name in names if not pypi_project_exists(name)]
     print(f"Release readiness for {version}")
@@ -142,7 +142,8 @@ def main() -> int:
             f"{len(brand_new)}/{len(names)}):"
         )
         for name in brand_new:
-            print(f"  - {name}  (will publish as {name}=={version})")
+            note = " (experimental)" if name in EXPERIMENTAL_PACKAGES else ""
+            print(f"  - {name}{note}  (will publish as {name}=={version})")
         print(
             "Release CI paces only new-project creates (10 minutes between them). "
             "Prefer a user-scoped PYPI_API_TOKEN. If the account is already "
@@ -156,7 +157,8 @@ def main() -> int:
                 f"({len(existing_missing)}/{len(names)}):"
             )
             for name in existing_missing:
-                print(f"  - {name}=={version}")
+                note = " (experimental)" if name in EXPERIMENTAL_PACKAGES else ""
+                print(f"  - {name}=={version}{note}")
     if not missing_version:
         print(f"All packages already present on PyPI at {version}.")
 

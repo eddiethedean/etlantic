@@ -21,6 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Artifacts, schema history, and reliability file providers use `SafeIoPolicy` consistently
 - Orchestrator terminal paths persist exactly one report; publication/report gap → `PMEXEC410`
 - Official package versions align at 0.23.0; plugins require `etlantic>=0.23.0,<0.24`
+- Fault injection requires `ETLANTIC_FAULT_INJECTION` to arm (in-process specs alone no longer fire)
+- DataFusion experimental stub advertises no graduated dataframe/Arrow/lazy capabilities
+
+### Fixed
+- Cancel/timeout reports finalize incomplete steps (no leftover `running`/`pending`)
+- CLEANUP fault no longer skips real cleanup or the terminal report (`PMEXEC412`)
+- `FileReportStore` writes durably before updating the in-memory index (no false SUCCEEDED)
+- Attempt cleanup failures after a successful step body no longer trigger retries (`PMEXEC414`)
+- Resource scope cleanup attempts every entry before aggregating failures
+- PMEXEC410 recovery marks `report_persisted` when the failed report write succeeds
+- `step_failed` callback faults are isolated (`PMEXEC413`)
+- Unsupported `CancellationPolicy` knobs fail closed (`PMEXEC411`)
+- `etlantic plugin compatibility` discovers packaged manifests and honors allowlist pins
+- Compatibility reports reject entry protocols that do not match core (even under `*`)
+- Trust failures with `--format sarif` emit SARIF instead of JSON
+- Step report metadata is redacted; `profile migrate` infers production `security_mode`
+- `SafeIoPolicy.from_dict` rejects invalid symlink/overwrite policy enums
+- Builtin stub registry versions track core `__version__`
 
 ## [0.22.0] - 2026-07-21
 

@@ -73,6 +73,8 @@ def test_cancelled_run_emits_one_terminal_report(tmp_path, monkeypatch) -> None:
     reports = store.list()
     assert len(reports) == 1
     assert reports[0].status == RunStatus.TIMED_OUT
+    incomplete = {"pending", "ready", "running", "retrying"}
+    assert all(s.status.value not in incomplete for s in reports[0].steps)
 
 
 def test_report_persist_fault_after_publication_marks_failed(

@@ -68,12 +68,13 @@ def test_success_path_report_persist_fault_pmexec410(tmp_path, monkeypatch) -> N
                 await orch.execute()
             assert exc_info.value.code == "PMEXEC410"
             assert orch._persistence.publication_committed
-            assert not orch._persistence.report_persisted
+            # Recovery put clears inject specs and persists a FAILED report.
+            assert orch._persistence.report_persisted
+            assert orch._persistence.terminal_reports_written == 1
 
     anyio.run(_run)
 
     reports = store.list()
-    assert len(reports) <= 1
-    if reports:
-        assert reports[0].status == RunStatus.FAILED
-        assert any(d.code == "PMEXEC410" for d in reports[0].diagnostics)
+    assert len(reports) == 1
+    assert reports[0].status == RunStatus.FAILED
+    assert any(d.code == "PMEXEC410" for d in reports[0].diagnostics)

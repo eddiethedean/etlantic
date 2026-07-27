@@ -1,7 +1,9 @@
 """Deterministic failure injection for resilience testing (0.23).
 
-Active only when ``ETLANTIC_FAULT_INJECTION=1`` or an in-process registry has
-active specs. Production profiles ignore injection unless the env flag is set.
+Injection fires only when ``ETLANTIC_FAULT_INJECTION`` is set to a truthy
+value (``1`` / ``true`` / ``yes``). In-process specs from ``active_faults`` /
+``register_faults`` supply *what* to inject; the env flag arms firing so
+production cannot be tripped by leftover specs alone.
 """
 
 from __future__ import annotations
@@ -69,15 +71,12 @@ _active: ContextVar[_FaultState | None] = ContextVar(
 
 
 def fault_injection_enabled() -> bool:
-    """Return True when fault injection may fire."""
-    if os.environ.get("ETLANTIC_FAULT_INJECTION", "").strip().lower() in {
+    """Return True when the env flag arms injection (specs may still be empty)."""
+    return os.environ.get("ETLANTIC_FAULT_INJECTION", "").strip().lower() in {
         "1",
         "true",
         "yes",
-    }:
-        return True
-    state = _active.get()
-    return state is not None and bool(state.specs)
+    }
 
 
 def _current_state() -> _FaultState | None:

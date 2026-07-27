@@ -99,7 +99,12 @@ class CliContext:
         errors = [d for d in diags if d.severity is Severity.ERROR]
         if errors:
             if not self.globals.quiet:
-                if fmt in {"json", "sarif"}:
+                if fmt == "sarif":
+                    from etlantic.cli.output import emit_payload
+                    from etlantic.diagnostics.sarif import diagnostics_to_sarif
+
+                    emit_payload(diagnostics_to_sarif(errors), fmt="sarif")
+                elif fmt == "json":
                     from etlantic.cli.output import diagnostic_to_dict, emit_payload
 
                     emit_payload(
@@ -107,7 +112,7 @@ class CliContext:
                             "ok": False,
                             "diagnostics": [diagnostic_to_dict(d) for d in errors],
                         },
-                        fmt="json" if fmt == "sarif" else fmt,
+                        fmt="json",
                     )
                 else:
                     typer.echo("Plugin authorization failed:", err=True)

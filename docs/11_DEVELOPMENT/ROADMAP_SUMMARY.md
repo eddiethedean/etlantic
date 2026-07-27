@@ -1,7 +1,8 @@
 # Roadmap Summary
 
-ETLantic **0.22.0** ships the **Plugin SDK Release Candidate**. Milestones
-describe capability order, not release-date commitments.
+ETLantic **0.23.0** ships **Runtime Resilience and Performance Budgets** on
+top of the 0.22 Plugin SDK RC. Milestones describe capability order, not
+release-date commitments.
 
 ## Shipped: 0.15 through 0.20
 

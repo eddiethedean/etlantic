@@ -19,5 +19,18 @@ def test_datafusion_plugin_discovered() -> None:
 @pytest.mark.datafusion
 def test_materialize_stub_raises_not_implemented() -> None:
     plugin = create_plugin()
-    with pytest.raises(NotImplementedError, match="experimental"):
+    with pytest.raises(NotImplementedError, match="experimental stub"):
         plugin.materialize()
+
+
+@pytest.mark.datafusion
+def test_datafusion_capabilities_ungraduated() -> None:
+    plugin = create_plugin()
+    caps = plugin.info.capabilities
+    assert caps.dataframe is False
+    assert caps.lazy is False
+    assert caps.eager is False
+    assert caps.arrow_import is False
+    assert caps.arrow_export is False
+    assert not caps.interchange_mechanisms
+    assert "experimental" in caps.extras

@@ -63,7 +63,7 @@ from etlantic.runtime.faults import (
     maybe_inject_async,
 )
 from etlantic.runtime.invoke import maybe_await
-from etlantic.runtime.logging import RunLogger, redact_message
+from etlantic.runtime.logging import RunLogger, redact_message, redact_value
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
 from etlantic.runtime.spark_exec import (
     acquire_session,
@@ -273,12 +273,17 @@ class LocalOrchestrator:
                         ]
                     ),
                 )
-                with (
-                    contextlib.suppress(Exception),
-                    active_faults(),
-                ):
-                    self.runtime.reports.put(failed_report)
+                recovery_ok = False
+                with active_faults():
+                    try:
+                        self.runtime.reports.put(failed_report)
+                        recovery_ok = True
+                    except Exception:
+                        recovery_ok = False
                 report = failed_report
+                if recovery_ok:
+                    self._persistence.report_persisted = True
+                    self._persistence.terminal_reports_written += 1
             raise PipelineExecutionError(
                 redact_message(str(exc)),
                 run_id=report.run_id,
@@ -287,6 +292,39 @@ class LocalOrchestrator:
             ) from exc
         self._persistence.report_persisted = True
         self._persistence.terminal_reports_written += 1
+
+    def _finalize_incomplete_steps(
+        self,
+        nodes: dict[str, _NodeState],
+        *,
+        terminal: StepStatus,
+        message: str,
+    ) -> None:
+        """Mark non-terminal steps so cancel/timeout reports have no running/pending."""
+        incomplete = {
+            StepStatus.PENDING,
+            StepStatus.READY,
+            StepStatus.RUNNING,
+            StepStatus.RETRYING,
+        }
+        now = datetime.now(UTC)
+        for state in nodes.values():
+            if state.status in incomplete:
+                state.status = terminal
+                state.ended_at = state.ended_at or now
+                if not state.error:
+                    state.error = message
+
+    def _validate_cancellation_policy(self) -> None:
+        """Fail closed on CancellationPolicy knobs that are not implemented."""
+        policy = self.request.cancellation
+        if policy.abandon_after_seconds is not None or policy.cooperative is False:
+            raise PipelineExecutionError(
+                "CancellationPolicy.abandon_after_seconds and cooperative=False "
+                "are not implemented; only hard cancel/timeout is supported. "
+                "Leave cooperative=True (default) and omit abandon_after_seconds.",
+                code="PMEXEC411",
+            )
 
     def __post_init__(self) -> None:
         if self.pipeline_cls is not None:
@@ -389,6 +427,7 @@ class LocalOrchestrator:
         from etlantic.plan.serialize import verify_plan_fingerprint
 
         verify_plan_fingerprint(self.plan)
+        self._validate_cancellation_policy()
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
         started = datetime.now(UTC)
         logger = RunLogger(run_id=run_id, pipeline_id=self.plan.pipeline_id)
@@ -509,6 +548,13 @@ class LocalOrchestrator:
                     await self.runtime.run_middleware.run(run_context, run_body)
         except TimeoutError as exc:
             status = RunStatus.TIMED_OUT
+            self._finalize_incomplete_steps(
+                nodes,
+                terminal=StepStatus.TIMED_OUT,
+                message=redact_message(
+                    f"Run timed out after {self.request.timeout.run_seconds}s"
+                ),
+            )
             self._append_diagnostic(
                 diagnostics,
                 RunDiagnostic(
@@ -539,6 +585,11 @@ class LocalOrchestrator:
         except cancel_exc as exc:
             cancelled = True
             status = RunStatus.CANCELLED
+            self._finalize_incomplete_steps(
+                nodes,
+                terminal=StepStatus.CANCELLED,
+                message="Run cancelled",
+            )
             report = self._build_report(
                 run_id=run_id,
                 started=started,
@@ -561,6 +612,11 @@ class LocalOrchestrator:
             raise
         except Exception as exc:
             status = RunStatus.FAILED
+            self._finalize_incomplete_steps(
+                nodes,
+                terminal=StepStatus.FAILED,
+                message=redact_message(str(exc)),
+            )
             self._append_diagnostic(
                 diagnostics,
                 RunDiagnostic(
@@ -587,10 +643,7 @@ class LocalOrchestrator:
                 code="PMEXEC500",
             ) from exc
         finally:
-            maybe_inject(FaultBoundary.CLEANUP)
-            # Drop run-scoped SQL staging tables when present.
-            import contextlib
-
+            # Real cleanup first; CLEANUP injection must not skip it.
             for plugin in getattr(self.runtime, "sql_plugins", {}).values():
                 cleanup = getattr(plugin, "cleanup_staging", None)
                 if callable(cleanup):
@@ -607,7 +660,49 @@ class LocalOrchestrator:
                         run_id=run_id,
                     )
                 self._spark_session = None
-            await self.runtime.resources.cleanup_scope("run", run_id)
+            with contextlib.suppress(Exception):
+                await self.runtime.resources.cleanup_scope("run", run_id)
+            cleanup_fault: BaseException | None = None
+            try:
+                maybe_inject(FaultBoundary.CLEANUP)
+            except BaseException as cleanup_exc:
+                cleanup_fault = cleanup_exc
+            if cleanup_fault is not None:
+                self._append_diagnostic(
+                    diagnostics,
+                    RunDiagnostic(
+                        code="PMEXEC412",
+                        severity="error",
+                        message=redact_message(f"Cleanup fault: {cleanup_fault}"),
+                    ),
+                )
+                if self._persistence.terminal_reports_written == 0:
+                    # Success path has not persisted yet; fail closed with a report.
+                    self._finalize_incomplete_steps(
+                        nodes,
+                        terminal=StepStatus.FAILED,
+                        message=redact_message(str(cleanup_fault)),
+                    )
+                    status = RunStatus.FAILED
+                    report = self._build_report(
+                        run_id=run_id,
+                        started=started,
+                        nodes=nodes,
+                        validations=validations,
+                        diagnostics=diagnostics,
+                        schema_obs=schema_obs,
+                        artifacts=artifacts,
+                        status=status,
+                    )
+                    with contextlib.suppress(Exception):
+                        self._persist_report(report)
+                    raise PipelineExecutionError(
+                        redact_message(str(cleanup_fault)),
+                        run_id=run_id,
+                        report=report,
+                        code="PMEXEC412",
+                    ) from cleanup_fault
+                # Already have a cancel/timeout/fail terminal report — keep it.
 
         step_reports = tuple(self._step_report(s) for s in nodes.values())
         failed_count = sum(
@@ -759,7 +854,7 @@ class LocalOrchestrator:
             records_in=state.records_in,
             records_out=state.records_out,
             implementation=state.implementation,
-            metadata=dict(state.metadata),
+            metadata=redact_value(dict(state.metadata)),
         )
 
     def _producers(self, graph: LogicalGraph) -> dict[str, set[str]]:
@@ -814,37 +909,32 @@ class LocalOrchestrator:
                     status=state.status.value,
                 )
             )
+
+            async def terminal(
+                attempt_no: int = current_attempt,
+                ctx: StepContext = bound_step_context,
+            ) -> None:
+                await self._run_node_once(
+                    state=state,
+                    run_id=run_id,
+                    artifacts=artifacts,
+                    graph=graph,
+                    validations=validations,
+                    diagnostics=diagnostics,
+                    schema_obs=schema_obs,
+                    attempt=attempt_no,
+                    step_context=ctx,
+                )
+
+            step_timeout = self.request.timeout.step_seconds
+            body_succeeded = False
             try:
-
-                async def terminal(
-                    attempt_no: int = current_attempt,
-                    ctx: StepContext = bound_step_context,
-                ) -> None:
-                    await self._run_node_once(
-                        state=state,
-                        run_id=run_id,
-                        artifacts=artifacts,
-                        graph=graph,
-                        validations=validations,
-                        diagnostics=diagnostics,
-                        schema_obs=schema_obs,
-                        attempt=attempt_no,
-                        step_context=ctx,
-                    )
-
-                step_timeout = self.request.timeout.step_seconds
-                try:
-                    if step_timeout is not None:
-                        with anyio.fail_after(step_timeout):
-                            await self.runtime.step_middleware.run(
-                                step_context, terminal
-                            )
-                    else:
+                if step_timeout is not None:
+                    with anyio.fail_after(step_timeout):
                         await self.runtime.step_middleware.run(step_context, terminal)
-                finally:
-                    await self.runtime.resources.cleanup_scope(
-                        "attempt", f"{name}:{current_attempt}"
-                    )
+                else:
+                    await self.runtime.step_middleware.run(step_context, terminal)
+                body_succeeded = True
                 state.status = StepStatus.SUCCEEDED
                 state.ended_at = datetime.now(UTC)
                 self.runtime.events.emit(
@@ -857,7 +947,6 @@ class LocalOrchestrator:
                         status=state.status.value,
                     )
                 )
-                return
             except (TimeoutError, Exception) as exc:
                 last_error = exc
                 timed_out = isinstance(exc, TimeoutError)
@@ -867,17 +956,31 @@ class LocalOrchestrator:
                     else (getattr(exc, "stage", None) or FailureStage.TRANSFORM.value)
                 )
                 state.error = redact_message(str(exc))
-                results = await self.runtime.callbacks.emit(
-                    "step_failed",
-                    StepFailureContext(
-                        run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
-                        step_name=name,
-                        attempt=attempt,
-                        error=exc,
-                        stage=state.stage,
-                    ),
-                )
+                results: list[Any] = []
+                try:
+                    results = await self.runtime.callbacks.emit(
+                        "step_failed",
+                        StepFailureContext(
+                            run_id=run_id,
+                            pipeline_id=self.plan.pipeline_id,
+                            step_name=name,
+                            attempt=attempt,
+                            error=exc,
+                            stage=state.stage,
+                        ),
+                    )
+                except Exception as callback_exc:
+                    self._append_diagnostic(
+                        diagnostics,
+                        RunDiagnostic(
+                            code="PMEXEC413",
+                            severity="warning",
+                            message=redact_message(
+                                f"step_failed callback fault: {callback_exc}"
+                            ),
+                            node_name=name,
+                        ),
+                    )
                 action = FailureAction.FAIL
                 for result in results:
                     if isinstance(result, FailureAction):
@@ -977,6 +1080,28 @@ class LocalOrchestrator:
                     attempt=attempt,
                     error=redact_message(str(exc)),
                 )
+                return
+            finally:
+                try:
+                    await self.runtime.resources.cleanup_scope(
+                        "attempt", f"{name}:{current_attempt}"
+                    )
+                except Exception as cleanup_exc:
+                    self._append_diagnostic(
+                        diagnostics,
+                        RunDiagnostic(
+                            code="PMEXEC414",
+                            severity="warning",
+                            message=redact_message(
+                                f"Attempt cleanup failed after "
+                                f"{'success' if body_succeeded else 'failure'}: "
+                                f"{cleanup_exc}"
+                            ),
+                            node_name=name,
+                        ),
+                    )
+                    # Never convert a successful body into a retryable failure.
+            if body_succeeded:
                 return
 
         if last_error is not None and state.status is not StepStatus.SUCCEEDED:

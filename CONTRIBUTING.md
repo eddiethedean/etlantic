@@ -35,7 +35,7 @@ uv run python scripts/check_docs.py
 uv run python scripts/check_agent_guidance.py
 uv run python scripts/check_release.py
 uv run python scripts/check_surface_inventory.py
-uv run --group polars --group pandas --group sql --group pyspark python scripts/check_transform_compiler_drift.py
+uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
 uv run etlantic validate examples/memory_customers.py:CustomerPipeline --format sarif > /tmp/etlantic.sarif
 uv run python examples/memory_customers.py
 uv run python scripts/build_docs.py

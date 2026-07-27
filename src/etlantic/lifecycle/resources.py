@@ -81,9 +81,19 @@ class ResourceManager:
                 if entry.scope == scope and entry.scope_key == scope_key
             ]
             entries = [self._cache.pop(key) for key in keys]
+        errors: list[BaseException] = []
         for entry in entries:
-            if entry.cleanup is not None:
+            if entry.cleanup is None:
+                continue
+            try:
                 await maybe_await(entry.cleanup)
+            except BaseException as exc:
+                # Attempt every cleanup; one failure must not leak the rest.
+                errors.append(exc)
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ExceptionGroup("resource cleanup failures", errors)
 
     @asynccontextmanager
     async def scope(self, scope: str, scope_key: str = "") -> AsyncIterator[None]:

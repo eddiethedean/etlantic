@@ -233,19 +233,19 @@ def register_commands(
             build_compatibility_report,
             render_compatibility_human,
         )
-        from etlantic.plugin_manifest import MANIFEST_FILENAME
+        from etlantic.plugin_manifest import read_distribution_manifest_text
 
         resolved, _ = get_cli_context(ctx).resolve_profile(
             profile, allow_adhoc_profile=allow_adhoc_profile
         )
-        allowlist = list(resolved.plugin_allowlist) if resolved is not None else None
+        allowlist = dict(resolved.plugin_allowlist) if resolved is not None else None
         package_names = list(plugins or [])
         if not package_names:
             from importlib.metadata import distributions
 
             for dist in distributions():
                 try:
-                    if dist.read_text(MANIFEST_FILENAME) is not None:
+                    if read_distribution_manifest_text(dist) is not None:
                         package_names.append(str(dist.metadata["Name"]))
                 except Exception:
                     continue

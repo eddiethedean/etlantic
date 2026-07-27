@@ -191,7 +191,7 @@ def test_materialize_fault_fires_during_dataframe_step() -> None:
             report = await orch.execute()
             step = next(s for s in report.steps if s.step_name == "step")
             assert step.status.value == "failed"
-            assert "materialize-boom" in (step.error or "")
+            assert "materialize-boom" in (step.error_message or "")
 
     anyio.run(_run)
 

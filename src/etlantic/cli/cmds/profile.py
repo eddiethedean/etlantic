@@ -221,7 +221,12 @@ def register_profile_commands(app: typer.Typer) -> None:
         if "assets" in migrated:
             migrated["assets"] = normalize_assets_map(migrated["assets"])
         if "security_mode" not in migrated:
-            migrated["security_mode"] = "development"
+            from etlantic.profile import _infer_security_mode
+
+            migrated["security_mode"] = _infer_security_mode(
+                name=str(migrated.get("name") or path.stem),
+                security_domain=str(migrated.get("security_domain") or ""),
+            )
         payload = {"path": str(path), "dry_run": dry_run, "profile": migrated}
         if fmt == "json":
             emit_payload(payload, fmt="json")

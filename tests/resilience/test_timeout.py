@@ -71,3 +71,5 @@ def test_timed_out_run_emits_one_terminal_report(tmp_path) -> None:
     assert len(reports) == 1
     assert reports[0].status == RunStatus.TIMED_OUT
     assert orch._persistence.terminal_reports_written == 1
+    incomplete = {"pending", "ready", "running", "retrying"}
+    assert all(s.status.value not in incomplete for s in reports[0].steps)

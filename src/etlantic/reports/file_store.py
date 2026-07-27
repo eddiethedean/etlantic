@@ -48,15 +48,16 @@ class FileReportStore:
         from etlantic.runtime.faults import FaultBoundary, maybe_inject
 
         maybe_inject(FaultBoundary.REPORT_PERSIST)
-        self._memory.put(report)
         assert self.policy is not None
         path = self.root / f"{report.run_id}.json"
+        # Durable write first so a failed write cannot leave SUCCEEDED in memory.
         write_text_safe(
             path,
             report.to_json(),
             self.policy,
             run_id=report.run_id,
         )
+        self._memory.put(report)
 
     def get(self, run_id: str) -> PipelineRunReport | None:
         return self._memory.get(run_id)
