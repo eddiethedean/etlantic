@@ -96,3 +96,18 @@ added. See [Diagnostics](DIAGNOSTICS.md).
 
 CI drift: `scripts/check_surface_inventory.py` bidirectionally compares this
 inventory to the curated `etlantic.__all__` and namespace ownership table.
+
+## Planned 0.24 additions
+
+The following are roadmap commitments, not members of the 0.23 inventory:
+
+- `PipelineDefinition` and the `etlantic.pipeline/1` wire schema;
+- functional constructors and lifecycle functions matching class authoring;
+- authoring catalogs, immutable edit commands, and stable diagnostic paths;
+- uniform semantic-artifact dictionary/JSON codecs;
+- transport-neutral application-service request/response models;
+- a thin optional FastAPI/OpenAPI reference adapter.
+
+They become public only when the 0.24 surface inventory, schemas, compatibility
+tests, and exit gate land. See the
+[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).

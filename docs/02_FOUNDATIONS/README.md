@@ -28,6 +28,11 @@ boundaries, vocabulary, and documentation stability model.
 > a deterministic `PipelinePlan`, and delegates realization to external
 > backends through plugins.
 
+Version 0.24 plans to generalize “typed Python declarations” into equivalent
+class, functional, JSON, and visual authoring over one canonical
+`PipelineDefinition`. See the
+[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 ## Non-Negotiable Boundaries
 
 - ODCS, DTCS, and DPCS own contract semantics.

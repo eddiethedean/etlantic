@@ -6,6 +6,12 @@ describe Experimental, partial, or future work and retain their own status
 labels. ETLantic 0.23.0 is **stable** only within the documented
 single-tenant reference deployment boundary.
 
+!!! info "Next phase: 0.24"
+    Programmatic builders, lossless pipeline-definition JSON, visual-builder
+    integration, and a thin FastAPI/OpenAPI reference are planned for 0.24;
+    they are not available in 0.23. See the
+    [0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 ## Start here
 
 1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.23.0`
@@ -30,6 +36,7 @@ After first success: [Capabilities](CAPABILITIES.md),
 | Compile a DAG | [Airflow tutorial](../06_EXECUTION/AIRFLOW_TUTORIAL.md) |
 | Author portable transforms | [Portable transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |
 | Build a third-party plugin | [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md) |
+| Follow functional/JSON/GUI authoring work | [0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md) |
 | Check plugin compatibility | `etlantic plugin compatibility` / [CLI](../10_REFERENCE/CLI.md) |
 | Resilience / performance budgets | [Exit gate 0.23](../11_DEVELOPMENT/EXIT_GATE_0_23.md) / [Benchmarks](../11_DEVELOPMENT/BENCHMARKS.md) |
 | Controlled pilot | [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md) |

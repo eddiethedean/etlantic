@@ -71,6 +71,34 @@ See the [Security Model](SECURITY.md).
 
 ETLantic supports complementary authoring paths.
 
+!!! note "Planned 0.24 convergence"
+    ETLantic 0.23 uses class and contract authoring. Version 0.24 plans one
+    immutable `PipelineDefinition` shared by class declarations, functional
+    builders, canonical `etlantic.pipeline/1` JSON, visual editors, and service
+    applications. All paths feed the same analysis and planning layers; HTTP
+    and GUI concerns do not enter pipeline semantics. See the
+    [0.24 plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
+The planned application boundary is:
+
+```text
+Class / functions / JSON / GUI
+              │
+              ▼
+     PipelineDefinition
+              │
+       validate and plan
+              ▼
+       PipelinePlan
+              │
+       run or compile
+```
+
+A FastAPI application may expose a transport-neutral ETLantic service facade,
+but authentication, persistence, durable job submission, and deployment remain
+host-application concerns. The 0.24 reference adapter proves schema and client
+generation; the production control API remains planned for 1.1.
+
 ### Code-first
 
 - `Data` classes define data contracts.

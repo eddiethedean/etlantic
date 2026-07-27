@@ -135,6 +135,26 @@ becoming part of the pipeline graph.
 A logical description of how transformations and data contracts are
 connected. A pipeline models intent rather than execution.
 
+## PipelineDefinition
+
+The planned 0.24 immutable, unresolved, authoring-complete representation of a
+pipeline. Class declarations, functional builders, canonical JSON, and visual
+edit operations normalize to this model. It is distinct from a resolved
+`PipelinePlan`.
+
+## Authoring Catalog
+
+The planned 0.24 machine-readable catalog of contracts, transformations,
+ports, parameters, policies, providers, plugins, capabilities, and UI-safe
+metadata available to programmatic and visual pipeline builders.
+
+## Edit Command
+
+A planned immutable operation that updates a `PipelineDefinition`, such as
+adding a node, connecting ports, or changing a parameter. Commands use stable
+document paths and support application-level undo, revision, and concurrency
+workflows.
+
 ## ETLantic
 
 The framework described by this documentation. ETLantic models,

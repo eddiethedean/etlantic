@@ -38,6 +38,7 @@ proposals. It is deliberately separate from the ETLantic 0.18 user guide.
 
 - [0.18 Versioned Tabular Interchange record (Gate A shipped)](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md)
+- [Programmatic authoring and lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
 - [Schema drift](SCHEMA_DRIFT_PLAN.md)
 - [Reliability](ETL_RELIABILITY_PLAN.md)
 - [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md)

@@ -17,6 +17,9 @@ this legend.
    those specs.
 5. Keep design layers distinct: contracts → `PipelinePlan` → plugin /
    compiled artifact → run result.
+6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
+   GUI catalogs/edit commands, and the FastAPI reference adapter as planned
+   0.24 surfaces until their exit gate passes.
 
 ## Page status labels
 
@@ -47,5 +50,6 @@ chapters):
 
 - [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) — current shipped surface
 - [Roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+- [0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md)
 - [Design Decisions](../11_DEVELOPMENT/DESIGN_DECISIONS.md)
 - [Architecture Decisions](../11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md)

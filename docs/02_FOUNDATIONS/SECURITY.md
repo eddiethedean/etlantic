@@ -152,6 +152,30 @@ Loaders should enforce limits for:
 
 Recursive references must terminate with a diagnostic.
 
+### Planned 0.24 pipeline documents and application APIs
+
+The planned `etlantic.pipeline/1` document, functional edit surface, authoring
+catalog, and FastAPI/OpenAPI reference extend the same data-only loading
+boundary. They do not create an executable serialization channel.
+
+- pipeline JSON contains stable references, never callables, bytecode, import
+  paths supplied by clients, backend objects, or resolved secrets;
+- deserialization performs no imports, plugin loading, storage/network access,
+  secret resolution, or user-code execution;
+- GUI edit commands and API mutations are bounded, schema-versioned, and
+  atomic, with optimistic concurrency preventing stale replacement;
+- structural preview occurs before implementation resolution, and production
+  resolution continues to enforce plugin allowlists and capability policy;
+- the host application supplies authorized tenant, environment, profile,
+  assets, plugins, and actions—request bodies cannot expand authority;
+- OpenAPI examples, errors, diagnostics, plans, and reports remain secret-free;
+- authentication, CSRF/CORS, rate limits, durable queues, persistence, and
+  process isolation remain responsibilities of the hosting application.
+
+See the
+[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md)
+and the later [FastAPI Integration Plan](../11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md).
+
 ### Filesystem safety
 
 File resolvers should:

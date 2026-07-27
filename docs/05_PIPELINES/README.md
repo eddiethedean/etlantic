@@ -26,6 +26,14 @@ This section explains how to:
 
 A pipeline is declared using ordinary Python.
 
+!!! note "Functional and JSON authoring are planned for 0.24"
+    ETLantic 0.23 uses the class API shown below. Version 0.24 plans equivalent
+    functional builders and an authoring-complete `PipelineDefinition` that
+    round-trips through canonical `etlantic.pipeline/1` JSON. A GUI or FastAPI
+    service will be able to build the same definition without generating a
+    Python class. See the
+    [0.24 plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 ```python
 from etlantic import Extract, Load, Pipeline
 
@@ -158,7 +166,9 @@ Read this section in the following order:
 - Planning precedes execution.
 - Execution belongs to plugins.
 - DPCS is the canonical portable representation.
-- Python remains the preferred authoring experience.
+- Python classes are the preferred authoring experience in 0.23.
+- In 0.24, classes, functional builders, JSON, and visual editors converge on
+  one canonical definition without changing DPCS's standards role.
 
 ## Next Step
 

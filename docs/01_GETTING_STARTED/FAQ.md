@@ -311,6 +311,22 @@ ETLantic generates or exposes:
 
 ------------------------------------------------------------------------
 
+## Can I build ETLantic pipelines in a GUI?
+
+Not through a complete public GUI-authoring API in 0.23. Version 0.24 plans an
+authoring-complete `PipelineDefinition`, functional builders, canonical JSON,
+machine-readable component catalogs, immutable edit operations, and diagnostics
+with stable field/node/edge paths.
+
+Those surfaces are specifically intended to let an independent frontend build
+pipelines visually through a FastAPI application without generating Python
+classes. ETLantic will provide a thin OpenAPI/FastAPI reference boundary; the
+application will own authentication, persistence, durable job execution, and
+deployment. See the
+[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
+------------------------------------------------------------------------
+
 ## Does ETLantic include SparkForge / medallion layers?
 
 No.

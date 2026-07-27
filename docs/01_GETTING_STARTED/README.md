@@ -14,6 +14,11 @@ validate and plan them once; run locally or through optional engine plugins.
 > [Evaluator brief](EVALUATOR.md) for decision-makers. How to read status labels:
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
+> **Planned for 0.24:** complete functional authoring, an authoring-complete
+> `PipelineDefinition`, lossless JSON, GUI integration contracts, and a thin
+> FastAPI/OpenAPI reference. These are future design, not 0.23 APIs. See the
+> [0.24 plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 ## Five-minute path
 
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.23.0`

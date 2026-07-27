@@ -2039,7 +2039,9 @@ documented scale limits, and deterministic terminal-state semantics.
 
 **Objective:** make every ETLantic modeling workflow available without class
 declarations, and make every public semantic artifact safely, canonically, and
-losslessly round-trip through JSON.
+losslessly round-trip through JSON. An independent application must be able to
+provide a complete visual pipeline builder using only public ETLantic APIs and
+schemas; generating Python classes must not be required.
 
 Class-based authoring remains a first-class convenience API. The functional
 API and class API are two views over the same canonical object model; neither
@@ -2161,6 +2163,91 @@ the other cannot express.
 
 - pickle/executable payloads; embedding resolved secrets; remote federation
 
+#### WP7 — Application and visual-builder integration contract
+
+**In scope**
+
+- publish a machine-readable authoring catalog for available data contracts,
+  transformations, ports, parameters, portable operations, providers,
+  schedulers, plugins, capabilities, profiles, policies, and reliability
+  declarations
+- include UI-safe metadata needed to build forms and palettes: stable
+  identifiers, display names, descriptions, types, required/default state,
+  constraints, enumerated choices, sensitivity markers, deprecation state,
+  capability requirements, and compatible connection endpoints
+- expose public, immutable edit operations for adding, removing, connecting,
+  disconnecting, moving, cloning, and updating definition elements without
+  rebuilding a Python class
+- define stable node, port, field, and document paths for edits and diagnostics;
+  validation errors include machine-readable paths and related endpoints so a
+  GUI can highlight the exact control, node, or edge
+- support safe incremental validation and planning previews over an in-memory
+  `PipelineDefinition`, with no execution, writes, secret resolution, or plugin
+  imports required for structural editing
+- provide schema/capability negotiation so an application can detect which
+  document versions, components, operations, and lifecycle actions the
+  installed ETLantic environment supports
+- provide deterministic import/export APIs suitable for undo/redo, autosave,
+  source control, and collaborative application storage
+- ship an independent reference visual-builder fixture or example that
+  discovers the catalog, builds and edits a pipeline, renders diagnostics,
+  exports canonical JSON, reloads it, and submits it to the public lifecycle
+- document the application integration contract separately from any particular
+  web, desktop, or notebook framework
+
+**Out of scope**
+
+- shipping a production GUI, hosted control plane, collaborative server, user
+  authentication, or application database in ETLantic core
+- allowing UI metadata or edit operations to bypass contract validation,
+  plugin trust, Safe I/O, outbound, or secret-handling policy
+
+#### WP8 — API service boundary and FastAPI reference integration
+
+**In scope**
+
+- ensure pipeline definitions, catalogs, edit commands, diagnostics, plans,
+  run requests, run status, and public result envelopes expose
+  OpenAPI-compatible JSON Schemas without application-specific encoders
+- define transport-neutral request/response models for catalog discovery,
+  definition CRUD payloads, edit application, validation, planning,
+  compilation, generation, visualization, run submission, cancellation, and
+  run/report retrieval
+- provide a public application-service facade that maps those request models to
+  ETLantic lifecycle operations without requiring callers to invoke class
+  methods or private modules
+- define stable machine-readable error envelopes, diagnostic paths, schema and
+  capability negotiation headers/fields, idempotency keys, optimistic
+  concurrency/version tokens, and canonical definition fingerprints
+- separate quick authoring operations from potentially long-running execution:
+  validate and plan may return directly within documented budgets, while run
+  submission, cancellation, progress, terminal status, and report retrieval
+  have explicit asynchronous job contracts
+- expose policy-context hooks through which the host application supplies the
+  authenticated principal's allowed tenant, environment, profile, assets,
+  plugins, and lifecycle actions; client payloads cannot grant themselves
+  authority
+- provide a thin FastAPI reference adapter or optional integration package that
+  publishes the public schemas in OpenAPI and demonstrates catalog,
+  pipeline-definition, validate, plan, run, cancellation, and report endpoints
+- generate and test an OpenAPI document plus a frontend client fixture against
+  the FastAPI reference adapter, proving that the GUI can use generated types
+  without importing Python or ETLantic internals
+- document deployment boundaries for authentication, authorization, CORS,
+  CSRF, rate limiting, request-size limits, persistence, queues/workers,
+  WebSocket or event-stream progress, and process isolation
+
+**Out of scope**
+
+- making FastAPI, an ASGI server, a database, a queue, or a frontend framework
+  a required dependency of ETLantic core
+- providing production authentication, authorization, user management,
+  collaborative editing, durable job scheduling, or hosted execution
+- accepting Python source, arbitrary import paths, resolved secrets, or
+  executable objects through API payloads
+- replacing the production FastAPI Control API planned for 1.1; WP8 proves the
+  0.24 authoring/service contract that the later control API will consume
+
 ### Non-goals
 
 - replacing `etlantic.plan/1` or requiring a plan-schema reset
@@ -2168,6 +2255,10 @@ the other cannot express.
 - serializing Python callables, closures, import-time expressions, dataframe
   objects, sessions, connections, scheduler handles, or backend-native plans
 - multi-tenant control plane, LSP, or unrestricted enterprise production claims
+- a framework-specific UI toolkit or requirement that consumers use a
+  particular frontend, transport, or application architecture
+- coupling the canonical application-service contract to HTTP even though
+  FastAPI is the 0.24 reference adapter
 - protocol `/1` freeze (remains a 0.22 RC follow-up under burn-in)
 
 ### Serialization and security boundary
@@ -2206,6 +2297,26 @@ the other cannot express.
   unresolved references, and secret values fail closed without partial
   construction
 - CLI and SDK round trips produce the same canonical document and diagnostics
+- an independently implemented visual builder can discover an authoring
+  catalog, render suitable controls, assemble and edit a complete pipeline,
+  connect only compatible ports, and show validation diagnostics on the
+  responsible fields, nodes, and edges using public APIs
+- the visual builder can autosave canonical JSON, reload it without semantic
+  loss, continue editing, and submit the definition to validation, planning,
+  compilation, generation, visualization, and execution without generating or
+  importing a pipeline class
+- catalog and definition version negotiation lets the visual builder reject or
+  degrade unsupported features explicitly rather than silently losing them
+- a FastAPI application can expose the complete GUI-facing workflow using the
+  public service facade and publish an OpenAPI document from ETLantic's schemas
+  without handwritten duplicate request models or custom serialization
+- a generated frontend client can discover components, create and edit a
+  pipeline, validate and plan it, submit and cancel a run, observe terminal
+  status, and retrieve its report using only documented API envelopes
+- malformed, oversized, stale, unauthorized, untrusted, and
+  version-incompatible API requests fail with stable error/diagnostic envelopes
+  and cannot trigger partial mutation, secret resolution, plugin import, or
+  execution before policy authorization
 
 ### Exit gate
 
@@ -2214,7 +2325,10 @@ through classes, functions, and JSON. All in-scope public semantic state has a
 versioned JSON representation and supported reverse conversion.
 `PipelineDefinition` enters validate → plan → compile/generate/viz/run without
 access to its originating class, while executable code and secrets remain
-outside serialization. WP1–WP6 acceptance scenarios and docs gates pass.
+outside serialization. WP1–WP8 acceptance scenarios and docs gates pass. The
+independent visual-builder fixture proves the WP7 integration contract, and
+the FastAPI/OpenAPI reference proves WP8, without privileged access to ETLantic
+internals.
 
 ## 0.25–0.98 — Compatibility Burn-In
 

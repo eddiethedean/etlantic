@@ -1,6 +1,6 @@
 # OpenAPI for Pipelines
 
-!!! warning "Future design—not a ETLantic 0.10 API guide"
+!!! warning "Future design—not an ETLantic 0.23 API guide"
     OpenAPI-for-pipelines is future design. Mermaid, Graphviz, HTML, and lineage
     exporters are shipped via `Pipeline.to_mermaid()` and `etlantic.viz`.
 
@@ -12,10 +12,22 @@ Just as OpenAPI provides a machine-readable description of HTTP APIs, this
 proposed ETLantic artifact describes *what a pipeline accepts, what it
 produces, and how it behaves* without exposing implementation details.
 
-It is not OpenAPI and is not a fourth contract standard. ODCS, DTCS, and DPCS
-remain the authoritative contract family. This document explores a derived,
-non-normative view generated from those contracts and a validated pipeline
-model.
+It is not a fourth contract standard. ODCS, DTCS, and DPCS remain the
+authoritative contract family. This document explores a derived, non-normative
+pipeline-interface view.
+
+ETLantic 0.24 separately plans real OpenAPI schemas for the HTTP/service
+request and response models used by a GUI-facing FastAPI adapter. Do not confuse
+that service API with the pipeline-interface description on this page:
+
+| Document | Meaning |
+|---|---|
+| `etlantic.pipeline/1` | Authoring-complete pipeline definition planned for 0.24 |
+| Pipeline interface description | Derived discovery/documentation view described here |
+| FastAPI OpenAPI document | HTTP operations and schemas for an application service |
+| `etlantic.plan/1` | Resolved execution plan |
+
+See [Programmatic Authoring in 0.24](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
 
 The generated specification is intended for documentation, discovery,
 governance, validation, IDE tooling, registries, and interoperability.
@@ -57,7 +69,8 @@ Pipeline Interface Description
 ```
 
 The specification is generated from the validated model and is never the source
-of truth.
+of truth. In 0.24, `PipelineDefinition` is the authoring source of truth after
+class, functional, JSON, or GUI input has normalized.
 
 ## Why an OpenAPI Analogy?
 
@@ -78,7 +91,7 @@ ETLantic answers analogous questions:
 
 ## Specification Structure
 
-Conceptually:
+Conceptually (not a shipped 0.23 API):
 
 ```yaml
 pipeline:
@@ -229,7 +242,7 @@ Avoid:
 
 ## Future Directions
 
-Future versions may support:
+The 0.24 programmatic-authoring phase plans:
 
 - Registry discovery
 - JSON Schema generation
@@ -237,6 +250,10 @@ Future versions may support:
 - Governance integrations
 - Catalog synchronization
 - Interactive documentation
+
+The generated client belongs to the service/OpenAPI layer. It manipulates
+canonical pipeline definitions and lifecycle requests; it does not execute
+arbitrary Python supplied by a browser.
 
 ## Key Principle
 

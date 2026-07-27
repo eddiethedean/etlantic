@@ -102,6 +102,11 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 
 | Capability | Status |
 |---|---|
+| Functional alternative for every class authoring primitive | Planned for 0.24 |
+| Authoring-complete `PipelineDefinition` | Planned for 0.24 |
+| Lossless `etlantic.pipeline/1` JSON round trip | Planned for 0.24 |
+| Machine-readable GUI authoring catalog and immutable edit API | Planned for 0.24 |
+| OpenAPI-compatible service facade and thin FastAPI reference | Planned for 0.24 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | `etlantic-datafusion` experimental engine | **Experimental in 0.23.0** (Gate B; not graduated) |
 | `MERGE` / upsert in the reference SQL plugin | Not implemented (`sql_merge=False`; fail closed) |
@@ -109,11 +114,18 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Event sensors / Dagster compilers | Future |
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
-| FastAPI control plane | Continues in 1.1 |
+| Production FastAPI control plane | Continues in 1.1 after the 0.24 reference boundary |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
+
+The 0.24 items above are one coordinated phase: class, functional, JSON, GUI,
+and service authoring will normalize to the same immutable definition. The
+FastAPI work in 0.24 proves that contract over OpenAPI; authentication,
+persistence, durable queues, and the production control API remain later or
+application-owned concerns. See the
+[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
 
 ## CI starter
 

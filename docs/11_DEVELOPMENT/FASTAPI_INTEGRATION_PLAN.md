@@ -1,7 +1,18 @@
 # FastAPI Integration Plan
 
+**Status: planned for 1.1.**
+
 ETLantic's FastAPI integration exposes typed pipeline operations through an
 ordinary FastAPI application without making HTTP part of pipeline semantics.
+
+ETLantic 0.24 first establishes the authoring-complete `PipelineDefinition`,
+canonical `etlantic.pipeline/1` JSON, component catalog, immutable edit
+operations, OpenAPI-compatible service models, and a thin reference adapter.
+See [Programmatic Authoring in 0.24](PROGRAMMATIC_AUTHORING_0_24.md).
+
+This 1.1 plan builds the production control API on that contract. It adds
+durable registry, submission, event, persistence, authorization, and deployment
+integration; it does not redefine the canonical pipeline document.
 
 The integration belongs in a separate `etlantic-fastapi` package. ETLantic
 core remains usable without FastAPI, Starlette, an ASGI server, or an HTTP
@@ -85,8 +96,11 @@ app = pipelines.create_app(
 
 | Operation | Purpose |
 |---|---|
-| `GET /pipelines` | List visible pipeline descriptors |
-| `GET /pipelines/{pipeline_id}` | Inspect metadata, ports, contracts, and capabilities |
+| `GET /catalog` | Discover authorized authoring components and capabilities |
+| `GET /pipelines` | List visible pipeline definitions |
+| `POST /pipelines` | Create a canonical pipeline definition |
+| `GET /pipelines/{pipeline_id}` | Retrieve metadata and the authorized definition |
+| `PATCH /pipelines/{pipeline_id}` | Apply versioned immutable edit commands |
 | `POST /pipelines/{pipeline_id}/validate` | Validate a pipeline and profile |
 | `POST /pipelines/{pipeline_id}/plans` | Produce a secret-free `PipelinePlan` |
 | `POST /pipelines/{pipeline_id}/runs` | Submit a durable `RunRequest` |
@@ -99,6 +113,8 @@ app = pipelines.create_app(
 
 The default API returns metadata and references, not arbitrary dataset contents.
 Artifact download or preview requires a separate bounded, authorized policy.
+Definition mutations require optimistic concurrency tokens, and submission
+operations require caller-scoped idempotency keys.
 
 ## FastAPI Mechanism Mapping
 

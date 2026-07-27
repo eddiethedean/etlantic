@@ -75,11 +75,29 @@ ODCS/DTCS/DPCS.
 
 Sequenced work packages: WP1 definition model → WP2 codecs/schema → WP3
 functional builders ∥ WP4 lifecycle-on-definitions → WP5 artifact codec
-consistency → WP6 CLI JSON targets and docs.
+consistency → WP6 CLI JSON targets and docs → WP7 application and
+visual-builder integration → WP8 API service boundary and FastAPI reference.
 
 A JSON-loaded pipeline validates, plans, and runs without its originating
 Python class after referenced implementations and plugins resolve under normal
 trust policy. Executable code and secrets stay outside serialization.
+
+An independent GUI will be able to discover a machine-readable component
+catalog, render forms and node palettes, apply immutable graph edits, connect
+compatible ports, map diagnostics to fields/nodes/edges, preview validation and
+planning, and import/export canonical JSON using only public APIs. The milestone
+includes an independent visual-builder fixture as proof, but does not add a
+production GUI or hosted control plane to ETLantic core.
+
+The GUI-facing workflow can sit behind a FastAPI application. ETLantic will
+provide OpenAPI-compatible schemas, transport-neutral service request/response
+models, stable errors, concurrency and idempotency fields, asynchronous
+run/status contracts, and host-supplied policy-context hooks. A thin FastAPI
+reference adapter and generated frontend client fixture will prove the
+integration. FastAPI, authentication, persistence, queues, and production
+hosting remain optional application concerns rather than core dependencies.
+This reference boundary feeds, but does not replace, the production FastAPI
+Control API planned for 1.1.
 
 See [ROADMAP.md](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#024--programmatic-authoring-and-lossless-json).
 

@@ -65,6 +65,12 @@ ETLantic does not replace dataframe engines, databases, Spark, schedulers,
 storage systems, catalogs, or secret managers. It gives them one typed pipeline
 model and one inspectable validation lifecycle.
 
+> **Next planned phase:** ETLantic 0.24 targets complete functional authoring,
+> a canonical `PipelineDefinition`, lossless `etlantic.pipeline/1` JSON,
+> visual-builder integration, and an OpenAPI/FastAPI reference boundary. These
+> surfaces are not part of 0.23. See the
+> [0.24 programmatic authoring plan](docs/11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 > **Status:** ETLantic **0.23.0** ships runtime resilience and performance
 > budgets on top of the 0.22 Plugin SDK RC: measured microbenchmark envelopes,
 > fault injection, durable-store hardening, and expanded backend CI. Stable for

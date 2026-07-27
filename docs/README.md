@@ -19,6 +19,11 @@ Its central idea is simple:
 > Define data, transformations, and pipelines with typed Python classes.
 > Validate and plan them once. Execute them through interchangeable backends.
 
+The next planned phase, 0.24, makes that model equally authorable through
+classes, functional builders, canonical JSON, and visual applications.
+`PipelineDefinition` and `etlantic.pipeline/1` are planned rather than shipped
+in 0.23. See [Programmatic Authoring in 0.24](11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+
 ETLantic also treats validation as a continuous envelope around ETL. ETLantic
 validates at every typed boundary—before extract, between steps, and at
 load—without treating validation as an ordinary transform. See
