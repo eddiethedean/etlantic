@@ -60,6 +60,22 @@ def test_manifest_digest_roundtrip() -> None:
     assert manifest.package == "example-plugin"
 
 
+def test_manifest_missing_digest_fails_when_verify() -> None:
+    payload = {
+        "schema": PLUGIN_MANIFEST_SCHEMA,
+        "package": "example-plugin",
+        "version": "0.20.0",
+        "protocol_range": "*",
+        "entries": [],
+        "capabilities": [],
+        "privileges": [],
+        "provenance": {},
+    }
+    manifest, diags = parse_plugin_manifest(json.dumps(payload), verify_digest=True)
+    assert manifest is None
+    assert any(d.code == "PMPLUG411" for d in diags)
+
+
 def test_manifest_tamper_detected() -> None:
     payload = {
         "schema": PLUGIN_MANIFEST_SCHEMA,

@@ -1,6 +1,6 @@
 # Portable Customer Transformation
 
-!!! success "**Status: Available since ETLantic 0.17** (Polars + PySpark + Pandas + SQL relational); current docs target **0.24.0**."
+!!! success "**Status: Available since ETLantic 0.17** (Polars + PySpark + Pandas + SQL relational); current docs target **0.25.0**."
     `@Transformation.portable` authoring shipped in 0.11. This guide runs a
     kernel or relational plan on Polars/PySpark/Pandas without a native
     `@implementation(...)` for the advertised claim set. Safe SQL portable

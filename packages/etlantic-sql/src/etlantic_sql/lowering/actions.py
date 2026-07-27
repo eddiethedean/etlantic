@@ -219,20 +219,15 @@ def apply_action_to_query(
 
     if name == "dtcs:deduplicate":
         keys = params.get("keys") or params.get("subset") or []
-        # DISTINCT ON (keys) is PostgreSQL-specific; for portable claim use
-        # DISTINCT when keys cover all columns, else fail closed on sqlite path
-        # by projecting keys+first via group workaround: DISTINCT on full row
-        # when keys empty; when keys set, use DISTINCT ON for postgres only.
+        # Full-row DISTINCT is correct only when keys are empty (all columns).
+        # Keyed dedupe needs DISTINCT ON / ROW_NUMBER; fail closed until then.
         if keys:
             key_list = [str(k) for k in keys]
-            query = SqlQuery(
-                source=source,
-                source_alias=alias,
-                columns=tuple(ColumnRef(c) for c in columns),
-                distinct=True,
-                metadata={"action": name, "dedupe_keys": key_list},
+            raise ValueError(
+                "dtcs:deduplicate with keys/subset is not implemented by the "
+                "SQL reference compiler; omit keys for full-row DISTINCT or use "
+                f"a dataframe engine. keys={key_list!r}"
             )
-            return query, list(columns)
         query = SqlQuery(
             source=source,
             source_alias=alias,

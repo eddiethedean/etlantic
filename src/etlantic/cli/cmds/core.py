@@ -70,7 +70,18 @@ def register_core_commands(
             verbose=cli.globals.verbose,
             quiet=cli.globals.quiet,
         )
-        raise typer.Exit(ec.SUCCESS if report.valid else ec.INVALID_MODEL)
+        if report.valid:
+            raise typer.Exit(ec.SUCCESS)
+        from etlantic.diagnostics import Severity
+
+        trust_phases = {"plugin_trust", "plugin_discovery", "plugin_discover"}
+        if any(
+            d.severity is Severity.ERROR
+            and ((d.phase or "") in trust_phases or (d.code or "").startswith("PMPLUG"))
+            for d in report.diagnostics
+        ):
+            raise typer.Exit(ec.TRUST_FAILURE)
+        raise typer.Exit(ec.INVALID_MODEL)
 
     @app.command("inspect")
     def inspect_cmd(

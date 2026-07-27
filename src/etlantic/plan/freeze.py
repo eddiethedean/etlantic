@@ -13,6 +13,7 @@ def deep_freeze(value: Any) -> Any:
 
     - ``dict`` / ``Mapping`` → ``MappingProxyType``
     - ``list`` → ``tuple``
+    - ``set`` / ``frozenset`` → ``frozenset``
     - primitives and frozen dataclass instances are left alone
     """
     if value is None or isinstance(value, (bool, int, float, str, bytes, complex)):
@@ -25,6 +26,8 @@ def deep_freeze(value: Any) -> Any:
         return tuple(deep_freeze(v) for v in value)
     if isinstance(value, tuple):
         return tuple(deep_freeze(v) for v in value)
+    if isinstance(value, (set, frozenset)):
+        return frozenset(deep_freeze(v) for v in value)
     if is_dataclass(value) and not isinstance(value, type):
         return value
     return value
@@ -40,5 +43,7 @@ def mutable_copy(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {k: mutable_copy(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
+        return [mutable_copy(v) for v in value]
+    if isinstance(value, (set, frozenset)):
         return [mutable_copy(v) for v in value]
     return value

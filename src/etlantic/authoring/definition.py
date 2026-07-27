@@ -405,15 +405,18 @@ class PipelineDefinition:
             An immutable ``PipelineDefinition``.
 
         Raises:
-            KeyError: If required keys are missing.
+            KeyError: If required keys (including ``schema``) are missing.
             TypeError: If nested values have unexpected types.
 
         Note:
             Prefer ``etlantic.authoring.pipeline_from_dict`` for verified
-            interchange (upgrade + fingerprint).
+            interchange (upgrade + fingerprint). ``from_dict`` requires an
+            explicit ``schema`` and does not invent the current schema id.
         """
+        if "schema" not in data or data["schema"] in (None, ""):
+            raise KeyError("schema")
         defn = cls(
-            schema=str(data.get("schema") or PIPELINE_SCHEMA),
+            schema=str(data["schema"]),
             pipeline_id=str(data["pipeline_id"]),
             pipeline_name=str(data["pipeline_name"]),
             version=(str(data["version"]) if data.get("version") is not None else None),

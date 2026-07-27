@@ -57,6 +57,27 @@ def main() -> None:
             f"SUPPORT.md opening must claim {package_version} is Beta (PyPI)"
         )
 
+    known_issues = (ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md").read_text(
+        encoding="utf-8"
+    )
+    known_opening = "\n".join(known_issues.splitlines()[:12])
+    major_minor = ".".join(package_version.split(".")[:2])
+    if f"**{major_minor}.x**" not in known_opening or "Beta" not in known_opening:
+        raise SystemExit(
+            "KNOWN_ISSUES.md opening must claim the current minor "
+            f"({major_minor}.x) is Beta"
+        )
+    try:
+        major_s, minor_s = major_minor.split(".")
+        prior_minor = f"{major_s}.{int(minor_s) - 1}" if int(minor_s) > 0 else None
+    except ValueError:
+        prior_minor = None
+    if prior_minor is not None and f"**{prior_minor}.x**" in known_opening:
+        raise SystemExit(
+            f"KNOWN_ISSUES.md opening still claims prior minor {prior_minor}.x "
+            "as the current Beta line"
+        )
+
     examples_index = (ROOT / "docs/09_EXAMPLES/README.md").read_text(encoding="utf-8")
     if "complete working examples" in examples_index.lower():
         raise SystemExit("Examples index still claims all design examples are runnable")
@@ -244,6 +265,7 @@ def main() -> None:
                 f"Current stable line is {prior_minor}.x",
                 f"{prior_minor}.x is production/stable",
                 f"docs target {prior_patch}",
+                f"current docs target **{prior_patch}**",
                 f"Documented {prior_minor} public imports",
                 f"Supported for the {prior_minor}.x line",
                 f"pin the published **{prior_patch}**",
@@ -253,6 +275,13 @@ def main() -> None:
                 f"stable in bounded {prior_patch}",
                 f"Is ETLantic {prior_minor} production-supported?",
                 f"**Available** APIs and behaviors are supported within the documented {prior_minor}",
+                f"**{prior_minor}.x** is a **Beta**",
+                f"currently {prior_minor}.x",
+                f"etlantic=={prior_patch}",
+                f"etlantic-polars=={prior_patch}",
+                f"etlantic-pandas=={prior_patch}",
+                f"etlantic-sql=={prior_patch}",
+                f"etlantic-pyspark=={prior_patch}",
             ]
         )
     if "| Capability | 0.4 |" in (ROOT / "README.md").read_text(encoding="utf-8"):

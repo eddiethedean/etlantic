@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Resolve dataframe `plugin.info` as property or callable so Polars/Pandas
+  ownership uses advertised `thread_safe` (default COPIED when caps missing)
+- Manifest parsing with `verify_digest=True` fails closed when `digest` is absent
+- Split colliding `PMEXEC411`/`PMEXEC412` meanings: callable missing writer/reader
+  are now `PMEXEC415`/`PMEXEC416`; document resilience codes `408`–`414`
+- SQL keyed `dtcs:deduplicate` fails closed instead of silently emitting full-row
+  `DISTINCT`
+- `etlantic init` / `write_minimal_etlantic_toml` stamps current `__version__`
+- `etlantic validate` exits `11` (`TRUST_FAILURE`) for trust/discovery errors
+- Reliability CLI commands use documented exit codes
+- `PipelineDefinition.from_dict` requires an explicit `schema`
+- Interchange burn-in golden aligns with `select_mechanism`; sibling burn-in
+  fingerprint/content gate added
+- `VALIDATION_PHASES` includes `plugin_discovery`; `deep_freeze` freezes sets
+- Stale 0.24 install pins / current-minor docs stamps; `check_docs` hardening
+
 ## [0.25.0] - 2026-07-27
 
 ### Added

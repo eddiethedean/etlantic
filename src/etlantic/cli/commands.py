@@ -435,7 +435,7 @@ def register_commands(
             },
             fmt=fmt,
         )
-        raise typer.Exit(0 if result.ok else 1)
+        raise typer.Exit(ec.SUCCESS if result.ok else ec.GENERAL_FAILURE)
 
     @reliability_app.command("partition-check")
     def partition_check_cmd(
@@ -461,7 +461,7 @@ def register_commands(
             },
             fmt=fmt,
         )
-        raise typer.Exit(0 if ok else 1)
+        raise typer.Exit(ec.SUCCESS if ok else ec.GENERAL_FAILURE)
 
     @reliability_app.command("repair-explain")
     def repair_explain_cmd(
@@ -523,7 +523,9 @@ def register_commands(
         store = InMemoryReconciliationEvidence()
         store.put(evidence)
         emit_payload(evidence.to_dict(), fmt=fmt)
-        raise typer.Exit(0 if evidence.status == "matched" else 1)
+        raise typer.Exit(
+            ec.SUCCESS if evidence.status == "matched" else ec.GENERAL_FAILURE
+        )
 
     @reliability_app.command("plan-diff")
     def plan_diff_cmd(

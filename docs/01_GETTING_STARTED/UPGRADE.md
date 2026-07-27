@@ -115,7 +115,7 @@ See [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md).
 | Change | Use instead |
 |---|---|
 | Silent success when report persistence fails after publication | Inspect terminal report status; recover orphaned publications manually; expect `PMEXEC410` |
-| Missing callable reader on storage bindings | Register reader or use supported binding; expect `PMEXEC412` |
+| Missing callable reader on storage bindings | Register reader or use supported binding; expect `PMEXEC416` |
 | Ad hoc fault injection in production | `etlantic.testing.faults` only with `ETLANTIC_FAULT_INJECTION=1` or test contexts |
 | Cross-engine interchange claims without evidence | Plan `evidence_refs` + runtime `interchange_evidence`; `reconcile_interchange_evidence` in tests |
 | Unsafe SQL/file retry after partial write | Blocked at runtime with `PMEXEC501`; keep compile-time `PMORCH310` checks in CI |

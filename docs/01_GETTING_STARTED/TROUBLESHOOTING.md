@@ -96,7 +96,8 @@ python -c "import importlib.metadata as m; print(m.version('etlantic')); print(m
 ```
 
 Core **0.25.x** requires official plugins from the **same** minor
-(`0.25.x`). Do not mix `0.22` plugins with `0.23` core. Remove stale plugin
+(`0.25.x`). Do not mix plugins from a different minor with core (for example
+`0.24` plugins with `0.25` core). Remove stale plugin
 versions and install matching pins, for example:
 
 ```bash
@@ -160,7 +161,7 @@ native `@implementation(...)`, or use
 | `PMPLUG401` | Production allowlist empty / plugin not allowed | Set non-empty `plugin_allowlist` with pinned versions; install matching plugins |
 | `PMXFORM301` | Portable action unsupported on selected compiler | Narrow portable IR, switch engine, or add `@implementation` |
 | `PMEXEC410` | Report persistence failed after publication | Inspect terminal status; recover orphaned writes; do not assume success |
-| `PMEXEC412` | Missing callable reader on storage binding | Register a reader or use a supported binding |
+| `PMEXEC416` | Missing callable reader on storage binding | Register a reader or use a supported binding |
 | `PMEXEC501` | Unsafe retry after partial write | Fix write mode / idempotency; keep `PMORCH310` compile checks in CI |
 | `PMORCH310` | Compile-time unsafe retry/orchestration claim | Adjust orchestration/write semantics before deploy |
 | Fingerprint mismatch | Plan digest does not match payload | Regenerate plan after upgrade; do not hand-edit fingerprints |
@@ -250,7 +251,7 @@ Dagster compilers are not shipped.
 ## Gate A / Polars ↔ Pandas interchange fails
 
 Gate A (`etlantic.interchange/1`) shipped in **0.18.0** for Polars ↔
-Pandas boundaries and remains available in 0.23.
+Pandas boundaries and remains available in 0.25.
 
 | Symptom | Fix |
 |---|---|

@@ -186,7 +186,21 @@ def parse_plugin_manifest(
             )
         )
         return None, diagnostics
-    if verify_digest and manifest.digest:
+    if verify_digest:
+        if not manifest.digest:
+            diagnostics.append(
+                Diagnostic(
+                    code="PMPLUG411",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"Plugin manifest for {manifest.package!r} is missing a "
+                        "digest; verify_digest=True requires a sha256 digest."
+                    ),
+                    path=("plugin", manifest.package),
+                    phase="plugin_evaluate",
+                )
+            )
+            return None, diagnostics
         expected = compute_manifest_digest(data)
         if manifest.digest != expected:
             diagnostics.append(

@@ -40,6 +40,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_pipeline_codec_burn_in.py
 
+      - name: Sibling codec burn-in
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_codec_burn_in_matrix.py
+
       - name: Documentation consistency
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_docs.py

@@ -114,6 +114,12 @@ def has_fan_out(plan: PipelinePlan, node_name: str, port_name: str) -> bool:
     )
 
 
+def resolve_plugin_info(plugin: Any) -> Any:
+    """Return plugin info whether exposed as a property or callable method."""
+    info = plugin.info
+    return info() if callable(info) else info
+
+
 def ownership_for_engine(
     engine: str,
     *,
@@ -130,7 +136,8 @@ def ownership_for_engine(
             if capabilities.thread_safe
             else ArtifactOwnership.COPIED
         )
-    return ArtifactOwnership.SHARED
+    # Missing caps: fail closed to COPIED (do not assume thread-safe SHARED).
+    return ArtifactOwnership.COPIED
 
 
 def _worst_decision(
@@ -172,7 +179,7 @@ async def execute_dataframe_step(
     any_fan_out = any(has_fan_out(plan, node.name, p) for p in output_ports)
     plugin_caps = None
     try:
-        plugin_caps = plugin.info().capabilities
+        plugin_caps = resolve_plugin_info(plugin).capabilities
     except Exception:
         plugin_caps = None
     # Initial context; per-port collect overrides applied below.

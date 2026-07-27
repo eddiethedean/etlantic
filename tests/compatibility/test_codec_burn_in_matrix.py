@@ -92,6 +92,8 @@ def test_capabilities_unknown_major_rejected_by_compat_helper() -> None:
 
 
 def test_interchange_descriptor_round_trip() -> None:
+    from etlantic.interchange.tabular.select import select_mechanism
+
     data = _load("interchange/v0_24/polars_pandas_arrow.json")
     assert data["schema"] == INTERCHANGE_SCHEMA
     desc = InterchangeDescriptor.from_dict(data)
@@ -100,6 +102,14 @@ def test_interchange_descriptor_round_trip() -> None:
     assert again.schema == INTERCHANGE_SCHEMA
     assert again.mechanism == desc.mechanism
     assert again.schema_fingerprint == desc.schema_fingerprint
+    selected, _reason = select_mechanism(
+        set(data["producer_caps"]),
+        set(data["consumer_caps"]),
+        durable=False,
+        already_collecting=True,
+        pyarrow_available=True,
+    )
+    assert selected.value == data["mechanism"]
 
 
 def test_interchange_unknown_schema_fail_closed() -> None:

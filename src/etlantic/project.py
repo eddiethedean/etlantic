@@ -145,12 +145,14 @@ def write_minimal_etlantic_toml(
     default_profile: str = "development",
 ) -> Path:
     """Write a minimal etlantic.toml scaffold."""
+    from etlantic._version import __version__
+
     text = (
         f'project = "{project}"\n'
         f'default_profile = "{default_profile}"\n'
         "\n"
         "[metadata]\n"
-        'etlantic.version = "0.21"\n'
+        f'etlantic.version = "{__version__}"\n'
     )
     path.write_text(text, encoding="utf-8")
     return path.resolve()

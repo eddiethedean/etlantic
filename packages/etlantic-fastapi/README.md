@@ -1,6 +1,6 @@
 # etlantic-fastapi
 
-Thin FastAPI reference adapter for the ETLantic 0.24 authoring and service
+Thin FastAPI reference adapter for the ETLantic 0.25 authoring and service
 contract. Not a production control plane (see 1.1 FastAPI Integration Plan).
 
 ```bash

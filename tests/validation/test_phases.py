@@ -85,6 +85,7 @@ def test_validation_phases_present() -> None:
         "semantic",
         "policy",
         "capability",
+        "plugin_discovery",
         "plugin_trust",
     )
 

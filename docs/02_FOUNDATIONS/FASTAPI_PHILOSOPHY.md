@@ -13,9 +13,9 @@ behavior.
 
 ETLantic applies that same philosophy to data engineering.
 
-ETLantic 0.24 plans to carry the idea beyond class syntax: functional builders,
-canonical pipeline JSON, and visual applications will describe the same
-`PipelineDefinition`. A thin FastAPI/OpenAPI reference will demonstrate that
+ETLantic 0.25 carries the idea beyond class syntax: functional builders,
+canonical pipeline JSON, and visual applications describe the same
+`PipelineDefinition`. A thin FastAPI/OpenAPI reference demonstrates that
 the model can sit behind an application API without making HTTP part of
 pipeline semantics. See the
 [0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).

@@ -1,4 +1,4 @@
-# Application Integration Contract (0.24)
+# Application Integration Contract (0.25)
 
 > **Status: Available in ETLantic 0.25.0.**
 

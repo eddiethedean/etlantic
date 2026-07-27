@@ -78,7 +78,7 @@ Rules:
 While ETLantic is pre-1.0:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.22: `etlantic>=0.22,<0.23`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.25: `etlantic>=0.25,<0.26`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

@@ -27,3 +27,7 @@ def test_etlantic_toml_load_and_profile_resolution(tmp_path: Path, monkeypatch) 
     profile, source = resolve_project_profile(None)
     assert profile.name == "development"
     assert "development.json" in source or "etlantic.toml" in source
+    from etlantic._version import __version__
+
+    text = (tmp_path / "etlantic.toml").read_text(encoding="utf-8")
+    assert f'etlantic.version = "{__version__}"' in text

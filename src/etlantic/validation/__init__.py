@@ -29,6 +29,7 @@ VALIDATION_PHASES = (
     "semantic",
     "policy",
     "capability",
+    "plugin_discovery",
     "plugin_trust",
 )
 

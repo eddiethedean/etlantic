@@ -61,7 +61,7 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently 0.24.x).
+These codes are emitted by the installed ETLantic package (currently 0.25.x).
 The message, path, metadata, and severity provide the case-specific detail.
 Maintainers can regenerate a machine-readable inventory with:
 
@@ -141,8 +141,14 @@ The script prints every `PMxxxx` / related code literal found under
 | `PMEXEC320` | A planned step lacks required transformation identity or registration |
 | `PMEXEC330` | Runtime input or output validation failed |
 | `PMEXEC410` | Data publication succeeded but run report persistence failed (0.23) |
-| `PMEXEC411` | No callable writer registered for a binding |
-| `PMEXEC412` | No callable reader registered for a binding |
+| `PMEXEC411` | Unsupported `CancellationPolicy` knobs (`abandon_after_seconds` / `cooperative=False`) |
+| `PMEXEC412` | Cleanup fault after a successful step body (fault injection / cleanup path) |
+| `PMEXEC413` | `step_failed` callback fault isolated from the primary step failure |
+| `PMEXEC414` | Attempt cleanup failed after a successful step body (no retry) |
+| `PMEXEC415` | No callable writer registered for a binding |
+| `PMEXEC416` | No callable reader registered for a binding |
+| `PMEXEC408` | Run timed out |
+| `PMEXEC409` | Run cancelled |
 | `PMEXEC401` | An environment-backed secret is unavailable |
 | `PMEXEC501` | Retry refused because retry-safety declares the step unsafe |
 | `PMEXEC402` | A file-backed secret cannot be loaded safely |

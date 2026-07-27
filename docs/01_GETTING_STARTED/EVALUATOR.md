@@ -128,7 +128,7 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.24 |
+| Concern | Status in 0.25 |
 |---|---|
 | License | MIT (core and official plugins) |
 | Supported versions / EOL | Current Beta line is 0.25.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
