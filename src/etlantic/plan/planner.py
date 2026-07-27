@@ -557,12 +557,26 @@ def _select_implementations_from_definition(
     context: PlanningContext,
     default_engine: str,
 ) -> dict[str, ImplementationDescriptor]:
-    """Select implementations using definition refs + callable/registry state."""
+    """Select implementations using definition refs + callable/registry state.
+
+    Mirrors class-path rules: honor portable_transform_policy, run compiler
+    analyze() before claiming portable_compiled, and never silently switch
+    engines when multiple refs exist.
+    """
     from etlantic.authoring.resolve import callable_registry
+    from etlantic.transform.compiler import (
+        COMPILER_PROTOCOL,
+        TransformPlanningContext,
+    )
+    from etlantic.transform.discovery import (
+        discover_transform_compilers_for_profile,
+    )
 
     selected: dict[str, ImplementationDescriptor] = {}
     xf_by_id = {t.identity: t for t in definition.transformations}
     live = callable_registry()
+    policy = getattr(context.profile, "portable_transform_policy", "prefer") or "prefer"
+    compilers = discover_transform_compilers_for_profile(context.profile)
 
     for node in graph.nodes:
         if node.kind is not NodeKind.STEP:
@@ -572,47 +586,141 @@ def _select_implementations_from_definition(
         xf = xf_by_id.get(transform_id)
         identity = implementation_id(transform_id, engine)
         is_async = False
-        kind = "native"
-        portable_plan = None
+        portable_plan = dict(xf.portable_plan) if xf is not None and xf.portable_plan else None
+        explicit_override = node.name in context.profile.implementation_overrides
+        requested_engine = engine
+        compiler = compilers.get(requested_engine)
 
         registry_key = f"{transform_id}::{engine}"
         registry_impl = context.registry.implementations.get(registry_key)
-        if registry_impl is not None:
+        if registry_impl is not None and (
+            policy == "native"
+            or portable_plan is None
+            or (compiler is None and policy != "require")
+        ):
             selected[node.name] = registry_impl
             continue
 
         record = live.get(transform_id, engine)
-        if record is not None:
-            identity = record.identity
-            is_async = record.is_async
-        elif xf is not None:
+        native_ref = None
+        if xf is not None:
             for ref in xf.implementation_refs:
                 if ref.engine == engine:
-                    identity = ref.identity
-                    is_async = ref.is_async
-                    kind = ref.kind
+                    native_ref = ref
                     break
-            else:
-                if len(xf.implementation_refs) == 1:
-                    ref = xf.implementation_refs[0]
-                    engine = ref.engine
-                    identity = ref.identity
-                    is_async = ref.is_async
-                    kind = ref.kind
-            if xf.portable_plan is not None and kind != "native":
-                portable_plan = dict(xf.portable_plan)
-            elif xf.portable_plan is not None and record is None:
-                # Prefer portable when no live native callable.
-                kind = "portable_compiled"
-                portable_plan = dict(xf.portable_plan)
 
+        use_portable = (
+            policy != "native" and portable_plan is not None and compiler is not None
+        )
+        if use_portable:
+            assert portable_plan is not None and compiler is not None
+            plan_ctx = TransformPlanningContext(
+                pipeline_id=graph.pipeline_id,
+                step_name=node.name,
+                profile_name=context.profile.name,
+                engine=requested_engine,
+            )
+            requirements = {
+                str(k): list(v) if isinstance(v, (list, tuple)) else [str(v)]
+                for k, v in (portable_plan.get("requirements") or {}).items()
+            } if isinstance(portable_plan.get("requirements"), dict) else {}
+            report = compiler.analyze(
+                portable_plan,
+                context=plan_ctx,
+                requirements=requirements or None,
+            )
+            if report.supported:
+                info = compiler.info
+                fp = str(portable_plan.get("fingerprint") or "")[:16]
+                selected[node.name] = ImplementationDescriptor(
+                    transformation_id=transform_id,
+                    engine=requested_engine,
+                    identity=f"portable:{info.name}@{fp or 'anon'}",
+                    is_async=True,
+                    kind="portable_compiled",
+                    ir_fingerprint=str(portable_plan.get("fingerprint") or "") or None,
+                    compiler_name=info.name,
+                    compiler_version=info.version,
+                    compiler_protocol=info.compiler_protocol or COMPILER_PROTOCOL,
+                    requirements=requirements,
+                    support_summary=report.to_dict(),
+                    portable_plan=portable_plan,
+                    metadata={
+                        "compiler_capabilities": info.capabilities.to_dict(),
+                        "support_summary": report.to_dict(),
+                        "selection_reason": "portable_compiled",
+                    },
+                )
+                continue
+            if policy == "require":
+                findings_msg = (
+                    "; ".join(f"{f.requirement}: {f.reason}" for f in report.findings)
+                    or "unsupported portable requirements"
+                )
+                raise PipelineValidationError(
+                    f'Step "{node.name}" portable requirements are unsupported '
+                    f"by compiler for engine {requested_engine!r}: {findings_msg}",
+                    report=ValidationReport.from_diagnostics(
+                        [
+                            Diagnostic(
+                                code="PMXFORM301",
+                                severity=Severity.ERROR,
+                                message=(
+                                    f'Step "{node.name}" portable compilation '
+                                    f"required but unsupported: {findings_msg}"
+                                ),
+                                path=("pipeline", node.name),
+                                phase="policy",
+                            )
+                        ],
+                        phases=("policy",),
+                    ),
+                )
+
+        if record is not None:
+            selected[node.name] = ImplementationDescriptor(
+                transformation_id=transform_id,
+                engine=engine,
+                identity=record.identity,
+                is_async=record.is_async,
+                kind="native",
+            )
+            continue
+        if native_ref is not None:
+            selected[node.name] = ImplementationDescriptor(
+                transformation_id=transform_id,
+                engine=engine,
+                identity=native_ref.identity,
+                is_async=native_ref.is_async,
+                kind=native_ref.kind,
+            )
+            continue
+        if registry_impl is not None:
+            selected[node.name] = registry_impl
+            continue
+        if (
+            xf is not None
+            and len(xf.implementation_refs) == 1
+            and not explicit_override
+            and policy != "require"
+        ):
+            # Do not silently switch engines under require, or when an
+            # explicit override requested a different engine.
+            ref = xf.implementation_refs[0]
+            selected[node.name] = ImplementationDescriptor(
+                transformation_id=transform_id,
+                engine=ref.engine,
+                identity=ref.identity,
+                is_async=ref.is_async,
+                kind=ref.kind,
+            )
+            continue
         selected[node.name] = ImplementationDescriptor(
             transformation_id=transform_id,
             engine=engine,
             identity=identity,
             is_async=is_async,
-            kind=kind,
-            portable_plan=portable_plan,
+            kind="native",
         )
     return selected
 

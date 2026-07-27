@@ -59,7 +59,7 @@ class AuthoringCatalog:
         "remove_node",
         "connect",
         "disconnect",
-        "update",
+        "update_node",
         "clone",
         "move",
     )
@@ -90,14 +90,19 @@ def catalog_from_definition(defn: PipelineDefinition) -> AuthoringCatalog:
     """Build a catalog slice from contracts/transforms present in a definition."""
     entries: list[CatalogEntry] = []
     for contract in defn.contracts:
+        connectable = contract.authoring_id or contract.identity
         entries.append(
             CatalogEntry(
-                identity=contract.identity,
+                identity=connectable,
                 kind="contract",
                 display_name=contract.name,
                 description="Data contract",
                 types=tuple(f.type for f in contract.fields),
                 endpoints=("port:input", "port:output"),
+                metadata={
+                    "published_id": contract.identity,
+                    "authoring_id": contract.authoring_id or contract.identity,
+                },
             )
         )
     for xf in defn.transformations:

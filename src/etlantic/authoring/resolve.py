@@ -81,15 +81,13 @@ def harvest_callables_from_definition_context(
     *,
     transforms: Mapping[str, type[Transformation]] | None = None,
 ) -> None:
-    """Harvest callables from known transformation classes when available."""
+    """Harvest callables only from an explicit host-supplied transform map.
+
+    Untrusted JSON must not bind execution by walking process-wide subclasses.
+    """
     transforms = transforms or {}
     for xf_def in defn.transformations:
         xf = transforms.get(xf_def.identity)
-        if xf is None:
-            for candidate in _all_transformation_subclasses():
-                if candidate.identity() == xf_def.identity:
-                    xf = candidate
-                    break
         if xf is None:
             continue
         for engine, record in xf.implementations().items():

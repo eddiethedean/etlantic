@@ -22,4 +22,6 @@ Framework-agnostic contract for visual builders and host applications.
 ## Reference HTTP adapter
 
 `etlantic-fastapi` publishes OpenAPI from the public schemas. It is a proof
-adapter, not the production 1.1 control API.
+adapter, not the production 1.1 control API. Runs are **synchronous**:
+`submit_run` completes before returning; `cancel_run` reports that in-flight
+cancel is unsupported on this reference adapter.

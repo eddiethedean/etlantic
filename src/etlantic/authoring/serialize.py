@@ -27,6 +27,36 @@ _FORBIDDEN_KEYS = frozenset(
         "password",
         "token",
         "resolved_secret",
+        "api_token",
+        "access_key",
+        "access_token",
+        "private_key",
+        "client_secret",
+        "api_key",
+        "passwd",
+        "credential",
+        "credentials",
+    }
+)
+_SECRET_REF_ALLOWED = frozenset({"provider", "name"})
+# Nested plaintext material that must never appear under any key (except
+# parameter ``value`` / ``default``, which are ordinary authoring fields).
+_NESTED_SECRET_MATERIAL = frozenset(
+    {
+        "token",
+        "password",
+        "secret",
+        "secret_value",
+        "resolved_secret",
+        "api_key",
+        "api_token",
+        "access_key",
+        "access_token",
+        "private_key",
+        "client_secret",
+        "passwd",
+        "credential",
+        "credentials",
     }
 )
 
@@ -55,22 +85,42 @@ def _reject_forbidden(value: Any, *, path: str = "$") -> None:
                 raise ValueError(
                     f"Pipeline definition rejects forbidden field {key_s!r} at {path}"
                 )
-            if (
-                "secret" in lowered
-                and key_s
-                not in {
-                    "secret_ref",
-                    "has_secret_ref",
-                    "secret_provider",
-                }
-                and not (
-                    isinstance(child, dict)
-                    and ("provider" in child or "name" in child)
-                )
-            ):
+            if key_s == "secret_ref":
+                if not isinstance(child, dict):
+                    raise ValueError(
+                        f"Pipeline definition rejects non-object secret_ref at {path}"
+                    )
+                extra = set(child) - _SECRET_REF_ALLOWED
+                if extra:
+                    raise ValueError(
+                        f"Pipeline definition rejects secret_ref fields "
+                        f"{sorted(extra)!r} at {path}.{key_s} "
+                        f"(only provider/name allowed)"
+                    )
+                if "provider" not in child or "name" not in child:
+                    raise ValueError(
+                        f"Pipeline definition secret_ref at {path}.{key_s} "
+                        f"requires provider and name"
+                    )
+                continue
+            if lowered in {"has_secret_ref", "secret_provider"}:
+                _reject_forbidden(child, path=f"{path}.{key_s}")
+                continue
+            if "secret" in lowered or lowered in _NESTED_SECRET_MATERIAL:
                 raise ValueError(
                     f"Pipeline definition rejects secret payload at {path}.{key_s}"
                 )
+            if isinstance(child, dict):
+                bad = [
+                    str(k)
+                    for k in child
+                    if str(k).lower() in _NESTED_SECRET_MATERIAL
+                ]
+                if bad:
+                    raise ValueError(
+                        f"Pipeline definition rejects secret value fields "
+                        f"{bad!r} at {path}.{key_s}"
+                    )
             _reject_forbidden(child, path=f"{path}.{key_s}")
     elif isinstance(value, list):
         if len(value) > _MAX_COLLECTION:
@@ -171,8 +221,11 @@ def pipeline_from_dict(
             )
         expected = pipeline_fingerprint(defn)
         if defn.fingerprint is None:
-            defn = defn.with_fingerprint(expected)
-        elif defn.fingerprint != expected:
+            raise ValueError(
+                "PipelineDefinition fingerprint required when verify=True "
+                "(seal via write_pipeline_json / with_fingerprint)"
+            )
+        if defn.fingerprint != expected:
             raise ValueError(
                 f"PipelineDefinition fingerprint mismatch: "
                 f"embedded={defn.fingerprint!r} computed={expected!r}"
@@ -213,5 +266,5 @@ def read_pipeline_json(
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> PipelineDefinition:
     """Read a definition JSON document from disk under Safe I/O budgets."""
-    text = read_text_bounded(path, max_bytes=max_bytes)
+    _resolved, text = read_text_bounded(path, max_bytes=max_bytes)
     return pipeline_from_json(text, verify=verify)

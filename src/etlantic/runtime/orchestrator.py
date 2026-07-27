@@ -2139,9 +2139,13 @@ class LocalOrchestrator:
         )
         from etlantic.authoring.resolve import callable_registry
 
-        live = callable_registry().get(node.transformation_id, engine)
-        if live is not None:
-            return live
+        # Class-authored runs prefer the transformation class implementations so
+        # a prior definition registration cannot hijack them. Definition-only
+        # runs (no pipeline_cls) consult the host callable registry.
+        if getattr(self, "pipeline_cls", None) is None:
+            live = callable_registry().get(node.transformation_id, engine)
+            if live is not None:
+                return live
 
         xf = self.transform_lookup.get(node.transformation_id)
         if xf is None:

@@ -105,7 +105,6 @@ async def arun_pipeline(
     from etlantic.authoring.definition import PipelineDefinition
     from etlantic.authoring.lifecycle import build_graph
     from etlantic.authoring.resolve import (
-        harvest_callables_from_pipeline,
         resolve_definition,
     )
     from etlantic.diagnostics import Severity
@@ -122,15 +121,16 @@ async def arun_pipeline(
 
     pipeline_for_scheduler: type[Any] | None
     if isinstance(pipeline_cls, PipelineDefinition):
+        if context is None:
+            context = PlanningContext.create(
+                profile=profile, registry=runtime.registry
+            )
         _defn, context, _ = resolve_definition(
             pipeline_cls, context=context, profile=profile
         )
-        if context is None:
-            context = PlanningContext.create(profile=profile, registry=runtime.registry)
         graph = build_graph(pipeline_cls)
         pipeline_for_scheduler = None
     else:
-        harvest_callables_from_pipeline(pipeline_cls)
         graph = pipeline_cls.build_graph()
         pipeline_for_scheduler = pipeline_cls
         if context is None:

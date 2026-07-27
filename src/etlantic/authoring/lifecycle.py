@@ -78,7 +78,7 @@ def _validate_definition(
     policy: str | Any | None = None,
 ) -> ValidationReport:
     from etlantic.policy import resolve_validation_policy
-    from etlantic.validation import VALIDATION_PHASES
+    from etlantic.validation import VALIDATION_PHASES, _detect_cycles
     from etlantic.validation.phases.capability import phase_capability
     from etlantic.validation.phases.plugin_trust import phase_plugin_trust
 
@@ -91,13 +91,14 @@ def _validate_definition(
     diagnostics: list[Diagnostic] = list(resolve_report.diagnostics)
     graph = logical_graph_from_definition(defn)
     diagnostics.extend(_tag_phase(_validate_definition_graph(defn, graph), "structural"))
+    diagnostics.extend(_tag_phase(_detect_cycles(graph), "structural"))
     diagnostics.extend(
         _tag_phase(
             _validate_definition_references(defn, graph, ctx, resolved_policy),
             "reference",
         )
     )
-    diagnostics.extend(_tag_phase(_validate_definition_semantic(graph), "semantic"))
+    diagnostics.extend(_tag_phase(_validate_definition_semantic(defn, graph), "semantic"))
     diagnostics.extend(
         _tag_phase(
             _validate_definition_policy(defn, graph, ctx, resolved_policy), "policy"
@@ -106,7 +107,50 @@ def _validate_definition(
     diagnostics.extend(
         _tag_phase(phase_capability(None, ctx, resolved_policy), "capability")
     )
+    diagnostics.extend(
+        _tag_phase(list(ctx.plugin_discovery_diagnostics), "plugin_discovery")
+    )
     diagnostics.extend(_tag_phase(phase_plugin_trust(ctx), "plugin_trust"))
+    for node in defn.nodes:
+        if node.nested is not None:
+            nested_report = _validate_definition(
+                node.nested, context=ctx, policy=resolved_policy
+            )
+            for diagnostic in nested_report.diagnostics:
+                diagnostics.append(
+                    Diagnostic(
+                        code=diagnostic.code,
+                        severity=diagnostic.severity,
+                        message=diagnostic.message,
+                        path=("nodes", node.name, "nested", *diagnostic.path),
+                        help=diagnostic.help,
+                        related=diagnostic.related,
+                        source=diagnostic.source,
+                        metadata=diagnostic.metadata,
+                        phase=diagnostic.phase,
+                        actions=diagnostic.actions,
+                    )
+                )
+    if resolved_policy.warnings_as_errors:
+        diagnostics = [
+            Diagnostic(
+                code=d.code,
+                severity=Severity.ERROR
+                if d.severity is Severity.WARNING
+                else d.severity,
+                message=d.message,
+                path=d.path,
+                help=d.help,
+                related=d.related,
+                source=d.source,
+                metadata=d.metadata,
+                phase=d.phase,
+                actions=d.actions,
+            )
+            if d.severity is Severity.WARNING
+            else d
+            for d in diagnostics
+        ]
     return ValidationReport.from_diagnostics(diagnostics, phases=VALIDATION_PHASES)
 
 
@@ -211,8 +255,15 @@ def _validate_definition_references(
     return diagnostics
 
 
-def _validate_definition_semantic(graph: LogicalGraph) -> list[Diagnostic]:
+def _validate_definition_semantic(
+    defn: PipelineDefinition, graph: LogicalGraph
+) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
+    contracts_by_id = {
+        c.authoring_id or c.identity: c for c in defn.contracts
+    }
+    for c in defn.contracts:
+        contracts_by_id[c.identity] = c
     nodes = graph.node_map()
     for edge in graph.edges:
         producer = nodes.get(edge.producer_node)
@@ -243,21 +294,35 @@ def _validate_definition_semantic(graph: LogicalGraph) -> list[Diagnostic]:
             and consumer_port
             and producer_port.contract_id
             and consumer_port.contract_id
-            and producer_port.contract_id != consumer_port.contract_id
         ):
-            diagnostics.append(
-                Diagnostic(
-                    code="PMPIPE210",
-                    severity=Severity.ERROR,
-                    message=(
-                        f'Contract mismatch: {edge.producer_node}.{edge.producer_port} '
-                        f'({producer_port.contract_id}) -> '
-                        f'{edge.consumer_node}.{edge.consumer_port} '
-                        f'({consumer_port.contract_id}).'
-                    ),
-                    path=("nodes", edge.consumer_node, "inputs", edge.consumer_port),
-                )
+            left = contracts_by_id.get(producer_port.contract_id)
+            right = contracts_by_id.get(consumer_port.contract_id)
+            left_pub = left.identity if left is not None else producer_port.contract_id
+            right_pub = right.identity if right is not None else consumer_port.contract_id
+            left_auth = (
+                (left.authoring_id or left.identity)
+                if left is not None
+                else producer_port.contract_id
             )
+            right_auth = (
+                (right.authoring_id or right.identity)
+                if right is not None
+                else consumer_port.contract_id
+            )
+            if left_pub != right_pub and left_auth != right_auth:
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPIPE210",
+                        severity=Severity.ERROR,
+                        message=(
+                            f'Contract mismatch: {edge.producer_node}.{edge.producer_port} '
+                            f'({producer_port.contract_id}) -> '
+                            f'{edge.consumer_node}.{edge.consumer_port} '
+                            f'({consumer_port.contract_id}).'
+                        ),
+                        path=("nodes", edge.consumer_node, "inputs", edge.consumer_port),
+                    )
+                )
     return diagnostics
 
 
@@ -270,8 +335,11 @@ def _validate_definition_policy(
     diagnostics: list[Diagnostic] = []
     if not getattr(policy, "require_implementations", False):
         return diagnostics
+    from etlantic.transform.discovery import discover_transform_compilers_for_profile
+
     xf_by_id = {t.identity: t for t in defn.transformations}
     registry = callable_registry()
+    compilers = discover_transform_compilers_for_profile(context.profile)
     for node in graph.nodes:
         if node.kind is not NodeKind.STEP or not node.transformation_id:
             continue
@@ -281,17 +349,17 @@ def _validate_definition_policy(
         engine = context.profile.implementation_overrides.get(node.name)
         if engine is None:
             engine = context.profile.dataframe_engine or "local"
-        has_ref = any(r.engine == engine for r in xf.implementation_refs)
         has_live = registry.get(node.transformation_id, engine) is not None
-        has_portable = xf.portable_plan is not None
-        if not (has_ref or has_live or has_portable):
+        has_portable = xf.portable_plan is not None and engine in compilers
+        if not (has_live or has_portable):
             diagnostics.append(
                 Diagnostic(
                     code="PMPLAN301",
                     severity=Severity.ERROR,
                     message=(
-                        f"No implementation for step '{node.name}' "
-                        f"(transformation {node.transformation_id}, engine {engine!r})."
+                        f"No live callable or portable compiler support for step "
+                        f"'{node.name}' (transformation {node.transformation_id}, "
+                        f"engine {engine!r})."
                     ),
                     path=("nodes", node.name, "implementation"),
                 )

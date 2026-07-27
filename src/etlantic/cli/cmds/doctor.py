@@ -167,12 +167,14 @@ def register_doctor_command(app: typer.Typer) -> None:
 
         if target:
             try:
+                from etlantic.authoring.types import pipeline_display_name
+
                 pipeline_cls = cli.load_target(target)
                 checks.append(
                     _check(
                         "target",
                         True,
-                        f"Loaded target {pipeline_cls.__name__}",
+                        f"Loaded target {pipeline_display_name(pipeline_cls)}",
                         severity="info",
                     )
                 )

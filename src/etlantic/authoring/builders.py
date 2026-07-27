@@ -335,9 +335,23 @@ def connect(
     consumer_contract_id: str | None = None,
 ) -> PipelineDefinition:
     """Add an edge between existing nodes."""
-    names = {n.name for n in defn.nodes}
-    if producer_node not in names or consumer_node not in names:
+    by_name = {n.name: n for n in defn.nodes}
+    if producer_node not in by_name or consumer_node not in by_name:
         raise ValueError("Cannot connect unknown nodes")
+    producer = by_name[producer_node]
+    consumer = by_name[consumer_node]
+    producer_ports = {p.name for p in producer.outputs}
+    consumer_ports = {p.name for p in (*consumer.inputs, *consumer.parameters)}
+    if producer_port not in producer_ports:
+        raise ValueError(
+            f"Unknown producer port {producer_node!r}.{producer_port!r}; "
+            f"available={sorted(producer_ports)}"
+        )
+    if consumer_port not in consumer_ports:
+        raise ValueError(
+            f"Unknown consumer port {consumer_node!r}.{consumer_port!r}; "
+            f"available={sorted(consumer_ports)}"
+        )
     new_edge = edge(
         producer_node,
         producer_port,

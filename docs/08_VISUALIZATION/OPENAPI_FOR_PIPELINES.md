@@ -1,8 +1,10 @@
 # OpenAPI for Pipelines
 
-!!! warning "Future design—not an ETLantic 0.23 API guide"
-    OpenAPI-for-pipelines is future design. Mermaid, Graphviz, HTML, and lineage
-    exporters are shipped via `Pipeline.to_mermaid()` and `etlantic.viz`.
+!!! warning "Future design—not an ETLantic 0.24 API guide"
+    This page describes a **derived pipeline-interface** documentation view.
+    It is not the shipped authoring HTTP API. For the 0.24 service/OpenAPI
+    reference, see [Application integration](APPLICATION_INTEGRATION.md) and
+    `etlantic-fastapi`.
 
 
 ETLantic can generate an **OpenAPI-inspired interface description for data
@@ -16,18 +18,20 @@ It is not a fourth contract standard. ODCS, DTCS, and DPCS remain the
 authoritative contract family. This document explores a derived, non-normative
 pipeline-interface view.
 
-ETLantic 0.24 separately plans real OpenAPI schemas for the HTTP/service
-request and response models used by a GUI-facing FastAPI adapter. Do not confuse
-that service API with the pipeline-interface description on this page:
+ETLantic 0.24 ships real OpenAPI schemas for the HTTP/service request and
+response models used by the GUI-facing FastAPI **reference** adapter
+(`etlantic-fastapi`). Do not confuse that service API with the
+pipeline-interface description on this page:
 
 | Document | Meaning |
 |---|---|
-| `etlantic.pipeline/1` | Authoring-complete pipeline definition planned for 0.24 |
+| `etlantic.pipeline/1` | Authoring-complete pipeline definition (**Available** in 0.24) |
 | Pipeline interface description | Derived discovery/documentation view described here |
 | FastAPI OpenAPI document | HTTP operations and schemas for an application service |
 | `etlantic.plan/1` | Resolved execution plan |
 
-See [Programmatic Authoring in 0.24](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+See [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) and
+[Application integration](APPLICATION_INTEGRATION.md).
 
 The generated specification is intended for documentation, discovery,
 governance, validation, IDE tooling, registries, and interoperability.

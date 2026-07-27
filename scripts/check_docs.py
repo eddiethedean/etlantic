@@ -251,7 +251,8 @@ def main() -> None:
                 f"{prior_patch} wheel",
                 f"Public imports ({prior_minor})",
                 f"stable in bounded {prior_patch}",
-                "Is ETLantic 0.21 production-supported?",
+                f"Is ETLantic {prior_minor} production-supported?",
+                f"**Available** APIs and behaviors are supported within the documented {prior_minor}",
             ]
         )
     if "| Capability | 0.4 |" in (ROOT / "README.md").read_text(encoding="utf-8"):
@@ -836,6 +837,10 @@ def main() -> None:
         raise SystemExit("status-banner.js must exclude HTML from future viz banner")
     if "/08_VISUALIZATION/LINEAGE/" not in banner_js:
         raise SystemExit("status-banner.js must exclude LINEAGE from future viz banner")
+    if "/08_VISUALIZATION/APPLICATION_INTEGRATION/" not in banner_js:
+        raise SystemExit(
+            "status-banner.js must exclude APPLICATION_INTEGRATION from future viz banner"
+        )
 
     start = banner_js.find("futureExecutionPages = [")
     end = banner_js.find("];", start)

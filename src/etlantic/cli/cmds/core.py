@@ -315,11 +315,54 @@ def register_core_commands(
         def _load_plan(ref: str) -> Any:
             path = Path(ref)
             if path.suffix == ".json" and path.exists():
-                from etlantic.plan.model import PipelinePlan
+                from etlantic.authoring.definition import PIPELINE_SCHEMA
+                from etlantic.plan.model import PLAN_SCHEMA, PipelinePlan
 
-                return PipelinePlan.from_dict(
-                    json.loads(path.read_text(encoding="utf-8"))
-                )
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                schema = str(payload.get("schema") or "")
+                if schema == PLAN_SCHEMA or schema.startswith("etlantic.plan/"):
+                    return PipelinePlan.from_dict(payload)
+                if schema == PIPELINE_SCHEMA or schema.startswith("etlantic.pipeline/"):
+                    resolved, _ = cli.resolve_profile(
+                        profile, allow_adhoc_profile=allow_adhoc_profile
+                    )
+                    cli.ensure_plugins(resolved)
+                    context = PlanningContext.create(
+                        profile=resolved,
+                        registry=cli.runtime.registry,
+                        allow_adhoc_profile=allow_adhoc_profile,
+                    )
+                    plan, report = plan_pipeline_with_report(
+                        cli.load_target(ref), context=context
+                    )
+                    if plan is None:
+                        raise typer.BadParameter(
+                            f"Planning failed for {ref}: "
+                            + "; ".join(d.message for d in report.errors)
+                        )
+                    return plan
+                # Legacy plan JSON without schema: attempt plan decode.
+                try:
+                    return PipelinePlan.from_dict(payload)
+                except Exception:
+                    resolved, _ = cli.resolve_profile(
+                        profile, allow_adhoc_profile=allow_adhoc_profile
+                    )
+                    cli.ensure_plugins(resolved)
+                    context = PlanningContext.create(
+                        profile=resolved,
+                        registry=cli.runtime.registry,
+                        allow_adhoc_profile=allow_adhoc_profile,
+                    )
+                    plan, report = plan_pipeline_with_report(
+                        cli.load_target(ref), context=context
+                    )
+                    if plan is None:
+                        raise typer.BadParameter(
+                            f"Planning failed for {ref}: "
+                            + "; ".join(d.message for d in report.errors)
+                        ) from None
+                    return plan
             resolved, _ = cli.resolve_profile(
                 profile, allow_adhoc_profile=allow_adhoc_profile
             )

@@ -1,10 +1,11 @@
-"""WP1–WP3 authoring definition, codecs, and functional parity tests."""
+"""WP1-WP3 authoring definition, codecs, and functional parity tests."""
 
 from __future__ import annotations
 
 import json
 
 import pytest
+from examples.memory_customers import CustomerPipeline
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -29,7 +30,6 @@ from etlantic.authoring import (
     step_node,
     transformation_definition,
 )
-from examples.memory_customers import CustomerPipeline
 
 
 def test_definition_from_pipeline_memory_customers() -> None:
@@ -70,7 +70,7 @@ def test_hostile_secret_payload_rejected() -> None:
     defn = definition_from_pipeline(CustomerPipeline)
     data = json.loads(pipeline_to_json(defn))
     data["metadata"] = {"password": "hunter2"}
-    with pytest.raises(ValueError, match="forbidden|secret"):
+    with pytest.raises(ValueError, match=r"forbidden|secret"):
         pipeline_from_dict(data)
 
 

@@ -71,6 +71,7 @@ class RunJob:
     definition_fingerprint: str
     report: PipelineRunReport | None = None
     error: str | None = None
+    sync_reference: bool = True
 
 
 @dataclass
@@ -86,9 +87,40 @@ class AuthoringService:
         if action not in self.policy.allowed_actions:
             raise PermissionError(f"Action {action!r} is not allowed by policy context")
 
+    def _enforce_definition_policy(self, defn: PipelineDefinition) -> None:
+        if self.policy.allowed_assets is not None:
+            allowed = set(self.policy.allowed_assets)
+            for node in defn.nodes:
+                if node.asset and node.asset not in allowed:
+                    raise PermissionError(
+                        f"Asset {node.asset!r} on node {node.name!r} is not "
+                        f"allowed by policy context"
+                    )
+        if self.policy.allowed_plugins is not None:
+            from etlantic.profile import resolve_profile
+
+            allowed_plugins = set(self.policy.allowed_plugins)
+            profile = resolve_profile(self.policy.profile)
+            for pkg in profile.plugin_allowlist or {}:
+                if pkg not in allowed_plugins:
+                    raise PermissionError(
+                        f"Profile plugin {pkg!r} is not allowed by policy context"
+                    )
+            for xf in defn.transformations:
+                for ref in xf.implementation_refs:
+                    if (
+                        ref.engine.startswith("etlantic-")
+                        and ref.engine not in allowed_plugins
+                    ):
+                        raise PermissionError(
+                            f"Plugin {ref.engine!r} is not allowed by policy context"
+                        )
+
     def negotiation(self) -> dict[str, Any]:
         self._require_action("catalog")
-        return negotiate_capabilities()
+        payload = negotiate_capabilities()
+        payload["run_model"] = "synchronous_reference"
+        return payload
 
     def catalog(self, definition_id: str | None = None) -> dict[str, Any]:
         self._require_action("catalog")
@@ -105,6 +137,7 @@ class AuthoringService:
         self._require_action("edit")
         _ = idempotency_key
         defn = pipeline_from_dict(document, verify=True)
+        self._enforce_definition_policy(defn)
         self.definitions[definition_id] = defn
         return {
             "id": definition_id,
@@ -132,6 +165,7 @@ class AuthoringService:
         result: EditResult = apply_edit(
             defn, EditCommand.from_dict(command), expected_token=expected_token
         )
+        self._enforce_definition_policy(result.definition)
         self.definitions[definition_id] = result.definition
         return {
             "id": definition_id,
@@ -143,6 +177,7 @@ class AuthoringService:
     def validate(self, definition_id: str) -> dict[str, Any]:
         self._require_action("validate")
         defn = self.definitions[definition_id]
+        self._enforce_definition_policy(defn)
         report = structural_validate_preview(defn, profile=self.policy.profile)
         return {
             "ok": not report.has_errors,
@@ -153,6 +188,7 @@ class AuthoringService:
     def plan(self, definition_id: str) -> dict[str, Any]:
         self._require_action("plan")
         defn = self.definitions[definition_id]
+        self._enforce_definition_policy(defn)
         plan, report = plan_preview(defn, profile=self.policy.profile)
         return {
             "ok": plan is not None and not report.has_errors,
@@ -166,23 +202,28 @@ class AuthoringService:
         *,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
+        """Run synchronously (reference adapter — not a durable async queue)."""
         self._require_action("run")
         _ = idempotency_key
         defn = self.definitions[definition_id]
+        self._enforce_definition_policy(defn)
         job_id = f"job-{uuid.uuid4().hex[:12]}"
         created = datetime.now(UTC).isoformat()
         job = RunJob(
             job_id=job_id,
-            status="submitted",
+            status="running",
             created_at=created,
             definition_fingerprint=defn.fingerprint or pipeline_fingerprint(defn),
+            sync_reference=True,
         )
         self.jobs[job_id] = job
         try:
             report = run_pipeline(
                 defn, profile=self.policy.profile, runtime=self.runtime
             )
-            job.status = "succeeded" if report.status.value == "succeeded" else report.status.value
+            job.status = (
+                "succeeded" if report.status.value == "succeeded" else report.status.value
+            )
             job.report = report
         except Exception as exc:
             job.status = "failed"
@@ -190,11 +231,17 @@ class AuthoringService:
         return self.job_status(job_id)
 
     def cancel_run(self, job_id: str) -> dict[str, Any]:
+        """Reference adapter runs are synchronous; cancel is not supported in-flight."""
         self._require_action("cancel")
         job = self.jobs[job_id]
-        if job.status in {"submitted", "running"}:
-            job.status = "cancelled"
-        return self.job_status(job_id)
+        status = self.job_status(job_id)
+        status["cancellable"] = False
+        status["cancel_supported"] = False
+        status["message"] = (
+            "Reference adapter runs synchronously; cancel has no effect on "
+            f"terminal job status {job.status!r}."
+        )
+        return status
 
     def job_status(self, job_id: str) -> dict[str, Any]:
         self._require_action("report")
@@ -206,6 +253,8 @@ class AuthoringService:
             "definition_fingerprint": job.definition_fingerprint,
             "error": job.error,
             "report": job.report.to_dict() if job.report is not None else None,
+            "run_model": "synchronous_reference",
+            "cancellable": False,
         }
 
 

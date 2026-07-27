@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from examples.memory_customers import CustomerPipeline, normalize_customers
+
 from etlantic.authoring import definition_from_pipeline, pipeline_to_dict
 from etlantic.authoring.resolve import callable_registry
 from etlantic.service import AuthoringService, PolicyContext
-from examples.memory_customers import CustomerPipeline, normalize_customers
 
 
 def test_authoring_service_validate_plan() -> None:

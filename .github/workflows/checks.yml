@@ -519,6 +519,27 @@ jobs:
       - name: Pytest datafusion stub suite
         run: uv run pytest -q tests/ -k datafusion -m datafusion
 
+  fastapi:
+    name: FastAPI reference adapter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.3"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with fastapi extra
+        run: uv sync --locked --extra fastapi
+
+      - name: Pytest FastAPI reference suite
+        run: |
+          uv run pytest -q tests/fastapi packages/etlantic-fastapi/tests
+
   real-pyspark:
     name: Real PySpark (JVM)
     runs-on: ubuntu-latest

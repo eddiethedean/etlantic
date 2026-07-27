@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     !path.includes("/08_VISUALIZATION/GRAPHVIZ/") &&
     !path.includes("/08_VISUALIZATION/HTML/") &&
     !path.includes("/08_VISUALIZATION/LINEAGE/") &&
+    !path.includes("/08_VISUALIZATION/APPLICATION_INTEGRATION/") &&
     !path.includes("/08_VISUALIZATION/README");
   const isProposedReference =
     path.includes("/10_REFERENCE/CONFIGURATION/") ||

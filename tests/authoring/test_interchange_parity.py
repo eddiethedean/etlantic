@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from etlantic.authoring import definition_from_pipeline, pipeline_from_json, pipeline_to_json
-from etlantic.interchange.normalize import graphs_equivalent
 from examples.memory_customers import CustomerPipeline
+
+from etlantic.authoring import (
+    definition_from_pipeline,
+    pipeline_from_json,
+    pipeline_to_json,
+)
+from etlantic.authoring.normalize import authoring_graph_fingerprint
 
 
 def test_dpcs_graph_equivalent_after_definition_round_trip() -> None:
@@ -21,7 +26,14 @@ def test_dpcs_graph_equivalent_after_definition_round_trip() -> None:
     after = CustomerPipeline.to_dpcs()
     assert isinstance(before, dict) and isinstance(after, dict)
     assert before.get("apiVersion") == after.get("apiVersion")
-    assert graphs_equivalent(class_graph, class_graph)
+    assert authoring_graph_fingerprint(original) == authoring_graph_fingerprint(loaded)
+    assert [
+        (e.producer_node, e.producer_port, e.consumer_node, e.consumer_port)
+        for e in projected.edges
+    ] == [
+        (e.producer_node, e.producer_port, e.consumer_node, e.consumer_port)
+        for e in class_graph.edges
+    ]
 
 
 def test_wire_stable_artifacts_documented_in_inventory() -> None:

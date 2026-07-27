@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from examples.memory_customers import CustomerPipeline
+
 from etlantic.authoring import (
     EditCommand,
     apply_edit,
+    definition_from_pipeline,
     discover_authoring_catalog,
     negotiate_capabilities,
     pipeline_from_json,
@@ -12,8 +15,6 @@ from etlantic.authoring import (
     plan_preview,
     structural_validate_preview,
 )
-from etlantic.authoring import definition_from_pipeline
-from examples.memory_customers import CustomerPipeline
 
 
 def test_visual_builder_public_workflow() -> None:

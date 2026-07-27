@@ -43,8 +43,11 @@ class EditCommand:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EditCommand:
+        op = str(data["op"])
+        if op == "update":
+            op = "update_node"
         return cls(
-            op=str(data["op"]),  # type: ignore[arg-type]
+            op=op,  # type: ignore[arg-type]
             path=tuple(str(p) for p in (data.get("path") or ())),
             payload=dict(data.get("payload") or {}),
         )
@@ -59,10 +62,12 @@ class EditResult:
     concurrency_token: str
 
     def to_dict(self) -> dict[str, Any]:
+        from etlantic.authoring.serialize import pipeline_to_dict
+
         return {
             "fingerprint": self.fingerprint,
             "concurrency_token": self.concurrency_token,
-            "definition": self.definition.to_dict(),
+            "definition": pipeline_to_dict(self.definition),
         }
 
 
@@ -108,9 +113,14 @@ def apply_edit(
     elif command.op == "update_node":
         name = str(payload["name"])
         node = NodeDefinition.from_dict(payload["node"])
-        nodes = tuple(node if n.name == name else n for n in defn.nodes)
+        if node.name != name:
+            raise ValueError(
+                f"update_node requires payload.node.name == payload.name "
+                f"({node.name!r} != {name!r}); rename is not supported"
+            )
         if not any(n.name == name for n in defn.nodes):
             raise ValueError(f"Unknown node {name!r}")
+        nodes = tuple(node if n.name == name else n for n in defn.nodes)
         updated = replace_nodes(defn, nodes)
     elif command.op == "clone":
         from etlantic.authoring.builders import clone_definition

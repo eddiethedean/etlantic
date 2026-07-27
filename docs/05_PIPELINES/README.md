@@ -24,15 +24,15 @@ This section explains how to:
 
 ## The Authoring Model
 
-A pipeline is declared using ordinary Python.
+A pipeline is declared using ordinary Python — or, since 0.24, with functional
+builders / `PipelineDefinition` JSON that normalize to the same immutable
+definition. See [Programmatic authoring](PROGRAMMATIC_AUTHORING.md).
 
-!!! note "Functional and JSON authoring are planned for 0.24"
-    ETLantic 0.23 uses the class API shown below. Version 0.24 plans equivalent
-    functional builders and an authoring-complete `PipelineDefinition` that
-    round-trips through canonical `etlantic.pipeline/1` JSON. A GUI or FastAPI
-    service will be able to build the same definition without generating a
-    Python class. See the
-    [0.24 plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+!!! success "Functional and JSON authoring are Available in 0.24"
+    Class, functional, and JSON paths share `PipelineDefinition` and
+    `etlantic.pipeline/1`. GUI hosts use the authoring catalog, edit commands,
+    and optional `etlantic-fastapi` reference adapter. See
+    [What's New in 0.24](../01_GETTING_STARTED/WHATS_NEW_0_24.md).
 
 ```python
 from etlantic import Extract, Load, Pipeline

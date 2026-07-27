@@ -24,6 +24,7 @@ from etlantic.authoring.builders import (
 from etlantic.authoring.catalog import (
     AuthoringCatalog,
     CatalogEntry,
+    catalog_from_definition,
     discover_authoring_catalog,
     negotiate_capabilities,
 )
@@ -94,6 +95,7 @@ __all__ = [
     "build_logical_graph",
     "callable_registry",
     "canonical_pipeline_json",
+    "catalog_from_definition",
     "clone_definition",
     "coerce_definition",
     "connect",

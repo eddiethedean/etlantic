@@ -32,7 +32,13 @@ from etlantic.model import (
     ParameterSpec,
     PortSpec,
 )
-from etlantic.pipeline import Extract, Load, Pipeline, SubpipelineInstance
+from etlantic.pipeline import (
+    Extract,
+    Load,
+    Pipeline,
+    SubpipelineInstance,
+    _resolve_binding_ref,
+)
 from etlantic.plan.freeze import immutable_mapping
 from etlantic.transformation import Step, Transformation
 
@@ -268,7 +274,15 @@ def definition_from_pipeline(cls: type[Pipeline]) -> PipelineDefinition:
                 transformations.setdefault(t.identity, t)
             binding_map: dict[str, Any] = {}
             for key, raw in member.bindings.items():
-                # Store producer as structured port ref when possible.
+                producer = _resolve_binding_ref(
+                    raw, members=members, pipeline_cls=cls, port_hint=key
+                )
+                if producer is not None and producer.node_name:
+                    binding_map[key] = {
+                        "node": producer.node_name,
+                        "port": producer.port_name,
+                    }
+                    continue
                 node_name = getattr(raw, "node_name", None)
                 port_name = getattr(raw, "port_name", None)
                 if isinstance(node_name, str) and isinstance(port_name, str):
@@ -276,8 +290,11 @@ def definition_from_pipeline(cls: type[Pipeline]) -> PipelineDefinition:
                         "node": node_name,
                         "port": port_name,
                     }
-                else:
-                    binding_map[key] = _json_safe(raw) if raw is not None else None
+                    continue
+                raise TypeError(
+                    f"Cannot serialize subpipeline binding {key!r} on {name!r}: "
+                    f"expected a resolvable port reference, got {type(raw).__name__}"
+                )
             nodes.append(
                 NodeDefinition(
                     name=name,

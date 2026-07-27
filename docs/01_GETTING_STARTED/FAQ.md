@@ -22,7 +22,7 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ------------------------------------------------------------------------
 
-## Is ETLantic 0.23 production-supported?
+## Is ETLantic 0.24 production-supported?
 
 ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
@@ -35,7 +35,7 @@ remain adopter-owned.
 
 ## What is the difference between Available and Experimental?
 
-**Available** APIs and behaviors are supported within the documented 0.23
+**Available** APIs and behaviors are supported within the documented 0.24
 single-tenant pilot envelope (the package itself remains **Beta** on PyPI).
 Features explicitly labeled **Experimental**, currently including Structured
 Streaming foundations and `etlantic-datafusion`, may change and are outside
@@ -313,17 +313,14 @@ ETLantic generates or exposes:
 
 ## Can I build ETLantic pipelines in a GUI?
 
-Not through a complete public GUI-authoring API in 0.23. Version 0.24 plans an
-authoring-complete `PipelineDefinition`, functional builders, canonical JSON,
-machine-readable component catalogs, immutable edit operations, and diagnostics
-with stable field/node/edge paths.
-
-Those surfaces are specifically intended to let an independent frontend build
-pipelines visually through a FastAPI application without generating Python
-classes. ETLantic will provide a thin OpenAPI/FastAPI reference boundary; the
-application will own authentication, persistence, durable job execution, and
-deployment. See the
-[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+Yes — through the shipped 0.24 authoring contracts. Use
+`PipelineDefinition`, functional builders, canonical `etlantic.pipeline/1` JSON,
+the authoring catalog, immutable edit commands, and
+`etlantic.service.AuthoringService`. Optional package `etlantic-fastapi` exposes
+a thin OpenAPI reference adapter. Your application still owns authentication,
+persistence, durable jobs, and deployment. See
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) and
+[Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md).
 
 ------------------------------------------------------------------------
 
