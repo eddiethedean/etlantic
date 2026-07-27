@@ -1,6 +1,6 @@
 # Optional Packages
 
-> **Status: Available in ETLantic 0.24.0.** Core `etlantic` does not install
+> **Status: Available in ETLantic 0.25.0.** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 ## Install pins
@@ -8,28 +8,28 @@
 Prefer exact pins for a controlled pilot:
 
 ```bash
-pip install 'etlantic==0.24.0'
-pip install 'etlantic-polars==0.24.0'
-pip install 'etlantic-pandas==0.24.0'
-pip install 'etlantic-sql==0.24.0'
-pip install 'etlantic-pyspark==0.24.0'
-pip install 'etlantic-airflow==0.24.0'
-pip install 'etlantic-prefect==0.24.0'
-pip install 'etlantic-keyring==0.24.0'
-pip install 'etlantic-sqlmodel==0.24.0'
-pip install 'etlantic-sparkforge==0.24.0'
+pip install 'etlantic==0.25.0'
+pip install 'etlantic-polars==0.25.0'
+pip install 'etlantic-pandas==0.25.0'
+pip install 'etlantic-sql==0.25.0'
+pip install 'etlantic-pyspark==0.25.0'
+pip install 'etlantic-airflow==0.25.0'
+pip install 'etlantic-prefect==0.25.0'
+pip install 'etlantic-keyring==0.25.0'
+pip install 'etlantic-sqlmodel==0.25.0'
+pip install 'etlantic-sparkforge==0.25.0'
 ```
 
-Official first-party plugins declare `etlantic>=0.24.0,<0.25`.
-Keep core and plugins on the same minor (for 0.24.x pilots, pin all to
-`0.24.0`). Cross-minor mixes are unsupported and commonly fail plugin
+Official first-party plugins declare `etlantic>=0.25.0,<0.26`.
+Keep core and plugins on the same minor (for 0.25.x pilots, pin all to
+`0.25.0`). Cross-minor mixes are unsupported and commonly fail plugin
 discovery.
 
-Experimental (not recommended): `pip install 'etlantic[datafusion]==0.24.0'`
-or `etlantic-datafusion==0.24.0` — Gate B stub; no graduated claims.
+Experimental (not recommended): `pip install 'etlantic[datafusion]==0.25.0'`
+or `etlantic-datafusion==0.25.0` — Gate B stub; no graduated claims.
 
-Optional reference adapter: `pip install 'etlantic-fastapi==0.24.0'` or
-`etlantic[fastapi]==0.24.0` — thin 0.24 authoring/service HTTP adapter (not
+Optional reference adapter: `pip install 'etlantic-fastapi==0.25.0'` or
+`etlantic[fastapi]==0.25.0` — thin 0.24 authoring/service HTTP adapter (not
 the 1.1 control plane).
 
 ## Package API index

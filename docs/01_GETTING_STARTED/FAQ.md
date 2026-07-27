@@ -22,9 +22,9 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ------------------------------------------------------------------------
 
-## Is ETLantic 0.24 production-supported?
+## Is ETLantic 0.25 production-supported?
 
-ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -35,7 +35,7 @@ remain adopter-owned.
 
 ## What is the difference between Available and Experimental?
 
-**Available** APIs and behaviors are supported within the documented 0.24
+**Available** APIs and behaviors are supported within the documented 0.25
 single-tenant pilot envelope (the package itself remains **Beta** on PyPI).
 Features explicitly labeled **Experimental**, currently including Structured
 Streaming foundations and `etlantic-datafusion`, may change and are outside
@@ -197,10 +197,10 @@ you need Spark semantics and have a working Java environment.
 ## Must core and plugin versions match?
 
 Yes. Keep core and optional plugins on the same minor release. For a
-reproducible 0.24.0 environment, pin both exactly, for example:
+reproducible 0.25.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.24.0' 'etlantic-polars==0.24.0'
+python -m pip install 'etlantic==0.25.0' 'etlantic-polars==0.25.0'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or
@@ -313,7 +313,8 @@ ETLantic generates or exposes:
 
 ## Can I build ETLantic pipelines in a GUI?
 
-Yes — through the shipped 0.24 authoring contracts. Use
+Yes — through the shipped authoring contracts (since 0.24) plus 0.25 burn-in
+fixtures. Use
 `PipelineDefinition`, functional builders, canonical `etlantic.pipeline/1` JSON,
 the authoring catalog, immutable edit commands, and
 `etlantic.service.AuthoringService`. Optional package `etlantic-fastapi` exposes
@@ -348,7 +349,7 @@ ETLantic is intended for:
 
 ## How do I author pipelines without classes (builders / JSON)?
 
-ETLantic 0.24 ships programmatic authoring: functional builders,
+Since 0.24, ETLantic ships programmatic authoring: functional builders,
 `PipelineDefinition`, and lossless `etlantic.pipeline/1` JSON. Class
 `Pipeline` subclasses, builders, and JSON documents normalize to the same
 definition and feed the same validate/plan/run path.

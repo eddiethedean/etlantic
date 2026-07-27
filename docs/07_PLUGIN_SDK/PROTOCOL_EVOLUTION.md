@@ -1,10 +1,25 @@
 # Protocol Evolution Policy
 
-> **Status (0.24.0):** Protocol `/1` families ship and are **freeze-eligible**.
-> Freeze closure is planned across Compatibility Burn-In (**0.25–0.26**), not
-> claimed frozen in 0.24. See
-> [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md) evidence and the
-> [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md).
+> **Status (0.25.0):** Protocol `/1` families ship and remain **freeze-eligible,
+> not frozen**. 0.25 records an explicit freeze decision: **remaining blockers
+> published** (see below). Freeze **closure** (lock conformance suite versions
+> or clear blockers) is owned by **0.26**. Evidence baseline:
+> [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md),
+> [EXIT_GATE_0_25](../11_DEVELOPMENT/EXIT_GATE_0_25.md).
+
+## Freeze decision (0.25)
+
+| Criterion | Status | Owner |
+|---|---|---|
+| First-party plugins exercise public `etlantic.testing` in CI | Met (0.22+) | Maintainers |
+| Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met — `.github/workflows/external-plugin-echo.yml` | Maintainers |
+| Packaging / manifest gates | Met | Maintainers |
+| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker** | Maintainers + community |
+| No unresolved provisional core protocol on the 1.0 path | Met for shipped `/1` families; Storage/Resource/Observability remain future | Maintainers |
+
+**Decision:** Do **not** claim `/1` frozen in 0.25.0. Publish the open external
+feedback blocker and keep additive `/1` evolution rules. 0.26 must either clear
+the blocker and freeze, or re-scope with an explicit plan.
 
 This document is the normative policy for evolving ETLantic plugin protocols
 (`etlantic.dataframe/1`, `etlantic.sql/1`, `etlantic.spark/1`,

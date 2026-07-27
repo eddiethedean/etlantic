@@ -5,20 +5,21 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.24.0** — choose your guide:
+**ETLantic 0.25.0** — choose your guide:
 
-| From version | Ordered path to 0.24 |
+| From version | Ordered path to 0.25 |
 |---|---|
-| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
-| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
-| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → 0.22→0.23 → 0.23→0.24 |
+| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
+| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
+| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → 0.23→0.24 → 0.24→0.25 |
+| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then the 0.22 chain |
 | 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then the 0.21 chain |
 | 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.20 chain |
 | 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.19 chain |
 | 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.18 chain |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.24 |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.25 |
 
-### Breaking highlights on the way to 0.24
+### Breaking highlights on the way to 0.25
 
 | Span | Watch for |
 |---|---|
@@ -29,6 +30,7 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.21 → 0.22 | Plugin SDK RC; curated `import etlantic as etl` facade |
 | 0.22 → 0.23 | Resilience budgets; report persistence / retry diagnostics |
 | 0.23 → 0.24 | `PipelineDefinition` / `etlantic.pipeline/1`; functional authoring; CLI JSON targets |
+| 0.24 → 0.25 | Compatibility burn-in fixtures; no wire-schema reset; freeze blockers published |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -37,6 +39,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.24 → 0.25 | [MIGRATION_0_24_TO_0_25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
 | 0.23 → 0.24 | [MIGRATION_0_23_TO_0_24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
 | 0.22 → 0.23 | [MIGRATION_0_22_TO_0_23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
 | 0.21 → 0.22 | [MIGRATION_0_21_TO_0_22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
@@ -126,9 +129,21 @@ See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md).
 | Class-only pipeline lifecycle | `PipelineDefinition` / `etlantic.authoring` functional builders and JSON |
 | Plan JSON as authoring round-trip | Use `etlantic.pipeline/1`; keep `etlantic.plan/1` for resolved execution |
 | GUI/service custom encoders | Public catalog, `EditCommand`, `etlantic.service.AuthoringService` |
-| Optional HTTP reference | `pip install etlantic-fastapi==0.24.0` (not the 1.1 control plane) |
+| Optional HTTP reference | `pip install etlantic-fastapi` matching the core minor (not the 1.1 control plane) |
 
 See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
+
+## 0.25 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Assume Plugin SDK `/1` is frozen | Still freeze-eligible; blockers published — see Protocol evolution |
+| Skip codec upgrade tests | Keep `tests/fixtures/burn_in/` green; run `check_pipeline_codec_burn_in.py` |
+| Add new root demoted aliases | Prefer owning modules; see [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md) |
+| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.25 |
+
+See [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) and
+[Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md).
 
 ## Checklist
 

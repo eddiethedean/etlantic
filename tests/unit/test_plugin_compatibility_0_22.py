@@ -26,7 +26,7 @@ def _manifest(**overrides: object) -> str:
     payload = {
         "schema": "etlantic.plugin_manifest/1",
         "package": "etlantic-echo",
-        "version": "0.24.0",
+        "version": "0.25.0",
         "protocol_range": "etlantic.dataframe/1",
         "entries": [
             {
@@ -51,7 +51,7 @@ def test_compatible_manifest_passes() -> None:
     row = evaluate_manifest_text(
         _manifest(),
         python_requires=">=3.11",
-        core_requires="etlantic>=0.24,<0.25",
+        core_requires="etlantic>=0.25,<0.26",
         allowlist=["etlantic-echo"],
     )
     assert row.ok

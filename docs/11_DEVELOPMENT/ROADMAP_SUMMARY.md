@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.24.0** ships **Programmatic Authoring and Lossless JSON**.
+ETLantic **0.25.0** ships **Compatibility Burn-In (first slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -73,18 +73,19 @@ facade, and `etlantic-fastapi` reference adapter. See
 [What's New in 0.24](../01_GETTING_STARTED/WHATS_NEW_0_24.md) and
 [Exit gate 0.24](EXIT_GATE_0_24.md).
 
-## Next: 0.25
+## Shipped: 0.25
 
-**Compatibility Burn-In (first slice):** `etlantic.pipeline/1` and sibling
-codec upgrade fixtures, Plugin SDK `/1` freeze evidence, and a published 1.0
-removal inventory. Not a control-plane or GUI release — see the full
-[0.25 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#025--compatibility-burn-in-first-slice).
+ETLantic **0.25.0** shipped **Compatibility Burn-In (first slice)**:
+`etlantic.pipeline/1` and sibling codec upgrade fixtures, Plugin SDK `/1`
+freeze decision (blockers published), and a published 1.0 removal inventory.
+See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and
+[Exit gate 0.25](EXIT_GATE_0_25.md).
 
-## Then: 0.26
+## Next: 0.26
 
 **Compatibility Burn-In (second slice):** dual-minor upgrade proof
-(0.24→0.25 and 0.25→0.26), complete public wire fixture matrix, freeze
-closure, and first-wave 1.0 removal execution — see
+(0.24→0.25 and 0.25→0.26), freeze closure, and first-wave 1.0 removal
+execution — see
 [0.26 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#026--compatibility-burn-in-second-slice).
 
 ## Then: 0.27–0.98 → 0.99 → 1.0

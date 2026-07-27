@@ -10,7 +10,7 @@ Runnable companion (checkout required — not in the PyPI wheel):
 [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).
 
 ```bash
-pip install 'etlantic==0.24.0' 'etlantic-polars==0.24.0'
+pip install 'etlantic==0.25.0' 'etlantic-polars==0.25.0'
 # from a checkout:
 uv run python examples/portable_polars_kernel.py
 ```

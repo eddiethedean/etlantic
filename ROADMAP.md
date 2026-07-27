@@ -1,8 +1,8 @@
 # Roadmap
 
-**Current release:** ETLantic **0.24.0** (Beta / PyPI). Milestones 0.21–0.24
-are shipped; **0.25** (burn-in first slice) and **0.26** (burn-in second
-slice) are planned, then 0.27–0.98 continued burn-in toward 0.99 RC. See
+**Current release:** ETLantic **0.25.0** (Beta / PyPI). Milestone **0.25**
+(burn-in first slice) is shipped; **0.26** (burn-in second slice) is planned,
+then 0.27–0.98 continued burn-in toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2344,7 +2344,7 @@ internals.
 
 ## 0.25 — Compatibility Burn-In (First Slice)
 
-**Status: planned — after 0.24.0.**
+**Status: shipped in 0.25.0.**
 
 **Objective:** prove that the contracts shipped through 0.24 — especially
 `etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —

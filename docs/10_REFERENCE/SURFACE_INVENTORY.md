@@ -1,4 +1,4 @@
-# Public Surface Inventory (0.24)
+# Public Surface Inventory (0.25)
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`).
@@ -7,7 +7,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.24 reference envelope |
+| `stable` | Supported within the documented 0.25 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -21,7 +21,7 @@ import etlantic as etl
 
 ## SDK (root curated)
 
-Unchanged curated root from 0.23. Prefer `etl.authoring` for programmatic
+Unchanged curated root from 0.24. Prefer `etl.authoring` for programmatic
 definition APIs.
 
 ## Lazy namespaces

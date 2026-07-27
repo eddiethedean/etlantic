@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-07-27
+
+### Added
+- Compatibility burn-in golden fixtures for `etlantic.pipeline/1` (0.24→0.25 old↔new reader/writer)
+- CI gate `scripts/check_pipeline_codec_burn_in.py` (fingerprint lock + load verify)
+- Cross-artifact burn-in matrix: plan, run_report, profile, capabilities, interchange
+- Wire schema ranges and unsupported downgrade documentation
+- Plugin SDK `/1` freeze decision record (remaining blockers published; not frozen)
+- Published 1.0 removal candidates inventory (no removals executed)
+- Docs: What's New 0.25, Migration 0.24→0.25, Exit Gate 0.25
+
+### Changed
+- Official package versions align at 0.25.0; plugins require `etlantic>=0.25.0,<0.26`
+- Protocol evolution status documents freeze blockers carried to 0.26
+
 ## [0.24.0] - 2026-07-27
 
 ### Added
@@ -883,6 +898,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.25.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.0
 [0.24.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.24.0
 [0.23.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.23.0
 [0.22.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.22.0

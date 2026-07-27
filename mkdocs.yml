@@ -175,7 +175,7 @@ nav:
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Programmatic authoring: 05_PIPELINES/PROGRAMMATIC_AUTHORING.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
-      - Current 0.24 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.25 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
@@ -198,6 +198,7 @@ nav:
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.25: 01_GETTING_STARTED/WHATS_NEW_0_25.md
       - What's new in 0.24: 01_GETTING_STARTED/WHATS_NEW_0_24.md
       - What's new in 0.23: 01_GETTING_STARTED/WHATS_NEW_0_23.md
       - What's new in 0.22: 01_GETTING_STARTED/WHATS_NEW_0_22.md
@@ -342,7 +343,8 @@ nav:
       - CLI: 10_REFERENCE/CLI.md
       - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.24.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.25.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
       - Surface inventory: 10_REFERENCE/SURFACE_INVENTORY.md
@@ -368,8 +370,9 @@ nav:
   - Project:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
-      - Migration 0.23 → 0.24: 11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
-      - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
+      - Migration 0.24 → 0.25: 11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md
+      - Exit gate 0.25: 11_DEVELOPMENT/EXIT_GATE_0_25.md
+      - 1.0 removal candidates: 11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md
       - Documentation audit 0.24: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_24.md
       - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
       - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
@@ -382,6 +385,8 @@ nav:
           - Full roadmap (GitHub): https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
           - Design Proposals index: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
           - Design studies (GitHub): https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES
+          - Migration 0.23 → 0.24: 11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
+          - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
           - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
           - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
           - Documentation audit 0.23: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md

@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.24.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
+ETLantic 0.25.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
 while remaining pre-1.0. Breaking changes remain possible, but they must not
 be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
@@ -8,7 +8,7 @@ be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.24 public imports | Supported for the 0.24.x line |
+| Documented 0.25 public imports | Supported for the 0.25.x line |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |
@@ -28,7 +28,12 @@ be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
 | Prefect scheduler MVP | provisional | expand or freeze protocol by 1.0 |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | inventory in 0.25 | first-wave removals in 0.26+; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
 
+### 0.25 discipline
+
+Do **not** add new indefinite keep-forever root aliases while ETLantic is on the
+0.25 burn-in line. Prefer owning modules or the curated root facade.
 ## Breaking-change requirements
 
 A breaking 0.x change requires a changelog entry, migration guide, before/after

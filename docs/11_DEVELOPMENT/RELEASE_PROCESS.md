@@ -12,7 +12,7 @@ ETLantic follows Semantic Versioning after 1.0:
 - Major: incompatible public API or persistent-format changes
 
 During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.24.0`).
+plugin packages currently share the core minor version (for example `0.25.0`).
 
 ## Packages published on each tag
 
@@ -177,7 +177,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.23 plugins, `etlantic>=0.24.0,<0.25`). A core
+0.23 plugins, `etlantic>=0.25.0,<0.26`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

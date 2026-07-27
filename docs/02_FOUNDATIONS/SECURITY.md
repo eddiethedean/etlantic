@@ -5,7 +5,7 @@ artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
 This chapter covers **controls shipped through 0.24** and the broader
-**proposed threat model**. ETLantic 0.24.0 is a **Beta** (PyPI) release
+**proposed threat model**. ETLantic 0.25.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
 attestations, deployment-topology guarantees, or advanced supply-chain
@@ -298,8 +298,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.24.0",
-        "etlantic-airflow": "==0.24.0",
+        "etlantic-polars": "==0.25.0",
+        "etlantic-airflow": "==0.25.0",
     },
 )
 ```
@@ -709,8 +709,8 @@ production = Profile(
     name="production",
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.24.0",
-        "etlantic-sql": "==0.24.0",
+        "etlantic-polars": "==0.25.0",
+        "etlantic-sql": "==0.25.0",
     },
 )
 ```

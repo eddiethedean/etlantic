@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.24.0'
+python -m pip install 'etlantic==0.25.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -111,7 +111,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
 | SparkForge | `etlantic-sparkforge` | Medallion adapter (bronze/silver/gold stay out of core) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
-| FastAPI | `etlantic-fastapi` | Thin 0.24 authoring/service **reference** adapter (not the 1.1 control plane) |
+| FastAPI | `etlantic-fastapi` | Thin 0.25 authoring/service **reference** adapter (not the 1.1 control plane) |
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.
@@ -149,7 +149,7 @@ guides.
 
 ## Capability boundary
 
-| Capability | 0.24 |
+| Capability | 0.25 |
 |---|---|
 | Cohesive CLI (`init`, `doctor`, durable reports) | Available |
 | Typed contracts, graph validation, deterministic planning | Available |
@@ -167,7 +167,7 @@ guides.
 See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
 guide for precise guarantees and limitations.
 
-> **Shipped in 0.24:** programmatic authoring, `PipelineDefinition`, lossless `etlantic.pipeline/1` JSON, visual-builder contract, and `etlantic-fastapi` reference adapter. See [What's New in 0.24](docs/01_GETTING_STARTED/WHATS_NEW_0_24.md).
+> **Shipped in 0.25:** compatibility burn-in for `etlantic.pipeline/1` and sibling codecs, Plugin SDK `/1` freeze decision (blockers published), and a published 1.0 removal inventory. See [What's New in 0.25](docs/01_GETTING_STARTED/WHATS_NEW_0_25.md).
 
 ## Learn more
 

@@ -1,0 +1,21 @@
+{
+  "batching": "single",
+  "collection": false,
+  "consumer_caps": [
+    "arrow_import"
+  ],
+  "consumer_engine": "pandas",
+  "copy_eligibility": "eligible",
+  "evidence_refs": [
+    "descriptor:deadbeef"
+  ],
+  "fallback_reason": null,
+  "mechanism": "arrow_c_data",
+  "ownership": "borrow",
+  "producer_caps": [
+    "arrow_export"
+  ],
+  "producer_engine": "polars",
+  "schema": "etlantic.interchange/1",
+  "schema_fingerprint": "deadbeef"
+}

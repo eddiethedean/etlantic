@@ -6,23 +6,23 @@ ETLantic catches incompatible data-pipeline wiring **before** you process
 data. Define typed datasets, transformations, and pipelines in Python;
 validate and plan them once; run locally or through optional engine plugins.
 
-> **Project status:** ETLantic **0.24.0** is a **Beta** (PyPI) release suitable within the documented
+> **Project status:** ETLantic **0.25.0** is a **Beta** (PyPI) release suitable within the documented
 > single-tenant reference deployment boundary. For the canonical onboarding
-> path, start at [Current 0.24 Guide](CURRENT_VERSION.md). Experimental features
+> path, start at [Current 0.25 Guide](CURRENT_VERSION.md). Experimental features
 > and broader deployment models remain outside that claim. See
 > [Capabilities](CAPABILITIES.md) for the shipped boundary and
 > [Evaluator brief](EVALUATOR.md) for decision-makers. How to read status labels:
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
-> **Shipped in 0.24:** functional authoring, authoring-complete
-> `PipelineDefinition`, lossless `etlantic.pipeline/1` JSON, GUI catalog/edit
-> contracts, and a thin FastAPI/OpenAPI reference. See
-> [What's New in 0.24](WHATS_NEW_0_24.md) and
+> **Shipped in 0.25:** compatibility burn-in for `etlantic.pipeline/1` and
+> sibling codecs, Plugin SDK `/1` freeze decision (blockers published), and a
+> published 1.0 removal inventory. See
+> [What's New in 0.25](WHATS_NEW_0_25.md) and
 > [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
 ## Five-minute path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.24.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init` → validate → run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
@@ -87,7 +87,7 @@ PipelinePlan (secret-free, deterministic)
 Run locally  |  Compile (Airflow)  |  Generate contracts
 ```
 
-ETLantic 0.24.0 can execute registered Python implementations with its local
+ETLantic 0.25.0 can execute registered Python implementations with its local
 runtime and optional Polars/Pandas/SQL/PySpark plugins, compile plans to
 Airflow DAGs via `etlantic-airflow`, execute plans through the Prefect local
 MVP, and compile supported portable transformation families without native
