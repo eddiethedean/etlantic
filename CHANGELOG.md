@@ -18,11 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transport-neutral `etlantic.service.AuthoringService`
 - Optional `etlantic-fastapi` reference adapter + OpenAPI fixture
 - Docs: What's New 0.24, Migration 0.23→0.24, Exit Gate 0.24, programmatic authoring guide
+- Docs adoption: cheatsheet, runnable `examples/pipeline_definition_json.py`, Diátaxis nav cleanup
 
 ### Changed
 - Official package versions align at 0.24.0; plugins require `etlantic>=0.24.0,<0.25`
 - Lazy namespaces include `authoring` and `service`
 - Surface inventory lists `etlantic.pipeline/1` and authoring catalog as wire-stable
+
+### Fixed
+- Fail-closed definition codecs, fingerprint verify, and secret filtering
+- Definition/class lifecycle parity (cycles, nested graphs, policy allowlists, callable registry)
+- Sync-honest FastAPI reference `submit_run` / `cancel_run` semantics
 
 ## [0.23.0] - 2026-07-27
 

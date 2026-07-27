@@ -21,3 +21,20 @@ and introduces lossless `etlantic.pipeline/1` JSON.
 - Production GUI / multi-tenant control plane
 - Replacing `etlantic.plan/1` (still the resolved execution IR)
 - FastAPI as a core dependency
+
+## Try it (10 lines)
+
+```bash
+# from a checkout with 0.24 installed
+uv run python examples/pipeline_definition_json.py
+python -m etlantic validate pipeline.definition.json --profile development
+```
+
+Or from a class:
+
+```bash
+python -m etlantic generate examples/memory_customers.py:CustomerPipeline \
+  --kind definition -o pipeline.json
+```
+
+Full guide: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).

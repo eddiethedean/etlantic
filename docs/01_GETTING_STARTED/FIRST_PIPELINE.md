@@ -11,7 +11,7 @@ If you have not already:
 ```bash
 python -m pip install 'etlantic==0.24.0'
 mkdir my-pipeline && cd my-pipeline
-etlantic init --with-toml
+python -m etlantic init --with-toml
 ```
 
 Open `pipeline.py`. The scaffold defines a typed `Row` contract, an `Identity`

@@ -18,8 +18,10 @@ this legend.
 5. Keep design layers distinct: contracts → `PipelinePlan` → plugin /
    compiled artifact → run result.
 6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
-   GUI catalogs/edit commands, and the FastAPI reference adapter as planned
-   0.24 surfaces until their exit gate passes.
+   GUI catalogs/edit commands, and the FastAPI reference adapter as
+   **Available in 0.24** (see
+   [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
+   Historical design notes remain under Project → Archive.
 
 ## Page status labels
 

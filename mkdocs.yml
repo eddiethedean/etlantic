@@ -112,15 +112,15 @@ plugins:
 nav:
   - Home: README.md
   - Learn:
+      - Overview: 01_GETTING_STARTED/README.md
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Current 0.24 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
-      - Overview: 01_GETTING_STARTED/README.md
-      - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
+      - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Guides:
           - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
           - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
@@ -157,6 +157,7 @@ nav:
       - Core Concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
       - Validation Everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
       - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
+      - Security: 02_FOUNDATIONS/SECURITY.md
       - Glossary: 02_FOUNDATIONS/GLOSSARY.md
       - Philosophy (optional):
           - Vision: 02_FOUNDATIONS/VISION.md
@@ -277,6 +278,7 @@ nav:
   - Reference:
       - Overview: 10_REFERENCE/README.md
       - CLI: 10_REFERENCE/CLI.md
+      - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
       - Configuration in 0.24.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
@@ -304,33 +306,35 @@ nav:
   - Project:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
-      - Full roadmap: https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
-      - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
-      - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
-      - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
       - Migration 0.23 → 0.24: 11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
-      - Migration 0.21 → 0.22: 11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md
-      - Exit gate 0.22: 11_DEVELOPMENT/EXIT_GATE_0_22.md
-      - Migration 0.20 → 0.21: 11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md
-      - Exit gate 0.21: 11_DEVELOPMENT/EXIT_GATE_0_21.md
-      - Migration 0.19 → 0.20: 11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md
-      - Exit gate 0.20: 11_DEVELOPMENT/EXIT_GATE_0_20.md
-      - Migration 0.18 → 0.19: 11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md
-      - Migration 0.17 → 0.18: 11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md
-      - Migration 0.16 → 0.17: 11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md
-      - Documentation audit 0.23: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
-      - Documentation audit 0.21: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_21.md
-      - Documentation audit 0.20: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md
-      - Documentation audit 0.18: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_18.md
-      - Documentation audit 0.17: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_17.md
+      - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
+      - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
       - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
       - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
       - ADR-013 Portable Transform IR: 11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
       - ADR-014 SOLID Core Refactor: 11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
       - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
       - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
-      - Design Proposals (not shipped):
-          - Read this first: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
+      - Archive (history / not product docs):
+          - Full roadmap (GitHub): https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
+          - Design Proposals index: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
+          - Programmatic Authoring plan (historical): 11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
+          - FastAPI Integration Plan (historical): 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
+          - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
+          - Migration 0.21 → 0.22: 11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md
+          - Exit gate 0.22: 11_DEVELOPMENT/EXIT_GATE_0_22.md
+          - Migration 0.20 → 0.21: 11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md
+          - Exit gate 0.21: 11_DEVELOPMENT/EXIT_GATE_0_21.md
+          - Migration 0.19 → 0.20: 11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md
+          - Exit gate 0.20: 11_DEVELOPMENT/EXIT_GATE_0_20.md
+          - Migration 0.18 → 0.19: 11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md
+          - Migration 0.17 → 0.18: 11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md
+          - Migration 0.16 → 0.17: 11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md
+          - Documentation audit 0.23: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
+          - Documentation audit 0.21: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_21.md
+          - Documentation audit 0.20: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md
+          - Documentation audit 0.18: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_18.md
+          - Documentation audit 0.17: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_17.md
           - Design studies (aspirational — not runnable guides):
               - CSV to CSV: 09_EXAMPLES/CSV_TO_CSV.md
               - CSV to SQL: 09_EXAMPLES/CSV_TO_SQL.md
@@ -354,7 +358,7 @@ nav:
               - DTCS evolution: 11_DEVELOPMENT/DTCS_PORTABLE_EVOLUTION.md
               - DTCS 2.0 Publication Record: 11_DEVELOPMENT/DTCS_PORTABLE_SPEC_PROPOSAL.md
               - DTCS 3.0 Publication Record: 11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md
-          - Execution Plugins:
+          - Execution Plugins (future pages):
               - Overview: 06_EXECUTION/PLUGINS.md
               - Storage Plugins: 06_EXECUTION/STORAGE_PLUGINS.md
               - Resource Plugins: 06_EXECUTION/RESOURCE_PLUGINS.md
@@ -372,25 +376,23 @@ nav:
               - ContractModel upgrade plan: 11_DEVELOPMENT/CONTRACTMODEL_UPGRADE_PLAN.md
               - TransformationModel incubation plan: 11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md
               - 0.18 Gate A interchange record: 11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md
-              - Programmatic Authoring and Lossless JSON (0.24): 11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
-              - FastAPI Integration Plan: 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
               - Schema Drift Plan: 11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md
               - ETL Reliability Plan: 11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md
               - SQLModel Integration Plan: 11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md
               - SparkForge Adoption: 11_DEVELOPMENT/SPARKFORGE_ADOPTION.md
-      - Migration archive:
-          - Migration 0.15 → 0.16: 11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md
-          - Migration 0.14 → 0.15: 11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md
-          - Migration 0.13 → 0.14: 11_DEVELOPMENT/MIGRATION_0_13_TO_0_14.md
-          - Migration 0.12 → 0.13: 11_DEVELOPMENT/MIGRATION_0_12_TO_0_13.md
-          - Migration 0.11 → 0.12: 11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md
-          - Migration 0.10 → 0.11: 11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md
-          - Migration 0.9 → 0.10: 11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md
-          - Migration 0.8 → 0.9: 11_DEVELOPMENT/MIGRATION_0_8_TO_0_9.md
-          - Migration 0.7 → 0.8: 11_DEVELOPMENT/MIGRATION_0_7_TO_0_8.md
-          - Migration 0.6 → 0.7: 11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
-          - Migration 0.5 → 0.6: 11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
-          - Migration 0.4 → 0.5: 11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
+          - Migration archive:
+              - Migration 0.15 → 0.16: 11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md
+              - Migration 0.14 → 0.15: 11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md
+              - Migration 0.13 → 0.14: 11_DEVELOPMENT/MIGRATION_0_13_TO_0_14.md
+              - Migration 0.12 → 0.13: 11_DEVELOPMENT/MIGRATION_0_12_TO_0_13.md
+              - Migration 0.11 → 0.12: 11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md
+              - Migration 0.10 → 0.11: 11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md
+              - Migration 0.9 → 0.10: 11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md
+              - Migration 0.8 → 0.9: 11_DEVELOPMENT/MIGRATION_0_8_TO_0_9.md
+              - Migration 0.7 → 0.8: 11_DEVELOPMENT/MIGRATION_0_7_TO_0_8.md
+              - Migration 0.6 → 0.7: 11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
+              - Migration 0.5 → 0.6: 11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
+              - Migration 0.4 → 0.5: 11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   - Standards:
       - Overview: specifications/README.md
       - DTCS 3.0 (canonical): specifications/DTCS.md

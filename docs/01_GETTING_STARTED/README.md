@@ -23,12 +23,12 @@ validate and plan them once; run locally or through optional engine plugins.
 ## Five-minute path
 
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.24.0`
-2. [Quickstart](QUICKSTART.md) — `etlantic init`, validate, plan, and run
+2. [Quickstart](QUICKSTART.md) — `python -m etlantic init` → validate → run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
 
 !!! note "CLI run vs in-memory demos"
-    The Quickstart binds assets to JSON files, so `etlantic run` works without
+    The Quickstart binds assets to JSON files, so `python -m etlantic run` works without
     seeding. In-memory demos (`PipelineRuntime.memory.seed`) only share data
     inside one Python process—use
     [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py)

@@ -6,7 +6,10 @@ interfaces.
 ## Shipped
 
 - [Command-Line Interface](CLI.md)
+- [Cheatsheet](CHEATSHEET.md)
 - [Python API](API_REFERENCE.md)
+- [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+  (`PipelineDefinition`, `etlantic.pipeline/1`, builders, service)
 - [Runtime configuration](RUNTIME_CONFIGURATION.md) (Profile, optional `etlantic.toml`, env vars)
 - [Configuration today](CONFIGURATION_TODAY.md) (shipped 0.21 profile + project toml)
 - [Compatibility Matrix](COMPATIBILITY.md)
@@ -24,8 +27,6 @@ interfaces.
 
 ## Future design / proposed 1.0
 
-- [Programmatic Authoring and Lossless JSON](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md)
-  (0.24 definition, functional, GUI, and service surfaces)
 - [Configuration](CONFIGURATION.md) (proposed 1.0 surface beyond shipped toml)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (proposed names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,

@@ -173,23 +173,23 @@ connected. A pipeline models intent rather than execution.
 
 ## PipelineDefinition
 
-The planned 0.24 immutable, unresolved, authoring-complete representation of a
-pipeline. Class declarations, functional builders, canonical JSON, and visual
-edit operations normalize to this model. It is distinct from a resolved
-`PipelinePlan`.
+The immutable, unresolved, authoring-complete representation of a pipeline
+(Available in 0.24). Class declarations, functional builders, canonical JSON,
+and visual edit operations normalize to this model. It is distinct from a
+resolved `PipelinePlan`.
 
 ## Authoring Catalog
 
-The planned 0.24 machine-readable catalog of contracts, transformations,
-ports, parameters, policies, providers, plugins, capabilities, and UI-safe
-metadata available to programmatic and visual pipeline builders.
+The machine-readable catalog of contracts, transformations, ports, parameters,
+policies, providers, plugins, capabilities, and UI-safe metadata available to
+programmatic and visual pipeline builders (Available in 0.24).
 
 ## Edit Command
 
-A planned immutable operation that updates a `PipelineDefinition`, such as
-adding a node, connecting ports, or changing a parameter. Commands use stable
-document paths and support application-level undo, revision, and concurrency
-workflows.
+An immutable operation that updates a `PipelineDefinition`, such as adding a
+node, connecting ports, or changing a parameter (Available in 0.24). Commands
+use stable document paths and support application-level undo, revision, and
+concurrency workflows.
 
 ## ETLantic
 

@@ -1,10 +1,10 @@
 # ETLantic 0.24 User Guide
 
-This is the current manual for published ETLantic **0.24.0**. Core onboarding
-paths below are available in 0.24; linked reference and design pages may also
-describe Experimental, partial, or future work and retain their own status
-labels. ETLantic 0.24.0 is **stable** only within the documented
-single-tenant reference deployment boundary.
+This is the current manual for ETLantic **0.24.0**. Core onboarding paths below
+are available in 0.24; linked reference and design pages may also describe
+Experimental, partial, or future work and retain their own status labels.
+**Supported for documented single-tenant pilots (Beta).** This is not a 1.0
+compatibility guarantee.
 
 ## Start here
 

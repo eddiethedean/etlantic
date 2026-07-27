@@ -71,15 +71,14 @@ See the [Security Model](SECURITY.md).
 
 ETLantic supports complementary authoring paths.
 
-!!! note "Planned 0.24 convergence"
-    ETLantic 0.23 uses class and contract authoring. Version 0.24 plans one
-    immutable `PipelineDefinition` shared by class declarations, functional
-    builders, canonical `etlantic.pipeline/1` JSON, visual editors, and service
-    applications. All paths feed the same analysis and planning layers; HTTP
-    and GUI concerns do not enter pipeline semantics. See the
-    [0.24 plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+!!! success "Available in 0.24 — shared PipelineDefinition"
+    Class declarations, functional builders, canonical `etlantic.pipeline/1`
+    JSON, and service/visual edit paths normalize to one immutable
+    `PipelineDefinition`. All paths feed the same analysis and planning layers;
+    HTTP and GUI concerns do not enter pipeline semantics. See
+    [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
-The planned application boundary is:
+The application boundary is:
 
 ```text
 Class / functions / JSON / GUI

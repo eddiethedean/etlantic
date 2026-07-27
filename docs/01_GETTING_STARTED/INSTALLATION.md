@@ -3,12 +3,13 @@
 ## Requirements
 
 - Python 3.11, 3.12, or 3.13
+- A virtual environment (strongly recommended)
 
 ## Install core (2 minutes)
 
-Pin the published release for reproducible evaluation. Use a virtual environment.
-Prefer `python -m pip` and `python -m etlantic` so the interpreter you intend
-is the one that runs.
+Pin the published **0.24.0** release for reproducible evaluation. Use a virtual
+environment. Prefer `python -m pip` and `python -m etlantic` so the interpreter
+you intend is the one that runs.
 
 ### pip
 
@@ -104,7 +105,13 @@ python -m pip install 'etlantic[prefect]==0.24.0'
 python -m pip install 'etlantic[datafusion]==0.24.0'
 ```
 
-Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`.
+Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[fastapi]`,
+`[otel]`, `[arrow]`.
+
+```bash
+python -m pip install 'etlantic-fastapi==0.24.0'   # thin 0.24 authoring HTTP reference
+# or: python -m pip install 'etlantic[fastapi]==0.24.0'
+```
 
 Verify discovery after installing Polars:
 
@@ -157,10 +164,32 @@ optional plugins. See [Dependency Strategy](../11_DEVELOPMENT/DEPENDENCY_STRATEG
 
 ---
 
-## Repository checkout (contributors only)
+## Install from source (optional)
 
-Skip this section until you intend to contribute. Adopters should use the pip /
-uv / Poetry / Conda paths above.
+Use a git checkout when you want mainline or editable monorepo plugins:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.24.0'
+python -m etlantic --version
+```
+
+Optional plugins from the same monorepo (after cloning):
+
+```bash
+git clone https://github.com/eddiethedean/etlantic.git
+cd etlantic
+git checkout v0.24.0
+uv sync --locked
+uv sync --extra fastapi   # optional reference adapter
+uv run python -m etlantic --version
+```
+
+## Repository checkout (contributors)
+
+Prefer `uv sync` for editable core + dev tools:
 
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git

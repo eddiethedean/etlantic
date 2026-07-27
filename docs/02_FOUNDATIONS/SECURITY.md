@@ -153,9 +153,9 @@ Loaders should enforce limits for:
 
 Recursive references must terminate with a diagnostic.
 
-### Planned 0.24 pipeline documents and application APIs
+### Pipeline documents and application APIs (Available in 0.24)
 
-The planned `etlantic.pipeline/1` document, functional edit surface, authoring
+The `etlantic.pipeline/1` document, functional edit surface, authoring
 catalog, and FastAPI/OpenAPI reference extend the same data-only loading
 boundary. They do not create an executable serialization channel.
 

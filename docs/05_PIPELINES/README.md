@@ -74,9 +74,9 @@ ETLantic
 DPCS Pipeline Contract
 ```
 
-Python is the preferred authoring experience.
+Class, functional, and JSON authoring share one `PipelineDefinition`.
 
-DPCS is the portable artifact.
+DPCS is the portable interchange artifact.
 
 ## Planning vs. Execution
 
@@ -148,16 +148,17 @@ Generated artifacts are deterministic and suitable for version control.
 Read this section in the following order:
 
 1. [Pipeline](PIPELINE.md)
-2. [Extracts](EXTRACTS.md)
-3. [Steps](STEPS.md)
-4. [Loads](LOADS.md)
-5. [Subpipelines](SUBPIPELINES.md)
-6. [DPCS](DPCS.md)
-7. [Pipeline Validation](PIPELINE_VALIDATION.md)
-8. [Planning](PLANNING.md)
-9. [Profiles](PROFILES.md)
-10. [Contract Generation](CONTRACT_GENERATION.md)
-11. [Contract Loading](CONTRACT_LOADING.md)
+2. [Programmatic authoring](PROGRAMMATIC_AUTHORING.md) — builders + JSON (0.24)
+3. [Extracts](EXTRACTS.md)
+4. [Steps](STEPS.md)
+5. [Loads](LOADS.md)
+6. [Subpipelines](SUBPIPELINES.md)
+7. [DPCS](DPCS.md)
+8. [Pipeline Validation](PIPELINE_VALIDATION.md)
+9. [Planning](PLANNING.md)
+10. [Profiles](PROFILES.md)
+11. [Contract Generation](CONTRACT_GENERATION.md)
+12. [Contract Loading](CONTRACT_LOADING.md)
 
 ## Key Principles
 
@@ -166,9 +167,9 @@ Read this section in the following order:
 - Planning precedes execution.
 - Execution belongs to plugins.
 - DPCS is the canonical portable representation.
-- Python classes are the preferred authoring experience in 0.23.
-- In 0.24, classes, functional builders, JSON, and visual editors converge on
-  one canonical definition without changing DPCS's standards role.
+- Classes, functional builders, and JSON share one canonical
+  `PipelineDefinition` (Available in 0.24) without changing DPCS's standards
+  role.
 
 ## Next Step
 

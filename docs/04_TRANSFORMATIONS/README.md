@@ -179,9 +179,8 @@ Read this section in the following order:
 - Types are the source of truth.
 - Implementations are interchangeable.
 - DTCS is the canonical portable representation.
-- Python classes remain the preferred authoring experience in 0.23. Version
-  0.24 plans equivalent functional, JSON, and visual authoring through one
-  canonical `PipelineDefinition`.
+- Class, functional, and JSON authoring share one canonical
+  `PipelineDefinition` (Available in 0.24).
 - Execution belongs to plugins.
 
 ## Next Step

@@ -4,9 +4,9 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.23 |
+| Topic | 0.24 |
 |---|---|
-| Maturity | **Beta** (PyPI) |
+| Maturity | **Beta** (docs line; publish pin when on PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
 | LTS | Current published minor only (`0.24.x`) |
@@ -103,7 +103,7 @@ storage.
 How to read status labels in deeper chapters:
 [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
-## What remains outside the stable envelope
+## What remains outside the Beta pilot envelope
 
 - Copying long Airflow **design study** tutorials into production—use
   `examples/airflow_compile.py` and `etlantic-airflow` instead
@@ -122,17 +122,17 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.23 |
+| Concern | Status in 0.24 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current stable line is 0.24.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current Beta line is 0.24.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
 
 ## Recommended evaluation path
 
@@ -149,7 +149,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
    with `etlantic-polars` + `etlantic-pandas` at `==0.24.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) if
+8. [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

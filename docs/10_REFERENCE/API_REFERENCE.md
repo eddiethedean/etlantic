@@ -22,6 +22,8 @@ transform = etl.Transformation.portable(...)
 
 # Lazy namespaces (import on first use)
 etl.transform   # portable authoring helpers
+etl.authoring   # PipelineDefinition, builders, JSON codecs (0.24)
+etl.service     # AuthoringService / PolicyContext (0.24)
 etl.dataframe   # dataframe plugin protocols
 etl.sql         # SQL plugin protocols
 etl.testing     # conformance suites and fault injection

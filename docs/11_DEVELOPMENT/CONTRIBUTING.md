@@ -86,6 +86,10 @@ uv run ruff format --check .
 ./scripts/test_core.sh
 # equivalent:
 # uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+uv run pytest -q tests/authoring
+uv sync --extra fastapi
+uv run pytest -q packages/etlantic-fastapi/tests
+uv run python examples/pipeline_definition_json.py
 uv run python scripts/check_docs.py
 uv run python scripts/check_agent_guidance.py
 uv run python scripts/check_release.py
@@ -135,8 +139,12 @@ changes.
 
 ## Public API Changes
 
-Changes to root imports, authoring syntax, plugin protocols, `PipelinePlan`, or
-generated contract meaning require extra review.
+Changes to root imports, authoring syntax (`etlantic.authoring` /
+`PipelineDefinition`), plugin protocols, `PipelinePlan`, or generated contract
+meaning require extra review. Treat
+[PROGRAMMATIC_AUTHORING_0_24.md](PROGRAMMATIC_AUTHORING_0_24.md) as a
+**historical** design record—the shipped guide is
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
 Before adding a public abstraction, demonstrate at least two concrete consumers
 or one complete end-to-end workflow that needs it.

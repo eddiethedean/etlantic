@@ -4,12 +4,14 @@
 > implemented by the installed package.
 
 ```bash
-etlantic --help
-etlantic --version
+python -m etlantic --help
+python -m etlantic --version
 ```
 
-Pipeline targets use `package.module:PipelineClass` or
-`path/to/file.py:PipelineClass`.
+Pipeline targets use `package.module:PipelineClass`,
+`path/to/file.py:PipelineClass`, **or** a path to an
+`etlantic.pipeline/1` JSON document. Prefer `python -m etlantic` so the active
+interpreter is used.
 
 ## Global options
 
@@ -32,6 +34,24 @@ Pipeline targets use `package.module:PipelineClass` or
     By default the CLI writes run reports to `.etlantic/reports/` and uses
     `.etlantic/artifacts/` for durable materialization. Pass `--ephemeral`
     for process-local stores (0.20 behavior).
+
+## Pipeline targets
+
+| Form | Example | Notes |
+|---|---|---|
+| Module path | `pkg.mod:MyPipeline` | Importable class |
+| File path | `pipeline.py:SamplePipeline` | Import-safe module |
+| Definition JSON | `pipeline.json` | `etlantic.pipeline/1` document |
+
+JSON targets load via `read_pipeline_json` (no code execution during decode).
+`validate` and `plan` accept definition JSON. `run` of a definition still
+needs live callables registered in-process (see
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
+
+```bash
+python -m etlantic validate pipeline.json --profile development
+python -m etlantic plan pipeline.json --profile development --format json
+```
 
 ## `init`
 
@@ -184,14 +204,18 @@ etlantic compile examples/memory_customers.py:CustomerPipeline \
 
 ## `generate`
 
-Generate ODCS/DTCS/DPCS contract bundles:
+Generate ODCS/DTCS/DPCS contract bundles, or emit a pipeline definition JSON:
 
 ```bash
-etlantic generate examples/memory_customers.py:CustomerPipeline -o contracts/
-etlantic generate examples/memory_customers.py:CustomerPipeline --sqlmodel
+python -m etlantic generate examples/memory_customers.py:CustomerPipeline -o contracts/
+python -m etlantic generate examples/memory_customers.py:CustomerPipeline --sqlmodel
+python -m etlantic generate examples/memory_customers.py:CustomerPipeline \
+  --kind definition -o pipeline.json
 ```
 
-`--sqlmodel` requires `etlantic-sqlmodel`.
+`--kind definition` writes an `etlantic.pipeline/1` document (Available in
+0.24). `--sqlmodel` requires `etlantic-sqlmodel`. Definition kind works from a
+class target or an existing definition JSON.
 
 ## `diff`
 

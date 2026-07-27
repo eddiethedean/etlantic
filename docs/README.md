@@ -17,21 +17,19 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 !!! tip "Green path (start here only)"
     1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.24.0`
-    2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `etlantic init` (five-minute success)
+    2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
     After first success: [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
     [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md).
-    Pages marked **Future design** are not APIs. Design studies under Project
-    are aspirational—not installable guides.
+    Pages marked **Future design** are not APIs.
 
 ## Project status
 
-**ETLantic 0.24.0** is a **Beta** (PyPI) release suitable for documented
-single-tenant pilots—not unrestricted enterprise production. It models,
-validates, and plans typed Python data pipelines, then runs them locally or
-through optional engine plugins.
+**ETLantic 0.24.0** is a **Beta** release for documented single-tenant pilots.
+Install with `pip install 'etlantic==0.24.0'`. Class, functional, and JSON
+authoring share `PipelineDefinition` (`etlantic.pipeline/1`).
 
 - **Use today:** single-tenant pilots and reference deployments (see
   [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)).
@@ -42,18 +40,19 @@ through optional engine plugins.
 ## Minimal working example
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.24.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
-python -m etlantic doctor --profile development
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
-python -m etlantic plan pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 cat data/out.json
 ```
 
 You should see `succeeded` and Ada/Grace sample rows (identity transform).
-Next: change the transform in [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
+Next: change the transform in [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md)
+or try [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
 The PyPI wheel does **not** include `examples/`; from a checkout an optional
 in-memory SDK demo is
@@ -86,10 +85,6 @@ Typed Python authoring or portable contracts
 
 ETLantic owns modeling, validation, planning, and coordination. Standards own
 contract meaning. Plugins and external systems perform the work.
-
-> **Next planned phase:** 0.24 targets functional authoring, `PipelineDefinition`,
-> and lossless `etlantic.pipeline/1` JSON. Those surfaces are **not** in 0.23.
-> See [Programmatic Authoring in 0.24](11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
 
 ## Choose Your Path
 

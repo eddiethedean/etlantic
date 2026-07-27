@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   const path = window.location.pathname;
+  const article = document.querySelector("article.md-content__inner");
+  if (!article) return;
+
   // Shipped in 0.5: DATAFRAME_PLUGINS, POLARS, PANDAS.
   // Shipped in 0.6: SQL, SQL_EXECUTION, SQL_PUSHDOWN.
   // Shipped in 0.7: PYSPARK, PYSPARK_EXECUTION, SPARK_OPTIMIZATION (batch).
@@ -53,9 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const isProposedReference =
     path.includes("/10_REFERENCE/CONFIGURATION/") ||
     path.includes("/10_REFERENCE/ENVIRONMENT_VARIABLES/");
-
-  const article = document.querySelector("article.md-content__inner");
-  if (!article) return;
 
   if (isExperimentalExecution) {
     const banner = document.createElement("div");

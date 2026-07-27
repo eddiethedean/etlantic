@@ -336,6 +336,41 @@ For wheel-user testing, leave the repository directory and run from a clean
 project. For contributor testing, use `uv run ...` from the checkout and do
 not mix it with a separately installed wheel.
 
+## JSON / PipelineDefinition authoring
+
+### Fingerprint mismatch on load
+
+`etlantic.pipeline/1` documents include a fingerprint. If you hand-edit JSON
+and change structure without refreshing the fingerprint, `verify=True` loads
+fail closed. Prefer builders / `write_pipeline_json`, or recompute via
+`pipeline_fingerprint` / `with_fingerprint` after intentional edits.
+
+### Unsupported schema
+
+Only `etlantic.pipeline/1` is accepted. A different `schema` string raises at
+decode time—do not pass plan JSON (`etlantic.plan/1`) to definition loaders.
+
+### Validate/plan works; run fails missing callable
+
+Definitions store implementation **refs**, not live functions. Register before
+run:
+
+```python
+etl.authoring.callable_registry().register(transformation_id, "local", fn)
+```
+
+Class pipelines resolve `@implementation` decorators without this step. See
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+
+### CLI TARGET vs class
+
+```bash
+python -m etlantic validate pipeline.json --profile development
+python -m etlantic generate module:MyPipeline --kind definition -o pipeline.json
+```
+
+Cross-check diagnostic codes in [Diagnostics](../10_REFERENCE/DIAGNOSTICS.md).
+
 ## Where to report a problem
 
 Include the ETLantic version, Python version, command, complete traceback or

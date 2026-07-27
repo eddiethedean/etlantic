@@ -17,6 +17,7 @@ RUNNABLE_PAGES = {
     "docs/09_EXAMPLES/PREFECT_RUN.md": "examples/prefect_run.py",
     "docs/09_EXAMPLES/AIRFLOW_COMPILE.md": "examples/airflow_compile.py",
     "docs/09_EXAMPLES/PORTABLE_TRANSFORMS.md": "examples/portable_polars_kernel.py",
+    "docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md": "examples/pipeline_definition_json.py",
 }
 
 

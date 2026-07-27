@@ -10,7 +10,7 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.24.x | Current supported stable line; security fixes are released on this line |
+| 0.24.x | Current supported Beta line; security fixes are released on this line |
 | 0.21.x and earlier | Not actively maintained; upgrade to 0.24.x |
 
 Backports to older minor lines are not provided. Upgrade to the latest 0.24.x

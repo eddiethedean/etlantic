@@ -110,6 +110,29 @@ Optional package factories (install `etlantic-polars`):
       members_order: source
       filters: ["!^_"]
 
+### Programmatic definition authoring (`etlantic.authoring`)
+
+Immutable `PipelineDefinition`, builders, JSON codecs, catalog, edit commands,
+and lifecycle helpers. See
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+
+::: etlantic.authoring
+    options:
+      show_root_heading: true
+      members_order: source
+      filters: ["!^_"]
+
+### Application service facade (`etlantic.service`)
+
+Transport-neutral `AuthoringService` and `PolicyContext` for host apps and the
+optional FastAPI reference adapter.
+
+::: etlantic.service
+    options:
+      show_root_heading: true
+      members_order: source
+      filters: ["!^_"]
+
 ### Ports and references
 
 ::: etlantic.ports

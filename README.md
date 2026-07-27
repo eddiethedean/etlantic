@@ -62,14 +62,14 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 `--force`).
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.24.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
-python -m etlantic doctor --profile development
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
-python -m etlantic plan pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 cat data/out.json
 ```

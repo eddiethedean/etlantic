@@ -1,6 +1,10 @@
 # ETLantic 0.24 Programmatic Authoring Plan
 
-**Status: shipped in ETLantic 0.24.0.**
+**Status: historical design record — shipped in ETLantic 0.24.0.**
+
+For the usable guide, see
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+This page remains the detailed design companion and exit-gate narrative.
 
 ETLantic 0.24 makes pipelines fully authorable, editable, serializable, and
 executable without requiring Python class declarations. Class authoring remains
@@ -9,8 +13,9 @@ and service applications converge on one canonical `PipelineDefinition`.
 
 This plan is the detailed companion to the
 [0.24 roadmap phase](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#024--programmatic-authoring-and-lossless-json).
-Names and examples on this page describe the intended public contract and may
-change before 0.24 ships.
+Names below match the shipped 0.24 public contract; prefer the
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) guide for
+current usage.
 
 ## Product outcome
 

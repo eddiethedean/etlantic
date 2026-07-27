@@ -5,9 +5,9 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.23 |
+| Topic | 0.24 |
 |---|---|
-| Maturity | Beta (PyPI) |
+| Maturity | Beta |
 | Support | Community; **no SLA** |
 | Scale claim | Measured **framework overhead** envelopes only |
 | Engine sizing | Adopter-owned (measure Polars/Pandas/SQL/Spark yourself) |
@@ -30,8 +30,8 @@ regress. See [Performance guidance](../11_DEVELOPMENT/PERFORMANCE.md) and
 
 1. Run `uv run python scripts/check_benchmarks.py` from a checkout (optional).
 2. Measure your own graph on the chosen engine with representative data.
-3. Include failure, cancellation, and interchange paths from the 0.23
-   resilience work—not only happy-path throughput.
+3. Include failure, cancellation, and interchange paths from the resilience
+   work (0.23+)—not only happy-path throughput.
 4. Record accepted residual risks in your deployment review
    ([Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md)).
 

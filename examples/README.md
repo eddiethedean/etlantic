@@ -21,6 +21,17 @@ Validates, plans, and runs with in-memory storage; prints `succeeded` and
 curated records. This is an in-memory SDK demo, **not** the docs Quickstart
 (`etlantic init`).
 
+## PipelineDefinition / JSON authoring (docs / local)
+
+```bash
+uv run python examples/pipeline_definition_json.py
+uv run python -m etlantic validate pipeline.definition.json --profile development
+```
+
+Builds a definition with functional constructors, writes
+`etlantic.pipeline/1` JSON, validates, and plans. See
+[Programmatic authoring](../docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+
 ## Sample multi-file project (docs / local)
 
 ```bash

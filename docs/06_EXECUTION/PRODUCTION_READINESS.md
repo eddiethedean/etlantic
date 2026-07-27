@@ -2,9 +2,9 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.23 |
+| Topic | 0.24 |
 |---|---|
-| Maturity | **Beta** (PyPI) |
+| Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
 | Not included | Multi-tenant control plane; capacity SLA; compliance SoR |
@@ -76,11 +76,12 @@ reference controls are shipped:
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.23)
+## Shipped / adopter-owned / residual (0.24)
 
-| Concern | 0.23 status |
+| Concern | 0.24 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
+| Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |
 | Portable compilers (Polars/Pandas/SQL/PySpark) | **Shipped** |
 | Plugin allowlists | **Shipped** (selection, not sandbox) |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
