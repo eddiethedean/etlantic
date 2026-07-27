@@ -4,13 +4,14 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **implemented 0.20–0.21 controls** and the broader
-**proposed threat model**. ETLantic 0.23.0 is production/stable for documented
-single-tenant reference deployments. It does not provide unrestricted
-full multi-tenant control planes, compliance attestations, deployment-topology, or advanced
-supply-chain guarantees; those controls remain adopter-owned.
+This chapter covers **controls shipped through 0.23** and the broader
+**proposed threat model**. ETLantic 0.23.0 is a **Beta** (PyPI) release
+suitable for documented single-tenant pilots—not unrestricted enterprise
+production. It does not provide multi-tenant control planes, SLA, compliance
+attestations, deployment-topology guarantees, or advanced supply-chain
+guarantees; those controls remain adopter-owned.
 
-## Implemented in 0.20–0.21
+## Implemented through 0.23
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);

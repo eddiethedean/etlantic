@@ -3,6 +3,15 @@
 > **Status: Available in ETLantic 0.23.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not a managed control plane.
 
+## Residual evaluation lead
+
+| Topic | 0.23 |
+|---|---|
+| Maturity | Beta (PyPI) |
+| Topology | Single trusted process / worker per runtime |
+| Multi-worker control plane | Not included |
+| SLA | None (community support) |
+
 ## Process model
 
 `PipelineRuntime` is application-owned and process-local. Its memory bindings,
@@ -12,7 +21,42 @@ worker, and use durable backend storage for data or reports that must cross
 process boundaries.
 
 This reference model is suitable for one trusted application or worker per
-runtime. ETLantic 0.21 does not coordinate a multi-worker runtime.
+runtime. ETLantic 0.23 does not coordinate a multi-worker runtime.
+
+## Reference topologies
+
+### A. Single process (local / container)
+
+1. Pin `etlantic==0.23.0` and matching plugins in a lockfile.
+2. Mount or bake `profiles/production.json` with `security_mode="production"`
+   and a non-empty `plugin_allowlist`.
+3. Resolve secrets from env / files / keyring at runtime only.
+4. Persist `.etlantic/` reports (or an application-owned store) on a durable volume.
+5. Health-check the process with your supervisor (no built-in HTTP probe).
+
+Checklist: [Production Profiles](PRODUCTION_PROFILES.md),
+[Ops Pilot](OPS_PILOT.md).
+
+### B. Airflow workers (compile-only path)
+
+1. CI: `validate` → `plan` → `etlantic compile … --target airflow -o dags/`.
+2. Deploy DAG artifacts through your normal Airflow release process.
+3. Workers that execute compiled DAGs must install the **same** core/plugin
+   minors used at compile time, plus Apache Airflow itself.
+4. `etlantic-airflow` does **not** install Airflow and does not run the
+   pipeline inside the compiler process.
+
+Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
+[Compilation](COMPILATION.md).
+
+### C. Prefect local MVP
+
+1. Install `etlantic-prefect==0.23.0`.
+2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
+3. Prefect consumes the resolved plan (direct execution). Deployment/serve
+   flows remain future—do not assume them from this package.
+
+Checklist: [Prefect example](../09_EXAMPLES/PREFECT_RUN.md).
 
 ## Select and lock a profile
 
@@ -41,9 +85,9 @@ the target environment.
 Validate before deployment and retain machine-readable evidence:
 
 ```bash
-etlantic validate package.pipeline:CustomerPipeline --format json
-etlantic validate package.pipeline:CustomerPipeline --format sarif
-etlantic plan package.pipeline:CustomerPipeline --format json
+python -m etlantic validate package.pipeline:CustomerPipeline --format json
+python -m etlantic validate package.pipeline:CustomerPipeline --format sarif
+python -m etlantic plan package.pipeline:CustomerPipeline --format json
 ```
 
 Compile only after the plan is valid. Plans are deterministic, secret-free
@@ -60,10 +104,11 @@ The adopter owns:
   generation;
 - observability retention and operational runbooks.
 
-ETLantic 0.21 does not claim a multi-worker or multi-tenant control plane.
+ETLantic 0.23 does not claim a multi-worker or multi-tenant control plane.
 
 ## Operational next steps
 
 - [Ops Pilot](OPS_PILOT.md)
 - [Production Readiness](PRODUCTION_READINESS.md)
 - [Production Profiles](PRODUCTION_PROFILES.md)
+- [Performance envelope](../01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md)

@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.23.0 is **stable** for documented single-tenant reference
+ETLantic 0.23.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Security reports
 concerning the published package, contract loading, planning, local runtime,
 storage bindings, secret handling, dataframe, SQL, and PySpark plugins,

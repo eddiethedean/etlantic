@@ -3,7 +3,7 @@
 This is the current manual for published ETLantic **0.23.0**. Core onboarding
 paths below are available in 0.23; linked reference and design pages may also
 describe Experimental, partial, or future work and retain their own status
-labels. ETLantic 0.23.0 is **stable** only within the documented
+labels. ETLantic 0.23.0 is a **Beta** (PyPI) release suitable only within the documented
 single-tenant reference deployment boundary.
 
 !!! info "Next phase: 0.24"

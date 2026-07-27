@@ -151,6 +151,23 @@ capabilities; narrow the portable definition, choose a capable engine, add a
 native `@implementation(...)`, or use
 `portable_transform_policy="prefer"` / `"native"`.
 
+## Diagnostic codes → remediation
+
+| Code | Meaning | Fix |
+|---|---|---|
+| `PMCFG100` | Unknown bare profile name | Use a built-in template, a JSON path, or `--allow-adhoc-profile` |
+| `PMCFG110` / `PMCFG111` | Legacy `bindings`-only profile | Prefer `assets`; `etlantic profile migrate` or `--accept-legacy-bindings` once |
+| `PMPLUG401` | Production allowlist empty / plugin not allowed | Set non-empty `plugin_allowlist` with pinned versions; install matching plugins |
+| `PMXFORM301` | Portable action unsupported on selected compiler | Narrow portable IR, switch engine, or add `@implementation` |
+| `PMEXEC410` | Report persistence failed after publication | Inspect terminal status; recover orphaned writes; do not assume success |
+| `PMEXEC412` | Missing callable reader on storage binding | Register a reader or use a supported binding |
+| `PMEXEC501` | Unsafe retry after partial write | Fix write mode / idempotency; keep `PMORCH310` compile checks in CI |
+| `PMORCH310` | Compile-time unsafe retry/orchestration claim | Adjust orchestration/write semantics before deploy |
+| Fingerprint mismatch | Plan digest does not match payload | Regenerate plan after upgrade; do not hand-edit fingerprints |
+| Missing wire `schema` | Plan/report lacks `etlantic.plan/1` (etc.) | Regenerate with current CLI/SDK; do not strip `schema` |
+
+Full catalog: [Diagnostics](../10_REFERENCE/DIAGNOSTICS.md).
+
 ## Production validation fails with `PMPLUG401`
 
 The built-in `production` profile intentionally has an empty plugin allowlist
@@ -233,7 +250,7 @@ Dagster compilers are not shipped.
 ## Gate A / Polars ↔ Pandas interchange fails
 
 Gate A (`etlantic.interchange/1`) shipped in **0.18.0** for Polars ↔
-Pandas boundaries and remains available in 0.20.
+Pandas boundaries and remains available in 0.23.
 
 | Symptom | Fix |
 |---|---|

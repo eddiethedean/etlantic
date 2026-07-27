@@ -5,7 +5,8 @@
 
 ## 1. Install
 
-ETLantic requires Python 3.11 or newer.
+ETLantic requires Python 3.11 or newer. Prefer `python -m` so PATH issues do not
+block you.
 
 ```bash
 python -m pip install 'etlantic==0.23.0'
@@ -14,9 +15,11 @@ python -m etlantic --version
 
 ## 2. Initialize a project
 
+`init` requires an **empty directory** (or pass `--force`):
+
 ```bash
 mkdir my-pipeline && cd my-pipeline
-etlantic init --with-toml
+python -m etlantic init --with-toml
 ```
 
 This creates `pipeline.py` (`SamplePipeline`), `profiles/development.json`,
@@ -25,20 +28,25 @@ sample `data/sample.json`, and `.etlantic/` workspace directories.
 ## 3. Validate, plan, and run
 
 ```bash
-etlantic doctor --profile development
-etlantic inspect pipeline.py:SamplePipeline
-etlantic validate pipeline.py:SamplePipeline --profile development
-etlantic plan pipeline.py:SamplePipeline --profile development
-etlantic run pipeline.py:SamplePipeline --profile development
-etlantic report list
+python -m etlantic doctor --profile development
+python -m etlantic inspect pipeline.py:SamplePipeline
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic plan pipeline.py:SamplePipeline --profile development
+python -m etlantic run pipeline.py:SamplePipeline --profile development
+python -m etlantic report list
 ```
 
 No Python-side `runtime.memory.seed()` is required: the generated profile maps
 assets to `json://data/...` paths.
 
-### Success criteria
+### What success looks like
 
-You should see a run status of `succeeded`. Inspect the written asset:
+- `doctor` exits 0 with no blocking issues.
+- `validate` / `plan` print a report with no errors (JSON with `--format json`).
+- `run` prints a run status of **`succeeded`**.
+- `report list` shows at least one durable report under `.etlantic/`.
+
+Inspect the written asset:
 
 ```bash
 cat data/out.json
@@ -59,9 +67,13 @@ Expected shape (identity transform on sample rows):
 ]
 ```
 
+This first run proves plumbing with an identity transform. **Next:** change the
+transform so names become uppercase (or add a field) in
+[First Pipeline](FIRST_PIPELINE.md)—that is where the product value shows up.
+
 ## 4. Python SDK path (optional)
 
-For programmatic use, the same pipeline class works with the public SDK:
+From the same project directory:
 
 ```python
 from pipeline import SamplePipeline
@@ -74,10 +86,7 @@ SamplePipeline.run(profile="development")
 
 ## Next steps
 
-- [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project (contracts,
-  intentional errors, richer transforms)
+- [First Pipeline](FIRST_PIPELINE.md) — evolve contracts, intentional errors,
+  richer transforms
+- [Engine selection](ENGINE_SELECTION.md) — add Polars, Pandas, SQL, or Spark
 - [Installation](INSTALLATION.md) — optional engine packages
-- [What's New in 0.23](WHATS_NEW_0_23.md)
-
-For an in-memory SDK demo from a checkout (not this Quickstart), see
-[`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).

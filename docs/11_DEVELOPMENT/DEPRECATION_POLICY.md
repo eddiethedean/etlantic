@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.23.0 is stable for documented single-tenant reference deployments,
+ETLantic 0.23.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
 while remaining pre-1.0. Breaking changes remain possible, but they must not
 be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 

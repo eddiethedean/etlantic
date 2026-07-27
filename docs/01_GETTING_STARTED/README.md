@@ -6,7 +6,7 @@ ETLantic catches incompatible data-pipeline wiring **before** you process
 data. Define typed datasets, transformations, and pipelines in Python;
 validate and plan them once; run locally or through optional engine plugins.
 
-> **Project status:** ETLantic **0.23.0** is **stable** within the documented
+> **Project status:** ETLantic **0.23.0** is a **Beta** (PyPI) release suitable within the documented
 > single-tenant reference deployment boundary. For the canonical onboarding
 > path, start at [Current 0.23 Guide](CURRENT_VERSION.md). Experimental features
 > and broader deployment models remain outside that claim. See

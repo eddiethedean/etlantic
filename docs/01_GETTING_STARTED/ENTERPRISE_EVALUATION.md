@@ -1,16 +1,23 @@
 # Enterprise Evaluation Guide
 
 > **Status: Available in ETLantic 0.23.0.** A consolidated diligence packet for
-> technical evaluators and enterprise decision-makers. ETLantic is stable for
-> documented **single-tenant reference deployments**—not unrestricted
-> enterprise production or multi-tenant control planes.
+> technical evaluators and enterprise decision-makers.
 
-## What ETLantic is (and is not)
+## Residual evaluation lead
 
-ETLantic is a typed, contract-driven **modeling** layer for data pipelines in
-Python. You define datasets, transformations, and pipelines once; ETLantic
-validates and plans them; optional plugins execute on Polars, Pandas, SQL,
-PySpark, Airflow, Prefect, and other backends.
+| Topic | 0.23 |
+|---|---|
+| Maturity | **Beta** (PyPI) |
+| Suitable for | Documented single-tenant pilots |
+| Not suitable for | Unrestricted enterprise production / multi-tenant control planes |
+| Support | Community; **no formal SLA** |
+| LTS / support window | Current published minor (`0.23.x`) only |
+| Compliance / SoR | Adopter-owned beyond shipped SBOM digests and GitHub attestations |
+
+ETLantic is a typed, contract-driven **pipeline framework** for Python. You
+define datasets, transformations, and pipelines once; ETLantic validates and
+plans them; optional plugins execute on Polars, Pandas, SQL, PySpark, Airflow
+(compile), and Prefect (local MVP).
 
 ETLantic is **not** a dataframe engine, distributed scheduler, warehouse, secret
 manager, or compliance audit system of record.

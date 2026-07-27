@@ -1,5 +1,10 @@
 # Roadmap
 
+**Current release:** ETLantic **0.23.0** (Beta / PyPI). Milestones 0.21–0.23
+are shipped; 0.24+ is planned. See
+[Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
+adopter-facing view.
+
 This roadmap sequences ETLantic from a typed modeling library into a
 stable, secure orchestration model and plugin platform.
 
@@ -1864,6 +1869,8 @@ verification, a stable diagnostic or event, and documented residual risk.
 
 ## 0.21 — Cohesive CLI and Authoring Experience
 
+**Status:** Shipped in ETLantic 0.21.0.
+
 **Objective:** make the supported workflow usable end to end without hidden
 process-local setup or Python-only registration steps.
 
@@ -1919,6 +1926,8 @@ The CLI and Python quickstarts describe one coherent product, and durable
 local workflows no longer depend on state retained inside a single process.
 
 ## 0.22 — Plugin SDK Release Candidate
+
+**Status:** Shipped in ETLantic 0.22.0.
 
 **Objective:** prove that the extension model is capability-driven and usable
 outside the monorepo before freezing protocol `/1` surfaces.
@@ -1989,6 +1998,8 @@ plugins. The curated `etl.*` facade is typed, documented, import-safe, and
 covered by the public surface and compatibility policy.
 
 ## 0.23 — Runtime Resilience and Performance Budgets
+
+**Status:** Shipped in ETLantic 0.23.0.
 
 **Objective:** quantify supported scale and prove correct behavior under
 partial failure, concurrency, cancellation, and resource pressure.

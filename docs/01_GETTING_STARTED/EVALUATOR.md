@@ -2,16 +2,26 @@
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
+## Residual evaluation lead
+
+| Topic | 0.23 |
+|---|---|
+| Maturity | **Beta** (PyPI) |
+| Suitable for | Documented single-tenant pilots |
+| Support | Community; **no formal SLA** |
+| LTS | Current published minor only (`0.23.x`) |
+| Not included | Multi-tenant control plane; unrestricted enterprise production |
+
 ## What ETLantic is
 
-A typed, contract-driven **modeling** layer for data pipelines in Python. You
-define datasets, transformations, and pipelines once; ETLantic validates and
-plans them; plugins execute.
+A typed, contract-driven **pipeline framework** for Python. You define
+datasets, transformations, and pipelines once; ETLantic validates and plans
+them; plugins execute.
 
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is stable in bounded 0.23.0
+## What is ready in bounded 0.23.0
 
 | Area | Ready? |
 |---|---|
@@ -72,9 +82,9 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-**ETLantic 0.23.0 is production/stable for documented single-tenant reference
-deployments.** Shipped trust controls do not make an arbitrary multi-tenant
-topology safe.
+ETLantic **0.23.0** is a **Beta** (PyPI) release suitable for documented
+single-tenant pilot deployments. Shipped trust controls do not make an
+arbitrary multi-tenant topology safe.
 
 Residual items that block **unrestricted** enterprise-wide production claims:
 

@@ -1,6 +1,6 @@
 # Support Policy
 
-ETLantic **0.23.x** is production/stable for documented single-tenant
+ETLantic **0.23.x** is a **Beta** (PyPI) release suitable for documented single-tenant
 reference deployments. Community support is best-effort and provides **no
 formal SLA** or guaranteed response time.
 

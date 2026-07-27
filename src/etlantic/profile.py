@@ -154,6 +154,49 @@ class Profile:
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Construct an immutable execution profile.
+
+        Args:
+            name: Profile name (also used by template resolution).
+            orchestrator: Orchestrator id (default ``"local"``).
+            dataframe_engine: Dataframe engine id, or ``None``.
+            sql_engine: SQL engine id, or ``None``.
+            spark_engine: Spark engine id, or ``None``.
+            allow_trusted_sql: Whether trusted SQL paths are permitted.
+            spark_udf_policy: Spark UDF policy string (e.g. ``"warn"``).
+            spark_streaming: Enable Spark streaming settings when True.
+            assets: Logical asset name → provider id map (public authoring key).
+            implementation_overrides: Node/step → implementation id overrides.
+            secret_providers: Secret provider name → backend id map.
+            resources: Resource name → provider id map.
+            secrets: Named :class:`~etlantic.secrets.SecretRef` values only.
+            security_domain: Logical security domain label.
+            security_mode: ``"development"``, ``"test"``, or ``"production"``.
+            validation_policy: Validation policy name (e.g. ``"default"``).
+            concurrency: Optional concurrency limit.
+            timeout_seconds: Optional run timeout.
+            retry_max_attempts: Optional retry attempt ceiling.
+            schedule: Portable schedule intent mapping.
+            execution: Portable execution intent mapping.
+            required_sql_capabilities: Required SQL capability tokens.
+            required_spark_capabilities: Required Spark capability tokens.
+            required_orchestrator_capabilities: Required orchestrator tokens.
+            plugin_allowlist: Plugin name → optional version pin (production
+                fail-closed when empty under ``security_mode="production"``).
+            portable_transform_policy: ``"prefer"``, ``"require"``, or
+                ``"native"``.
+            tenant: Tenant label for safe I/O / outbound policy.
+            environment: Environment label for safe I/O / outbound policy.
+            safe_io: Safe I/O policy mapping.
+            outbound: Outbound HTTP policy mapping.
+            require_plugin_probe: Require capability probe when True.
+            metadata: Extension metadata (size/depth budgets enforced later).
+            **kwargs: Rejected if it contains removed ``bindings=``.
+
+        Raises:
+            TypeError: When ``bindings=`` is passed (removed in 0.16).
+            ValueError: When ``security_mode`` is not a known mode.
+        """
         if "bindings" in kwargs:
             raise TypeError(_BINDINGS_REMOVED)
         store = _normalize_assets(assets=assets)
@@ -202,14 +245,23 @@ class Profile:
         object.__setattr__(self, "metadata", dict(metadata or {}))
 
     def primary_engine(self) -> str:
-        """Resolve the profile's primary execution engine (spark → sql → dataframe)."""
+        """Resolve the profile's primary execution engine (spark → sql → dataframe).
+
+        Returns:
+            Engine id from ``spark_engine``, else ``sql_engine``, else
+            ``dataframe_engine`` (defaulting to ``"local"``).
+        """
         from etlantic.engines import get_engine_registry
 
         return get_engine_registry().primary_engine(self)
 
     @property
     def engine_profile(self) -> Any:
-        """Internal engine configuration view."""
+        """Internal engine configuration view.
+
+        Returns:
+            An ``EngineProfile`` record for engine registry lookups.
+        """
         from etlantic._profile.records import EngineProfile
 
         return EngineProfile(
@@ -229,15 +281,28 @@ class Profile:
 
     @property
     def assets(self) -> dict[str, str]:
-        """Preferred public view of logical asset → provider resolution."""
+        """Preferred public view of logical asset → provider resolution.
+
+        Returns:
+            A shallow copy of the internal asset→provider store.
+        """
         return dict(self.bindings)
 
     def identity(self) -> str:
-        """Stable profile identity."""
+        """Return the stable profile identity string.
+
+        Returns:
+            ``"profile:{name}"`` for this profile.
+        """
         return f"profile:{self.name}"
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize profile for public JSON (assets only; no mirrored bindings)."""
+        """Serialize profile for public JSON (assets only; no mirrored bindings).
+
+        Returns:
+            A JSON-serializable mapping using public ``assets`` (not plan-wire
+            ``bindings``). Secret values remain :class:`SecretRef` dicts.
+        """
         data = asdict(self)
         data["secrets"] = {
             key: ref.to_dict() if isinstance(ref, SecretRef) else ref
@@ -255,7 +320,12 @@ class Profile:
         return data
 
     def to_plan_snapshot(self) -> dict[str, Any]:
-        """Fingerprint-stable snapshot retaining the plan wire ``bindings`` shape."""
+        """Fingerprint-stable snapshot retaining the plan wire ``bindings`` shape.
+
+        Returns:
+            A mapping suitable for embedding in a frozen plan (uses ``bindings``
+            rather than public ``assets``).
+        """
         data = asdict(self)
         data["secrets"] = {
             key: ref.to_dict() if isinstance(ref, SecretRef) else ref
@@ -267,7 +337,19 @@ class Profile:
 
     @classmethod
     def from_plan_snapshot(cls, data: dict[str, Any]) -> Profile:
-        """Rehydrate a profile embedded in a frozen plan (bindings wire shape)."""
+        """Rehydrate a profile embedded in a frozen plan (bindings wire shape).
+
+        Args:
+            data: Plan-embedded profile snapshot (may use ``bindings``).
+
+        Returns:
+            A concrete :class:`Profile`.
+
+        Raises:
+            ValueError: When required fields or nested values are invalid
+                (delegates to :meth:`from_dict`).
+            KeyError: When ``name`` is missing from ``data``.
+        """
         snap = dict(data)
         if "assets" not in snap and "bindings" in snap:
             snap["assets"] = dict(snap.get("bindings") or {})
@@ -286,6 +368,20 @@ class Profile:
 
         Legacy JSON ``bindings`` keys require ``accept_legacy_bindings=True``
         in 0.21+ (use ``profile migrate`` to rewrite to ``assets``).
+
+        Args:
+            data: Profile document mapping (must include ``name``).
+            accept_legacy_bindings: When True, allow legacy ``bindings`` keys
+                (emits ``PMCFG110`` warning). Default fail-closed ``PMCFG111``.
+
+        Returns:
+            A concrete :class:`Profile`.
+
+        Raises:
+            ValueError: When secrets are plaintext/invalid, legacy ``bindings``
+                appear without opt-in, or ``security_mode`` /
+                ``portable_transform_policy`` are unknown.
+            KeyError: When ``name`` is missing from ``data``.
         """
         import warnings
 
@@ -395,6 +491,18 @@ class Profile:
         Unknown keys raise ``TypeError`` so typos like ``plugin_allow_list``
         cannot silently leave production allowlists empty. ``assets`` is the
         public authoring key for the internal bindings store.
+
+        Args:
+            **kwargs: Field replacements. Use ``assets=`` for asset maps;
+                ``bindings=`` is rejected.
+
+        Returns:
+            A new :class:`Profile` with updates applied.
+
+        Raises:
+            TypeError: When ``bindings=`` is passed or unknown field names
+                appear in ``kwargs``.
+            ValueError: When updated values fail :meth:`from_dict` validation.
         """
         known = {f.name for f in fields(self)} | {"assets"}
         # Reject public bindings= authoring; internal snapshot still uses bindings.
@@ -478,6 +586,10 @@ def development_profile(**overrides: Any) -> Profile:
 
     Returns:
         A concrete :class:`Profile` instance.
+
+    Raises:
+        TypeError: When ``overrides`` contains unknown fields or ``bindings=``.
+        ValueError: When override values fail profile validation.
     """
     base = Profile(
         name="development",
@@ -500,6 +612,10 @@ def test_profile(**overrides: Any) -> Profile:
 
     Returns:
         A concrete :class:`Profile` instance.
+
+    Raises:
+        TypeError: When ``overrides`` contains unknown fields or ``bindings=``.
+        ValueError: When override values fail profile validation.
     """
     base = Profile(
         name="test",
@@ -524,6 +640,10 @@ def production_profile(**overrides: Any) -> Profile:
 
     Returns:
         A concrete :class:`Profile` instance.
+
+    Raises:
+        TypeError: When ``overrides`` contains unknown fields or ``bindings=``.
+        ValueError: When override values fail profile validation.
     """
     base = Profile(
         name="production",
@@ -604,6 +724,11 @@ def write_profile(profile: Profile, path: str | Path) -> Path:
 
     Returns:
         Resolved absolute output path.
+
+    Raises:
+        UnsafeLoadError: When the path violates safe I/O policy (e.g. escape
+            outside the parent root, symlink, overwrite rejection).
+        OSError: When the file cannot be written.
     """
     from etlantic.io_policy import SafeIoPolicy, write_text_safe
 
@@ -625,6 +750,8 @@ def load_profile(
 
     Args:
         path: Profile JSON document.
+        accept_legacy_bindings: Forwarded to :meth:`Profile.from_dict` for
+            legacy ``bindings`` keys (default fail-closed ``PMCFG111``).
 
     Returns:
         Parsed :class:`Profile` (legacy ``bindings`` keys may warn ``PMCFG110``).
@@ -633,6 +760,7 @@ def load_profile(
         ValueError: When the document is not a JSON object or fields are invalid.
         OSError: When the file cannot be read.
         UnsafeLoadError: When the path escapes the profile directory root.
+        json.JSONDecodeError: When the file is not valid JSON.
     """
     from etlantic.io_policy import SafeIoPolicy, read_text_safe
 

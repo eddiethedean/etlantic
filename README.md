@@ -9,8 +9,8 @@
 <h1 align="center">ETLantic</h1>
 
 <p align="center">
-  <strong>Design once. Validate everywhere.</strong><br>
-  Typed, contract-driven data pipelines for Python.
+  <strong>Typed Python data pipelines with validate-before-write.</strong><br>
+  Design once. Validate everywhere.
 </p>
 
 <p align="center">
@@ -30,24 +30,18 @@
 
 ---
 
-ETLantic is a typed control layer for data pipelines. Define data,
-transformations, and topology as Python contracts; validate them before work
-begins; then run or compile the same logical pipeline for different backends.
+ETLantic lets you define Python data pipelines as typed classes, catch bad
+wiring and contract mismatches **before any write**, then run or compile the
+same pipeline on local Python, Polars, Pandas, SQL, or Spark—and emit Airflow
+DAGs when you need them.
+
+It is **not** a warehouse tool (use dbt), **not** a scheduler (use Airflow,
+Dagster, or Prefect), and **not** a dataframe engine. It is a typed pipeline
+framework that coordinates the tools you already choose.
 
 ```text
 Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run or compile
 ```
-
-The name describes the model: **ETL** is the data flow; **ETLantic** surrounds
-it with typed contracts, validation, planning, and evidence.
-
-```text
-V(model) → Extract → V(input) → Transform → V(output) → Load → V/evidence
-```
-
-Validation is a control layer, not another business transformation. Runtime
-checks are selected by policy and backend capability; publication evidence does
-not imply an automatic sink reread.
 
 ## Why ETLantic?
 
@@ -55,55 +49,47 @@ not imply an automatic sink reread.
   untrusted plugins before a write.
 - Validate extracted inputs, transformation outputs, engine transitions, and
   publication boundaries against the same contracts.
-- Keep one logical pipeline across local Python, Polars, Pandas, SQL, PySpark,
-  Airflow, and Prefect.
+- Keep one logical pipeline across local Python, Polars, Pandas, SQL, and
+  PySpark; compile to Airflow DAGs; run under Prefect where the local MVP
+  applies.
 - Review deterministic, secret-free plans and preserve structured diagnostics,
   lineage, schema observations, and run reports.
 - Install a small core and add only the engines you need.
 
-ETLantic does not replace dataframe engines, databases, Spark, schedulers,
-storage systems, catalogs, or secret managers. It gives them one typed pipeline
-model and one inspectable validation lifecycle.
-
-> **Next planned phase:** ETLantic 0.24 targets complete functional authoring,
-> a canonical `PipelineDefinition`, lossless `etlantic.pipeline/1` JSON,
-> visual-builder integration, and an OpenAPI/FastAPI reference boundary. These
-> surfaces are not part of 0.23. See the
-> [0.24 programmatic authoring plan](docs/11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
-
-> **Status:** ETLantic **0.23.0** ships runtime resilience and performance
-> budgets on top of the 0.22 Plugin SDK RC: measured microbenchmark envelopes,
-> fault injection, durable-store hardening, and expanded backend CI. Stable for
-> documented single-tenant reference deployments—not unrestricted enterprise
-> production. Structured Streaming remains experimental. See
-> [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
-> and [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/).
-
 ## Quickstart
 
-ETLantic requires Python 3.11 or newer.
+Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
+`--force`).
 
 ```bash
-pip install etlantic==0.23.0
-etlantic --version
+python -m pip install 'etlantic==0.23.0'
+python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
-etlantic init --with-toml
-etlantic doctor --profile development
-etlantic validate pipeline.py:SamplePipeline --profile development
-etlantic plan pipeline.py:SamplePipeline --profile development
-etlantic run pipeline.py:SamplePipeline --profile development
+python -m etlantic init --with-toml
+python -m etlantic doctor --profile development
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic plan pipeline.py:SamplePipeline --profile development
+python -m etlantic run pipeline.py:SamplePipeline --profile development
 cat data/out.json
 ```
 
-You should see run status `succeeded` and JSON rows for Ada and Grace. The CLI
-defaults to `development` when `--profile` is omitted (or your project's
+You should see run status `succeeded` and JSON rows for Ada and Grace (identity
+transform on the sample). That proves plumbing—next, change the transform in
+[First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/).
+
+The CLI defaults to `development` when `--profile` is omitted (or your project's
 `default_profile`). Prefer an explicit profile in scripts and CI.
 
 Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/).
-Next: [First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/)
-(evolve the generated project). From a checkout, an optional in-memory SDK demo
-is [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).
+From a checkout, an optional in-memory SDK demo is
+[`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).
+
+> **Status:** ETLantic **0.23.0** is a **Beta** (PyPI) release suitable for
+> documented single-tenant pilots—not unrestricted enterprise production.
+> Structured Streaming remains experimental. See
+> [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
+> and [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/).
 
 ## Engines and integrations
 
@@ -113,8 +99,8 @@ is [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blo
 | Pandas | `etlantic-pandas` | Eager dataframe execution and portable compilation |
 | SQL | `etlantic-sql` | Parameterized relational execution and portable SQL compilation |
 | PySpark | `etlantic-pyspark` | Spark execution and portable compilation |
-| Airflow | `etlantic-airflow` | Compile plans into DAG artifacts |
-| Prefect | `etlantic-prefect` | Direct-execution scheduler integration |
+| Airflow | `etlantic-airflow` | Compile plans into DAG artifacts (does not install Airflow) |
+| Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
 | Keyring | `etlantic-keyring` | OS keyring secret provider |
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
 | SparkForge | `etlantic-sparkforge` | Medallion adapter (bronze/silver/gold stay out of core) |
@@ -124,15 +110,14 @@ See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/O
 for observability (`otel` / `observability` extras) and Arrow helpers.
 
 Matching extras such as `etlantic[polars]` are equivalent. Pin matching minors
-while ETLantic is pre-1.0. Airflow is compile-only and does not install Apache
-Airflow itself.
+while ETLantic is pre-1.0.
 
 ## Architecture
 
 ETLantic keeps logical meaning separate from physical execution:
 
 ```text
-Data (ODCS/ContractModel) + Transformation (DTCS) + Pipeline (DPCS)
+Data + Transformation + Pipeline contracts
                               │
                        validate and plan
                               ▼
@@ -150,6 +135,11 @@ Production profiles require explicit plugin allowlists. Backend optimizations
 may change the physical graph but must preserve contracts, validation
 boundaries, security domains, and logical attribution.
 
+Contract standards (ODCS / DTCS / DPCS) and the validation envelope are covered
+in the [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/)
+and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/)
+guides.
+
 ## Capability boundary
 
 | Capability | 0.23 |
@@ -159,17 +149,22 @@ boundaries, security domains, and logical attribution.
 | Local, Polars, Pandas, SQL, and PySpark execution paths | Available |
 | Portable compilers for Polars, Pandas, SQL, and PySpark | Available |
 | ODCS, DTCS, DPCS, schema drift, lineage, reports, and SARIF | Available |
-| Airflow compilation and Prefect scheduling | Available |
+| Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
 | Versioned Polars↔Pandas tabular interchange | Available |
 | Contract and configuration freeze (deep plans, security_mode) | Available |
-| Trust, isolation, safe I/O, SBOM/attestations | Available |
+| Trust, isolation, safe I/O, SBOM/attestations (single-tenant reference) | Available (bounded) |
 | Structured Streaming | Experimental |
 | `etlantic-datafusion` | Experimental |
-| Full multi-tenant control plane | Not included |
+| Full multi-tenant control plane / SLA / unrestricted enterprise | Not included |
 
 See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
-and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/)
-guides for precise guarantees and limitations.
+guide for precise guarantees and limitations.
+
+> **Next planned phase:** 0.24 targets complete functional authoring, a
+> canonical `PipelineDefinition`, lossless `etlantic.pipeline/1` JSON, and an
+> OpenAPI/FastAPI reference boundary. These surfaces are **not** part of 0.23.
+> See the
+> [0.24 programmatic authoring plan](docs/11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
 
 ## Learn more
 

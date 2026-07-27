@@ -38,6 +38,7 @@ uv sync --group pyspark
 uv run pytest -m spark
 
 SPARKLESS_TEST_MODE=pyspark uv run pytest -m real_pyspark
+```
 
 CI also runs the `real-pyspark` job (Java 17, Ubuntu) on `@pytest.mark.real_pyspark`.
 

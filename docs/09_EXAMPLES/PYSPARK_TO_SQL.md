@@ -1,9 +1,9 @@
 # PySpark to SQL
 
-!!! warning "Design study—not a runnable ETLantic 0.18 API guide. Prefer CAPABILITIES and examples/."
+!!! warning "Design study—not a runnable ETLantic 0.23 API guide. Prefer CAPABILITIES and runnable Examples."
     This page previously contained aspirational copy-paste code (including
     deprecated `Source`/`Sink` / `DataContractModel` authoring). Those samples
-    are removed so they cannot be mistaken for ETLantic 0.18 APIs.
+    are removed so they cannot be mistaken for ETLantic 0.23 APIs.
 
     Prefer [PySpark](../06_EXECUTION/PYSPARK_TUTORIAL.md) and [SQL](../06_EXECUTION/SQL_TUTORIAL.md) tutorials.
 

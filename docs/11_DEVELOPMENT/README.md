@@ -14,12 +14,28 @@ released.
 - [Governance](GOVERNANCE.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [API stability and deprecation](DEPRECATION_POLICY.md)
+- [Dependency Strategy](DEPENDENCY_STRATEGY.md)
+- [Roadmap summary](ROADMAP_SUMMARY.md)
+- [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+
+## Current migrations and exit gates
+
+- [Migration 0.22 → 0.23](MIGRATION_0_22_TO_0_23.md)
+- [Exit gate 0.23](EXIT_GATE_0_23.md)
+- [Migration 0.21 → 0.22](MIGRATION_0_21_TO_0_22.md)
+- [Exit gate 0.22](EXIT_GATE_0_22.md)
+- [Upgrade hub (cumulative)](../01_GETTING_STARTED/UPGRADE.md)
+
+## Documentation audits
+
+- [Maintained 0.23 Documentation Audit](DOCUMENTATION_AUDIT_0_23.md)
 - [Maintained 0.21 Documentation Audit](DOCUMENTATION_AUDIT_0_21.md)
 - [Maintained 0.20 Documentation Audit](DOCUMENTATION_AUDIT_0_20.md)
 - [Maintained 0.18 Documentation Audit](DOCUMENTATION_AUDIT_0_18.md)
 - [Historical 0.17 Documentation Audit](DOCUMENTATION_AUDIT_0_17.md)
-- [Migration 0.21 → 0.22](MIGRATION_0_21_TO_0_22.md)
-- [Exit gate 0.22](EXIT_GATE_0_22.md)
+
+## Migration archive
+
 - [Migration 0.19 → 0.20](MIGRATION_0_19_TO_0_20.md)
 - [Exit gate 0.20](EXIT_GATE_0_20.md)
 - [Migration 0.17 → 0.18](MIGRATION_0_17_TO_0_18.md)
@@ -36,9 +52,6 @@ released.
 - [Migration 0.12 → 0.13](MIGRATION_0_12_TO_0_13.md)
 - [Migration 0.13 → 0.14](MIGRATION_0_13_TO_0_14.md)
 - [Migration 0.14 → 0.15](MIGRATION_0_14_TO_0_15.md)
-- [Roadmap summary](ROADMAP_SUMMARY.md)
-- [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
-- [Dependency Strategy](DEPENDENCY_STRATEGY.md)
 
 ## Decisions
 

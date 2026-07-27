@@ -48,12 +48,14 @@ def main() -> None:
             )
 
     support = (ROOT / "SUPPORT.md").read_text(encoding="utf-8")
-    support_opening = "\n".join(support.splitlines()[:8])
+    support_opening = "\n".join(support.splitlines()[:8]).lower()
     if (
-        f"**{package_version}**" not in support_opening
-        or "stable" not in support_opening
+        f"**{package_version}**" not in "\n".join(support.splitlines()[:8])
+        or "beta" not in support_opening
     ):
-        raise SystemExit(f"SUPPORT.md opening must claim {package_version} is stable")
+        raise SystemExit(
+            f"SUPPORT.md opening must claim {package_version} is Beta (PyPI)"
+        )
 
     examples_index = (ROOT / "docs/09_EXAMPLES/README.md").read_text(encoding="utf-8")
     if "complete working examples" in examples_index.lower():
@@ -694,9 +696,15 @@ def main() -> None:
 
     # Honesty gate + nav SSOT
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    if "pip install etlantic" not in readme:
+    if (
+        "pip install etlantic" not in readme
+        and "pip install 'etlantic" not in readme
+    ):
         raise SystemExit("README.md missing pip-first install guidance")
-    if "etlantic --version" not in readme:
+    if (
+        "etlantic --version" not in readme
+        and "python -m etlantic --version" not in readme
+    ):
         raise SystemExit("README.md missing etlantic --version verify step")
     if "hosted site TBD" in readme:
         raise SystemExit("README.md still says hosted site TBD")
@@ -1246,6 +1254,91 @@ def main() -> None:
         [sys.executable, str(ROOT / "scripts/check_runnable_docs.py")],
         check=True,
     )
+
+
+    # Curated stable-surface docstring gate (Pipeline + Profile public methods).
+    import inspect
+
+    def _doc_has_sections(
+        doc: str | None, *, need_args: bool, need_raises: bool
+    ) -> list[str]:
+        missing: list[str] = []
+        body = doc or ""
+        if need_args and "Args:" not in body and "Arguments:" not in body:
+            missing.append("Args")
+        if "Returns:" not in body and "Return:" not in body:
+            missing.append("Returns")
+        if need_raises and "Raises:" not in body:
+            missing.append("Raises")
+        return missing
+
+    def _has_non_self_params(fn: object) -> bool:
+        try:
+            params = list(inspect.signature(fn).parameters.values())
+        except (TypeError, ValueError):
+            return True
+        interesting = (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+            inspect.Parameter.VAR_POSITIONAL,
+        )
+        return any(
+            p.name not in {"self", "cls"} and p.kind in interesting for p in params
+        )
+
+    sys.path.insert(0, str(ROOT / "src"))
+    from etlantic.pipeline import Pipeline
+    from etlantic.profile import Profile
+
+    curated = {
+        Pipeline: (
+            "validate",
+            "plan",
+            "explain_plan",
+            "run",
+            "arun",
+            "inspect",
+            "to_dpcs",
+            "from_dpcs",
+        ),
+        Profile: (
+            "to_dict",
+            "from_dict",
+            "with_updates",
+            "to_plan_snapshot",
+            "from_plan_snapshot",
+        ),
+    }
+    require_raises = {
+        (Pipeline, "validate"),
+        (Pipeline, "plan"),
+        (Pipeline, "explain_plan"),
+        (Pipeline, "run"),
+        (Pipeline, "arun"),
+        (Pipeline, "from_dpcs"),
+        (Profile, "from_dict"),
+        (Profile, "from_plan_snapshot"),
+    }
+    failures: list[str] = []
+    for cls, names in curated.items():
+        for name in names:
+            fn = getattr(cls, name)
+            missing = _doc_has_sections(
+                inspect.getdoc(fn),
+                need_args=_has_non_self_params(fn),
+                need_raises=(cls, name) in require_raises,
+            )
+            if missing:
+                failures.append(
+                    f"{cls.__name__}.{name} missing docstring sections: "
+                    + ", ".join(missing)
+                )
+    if failures:
+        raise SystemExit(
+            "Stable-surface docstring gate failed:\n- "
+            + "\n- ".join(failures)
+        )
 
     print(f"Documentation consistency checks passed for {package_version}.")
 

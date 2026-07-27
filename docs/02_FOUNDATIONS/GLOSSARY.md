@@ -85,6 +85,42 @@ plan is produced by ETLantic but executed by plugins.
 
 The preferred public term is `PipelinePlan`.
 
+## PipelinePlan
+
+The immutable, secret-free resolved IR produced by planning. Contains
+resolved assets, capability decisions, validation phases, and a fingerprint.
+Plans are inspectable before any write and are the input to `run` / `compile`.
+
+## Plugin allowlist
+
+`Profile.plugin_allowlist` — the map of trusted plugin distribution names to
+version constraints. Required and fail-closed when `security_mode="production"`.
+The allowlist selects discovered plugins; it does not install packages.
+
+## security_mode
+
+`Profile.security_mode`: `development` | `test` | `production`. Production
+mode enables fail-closed plugin trust and related Safe I/O expectations.
+Detection is by this field only—not by profile name or `security_domain`.
+
+## SafeIoPolicy
+
+The policy that constrains filesystem and outbound I/O for reports, schema
+history, caches, and artifact roots. World-writable or undeclared paths fail
+closed under production expectations.
+
+## Fingerprint
+
+A deterministic digest over the secret-free plan (or related artifact).
+Verified on deserialize and again before compile/run trust boundaries.
+Regenerate plans after upgrades that change participation rules.
+
+## Gate A / tabular interchange
+
+Versioned Polars↔Pandas tabular interchange using wire schema
+`etlantic.interchange/1`. Plans may carry interchange evidence references;
+runtime reports may record observed interchange evidence for reconciliation.
+
 ## Execution Region
 
 A group of compatible logical nodes that a backend may realize together, such

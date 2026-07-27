@@ -1,9 +1,9 @@
 # Streaming PySpark
 
-!!! warning "Design study—not a runnable ETLantic 0.18 API guide. Prefer CAPABILITIES and examples/."
+!!! warning "Design study—not a runnable ETLantic 0.23 API guide. Prefer CAPABILITIES and runnable Examples."
     This page previously contained aspirational copy-paste code (including
     deprecated `Source`/`Sink` / `DataContractModel` authoring). Those samples
-    are removed so they cannot be mistaken for ETLantic 0.18 APIs.
+    are removed so they cannot be mistaken for ETLantic 0.23 APIs.
 
     Structured Streaming remains **experimental**. See [Structured Streaming](../06_EXECUTION/STRUCTURED_STREAMING.md).
 

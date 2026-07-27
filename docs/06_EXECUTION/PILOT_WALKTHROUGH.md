@@ -1,6 +1,6 @@
 # Controlled Pilot Walkthrough
 
-ETLantic 0.23.0 is production/stable for the documented single-tenant reference
+ETLantic 0.23.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment. Use this walkthrough with pinned dependencies, explicit rollback,
 and reviewed plans. Multi-tenant topology, compliance/SBOM/signing, and
 advanced supply-chain controls remain adopter-owned; this is not an

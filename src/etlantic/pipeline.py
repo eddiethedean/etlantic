@@ -95,6 +95,22 @@ class Extract:
         producer_key: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Create a logical extract boundary.
+
+        Args:
+            asset: Logical asset name resolved by the profile at plan/runtime.
+            contract_type: Optional typed data contract for the extract output.
+            name: Optional node name (set when bound into a ``Pipeline``).
+            pipeline_id: Optional owning pipeline identity.
+            producer_key: Stable producer key for graph wiring; auto-assigned
+                when omitted.
+            **kwargs: Rejected if it contains removed ``binding=``.
+
+        Raises:
+            TypeError: When ``asset`` is missing/``None``, or ``binding=`` is
+                passed (removed in 0.16).
+            ValueError: When ``asset`` is empty/whitespace.
+        """
         self.asset = _require_asset(asset, kwargs=kwargs)
         self.contract_type = contract_type
         self.name = name
@@ -113,11 +129,22 @@ class Extract:
 
     @property
     def result(self) -> OutputRef[Any]:
-        """Default output reference for this extract."""
+        """Default output reference for this extract.
+
+        Returns:
+            Same as :meth:`as_output_ref` with port ``"result"``.
+        """
         return self.as_output_ref()
 
     def as_output_ref(self, *, default_port: str = "result") -> OutputRef[Any]:
-        """Return an OutputRef for this extract's produced dataset."""
+        """Return an OutputRef for this extract's produced dataset.
+
+        Args:
+            default_port: Output port name (default ``"result"``).
+
+        Returns:
+            An :class:`~etlantic.refs.OutputRef` pointing at this extract.
+        """
         name = self.name or ""
         return OutputRef(
             node_name=name,
@@ -129,7 +156,15 @@ class Extract:
         )
 
     def bind(self, name: str, *, pipeline_id: str | None = None) -> Extract:
-        """Return an extract bound to a node name within a pipeline."""
+        """Return an extract bound to a node name within a pipeline.
+
+        Args:
+            name: Node name assigned in the parent pipeline class body.
+            pipeline_id: Optional owning pipeline identity.
+
+        Returns:
+            A new ``Extract`` with the same asset/contract and bound name.
+        """
         return type(self)(
             asset=self.asset,
             contract_type=self.contract_type,
@@ -164,6 +199,21 @@ class Load:
         pipeline_id: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Create a logical load boundary.
+
+        Args:
+            input: Upstream output reference or step result feeding this load.
+            asset: Logical asset name resolved by the profile at plan/runtime.
+            contract_type: Optional typed data contract for the published data.
+            name: Optional node name (set when bound into a ``Pipeline``).
+            pipeline_id: Optional owning pipeline identity.
+            **kwargs: Rejected if it contains removed ``binding=``.
+
+        Raises:
+            TypeError: When ``asset`` is missing/``None``, or ``binding=`` is
+                passed (removed in 0.16).
+            ValueError: When ``asset`` is empty/whitespace.
+        """
         self.input = input
         self.asset = _require_asset(asset, kwargs=kwargs)
         self.contract_type = contract_type
@@ -181,7 +231,15 @@ class Load:
         )
 
     def bind(self, name: str, *, pipeline_id: str | None = None) -> Load:
-        """Return a load bound to a node name within a pipeline."""
+        """Return a load bound to a node name within a pipeline.
+
+        Args:
+            name: Node name assigned in the parent pipeline class body.
+            pipeline_id: Optional owning pipeline identity.
+
+        Returns:
+            A new ``Load`` with the same input/asset/contract and bound name.
+        """
         return type(self)(
             input=self.input,
             asset=self.asset,
@@ -207,7 +265,15 @@ class SubpipelineInstance:
     def bind_name(
         self, name: str, *, pipeline_id: str | None = None
     ) -> SubpipelineInstance:
-        """Bind this subpipeline instance to a parent node name."""
+        """Bind this subpipeline instance to a parent node name.
+
+        Args:
+            name: Parent-side node name for this embedded pipeline.
+            pipeline_id: Optional owning parent pipeline identity.
+
+        Returns:
+            A new instance with sink outputs exposed as attributes.
+        """
         child_graph = self.pipeline_cls.build_graph()
         outputs: dict[str, OutputRef[Any]] = {}
         for node in child_graph.nodes:
@@ -312,12 +378,22 @@ class Pipeline(metaclass=_PipelineMeta):
 
     @classmethod
     def identity(cls) -> str:
-        """Stable pipeline identity."""
+        """Return the stable pipeline identity string.
+
+        Returns:
+            Deterministic identity derived from the pipeline class.
+        """
         return pipeline_id(cls)
 
     @classmethod
     def build_graph(cls) -> LogicalGraph:
-        """Build (and cache) the immutable logical graph for this pipeline."""
+        """Build (and cache) the immutable logical graph for this pipeline.
+
+        Returns:
+            A :class:`~etlantic.model.LogicalGraph`. Cyclic subpipeline nesting
+            yields an empty graph with ``cyclic_subpipeline`` metadata rather
+            than raising.
+        """
         if cls._cached_graph is not None:
             return cls._cached_graph
         if cls in _building_graphs:
@@ -348,7 +424,12 @@ class Pipeline(metaclass=_PipelineMeta):
 
     @classmethod
     def inspect(cls) -> LogicalGraph:
-        """Return the read-only logical graph for this pipeline."""
+        """Return the read-only logical graph for this pipeline.
+
+        Returns:
+            The inspected :class:`~etlantic.model.LogicalGraph` (same as
+            :meth:`build_graph` via the inspection helper).
+        """
         from etlantic.inspection import inspect_pipeline
 
         return inspect_pipeline(cls)
@@ -360,12 +441,18 @@ class Pipeline(metaclass=_PipelineMeta):
         """Validate the complete graph without executing transformation code.
 
         Args:
-            profile: Built-in profile name or explicit ``Profile``.
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
             policy: Validation policy name or object.
             context: Optional planning context with registries and capabilities.
 
         Returns:
             A ``ValidationReport`` containing phase results and diagnostics.
+            Validation failures are returned in the report; call
+            ``report.raise_for_errors()`` to raise ``PipelineValidationError``.
+
+        Raises:
+            ValueError: When ``profile`` is an unknown bare name (PMCFG100).
+            FileNotFoundError: When ``profile`` is a missing ``.json`` path.
 
         Examples:
             >>> report = CustomerPipeline.validate(profile="development")
@@ -386,13 +473,18 @@ class Pipeline(metaclass=_PipelineMeta):
         """Resolve an immutable, secret-free execution plan.
 
         Args:
-            profile: Built-in profile name or explicit ``Profile``.
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
             context: Optional planning context with bindings and plugins.
             selection: Optional partial-run selection mapping.
 
         Returns:
             A deterministic ``PipelinePlan``. Planning does not execute user
             transformation code or resolve secret values.
+
+        Raises:
+            PipelineValidationError: When validation reports errors.
+            ValueError: When ``profile`` is an unknown bare name (PMCFG100).
+            FileNotFoundError: When ``profile`` is a missing ``.json`` path.
         """
         from etlantic.plan.planner import plan_pipeline
 
@@ -409,13 +501,18 @@ class Pipeline(metaclass=_PipelineMeta):
         """Return a structured explanation of the planned pipeline.
 
         Args:
-            profile: Built-in profile name or explicit ``Profile``.
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
             context: Optional planning context with bindings and plugins.
             selection: Optional partial-run selection mapping.
 
         Returns:
             A JSON-serializable explanation dict (regions, bindings,
             interchange boundaries, fingerprints). Does not execute user code.
+
+        Raises:
+            PipelineValidationError: When planning validation fails.
+            ValueError: When ``profile`` is an unknown bare name (PMCFG100).
+            FileNotFoundError: When ``profile`` is a missing ``.json`` path.
 
         Examples:
             >>> explanation = CustomerPipeline.explain_plan(profile="development")
@@ -441,7 +538,7 @@ class Pipeline(metaclass=_PipelineMeta):
         """Validate, plan, and execute this pipeline in the current process.
 
         Args:
-            profile: Built-in profile name or explicit ``Profile``.
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
             request: Optional run selection, intent, and policy request.
             runtime: Application-owned ``PipelineRuntime``. A new runtime is
                 created when omitted.
@@ -453,7 +550,11 @@ class Pipeline(metaclass=_PipelineMeta):
 
         Raises:
             PipelineValidationError: If validation fails before execution.
-            PipelineExecutionError: If execution cannot produce a run report.
+            PipelineExecutionError: If execution fails, or if called from an
+                already-running event loop (use :meth:`arun` instead).
+            ETLanticError: If plugin trust checks fail before planning.
+            ValueError: When ``profile`` is an unknown bare name (PMCFG100).
+            FileNotFoundError: When ``profile`` is a missing ``.json`` path.
 
         Storage writes and plugin calls follow the resolved plan. Process-local
         memory and report stores do not survive a new CLI or Python process.
@@ -482,7 +583,7 @@ class Pipeline(metaclass=_PipelineMeta):
         """Validate, plan, and execute this pipeline locally (async).
 
         Args:
-            profile: Built-in profile name or explicit ``Profile``.
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
             request: Optional run selection, intent, and policy request.
             runtime: Application-owned ``PipelineRuntime``.
             context: Optional planning context.
@@ -494,6 +595,9 @@ class Pipeline(metaclass=_PipelineMeta):
         Raises:
             PipelineValidationError: If validation fails before execution.
             PipelineExecutionError: If execution cannot produce a run report.
+            ETLanticError: If plugin trust checks fail before planning.
+            ValueError: When ``profile`` is an unknown bare name (PMCFG100).
+            FileNotFoundError: When ``profile`` is a missing ``.json`` path.
 
         Examples:
             >>> import anyio
@@ -518,7 +622,17 @@ class Pipeline(metaclass=_PipelineMeta):
         runtime: Any = None,
         context: Any = None,
     ) -> Any:
-        """Open a stateful local debug session."""
+        """Open a stateful local debug session.
+
+        Args:
+            profile: Built-in profile name, JSON path, or explicit ``Profile``.
+            runtime: Application-owned ``PipelineRuntime`` (created if omitted).
+            context: Optional planning context.
+
+        Returns:
+            A ``DebugSession`` for stepwise ``run_until`` / ``run_one`` /
+            ``rerun`` local execution.
+        """
         from etlantic.lifecycle.runtime import PipelineRuntime
         from etlantic.runtime.execute import DebugSession
 
@@ -531,14 +645,26 @@ class Pipeline(metaclass=_PipelineMeta):
 
     @classmethod
     def to_mermaid(cls) -> str:
-        """Generate a Mermaid flowchart from the logical graph."""
+        """Generate a Mermaid flowchart from the logical graph.
+
+        Returns:
+            Mermaid flowchart source for the pipeline's logical graph.
+        """
         from etlantic.mermaid import graph_to_mermaid
 
         return graph_to_mermaid(cls.build_graph())
 
     @classmethod
     def to_dpcs(cls) -> dict[str, Any]:
-        """Generate a DPCS document dict for this pipeline."""
+        """Generate a DPCS document dict for this pipeline.
+
+        Returns:
+            A DPCS document mapping suitable for interchange/serialization.
+
+        Raises:
+            ModelDefinitionError: When ``cls`` is not a ``Pipeline`` subclass.
+            DpcsError: When the pipeline cannot be encoded as valid DPCS.
+        """
         from etlantic.interchange.dpcs import pipeline_to_dpcs
 
         return pipeline_to_dpcs(cls)
@@ -552,7 +678,21 @@ class Pipeline(metaclass=_PipelineMeta):
         root: str | Any = None,
         class_name: str | None = None,
     ) -> type[Pipeline]:
-        """Load a Pipeline subclass from a DPCS artifact."""
+        """Load a Pipeline subclass from a DPCS artifact.
+
+        Args:
+            source: DPCS YAML/JSON path or already-parsed document dict.
+            registry: Optional type registry for resolving ODCS/DTCS refs.
+            root: Optional filesystem root for relative artifact loads.
+            class_name: Optional generated class name override.
+
+        Returns:
+            A dynamically constructed ``Pipeline`` subclass.
+
+        Raises:
+            DpcsError: When the document is invalid or cannot be materialized.
+            UnsafeLoadError: When a path load violates safe I/O policy.
+        """
         from etlantic.interchange.dpcs import pipeline_from_dpcs
 
         return pipeline_from_dpcs(
@@ -564,21 +704,45 @@ class Pipeline(metaclass=_PipelineMeta):
 
     @classmethod
     def generate_contracts(cls) -> Any:
-        """Discover and build an in-memory contract bundle."""
+        """Discover and build an in-memory contract bundle.
+
+        Returns:
+            A ``ContractBundle`` with ODCS/DTCS/DPCS documents in memory.
+
+        Raises:
+            BundleError: When ``cls`` is invalid or validation fails.
+        """
         from etlantic.interchange.bundle import generate_contracts
 
         return generate_contracts(cls)
 
     @classmethod
     def write_contracts(cls, directory: str | Any) -> Any:
-        """Generate and write ODCS/DTCS/DPCS artifacts under ``directory``."""
+        """Generate and write ODCS/DTCS/DPCS artifacts under ``directory``.
+
+        Args:
+            directory: Output directory for interchange artifacts.
+
+        Returns:
+            The written ``ContractBundle`` (including on-disk paths).
+
+        Raises:
+            BundleError: When generation or write fails.
+        """
         from etlantic.interchange.bundle import write_contracts
 
         return write_contracts(cls, directory)
 
     @classmethod
     def subpipeline(cls, **bindings: Any) -> SubpipelineInstance:
-        """Embed this pipeline as a reusable subpipeline in a parent."""
+        """Embed this pipeline as a reusable subpipeline in a parent.
+
+        Args:
+            **bindings: Parent-side input bindings for the child pipeline.
+
+        Returns:
+            A :class:`SubpipelineInstance` for declaration in a parent class body.
+        """
         return SubpipelineInstance(pipeline_cls=cls, bindings=dict(bindings))
 
 

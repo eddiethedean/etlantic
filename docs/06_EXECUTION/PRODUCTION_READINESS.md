@@ -1,6 +1,15 @@
 # Production Readiness and Deployment Boundaries
 
-ETLantic 0.23.0 is production/stable for the documented single-tenant reference
+## Residual evaluation lead
+
+| Topic | 0.23 |
+|---|---|
+| Maturity | **Beta** (PyPI) |
+| Suitable for | Documented single-tenant pilot / reference topology |
+| Support | Community; **no SLA** |
+| Not included | Multi-tenant control plane; capacity SLA; compliance SoR |
+
+ETLantic 0.23.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment on this page. Experimental features remain experimental. Broader
 deployment topology, multi-tenancy, compliance attestations beyond shipped
 SBOM digests/GitHub attestations, and advanced supply-chain programs remain
@@ -67,9 +76,9 @@ reference controls are shipped:
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.21)
+## Shipped / adopter-owned / residual (0.23)
 
-| Concern | 0.21 status |
+| Concern | 0.23 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Portable compilers (Polars/Pandas/SQL/PySpark) | **Shipped** |

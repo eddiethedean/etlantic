@@ -24,7 +24,7 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ## Is ETLantic 0.23 production-supported?
 
-ETLantic **0.23.0** is **stable** for documented single-tenant reference
+ETLantic **0.23.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -33,13 +33,14 @@ remain adopter-owned.
 
 ------------------------------------------------------------------------
 
-## What is the difference between Stable and Experimental?
+## What is the difference between Available and Experimental?
 
-Stable APIs and behaviors are supported within the documented 0.23 reference
-envelope. Features explicitly labeled **Experimental**, currently including
-Structured Streaming foundations and `etlantic-datafusion`, may change and are
-outside that stable claim. A page describing a shipped feature does not make
-every feature on that page stable; check its status label and
+**Available** APIs and behaviors are supported within the documented 0.23
+single-tenant pilot envelope (the package itself remains **Beta** on PyPI).
+Features explicitly labeled **Experimental**, currently including Structured
+Streaming foundations and `etlantic-datafusion`, may change and are outside
+that claim. A page describing a shipped feature does not make every feature on
+that page ready for pilots; check its status label and
 [Capabilities](CAPABILITIES.md).
 
 ------------------------------------------------------------------------
@@ -96,14 +97,13 @@ composition across engines with secret-free plans, evaluate ETLantic.
 
 ## Why is ETLantic inspired by FastAPI?
 
-FastAPI demonstrated that Python type annotations can become the
-foundation for an outstanding developer experience.
+FastAPI showed that Python type annotations can drive an outstanding developer
+experience. ETLantic applies the same idea to data pipelines: types declare
+interfaces that validation and planning can enforce.
 
-ETLantic applies the same philosophy to data engineering.
-
-Types define interfaces.
-
-Everything else can be inferred.
+That does **not** mean everything is inferred. Profiles, assets, plugin
+allowlists, and security modes remain explicit—just as FastAPI still requires
+you to declare routes and dependencies.
 
 ------------------------------------------------------------------------
 

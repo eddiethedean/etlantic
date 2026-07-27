@@ -1,5 +1,5 @@
 site_name: ETLantic
-site_description: Typed, contract-driven data pipeline modeling for Python.
+site_description: Typed Python data pipelines with validate-before-write.
 site_url: https://etlantic.readthedocs.io/
 repo_url: https://github.com/eddiethedean/etlantic
 repo_name: eddiethedean/etlantic
@@ -101,16 +101,23 @@ plugins:
             members_order: source
             show_root_heading: true
             show_source: false
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            filters:
+              - "!^_"
+            separate_signature: true
+            merge_init_into_class: true
 
 nav:
   - Home: README.md
   - Learn:
-      - Current 0.23 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
-      - Overview: 01_GETTING_STARTED/README.md
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
+      - Current 0.23 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Overview: 01_GETTING_STARTED/README.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
@@ -129,6 +136,7 @@ nav:
       - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
       - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
       - Security: 02_FOUNDATIONS/SECURITY.md
+      - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Release notes:
       - Changelog: CHANGELOG.md
       - What's new in 0.23: 01_GETTING_STARTED/WHATS_NEW_0_23.md
@@ -203,7 +211,6 @@ nav:
           - SQL: 06_EXECUTION/SQL_TUTORIAL.md
           - PySpark: 06_EXECUTION/PYSPARK_TUTORIAL.md
           - Airflow: 06_EXECUTION/AIRFLOW_TUTORIAL.md
-          - Prefect: 09_EXAMPLES/PREFECT_RUN.md
           - CI integration: 06_EXECUTION/CI_INTEGRATION.md
           - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md
           - Controlled pilot: 06_EXECUTION/PILOT_WALKTHROUGH.md
@@ -280,11 +287,21 @@ nav:
       - API — Authoring: 10_REFERENCE/API_AUTHORING.md
       - API — Plan and runtime: 10_REFERENCE/API_PLAN_RUNTIME.md
       - API — Protocols: 10_REFERENCE/API_PROTOCOLS.md
+  - Contribute:
+      - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
+      - Testing: 11_DEVELOPMENT/TESTING.md
+      - Coding Standards: 11_DEVELOPMENT/CODING_STANDARDS.md
+      - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
+      - Release Process: 11_DEVELOPMENT/RELEASE_PROCESS.md
+      - Dependency Strategy: 11_DEVELOPMENT/DEPENDENCY_STRATEGY.md
+      - Support policy: 11_DEVELOPMENT/SUPPORT.md
+      - Governance: 11_DEVELOPMENT/GOVERNANCE.md
+      - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
+      - API stability and deprecation: 11_DEVELOPMENT/DEPRECATION_POLICY.md
   - Project:
       - Overview: 11_DEVELOPMENT/README.md
-      - ContractModel upgrade plan: 11_DEVELOPMENT/CONTRACTMODEL_UPGRADE_PLAN.md
-      - TransformationModel incubation plan: 11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md
-      - Upgrade hub: 01_GETTING_STARTED/UPGRADE.md
+      - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+      - Full roadmap: https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
       - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
       - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
       - Migration 0.21 → 0.22: 11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md
@@ -296,20 +313,20 @@ nav:
       - Migration 0.18 → 0.19: 11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md
       - Migration 0.17 → 0.18: 11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md
       - Migration 0.16 → 0.17: 11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md
+      - Documentation audit 0.23: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
       - Documentation audit 0.21: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_21.md
       - Documentation audit 0.20: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md
       - Documentation audit 0.18: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_18.md
       - Documentation audit 0.17: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_17.md
-      - Support policy: 11_DEVELOPMENT/SUPPORT.md
-      - Governance: 11_DEVELOPMENT/GOVERNANCE.md
-      - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
-      - API stability and deprecation: 11_DEVELOPMENT/DEPRECATION_POLICY.md
-      - Changelog: CHANGELOG.md
-      - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
-      - Full roadmap: https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
+      - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
+      - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
+      - ADR-013 Portable Transform IR: 11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
+      - ADR-014 SOLID Core Refactor: 11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
+      - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
+      - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
       - Design Proposals (not shipped):
           - Read this first: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
-          - Design studies (not shipped):
+          - Design studies (aspirational — not runnable guides):
               - CSV to CSV: 09_EXAMPLES/CSV_TO_CSV.md
               - CSV to SQL: 09_EXAMPLES/CSV_TO_SQL.md
               - SQL to SQL: 09_EXAMPLES/SQL_TO_SQL.md
@@ -347,6 +364,8 @@ nav:
               - Configuration: 10_REFERENCE/CONFIGURATION.md
               - Environment Variables: 10_REFERENCE/ENVIRONMENT_VARIABLES.md
           - Maintainer plans:
+              - ContractModel upgrade plan: 11_DEVELOPMENT/CONTRACTMODEL_UPGRADE_PLAN.md
+              - TransformationModel incubation plan: 11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md
               - 0.18 Gate A interchange record: 11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md
               - Programmatic Authoring and Lossless JSON (0.24): 11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
               - FastAPI Integration Plan: 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
@@ -367,19 +386,6 @@ nav:
           - Migration 0.6 → 0.7: 11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
           - Migration 0.5 → 0.6: 11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
           - Migration 0.4 → 0.5: 11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
-      - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
-      - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
-      - Testing: 11_DEVELOPMENT/TESTING.md
-      - Coding Standards: 11_DEVELOPMENT/CODING_STANDARDS.md
-      - Release Process: 11_DEVELOPMENT/RELEASE_PROCESS.md
-      - Dependency Strategy: 11_DEVELOPMENT/DEPENDENCY_STRATEGY.md
-      - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
-      - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
-      - ADR-013 Portable Transform IR: 11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
-      - ADR-014 SOLID Core Refactor: 11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
-      - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
-      - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
-      - Documentation audit 0.20: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md
   - Standards:
       - Overview: specifications/README.md
       - DTCS 3.0 (canonical): specifications/DTCS.md

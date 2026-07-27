@@ -7,18 +7,29 @@ and first-party plugins to the **same minor** after upgrading.
 
 **ETLantic 0.23.0** — choose your guide:
 
-| Current version | Start here |
+| From version | Ordered path to 0.23 |
 |---|---|
-| 0.22.x | [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
-| 0.21.x | [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md), then [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
-| 0.20.x | [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md), then follow the chain to 0.23 |
-| 0.19.x | [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md), then follow the chain to 0.23 |
-| 0.18.x | [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md), then follow the chain to 0.23 |
-| ≤ 0.17 | Follow the [migration chain](#migration-chain-newest-first) below |
+| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → 0.21→0.22 → 0.22→0.23 |
+| 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.20 chain |
+| 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.19 chain |
+| 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.18 chain |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.23 |
+
+### Breaking highlights on the way to 0.23
+
+| Span | Watch for |
+|---|---|
+| 0.17 → 0.18 | Gate A interchange (`etlantic.interchange/1`) |
+| 0.18 → 0.19 | Wire `schema` required; `security_mode`; fail-closed profiles |
+| 0.19 → 0.20 | Production allowlist before plugin load; Safe I/O |
+| 0.20 → 0.21 | Durable CLI workspace; `init` / `doctor`; assets vs bindings |
+| 0.21 → 0.22 | Plugin SDK RC; curated `import etlantic as etl` facade |
+| 0.22 → 0.23 | Resilience budgets; report persistence / retry diagnostics |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
-interchange descriptors. Review
-[CHANGELOG](../CHANGELOG.md).
+interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 ## Migration chain (newest first)
 

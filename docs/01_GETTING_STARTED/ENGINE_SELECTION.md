@@ -25,7 +25,8 @@ Start with core local Python. Add one engine at a time.
    engine path works under `validate` and `plan`.
 2. **Pin the minor in 0.x.** Keep core and every official plugin on the same
    release (for example `etlantic==0.23.0` with `etlantic-polars==0.23.0`).
-   Do not mix `0.20` plugins with `0.21` core.
+   Do not mix plugins from a different minor with the core (for example
+   `0.22` plugins with `0.23` core).
 3. **Production profiles need allowlists.** Create `profiles/prod.json` from the
    embedded JSON in [Capabilities → CI starter](CAPABILITIES.md#ci-starter), or
    from [prod.example.json](prod.example.json) in a checkout. Trim the allowlist

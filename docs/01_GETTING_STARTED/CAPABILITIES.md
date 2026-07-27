@@ -1,6 +1,15 @@
 # Current Capabilities and Limitations
 
-ETLantic **0.23.0** is **stable** for documented
+## Residual evaluation lead
+
+| Topic | 0.23 |
+|---|---|
+| Maturity | **Beta** (PyPI) |
+| Suitable for | Documented single-tenant pilots |
+| Support | Community; **no SLA** |
+| Not included | Multi-tenant control plane; unrestricted enterprise production |
+
+ETLantic **0.23.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant reference deployments. Experimental features remain
 experimental, and multi-tenant isolation, deployment topology, compliance,
 advanced multi-tenant control planes remain adopter-owned; 0.23 ships runtime

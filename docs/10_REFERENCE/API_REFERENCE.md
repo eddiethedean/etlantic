@@ -99,7 +99,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.23.0 is **stable** for documented single-tenant reference
+ETLantic 0.23.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
