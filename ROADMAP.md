@@ -1,7 +1,8 @@
 # Roadmap
 
 **Current release:** ETLantic **0.24.0** (Beta / PyPI). Milestones 0.21–0.24
-are shipped; 0.25+ is planned. See
+are shipped; **0.25** (compatibility burn-in, first slice) is planned, then
+0.26–0.98 continued burn-in toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2341,19 +2342,134 @@ independent visual-builder fixture proves the WP7 integration contract, and
 the FastAPI/OpenAPI reference proves WP8, without privileged access to ETLantic
 internals.
 
-## 0.25–0.98 — Compatibility Burn-In
+## 0.25 — Compatibility Burn-In (First Slice)
 
-**Objective:** allow only bounded, evidence-backed additions while the frozen
-contracts accumulate real adoption and upgrade history.
+**Status: planned — after 0.24.0.**
+
+**Objective:** prove that the contracts shipped through 0.24 — especially
+`etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —
+can survive a real minor upgrade without a wire-schema reset. 0.25 is the
+first named slice of the broader compatibility burn-in band (0.26–0.98
+continue the same discipline toward 0.99 RC).
+
+This is **not** a control-plane, GUI, or new-engine milestone. Production
+FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain
+post-1.0 / later 1.x tracks.
+
+### Prerequisites already shipped (0.24)
+
+- Canonical `PipelineDefinition` and lossless `etlantic.pipeline/1`
+- Definition lifecycle (validate / plan / run / …) without originating classes
+- Authoring catalog, `EditCommand`s, service facade, `etlantic-fastapi` reference
+- Plugin SDK `/1` freeze-eligible (0.22 RC; freeze decision is a 0.25 deliverable)
+- Frozen-style plan/report/capabilities/interchange schemas from earlier minors
+
+### Work packages
+
+#### WP1 — `etlantic.pipeline/1` upgrade fixtures
+
+**In scope**
+
+- golden old-reader/new-writer and new-reader/old-writer fixtures for
+  `etlantic.pipeline/1`
+- intentional break → documented migration helper (no silent field drops)
+- CI gate that fails on unversioned incompatible changes to the definition codec
+
+**Out of scope**
+
+- redesigning the authoring model; new edit UX beyond fixture needs
+
+#### WP2 — Cross-artifact codec matrix
+
+**In scope**
+
+- the same reader/writer fixture discipline for `etlantic.plan/1`,
+  `etlantic.run_report/1`, profile JSON, and (where already versioned)
+  `etlantic.capabilities/1` / `etlantic.interchange/1`
+- document supported schema ranges and unsupported downgrade behavior
+
+**Out of scope**
+
+- replacing `etlantic.plan/1`; expanding interchange Gate B
+
+#### WP3 — Plugin SDK `/1` freeze evidence
+
+**In scope**
+
+- close the 0.22 freeze-eligible checklist: external plugin conformance
+  (`etlantic-plugin-echo` + documented third-party path), packaging/manifest
+  gates, and “no provisional core protocol” on the 1.0 path
+- record an explicit freeze **or** publish remaining blockers
+
+**Out of scope**
+
+- new plugin protocols (Storage / Resource / Observability catalogs stay future)
+
+#### WP4 — 1.0 removal inventory
+
+**In scope**
+
+- catalog ambiguous aliases and pre-1.0 compatibility shims
+- each candidate gets a removal ticket and migration note (no new indefinite
+  aliases)
+
+**Out of scope**
+
+- performing the 1.0 removals in 0.25 (inventory and discipline only)
+
+#### WP5 — Bounded authoring polish (fixture-driven only)
+
+**In scope**
+
+- functional parity edge cases and nested-subpipeline edit gaps called out in
+  [Exit gate 0.24](docs/11_DEVELOPMENT/EXIT_GATE_0_24.md), **only** where they
+  block upgrade/parity evidence
+
+**Out of scope**
+
+- new product UX, production GUI hosts, AI-assisted authoring
+
+### Non-goals
+
+- production FastAPI control plane / multi-tenant API (1.1)
+- registry, workspaces, durable job store (1.2)
+- shipping a GUI, LSP, or AI authoring surface
+- new engines/orchestrators, expanded streaming, DataFusion graduation
+- replacing `etlantic.plan/1` or requiring a wire-schema reset
+
+### Acceptance scenarios
+
+- CI exercises a documented **0.24 → 0.25** upgrade path for
+  `etlantic.pipeline/1` with old↔new reader/writer fixtures green
+- at least one additional versioned artifact (plan or run report) has the same
+  fixture discipline in CI
+- Plugin SDK `/1` freeze decision is recorded (freeze or explicit blockers)
+- a published “1.0 removal candidates” list exists; no new silent keep-forever
+  aliases land in 0.25
+- What's New / Migration 0.24→0.25 / Exit Gate 0.25 pass docs gates
+
+### Exit gate
+
+0.25.0 ships with upgrade fixtures for `pipeline/1` (and at least one sibling
+artifact), a Plugin SDK `/1` freeze decision on record, a 1.0 removal
+inventory, and migration/docs gates. No wire-schema reset. Control plane and
+GUI remain out of scope.
+
+## 0.26–0.98 — Continued Compatibility Burn-In
+
+**Objective:** continue bounded, evidence-backed additions while frozen
+contracts accumulate further adoption and upgrade history after the 0.25
+first slice.
 
 ### Deliver
 
 - exercise at least two consecutive minor upgrade paths without requiring a
-  wire-schema reset
+  wire-schema reset (0.24→0.25 counts as the first; continue through later
+  minors)
 - maintain old-reader/new-writer and new-reader/old-writer fixtures for every
   supported schema and protocol range
-- require migrations for all intentional breaking changes and collect removal
-  candidates for 1.0 rather than carrying ambiguous aliases indefinitely
+- require migrations for all intentional breaking changes and keep the 1.0
+  removal inventory current rather than carrying ambiguous aliases indefinitely
 - graduate experimental engines or portable families only through their
   existing conformance, differential, security, performance, and documentation
   gates

@@ -73,17 +73,26 @@ facade, and `etlantic-fastapi` reference adapter. See
 [What's New in 0.24](../01_GETTING_STARTED/WHATS_NEW_0_24.md) and
 [Exit gate 0.24](EXIT_GATE_0_24.md).
 
-## Next: 0.25–0.98
+## Next: 0.25
 
-Compatibility burn-in for frozen contracts and upgrade fixtures.
+**Compatibility Burn-In (first slice):** `etlantic.pipeline/1` and sibling
+codec upgrade fixtures, Plugin SDK `/1` freeze evidence, and a published 1.0
+removal inventory. Not a control-plane or GUI release — see the full
+[0.25 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#025--compatibility-burn-in-first-slice).
+
+## Then: 0.26–0.98 → 0.99 → 1.0
+
+Continued compatibility burn-in, then RC and Stable Foundation. Production
+FastAPI control API remains **1.1**; registry/workspaces **1.2**.
 
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
-frozen `/1` protocols (post-0.22 RC feedback), and 0.24 functional/JSON
-authoring convergence, then compatibility burn-in (0.25–0.98).
-TransformationModel incubation is deferred to post-1.0 phases.
+frozen `/1` protocols (0.25 freeze decision), and 0.24 functional/JSON
+authoring convergence, then compatibility burn-in (**0.25** first slice,
+0.26–0.98 continued). TransformationModel incubation is deferred to post-1.0
+phases.
 
 > **Production use is supported only within the documented reference
 > envelope.** See the [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md).

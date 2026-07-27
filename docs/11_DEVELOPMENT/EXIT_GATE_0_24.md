@@ -26,7 +26,12 @@
 
 ## Residual / follow-ups (0.25+)
 
-- Compatibility burn-in for `etlantic.pipeline/1` upgrade fixtures
-- Production FastAPI Control API (1.1)
-- Broader functional parity matrix for every class primitive edge case
-- Nested subpipeline edit UX polish
+Owned by **[0.25 — Compatibility Burn-In (first slice)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#025--compatibility-burn-in-first-slice)**
+unless noted otherwise:
+
+- Compatibility burn-in for `etlantic.pipeline/1` upgrade fixtures (0.25 WP1)
+- Cross-artifact codec matrix for plan/report/profile (0.25 WP2)
+- Plugin SDK `/1` freeze evidence (0.25 WP3)
+- 1.0 removal inventory (0.25 WP4)
+- Broader functional parity / nested subpipeline polish only when fixture-blocking (0.25 WP5)
+- Production FastAPI Control API (**1.1**, not 0.25)

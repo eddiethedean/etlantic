@@ -32,7 +32,7 @@
 - **0.24** Programmatic Authoring and Lossless JSON (`PipelineDefinition`,
   `etlantic.pipeline/1`, functional builders, CLI JSON targets, visual-builder
   catalog/edit contract, and FastAPI/OpenAPI reference adapter)
-- **0.25–0.98** Compatibility burn-in (upgrade fixtures, protocol `/1` freeze)
+- **0.25** Compatibility burn-in first slice (upgrade fixtures, protocol `/1` freeze); **0.26–0.98** continued burn-in
 - Multi-worker control plane / distributed scheduler
 - Storage / Resource / Observability protocol catalogs
 - Declaring unrestricted multi-tenant enterprise production
