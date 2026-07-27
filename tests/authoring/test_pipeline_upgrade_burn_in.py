@@ -22,7 +22,9 @@ from etlantic.authoring import (
 )
 from etlantic.authoring.upgrade import UnsupportedPipelineSchemaError
 
-FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "burn_in" / "pipeline" / "v0_24"
+FIXTURE_DIR = (
+    Path(__file__).resolve().parents[1] / "fixtures" / "burn_in" / "pipeline" / "v0_24"
+)
 
 
 def _fixture_paths() -> list[Path]:
@@ -66,7 +68,9 @@ def test_unknown_schema_still_fail_closed() -> None:
     path = FIXTURE_DIR / "minimal.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     data["schema"] = "etlantic.pipeline/99"
-    with pytest.raises((ValueError, UnsupportedPipelineSchemaError), match="Unsupported"):
+    with pytest.raises(
+        (ValueError, UnsupportedPipelineSchemaError), match="Unsupported"
+    ):
         pipeline_from_dict(data, verify=True)
 
 
