@@ -1,17 +1,17 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.23.0.** A consolidated diligence packet for
+> **Status: Available in ETLantic 0.24.0.** A consolidated diligence packet for
 > technical evaluators and enterprise decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.23 |
+| Topic | 0.24 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Not suitable for | Unrestricted enterprise production / multi-tenant control planes |
 | Support | Community; **no formal SLA** |
-| LTS / support window | Current published minor (`0.23.x`) only |
+| LTS / support window | Current published minor (`0.24.x`) only |
 | Compliance / SoR | Adopter-owned beyond shipped SBOM digests and GitHub attestations |
 
 ETLantic is a typed, contract-driven **pipeline framework** for Python. You
@@ -38,7 +38,7 @@ matrix. Use this guide to assemble a complete evaluation packet.
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.23.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.24.0`
 2. [Quickstart](QUICKSTART.md) — `etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -76,9 +76,9 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.23.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.24.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 
@@ -90,6 +90,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 | Portable transforms | [Portable transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |
 | Plugin SDK evaluation | [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md) |
 | Resilience / performance budgets | [Exit gate 0.23](../11_DEVELOPMENT/EXIT_GATE_0_23.md) |
+| Programmatic authoring / JSON | [Exit gate 0.24](../11_DEVELOPMENT/EXIT_GATE_0_24.md) |
 
 ## Explicit non-goals (do not expect these from docs or product)
 
@@ -111,6 +112,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.23 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.24 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-07-27
+
+### Added
+- Canonical `PipelineDefinition` and lossless `etlantic.pipeline/1` codecs/schema
+- Functional authoring builders (`etlantic.authoring`) with class/JSON parity
+- Definition-aware lifecycle: validate, plan, run, inspect without originating classes
+- CLI JSON TARGET support and `etlantic generate --kind definition`
+- Authoring catalog, immutable `EditCommand`s, structural/plan previews
+- Transport-neutral `etlantic.service.AuthoringService`
+- Optional `etlantic-fastapi` reference adapter + OpenAPI fixture
+- Docs: What's New 0.24, Migration 0.23→0.24, Exit Gate 0.24, programmatic authoring guide
+
+### Changed
+- Official package versions align at 0.24.0; plugins require `etlantic>=0.24.0,<0.25`
+- Lazy namespaces include `authoring` and `service`
+- Surface inventory lists `etlantic.pipeline/1` and authoring catalog as wire-stable
+
 ## [0.23.0] - 2026-07-27
 
 ### Added
@@ -860,6 +877,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.24.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.24.0
 [0.23.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.23.0
 [0.22.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.22.0
 [0.21.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.21.0

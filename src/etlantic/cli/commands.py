@@ -624,7 +624,9 @@ def register_commands(
         target: str = typer.Argument(...),
         output: str | None = typer.Option(None, "--output", "-o"),
     ) -> None:
-        graph = load_target(target).inspect()
+        from etlantic.authoring.lifecycle import inspect_pipeline_like
+
+        graph = inspect_pipeline_like(load_target(target))
         text = graph_to_dot(logical_graph_to_ir(graph))
         if output:
             Path(output).write_text(text, encoding="utf-8")
@@ -637,7 +639,9 @@ def register_commands(
         target: str = typer.Argument(...),
         output: str = typer.Option("lineage.html", "--output", "-o"),
     ) -> None:
-        graph = load_target(target).inspect()
+        from etlantic.authoring.lifecycle import inspect_pipeline_like
+
+        graph = inspect_pipeline_like(load_target(target))
         html = graph_to_html(logical_graph_to_ir(graph))
         Path(output).write_text(html, encoding="utf-8")
         typer.echo(f"Wrote {output}")
@@ -647,5 +651,7 @@ def register_commands(
         target: str = typer.Argument(...),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        graph = load_target(target).inspect()
+        from etlantic.authoring.lifecycle import inspect_pipeline_like
+
+        graph = inspect_pipeline_like(load_target(target))
         emit_payload(lineage_export(logical_graph_to_ir(graph)), fmt=fmt)

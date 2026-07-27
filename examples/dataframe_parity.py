@@ -1,4 +1,4 @@
-"""Parity example: one pipeline, Polars or Pandas via profile (ETLantic 0.23.0).
+"""Parity example: one pipeline, Polars or Pandas via profile (ETLantic 0.24.0).
 
 Requires:
 
@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.23.0 etlantic-polars==0.23.0 etlantic-pandas==0.23.0
+    pip install etlantic==0.24.0 etlantic-polars==0.24.0 etlantic-pandas==0.24.0
 
 Run with:
 

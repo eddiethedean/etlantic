@@ -116,7 +116,7 @@ nav:
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
-      - Current 0.23 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.24 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Overview: 01_GETTING_STARTED/README.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
@@ -139,6 +139,7 @@ nav:
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.24: 01_GETTING_STARTED/WHATS_NEW_0_24.md
       - What's new in 0.23: 01_GETTING_STARTED/WHATS_NEW_0_23.md
       - What's new in 0.22: 01_GETTING_STARTED/WHATS_NEW_0_22.md
       - Earlier releases:
@@ -187,6 +188,7 @@ nav:
       - Async: 04_TRANSFORMATIONS/ASYNC.md
   - Pipelines:
       - Overview: 05_PIPELINES/README.md
+      - Programmatic authoring: 05_PIPELINES/PROGRAMMATIC_AUTHORING.md
       - Pipeline: 05_PIPELINES/PIPELINE.md
       - Extracts: 05_PIPELINES/EXTRACTS.md
       - Steps: 05_PIPELINES/STEPS.md
@@ -261,6 +263,7 @@ nav:
       - Graphviz: 08_VISUALIZATION/GRAPHVIZ.md
       - HTML: 08_VISUALIZATION/HTML.md
       - Lineage: 08_VISUALIZATION/LINEAGE.md
+      - Application integration: 08_VISUALIZATION/APPLICATION_INTEGRATION.md
   - Examples:
       - Runnable Guides:
           - Overview: 09_EXAMPLES/README.md
@@ -275,7 +278,7 @@ nav:
       - Overview: 10_REFERENCE/README.md
       - CLI: 10_REFERENCE/CLI.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.23.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.24.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
       - Surface inventory: 10_REFERENCE/SURFACE_INVENTORY.md
@@ -303,7 +306,9 @@ nav:
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
       - Full roadmap: https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
       - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
+      - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
       - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
+      - Migration 0.23 → 0.24: 11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
       - Migration 0.21 → 0.22: 11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md
       - Exit gate 0.22: 11_DEVELOPMENT/EXIT_GATE_0_22.md
       - Migration 0.20 → 0.21: 11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md

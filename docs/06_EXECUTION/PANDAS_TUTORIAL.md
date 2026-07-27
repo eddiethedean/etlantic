@@ -1,19 +1,19 @@
 # Execute with Pandas
 
-> **Status: Available in ETLantic 0.23.0.** This guide uses the same logical
+> **Status: Available in ETLantic 0.24.0.** This guide uses the same logical
 > pipeline as the Polars tutorial.
 
 
 !!! note "Repository examples"
     Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.23.0` tag) and use
+    wheel. Clone a matching checkout (prefer the `v0.24.0` tag) and use
     `uv sync` / the documented dependency group before running them.
 
 ## Install and run
 
 ```bash
-python -m pip install 'etlantic==0.23.0' 'etlantic-pandas==0.23.0'
-git clone --branch v0.23.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.24.0' 'etlantic-pandas==0.24.0'
+git clone --branch v0.24.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas
 ```

@@ -16,7 +16,7 @@ pipelines and coordinating their execution through the tools you already
 choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 !!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.23.0`
+    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.24.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `etlantic init` (five-minute success)
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
@@ -28,7 +28,7 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 ## Project status
 
-**ETLantic 0.23.0** is a **Beta** (PyPI) release suitable for documented
+**ETLantic 0.24.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilots—not unrestricted enterprise production. It models,
 validates, and plans typed Python data pipelines, then runs them locally or
 through optional engine plugins.
@@ -42,7 +42,7 @@ through optional engine plugins.
 ## Minimal working example
 
 ```bash
-python -m pip install 'etlantic==0.23.0'
+python -m pip install 'etlantic==0.24.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic doctor --profile development

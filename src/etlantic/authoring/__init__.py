@@ -2,6 +2,132 @@
 
 from __future__ import annotations
 
+from etlantic.authoring.builders import (
+    add_node,
+    clone_definition,
+    connect,
+    contract_definition,
+    disconnect,
+    edge,
+    extract_node,
+    field_spec,
+    implementation_ref,
+    input_port,
+    load_node,
+    output_port,
+    parameter_port,
+    pipeline_definition,
+    remove_node,
+    step_node,
+    transformation_definition,
+)
+from etlantic.authoring.catalog import (
+    AuthoringCatalog,
+    CatalogEntry,
+    discover_authoring_catalog,
+    negotiate_capabilities,
+)
+from etlantic.authoring.definition import (
+    PIPELINE_SCHEMA,
+    ContractDefinition,
+    EdgeDefinition,
+    FieldSpec,
+    ImplementationRef,
+    NodeDefinition,
+    PipelineDefinition,
+    PortDefinitionSpec,
+    TransformationDefinition,
+)
+from etlantic.authoring.edits import EditCommand, EditResult, apply_edit
 from etlantic.authoring.graph_builder import build_logical_graph
+from etlantic.authoring.lifecycle import (
+    build_graph,
+    inspect_pipeline_like,
+    plan_pipeline_like,
+    validate_pipeline_like,
+)
+from etlantic.authoring.normalize import (
+    authoring_graph_fingerprint,
+    definition_from_pipeline,
+    logical_graph_from_definition,
+)
+from etlantic.authoring.preview import plan_preview, structural_validate_preview
+from etlantic.authoring.resolve import (
+    CallableRegistry,
+    callable_registry,
+    harvest_callables_from_pipeline,
+    resolve_definition,
+)
+from etlantic.authoring.serialize import (
+    canonical_pipeline_json,
+    pipeline_fingerprint,
+    pipeline_from_dict,
+    pipeline_from_json,
+    pipeline_to_dict,
+    pipeline_to_json,
+    read_pipeline_json,
+    verify_pipeline_fingerprint,
+    write_pipeline_json,
+)
+from etlantic.authoring.types import PipelineLike, coerce_definition
 
-__all__ = ["build_logical_graph"]
+__all__ = [
+    "PIPELINE_SCHEMA",
+    "AuthoringCatalog",
+    "CallableRegistry",
+    "CatalogEntry",
+    "ContractDefinition",
+    "EdgeDefinition",
+    "EditCommand",
+    "EditResult",
+    "FieldSpec",
+    "ImplementationRef",
+    "NodeDefinition",
+    "PipelineDefinition",
+    "PipelineLike",
+    "PortDefinitionSpec",
+    "TransformationDefinition",
+    "add_node",
+    "apply_edit",
+    "authoring_graph_fingerprint",
+    "build_graph",
+    "build_logical_graph",
+    "callable_registry",
+    "canonical_pipeline_json",
+    "clone_definition",
+    "coerce_definition",
+    "connect",
+    "contract_definition",
+    "definition_from_pipeline",
+    "disconnect",
+    "discover_authoring_catalog",
+    "edge",
+    "extract_node",
+    "field_spec",
+    "harvest_callables_from_pipeline",
+    "implementation_ref",
+    "input_port",
+    "inspect_pipeline_like",
+    "load_node",
+    "logical_graph_from_definition",
+    "negotiate_capabilities",
+    "output_port",
+    "parameter_port",
+    "pipeline_definition",
+    "pipeline_fingerprint",
+    "pipeline_from_dict",
+    "pipeline_from_json",
+    "pipeline_to_dict",
+    "pipeline_to_json",
+    "plan_pipeline_like",
+    "plan_preview",
+    "read_pipeline_json",
+    "remove_node",
+    "resolve_definition",
+    "step_node",
+    "structural_validate_preview",
+    "transformation_definition",
+    "validate_pipeline_like",
+    "verify_pipeline_fingerprint",
+    "write_pipeline_json",
+]

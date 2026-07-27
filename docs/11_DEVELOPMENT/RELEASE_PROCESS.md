@@ -12,11 +12,11 @@ ETLantic follows Semantic Versioning after 1.0:
 - Major: incompatible public API or persistent-format changes
 
 During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.23.0`).
+plugin packages currently share the core minor version (for example `0.24.0`).
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes eleven distributions:
+Tag `vX.Y.Z` publishes twelve distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -30,6 +30,7 @@ Tag `vX.Y.Z` publishes eleven distributions:
 | `etlantic-keyring` | `packages/etlantic-keyring` | stable |
 | `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | stable |
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | stable |
+| `etlantic-fastapi` | `packages/etlantic-fastapi` | thin 0.24 reference adapter |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 
 ## Pre-Release Checklist
@@ -59,7 +60,7 @@ Tag `vX.Y.Z` publishes eleven distributions:
    uv sync --locked
    uv run ruff check .
    uv run ruff format --check .
-   uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not airflow and not prefect and not keyring and not sqlmodel"
+   uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
    uv run python scripts/check_docs.py
    uv run python scripts/check_plugin_manifests.py
    uv run python scripts/check_agent_guidance.py
@@ -107,7 +108,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all eleven wheels/sdists.
+3. Builds all twelve wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (including keyring/sqlmodel),
@@ -176,7 +177,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.23 plugins, `etlantic>=0.23.0,<0.24`). A core
+0.23 plugins, `etlantic>=0.24.0,<0.25`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

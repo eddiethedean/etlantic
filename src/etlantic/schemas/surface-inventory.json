@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "classes": ["stable", "provisional", "experimental", "private", "compatibility"],
   "sdk_root_stable": [
     "Data",
@@ -22,6 +22,7 @@
     "compile_plan"
   ],
   "sdk_root_namespaces": [
+    "authoring",
     "transform",
     "dataframe",
     "sql",
@@ -29,9 +30,11 @@
     "orchestration",
     "viz",
     "secrets",
-    "testing"
+    "testing",
+    "service"
   ],
   "namespace_ownership": {
+    "authoring": "etlantic.authoring",
     "transform": "etlantic.transform",
     "dataframe": "etlantic.dataframe",
     "sql": "etlantic.sql",
@@ -39,7 +42,8 @@
     "orchestration": "etlantic.orchestration",
     "viz": "etlantic.viz",
     "secrets": "etlantic.secrets",
-    "testing": "etlantic.testing"
+    "testing": "etlantic.testing",
+    "service": "etlantic.service"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",
@@ -72,9 +76,11 @@
   ],
   "wire_schemas": {
     "etlantic.plan/1": "stable",
+    "etlantic.pipeline/1": "stable",
     "etlantic.run_report/1": "stable",
     "etlantic.interchange/1": "stable",
-    "etlantic.capabilities/1": "stable"
+    "etlantic.capabilities/1": "stable",
+    "etlantic.authoring-catalog/1": "stable"
   },
   "protocols": {
     "etlantic.dataframe/1": "stable",

@@ -127,18 +127,64 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
     @app.command("generate")
     def generate_cmd(
         ctx: typer.Context,
-        target: str = typer.Argument(..., help="module:Class or path.py:Class"),
+        target: str = typer.Argument(
+            ..., help="module:Class, path.py:Class, or pipeline JSON"
+        ),
         output: str = typer.Option("contracts", "--output", "-o"),
         fmt: str = typer.Option("json", "--format"),
+        kind: str = typer.Option(
+            "contracts",
+            "--kind",
+            help="contracts (ODCS/DTCS/DPCS) or definition (etlantic.pipeline/1 JSON)",
+        ),
         sqlmodel: bool = typer.Option(
             False,
             "--sqlmodel",
             help="Also emit SQLModel stubs (requires etlantic-sqlmodel)",
         ),
     ) -> None:
-        """Generate ODCS/DTCS/DPCS contract bundles for a pipeline."""
+        """Generate ODCS/DTCS/DPCS contract bundles or pipeline definition JSON."""
         cli = _cli(ctx)
         pipeline_cls = cli.load_target(target)
+        from etlantic.authoring.definition import PipelineDefinition
+        from etlantic.authoring.normalize import definition_from_pipeline
+        from etlantic.authoring.serialize import write_pipeline_json
+
+        if kind == "definition":
+            if isinstance(pipeline_cls, PipelineDefinition):
+                defn = pipeline_cls
+            else:
+                defn = definition_from_pipeline(pipeline_cls)
+            out_path = Path(output)
+            if out_path.suffix.lower() != ".json":
+                out_path = out_path / "pipeline.definition.json"
+            written = write_pipeline_json(defn, out_path)
+            emit_payload(
+                {
+                    "ok": True,
+                    "kind": "definition",
+                    "schema": defn.schema,
+                    "pipeline_id": defn.pipeline_id,
+                    "fingerprint": defn.fingerprint,
+                    "output": str(written),
+                },
+                fmt=fmt,
+            )
+            return
+
+        if isinstance(pipeline_cls, PipelineDefinition):
+            emit_payload(
+                {
+                    "ok": False,
+                    "error": (
+                        "Contract generation from PipelineDefinition requires "
+                        "--kind definition; ODCS/DTCS/DPCS still needs a class target"
+                    ),
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.INVALID_MODEL)
+
         bundle = write_contracts(pipeline_cls, output)
         payload: dict[str, Any] = {
             "ok": True,

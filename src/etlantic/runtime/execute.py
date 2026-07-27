@@ -89,7 +89,7 @@ def _merge_plan_policies(request: RunRequest, plan: PipelinePlan) -> RunRequest:
 
 
 async def arun_pipeline(
-    pipeline_cls: type[Any],
+    pipeline_cls: type[Any] | Any,
     *,
     profile: str | Any = "development",
     request: RunRequest | None = None,
@@ -98,7 +98,16 @@ async def arun_pipeline(
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
 ) -> PipelineRunReport:
-    """Validate, plan, and execute a pipeline asynchronously."""
+    """Validate, plan, and execute a pipeline asynchronously.
+
+    ``pipeline_cls`` may be a ``Pipeline`` subclass or a ``PipelineDefinition``.
+    """
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.lifecycle import build_graph
+    from etlantic.authoring.resolve import (
+        harvest_callables_from_pipeline,
+        resolve_definition,
+    )
     from etlantic.diagnostics import Severity
     from etlantic.exceptions import ETLanticError
     from etlantic.profile import resolve_profile
@@ -110,10 +119,24 @@ async def arun_pipeline(
     errors = [d for d in trust_diags if d.severity is Severity.ERROR]
     if errors:
         raise ETLanticError("; ".join(d.message for d in errors))
-    graph = pipeline_cls.build_graph()
+
+    pipeline_for_scheduler: type[Any] | None
+    if isinstance(pipeline_cls, PipelineDefinition):
+        _defn, context, _ = resolve_definition(
+            pipeline_cls, context=context, profile=profile
+        )
+        if context is None:
+            context = PlanningContext.create(profile=profile, registry=runtime.registry)
+        graph = build_graph(pipeline_cls)
+        pipeline_for_scheduler = None
+    else:
+        harvest_callables_from_pipeline(pipeline_cls)
+        graph = pipeline_cls.build_graph()
+        pipeline_for_scheduler = pipeline_cls
+        if context is None:
+            context = PlanningContext.create(profile=profile, registry=runtime.registry)
+
     selection = request.selection.to_plan_selection(graph)
-    if context is None:
-        context = PlanningContext.create(profile=profile, registry=runtime.registry)
     plan = plan_pipeline(
         pipeline_cls,
         context=context,
@@ -177,7 +200,7 @@ async def arun_pipeline(
             plan,
             request=request,
             runtime=runtime,
-            pipeline_cls=pipeline_cls,
+            pipeline_cls=pipeline_for_scheduler,
             workspace=Path(workspace) if workspace else store.workspace,
             artifact_store=store,
             context=SchedulingContext(
@@ -190,7 +213,7 @@ async def arun_pipeline(
 
 
 def run_pipeline(
-    pipeline_cls: type[Any],
+    pipeline_cls: type[Any] | Any,
     *,
     profile: str | Any = "development",
     request: RunRequest | None = None,
@@ -199,7 +222,10 @@ def run_pipeline(
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
 ) -> PipelineRunReport:
-    """Validate, plan, and execute a pipeline synchronously."""
+    """Validate, plan, and execute a pipeline synchronously.
+
+    ``pipeline_cls`` may be a ``Pipeline`` subclass or a ``PipelineDefinition``.
+    """
     _ensure_not_in_running_loop()
 
     async def _main() -> PipelineRunReport:

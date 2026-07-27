@@ -5,19 +5,20 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.23.0** — choose your guide:
+**ETLantic 0.24.0** — choose your guide:
 
-| From version | Ordered path to 0.23 |
+| From version | Ordered path to 0.24 |
 |---|---|
-| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
-| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
-| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → 0.21→0.22 → 0.22→0.23 |
+| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
+| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
+| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → 0.22→0.23 → 0.23→0.24 |
+| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then the 0.21 chain |
 | 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.20 chain |
 | 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.19 chain |
 | 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.18 chain |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.23 |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.24 |
 
-### Breaking highlights on the way to 0.23
+### Breaking highlights on the way to 0.24
 
 | Span | Watch for |
 |---|---|
@@ -27,6 +28,7 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.20 → 0.21 | Durable CLI workspace; `init` / `doctor`; assets vs bindings |
 | 0.21 → 0.22 | Plugin SDK RC; curated `import etlantic as etl` facade |
 | 0.22 → 0.23 | Resilience budgets; report persistence / retry diagnostics |
+| 0.23 → 0.24 | `PipelineDefinition` / `etlantic.pipeline/1`; functional authoring; CLI JSON targets |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -35,6 +37,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.23 → 0.24 | [MIGRATION_0_23_TO_0_24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
 | 0.22 → 0.23 | [MIGRATION_0_22_TO_0_23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
 | 0.21 → 0.22 | [MIGRATION_0_21_TO_0_22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
 | 0.20 → 0.21 | [MIGRATION_0_20_TO_0_21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) |
@@ -115,6 +118,17 @@ See [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md).
 | Unsafe SQL/file retry after partial write | Blocked at runtime with `PMEXEC501`; keep compile-time `PMORCH310` checks in CI |
 
 See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md).
+
+## 0.24 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Class-only pipeline lifecycle | `PipelineDefinition` / `etlantic.authoring` functional builders and JSON |
+| Plan JSON as authoring round-trip | Use `etlantic.pipeline/1`; keep `etlantic.plan/1` for resolved execution |
+| GUI/service custom encoders | Public catalog, `EditCommand`, `etlantic.service.AuthoringService` |
+| Optional HTTP reference | `pip install etlantic-fastapi==0.24.0` (not the 1.1 control plane) |
+
+See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
 
 ## Checklist
 

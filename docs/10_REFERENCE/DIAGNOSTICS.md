@@ -61,7 +61,7 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently 0.23.x).
+These codes are emitted by the installed ETLantic package (currently 0.24.x).
 The message, path, metadata, and severity provide the case-specific detail.
 Maintainers can regenerate a machine-readable inventory with:
 

@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.23.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
+ETLantic 0.24.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
 while remaining pre-1.0. Breaking changes remain possible, but they must not
 be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
@@ -8,7 +8,7 @@ be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.23 public imports | Supported for the 0.23.x line |
+| Documented 0.24 public imports | Supported for the 0.24.x line |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |

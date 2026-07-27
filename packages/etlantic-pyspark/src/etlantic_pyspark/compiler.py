@@ -36,7 +36,7 @@ from etlantic_pyspark.lowering.actions import (
     apply_action,
 )
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
 
 KERNEL_FUNCTIONS = frozenset(
     {

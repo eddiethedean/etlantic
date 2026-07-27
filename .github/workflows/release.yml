@@ -47,12 +47,13 @@ jobs:
           SQLMODEL_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sqlmodel/pyproject.toml | head -1)"
           SPARKFORGE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sparkforge/pyproject.toml | head -1)"
           DATAFUSION_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-datafusion/pyproject.toml | head -1)"
+          FASTAPI_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-fastapi/pyproject.toml | head -1)"
           if [ "$TAG" != "$VERSION" ] || [ "$TAG" != "$MODULE_VERSION" ]; then
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ]; then
-            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION'"
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION'"
             exit 1
           fi
 
@@ -71,6 +72,7 @@ jobs:
           uv build --package etlantic-sqlmodel --out-dir dist
           uv build --package etlantic-sparkforge --out-dir dist
           uv build --package etlantic-datafusion --out-dir dist
+          uv build --package etlantic-fastapi --out-dir dist
           ls -la dist/
 
       - name: Generate CycloneDX SBOMs
@@ -147,10 +149,11 @@ jobs:
           SQLMODEL="dist/etlantic_sqlmodel-${TAG}-py3-none-any.whl"
           SPARKFORGE="dist/etlantic_sparkforge-${TAG}-py3-none-any.whl"
           DATAFUSION="dist/etlantic_datafusion-${TAG}-py3-none-any.whl"
+          FASTAPI="dist/etlantic_fastapi-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project \
             --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
             --with "$SPARK" --with "$AIRFLOW" --with "$PREFECT" --with "$KEYRING" \
-            --with "$SQLMODEL" --with "$SPARKFORGE" --with "$DATAFUSION" \
+            --with "$SQLMODEL" --with "$SPARKFORGE" --with "$DATAFUSION" --with "$FASTAPI" \
             python -c "
           import etlantic
           import etlantic_polars
@@ -163,6 +166,7 @@ jobs:
           import etlantic_sqlmodel
           import etlantic_sparkforge
           import etlantic_datafusion
+          import etlantic_fastapi
           assert etlantic.__version__ == '$TAG'
           assert etlantic_polars.__version__ == '$TAG'
           assert etlantic_pandas.__version__ == '$TAG'
@@ -174,6 +178,7 @@ jobs:
           assert etlantic_sqlmodel.__version__ == '$TAG'
           assert etlantic_sparkforge.__version__ == '$TAG'
           assert etlantic_datafusion.__version__ == '$TAG'
+          assert etlantic_fastapi.__version__ == '$TAG'
           from etlantic.dataframe.discovery import discover_dataframe_plugins
           from etlantic.sql.discovery import discover_sql_plugins
           from etlantic.spark.discovery import discover_spark_plugins
@@ -328,6 +333,9 @@ jobs:
           publish_pair etlantic-datafusion \
             "dist/etlantic_datafusion-${TAG}-py3-none-any.whl" \
             "dist/etlantic_datafusion-${TAG}.tar.gz"
+          publish_pair etlantic-fastapi \
+            "dist/etlantic_fastapi-${TAG}-py3-none-any.whl" \
+            "dist/etlantic_fastapi-${TAG}.tar.gz"
 
       - name: Create GitHub Release
         env:

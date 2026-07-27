@@ -1,6 +1,6 @@
 # Reference
 
-This section separates ETLantic **0.23** shipped behavior from proposed 1.0
+This section separates ETLantic **0.24** shipped behavior from proposed 1.0
 interfaces.
 
 ## Shipped
@@ -25,7 +25,7 @@ interfaces.
 ## Future design / proposed 1.0
 
 - [Programmatic Authoring and Lossless JSON](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md)
-  (planned 0.24 definition, functional, GUI, and service surfaces)
+  (0.24 definition, functional, GUI, and service surfaces)
 - [Configuration](CONFIGURATION.md) (proposed 1.0 surface beyond shipped toml)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (proposed names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,

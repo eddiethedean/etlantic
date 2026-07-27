@@ -1,7 +1,7 @@
 # Roadmap
 
-**Current release:** ETLantic **0.23.0** (Beta / PyPI). Milestones 0.21–0.23
-are shipped; 0.24+ is planned. See
+**Current release:** ETLantic **0.24.0** (Beta / PyPI). Milestones 0.21–0.24
+are shipped; 0.25+ is planned. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2046,7 +2046,7 @@ documented scale limits, and deterministic terminal-state semantics.
 
 ## 0.24 — Programmatic Authoring and Lossless JSON
 
-**Status: planned — after 0.23.0.**
+**Status: shipped — 0.24.0.**
 
 **Objective:** make every ETLantic modeling workflow available without class
 declarations, and make every public semantic artifact safely, canonically, and

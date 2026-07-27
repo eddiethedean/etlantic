@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from etlantic.diagnostics import Diagnostic, Severity
 
@@ -13,13 +13,20 @@ if TYPE_CHECKING:
 
 
 def phase_capability(
-    pipeline_cls: type[Pipeline],
+    pipeline_cls: type[Pipeline] | Any | None,
     context: PlanningContext,
     policy: ValidationPolicy,
 ) -> list[Diagnostic]:
+    """Negotiate profile capability requirements against registered engines.
+
+    ``pipeline_cls`` is accepted for call-site compatibility and may be a
+    pipeline class, definition probe, or ``None``; capability checks use
+    ``context`` only.
+    """
     from etlantic.capabilities import CapabilityDecision, negotiate_capabilities
     from etlantic.engines import get_engine_registry
 
+    _ = pipeline_cls
     diagnostics: list[Diagnostic] = []
     registry = get_engine_registry()
     profile = context.profile

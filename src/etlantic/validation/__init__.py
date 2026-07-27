@@ -34,14 +34,24 @@ VALIDATION_PHASES = (
 
 
 def validate_pipeline(
-    pipeline_cls: type[Pipeline],
+    pipeline_cls: type[Pipeline] | Any,
     *,
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     policy: str | ValidationPolicy | None = None,
 ) -> ValidationReport:
-    """Validate a pipeline through structural → capability phases."""
+    """Validate a pipeline through structural → capability phases.
+
+    Accepts a ``Pipeline`` subclass or a ``PipelineDefinition``.
+    """
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.lifecycle import validate_pipeline_like
     from etlantic.registry import PlanningContext
+
+    if isinstance(pipeline_cls, PipelineDefinition):
+        return validate_pipeline_like(
+            pipeline_cls, context=context, profile=profile, policy=policy
+        )
 
     if context is None:
         context = PlanningContext.create(profile=profile)

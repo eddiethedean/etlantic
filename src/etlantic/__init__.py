@@ -72,6 +72,7 @@ _CURATED: dict[str, Any] = {
 
 # Namespace names remain in __all__; modules are bound above.
 _LAZY_NAMESPACES: dict[str, str] = {
+    "authoring": "etlantic.authoring",
     "transform": "etlantic.transform",
     "dataframe": "etlantic.dataframe",
     "sql": "etlantic.sql",
@@ -80,6 +81,7 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "viz": "etlantic.viz",
     "secrets": "etlantic.secrets",
     "testing": "etlantic.testing",
+    "service": "etlantic.service",
 }
 
 # Pre-1.0 compatibility aliases for symbols demoted off the curated root.

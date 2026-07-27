@@ -2137,6 +2137,12 @@ class LocalOrchestrator:
             or (descriptor.engine if descriptor else None)
             or "local"
         )
+        from etlantic.authoring.resolve import callable_registry
+
+        live = callable_registry().get(node.transformation_id, engine)
+        if live is not None:
+            return live
+
         xf = self.transform_lookup.get(node.transformation_id)
         if xf is None:
             for candidate in _all_subclasses(Transformation):

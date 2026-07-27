@@ -1,4 +1,4 @@
-# Installing ETLantic 0.23.0
+# Installing ETLantic 0.24.0
 
 ## Requirements
 
@@ -16,7 +16,7 @@ is the one that runs.
 python -m venv .venv
 source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.23.0'
+python -m pip install 'etlantic==0.24.0'
 python -m etlantic --version
 ```
 
@@ -25,18 +25,18 @@ python -m etlantic --version
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install 'etlantic==0.23.0'
+uv pip install 'etlantic==0.24.0'
 uv run etlantic --version
 ```
 
 If you already have a uv project (`pyproject.toml`), you may use
-`uv add 'etlantic==0.23.0'` instead.
+`uv add 'etlantic==0.24.0'` instead.
 
 ### Poetry
 
 ```bash
 poetry new my-pipeline && cd my-pipeline
-poetry add 'etlantic==0.23.0'
+poetry add 'etlantic==0.24.0'
 poetry run etlantic --version
 ```
 
@@ -45,7 +45,7 @@ poetry run etlantic --version
 ```bash
 conda create -n etlantic python=3.12 pip -y
 conda activate etlantic
-python -m pip install 'etlantic==0.23.0'
+python -m pip install 'etlantic==0.24.0'
 python -m etlantic --version
 ```
 
@@ -53,7 +53,7 @@ python -m etlantic --version
 
 ```powershell
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.23.0'
+py -3.11 -m pip install 'etlantic==0.24.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -74,34 +74,34 @@ after first success. Contributor checkout lives at the end of this page.
 ## Optional engine plugins
 
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
-explicitly and **match the core minor** (`0.23.0` with `0.23.0`).
+explicitly and **match the core minor** (`0.24.0` with `0.24.0`).
 
 **Primary install (separate packages):**
 
 ```bash
-python -m pip install 'etlantic-polars==0.23.0'     # dataframe + Polars portable compiler
-python -m pip install 'etlantic-pandas==0.23.0'     # dataframe + Pandas portable compiler
-python -m pip install 'etlantic-sql==0.23.0'        # PostgreSQL SQL reference plugin
-python -m pip install 'etlantic-pyspark==0.23.0'    # PySpark plugin + portable compiler
-python -m pip install 'etlantic-airflow==0.23.0'    # Airflow DAG compiler
-python -m pip install 'etlantic-prefect==0.23.0'    # Prefect direct-execution (local MVP)
-python -m pip install 'etlantic-keyring==0.23.0'    # OS keyring secret provider
-python -m pip install 'etlantic-sqlmodel==0.23.0'   # SQLModel bridge helpers
-python -m pip install 'etlantic-sparkforge==0.23.0' # SparkForge → ETLantic IR adapter
+python -m pip install 'etlantic-polars==0.24.0'     # dataframe + Polars portable compiler
+python -m pip install 'etlantic-pandas==0.24.0'     # dataframe + Pandas portable compiler
+python -m pip install 'etlantic-sql==0.24.0'        # PostgreSQL SQL reference plugin
+python -m pip install 'etlantic-pyspark==0.24.0'    # PySpark plugin + portable compiler
+python -m pip install 'etlantic-airflow==0.24.0'    # Airflow DAG compiler
+python -m pip install 'etlantic-prefect==0.24.0'    # Prefect direct-execution (local MVP)
+python -m pip install 'etlantic-keyring==0.24.0'    # OS keyring secret provider
+python -m pip install 'etlantic-sqlmodel==0.24.0'   # SQLModel bridge helpers
+python -m pip install 'etlantic-sparkforge==0.24.0' # SparkForge → ETLantic IR adapter
 ```
 
 **Equivalent extras** (same packages, same pins):
 
 ```bash
-python -m pip install 'etlantic[polars]==0.23.0'
-python -m pip install 'etlantic[pandas]==0.23.0'
-python -m pip install 'etlantic[dataframes]==0.23.0'   # polars + pandas
-python -m pip install 'etlantic[sql]==0.23.0'          # alias: [postgresql]
-python -m pip install 'etlantic[pyspark]==0.23.0'      # alias: [spark]
-python -m pip install 'etlantic[airflow]==0.23.0'
-python -m pip install 'etlantic[prefect]==0.23.0'
+python -m pip install 'etlantic[polars]==0.24.0'
+python -m pip install 'etlantic[pandas]==0.24.0'
+python -m pip install 'etlantic[dataframes]==0.24.0'   # polars + pandas
+python -m pip install 'etlantic[sql]==0.24.0'          # alias: [postgresql]
+python -m pip install 'etlantic[pyspark]==0.24.0'      # alias: [spark]
+python -m pip install 'etlantic[airflow]==0.24.0'
+python -m pip install 'etlantic[prefect]==0.24.0'
 # Experimental Gate B stub (not graduated; not recommended):
-python -m pip install 'etlantic[datafusion]==0.23.0'
+python -m pip install 'etlantic[datafusion]==0.24.0'
 ```
 
 Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[otel]`, `[arrow]`.
@@ -141,7 +141,7 @@ only; does not install Apache Airflow). Prefect: direct execution via
 Prefer the [Upgrade hub](UPGRADE.md). Quick pin:
 
 ```bash
-python -m pip install --upgrade 'etlantic==0.23.0'
+python -m pip install --upgrade 'etlantic==0.24.0'
 ```
 
 ## Installation problems

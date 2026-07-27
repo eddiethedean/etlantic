@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 from etlantic.model import LogicalGraph
 
-if TYPE_CHECKING:
-    from etlantic.pipeline import Pipeline
 
+def inspect_pipeline(pipeline_cls: type[Any] | Any) -> LogicalGraph:
+    """Return the immutable logical graph for a pipeline class or definition.
 
-def inspect_pipeline(pipeline_cls: type[Pipeline]) -> LogicalGraph:
-    """Return the immutable logical graph for a pipeline class.
-
-    Repeated calls return an equivalent graph (cached on the class).
+    Repeated calls on classes return an equivalent graph (cached on the class).
     """
-    return pipeline_cls.build_graph()
+    from etlantic.authoring.lifecycle import inspect_pipeline_like
+
+    return inspect_pipeline_like(pipeline_cls)

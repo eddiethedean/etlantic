@@ -54,11 +54,19 @@ def register_core_commands(
             registry=cli.runtime.registry,
             allow_adhoc_profile=allow_adhoc_profile,
         )
-        report = pipeline_cls.validate(context=context)
+        from etlantic.authoring.definition import PipelineDefinition
+        from etlantic.authoring.lifecycle import validate_pipeline_like
+
+        if isinstance(pipeline_cls, PipelineDefinition):
+            report = validate_pipeline_like(pipeline_cls, context=context)
+            prefix = pipeline_cls.pipeline_name
+        else:
+            report = pipeline_cls.validate(context=context)
+            prefix = pipeline_cls.__name__
         emit_validation_report(
             report,
             fmt=fmt,
-            prefix=pipeline_cls.__name__,
+            prefix=prefix,
             verbose=cli.globals.verbose,
             quiet=cli.globals.quiet,
         )
@@ -73,7 +81,9 @@ def register_core_commands(
         """Inspect a pipeline logical graph."""
         cli = get_cli_context(ctx)
         pipeline_cls = cli.load_target(target)
-        graph = pipeline_cls.inspect()
+        from etlantic.authoring.lifecycle import inspect_pipeline_like
+
+        graph = inspect_pipeline_like(pipeline_cls)
         payload = {
             "pipeline_id": graph.pipeline_id,
             "pipeline_name": graph.pipeline_name,
@@ -149,13 +159,25 @@ def register_core_commands(
             no_write=no_write,
         )
         paths = cli.workspace()
+        from etlantic.authoring.definition import PipelineDefinition
+        from etlantic.runtime.execute import run_pipeline as run_pipeline_fn
+
         try:
-            report = pipeline_cls.run(
-                profile=resolved,
-                request=request,
-                runtime=cli.runtime,
-                workspace=str(paths.artifacts),
-            )
+            if isinstance(pipeline_cls, PipelineDefinition):
+                report = run_pipeline_fn(
+                    pipeline_cls,
+                    profile=resolved,
+                    request=request,
+                    runtime=cli.runtime,
+                    workspace=str(paths.artifacts),
+                )
+            else:
+                report = pipeline_cls.run(
+                    profile=resolved,
+                    request=request,
+                    runtime=cli.runtime,
+                    workspace=str(paths.artifacts),
+                )
         except PipelineExecutionError as exc:
             report = getattr(exc, "report", None)
             if report is not None:

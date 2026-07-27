@@ -1,6 +1,6 @@
 # ETLantic 0.24 Programmatic Authoring Plan
 
-**Status: planned; not available in ETLantic 0.23.**
+**Status: shipped in ETLantic 0.24.0.**
 
 ETLantic 0.24 makes pipelines fully authorable, editable, serializable, and
 executable without requiring Python class declarations. Class authoring remains

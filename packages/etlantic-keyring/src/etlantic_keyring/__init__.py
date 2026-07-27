@@ -15,7 +15,7 @@ from etlantic.secrets.provider import (
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
 
 __all__ = [
     "KeyringSecretProvider",

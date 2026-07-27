@@ -1132,6 +1132,7 @@ def main() -> None:
     except ValueError:
         next_minor = None
     experimental_packages = {"etlantic-datafusion"}
+    reference_packages = {"etlantic-fastapi"}
     root_pyproject_path = ROOT / "pyproject.toml"
     root_text = root_pyproject_path.read_text(encoding="utf-8")
     if root_beta_classifier not in root_text:
@@ -1146,6 +1147,20 @@ def main() -> None:
         if pkg_name in experimental_packages:
             if alpha_classifier not in text:
                 raise SystemExit(f"{path} experimental package should use Alpha")
+            if next_minor is not None:
+                expected_alt = f"etlantic>={major_minor}.0,<{next_minor}"
+                if expected_alt not in text:
+                    raise SystemExit(
+                        f"{path} must depend on {expected_alt} (found mismatched core range)"
+                    )
+            continue
+        if pkg_name in reference_packages:
+            if root_beta_classifier not in text:
+                raise SystemExit(f"{path} reference package should use Beta")
+            if plugin_stable_classifier in text:
+                raise SystemExit(
+                    f"{path} reference package should use Beta, not Production/Stable"
+                )
             if next_minor is not None:
                 expected_alt = f"etlantic>={major_minor}.0,<{next_minor}"
                 if expected_alt not in text:

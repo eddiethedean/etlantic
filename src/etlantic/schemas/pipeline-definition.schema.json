@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/pipeline-definition.json",
+  "title": "ETLantic PipelineDefinition",
+  "description": "Wire document for PipelineDefinition (schema const etlantic.pipeline/1).",
+  "type": "object",
+  "required": ["schema", "pipeline_id", "pipeline_name", "nodes", "edges"],
+  "properties": {
+    "schema": { "const": "etlantic.pipeline/1" },
+    "pipeline_id": { "type": "string" },
+    "pipeline_name": { "type": "string" },
+    "version": { "type": ["string", "null"] },
+    "fingerprint": { "type": ["string", "null"] },
+    "contracts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contract" }
+    },
+    "transformations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/transformation" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "profile_ref": { "type": ["string", "null"] },
+    "policy_refs": { "type": "object", "additionalProperties": true },
+    "reliability": { "type": "object", "additionalProperties": true },
+    "provenance": { "type": "object", "additionalProperties": true },
+    "extensions": { "type": "object", "additionalProperties": true },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "nullable": { "type": "boolean" },
+        "required": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "contract": {
+      "type": "object",
+      "required": ["identity", "name"],
+      "properties": {
+        "identity": { "type": "string" },
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "authoring_id": { "type": ["string", "null"] },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+        "metadata": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": false
+    },
+    "port": {
+      "type": "object",
+      "required": ["name", "direction"],
+      "properties": {
+        "name": { "type": "string" },
+        "direction": { "type": "string" },
+        "contract_id": { "type": ["string", "null"] },
+        "value_type": { "type": ["string", "null"] },
+        "default": true,
+        "has_default": { "type": "boolean" },
+        "value": true,
+        "has_value": { "type": "boolean" },
+        "role": { "type": "string" },
+        "required": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "implementation_ref": {
+      "type": "object",
+      "required": ["engine", "identity"],
+      "properties": {
+        "engine": { "type": "string" },
+        "identity": { "type": "string" },
+        "kind": { "type": "string" },
+        "is_async": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "transformation": {
+      "type": "object",
+      "required": ["identity", "name"],
+      "properties": {
+        "identity": { "type": "string" },
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "ports": { "type": "array", "items": { "$ref": "#/$defs/port" } },
+        "implementation_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/implementation_ref" }
+        },
+        "portable_plan": { "type": ["object", "null"], "additionalProperties": true },
+        "metadata": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": ["name", "kind", "identity"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "type": "string" },
+        "identity": { "type": "string" },
+        "asset": { "type": ["string", "null"] },
+        "contract_id": { "type": ["string", "null"] },
+        "transformation_id": { "type": ["string", "null"] },
+        "transformation_name": { "type": ["string", "null"] },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/port" } },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/port" } },
+        "parameters": { "type": "array", "items": { "$ref": "#/$defs/port" } },
+        "nested": { "type": ["object", "null"] },
+        "nested_pipeline_id": { "type": ["string", "null"] },
+        "bindings": { "type": "object", "additionalProperties": true },
+        "metadata": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": ["producer_node", "producer_port", "consumer_node", "consumer_port"],
+      "properties": {
+        "producer_node": { "type": "string" },
+        "producer_port": { "type": "string" },
+        "consumer_node": { "type": "string" },
+        "consumer_port": { "type": "string" },
+        "producer_contract_id": { "type": ["string", "null"] },
+        "consumer_contract_id": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

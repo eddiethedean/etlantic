@@ -54,7 +54,7 @@ from etlantic.transformation import Step
 
 
 def plan_pipeline(
-    pipeline_cls: type[Any],
+    pipeline_cls: type[Any] | Any,
     *,
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
@@ -67,7 +67,7 @@ def plan_pipeline(
     planning.
 
     Args:
-        pipeline_cls: Pipeline class to plan.
+        pipeline_cls: Pipeline class or ``PipelineDefinition`` to plan.
         context: Optional planning context (registry, profile object, selection).
             When omitted, ``PlanningContext.create(profile=profile)`` is used.
         profile: Profile name, JSON path, :class:`~etlantic.profile.Profile`, or
@@ -80,7 +80,17 @@ def plan_pipeline(
     Raises:
         PipelineValidationError: When validation reports errors.
     """
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.lifecycle import plan_pipeline_like
     from etlantic.validation import validate_pipeline
+
+    if isinstance(pipeline_cls, PipelineDefinition):
+        return plan_pipeline_like(
+            pipeline_cls,
+            context=context,
+            profile=profile,
+            selection=selection,
+        )
 
     ctx = context or PlanningContext.create(profile=profile)
     report = validate_pipeline(pipeline_cls, context=ctx)
@@ -93,7 +103,7 @@ def plan_pipeline(
 
 
 def plan_pipeline_with_report(
-    pipeline_cls: type[Any],
+    pipeline_cls: type[Any] | Any,
     *,
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
@@ -105,7 +115,7 @@ def plan_pipeline_with_report(
     ``(None, report)`` instead of raising when validation fails.
 
     Args:
-        pipeline_cls: Pipeline class to plan.
+        pipeline_cls: Pipeline class or ``PipelineDefinition`` to plan.
         context: Optional planning context.
         profile: Profile name, path, object, or ``None``.
         selection: Optional partial-run selection.
@@ -114,7 +124,29 @@ def plan_pipeline_with_report(
         ``(plan, report)`` where ``plan`` is ``None`` when validation failed or
         planning raised :class:`~etlantic.exceptions.PipelineValidationError`.
     """
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.lifecycle import (
+        plan_pipeline_like,
+        validate_pipeline_like,
+    )
     from etlantic.validation import validate_pipeline
+
+    if isinstance(pipeline_cls, PipelineDefinition):
+        ctx = context or PlanningContext.create(profile=profile)
+        report = validate_pipeline_like(pipeline_cls, context=ctx)
+        if report.has_errors:
+            return None, report
+        try:
+            return (
+                plan_pipeline_like(
+                    pipeline_cls,
+                    context=ctx,
+                    selection=selection or ctx.selection,
+                ),
+                report,
+            )
+        except PipelineValidationError as exc:
+            return None, exc.report if exc.report is not None else report
 
     ctx = context or PlanningContext.create(profile=profile)
     report = validate_pipeline(pipeline_cls, context=ctx)
@@ -144,14 +176,32 @@ def _selection_error(message: str) -> PipelineValidationError:
     return PipelineValidationError(message, report=report)
 
 
-def _build_plan(
-    pipeline_cls: type[Any],
+def _build_plan_from_definition(
+    definition: Any,
     context: PlanningContext,
     *,
     selection: dict[str, Any] | None = None,
 ) -> PipelinePlan:
+    """Build a plan from an unresolved PipelineDefinition."""
+    return _build_plan(None, context, selection=selection, definition=definition)
+
+
+def _build_plan(
+    pipeline_cls: type[Any] | None,
+    context: PlanningContext,
+    *,
+    selection: dict[str, Any] | None = None,
+    definition: Any | None = None,
+) -> PipelinePlan:
     # 1. Freeze logical model
-    graph = pipeline_cls.build_graph()
+    if definition is not None:
+        from etlantic.authoring.normalize import logical_graph_from_definition
+
+        graph = logical_graph_from_definition(definition)
+    else:
+        if pipeline_cls is None:
+            raise TypeError("pipeline_cls is required when definition is omitted")
+        graph = pipeline_cls.build_graph()
     selected: tuple[str, ...] | None = None
     sel = selection or {}
     try:
@@ -177,9 +227,14 @@ def _build_plan(
     security_domain = profile.security_domain
 
     # 4-5. Implementations + capabilities
-    implementations = _select_implementations(
-        pipeline_cls, graph, context, default_engine
-    )
+    if definition is not None:
+        implementations = _select_implementations_from_definition(
+            definition, graph, context, default_engine
+        )
+    else:
+        implementations = _select_implementations(
+            pipeline_cls, graph, context, default_engine
+        )
     from etlantic.planning.capabilities import (
         assert_capabilities_supported,
         assert_dataframe_engines_available,
@@ -315,6 +370,13 @@ def _build_plan(
             resource_refs[f"secret:{key}"] = secret.to_dict()
 
     contract_versions: dict[str, str] = {}
+    if definition is not None:
+        for contract in getattr(definition, "contracts", ()) or ():
+            if contract.version and (contract.authoring_id or contract.identity):
+                contract_versions[contract.authoring_id or contract.identity] = (
+                    contract.version
+                )
+                contract_versions[contract.identity] = contract.version
     for node in graph.nodes:
         if node.contract_type is not None:
             version = published_contract_version(node.contract_type)
@@ -487,6 +549,72 @@ def _build_plan(
         execution_settings=plan.execution_settings,
         metadata=plan.metadata,
     )
+
+
+def _select_implementations_from_definition(
+    definition: Any,
+    graph: LogicalGraph,
+    context: PlanningContext,
+    default_engine: str,
+) -> dict[str, ImplementationDescriptor]:
+    """Select implementations using definition refs + callable/registry state."""
+    from etlantic.authoring.resolve import callable_registry
+
+    selected: dict[str, ImplementationDescriptor] = {}
+    xf_by_id = {t.identity: t for t in definition.transformations}
+    live = callable_registry()
+
+    for node in graph.nodes:
+        if node.kind is not NodeKind.STEP:
+            continue
+        engine = context.profile.implementation_overrides.get(node.name, default_engine)
+        transform_id = node.transformation_id or "unknown"
+        xf = xf_by_id.get(transform_id)
+        identity = implementation_id(transform_id, engine)
+        is_async = False
+        kind = "native"
+        portable_plan = None
+
+        registry_key = f"{transform_id}::{engine}"
+        registry_impl = context.registry.implementations.get(registry_key)
+        if registry_impl is not None:
+            selected[node.name] = registry_impl
+            continue
+
+        record = live.get(transform_id, engine)
+        if record is not None:
+            identity = record.identity
+            is_async = record.is_async
+        elif xf is not None:
+            for ref in xf.implementation_refs:
+                if ref.engine == engine:
+                    identity = ref.identity
+                    is_async = ref.is_async
+                    kind = ref.kind
+                    break
+            else:
+                if len(xf.implementation_refs) == 1:
+                    ref = xf.implementation_refs[0]
+                    engine = ref.engine
+                    identity = ref.identity
+                    is_async = ref.is_async
+                    kind = ref.kind
+            if xf.portable_plan is not None and kind != "native":
+                portable_plan = dict(xf.portable_plan)
+            elif xf.portable_plan is not None and record is None:
+                # Prefer portable when no live native callable.
+                kind = "portable_compiled"
+                portable_plan = dict(xf.portable_plan)
+
+        selected[node.name] = ImplementationDescriptor(
+            transformation_id=transform_id,
+            engine=engine,
+            identity=identity,
+            is_async=is_async,
+            kind=kind,
+            portable_plan=portable_plan,
+        )
+    return selected
 
 
 def _select_implementations(

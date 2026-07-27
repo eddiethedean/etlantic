@@ -10,11 +10,21 @@ from typing import Any
 
 import typer
 
+from etlantic.authoring.definition import PipelineDefinition
 
-def load_target(target: str) -> type[Any]:
-    """Load ``module.path:ClassName`` or a file path ``file.py:ClassName``."""
+
+def load_target(target: str) -> type[Any] | PipelineDefinition:
+    """Load ``module:Class``, ``path.py:Class``, or an ``etlantic.pipeline/1`` JSON path."""
+    path = Path(target)
+    if path.suffix.lower() == ".json" and path.exists():
+        from etlantic.authoring.serialize import read_pipeline_json
+
+        return read_pipeline_json(path)
+
     if ":" not in target:
-        raise typer.BadParameter("Target must be module:Class or path.py:Class")
+        raise typer.BadParameter(
+            "Target must be module:Class, path.py:Class, or a pipeline JSON file"
+        )
     module_part, class_name = target.rsplit(":", 1)
     path = Path(module_part)
     if path.suffix == ".py" and path.exists():

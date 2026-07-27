@@ -2,19 +2,19 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.23 |
+| Topic | 0.24 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no SLA** |
 | Not included | Multi-tenant control plane; unrestricted enterprise production |
 
-ETLantic **0.23.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.24.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant reference deployments. Experimental features remain
 experimental, and multi-tenant isolation, deployment topology, compliance,
-advanced multi-tenant control planes remain adopter-owned; 0.23 ships runtime
-resilience budgets, benchmark CI gates, and expanded backend validation. This
-page is the shortest answer to "What can I use today?"
+advanced multi-tenant control planes remain adopter-owned; 0.24 adds
+programmatic authoring, lossless `etlantic.pipeline/1` JSON, and a thin
+FastAPI reference adapter. This page is the shortest answer to "What can I use today?"
 
 ## Recommended bounded production deployment
 
@@ -35,15 +35,19 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
     `profiles/` tree. Use the paste-ready Quickstart, copy the profile JSON
     below, or clone the repository and run scripts with `uv run`.
 
-## Available in 0.23
+## Available in 0.24
 
 ### Core authoring and validation
 
 | Capability | Status |
 |---|---|
 | Typed data, transformation, and pipeline models | Available |
+| Functional builders + `PipelineDefinition` | Available |
+| `etlantic.pipeline/1` lossless JSON codecs | Available |
+| Authoring catalog + immutable edit commands | Available |
+| Service facade + optional FastAPI reference | Available (`etlantic-fastapi`) |
 | `Extract` / `Load` / `asset=` authoring (`Source` / `Sink` removed) | Available |
-| Structural and semantic validation | Available |
+| Structural and semantic validation (class or definition) | Available |
 | ODCS, DTCS, and DPCS generation and loading | Available |
 | Profiles and deterministic, secret-free pipeline plans | Available |
 | `@Transformation.portable` / `etlantic.transform` → `dtcs.transform-plan/2` | Available |
@@ -107,34 +111,30 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 |---|---|
 | Structured Streaming foundation | **Experimental** |
 
-## Not included in 0.23
+## Not included in 0.24
 
 | Capability | Status |
 |---|---|
-| Functional alternative for every class authoring primitive | Planned for 0.24 |
-| Authoring-complete `PipelineDefinition` | Planned for 0.24 |
-| Lossless `etlantic.pipeline/1` JSON round trip | Planned for 0.24 |
-| Machine-readable GUI authoring catalog and immutable edit API | Planned for 0.24 |
-| OpenAPI-compatible service facade and thin FastAPI reference | Planned for 0.24 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| `etlantic-datafusion` experimental engine | **Experimental in 0.23.0** (Gate B; not graduated) |
+| `etlantic-datafusion` experimental engine | **Experimental in 0.24.0** (Gate B; not graduated) |
 | `MERGE` / upsert in the reference SQL plugin | Not implemented (`sql_merge=False`; fail closed) |
 | Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
 | Event sensors / Dagster compilers | Future |
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
-| Production FastAPI control plane | Continues in 1.1 after the 0.24 reference boundary |
+| Production FastAPI control plane | Continues in 1.1 (0.24 ships only the thin reference adapter) |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
+| Compatibility burn-in / upgrade fixtures for frozen `/1` wires | Continues in 0.25+ |
 
-The 0.24 items above are one coordinated phase: class, functional, JSON, GUI,
-and service authoring will normalize to the same immutable definition. The
-FastAPI work in 0.24 proves that contract over OpenAPI; authentication,
-persistence, durable queues, and the production control API remain later or
-application-owned concerns. See the
-[0.24 Programmatic Authoring Plan](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md).
+0.24 normalized class, functional, JSON, GUI catalog, and service authoring to
+the same immutable `PipelineDefinition`. The FastAPI package proves that
+contract over OpenAPI; authentication, persistence, durable queues, and the
+production control API remain later or application-owned. See
+[What's New in 0.24](WHATS_NEW_0_24.md) and
+[Exit gate 0.24](../11_DEVELOPMENT/EXIT_GATE_0_24.md).
 
 ## CI starter
 
@@ -170,7 +170,7 @@ Starter profile (trim allowlist to one engine for first success):
   "allow_trusted_sql": false,
   "plugin_allowlist": {
     "local": null,
-    "etlantic-polars": "==0.23.0"
+    "etlantic-polars": "==0.24.0"
   },
   "assets": {},
   "secrets": {},
@@ -194,16 +194,16 @@ See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
 [Evaluator brief](EVALUATOR.md).
 
 ```bash
-pip install 'etlantic==0.23.0'                 # core only — no engines
-pip install 'etlantic-polars==0.23.0'          # Polars reference plugin
-pip install 'etlantic-pandas==0.23.0'          # Pandas compatibility plugin
-pip install 'etlantic-sql==0.23.0'             # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.23.0'         # PySpark reference plugin
-pip install 'etlantic-airflow==0.23.0'         # Airflow DAG compiler
-pip install 'etlantic-prefect==0.23.0'         # Prefect direct-execution scheduler
-pip install 'etlantic-keyring==0.23.0'         # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.23.0'        # SQLModel contract bridge
-pip install 'etlantic-sparkforge==0.23.0'      # SparkForge → ETLantic adapter
+pip install 'etlantic==0.24.0'                 # core only — no engines
+pip install 'etlantic-polars==0.24.0'          # Polars reference plugin
+pip install 'etlantic-pandas==0.24.0'          # Pandas compatibility plugin
+pip install 'etlantic-sql==0.24.0'             # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.24.0'         # PySpark reference plugin
+pip install 'etlantic-airflow==0.24.0'         # Airflow DAG compiler
+pip install 'etlantic-prefect==0.24.0'         # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.24.0'         # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.24.0'        # SQLModel contract bridge
+pip install 'etlantic-sparkforge==0.24.0'      # SparkForge → ETLantic adapter
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.

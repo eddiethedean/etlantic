@@ -1,0 +1,217 @@
+"""Canonical serialization and fingerprinting for PipelineDefinition."""
+
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+from pathlib import Path
+from typing import Any
+
+from etlantic.authoring.definition import PIPELINE_SCHEMA, PipelineDefinition
+from etlantic.authoring.upgrade import (
+    UnsupportedPipelineSchemaError,
+    upgrade_pipeline_dict,
+)
+from etlantic.interchange.security import DEFAULT_MAX_BYTES, read_text_bounded
+from etlantic.plan.freeze import mutable_copy
+
+_FORBIDDEN_KEYS = frozenset(
+    {
+        "__import__",
+        "__class__",
+        "callable",
+        "pickle",
+        "bytecode",
+        "secret_value",
+        "password",
+        "token",
+        "resolved_secret",
+    }
+)
+
+_MAX_DEPTH = 64
+_MAX_COLLECTION = 10_000
+
+
+def _sort_structure(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: _sort_structure(value[k]) for k in sorted(value)}
+    if isinstance(value, list):
+        return [_sort_structure(v) for v in value]
+    return value
+
+
+def _reject_forbidden(value: Any, *, path: str = "$") -> None:
+    if isinstance(value, dict):
+        if len(value) > _MAX_COLLECTION:
+            raise ValueError(
+                f"Pipeline definition mapping at {path} exceeds collection budget"
+            )
+        for key, child in value.items():
+            key_s = str(key)
+            lowered = key_s.lower()
+            if key_s in _FORBIDDEN_KEYS or lowered in _FORBIDDEN_KEYS:
+                raise ValueError(
+                    f"Pipeline definition rejects forbidden field {key_s!r} at {path}"
+                )
+            if (
+                "secret" in lowered
+                and key_s
+                not in {
+                    "secret_ref",
+                    "has_secret_ref",
+                    "secret_provider",
+                }
+                and not (
+                    isinstance(child, dict)
+                    and ("provider" in child or "name" in child)
+                )
+            ):
+                raise ValueError(
+                    f"Pipeline definition rejects secret payload at {path}.{key_s}"
+                )
+            _reject_forbidden(child, path=f"{path}.{key_s}")
+    elif isinstance(value, list):
+        if len(value) > _MAX_COLLECTION:
+            raise ValueError(
+                f"Pipeline definition list at {path} exceeds collection budget"
+            )
+        for idx, child in enumerate(value):
+            _reject_forbidden(child, path=f"{path}[{idx}]")
+
+
+def _check_depth(value: Any, *, depth: int = 0) -> None:
+    if depth > _MAX_DEPTH:
+        raise ValueError("Pipeline definition exceeds nesting depth budget")
+    if isinstance(value, dict):
+        for child in value.values():
+            _check_depth(child, depth=depth + 1)
+    elif isinstance(value, list):
+        for child in value:
+            _check_depth(child, depth=depth + 1)
+
+
+def canonical_pipeline_dict(defn: PipelineDefinition) -> dict[str, Any]:
+    """Return a deterministically ordered definition dict for hashing."""
+    data = copy.deepcopy(defn.to_dict())
+    data.pop("fingerprint", None)
+    return _sort_structure(data)
+
+
+def canonical_pipeline_json(defn: PipelineDefinition) -> str:
+    """Return canonical JSON as a UTF-8 string."""
+    return json.dumps(
+        canonical_pipeline_dict(defn),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def pipeline_fingerprint(defn: PipelineDefinition) -> str:
+    """Compute a stable SHA-256 fingerprint of the canonical definition."""
+    payload = canonical_pipeline_json(defn).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def pipeline_to_dict(
+    defn: PipelineDefinition, *, with_fingerprint: bool = True
+) -> dict[str, Any]:
+    """Serialize a definition, optionally embedding its fingerprint."""
+    data = defn.to_dict()
+    if with_fingerprint:
+        data["fingerprint"] = pipeline_fingerprint(defn)
+    return data
+
+
+def pipeline_to_json(
+    defn: PipelineDefinition,
+    *,
+    indent: int | None = 2,
+    with_fingerprint: bool = True,
+) -> str:
+    """Serialize a definition to JSON text."""
+    data = pipeline_to_dict(defn, with_fingerprint=with_fingerprint)
+    if indent is None:
+        return json.dumps(
+            data, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+    return json.dumps(data, indent=indent, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def verify_pipeline_fingerprint(defn: PipelineDefinition) -> None:
+    """Recompute fingerprint and compare to ``defn.fingerprint``."""
+    expected = pipeline_fingerprint(defn)
+    if defn.fingerprint != expected:
+        raise ValueError(
+            f"PipelineDefinition fingerprint mismatch: "
+            f"embedded={defn.fingerprint!r} computed={expected!r}"
+        )
+
+
+def pipeline_from_dict(
+    data: dict[str, Any],
+    *,
+    verify: bool = True,
+) -> PipelineDefinition:
+    """Deserialize a definition from a mapping."""
+    if not isinstance(data, dict):
+        raise TypeError(
+            f"PipelineDefinition document must be a mapping, got {type(data)!r}"
+        )
+    _check_depth(data)
+    _reject_forbidden(data)
+    upgraded = upgrade_pipeline_dict(mutable_copy(data))
+    defn = PipelineDefinition.from_dict(upgraded)
+    if verify:
+        if defn.schema != PIPELINE_SCHEMA:
+            raise UnsupportedPipelineSchemaError(
+                f"Unsupported PipelineDefinition schema {defn.schema!r}"
+            )
+        expected = pipeline_fingerprint(defn)
+        if defn.fingerprint is None:
+            defn = defn.with_fingerprint(expected)
+        elif defn.fingerprint != expected:
+            raise ValueError(
+                f"PipelineDefinition fingerprint mismatch: "
+                f"embedded={defn.fingerprint!r} computed={expected!r}"
+            )
+    return defn
+
+
+def pipeline_from_json(text: str, *, verify: bool = True) -> PipelineDefinition:
+    """Deserialize a definition from JSON text (inert — no imports or I/O)."""
+    if len(text.encode("utf-8")) > DEFAULT_MAX_BYTES:
+        raise ValueError("Pipeline definition JSON exceeds read budget")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid PipelineDefinition JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("PipelineDefinition JSON must be an object")
+    return pipeline_from_dict(data, verify=verify)
+
+
+def write_pipeline_json(
+    defn: PipelineDefinition,
+    path: str | Path,
+    *,
+    indent: int | None = 2,
+) -> Path:
+    """Write canonical definition JSON to ``path``."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(pipeline_to_json(defn, indent=indent), encoding="utf-8")
+    return target
+
+
+def read_pipeline_json(
+    path: str | Path,
+    *,
+    verify: bool = True,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> PipelineDefinition:
+    """Read a definition JSON document from disk under Safe I/O budgets."""
+    text = read_text_bounded(path, max_bytes=max_bytes)
+    return pipeline_from_json(text, verify=verify)

@@ -1,8 +1,7 @@
 # Roadmap Summary
 
-ETLantic **0.23.0** ships **Runtime Resilience and Performance Budgets** on
-top of the 0.22 Plugin SDK RC. Milestones describe capability order, not
-release-date commitments.
+ETLantic **0.24.0** ships **Programmatic Authoring and Lossless JSON**.
+Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
 
@@ -65,41 +64,18 @@ real PySpark + Airflow import CI. See
 [What's New in 0.23](../01_GETTING_STARTED/WHATS_NEW_0_23.md) and
 [Exit gate 0.23](EXIT_GATE_0_23.md).
 
-## Next: 0.24
+## Shipped: 0.24
 
-ETLantic **0.24** is **Programmatic Authoring and Lossless JSON** (planned).
-Class and functional authoring become two views of one canonical
-`PipelineDefinition`. A new wire document `etlantic.pipeline/1` is the
-lossless authoring codec — distinct from resolved `etlantic.plan/1` and from
-ODCS/DTCS/DPCS.
+ETLantic **0.24.0** shipped **Programmatic Authoring and Lossless JSON**:
+canonical `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
+definition lifecycle, CLI JSON targets, authoring catalog/edits, service
+facade, and `etlantic-fastapi` reference adapter. See
+[What's New in 0.24](../01_GETTING_STARTED/WHATS_NEW_0_24.md) and
+[Exit gate 0.24](EXIT_GATE_0_24.md).
 
-Sequenced work packages: WP1 definition model → WP2 codecs/schema → WP3
-functional builders ∥ WP4 lifecycle-on-definitions → WP5 artifact codec
-consistency → WP6 CLI JSON targets and docs → WP7 application and
-visual-builder integration → WP8 API service boundary and FastAPI reference.
+## Next: 0.25–0.98
 
-A JSON-loaded pipeline validates, plans, and runs without its originating
-Python class after referenced implementations and plugins resolve under normal
-trust policy. Executable code and secrets stay outside serialization.
-
-An independent GUI will be able to discover a machine-readable component
-catalog, render forms and node palettes, apply immutable graph edits, connect
-compatible ports, map diagnostics to fields/nodes/edges, preview validation and
-planning, and import/export canonical JSON using only public APIs. The milestone
-includes an independent visual-builder fixture as proof, but does not add a
-production GUI or hosted control plane to ETLantic core.
-
-The GUI-facing workflow can sit behind a FastAPI application. ETLantic will
-provide OpenAPI-compatible schemas, transport-neutral service request/response
-models, stable errors, concurrency and idempotency fields, asynchronous
-run/status contracts, and host-supplied policy-context hooks. A thin FastAPI
-reference adapter and generated frontend client fixture will prove the
-integration. FastAPI, authentication, persistence, queues, and production
-hosting remain optional application concerns rather than core dependencies.
-This reference boundary feeds, but does not replace, the production FastAPI
-Control API planned for 1.1.
-
-See [ROADMAP.md](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#024--programmatic-authoring-and-lossless-json).
+Compatibility burn-in for frozen contracts and upgrade fixtures.
 
 ## Toward 1.0
 

@@ -21,6 +21,8 @@ PACKAGES = (
     "etlantic-sqlmodel",
     "etlantic-sparkforge",
 )
+# Thin reference adapters align with core Beta maturity (not Production/Stable plugins).
+REFERENCE_PACKAGES = ("etlantic-fastapi",)
 # Experimental packages may use Alpha classifiers and are optional in release CI.
 EXPERIMENTAL_PACKAGES = ("etlantic-datafusion",)
 
@@ -95,6 +97,29 @@ def main() -> int:
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
 
+    for pkg in REFERENCE_PACKAGES:
+        path = ROOT / "packages" / pkg / "pyproject.toml"
+        if not path.exists():
+            errors.append(f"reference package missing: {pkg}")
+            continue
+        pkg_version = version_from(path, r'(?m)^version = "([^"]+)"')
+        if pkg_version != version:
+            errors.append(f"{pkg} version {pkg_version} != {version}")
+        text = path.read_text(encoding="utf-8")
+        if "[project.urls]" not in text:
+            errors.append(f"{pkg} missing [project.urls]")
+        if "classifiers =" not in text:
+            errors.append(f"{pkg} missing classifiers")
+        if "Development Status :: 4 - Beta" not in text:
+            errors.append(f"{pkg} reference package should use Beta classifier")
+        if "Development Status :: 5 - Production/Stable" in text:
+            errors.append(f"{pkg} should use Beta, not Production/Stable")
+        major_minor = ".".join(version.split(".")[:2])
+        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
+        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        if expected_dep not in text:
+            errors.append(f"{pkg} missing core dependency {expected_dep}")
+
     for pkg in EXPERIMENTAL_PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"
         if not path.exists():
@@ -114,7 +139,7 @@ def main() -> int:
 
     root_pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     pin_suffix = f"=={version}"
-    for pkg in (*PACKAGES, *EXPERIMENTAL_PACKAGES):
+    for pkg in (*PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES):
         if f"{pkg}{pin_suffix}" not in root_pyproject:
             errors.append(
                 f"root pyproject.toml missing optional dependency pin {pkg}{pin_suffix}"
@@ -127,12 +152,12 @@ def main() -> int:
     if "Development Status :: 5 - Production/Stable" in root_pyproject:
         errors.append("root pyproject.toml should use Beta, not Production/Stable")
     release_yml = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
-    for pkg in (*PACKAGES, *EXPERIMENTAL_PACKAGES):
+    for pkg in (*PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES):
         expected = pkg.replace("-", "_")
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")
 
-    names = ("etlantic", *PACKAGES, *EXPERIMENTAL_PACKAGES)
+    names = ("etlantic", *PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES)
     missing_version = [name for name in names if not pypi_exists(name, version)]
     brand_new = [name for name in names if not pypi_project_exists(name)]
     print(f"Release readiness for {version}")
@@ -142,7 +167,11 @@ def main() -> int:
             f"{len(brand_new)}/{len(names)}):"
         )
         for name in brand_new:
-            note = " (experimental)" if name in EXPERIMENTAL_PACKAGES else ""
+            note = ""
+            if name in EXPERIMENTAL_PACKAGES:
+                note = " (experimental)"
+            elif name in REFERENCE_PACKAGES:
+                note = " (reference adapter)"
             print(f"  - {name}{note}  (will publish as {name}=={version})")
         print(
             "Release CI paces only new-project creates (10 minutes between them). "
@@ -157,7 +186,11 @@ def main() -> int:
                 f"({len(existing_missing)}/{len(names)}):"
             )
             for name in existing_missing:
-                note = " (experimental)" if name in EXPERIMENTAL_PACKAGES else ""
+                note = ""
+                if name in EXPERIMENTAL_PACKAGES:
+                    note = " (experimental)"
+                elif name in REFERENCE_PACKAGES:
+                    note = " (reference adapter)"
                 print(f"  - {name}=={version}{note}")
     if not missing_version:
         print(f"All packages already present on PyPI at {version}.")
