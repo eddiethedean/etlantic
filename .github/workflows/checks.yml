@@ -34,7 +34,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Pytest (core)
-        run: uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+        run: uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 
       - name: Documentation consistency
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
