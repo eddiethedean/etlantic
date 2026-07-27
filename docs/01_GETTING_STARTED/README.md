@@ -6,16 +6,17 @@ ETLantic catches incompatible data-pipeline wiring **before** you process
 data. Define typed datasets, transformations, and pipelines in Python;
 validate and plan them once; run locally or through optional engine plugins.
 
-> **Project status:** ETLantic **0.22.0** is **stable** within the documented
-> single-tenant reference deployment boundary. Experimental features and
-> broader deployment models remain outside that claim. See
+> **Project status:** ETLantic **0.23.0** is **stable** within the documented
+> single-tenant reference deployment boundary. For the canonical onboarding
+> path, start at [Current 0.23 Guide](CURRENT_VERSION.md). Experimental features
+> and broader deployment models remain outside that claim. See
 > [Capabilities](CAPABILITIES.md) for the shipped boundary and
 > [Evaluator brief](EVALUATOR.md) for decision-makers. How to read status labels:
 > [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
 
 ## Five-minute path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.22.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.23.0`
 2. [Quickstart](QUICKSTART.md) — `etlantic init`, validate, plan, and run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
@@ -75,7 +76,7 @@ PipelinePlan (secret-free, deterministic)
 Run locally  |  Compile (Airflow)  |  Generate contracts
 ```
 
-ETLantic 0.22.0 can execute registered Python implementations with its local
+ETLantic 0.23.0 can execute registered Python implementations with its local
 runtime and optional Polars/Pandas/SQL/PySpark plugins, compile plans to
 Airflow DAGs via `etlantic-airflow`, execute plans through the Prefect local
 MVP, and compile supported portable transformation families without native

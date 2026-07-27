@@ -65,7 +65,32 @@ usually catch a more specific exception.
 | `PipelineCancelledError` | A run was cancelled |
 
 Execution exceptions may include `run_id`, `report`, and `code` when available.
-Messages are redacted before entering reports and logs.
+`NodeExecutionError` also exposes `node_name`, optional `stage`, and `cause`.
+`DataValidationError` may include `node_name` and `boundary`. Messages are
+redacted before entering reports and logs.
+
+## Orchestration, interchange, and security
+
+| Exception | When |
+|---|---|
+| `OrchestrationCompilationError` | Orchestrator compile failed (missing plugin, capability, or invalid artifact) |
+| `InterchangeError` | Base error for tabular interchange contract violations |
+| `InterchangeSelectionError` | No contract-safe interchange mechanism could be selected |
+| `InterchangeDescriptorError` | Interchange descriptor failed closed validation |
+| `UnsafeSerializationError` | Serialization policy blocked an unsafe object graph |
+
+```python
+from etlantic.orchestration.compile import OrchestrationCompilationError
+from etlantic.interchange.tabular import (
+    InterchangeError,
+    InterchangeDescriptorError,
+    InterchangeSelectionError,
+)
+from etlantic.serialization_policy import UnsafeSerializationError
+```
+
+Demoted compatibility imports from `etlantic` (warn once) remain available for
+pre-1.0 code. Prefer the owning modules above.
 
 ## Internal
 

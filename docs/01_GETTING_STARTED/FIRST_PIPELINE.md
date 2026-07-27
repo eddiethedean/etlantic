@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.22.0.** This tutorial extends the project
+> **Status: Available in ETLantic 0.23.0.** This tutorial extends the project
 > created by [Quickstart](QUICKSTART.md) (`etlantic init`). It uses the local
 > Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
 
@@ -9,7 +9,7 @@
 If you have not already:
 
 ```bash
-python -m pip install 'etlantic==0.22.0'
+python -m pip install 'etlantic==0.23.0'
 mkdir my-pipeline && cd my-pipeline
 etlantic init --with-toml
 ```
@@ -180,7 +180,7 @@ CSV, and no-write storage. Optional plugins are available today:
 - SparkForge adapter — `etlantic-sparkforge`
 
 Keep core and optional plugin minors matched—for this guide, pin both to
-`0.22.0`. See [Capabilities](CAPABILITIES.md).
+`0.23.0`. See [Capabilities](CAPABILITIES.md).
 
 Continue with [Engine selection](ENGINE_SELECTION.md). For a production profile
 starter, copy the JSON from

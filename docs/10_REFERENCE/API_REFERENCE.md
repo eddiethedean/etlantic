@@ -11,6 +11,24 @@
 | Plugin author | [Protocols](API_PROTOCOLS.md) | [Plugin SDK](../07_PLUGIN_SDK/README.md), Testing helpers |
 | CI / ops | [CLI](CLI.md), [Runtime configuration](RUNTIME_CONFIGURATION.md) | [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) |
 
+## Recommended imports
+
+```python
+import etlantic as etl
+
+# Curated authoring surface
+pipeline = etl.Pipeline(...)
+transform = etl.Transformation.portable(...)
+
+# Lazy namespaces (import on first use)
+etl.transform   # portable authoring helpers
+etl.dataframe   # dataframe plugin protocols
+etl.sql         # SQL plugin protocols
+etl.testing     # conformance suites and fault injection
+```
+
+You may also import curated symbols directly:
+
 ```python
 from etlantic import (
     Data,
@@ -35,7 +53,7 @@ from etlantic import (
 | `Input` / `Output` / `Parameter` | `etlantic.ports` | Transformation port markers |
 | `Transformation` | `etlantic.transformation` | Typed transform interface + implementations |
 | `Extract` / `Load` | `etlantic.pipeline` | Pipeline entry / publication boundaries |
-| `Pipeline` | `etlantic.pipeline` | Declarative graph; `validate` / `plan` / `run` |
+| `Pipeline` | `etlantic.pipeline` | Declarative graph; `validate` / `plan` / `run` / `explain_plan` |
 | `Profile` | `etlantic.profile` | Environment + allowlist + engine selection; `security_mode` for trust |
 | `resolve_profile` | `etlantic.profile` | Named/path resolve; unknown names fail closed unless `allow_adhoc_profile=True` |
 | `PipelineRuntime` | `etlantic.lifecycle` | Process-local plugins, memory, reports |
@@ -87,3 +105,21 @@ follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
 [compatibility matrix](COMPATIBILITY.md) before upgrading. Narrative CLI docs:
 [CLI](CLI.md).
+
+## Compatibility aliases (pre-1.0)
+
+ETLantic 0.22+ demoted many specialist root exports to warn-once compatibility
+aliases. They remain importable from `etlantic` but emit a one-time
+`DeprecationWarning`. Prefer lazy namespaces or owning modules.
+
+| Category | Examples | Prefer |
+|---|---|---|
+| Runtime helpers | `RunRequest`, `RunSelection`, `RunIntent`, `DebugSession` | `etlantic.runtime` |
+| Profile helpers | `load_profile`, `development_profile`, `production_profile` | `etlantic.profile` |
+| Reliability | `WriteIntent`, `WriteMode`, `FreshnessExpectation` | `etlantic.reliability` |
+| Interchange | `diff_pipelines`, `load_bundle`, `generate_contracts` | `etlantic.interchange` |
+| Security | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
+| Storage bindings | `MemoryStorage`, `CsvStorage`, `CallableStorage` | `etlantic.storage` |
+
+See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) and
+[Surface inventory](SURFACE_INVENTORY.md) for the full demoted set.

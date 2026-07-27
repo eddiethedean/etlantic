@@ -4,6 +4,13 @@ An ETLantic project separates **modeling** from **execution**. Your Python
 classes define contracts and pipelines, while runtime configuration and
 generated artifacts remain outside your source code.
 
+!!! note "Flat init scaffold vs recommended layout"
+    `etlantic init` scaffolds a **flat** project (`pipeline.py` at the project
+    root) so the Quickstart succeeds in five minutes. The layout below is the
+    recommended evolution once you add a second pipeline or share code across
+    modules. Move contracts and transforms into `src/<package>/` when the flat
+    file becomes hard to navigate—no API changes are required.
+
 ## Recommended Layout
 
 ``` text

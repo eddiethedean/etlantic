@@ -8,7 +8,7 @@ Start with core local Python. Add one engine at a time.
 
 | Goal | Install | Profile hint | Guide |
 |---|---|---|---|
-| Learn the model in memory | `etlantic==0.23.0` | `development` | [Quickstart](QUICKSTART.md) |
+| Learn the model with JSON files | `etlantic==0.23.0` | `development` | [Quickstart](QUICKSTART.md) |
 | JSON / CSV files | core only | file storage bindings | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Fast local dataframes | `etlantic[polars]==0.23.0` | `dataframe_engine="polars"` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
 | Pandas compatibility | `etlantic[pandas]==0.23.0` | `dataframe_engine="pandas"` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |

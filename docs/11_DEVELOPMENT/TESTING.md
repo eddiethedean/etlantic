@@ -49,6 +49,7 @@ uv run pytest -m airflow tests/airflow/test_airflow_compile.py::test_optional_ai
 The `airflow-import` CI matrix pins Apache Airflow **2.8.x**, **2.9.x**, and
 **2.10.x** and imports compiled fixture DAGs via `load_compiled_pipeline()`.
 
+```bash
 uv sync --group prefect
 uv run pytest -m prefect
 ```

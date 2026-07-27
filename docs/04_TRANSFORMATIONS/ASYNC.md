@@ -38,6 +38,30 @@ async def normalize(customers):
 
 Both implementations satisfy the same transformation contract.
 
+## Pipeline async execution
+
+Use `Pipeline.arun()` when calling from code that already runs inside an event
+loop (for example FastAPI handlers or notebook kernels). `Pipeline.run()` is
+the synchronous entry point and refuses to block an active loop (`PMEXEC100`).
+
+```python
+import asyncio
+
+from pipeline import SamplePipeline
+
+
+async def main() -> None:
+    report = await SamplePipeline.arun(profile="development")
+    report.raise_for_errors()
+    print(report.status)
+
+
+asyncio.run(main())
+```
+
+Register async implementations with `@Transformation.implementation(...)` on an
+`async def` function—the invocation layer awaits them automatically.
+
 ## Internal Execution Model
 
 Conceptually:

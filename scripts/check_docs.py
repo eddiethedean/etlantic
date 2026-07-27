@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -30,7 +31,12 @@ def main() -> None:
     current_markers = [
         ROOT / "README.md",
         ROOT / "docs/README.md",
+        ROOT / "docs/01_GETTING_STARTED/README.md",
+        ROOT / "docs/01_GETTING_STARTED/FIRST_PIPELINE.md",
+        ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
+        ROOT / "docs/01_GETTING_STARTED/FAQ.md",
         ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
+        ROOT / "docs/09_EXAMPLES/README.md",
         ROOT / "SECURITY.md",
         ROOT / "SUPPORT.md",
     ]
@@ -219,6 +225,33 @@ def main() -> None:
         "`0.21.0` core)",
         "shipped in ETLantic\n0.21.0",
     ]
+    major_minor = ".".join(package_version.split(".")[:2])
+    try:
+        major_s, minor_s = major_minor.split(".")
+        prior_minor = f"{major_s}.{int(minor_s) - 1}" if int(minor_s) > 0 else None
+    except ValueError:
+        prior_minor = None
+    if prior_minor is not None:
+        prior_patch = f"{prior_minor}.0"
+        banned_phrases.extend(
+            [
+                f"pip install etlantic=={prior_patch}",
+                f"ETLantic **{prior_patch}** is **stable**",
+                f"Available in ETLantic {prior_patch}",
+                f"What is stable in bounded {prior_patch}",
+                f"Current stable line is {prior_minor}.x",
+                f"{prior_minor}.x is production/stable",
+                f"docs target {prior_patch}",
+                f"Documented {prior_minor} public imports",
+                f"Supported for the {prior_minor}.x line",
+                f"pin the published **{prior_patch}**",
+                f"Core **{prior_minor}.x** requires",
+                f"{prior_patch} wheel",
+                f"Public imports ({prior_minor})",
+                f"stable in bounded {prior_patch}",
+                "Is ETLantic 0.21 production-supported?",
+            ]
+        )
     if "| Capability | 0.4 |" in (ROOT / "README.md").read_text(encoding="utf-8"):
         raise SystemExit("README.md capability table still labels the release as 0.4")
     if "| Capability | 0.5 |" in (ROOT / "README.md").read_text(encoding="utf-8"):
@@ -1183,6 +1216,20 @@ def main() -> None:
     if f"{major_minor} configuration cheat sheet" not in upgrade_hub.lower():
         raise SystemExit(
             f"UPGRADE.md must include {major_minor} configuration cheat sheet"
+        )
+
+    surface_inventory_json = ROOT / "src/etlantic/schemas/surface-inventory.json"
+    inventory = json.loads(surface_inventory_json.read_text(encoding="utf-8"))
+    if inventory.get("version") != package_version:
+        raise SystemExit(
+            f"surface-inventory.json version {inventory.get('version')!r} "
+            f"!= package {package_version}"
+        )
+    cli_flags_stable = inventory.get("cli_flags_stable", [])
+    if "--accept-legacy-bindings" not in cli_flags_stable:
+        raise SystemExit(
+            "surface-inventory.json cli_flags_stable must include "
+            "--accept-legacy-bindings"
         )
 
     # CLI.md must document every public CLI command (contract vs Typer surface).

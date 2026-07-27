@@ -1,10 +1,16 @@
-"""Local PySpark batch pipeline (ETLantic 0.7).
+"""Local PySpark batch pipeline (ETLantic 0.23.0).
 
-Requires: pip install etlantic-pyspark
+Requires:
+
+    uv sync --group pyspark
+
+Or from published packages:
+
+    pip install etlantic==0.23.0 etlantic-pyspark==0.23.0
 
 Run with:
 
-    python examples/pyspark_local.py
+    uv run python examples/pyspark_local.py
 """
 
 from __future__ import annotations

@@ -22,9 +22,9 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ------------------------------------------------------------------------
 
-## Is ETLantic 0.21 production-supported?
+## Is ETLantic 0.23 production-supported?
 
-ETLantic **0.22.0** is **stable** for documented single-tenant reference
+ETLantic **0.23.0** is **stable** for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -35,7 +35,7 @@ remain adopter-owned.
 
 ## What is the difference between Stable and Experimental?
 
-Stable APIs and behaviors are supported within the documented 0.22 reference
+Stable APIs and behaviors are supported within the documented 0.23 reference
 envelope. Features explicitly labeled **Experimental**, currently including
 Structured Streaming foundations and `etlantic-datafusion`, may change and are
 outside that stable claim. A page describing a shipped feature does not make
@@ -197,10 +197,10 @@ you need Spark semantics and have a working Java environment.
 ## Must core and plugin versions match?
 
 Yes. Keep core and optional plugins on the same minor release. For a
-reproducible 0.22.0 environment, pin both exactly, for example:
+reproducible 0.23.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.22.0' 'etlantic-polars==0.22.0'
+python -m pip install 'etlantic==0.23.0' 'etlantic-polars==0.23.0'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or
@@ -210,11 +210,20 @@ planning even when both packages install successfully.
 
 ## Why do `validate` and `plan` work but CLI `run` has no input data?
 
-Validation and planning inspect definitions and do not need source rows. The
-quickstart seeds memory inside its Python process; a later `etlantic run`
-process has a fresh in-memory store and cannot see those records. Run that
-example with `python pipeline.py`, or configure JSON/CSV or another durable
-storage binding for cross-process CLI execution.
+Validation and planning inspect pipeline definitions—they do not need source
+rows.
+
+The [Quickstart](QUICKSTART.md) uses `etlantic init`, which binds assets to
+JSON files under `data/`. If `run` shows empty output, check that:
+
+1. Input JSON files exist and match your contract schema.
+2. You use the same `--profile` for `validate`, `plan`, and `run`.
+3. Asset paths in your profile match the generated project layout.
+
+For in-process demos without file bindings, use
+[`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py)
+from a repo checkout and run with `python examples/memory_customers.py`—not
+`etlantic run` in a separate process.
 
 ------------------------------------------------------------------------
 

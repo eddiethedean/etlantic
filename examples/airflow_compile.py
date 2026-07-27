@@ -1,10 +1,16 @@
-"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.8).
+"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.23.0).
 
-Requires: pip install etlantic-airflow
+Requires:
+
+    uv sync --group airflow --group airflow-runtime
+
+Or from published packages:
+
+    pip install etlantic==0.23.0 etlantic-airflow==0.23.0
 
 Run with:
 
-    python examples/airflow_compile.py
+    uv run python examples/airflow_compile.py
 """
 
 from __future__ import annotations

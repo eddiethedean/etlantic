@@ -21,11 +21,11 @@ etlantic --version
 python -m etlantic --version
 ```
 
-Upgrade from PyPI (pin the published **0.22.0** release for reproducible installs):
+Upgrade from PyPI (pin the published **0.23.0** release for reproducible installs):
 
 ```bash
 python -m pip install --upgrade 'etlantic==0.23.0'
-# or accept compatible 0.22.x patches within the minor:
+# or accept compatible 0.23.x patches within the minor:
 python -m pip install --upgrade 'etlantic>=0.23.0,<0.24'
 ```
 
@@ -95,8 +95,8 @@ Compare distributions in the same interpreter:
 python -c "import importlib.metadata as m; print(m.version('etlantic')); print(m.version('etlantic-polars'))"
 ```
 
-Core **0.22.x** requires official plugins from the **same** minor
-(`0.22.x`). Do not mix `0.20` plugins with `0.21` core. Remove stale plugin
+Core **0.23.x** requires official plugins from the **same** minor
+(`0.23.x`). Do not mix `0.22` plugins with `0.23` core. Remove stale plugin
 versions and install matching pins, for example:
 
 ```bash
@@ -309,7 +309,7 @@ Only run the removal command from the repository root after confirming
 
 Python puts the current directory early on `sys.path`. Running from an
 ETLantic source checkout can therefore import checkout code instead of the
-0.22.0 wheel in your environment. Check the imported path:
+0.23.0 wheel in your environment. Check the imported path:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__); print(etlantic.__file__)"

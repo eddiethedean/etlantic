@@ -1,4 +1,11 @@
-"""Runnable JSON-to-JSON and CSV-to-CSV storage examples."""
+"""Runnable JSON-to-JSON and CSV-to-CSV storage examples (ETLantic 0.23.0).
+
+Requires core only (no optional engine plugins).
+
+Run with:
+
+    uv run python examples/file_storage.py
+"""
 
 from __future__ import annotations
 

@@ -78,8 +78,8 @@ Legacy **`bindings`** keys fail closed with `PMCFG111` unless
 - `spark_engine`: `null`, `pyspark`, or `spark`
 - `orchestrator`: `local`, `airflow`, `prefect`, etc.
 
-Keep plugin package versions on the **same minor** as core (`0.22.x` with
-`0.22.0` core).
+Keep plugin package versions on the **same minor** as core (`0.23.x` with
+`0.23.0` core).
 
 ### Optional 0.20 trust controls
 

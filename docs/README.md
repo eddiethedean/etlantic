@@ -56,8 +56,8 @@ then runs them locally or through optional engine plugins.
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
     Diligence (after first success): [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
+    [What's new in 0.23](01_GETTING_STARTED/WHATS_NEW_0_23.md),
     [What's new in 0.22](01_GETTING_STARTED/WHATS_NEW_0_22.md),
-    [What's new in 0.20](01_GETTING_STARTED/WHATS_NEW_0_20.md),
     [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md).
     Pages marked **Future design** are not APIs. Design studies under Examples
     are aspirational—not installable APIs.

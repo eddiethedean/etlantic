@@ -11,7 +11,7 @@ plans them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is stable in bounded 0.22.0
+## What is stable in bounded 0.23.0
 
 | Area | Ready? |
 |---|---|
@@ -48,7 +48,7 @@ manager.
   manifests, artifact/cache isolation keys, outbound default-deny,
   unsafe-serialization prohibition, versioned `SecurityEvent`, release SBOM
   digests and GitHub attestations
-- Report vulnerabilities privately; security fixes are supported on 0.22.x
+- Report vulnerabilities privately; security fixes are supported on 0.23.x
 
 ### Shipped vs residual (0.21)
 
@@ -72,7 +72,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-**ETLantic 0.22.0 is production/stable for documented single-tenant reference
+**ETLantic 0.23.0 is production/stable for documented single-tenant reference
 deployments.** Shipped trust controls do not make an arbitrary multi-tenant
 topology safe.
 
@@ -112,34 +112,34 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.21 |
+| Concern | Status in 0.23 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current stable line is 0.22.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current stable line is 0.23.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
 
 ## Recommended evaluation path
 
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.22.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.23.0`
 2. [Quickstart](QUICKSTART.md) (`etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.22.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.23.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) if
+8. [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

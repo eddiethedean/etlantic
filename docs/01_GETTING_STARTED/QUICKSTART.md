@@ -77,7 +77,7 @@ SamplePipeline.run(profile="development")
 - [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project (contracts,
   intentional errors, richer transforms)
 - [Installation](INSTALLATION.md) — optional engine packages
-- [What's New in 0.21](WHATS_NEW_0_22.md)
+- [What's New in 0.23](WHATS_NEW_0_23.md)
 
 For an in-memory SDK demo from a checkout (not this Quickstart), see
 [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py).

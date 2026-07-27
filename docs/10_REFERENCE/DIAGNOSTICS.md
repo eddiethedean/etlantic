@@ -49,9 +49,9 @@ PMPLUGxxx  Plugin trust / allowlist (e.g. PMPLUG401, PMPLUG402)
 PMORCHxxx  Orchestration / compile diagnostics
 PMSPARKxxx Spark capability and runtime diagnostics
 PMDFxxx    Dataframe plugin diagnostics
-PMXFORMxxx Portable transform authoring / compiler diagnostics
 PMEXECxxx  Execution lifecycle
 PMCFGxxx   Configuration and profiles
+PMSECxxx   Security policy (I/O, serialization, outbound)
 PMGENxxx   Contract and documentation generation
 PMINTxxx   Internal framework invariants
 ```
@@ -61,9 +61,9 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the 0.18 source tree. The message, path, metadata,
-and severity provide the case-specific detail. Maintainers can regenerate a
-machine-readable inventory with:
+These codes are emitted by the installed ETLantic package (currently 0.23.x).
+The message, path, metadata, and severity provide the case-specific detail.
+Maintainers can regenerate a machine-readable inventory with:
 
 ```bash
 uv run python scripts/generate_diagnostics_catalog.py
@@ -105,6 +105,26 @@ The script prints every `PMxxxx` / related code literal found under
 | `PMXFORM810` | Portable plan exceeds the document-size budget |
 | `PMXFORM811` | Portable plan exceeds the node-count budget |
 | `PMXFORM812` | Portable plan exceeds the depth budget |
+
+### Configuration and profiles
+
+| Code | Meaning |
+|---|---|
+| `PMCFG100` | Unknown profile name; use a built-in template or pass an explicit profile path |
+| `PMCFG110` | Legacy `bindings` key loaded from profile JSON; migrate to `assets` |
+| `PMCFG111` | Profile JSON used legacy `bindings`; rename to `assets` or pass `--accept-legacy-bindings` |
+
+### Source, import, and security policy
+
+| Code | Meaning |
+|---|---|
+| `PMSRC101` | Unsafe or disallowed source import path under the active I/O policy |
+| `PMSRC102` | Interchange bundle import rejected by security policy |
+| `PMSRC103` | Interchange bundle descriptor failed validation |
+| `PMSRC104` | Interchange bundle load failed closed |
+| `PMSEC050` | Outbound network or transport request blocked by default-deny policy |
+| `PMSEC051` | Outbound request exceeded configured policy limits |
+| `PMSEC060` | Unsafe serialization blocked (secret or forbidden object graph) |
 
 ### Orchestration and execution
 

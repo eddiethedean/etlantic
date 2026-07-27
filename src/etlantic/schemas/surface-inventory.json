@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "classes": ["stable", "provisional", "experimental", "private", "compatibility"],
   "sdk_root_stable": [
     "Data",
@@ -47,7 +47,8 @@
     "resolve_profile"
   ],
   "cli_flags_stable": [
-    "--allow-adhoc-profile"
+    "--allow-adhoc-profile",
+    "--accept-legacy-bindings"
   ],
   "sdk_root_provisional": ["DataContractModel"],
   "sdk_root_experimental": [],

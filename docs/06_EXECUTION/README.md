@@ -138,6 +138,15 @@ your project:
 13. [Resource Providers](RESOURCE_PLUGINS.md)
 14. [Compilation](COMPILATION.md)
 
+### Operations and deployment
+
+15. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
+16. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
+17. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
+18. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
+19. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
+20. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
+
 ## Key Principles
 
 - Execution follows planning.

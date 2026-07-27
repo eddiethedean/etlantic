@@ -65,11 +65,12 @@ ETLantic does not replace dataframe engines, databases, Spark, schedulers,
 storage systems, catalogs, or secret managers. It gives them one typed pipeline
 model and one inspectable validation lifecycle.
 
-> **Status:** ETLantic **0.23.0** ships runtime resilience and performance budgets on top of
-the 0.22 Plugin SDK RC: measured microbenchmark envelopes, fault injection,
-durable-store hardening, and expanded backend CI.
-> local workspaces. Stable for documented single-tenant reference deployments, not unrestricted enterprise production. Structured
-> Streaming remains experimental. See [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
+> **Status:** ETLantic **0.23.0** ships runtime resilience and performance
+> budgets on top of the 0.22 Plugin SDK RC: measured microbenchmark envelopes,
+> fault injection, durable-store hardening, and expanded backend CI. Stable for
+> documented single-tenant reference deployments—not unrestricted enterprise
+> production. Structured Streaming remains experimental. See
+> [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
 > and [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/).
 
 ## Quickstart

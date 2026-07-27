@@ -1,4 +1,18 @@
-"""Parity example: one pipeline, Polars or Pandas via profile."""
+"""Parity example: one pipeline, Polars or Pandas via profile (ETLantic 0.23.0).
+
+Requires:
+
+    uv sync --group dataframes
+
+Or from published packages:
+
+    pip install etlantic==0.23.0 etlantic-polars==0.23.0 etlantic-pandas==0.23.0
+
+Run with:
+
+    uv run --group dataframes python examples/dataframe_parity.py polars
+    uv run --group dataframes python examples/dataframe_parity.py pandas
+"""
 
 from __future__ import annotations
 
