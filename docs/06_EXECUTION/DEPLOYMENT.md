@@ -1,6 +1,6 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.22.0.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.23.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not a managed control plane.
 
 ## Process model

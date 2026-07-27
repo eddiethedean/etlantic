@@ -121,6 +121,8 @@ The script prints every `PMxxxx` / related code literal found under
 | `PMEXEC320` | A planned step lacks required transformation identity or registration |
 | `PMEXEC330` | Runtime input or output validation failed |
 | `PMEXEC410` | Data publication succeeded but run report persistence failed (0.23) |
+| `PMEXEC411` | No callable writer registered for a binding |
+| `PMEXEC412` | No callable reader registered for a binding |
 | `PMEXEC401` | An environment-backed secret is unavailable |
 | `PMEXEC501` | Retry refused because retry-safety declares the step unsafe |
 | `PMEXEC402` | A file-backed secret cannot be loaded safely |

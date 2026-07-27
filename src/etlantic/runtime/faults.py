@@ -13,7 +13,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
 
 
 class FaultBoundary(StrEnum):
@@ -61,7 +60,9 @@ class _FaultState:
     call_counts: dict[tuple[str, str | None], int] = field(default_factory=dict)
 
 
-_active: ContextVar[_FaultState | None] = ContextVar("etlantic_fault_state", default=None)
+_active: ContextVar[_FaultState | None] = ContextVar(
+    "etlantic_fault_state", default=None
+)
 
 
 def fault_injection_enabled() -> bool:

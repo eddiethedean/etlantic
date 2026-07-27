@@ -5,14 +5,15 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.22.0** — choose your guide:
+**ETLantic 0.23.0** — choose your guide:
 
 | Current version | Start here |
 |---|---|
-| 0.21.x | [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
-| 0.20.x | [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md), then [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
-| 0.19.x | [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md), then follow the chain to 0.22 |
-| 0.18.x | [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md), then follow the chain to 0.22 |
+| 0.22.x | [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| 0.21.x | [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md), then [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
+| 0.20.x | [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md), then follow the chain to 0.23 |
+| 0.19.x | [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md), then follow the chain to 0.23 |
+| 0.18.x | [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md), then follow the chain to 0.23 |
 | ≤ 0.17 | Follow the [migration chain](#migration-chain-newest-first) below |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
@@ -23,6 +24,7 @@ interchange descriptors. Review
 
 | From → To | Guide |
 |---|---|
+| 0.22 → 0.23 | [MIGRATION_0_22_TO_0_23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) |
 | 0.21 → 0.22 | [MIGRATION_0_21_TO_0_22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) |
 | 0.20 → 0.21 | [MIGRATION_0_20_TO_0_21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) |
 | 0.19 → 0.20 | [MIGRATION_0_19_TO_0_20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) |
@@ -90,6 +92,18 @@ See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) for C
 | Manual protocol pin guessing | `etlantic plugin compatibility` |
 
 See [Migration 0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md).
+
+## 0.23 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Silent success when report persistence fails after publication | Inspect terminal report status; recover orphaned publications manually; expect `PMEXEC410` |
+| Missing callable reader on storage bindings | Register reader or use supported binding; expect `PMEXEC412` |
+| Ad hoc fault injection in production | `etlantic.testing.faults` only with `ETLANTIC_FAULT_INJECTION=1` or test contexts |
+| Cross-engine interchange claims without evidence | Plan `evidence_refs` + runtime `interchange_evidence`; `reconcile_interchange_evidence` in tests |
+| Unsafe SQL/file retry after partial write | Blocked at runtime with `PMEXEC501`; keep compile-time `PMORCH310` checks in CI |
+
+See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md).
 
 ## Checklist
 

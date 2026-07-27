@@ -11,6 +11,17 @@ from etlantic.testing.dataframe import (
     assert_roundtrip_records,
     run_conformance_suite,
 )
+from etlantic.testing.faults import (
+    FaultBoundary,
+    FaultSpec,
+    FaultTrigger,
+    clear_faults,
+    fault_injection_enabled,
+    maybe_inject,
+    register_faults,
+    reset_fault_counts,
+    with_faults,
+)
 from etlantic.testing.interchange import run_tabular_interchange_conformance_smoke
 from etlantic.testing.orchestrator import (
     assert_orchestrator_plugin_info,
@@ -38,22 +49,14 @@ from etlantic.testing.write_semantics import (
     assert_write_intent_parity,
     run_write_semantics_parity_suite,
 )
-from etlantic.testing.faults import (
-    FaultBoundary,
-    FaultSpec,
-    FaultTrigger,
-    clear_faults,
-    fault_injection_enabled,
-    maybe_inject,
-    register_faults,
-    reset_fault_counts,
-    with_faults,
-)
 
 # Module alias matching documented import path.
 from . import portable_transform_conformance as portable_transform_conformance
 
 __all__ = [
+    "FaultBoundary",
+    "FaultSpec",
+    "FaultTrigger",
     "assert_capability_claims_consistent",
     "assert_capability_matches_behavior",
     "assert_missing_secret_fails",
@@ -64,18 +67,14 @@ __all__ = [
     "assert_secret_provider_info",
     "assert_spark_plugin_info",
     "assert_sql_plugin_info",
-    "FaultBoundary",
-    "FaultSpec",
-    "FaultTrigger",
+    "assert_write_intent_parity",
     "clear_faults",
     "fault_injection_enabled",
     "maybe_inject",
-    "register_faults",
-    "reset_fault_counts",
-    "with_faults",
-    "assert_write_intent_parity",
     "normalize_rows",
     "portable_transform_conformance",
+    "register_faults",
+    "reset_fault_counts",
     "run_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_portable_transform_conformance_suite",
@@ -85,4 +84,5 @@ __all__ = [
     "run_sql_conformance_suite",
     "run_tabular_interchange_conformance_smoke",
     "run_write_semantics_parity_suite",
+    "with_faults",
 ]

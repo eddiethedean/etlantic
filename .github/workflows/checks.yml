@@ -530,4 +530,6 @@ jobs:
         run: uv pip install "apache-airflow==${{ matrix.airflow-version }}"
 
       - name: Compile and import generated DAG
+        env:
+          ETLANTIC_REQUIRE_AIRFLOW: "1"
         run: uv run pytest -q tests/airflow/test_airflow_compile.py::test_optional_airflow_import_of_generated_dag -m airflow

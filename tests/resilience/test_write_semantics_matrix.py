@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from etlantic import (
     Data,
     Extract,
@@ -14,12 +12,11 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    RunRequest,
-    RunStatus,
     Transformation,
 )
 from etlantic.reliability import RetrySafetyDeclaration
-from etlantic.runtime.request import RetryPolicy
+from etlantic.runtime.request import RetryPolicy, RunRequest
+from etlantic.runtime.state import RunStatus
 from etlantic.storage import JsonStorage
 
 

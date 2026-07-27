@@ -68,7 +68,7 @@ For a controlled deployment, test the exact resolved environment and pin
 
 Core extras already enforce exact official plugin versions, for example
 `etlantic[polars]==0.23.0` depends on `etlantic-polars==0.23.0`. Official
-plugin source metadata accepts core `etlantic>=0.23.0,<0.23`, which is
+plugin source metadata accepts core `etlantic>=0.23.0,<0.24`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

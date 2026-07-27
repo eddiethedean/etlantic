@@ -49,7 +49,6 @@ from etlantic.reports.model import (
 )
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import AttemptContext, RunContext, StepContext
-from etlantic.runtime.faults import FaultBoundary, maybe_inject
 from etlantic.runtime.dataframe_exec import (
     execute_dataframe_step,
     is_dataframe_engine,
@@ -57,6 +56,7 @@ from etlantic.runtime.dataframe_exec import (
 )
 from etlantic.runtime.events import LifecycleEvent, SecurityEvent
 from etlantic.runtime.executors import get_executor_registry
+from etlantic.runtime.faults import FaultBoundary, active_faults, maybe_inject
 from etlantic.runtime.invoke import maybe_await
 from etlantic.runtime.logging import RunLogger, redact_message
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
@@ -232,10 +232,23 @@ class LocalOrchestrator:
     def _mark_publication(self) -> None:
         self._persistence.publication_committed = True
 
+    def _notify_publication(self, *, run_id: str, node: Node, attempt: int) -> None:
+        self.runtime.events.emit(
+            LifecycleEvent(
+                kind="publication",
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                step_name=node.name,
+                attempt=attempt,
+                status="succeeded",
+            )
+        )
+        self._mark_publication()
+
     def _persist_report(self, report: PipelineRunReport) -> None:
         """Persist a terminal report once, with fault-injection and gap detection."""
-        maybe_inject(FaultBoundary.REPORT_PERSIST)
         try:
+            maybe_inject(FaultBoundary.REPORT_PERSIST)
             self.runtime.reports.put(report)
         except Exception as exc:
             if self._persistence.publication_committed:
@@ -243,8 +256,8 @@ class LocalOrchestrator:
                     report,
                     status=RunStatus.FAILED,
                     diagnostics=tuple(
-                        list(report.diagnostics)
-                        + [
+                        [
+                            *report.diagnostics,
                             RunDiagnostic(
                                 code="PMEXEC410",
                                 severity="error",
@@ -252,11 +265,14 @@ class LocalOrchestrator:
                                     "Data publication succeeded but run report "
                                     "persistence failed; run marked failed."
                                 ),
-                            )
+                            ),
                         ]
                     ),
                 )
-                with contextlib.suppress(Exception):
+                with (
+                    contextlib.suppress(Exception),
+                    active_faults(),
+                ):
                     self.runtime.reports.put(failed_report)
                 report = failed_report
             raise PipelineExecutionError(
@@ -631,7 +647,7 @@ class LocalOrchestrator:
                 "outbound_events": list(self.outbound_events),
             },
         )
-        self.runtime.reports.put(report)
+        self._persist_report(report)
         event_kind = "run_completed" if status is RunStatus.SUCCEEDED else "run_failed"
         self.runtime.events.emit(
             LifecycleEvent(
@@ -1112,6 +1128,7 @@ class LocalOrchestrator:
                         "sink_kind": "records",
                         "provider": provider,
                     }
+                    self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                     return
                 enable_delta = provider in {"delta", "pyspark"} or write_mode in {
                     "merge",
@@ -1165,6 +1182,7 @@ class LocalOrchestrator:
                 state.metadata["spark"] = result.metrics.to_dict()
                 if result.schema_observation:
                     state.metadata["spark_schema"] = result.schema_observation
+                self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                 return
             if is_sql_engine(self._engine_for(node.name)) and not isinstance(
                 payload, list

@@ -30,7 +30,7 @@ Load and save profiles through the SDK:
 from etlantic.profile import load_profile, write_profile, production_profile
 
 profile = production_profile(
-    plugin_allowlist={"etlantic-polars": "==0.22.0"},
+    plugin_allowlist={"etlantic-polars": "==0.23.0"},
     assets={"raw": "s3://bucket/raw", "curated": "warehouse.curated"},
 )
 write_profile(profile, "profiles/prod.json")
@@ -56,8 +56,8 @@ In production, an empty allowlist rejects every discovered plugin. Example:
 
 ```json
 "plugin_allowlist": {
-  "etlantic-polars": "==0.22.0",
-  "etlantic-sql": "==0.22.0"
+  "etlantic-polars": "==0.23.0",
+  "etlantic-sql": "==0.23.0"
 }
 ```
 

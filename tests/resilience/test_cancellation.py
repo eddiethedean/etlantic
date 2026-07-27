@@ -108,10 +108,13 @@ def test_report_persist_fault_after_publication_marks_failed(
             orch = LocalOrchestrator(
                 runtime=runtime, plan=plan, request=request, pipeline_cls=P
             )
-            with pytest.raises(Exception):
+            with pytest.raises(PipelineExecutionError) as exc_info:
                 await orch.execute()
+            assert exc_info.value.code == "PMEXEC410"
 
     anyio.run(_run)
 
     reports = store.list()
-    assert len(reports) <= 1 or reports[0].status == RunStatus.FAILED
+    assert len(reports) == 1
+    assert reports[0].status == RunStatus.FAILED
+    assert any(d.code == "PMEXEC410" for d in reports[0].diagnostics)

@@ -3,7 +3,8 @@
 ETLantic **0.23.0** is **stable** for documented
 single-tenant reference deployments. Experimental features remain
 experimental, and multi-tenant isolation, deployment topology, compliance,
-advanced multi-tenant control planes remain adopter-owned; 0.22 ships SBOM digests, attestations, and OIDC-preferred publish. This
+advanced multi-tenant control planes remain adopter-owned; 0.23 ships runtime
+resilience budgets, benchmark CI gates, and expanded backend validation. This
 page is the shortest answer to "What can I use today?"
 
 ## Recommended bounded production deployment
@@ -25,7 +26,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
     `profiles/` tree. Use the paste-ready Quickstart, copy the profile JSON
     below, or clone the repository and run scripts with `uv run`.
 
-## Available in 0.22
+## Available in 0.23
 
 ### Core authoring and validation
 
@@ -62,12 +63,13 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Portable SQL compiler (kernel + relational `/1`) | Available (`etlantic-sql`) |
 | Advanced portable profiles (window, reshape, string-advanced, …) | Available on Polars + PySpark; Pandas/SQL remain baseline |
 | Public portable transform conformance suite | Available |
-| Versioned tabular interchange (`etlantic.interchange/1`) | **0.18.0 Gate A — Available** for Polars↔Pandas boundaries (still current in 0.22) |
+| Versioned tabular interchange (`etlantic.interchange/1`) | **0.18.0 Gate A — Available** for Polars↔Pandas boundaries (runtime evidence reconciliation in 0.23) |
 | Best-effort Arrow-assisted conversion | Legacy helper; available when PyArrow is installed, but not the Gate A contract |
 | Pre-import plugin authorization + static manifests | **Available in 0.23.0** |
 | Unified SafeIoPolicy + artifact/cache isolation | **Available in 0.23.0** |
 | Outbound SSRF policy + serialization bans | **Available in 0.23.0** |
-| Release SBOM digests / attestations / OIDC publish | **Available in 0.23.0** |
+| Runtime fault injection (test/dev) + terminal report semantics | **Available in 0.23.0** |
+| Microbenchmark baselines + CI regression gate | **Available in 0.23.0** |
 | Contract and configuration freeze | **Available in 0.23.0** — deep plan immutability, fingerprint verify, `security_mode`, strict profiles |
 | `etlantic-datafusion` | **Experimental** (Gate B) — stub package; not recommended |
 | SQL protocol + PostgreSQL reference plugin | Available (`etlantic-sql`) |
@@ -96,7 +98,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 |---|---|
 | Structured Streaming foundation | **Experimental** |
 
-## Not included in 0.22
+## Not included in 0.23
 
 | Capability | Status |
 |---|---|

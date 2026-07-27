@@ -38,9 +38,7 @@ def _collect_results() -> dict[str, float]:
     return merged
 
 
-def _compare(
-    observed: dict[str, float], baseline: dict[str, object]
-) -> list[str]:
+def _compare(observed: dict[str, float], baseline: dict[str, object]) -> list[str]:
     errors: list[str] = []
     scenarios = baseline.get("scenarios") or {}
     if not isinstance(scenarios, dict):
@@ -104,7 +102,10 @@ def main() -> int:
         )
         return 1
 
-    print("Benchmark gate passed:", ", ".join(f"{k}={v:.6f}s" for k, v in observed.items()))
+    print(
+        "Benchmark gate passed:",
+        ", ".join(f"{k}={v:.6f}s" for k, v in observed.items()),
+    )
     return 0
 
 

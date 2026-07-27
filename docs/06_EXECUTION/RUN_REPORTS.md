@@ -1,6 +1,6 @@
 # Run Reports
 
-> **Status: Available in ETLantic 0.22.0.** Every successful or failed local
+> **Status: Available in ETLantic 0.23.0.** Every successful or failed local
 > (and plugin-backed) run returns a structured `PipelineRunReport`.
 
 Every ETLantic run returns a structured `PipelineRunReport`.
@@ -309,6 +309,24 @@ Durable history enables:
 - comparison between profiles and backends
 
 Persistence is provider-owned. `PipelineRunReport` remains provider-neutral.
+
+### Publication vs report persistence (0.23)
+
+When a sink publication succeeds but the terminal run report cannot be written,
+the orchestrator fails closed with diagnostic **`PMEXEC410`** and marks the run
+`FAILED` (even when step work succeeded). This prevents silent success when
+operators cannot find the canonical run record.
+
+**Manual recovery** when publication artifacts exist without a matching report:
+
+1. List reports: `etlantic report list` or inspect `.etlantic/reports/*.json`.
+2. Identify the `run_id` from sink metadata, logs, or lifecycle events.
+3. Confirm published outputs under the configured binding (memory, file, SQL, Spark).
+4. If outputs are valid but no report exists, record the incident out-of-band;
+   re-run with `--ephemeral` only for debugging — do not assume idempotent
+   rewrite without checking retry-safety on sinks.
+
+There is no automatic merge of orphaned publications into reports in 0.23.
 
 ## Partial and External Runs
 

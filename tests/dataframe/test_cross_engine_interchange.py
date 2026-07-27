@@ -4,8 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+from etlantic import (
+    Data,
+    Extract,
+    Input,
+    Load,
+    Output,
+    Pipeline,
+    Transformation,
+)
 from etlantic.dataframe.discovery import register_discovered_plugins
+from etlantic.interchange.tabular import InterchangeEvidence, InterchangeMechanism
+from etlantic.interchange.tabular.execute import boundary_for_input
+from etlantic.interchange.tabular.reconcile import reconcile_interchange_evidence
 from etlantic.lifecycle import PipelineRuntime
 from etlantic.profile import Profile
 from etlantic.registry import PlanningContext, builtin_stub_registry
@@ -72,6 +83,10 @@ def test_polars_to_pandas_pipeline_honors_planned_interchange() -> None:
     runtime = PipelineRuntime(registry=registry, dataframe_plugins=plugins)
     runtime.memory.seed("rows", [_Row(value=1), _Row(value=2)])
 
+    plan = _CrossEnginePipeline.plan(profile=profile, context=context)
+    descriptor = boundary_for_input(plan, "pandas_step", "rows")
+    assert descriptor is not None
+
     report = _CrossEnginePipeline.run(
         profile=profile,
         context=context,
@@ -80,3 +95,20 @@ def test_polars_to_pandas_pipeline_honors_planned_interchange() -> None:
 
     assert report.status is RunStatus.SUCCEEDED
     assert [row.value for row in runtime.memory.get("out")] == [1, 2]
+
+    pandas_step = next(s for s in report.steps if s.step_name == "pandas_step")
+    dataframe_meta = pandas_step.metadata.get("dataframe") or {}
+    evidence_items = (dataframe_meta.get("extras") or {}).get("interchange_evidence")
+    assert evidence_items
+    observed_raw = evidence_items[0]
+    observed = InterchangeEvidence(
+        evidence_id=observed_raw["evidence_id"],
+        mechanism=InterchangeMechanism(observed_raw["mechanism"]),
+        copy_observed=observed_raw["copy_observed"],
+        zero_copy_reported=observed_raw["zero_copy_reported"],
+        fallback_reason=observed_raw.get("fallback_reason"),
+        cleanup_status=observed_raw["cleanup_status"],
+        notes=observed_raw.get("notes") or "",
+    )
+    result = reconcile_interchange_evidence(descriptor, observed)
+    assert result.ok

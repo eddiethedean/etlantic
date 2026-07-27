@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 from dataclasses import dataclass
 from typing import Any
 
-from etlantic.interchange.tabular.descriptor import CopyEligibility, InterchangeDescriptor
+from etlantic.interchange.tabular.descriptor import (
+    CopyEligibility,
+    InterchangeDescriptor,
+)
 from etlantic.interchange.tabular.evidence import InterchangeEvidence
 from etlantic.interchange.tabular.mechanisms import InterchangeMechanism
 
@@ -44,9 +48,10 @@ def build_interchange_evidence(
 ) -> InterchangeEvidence:
     """Build runtime evidence for one cross-engine materialization boundary."""
     copy_observed: bool | None
-    if value_before is not value_after:
-        copy_observed = True
-    elif descriptor.copy_eligibility is CopyEligibility.COPY_REQUIRED:
+    if (
+        value_before is not value_after
+        or descriptor.copy_eligibility is CopyEligibility.COPY_REQUIRED
+    ):
         copy_observed = True
     elif descriptor.copy_eligibility is CopyEligibility.ELIGIBLE:
         copy_observed = False
@@ -55,10 +60,8 @@ def build_interchange_evidence(
 
     mechanism = descriptor.mechanism
     if mechanism_observed is not None:
-        try:
+        with contextlib.suppress(ValueError):
             mechanism = InterchangeMechanism(mechanism_observed)
-        except ValueError:
-            pass
 
     notes = ""
     if os.environ.get("ETLANTIC_INTERCHANGE_EVIDENCE") == "1":
@@ -108,9 +111,7 @@ def reconcile_interchange_evidence(
         planned_descriptor.copy_eligibility is CopyEligibility.COPY_REQUIRED
         and observed_evidence.copy_observed is False
     ):
-        mismatches.append(
-            "copy required by plan but no copy observed at runtime"
-        )
+        mismatches.append("copy required by plan but no copy observed at runtime")
 
     expected_refs = set(
         interchange_evidence_refs(
@@ -128,9 +129,7 @@ def reconcile_interchange_evidence(
         observed_evidence.evidence_id
         != f"interchange:{planned_descriptor.schema_fingerprint}"
     ):
-        mismatches.append(
-            f"evidence_id mismatch: {observed_evidence.evidence_id!r}"
-        )
+        mismatches.append(f"evidence_id mismatch: {observed_evidence.evidence_id!r}")
 
     return ReconciliationResult(
         ok=not mismatches,

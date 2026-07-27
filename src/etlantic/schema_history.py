@@ -8,7 +8,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from etlantic.io_policy import SafeIoPolicy, read_text_safe, write_json_safe
+from etlantic.io_policy import (
+    SafeIoPolicy,
+    read_modify_write_json_safe,
+    read_text_safe,
+    write_json_safe,
+)
 from etlantic.schema_drift import SchemaObservation
 from etlantic.schema_policy import InMemorySchemaHistory
 from etlantic.serialization_policy import assert_safe_load_path
@@ -116,7 +121,11 @@ class FileSchemaHistoryProvider:
     def _load(self) -> None:
         assert self.policy is not None
         for path in sorted(self.root.glob("*.json")):
-            if path.name.endswith(".ack.json") or path.name.endswith(".lock"):
+            if (
+                path.name.endswith(".ack.json")
+                or path.name.endswith(".lock")
+                or path.name.endswith(".tmp")
+            ):
                 continue
             try:
                 assert_safe_load_path(path)
@@ -138,26 +147,31 @@ class FileSchemaHistoryProvider:
     def record(self, observation: SchemaObservation) -> None:
         assert_no_row_payload(observation)
         fp = observation.schema.fingerprint()
-        existing = self._memory.history(observation.subject_id)
-        if any(o.schema.fingerprint() == fp for o in existing):
+        if any(
+            o.schema.fingerprint() == fp
+            for o in self._memory.history(observation.subject_id)
+        ):
             return
-        self._memory.record(observation)
         assert self.policy is not None
         path = self._subject_path(observation.subject_id)
-        history = [
-            _observation_to_dict(o)
-            for o in self._memory.history(observation.subject_id)
-        ]
-        write_json_safe(
-            path,
-            {
+        obs_dict = _observation_to_dict(observation)
+
+        def _merge(data: dict[str, Any]) -> dict[str, Any]:
+            history = list(data.get("history") or [])
+            if any(
+                isinstance(item, dict) and item.get("fingerprint") == fp
+                for item in history
+            ):
+                return data
+            history.append(obs_dict)
+            return {
                 "subject_id": observation.subject_id,
-                "latest": _observation_to_dict(observation),
+                "latest": obs_dict,
                 "history": history,
-            },
-            self.policy,
-            run_id="schema-history",
-        )
+            }
+
+        read_modify_write_json_safe(path, self.policy, _merge, run_id="schema-history")
+        self._memory.record(observation)
 
     def latest(self, subject_id: str) -> SchemaObservation | None:
         return self._memory.latest(subject_id)

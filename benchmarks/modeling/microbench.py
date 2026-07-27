@@ -12,9 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tests.fixtures.sample_pipeline import SamplePipeline  # noqa: E402
+
 from etlantic import PipelineRuntime  # noqa: E402
 from etlantic.registry import PlanningContext  # noqa: E402
-from tests.fixtures.sample_pipeline import SamplePipeline  # noqa: E402
 
 
 @dataclass(frozen=True, slots=True)

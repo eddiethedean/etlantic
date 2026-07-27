@@ -215,12 +215,22 @@ def test_etlantic_step_is_reference_stub():
 
 
 @pytest.mark.airflow
-def test_optional_airflow_import_of_generated_dag(planned, tmp_path):
+def test_optional_airflow_import_of_generated_dag(planned, tmp_path, monkeypatch):
+    import os
+
+    if os.environ.get("ETLANTIC_REQUIRE_AIRFLOW") == "1":
+        try:
+            import airflow  # noqa: F401
+        except ImportError as exc:
+            raise AssertionError(
+                "apache-airflow is required when ETLANTIC_REQUIRE_AIRFLOW=1"
+            ) from exc
+    else:
+        pytest.importorskip("airflow")
+
     plan, profile, plugin, _ = planned
     artifact = compile_plan(plan, target="airflow", profile=profile, plugin=plugin)
     path = artifact.write(tmp_path / "importable_dag.py")
-    airflow = pytest.importorskip("airflow")
-    _ = airflow
     from etlantic_airflow import load_compiled_pipeline
 
     dag = load_compiled_pipeline(path)

@@ -1,6 +1,6 @@
 # Operations Examples
 
-> **Status: Available in ETLantic 0.22.0.** Minimal patterns for secrets,
+> **Status: Available in ETLantic 0.23.0.** Minimal patterns for secrets,
 > schema drift, and CI SARIF — beside the green path.
 
 ## Secrets (runtime references only)

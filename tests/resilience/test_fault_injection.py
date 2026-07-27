@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from etlantic.runtime.faults import (
@@ -16,6 +14,43 @@ from etlantic.runtime.faults import (
     reset_fault_counts,
 )
 from etlantic.testing.faults import with_faults
+
+pl = pytest.importorskip("polars", reason="polars optional for dataframe fault test")
+pytest.importorskip("etlantic_polars", reason="etlantic-polars optional")
+
+from etlantic import (  # noqa: E402
+    Data,
+    Extract,
+    Input,
+    Load,
+    Output,
+    Pipeline,
+    PipelineRuntime,
+    Transformation,
+)
+from etlantic.profile import Profile  # noqa: E402
+from etlantic.runtime.orchestrator import LocalOrchestrator  # noqa: E402
+from etlantic.runtime.request import RunIntent, RunRequest  # noqa: E402
+
+
+class MaterializeRow(Data):
+    id: int
+
+
+class _PolarsIdentity(Transformation):
+    rows: Input[MaterializeRow]
+    result: Output[MaterializeRow]
+
+
+@_PolarsIdentity.implementation("polars")
+def _polars_identity(rows):  # type: ignore[no-untyped-def]
+    return rows
+
+
+class _MaterializePipeline(Pipeline):
+    raw: Extract[MaterializeRow] = Extract(asset="rows")
+    step = _PolarsIdentity.step(rows=raw)
+    out: Load[MaterializeRow] = Load(input=step.result, asset="out")
 
 
 @pytest.fixture(autouse=True)
@@ -32,11 +67,13 @@ def test_fault_injection_disabled_without_flag_or_registry(
 
 
 def test_on_call_raises() -> None:
-    with with_faults(
-        FaultSpec(boundary=FaultBoundary.EXTRACT, message="boom", error=ValueError)
+    with (
+        with_faults(
+            FaultSpec(boundary=FaultBoundary.EXTRACT, message="boom", error=ValueError)
+        ),
+        pytest.raises(ValueError, match="boom"),
     ):
-        with pytest.raises(ValueError, match="boom"):
-            maybe_inject(FaultBoundary.EXTRACT)
+        maybe_inject(FaultBoundary.EXTRACT)
 
 
 @pytest.mark.parametrize(
@@ -55,9 +92,11 @@ def test_on_call_raises() -> None:
     ],
 )
 def test_each_boundary_can_fire(boundary: FaultBoundary) -> None:
-    with with_faults(FaultSpec(boundary=boundary, message=f"{boundary}-fail")):
-        with pytest.raises(RuntimeError, match=f"{boundary}-fail"):
-            maybe_inject(boundary)
+    with (
+        with_faults(FaultSpec(boundary=boundary, message=f"{boundary}-fail")),
+        pytest.raises(RuntimeError, match=f"{boundary}-fail"),
+    ):
+        maybe_inject(boundary)
 
 
 def test_after_n_calls_trigger() -> None:
@@ -110,11 +149,45 @@ def test_file_report_store_honors_report_persist_fault(tmp_path) -> None:
         started_at=datetime.now(UTC),
         summary=RunSummary(total_steps=1),
     )
-    with with_faults(
-        FaultSpec(boundary=FaultBoundary.REPORT_PERSIST, message="persist-fail")
+    with (
+        with_faults(
+            FaultSpec(boundary=FaultBoundary.REPORT_PERSIST, message="persist-fail")
+        ),
+        pytest.raises(RuntimeError, match="persist-fail"),
     ):
-        with pytest.raises(RuntimeError, match="persist-fail"):
-            store.put(report)
+        store.put(report)
     # In-memory index may still hold report from partial put depending on order;
     # durable write must not succeed when fault fires before write.
     assert not (tmp_path / "run-1.json").exists()
+
+
+@pytest.mark.polars
+def test_materialize_fault_fires_during_dataframe_step() -> None:
+    import anyio
+
+    profile = Profile(name="polars-fault", dataframe_engine="polars")
+    runtime = PipelineRuntime()
+    runtime.ensure_plugins_for_profile(profile)
+    runtime.memory.seed("rows", [MaterializeRow(id=1)])
+    plan = _MaterializePipeline.plan(profile=profile)
+    request = RunRequest(intent=RunIntent.STANDARD)
+
+    async def _run() -> None:
+        with with_faults(
+            FaultSpec(
+                boundary=FaultBoundary.MATERIALIZE,
+                trigger=FaultTrigger.ON_STEP,
+                step_name="step",
+                message="materialize-boom",
+            )
+        ):
+            orch = LocalOrchestrator(
+                runtime=runtime,
+                plan=plan,
+                request=request,
+                pipeline_cls=_MaterializePipeline,
+            )
+            with pytest.raises(Exception, match="materialize-boom"):
+                await orch.execute()
+
+    anyio.run(_run)

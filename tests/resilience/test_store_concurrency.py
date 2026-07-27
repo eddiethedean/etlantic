@@ -7,14 +7,12 @@ import multiprocessing
 from datetime import UTC, datetime
 from pathlib import Path
 
-import pytest
-
 from etlantic.io_policy import SafeIoPolicy
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport, RunSummary
 from etlantic.runtime.request import RunIntent
 from etlantic.runtime.state import RunStatus
-from etlantic.schema_drift import NormalizedSchema, normalize_schema_from_fields
+from etlantic.schema_drift import normalize_schema_from_fields
 from etlantic.schema_history import FileSchemaHistoryProvider
 from etlantic.schema_policy import SchemaObservation
 
@@ -65,6 +63,40 @@ def test_schema_history_idempotent_by_fingerprint(tmp_path: Path) -> None:
     provider.record(obs)
     provider.record(obs)
     assert len(provider.history("Customer")) == 1
+
+
+def _record_schema(root: str, suffix: str) -> None:
+    provider = FileSchemaHistoryProvider(Path(root), policy=SafeIoPolicy.for_root(root))
+    schema = normalize_schema_from_fields(
+        [
+            {"name": "id", "logical_type": "integer"},
+            {"name": suffix, "logical_type": "string"},
+        ],
+        identity="Customer",
+    )
+    provider.record(
+        SchemaObservation(subject_id="Customer", schema=schema, inspector="test")
+    )
+
+
+def test_concurrent_schema_history_distinct_fingerprints(tmp_path: Path) -> None:
+    root = str(tmp_path)
+    workers = 4
+    with multiprocessing.Pool(workers) as pool:
+        pool.starmap(_record_schema, [(root, f"field-{i}") for i in range(workers)])
+
+    provider = FileSchemaHistoryProvider(
+        tmp_path, policy=SafeIoPolicy.for_root(tmp_path)
+    )
+    assert len(provider.history("Customer")) == workers
+
+
+def test_schema_history_skips_incomplete_tmp_artifacts(tmp_path: Path) -> None:
+    (tmp_path / "Customer.json.tmp").write_text('{"incomplete": true', encoding="utf-8")
+    provider = FileSchemaHistoryProvider(
+        tmp_path, policy=SafeIoPolicy.for_root(tmp_path)
+    )
+    assert provider.history("Customer") == []
 
 
 def test_file_store_skips_incomplete_tmp_artifacts(tmp_path: Path) -> None:

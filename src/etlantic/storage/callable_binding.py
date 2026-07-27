@@ -40,7 +40,7 @@ class CallableStorage:
         if reader is None:
             raise PipelineExecutionError(
                 f"No callable reader registered for binding {binding!r}",
-                code="PMEXEC410",
+                code="PMEXEC412",
             )
         raw = await maybe_await(reader, location=location, context=context)
         return as_records(raw, contract_type)

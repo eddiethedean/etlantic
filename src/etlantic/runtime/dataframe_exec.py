@@ -21,6 +21,7 @@ from etlantic.interchange.tabular.reconcile import build_interchange_evidence
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
 from etlantic.registry import ImplementationDescriptor
+from etlantic.runtime.faults import FaultBoundary, maybe_inject
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.state import FailureStage
 from etlantic.transformation import ImplementationRecord
@@ -205,13 +206,16 @@ async def execute_dataframe_step(
             input_context = replace(context, interchange=interchange)
             if interchange is not None:
                 interchange_mechanisms.append(interchange.mechanism.value)
+                maybe_inject(FaultBoundary.CONVERT, step_name=node.name)
             value_before = value
+            maybe_inject(FaultBoundary.MATERIALIZE, step_name=node.name)
             frame = plugin.materialize_input(
                 value,
                 contract_type=contract,
                 context=input_context,
                 port_name=port_name,
             )
+            maybe_inject(FaultBoundary.VALIDATE, step_name=node.name)
             result = plugin.validate_frame(
                 frame,
                 contract_type=contract,
@@ -363,6 +367,7 @@ async def execute_dataframe_step(
         if port_collect:
             any_collected = True
         value = plugin.collect_if_needed(value, context=port_context)
+        maybe_inject(FaultBoundary.VALIDATE, step_name=node.name)
         result = plugin.validate_frame(
             value,
             contract_type=contract,

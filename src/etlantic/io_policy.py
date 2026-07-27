@@ -8,7 +8,8 @@ import json
 import os
 import tempfile
 import time
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -449,6 +450,49 @@ def write_json_safe(
     """Write JSON via :func:`write_text_safe`."""
     text = json.dumps(data, indent=2, sort_keys=True) + "\n"
     return write_text_safe(path, text, policy, run_id=run_id)
+
+
+def read_modify_write_json_safe(
+    path: str | Path,
+    policy: SafeIoPolicy,
+    modifier: Callable[[dict[str, Any]], dict[str, Any]],
+    *,
+    run_id: str = "io",
+) -> SafeIoResult:
+    """Read-modify-write JSON atomically under a single file lock."""
+    resolved, events = resolve_under_policy(path, policy, run_id=run_id)
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    lock: Path | None = None
+    if policy.enable_locking:
+        lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)
+    try:
+        current: dict[str, Any] = {}
+        if resolved.exists():
+            _resolved, text, read_events = read_text_safe(
+                resolved, policy, run_id=run_id
+            )
+            events.extend(read_events)
+            parsed = json.loads(text)
+            if isinstance(parsed, dict):
+                current = parsed
+        updated = modifier(current)
+        nested = replace(policy, enable_locking=False)
+        result = write_text_safe(
+            resolved,
+            json.dumps(updated, indent=2, sort_keys=True) + "\n",
+            nested,
+            run_id=run_id,
+        )
+        events.extend(result.security_events)
+        return SafeIoResult(
+            path=result.path,
+            digest=result.digest,
+            bytes_written=result.bytes_written,
+            security_events=events,
+        )
+    finally:
+        if lock is not None:
+            _release_lock(lock)
 
 
 def namespaced_path(

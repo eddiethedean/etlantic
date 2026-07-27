@@ -1,4 +1,4 @@
-# Public Surface Inventory (0.22)
+# Public Surface Inventory (0.23)
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`).
@@ -7,7 +7,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.22 reference envelope |
+| `stable` | Supported within the documented 0.23 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -20,7 +20,7 @@ import etlantic as etl
 ```
 
 `from etlantic import Data, Pipeline` and public submodule imports remain
-supported. Specialist helpers demoted off the root in 0.22 stay importable as
+supported. Specialist helpers demoted off the root in 0.23 stay importable as
 compatibility aliases (DeprecationWarning once per process) — prefer
 `etl.sql`, `etl.spark`, etc.
 
@@ -58,7 +58,7 @@ Plan helpers `verify_plan_fingerprint` / `deep_freeze` remain stable via
 
 `init`, `doctor`, `validate`, `inspect`, `plan`, `profile`, `run`, `compile`,
 `generate`, `diff`, `plugin`, `schema`, `reliability`, `viz`, `report` —
-**stable** within 0.22.
+**stable** within 0.23.
 
 `--allow-adhoc-profile` on validate/plan/run — **stable** (opt-in fail-open for
 unknown bare profile names; default is fail-closed `PMCFG100`).

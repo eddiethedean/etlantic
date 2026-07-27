@@ -1,6 +1,6 @@
 # 5–10 Minute Quickstart
 
-> **Status: Available in ETLantic 0.22.0.** Use `etlantic init` for the
+> **Status: Available in ETLantic 0.23.0.** Use `etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 
 ## 1. Install
@@ -8,7 +8,7 @@
 ETLantic requires Python 3.11 or newer.
 
 ```bash
-python -m pip install 'etlantic==0.22.0'
+python -m pip install 'etlantic==0.23.0'
 python -m etlantic --version
 ```
 
