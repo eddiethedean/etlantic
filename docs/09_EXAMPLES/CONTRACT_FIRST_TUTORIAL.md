@@ -5,7 +5,8 @@
 
 Generate ODCS/DTCS/DPCS from a code-first pipeline, then reload contracts with
 the shipped interchange helpers. Longer design studies under
-[Contract First](CONTRACT_FIRST.md) are **not** current API guides.
+[Contract First](https://github.com/eddiethedean/etlantic/blob/main/docs/09_EXAMPLES/CONTRACT_FIRST.md)
+are **not** current API guides.
 
 ## Generate contracts
 

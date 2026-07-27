@@ -24,13 +24,15 @@ After first success: [Capabilities](CAPABILITIES.md),
 |---|---|
 | Author without classes / JSON round trip | [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
 | Visual builder / service integration | [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
-| FastAPI reference adapter | `pip install etlantic-fastapi` / [Exit gate 0.24](../11_DEVELOPMENT/EXIT_GATE_0_24.md) |
+| FastAPI reference adapter | `pip install etlantic-fastapi` / [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | Read and write JSON or CSV | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Execute with Polars | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
 | Upgrade from 0.23 | [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
+| Day-0 CLI / SDK reminders | [Cheatsheet](../10_REFERENCE/CHEATSHEET.md) |
 
 ## Status labels
 
 Pages and tables use **Available**, **Partial**, **Experimental**, **Gap**,
-and **Future design**. Only **Available** surfaces are supported production
-API in 0.24.
+and **Future design**. **Available** means supported for documented
+single-tenant **Beta** pilots in 0.24—not a 1.0 production compatibility
+guarantee.

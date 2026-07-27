@@ -22,19 +22,17 @@ and introduces lossless `etlantic.pipeline/1` JSON.
 - Replacing `etlantic.plan/1` (still the resolved execution IR)
 - FastAPI as a core dependency
 
-## Try it (10 lines)
+## Try it (pip-only)
 
 ```bash
-# from a checkout with 0.24 installed
-uv run python examples/pipeline_definition_json.py
-python -m etlantic validate pipeline.definition.json --profile development
-```
-
-Or from a class:
-
-```bash
-python -m etlantic generate examples/memory_customers.py:CustomerPipeline \
+python -m pip install 'etlantic==0.24.0'
+python -m etlantic init --with-toml
+python -m etlantic generate pipeline.py:SamplePipeline \
   --kind definition -o pipeline.json
+python -m etlantic validate pipeline.json --profile development
 ```
 
-Full guide: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+Builders without a class: see the pip-only section in
+[Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+
+Optional from a checkout: `uv run python examples/pipeline_definition_json.py`.

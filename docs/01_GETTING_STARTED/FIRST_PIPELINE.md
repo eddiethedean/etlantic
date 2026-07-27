@@ -1,7 +1,7 @@
 # Your First Pipeline
 
 > **Status: Available in ETLantic 0.24.0.** This tutorial extends the project
-> created by [Quickstart](QUICKSTART.md) (`etlantic init`). It uses the local
+> created by [Quickstart](QUICKSTART.md) (`python -m etlantic init`). It uses the local
 > Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
 
 ## Start from the init project
@@ -62,10 +62,10 @@ to JSON paths.
 ## Validate, plan, and run (CLI)
 
 ```bash
-etlantic inspect pipeline.py:SamplePipeline --format json
-etlantic validate pipeline.py:SamplePipeline --profile development --format json
-etlantic plan pipeline.py:SamplePipeline --profile development --format json
-etlantic run pipeline.py:SamplePipeline --profile development
+python -m etlantic inspect pipeline.py:SamplePipeline --format json
+python -m etlantic validate pipeline.py:SamplePipeline --profile development --format json
+python -m etlantic plan pipeline.py:SamplePipeline --profile development --format json
+python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
 Prefer the same `--profile` for validate, plan, and run. If you omit
@@ -94,7 +94,7 @@ out: Load[Other] = Load(
 Then validate. ETLantic rejects the graph before it reads any data:
 
 ```bash
-etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
 ```
 
 ```text

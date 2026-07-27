@@ -11,6 +11,22 @@ exclude_docs: |
   theme/README.md
   11_DEVELOPMENT/CURSOR_EXTRACT_LOAD_MIGRATION_PROMPT.md
   11_DEVELOPMENT/PREFECT_SPIKE_NOTES.md
+  09_EXAMPLES/CSV_TO_CSV.md
+  09_EXAMPLES/CSV_TO_SQL.md
+  09_EXAMPLES/SQL_TO_SQL.md
+  09_EXAMPLES/PANDAS_PIPELINE.md
+  09_EXAMPLES/POLARS_PIPELINE.md
+  09_EXAMPLES/AIRFLOW_PIPELINE.md
+  09_EXAMPLES/MULTI_OUTPUT.md
+  09_EXAMPLES/CALLBACKS.md
+  09_EXAMPLES/ASYNC_PIPELINES.md
+  09_EXAMPLES/CONTRACT_FIRST.md
+  09_EXAMPLES/CODE_FIRST.md
+  09_EXAMPLES/END_TO_END.md
+  09_EXAMPLES/SQL_TO_PYSPARK.md
+  09_EXAMPLES/PYSPARK_TO_SQL.md
+  09_EXAMPLES/PYSPARK_TO_DELTA.md
+  09_EXAMPLES/STREAMING_PYSPARK.md
 
 validation:
   omitted_files: warn
@@ -116,19 +132,21 @@ nav:
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
+      - Programmatic authoring: 05_PIPELINES/PROGRAMMATIC_AUTHORING.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Current 0.24 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
-      - Guides:
+      - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
+      - How-to:
           - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
           - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
           - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
+          - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
           - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
           - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
           - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
-          - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
   - Evaluate:
       - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Capabilities and Limitations: 01_GETTING_STARTED/CAPABILITIES.md
@@ -318,6 +336,7 @@ nav:
       - Archive (history / not product docs):
           - Full roadmap (GitHub): https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
           - Design Proposals index: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
+          - Design studies (GitHub): https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES
           - Programmatic Authoring plan (historical): 11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
           - FastAPI Integration Plan (historical): 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
           - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
@@ -335,23 +354,6 @@ nav:
           - Documentation audit 0.20: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md
           - Documentation audit 0.18: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_18.md
           - Documentation audit 0.17: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_17.md
-          - Design studies (aspirational — not runnable guides):
-              - CSV to CSV: 09_EXAMPLES/CSV_TO_CSV.md
-              - CSV to SQL: 09_EXAMPLES/CSV_TO_SQL.md
-              - SQL to SQL: 09_EXAMPLES/SQL_TO_SQL.md
-              - Pandas Pipeline: 09_EXAMPLES/PANDAS_PIPELINE.md
-              - Polars Pipeline: 09_EXAMPLES/POLARS_PIPELINE.md
-              - Airflow Pipeline: 09_EXAMPLES/AIRFLOW_PIPELINE.md
-              - Multi-output: 09_EXAMPLES/MULTI_OUTPUT.md
-              - Callbacks: 09_EXAMPLES/CALLBACKS.md
-              - Async Pipelines: 09_EXAMPLES/ASYNC_PIPELINES.md
-              - Contract First: 09_EXAMPLES/CONTRACT_FIRST.md
-              - Code First: 09_EXAMPLES/CODE_FIRST.md
-              - End to End: 09_EXAMPLES/END_TO_END.md
-              - SQL to PySpark: 09_EXAMPLES/SQL_TO_PYSPARK.md
-              - PySpark to SQL: 09_EXAMPLES/PYSPARK_TO_SQL.md
-              - PySpark to Delta: 09_EXAMPLES/PYSPARK_TO_DELTA.md
-              - Streaming PySpark: 09_EXAMPLES/STREAMING_PYSPARK.md
           - Portable compilers and plans (history):
               - Implementation plan: 11_DEVELOPMENT/PORTABLE_TRANSFORM_PLAN.md
               - Scheduler and Prefect plan: 11_DEVELOPMENT/SCHEDULER_AND_PREFECT_PLAN.md

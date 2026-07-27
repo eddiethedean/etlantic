@@ -6,7 +6,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 | Topic | 0.24 |
 |---|---|
-| Maturity | **Beta** (docs line; publish pin when on PyPI) |
+| Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
 | LTS | Current published minor only (`0.24.x`) |
@@ -26,6 +26,11 @@ manager.
 | Area | Ready? |
 |---|---|
 | Typed authoring (`Data`, `Transformation`, `Pipeline`) | Yes |
+| Functional builders / `PipelineDefinition` (`etlantic.authoring`) | Yes |
+| Lossless `etlantic.pipeline/1` JSON TARGET | Yes |
+| Authoring catalog + `EditCommand`s | Yes |
+| Service facade (`etlantic.service`) | Yes |
+| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not 1.1 control plane) |
 | Validation and secret-free `PipelinePlan` | Yes |
 | ODCS / DTCS / DPCS interchange | Yes |
 | Local in-process runtime + run reports | Yes |
@@ -45,6 +50,7 @@ manager.
 | Public portable transform conformance suite | Yes (0.14) |
 | Multi-tenant durable orchestration | No |
 | Formal SLA / support response times | No |
+| Production GUI / multi-tenant control plane | No |
 
 ## Security posture
 
@@ -60,7 +66,7 @@ manager.
   digests and GitHub attestations
 - Report vulnerabilities privately; security fixes are supported on 0.24.x
 
-### Shipped vs residual (0.21)
+### Shipped trust controls vs residual gaps
 
 | Concern | Status |
 |---|---|

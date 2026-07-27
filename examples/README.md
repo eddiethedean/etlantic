@@ -21,7 +21,7 @@ Validates, plans, and runs with in-memory storage; prints `succeeded` and
 curated records. This is an in-memory SDK demo, **not** the docs Quickstart
 (`etlantic init`).
 
-## PipelineDefinition / JSON authoring (docs / local)
+## PipelineDefinition / JSON authoring (CI)
 
 ```bash
 uv run python examples/pipeline_definition_json.py

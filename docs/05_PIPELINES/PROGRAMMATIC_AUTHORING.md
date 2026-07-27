@@ -6,7 +6,68 @@ Author pipelines with immutable builders or JSON — no class declarations
 required. Class authoring remains fully supported and normalizes to the same
 `PipelineDefinition` (`etlantic.pipeline/1`).
 
-## End-to-end: build → JSON → validate → plan
+After `pip install 'etlantic==0.24.0'`, you can build, write JSON, and validate
+with no repository checkout.
+
+```text
+Class  ──┐
+Builders ┼──▶ PipelineDefinition ──▶ validate / plan ──▶ PipelinePlan
+JSON   ──┘     (etlantic.pipeline/1)                    (etlantic.plan/1)
+```
+
+Plan JSON is **not** interchangeable with definition JSON.
+
+## Pip-only: build → JSON → validate
+
+```python
+import etlantic as etl
+
+raw_id = "demo:Row"
+pid = "demo:Sample"
+
+defn = etl.authoring.pipeline_definition(
+    pid,
+    "Sample",
+    contracts=(
+        etl.authoring.contract_definition(
+            raw_id,
+            "Row",
+            fields=(
+                etl.authoring.field_spec("id", "integer"),
+                etl.authoring.field_spec("name", "string"),
+            ),
+        ),
+    ),
+    nodes=(
+        etl.authoring.extract_node(
+            "rows", asset="rows", contract_id=raw_id, pipeline_id=pid
+        ),
+        etl.authoring.load_node(
+            "out", asset="out", contract_id=raw_id, pipeline_id=pid
+        ),
+    ),
+    edges=(
+        etl.authoring.edge(
+            "rows",
+            "result",
+            "out",
+            "input",
+            producer_contract_id=raw_id,
+            consumer_contract_id=raw_id,
+        ),
+    ),
+)
+etl.authoring.write_pipeline_json(defn, "pipeline.json")
+```
+
+```bash
+python -m etlantic validate pipeline.json --profile development
+python -m etlantic plan pipeline.json --profile development --format json
+```
+
+Optional from a checkout: `uv run python examples/pipeline_definition_json.py`.
+
+## End-to-end with a transform step
 
 ```python
 import etlantic as etl
@@ -97,17 +158,19 @@ report.raise_for_errors()
 plan = etl.authoring.plan_pipeline_like(loaded, profile="development")
 ```
 
-Runnable companion from a checkout: `uv run python examples/pipeline_definition_json.py`.
-
 ## From an existing class
 
 ```python
 import etlantic as etl
-from examples.memory_customers import CustomerPipeline
 
-defn = etl.authoring.definition_from_pipeline(CustomerPipeline)
-etl.authoring.write_pipeline_json(defn, "pipeline.json")
+# From an init project or any Pipeline subclass in your app:
+# from pipeline import SamplePipeline
+# defn = etl.authoring.definition_from_pipeline(SamplePipeline)
+# etl.authoring.write_pipeline_json(defn, "pipeline.json")
 ```
+
+From a repository checkout you can also normalize
+`examples/memory_customers.py:CustomerPipeline`.
 
 ## Callable registry (required to run definitions)
 
@@ -115,12 +178,10 @@ JSON and builders store **implementation refs**, not live callables. Before
 `run`, register the function for each transformation/engine:
 
 ```python
-from examples.memory_customers import normalize_customers
-
 etl.authoring.callable_registry().register(
     "demo:Normalize",  # transformation identity
     "local",
-    normalize_customers,
+    normalize_fn,
 )
 ```
 
@@ -132,7 +193,7 @@ without this step.
 TARGET may be `module:Class`, `path.py:Class`, **or** a pipeline JSON file:
 
 ```bash
-python -m etlantic generate examples/memory_customers.py:CustomerPipeline \
+python -m etlantic generate pipeline.py:SamplePipeline \
   --kind definition -o pipeline.json
 python -m etlantic validate pipeline.json --profile development
 python -m etlantic plan pipeline.json --profile development
@@ -155,6 +216,7 @@ Do not treat plan JSON as interchangeable with definition JSON.
 
 - [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) — service + FastAPI
 - [API — Authoring](../10_REFERENCE/API_AUTHORING.md) — mkdocstrings for `etlantic.authoring`
+- [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [Troubleshooting](../01_GETTING_STARTED/TROUBLESHOOTING.md#json-pipelinedefinition-authoring) — fingerprints, schema, registry
 - Exit-gate record (historical): [EXIT_GATE_0_24](../11_DEVELOPMENT/EXIT_GATE_0_24.md)
 - Design plan (historical): [PROGRAMMATIC_AUTHORING_0_24](../11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md)

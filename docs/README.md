@@ -19,10 +19,12 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
     1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.24.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
-    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
+    4. Optional fork: [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) — builders / JSON
+    5. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
     After first success: [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
-    [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md).
+    [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md),
+    [Cheatsheet](10_REFERENCE/CHEATSHEET.md).
     Pages marked **Future design** are not APIs.
 
 ## Project status
@@ -106,9 +108,11 @@ Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
 ### I want to author pipelines
 
 1. [Getting Started](01_GETTING_STARTED/README.md)
-2. [Data Contracts](03_DATA_CONTRACTS/README.md)
-3. [Transformations](04_TRANSFORMATIONS/README.md)
-4. [Pipelines](05_PIPELINES/README.md)
+2. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) (class path) or
+   [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) (builders / JSON)
+3. [Data Contracts](03_DATA_CONTRACTS/README.md)
+4. [Transformations](04_TRANSFORMATIONS/README.md)
+5. [Pipelines](05_PIPELINES/README.md)
 
 ### I want to understand execution (shipped)
 

@@ -54,7 +54,7 @@ python -m pip install 'etlantic-fastapi==0.24.0'
 # or: python -m pip install 'etlantic[fastapi]==0.24.0'
 ```
 
-If PyPI does not yet publish `etlantic-fastapi`, install from a checkout:
+Contributor checkout (editable monorepo):
 
 ```bash
 uv sync --extra fastapi

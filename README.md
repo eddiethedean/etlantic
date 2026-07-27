@@ -30,9 +30,10 @@
 
 ---
 
-ETLantic lets you define Python data pipelines as typed classes, catch bad
-wiring and contract mismatches **before any write**, then run or compile the
-same pipeline on local Python, Polars, Pandas, SQL, or Spark—and emit Airflow
+ETLantic lets you define Python data pipelines as typed classes **or**
+functional builders / JSON (`PipelineDefinition`), catch bad wiring and
+contract mismatches **before any write**, then run or compile the same
+pipeline on local Python, Polars, Pandas, SQL, or Spark—and emit Airflow
 DAGs when you need them.
 
 It is **not** a warehouse tool (use dbt), **not** a scheduler (use Airflow,
@@ -105,7 +106,7 @@ From a checkout, an optional in-memory SDK demo is
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
 | SparkForge | `etlantic-sparkforge` | Medallion adapter (bronze/silver/gold stay out of core) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
-| FastAPI | `etlantic-fastapi` | Thin 0.24 authoring/service reference adapter |
+| FastAPI | `etlantic-fastapi` | Thin 0.24 authoring/service **reference** adapter (not the 1.1 control plane) |
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.

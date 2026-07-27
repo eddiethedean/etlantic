@@ -62,7 +62,9 @@ jobs:
 
       - name: Runnable example
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run python examples/memory_customers.py
+        run: |
+          uv run python examples/memory_customers.py
+          uv run python examples/pipeline_definition_json.py
 
       - name: CLI SARIF smoke
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

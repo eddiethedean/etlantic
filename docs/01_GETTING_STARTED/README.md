@@ -25,7 +25,8 @@ validate and plan them once; run locally or through optional engine plugins.
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.24.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init` → validate → run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
-4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
+4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+5. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without
@@ -55,22 +56,26 @@ validate and plan them once; run locally or through optional engine plugins.
 1. [Installation](INSTALLATION.md)
 2. [Quickstart](QUICKSTART.md)
 3. [Your First Pipeline](FIRST_PIPELINE.md)
-4. [Engine selection](ENGINE_SELECTION.md), then
+4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+5. [Engine selection](ENGINE_SELECTION.md), then
    [Polars](../06_EXECUTION/POLARS_TUTORIAL.md),
    [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md),
    [SQL](../06_EXECUTION/SQL_TUTORIAL.md), or
    [PySpark](../06_EXECUTION/PYSPARK_TUTORIAL.md)
-5. Diligence: [Capabilities](CAPABILITIES.md), [Evaluator Brief](EVALUATOR.md),
+6. Diligence: [Capabilities](CAPABILITIES.md), [Evaluator Brief](EVALUATOR.md),
    [Compare](COMPARE.md)
-6. [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Cookbook](COOKBOOK.md) /
+7. [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Cookbook](COOKBOOK.md) /
    [Best practices](BEST_PRACTICES.md)
-7. [Project Structure](PROJECT_STRUCTURE.md) (after a second pipeline)
-8. [Upgrade](UPGRADE.md) when moving between 0.x releases
+8. [Project Structure](PROJECT_STRUCTURE.md) (after a second pipeline)
+9. [Upgrade](UPGRADE.md) when moving between 0.x releases
 
 ## The ETLantic Mental Model
 
 ``` text
-Typed Python classes
+Class / builders / JSON
+      │
+      ▼
+PipelineDefinition (etlantic.pipeline/1)
       │
       ▼
 Validation (catch bad wiring)

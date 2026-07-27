@@ -46,5 +46,10 @@ proposals. It is deliberately separate from the ETLantic 0.18 user guide.
 
 ## Design-study examples
 
-The [Examples index](../09_EXAMPLES/README.md) distinguishes CI-tested scripts
-from aspirational studies. Design studies are not compatibility promises.
+Aspirational design studies under `docs/09_EXAMPLES/` are **not** site nav
+pages and are **not** compatibility promises. Browse them on GitHub:
+
+[docs/09_EXAMPLES](https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES)
+
+The [Examples index](../09_EXAMPLES/README.md) lists **runnable** CI/docs
+guides only.

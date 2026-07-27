@@ -5,10 +5,12 @@
 1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.24.0`
 2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
 3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
-4. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
-5. Runnable scripts below
+4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+5. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
+6. Runnable scripts below
 
-Pages under **Design Studies** are aspirational stubs—not installable tutorials.
+Aspirational design studies live on GitHub under `docs/09_EXAMPLES/` and are
+excluded from the product docs nav—not installable tutorials.
 
 ## Runnable guides (docs)
 

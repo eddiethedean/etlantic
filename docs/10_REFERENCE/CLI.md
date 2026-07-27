@@ -58,8 +58,8 @@ python -m etlantic plan pipeline.json --profile development --format json
 Scaffold a minimal import-safe pipeline project:
 
 ```bash
-etlantic init
-etlantic init --directory ./my-pipeline --name SamplePipeline --with-toml
+python -m etlantic init
+python -m etlantic init --directory ./my-pipeline --name SamplePipeline --with-toml
 ```
 
 Creates `pipeline.py`, `profiles/<profile>.json`, sample JSON under `data/`,
@@ -70,8 +70,8 @@ workspace dirs under `.etlantic/`, and optionally `etlantic.toml`.
 Read-only environment, plugin, profile, and workspace checks:
 
 ```bash
-etlantic doctor --profile development
-etlantic doctor pipeline.py:SamplePipeline --format json
+python -m etlantic doctor --profile development
+python -m etlantic doctor pipeline.py:SamplePipeline --format json
 ```
 
 Exits `0` when checks pass, `16` (`ENVIRONMENT_FAILURE`) when they fail.
@@ -81,9 +81,14 @@ Exits `0` when checks pass, `16` (`ENVIRONMENT_FAILURE`) when they fail.
 Validate without executing transformation code:
 
 ```bash
-etlantic validate examples/memory_customers.py:CustomerPipeline \
-  --profile development
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic validate pipeline.json --profile development
 ```
+
+!!! note "From a checkout"
+    Repository demos such as `examples/memory_customers.py:CustomerPipeline`
+    require a git checkout (not on the PyPI wheel). Prefer the init project or
+    a definition JSON file for pip-only workflows.
 
 Options:
 
@@ -99,8 +104,8 @@ Exit `0` when valid, `10` (`INVALID_MODEL`) on validation errors.
 Print the logical pipeline graph:
 
 ```bash
-etlantic inspect examples/memory_customers.py:CustomerPipeline
-etlantic inspect examples/memory_customers.py:CustomerPipeline --format json
+python -m etlantic inspect pipeline.py:SamplePipeline
+python -m etlantic inspect pipeline.py:SamplePipeline --format json
 ```
 
 ## `plan`
@@ -108,8 +113,8 @@ etlantic inspect examples/memory_customers.py:CustomerPipeline --format json
 Resolve a deterministic `PipelinePlan`:
 
 ```bash
-etlantic plan examples/memory_customers.py:CustomerPipeline \
-  --profile development
+python -m etlantic plan pipeline.py:SamplePipeline --profile development
+python -m etlantic plan pipeline.json --profile development --format json
 ```
 
 The default output format is JSON. Selection options are:
@@ -124,11 +129,8 @@ The default output format is JSON. Selection options are:
 Explain resolution decisions with either form:
 
 ```bash
-etlantic plan explain examples/memory_customers.py:CustomerPipeline \
-  --profile development
-
-etlantic plan examples/memory_customers.py:CustomerPipeline \
-  --profile development --explain
+python -m etlantic plan explain pipeline.py:SamplePipeline --profile development
+python -m etlantic plan pipeline.py:SamplePipeline --profile development --explain
 ```
 
 Explain output includes bindings, implementations, capability decisions, and
@@ -140,7 +142,7 @@ identity for Polars kernel compilation.
 Compare two resolved plans structurally (targets or plan JSON paths):
 
 ```bash
-etlantic plan diff LEFT RIGHT --profile development --format json
+python -m etlantic plan diff LEFT RIGHT --profile development --format json
 ```
 
 Exit `0` when equal, `15` (`BREAKING_CHANGE`) when they differ.
@@ -150,10 +152,10 @@ Exit `0` when equal, `15` (`BREAKING_CHANGE`) when they differ.
 Profile lifecycle helpers:
 
 ```bash
-etlantic profile validate profiles/development.json
-etlantic profile show development --format json
-etlantic profile diff LEFT.json RIGHT.json
-etlantic profile migrate profiles/legacy.json --write
+python -m etlantic profile validate profiles/development.json
+python -m etlantic profile show development --format json
+python -m etlantic profile diff LEFT.json RIGHT.json
+python -m etlantic profile migrate profiles/legacy.json --write
 ```
 
 | Subcommand | Purpose |
@@ -168,8 +170,8 @@ etlantic profile migrate profiles/legacy.json --write
 Validate, plan, and execute with the local runtime:
 
 ```bash
-etlantic run pipeline.py:SamplePipeline --profile development
-etlantic run pipeline.py:SamplePipeline --profile development --preview
+python -m etlantic run pipeline.py:SamplePipeline --profile development
+python -m etlantic run pipeline.py:SamplePipeline --profile development --preview
 ```
 
 Supported report formats are `text`, `json`, and `html`. Additional options:
@@ -194,11 +196,15 @@ Compile a planned pipeline to an external orchestrator artifact
 (requires the matching plugin, e.g. `etlantic-airflow`):
 
 ```bash
-etlantic compile examples/memory_customers.py:CustomerPipeline \
+python -m etlantic compile pipeline.py:SamplePipeline \
   --target airflow -o dags/ --profile development
-etlantic compile examples/memory_customers.py:CustomerPipeline \
+python -m etlantic compile pipeline.py:SamplePipeline \
   --target airflow -o dags/ --preview
 ```
+
+!!! note "From a checkout"
+    The repository also ships `examples/memory_customers.py:CustomerPipeline`
+    for compile demos; that path is not on the PyPI wheel.
 
 `--preview` shows mutation scope without writing artifacts.
 
@@ -207,9 +213,9 @@ etlantic compile examples/memory_customers.py:CustomerPipeline \
 Generate ODCS/DTCS/DPCS contract bundles, or emit a pipeline definition JSON:
 
 ```bash
-python -m etlantic generate examples/memory_customers.py:CustomerPipeline -o contracts/
-python -m etlantic generate examples/memory_customers.py:CustomerPipeline --sqlmodel
-python -m etlantic generate examples/memory_customers.py:CustomerPipeline \
+python -m etlantic generate pipeline.py:SamplePipeline -o contracts/
+python -m etlantic generate pipeline.py:SamplePipeline --sqlmodel
+python -m etlantic generate pipeline.py:SamplePipeline \
   --kind definition -o pipeline.json
 ```
 
@@ -222,17 +228,17 @@ class target or an existing definition JSON.
 Diff data contracts, transformations, or pipelines:
 
 ```bash
-etlantic diff PREV CURRENT --kind pipeline --format json
-etlantic diff PREV CURRENT --kind data --format sarif
+python -m etlantic diff PREV CURRENT --kind pipeline --format json
+python -m etlantic diff PREV CURRENT --kind data --format sarif
 ```
 
 ## `plugin`
 
 ```bash
-etlantic plugin list --profile ./profiles/prod.json --format json
-etlantic plugin info polars --kind dataframe
-etlantic plugin compatibility etlantic-polars --format json
-etlantic plugin compatibility --format human
+python -m etlantic plugin list --profile ./profiles/prod.json --format json
+python -m etlantic plugin info polars --kind dataframe
+python -m etlantic plugin compatibility etlantic-polars --format json
+python -m etlantic plugin compatibility --format human
 ```
 
 Supported `--kind` values today: `dataframe`, `sql`, `spark`, `orchestrator`,
@@ -257,14 +263,14 @@ Subcommands: `inspect`, `check`, `diff`, `history`, `impact`, `acknowledge`,
 stores fingerprints/metadata only—never source rows.
 
 ```bash
-etlantic schema inspect module:MyContract --format json
-etlantic schema check module:MyContract --subject orders --format json
-etlantic schema diff PREV CURRENT --format json
-etlantic schema history orders --format json
-etlantic schema impact PREV CURRENT --format json
-etlantic schema propose module:MyContract --subject orders
-etlantic schema monitor module:MyContract --subject orders
-etlantic schema acknowledge orders --note "accepted additive column"
+python -m etlantic schema inspect module:MyContract --format json
+python -m etlantic schema check module:MyContract --subject orders --format json
+python -m etlantic schema diff PREV CURRENT --format json
+python -m etlantic schema history orders --format json
+python -m etlantic schema impact PREV CURRENT --format json
+python -m etlantic schema propose module:MyContract --subject orders
+python -m etlantic schema monitor module:MyContract --subject orders
+python -m etlantic schema acknowledge orders --note "accepted additive column"
 ```
 
 `propose` records a candidate observation without mutating contracts.
@@ -278,10 +284,10 @@ Subcommands: `freshness`, `partition-check`, `repair-explain`,
 These are local ops helpers—not a managed reliability product.
 
 ```bash
-etlantic reliability freshness orders --max-age 3600 --observed-age 120
-etlantic reliability partition-check orders --keys dt,region --count 24 --minimum-count 24
-etlantic reliability reconcile orders --left 100 --right 100
-etlantic reliability env-diff LEFT.json RIGHT.json
+python -m etlantic reliability freshness orders --max-age 3600 --observed-age 120
+python -m etlantic reliability partition-check orders --keys dt,region --count 24 --minimum-count 24
+python -m etlantic reliability reconcile orders --left 100 --right 100
+python -m etlantic reliability env-diff LEFT.json RIGHT.json
 ```
 
 `reliability plan-diff` is deprecated; prefer `etlantic plan diff`.
@@ -289,18 +295,18 @@ etlantic reliability env-diff LEFT.json RIGHT.json
 ## `viz`
 
 ```bash
-etlantic viz dot examples/memory_customers.py:CustomerPipeline -o pipeline.dot
-etlantic viz html examples/memory_customers.py:CustomerPipeline -o lineage.html
-etlantic viz lineage examples/memory_customers.py:CustomerPipeline --format json
+python -m etlantic viz dot examples/memory_customers.py:CustomerPipeline -o pipeline.dot
+python -m etlantic viz html examples/memory_customers.py:CustomerPipeline -o lineage.html
+python -m etlantic viz lineage examples/memory_customers.py:CustomerPipeline --format json
 ```
 
 ## `report`
 
 ```bash
-etlantic report list
-etlantic report show RUN_ID --format text
-etlantic report export RUN_ID --format json --output report.json
-etlantic report compare LEFT RIGHT --store .etlantic/reports
+python -m etlantic report list
+python -m etlantic report show RUN_ID --format text
+python -m etlantic report export RUN_ID --format json --output report.json
+python -m etlantic report compare LEFT RIGHT --store .etlantic/reports
 ```
 
 By default `list` / `show` / `export` read the durable store at
