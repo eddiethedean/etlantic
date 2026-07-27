@@ -125,27 +125,31 @@ your project:
 
 1. [Execution Model](EXECUTION_MODEL.md)
 2. [Run Reports](RUN_REPORTS.md)
-3. [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md)
-4. [Logging](LOGGING.md)
-5. [Secrets Management](SECRETS_MANAGEMENT.md)
-6. [Local Python](LOCAL_PYTHON.md)
-7. [Dataframe Plugins](DATAFRAME_PLUGINS.md)
-8. [SQL](SQL.md)
-9. [PySpark](PYSPARK.md)
-10. [Plugins](PLUGINS.md) (future design overview)
-11. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
-12. [Storage Plugins](STORAGE_PLUGINS.md)
-13. [Resource Providers](RESOURCE_PLUGINS.md)
-14. [Compilation](COMPILATION.md)
+3. [Logging](LOGGING.md)
+4. [Secrets Management](SECRETS_MANAGEMENT.md)
+5. [Local Python](LOCAL_PYTHON.md)
+6. [Dataframe Plugins](DATAFRAME_PLUGINS.md)
+7. [SQL](SQL.md)
+8. [PySpark](PYSPARK.md)
+9. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
+10. [Compilation](COMPILATION.md)
+
+!!! note "Future design (not in the 0.25 operator path)"
+    [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
+    [Plugins overview](PLUGINS.md),
+    [Storage Plugins](STORAGE_PLUGINS.md), and
+    [Resource Providers](RESOURCE_PLUGINS.md) describe unshipped provider
+    protocols. Prefer [Storage today](STORAGE_TODAY.md) and
+    [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
 
 ### Operations and deployment
 
-15. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
-16. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
-17. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
-18. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
-19. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
-20. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
+11. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
+12. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
+13. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
+14. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
+15. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
+16. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
 
 ## Key Principles
 

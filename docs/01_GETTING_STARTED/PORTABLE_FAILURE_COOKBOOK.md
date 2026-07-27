@@ -43,9 +43,9 @@ definition is expected for advanced profiles. See
 ## Debugging steps
 
 ```bash
-etlantic plugin list --kind transform_compiler --format json
-etlantic validate path.py:MyPipeline --profile development --format json
-etlantic plan path.py:MyPipeline --profile development --format json
+python -m etlantic plugin list --kind transform_compiler --format json
+python -m etlantic validate path.py:MyPipeline --profile development --format json
+python -m etlantic plan path.py:MyPipeline --profile development --format json
 ```
 
 Inspect capability decisions in the plan explain output

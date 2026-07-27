@@ -13,7 +13,7 @@ plugins the pilot needs:
 
 ```bash
 python -m pip install "etlantic==0.25.0" "etlantic-polars==0.25.0"
-etlantic --help
+python -m etlantic --help
 ```
 
 See [Installation](../01_GETTING_STARTED/INSTALLATION.md) and the
@@ -50,10 +50,10 @@ paths.
 Use an importable `module:Class` or `path.py:Class` target:
 
 ```bash
-etlantic validate examples/memory_customers.py:CustomerPipeline \
+python -m etlantic validate examples/memory_customers.py:CustomerPipeline \
   --profile development --format json
 
-etlantic plan examples/memory_customers.py:CustomerPipeline \
+python -m etlantic plan examples/memory_customers.py:CustomerPipeline \
   --profile development --format json > pipeline-plan.json
 ```
 
@@ -64,8 +64,9 @@ transformation implementations.
 ## 5. Create an explicit production profile
 
 The bare `production` profile is intentionally empty and fails closed. Generate
-a reviewed JSON profile with a non-empty plugin allowlist and all logical
-bindings:
+a reviewed JSON profile with `security_mode="production"`, a non-empty plugin
+allowlist, and all logical bindings (or start from
+[prod.example.json](../01_GETTING_STARTED/prod.example.json)):
 
 ```python
 from etlantic import Profile, write_profile
@@ -74,6 +75,7 @@ write_profile(
     Profile(
         name="pilot-production",
         dataframe_engine="polars",
+        security_mode="production",  # required for fail-closed trust
         security_domain="production",
         validation_policy="strict",
         plugin_allowlist={"etlantic-polars": "==0.25.0"},
@@ -94,11 +96,11 @@ selected providers are not already in the built-in or plugin registry. See
 ## 6. Publish SARIF and retain the plan
 
 ```bash
-etlantic validate examples/memory_customers.py:CustomerPipeline \
+python -m etlantic validate examples/memory_customers.py:CustomerPipeline \
   --profile profiles/pilot-production.json \
   --format sarif > etlantic.sarif
 
-etlantic plan examples/memory_customers.py:CustomerPipeline \
+python -m etlantic plan examples/memory_customers.py:CustomerPipeline \
   --profile profiles/pilot-production.json \
   --format json > pipeline-plan.json
 ```
@@ -130,7 +132,7 @@ Retain reports according to the pilot's access and retention policy. Compare
 two runs with:
 
 ```bash
-etlantic report compare RUN_BEFORE RUN_AFTER \
+python -m etlantic report compare RUN_BEFORE RUN_AFTER \
   --store .etlantic/reports --format json
 ```
 

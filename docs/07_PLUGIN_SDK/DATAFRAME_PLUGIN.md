@@ -123,6 +123,7 @@ from etlantic import Profile
 
 profile = Profile(
     name="production",
+    security_mode="production",  # required for fail-closed trust
     security_domain="production",
     dataframe_engine="my-engine",
     plugin_allowlist={"my-engine": ">=0.1,<1"},

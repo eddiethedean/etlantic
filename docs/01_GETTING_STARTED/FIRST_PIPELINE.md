@@ -81,18 +81,21 @@ rows (identity transform).
 
 ## Try an intentional wiring error
 
-In `SamplePipeline`, change exactly this annotation:
+Add a second contract and change **only** the Load annotation so the graph
+wiring is inconsistent (keep `input=` and `asset=` complete so the file still
+parses):
 
 ```python
-# before
-out: Load[Row] = Load(
-
-# intentionally broken — invent a second contract first:
 class Other(Data):
     id: int
     name: str
 
-out: Load[Other] = Load(
+
+class SamplePipeline(Pipeline):
+    raw: Extract[Row] = Extract(asset="rows")
+    step = Identity.step(rows=raw)
+    # Broken: Load expects Other but upstream step.result is still Row
+    out: Load[Other] = Load(input=step.result, asset="out")
 ```
 
 Then validate. ETLantic rejects the graph before it reads any data:
@@ -105,7 +108,8 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 PMPIPE210: The step "out" expects Other on "input", but received Row from "step.result".
 ```
 
-Restore `Load[Row]` before continuing.
+Restore `out: Load[Row] = Load(input=step.result, asset="out")` (and remove
+`Other` if unused) before continuing.
 
 ## Evolve the transform
 

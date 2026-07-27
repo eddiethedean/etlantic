@@ -16,7 +16,7 @@ These docs describe ETLantic **0.25.0**. Confirm what you installed:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"
-etlantic --version
+python -m etlantic --version
 # Interpreter-specific (avoids PATH mismatches):
 python -m etlantic --version
 ```
@@ -198,8 +198,8 @@ runtime.memory.get("customer_sink")
 Bare profile names that are not built-in templates fail closed:
 
 ```bash
-etlantic validate path.py:P --profile typo   # PMCFG100
-etlantic validate path.py:P --profile typo --allow-adhoc-profile
+python -m etlantic validate path.py:P --profile typo   # PMCFG100
+python -m etlantic validate path.py:P --profile typo --allow-adhoc-profile
 ```
 
 SDK: `resolve_profile("typo", allow_adhoc_profile=True)`. Prefer an explicit

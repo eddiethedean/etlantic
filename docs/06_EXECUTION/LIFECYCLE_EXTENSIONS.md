@@ -1,11 +1,12 @@
 # Lifecycle Extension Mechanisms
 
-!!! warning "Design study—not a runnable ETLantic 0.18 API guide. Prefer CAPABILITIES and examples/."
-    Parts of this chapter describe intended lifespan / middleware / resource
-    injection surfaces that are not fully shipped. Prefer
-    [Callbacks](../04_TRANSFORMATIONS/CALLBACKS.md), run reports, and the
-    local runtime APIs documented in the
-    [API reference](../10_REFERENCE/API_REFERENCE.md) for 0.18 applications.
+!!! warning "Design study—not a runnable ETLantic 0.25 API guide. Prefer CAPABILITIES and examples/."
+
+Lifecycle hooks below describe intended lifespan / middleware / resource
+injection surfaces that are not fully shipped. Prefer
+[Callbacks](../04_TRANSFORMATIONS/CALLBACKS.md), run reports, and the
+local runtime APIs documented in the
+[API reference](../10_REFERENCE/API_REFERENCE.md) for 0.25 applications.
 
 ETLantic provides four distinct mechanisms for inserting reusable behavior
 at well-defined points in modeling and execution:

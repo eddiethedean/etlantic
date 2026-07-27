@@ -3,7 +3,8 @@
 
 Usage:
   uv run python scripts/generate_diagnostics_catalog.py
-  uv run python scripts/generate_diagnostics_catalog.py --markdown >> docs/10_REFERENCE/DIAGNOSTICS_GENERATED.md
+  uv run python scripts/generate_diagnostics_catalog.py --markdown \
+    > docs/10_REFERENCE/DIAGNOSTICS_CATALOG.md
 """
 
 from __future__ import annotations
@@ -30,16 +31,50 @@ def collect_codes() -> dict[str, set[str]]:
     return found
 
 
+def _package_version() -> str:
+    text = (ROOT / "src/etlantic/_version.py").read_text(encoding="utf-8")
+    match = re.search(r'__version__ = "([^"]+)"', text)
+    if match is None:
+        raise SystemExit("Could not read package version")
+    return match.group(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--markdown",
         action="store_true",
-        help="Emit a markdown table instead of plain text",
+        help="Emit a markdown page (banner + table) instead of plain text",
     )
     args = parser.parse_args()
     codes = collect_codes()
     if args.markdown:
+        version = _package_version()
+        print("# Diagnostics catalog (generated)")
+        print()
+        print(
+            f"> **Status: Available in ETLantic {version}.** Machine-readable "
+            "inventory of"
+        )
+        print(
+            "> diagnostic code literals found under `src/etlantic`. Regenerate with:"
+        )
+        print(">")
+        print("> ```bash")
+        print(
+            "> uv run python scripts/generate_diagnostics_catalog.py --markdown \\"
+        )
+        print(">   > docs/10_REFERENCE/DIAGNOSTICS_CATALOG.md")
+        print("> ```")
+        print(">")
+        print(
+            "> Prefer the curated tables in [Diagnostics](DIAGNOSTICS.md) for "
+            "human-oriented"
+        )
+        print(
+            "> meanings. This page is the exhaustive code→source index."
+        )
+        print()
         print("| Code | Example source paths |")
         print("|---|---|")
         for code in sorted(codes):

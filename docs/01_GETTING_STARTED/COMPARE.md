@@ -38,8 +38,9 @@ durable orchestrator.
 - Dataframe compute kernels
 - Multi-worker / multi-tenant control planes
 - Managed Spark clusters
-- Release SBOM digests and attestations ship in 0.20+ (available in 0.21); broader compliance
-  programs and multi-tenant attestation remain adopter-owned
+- Broader compliance programs and multi-tenant attestation (adopters own these;
+  ETLantic ships release SBOM digests / attestations for its own packages since
+  0.20)
 
 ## Next
 

@@ -7,9 +7,9 @@ Validate without executing transformation code and publish SARIF diagnostics.
 ## Development / local CI
 
 ```bash
-etlantic validate package.pipeline:CustomerPipeline \
+python -m etlantic validate package.pipeline:CustomerPipeline \
   --profile development --format sarif > etlantic.sarif
-etlantic plan package.pipeline:CustomerPipeline \
+python -m etlantic plan package.pipeline:CustomerPipeline \
   --profile development --format json > pipeline-plan.json
 ```
 
@@ -19,9 +19,11 @@ The built-in `--profile production` template is intentionally empty and
 **fail-closed**: it requires a non-empty `plugin_allowlist` and resolved
 bindings. Do not use the bare name for CI until you supply a real profile.
 
-Write a JSON profile (secret-free) and pass its path. Prefer the embedded
+Write a JSON profile (secret-free) and pass its path. Prefer
+[prod.example.json](../01_GETTING_STARTED/prod.example.json) or the embedded
 starter in [Capabilities → CI starter](../01_GETTING_STARTED/CAPABILITIES.md#ci-starter)
-(not installed with the wheel):
+(not installed with the wheel). Fail-closed trust requires
+`security_mode="production"` (not the profile name or `security_domain` alone):
 
 ```python
 from etlantic import Profile, write_profile
@@ -30,6 +32,7 @@ write_profile(
     Profile(
         name="ci-production",
         dataframe_engine="local",
+        security_mode="production",  # required for fail-closed trust
         security_domain="production",
         validation_policy="strict",
         plugin_allowlist={
@@ -46,9 +49,9 @@ write_profile(
 ```
 
 ```bash
-etlantic validate package.pipeline:CustomerPipeline \
+python -m etlantic validate package.pipeline:CustomerPipeline \
   --profile profiles/ci-production.json --format sarif > etlantic.sarif
-etlantic plan package.pipeline:CustomerPipeline \
+python -m etlantic plan package.pipeline:CustomerPipeline \
   --profile profiles/ci-production.json --format json > pipeline-plan.json
 ```
 

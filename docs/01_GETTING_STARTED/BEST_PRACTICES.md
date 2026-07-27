@@ -30,11 +30,11 @@
 ## CLI workflow
 
 ```bash
-etlantic doctor --profile development
-etlantic validate TARGET --profile development --format json
-etlantic plan TARGET --profile development --format json
-etlantic run TARGET --profile development          # durable assets
-etlantic validate TARGET --format sarif            # CI
+python -m etlantic doctor --profile development
+python -m etlantic validate TARGET --profile development --format json
+python -m etlantic plan TARGET --profile development --format json
+python -m etlantic run TARGET --profile development          # durable assets
+python -m etlantic validate TARGET --format sarif            # CI
 ```
 
 Start from `etlantic init` for JSON-backed assets so CLI `run` works without

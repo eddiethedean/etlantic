@@ -313,13 +313,11 @@ ETLantic generates or exposes:
 
 ## Can I build ETLantic pipelines in a GUI?
 
-Yes — through the shipped authoring contracts (since 0.24) plus 0.25 burn-in
-fixtures. Use
-`PipelineDefinition`, functional builders, canonical `etlantic.pipeline/1` JSON,
-the authoring catalog, immutable edit commands, and
-`etlantic.service.AuthoringService`. Optional package `etlantic-fastapi` exposes
-a thin OpenAPI reference adapter. Your application still owns authentication,
-persistence, durable jobs, and deployment. See
+Not as a shipped product. Since 0.24, ETLantic exposes programmatic authoring
+APIs (`PipelineDefinition`, builders, `etlantic.pipeline/1` JSON,
+`AuthoringService`) that **your application** can wrap in a GUI. Optional
+`etlantic-fastapi` is a thin OpenAPI **reference** adapter only — you still
+own authentication, persistence, durable jobs, and deployment. See
 [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) and
 [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md).
 

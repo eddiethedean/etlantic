@@ -19,19 +19,18 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
     1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.25.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
-    4. Optional fork: [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) — builders / JSON
-    5. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
+    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
 
-    After first success: [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
-    [Evaluator](01_GETTING_STARTED/EVALUATOR.md), [Compare](01_GETTING_STARTED/COMPARE.md),
-    [Cheatsheet](10_REFERENCE/CHEATSHEET.md).
+    That is the whole first-hour path. Optional later:
+    [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md),
+    [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
+    [Compare](01_GETTING_STARTED/COMPARE.md).
     Pages marked **Future design** are not APIs.
 
 ## Project status
 
 **ETLantic 0.25.0** is a **Beta** release for documented single-tenant pilots.
-Install with `pip install 'etlantic==0.25.0'`. Class, functional, and JSON
-authoring share `PipelineDefinition` (`etlantic.pipeline/1`).
+Install with `pip install 'etlantic==0.25.0'`.
 
 - **Use today:** single-tenant pilots and reference deployments (see
   [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)).
@@ -53,8 +52,7 @@ cat data/out.json
 ```
 
 You should see `succeeded` and Ada/Grace sample rows (identity transform).
-Next: change the transform in [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md)
-or try [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
 
 !!! note "PyPI vs clone"
     **PyPI users:** stay on Installation → Quickstart → First Pipeline. The
@@ -63,92 +61,11 @@ or try [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
     [`examples/`](https://github.com/eddiethedean/etlantic/tree/main/examples)
     (see [examples/README](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md)).
 
-## The Architecture in One View
+## After first success
 
-```text
-Typed Python authoring or portable contracts
-                    │
-                    ▼
-          Typed logical pipeline model
-                    │
-                    ▼
-     Introspection and semantic validation
-                    │
-                    ▼
-        Profile and capability resolution
-                    │
-                    ▼
-        Immutable PipelinePlan (resolved IR)
-                    │
-          ┌─────────┼──────────┐
-          ▼         ▼          ▼
-      Execute    Compile    Generate
-          │         │          │
-          ▼         ▼          ▼
-      Plugins   Airflow/SQL  Docs/graphs
-```
-
-ETLantic owns modeling, validation, planning, and coordination. Standards own
-contract meaning. Plugins and external systems perform the work.
-
-## Choose Your Path
-
-Follow the **Green path** above for first success. Optional persona forks:
-
-### I want to run something now
-
-Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
-[Quickstart](01_GETTING_STARTED/QUICKSTART.md) →
-[First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
-
-### I want to understand the idea
-
-1. [Manifesto](ETLANTIC_MANIFESTO.md)
-2. [Evaluator brief](01_GETTING_STARTED/EVALUATOR.md)
-3. [Core Concepts](02_FOUNDATIONS/CORE_CONCEPTS.md)
-4. [Architecture](02_FOUNDATIONS/ARCHITECTURE.md)
-
-### I want to author pipelines
-
-1. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) then [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) (class path), or
-   [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) (builders / JSON)
-2. [Data Contracts](03_DATA_CONTRACTS/README.md)
-3. [Transformations](04_TRANSFORMATIONS/README.md)
-4. [Pipelines](05_PIPELINES/README.md)
-
-### I want to understand execution (shipped)
-
-1. [Execution Model](06_EXECUTION/EXECUTION_MODEL.md)
-2. [Local Python](06_EXECUTION/LOCAL_PYTHON.md)
-3. [Polars](06_EXECUTION/POLARS.md) / [Pandas](06_EXECUTION/PANDAS.md) / [SQL](06_EXECUTION/SQL.md)
-
-### I want runnable examples
-
-See [Examples](09_EXAMPLES/README.md) (runnable guides only in the primary nav).
-
-### I want to extend plugins
-
-1. [Plugin SDK overview](07_PLUGIN_SDK/README.md)
-2. [Testing Plugins](07_PLUGIN_SDK/TESTING_PLUGINS.md)
-
-## Documentation Map
-
-| Section | Purpose |
+| Goal | Start here |
 |---|---|
-| [Getting Started](01_GETTING_STARTED/README.md) | Learn index (follow the Green path above first) |
-| [Foundations](02_FOUNDATIONS/README.md) | Philosophy and architecture |
-| [Data Contracts](03_DATA_CONTRACTS/README.md) | Typed datasets |
-| [Transformations](04_TRANSFORMATIONS/README.md) | Typed transformation interfaces |
-| [Pipelines](05_PIPELINES/README.md) | Portable graphs |
-| [Execution](06_EXECUTION/README.md) | Engines and runtime |
-| [Examples](09_EXAMPLES/README.md) | Runnable pointers |
-| [Reference](10_REFERENCE/README.md) | CLI, API, compatibility |
-| [Contribute](11_DEVELOPMENT/CONTRIBUTING.md) | Contributing and release |
-| [Maintainers](11_DEVELOPMENT/README.md) | Roadmap and maintainer docs |
-
-## Non-Goals
-
-ETLantic is not intended to become a dataframe engine, distributed scheduler,
-storage system, secret manager, or a replacement for Pandas, Polars, SQL,
-Spark, Airflow, or Dagster. It is the typed framework that connects those
-systems without letting any one of them define portable pipeline meaning.
+| Understand the model | [Architecture](02_FOUNDATIONS/ARCHITECTURE.md), [Manifesto](ETLANTIC_MANIFESTO.md) |
+| Author without classes | [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
+| Evaluate for a pilot | [Evaluator brief](01_GETTING_STARTED/EVALUATOR.md) |
+| Contribute | [Contributing](11_DEVELOPMENT/CONTRIBUTING.md) |

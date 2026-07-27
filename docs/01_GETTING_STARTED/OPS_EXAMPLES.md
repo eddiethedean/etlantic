@@ -22,9 +22,9 @@ See [Secrets Management](../06_EXECUTION/SECRETS_MANAGEMENT.md) and
 Schema history stores fingerprints and metadata — never source rows.
 
 ```bash
-etlantic schema inspect path.py:MyContract --format json
-etlantic schema check path.py:MyContract --format json
-etlantic schema history --format json
+python -m etlantic schema inspect path.py:MyContract --format json
+python -m etlantic schema check path.py:MyContract --format json
+python -m etlantic schema history --format json
 ```
 
 See CLI `etlantic schema --help` and
@@ -33,7 +33,7 @@ See CLI `etlantic schema --help` and
 ## SARIF in CI
 
 ```bash
-etlantic validate path/to/pipeline.py:MyPipeline \
+python -m etlantic validate path/to/pipeline.py:MyPipeline \
   --profile ./profiles/prod.json \
   --format sarif > etlantic.sarif
 ```

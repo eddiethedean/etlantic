@@ -63,14 +63,16 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 These codes are emitted by the installed ETLantic package (currently 0.25.x).
 The message, path, metadata, and severity provide the case-specific detail.
-Maintainers can regenerate a machine-readable inventory with:
+
+**Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
+(code → source paths). Regenerate with:
 
 ```bash
-uv run python scripts/generate_diagnostics_catalog.py
+uv run python scripts/generate_diagnostics_catalog.py --markdown \
+  > docs/10_REFERENCE/DIAGNOSTICS_CATALOG.md
 ```
 
-The script prints every `PMxxxx` / related code literal found under
-`src/etlantic`. The curated tables below remain the human-oriented index.
+The curated tables below remain the human-oriented index.
 
 ### Pipeline and planning
 

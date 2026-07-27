@@ -1,8 +1,8 @@
 # Ops Pilot Guide
 
-> **Status: Production/stable in ETLantic 0.25.0 for the documented
+> **Status: Available in ETLantic 0.25.0 (Beta) for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
-> product.
+> product and is not unrestricted enterprise production.
 
 Use this page for a **bounded deployment**: one team or tenant, pinned packages,
 process isolation, and fail-closed production profiles. SLA, HA, deployment
@@ -23,7 +23,9 @@ plugins via `Profile.plugin_allowlist` (bare versions are accepted as
 
 ## Required controls
 
-1. **Non-empty `plugin_allowlist`** on production / `security_domain=production`
+1. **Non-empty `plugin_allowlist`** when `security_mode="production"`
+   (not the profile name or `security_domain` alone). Prefer
+   [prod.example.json](../01_GETTING_STARTED/prod.example.json).
 2. **No secrets** in plans, reports, CI logs, or schema history
 3. **Process isolation** — do not multi-tenant in one process
 4. **SARIF validate** in CI before compile/generate
@@ -33,9 +35,9 @@ Use an explicit allowlisted profile file (the built-in name
 [Production profiles](PRODUCTION_PROFILES.md).
 
 ```bash
-etlantic validate path/to/pipeline.py:MyPipeline \
+python -m etlantic validate path/to/pipeline.py:MyPipeline \
   --profile ./profiles/prod.json --format sarif
-etlantic plan path/to/pipeline.py:MyPipeline \
+python -m etlantic plan path/to/pipeline.py:MyPipeline \
   --profile ./profiles/prod.json --format json
 ```
 

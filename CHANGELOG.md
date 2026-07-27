@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Docs adoption remediation: production trust examples require `security_mode`,
+  Learn nav slimmed, Support section, diagnostics catalog, migration-from-other-tools
+  stub, contributor CI checklist parity with burn-in/manifest gates
+
 ## [0.25.0] - 2026-07-27
 
 ### Added
@@ -45,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `VALIDATION_PHASES` includes `plugin_discovery`; `deep_freeze` freezes sets
 - Stale 0.24 install pins / current-minor docs stamps; `check_docs` hardening
 
+### Upgrade notes
+
+- Pin core and official plugins to `==0.25.0` (matching minors while pre-1.0).
+- Read [Migration 0.24 → 0.25](docs/11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md)
+  and [What's new in 0.25](docs/01_GETTING_STARTED/WHATS_NEW_0_25.md).
+- Production fail-closed trust still requires `security_mode="production"` plus
+  a non-empty `plugin_allowlist` (not the profile name alone).
+
 ## [0.24.0] - 2026-07-27
 
 ### Added
@@ -67,6 +80,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fail-closed definition codecs, fingerprint verify, and secret filtering
 - Definition/class lifecycle parity (cycles, nested graphs, policy allowlists, callable registry)
 - Sync-honest FastAPI reference `submit_run` / `cancel_run` semantics
+
+### Upgrade notes
+
+- Pin core and official plugins to `==0.24.0`.
+- Read [Migration 0.23 → 0.24](docs/11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md)
+  and [What's new in 0.24](docs/01_GETTING_STARTED/WHATS_NEW_0_24.md).
+- Prefer `import etlantic as etl` and programmatic authoring via
+  `PipelineDefinition` / `etlantic.authoring` when not using classes.
 
 ## [0.23.0] - 2026-07-27
 
@@ -100,6 +121,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Step report metadata is redacted; `profile migrate` infers production `security_mode`
 - `SafeIoPolicy.from_dict` rejects invalid symlink/overwrite policy enums
 - Builtin stub registry versions track core `__version__`
+
+### Upgrade notes
+
+- Pin core and official plugins to `==0.23.0`.
+- Read [Migration 0.22 → 0.23](docs/11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md)
+  and [What's new in 0.23](docs/01_GETTING_STARTED/WHATS_NEW_0_23.md).
+- Fault injection requires `ETLANTIC_FAULT_INJECTION` to arm.
 
 ## [0.22.0] - 2026-07-21
 

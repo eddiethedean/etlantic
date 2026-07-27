@@ -34,8 +34,8 @@ Complete source:
 For CI compilation without running the example:
 
 ```bash
-etlantic validate module.py:Pipeline --profile ./profiles/prod.json --format json
-etlantic compile module.py:Pipeline --target airflow --profile ./profiles/prod.json -o dags/
+python -m etlantic validate module.py:Pipeline --profile ./profiles/prod.json --format json
+python -m etlantic compile module.py:Pipeline --target airflow --profile ./profiles/prod.json -o dags/
 ```
 
 Production profiles require an explicit plugin allowlist in a Profile JSON

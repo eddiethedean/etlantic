@@ -191,8 +191,8 @@ Full multi-engine allowlist companion (docs only):
 Then validate and plan:
 
 ```bash
-etlantic validate path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format sarif
-etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format json
+python -m etlantic validate path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format sarif
+python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod.json --format json
 ```
 
 See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),

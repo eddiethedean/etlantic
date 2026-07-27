@@ -37,6 +37,7 @@ from etlantic import Profile
 
 profile = Profile(
     name="production",
+    security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
         "etlantic-polars": ">=0.9.0,<1.0",

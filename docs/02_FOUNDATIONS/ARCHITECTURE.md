@@ -338,8 +338,15 @@ semantics are predictable.
 
 ## Resource Architecture
 
-Logical models refer to named resources. Profiles bind those names to resource
-providers.
+!!! warning "Future design in 0.25"
+    Third-party **resource / storage / observability provider protocols** are
+    **not** shipped. Built-in storage bindings and profile `resources` metadata
+    exist today; see [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and
+    [Plugin SDK overview](../07_PLUGIN_SDK/OVERVIEW.md). The diagram below is
+    the intended model, not a callable API.
+
+Logical models may refer to named resources. Profiles are intended to bind
+those names to resource providers when the protocol ships:
 
 ```text
 Transformation requires "warehouse"

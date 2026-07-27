@@ -8,6 +8,7 @@
 
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
 - [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
+- [Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap (GitHub)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 - [Exit gate 0.25](EXIT_GATE_0_25.md)
@@ -41,7 +42,8 @@
 
 ## Documentation audits
 
-- [0.25](DOCUMENTATION_AUDIT_0_25.md) (current)
+- [0.25 adoption](DOCUMENTATION_AUDIT_0_25_ADOPTION.md) (current remediation)
+- [0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [0.24](DOCUMENTATION_AUDIT_0_24.md)
 - [0.23](DOCUMENTATION_AUDIT_0_23.md)
 - [0.21](DOCUMENTATION_AUDIT_0_21.md)

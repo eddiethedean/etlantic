@@ -1315,6 +1315,64 @@ def main() -> None:
         check=True,
     )
 
+    # Production trust examples must set security_mode, not only security_domain.
+    # Fail-closed plugin trust is gated by security_mode == "production".
+    domain_only = re.compile(
+        r'security_domain\s*=\s*["\']production["\']'
+        r'|["\']security_domain["\']\s*:\s*["\']production["\']'
+    )
+    mode_present = re.compile(
+        r'security_mode\s*=\s*["\']production["\']'
+        r'|["\']security_mode["\']\s*:\s*["\']production["\']'
+    )
+    bare_profile_production = re.compile(
+        r"(?:python\s+-m\s+)?etlantic\s+\w+[^\n]*--profile\s+production\b"
+    )
+    trust_scan_roots = [
+        ROOT / "docs/01_GETTING_STARTED",
+        ROOT / "docs/02_FOUNDATIONS",
+        ROOT / "docs/05_PIPELINES",
+        ROOT / "docs/06_EXECUTION",
+        ROOT / "docs/07_PLUGIN_SDK",
+    ]
+    for root in trust_scan_roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            # Skip pages that only document the built-in empty template failure.
+            for match in domain_only.finditer(text):
+                start = max(0, match.start() - 400)
+                end = min(len(text), match.end() + 400)
+                window = text[start:end]
+                if not mode_present.search(window):
+                    raise SystemExit(
+                        f"{path}: security_domain=\"production\" without nearby "
+                        "security_mode=\"production\" (fail-closed trust requires "
+                        "security_mode)"
+                    )
+            # Day-2 howtos must not recommend bare --profile production as a
+            # working CI command (empty allowlist fail-closed).
+            if path.name in {
+                "SECURITY_HOWTO.md",
+                "BEST_PRACTICES.md",
+                "OPS_EXAMPLES.md",
+                "COOKBOOK.md",
+            }:
+                for cmd in bare_profile_production.finditer(text):
+                    line_start = text.rfind("\n", 0, cmd.start()) + 1
+                    line = text[line_start : text.find("\n", cmd.start())]
+                    if "fail" in line.lower() or "empty" in line.lower():
+                        continue
+                    # Allow prose that says not to use the bare name.
+                    preceding = text[max(0, cmd.start() - 120) : cmd.start()].lower()
+                    if "do not" in preceding or "not use" in preceding:
+                        continue
+                    raise SystemExit(
+                        f"{path}: avoid recommending bare --profile production; "
+                        "use an allowlisted profile file with security_mode"
+                    )
+
     # Curated stable-surface docstring gate (Pipeline, Profile, authoring, service).
     # To gate a new stable surface:
     # 1. Import the class/function above.
@@ -1364,7 +1422,9 @@ def main() -> None:
         read_pipeline_json,
         write_pipeline_json,
     )
+    from etlantic.orchestration import compile_plan
     from etlantic.pipeline import Pipeline
+    from etlantic.plan.explain import explain_plan
     from etlantic.plan.freeze import deep_freeze
     from etlantic.plan.planner import plan_pipeline
     from etlantic.plan.serialize import verify_plan_fingerprint
@@ -1441,6 +1501,8 @@ def main() -> None:
         "etlantic.plan.deep_freeze": deep_freeze,
         "etlantic.plan.verify_plan_fingerprint": verify_plan_fingerprint,
         "etlantic.plan.plan_pipeline": plan_pipeline,
+        "etlantic.plan.explain_plan": explain_plan,
+        "etlantic.orchestration.compile_plan": compile_plan,
     }
     function_require_raises = {
         "etlantic.authoring.apply_edit",
@@ -1449,6 +1511,7 @@ def main() -> None:
         "etlantic.authoring.pipeline_definition",
         "etlantic.plan.verify_plan_fingerprint",
         "etlantic.plan.plan_pipeline",
+        "etlantic.orchestration.compile_plan",
     }
     failures: list[str] = []
     for cls, names in curated.items():

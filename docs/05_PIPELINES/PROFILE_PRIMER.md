@@ -21,21 +21,26 @@ Built-in names resolve from ETLantic templates. For reproducible deployment,
 store a JSON profile and pass its path:
 
 ```bash
-etlantic plan my_pipeline.py:MyPipeline --profile profiles/prod.json
+python -m etlantic plan my_pipeline.py:MyPipeline --profile profiles/prod.json
 ```
 
-Load and save profiles through the SDK:
+Load and save profiles through the SDK. Prefer shipped file/memory bindings
+(see [Storage today](../06_EXECUTION/STORAGE_TODAY.md)); S3 and warehouse
+storage plugins are **not** shipped in 0.25:
 
 ```python
 from etlantic.profile import load_profile, write_profile, production_profile
 
 profile = production_profile(
-    plugin_allowlist={"etlantic-polars": "==0.25.0"},
-    assets={"raw": "s3://bucket/raw", "curated": "warehouse.curated"},
+    plugin_allowlist={"etlantic-polars": "==0.25.0", "local": None},
+    assets={"raw": "json", "curated": "json"},
 )
 write_profile(profile, "profiles/prod.json")
 loaded = load_profile("profiles/prod.json")
 ```
+
+Canonical starter:
+[prod.example.json](../01_GETTING_STARTED/prod.example.json).
 
 Profile JSON is read and written through **safe I/O** confined to the profile
 file's parent directory (see [Architecture — 0.20 trust delta](../02_FOUNDATIONS/ARCHITECTURE.md#020-trust-and-safe-io-delta)).

@@ -1,7 +1,8 @@
 # Visualization
 
-> **Available in 0.9:** Mermaid, Graphviz DOT, HTML lineage pages, and JSON
-> lineage export via `etlantic.viz` and `etlantic viz …`.
+> **Available in 0.25:** Mermaid, Graphviz DOT, HTML lineage pages, and JSON
+> lineage export via `etlantic.viz` and `python -m etlantic viz …` (first
+> shipped in 0.9).
 
 Visualization helps developers understand pipelines without reading every
 implementation. Prefer diagrams generated from the typed model over hand-drawn

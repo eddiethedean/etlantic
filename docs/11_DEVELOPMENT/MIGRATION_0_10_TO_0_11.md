@@ -48,6 +48,7 @@ pilots:
 ```python
 Profile(
     name="production",
+    security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={"local": None, "etlantic-polars": ">=0.11.0,<1.0"},
 )

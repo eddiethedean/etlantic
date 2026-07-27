@@ -36,17 +36,21 @@ API/reference surface.
 9. Evaluate brief vs enterprise packet roles clarified
 10. Contributor DX (`mkdocs serve`, FastAPI `PYTHONPATH`)
 
+Follow-on public-adoption remediation (trust examples, Learn slim, diagnostics
+catalog, migration stub): see
+[Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md).
+
 ## Remaining debt
 
 - Broader Args/Raises coverage beyond curated docstring gate
 - Public-vs-internal API policy for `agents` / `ide` / `notebook` dumps
-- Diagnostics machine-readable catalog publish (or remove promise)
 - Docker / devcontainer evaluator sandbox
-- From-dbt / Airflow / Dagster migration cookbooks
+- From-dbt / Airflow / Dagster migration cookbooks (stub only; see adoption audit)
 - Scaffold product change for stronger aha transform
 
 ## Links
 
+- [Adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
 - [Archive index](ARCHIVE_INDEX.md)
 - [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
 - [Learning path](../01_GETTING_STARTED/LEARNING_PATH.md)

@@ -9,12 +9,18 @@ standards own semantics.
 
 ## Before You Start
 
-Read:
+For **docs / typo / small fix PRs:** skim
+[Architecture](../02_FOUNDATIONS/ARCHITECTURE.md) and jump to
+[Development Setup](#development-setup). Use the docs-only checks below.
+
+For **core, plugin, or architecture PRs**, also read:
 
 - [Manifesto](../ETLANTIC_MANIFESTO.md)
 - [Design Principles](../02_FOUNDATIONS/DESIGN_PRINCIPLES.md)
 - [Architecture](../02_FOUNDATIONS/ARCHITECTURE.md)
 - [Design Decisions](DESIGN_DECISIONS.md)
+
+Look for `good first issue` labels when they are present on the tracker.
 
 ## Scope Test
 
@@ -91,11 +97,14 @@ uv sync --extra fastapi
 uv run pytest -q packages/etlantic-fastapi/tests
 uv run python examples/pipeline_definition_json.py
 uv run python scripts/check_docs.py
+uv run python scripts/check_pipeline_codec_burn_in.py
+uv run python scripts/check_codec_burn_in_matrix.py
+uv run python scripts/check_plugin_manifests.py
 uv run python scripts/check_agent_guidance.py
 uv run python scripts/check_release.py
 uv run python scripts/check_surface_inventory.py
 uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
-uv run etlantic validate examples/memory_customers.py:CustomerPipeline --format sarif > /tmp/etlantic.sarif
+uv run python -m etlantic validate examples/memory_customers.py:CustomerPipeline --format sarif > /tmp/etlantic.sarif
 uv run python examples/memory_customers.py
 uv run python scripts/build_docs.py
 ```

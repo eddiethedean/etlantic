@@ -2,14 +2,22 @@
 
 ## Run the current test suite
 
+Prefer the marker-aware core suite (matches CI baseline exclusions):
+
 ```bash
 uv sync --locked
-uv run pytest -q
+./scripts/test_core.sh
+# equivalent:
+# uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
 uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_docs.py
 uv run python scripts/build_docs.py
 ```
+
+`uv run pytest -q` without markers pulls optional plugin tests and will fail
+unless those dependency groups are installed. Use `./scripts/test_core.sh` for
+day-to-day core work, then add marker-specific runs below.
 
 Run the narrowest relevant test directory while developing, then the complete
 suite before opening a pull request. Current test areas include core validation

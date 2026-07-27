@@ -294,6 +294,7 @@ from etlantic import Profile
 
 production = Profile(
     name="production",
+    security_mode="production",  # required for fail-closed trust
     security_domain="production",
     dataframe_engine="polars",
     portable_transform_policy="require",
@@ -303,6 +304,10 @@ production = Profile(
     },
 )
 ```
+
+Fail-closed plugin trust uses **`security_mode`**, not the profile name or
+`security_domain` alone. Prefer the canonical starter
+[prod.example.json](../01_GETTING_STARTED/prod.example.json).
 
 See [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md).
 
@@ -707,6 +712,7 @@ from etlantic import Profile
 
 production = Profile(
     name="production",
+    security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
         "etlantic-polars": "==0.25.0",
@@ -715,10 +721,13 @@ production = Profile(
 )
 ```
 
+Canonical JSON starter:
+[prod.example.json](../01_GETTING_STARTED/prod.example.json).
+
 !!! note "Future design (1.0)"
     A proposed TOML security policy block may eventually participate in
     planning (document size limits, filesystem roots, network allowlists).
-    That configuration surface is **not** loaded in 0.18. Proposed names live
+    That configuration surface is **not** loaded in 0.25. Proposed names live
     under [Configuration](../10_REFERENCE/CONFIGURATION.md).
 
 Security policy participates in planning. Secret values do not.

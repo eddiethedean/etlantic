@@ -8,27 +8,22 @@ validate and plan them once; run locally or through optional engine plugins.
 
 > **Project status:** ETLantic **0.25.0** is a **Beta** (PyPI) release suitable within the documented
 > single-tenant reference deployment boundary. **First run:** follow the
-> [docs home green path](../README.md) (Installation → Quickstart → First Pipeline).
+> [docs home green path](../README.md) (Installation → Quickstart → First Pipeline → Engine selection).
 > This page is the Learn section index. Experimental features and broader
 > deployment models remain outside that claim. See
 > [Capabilities](CAPABILITIES.md) for the shipped boundary and
-> [Evaluator brief](EVALUATOR.md) for decision-makers. How to read status labels:
-> [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md).
-
-> **Shipped in 0.25:** compatibility burn-in for `etlantic.pipeline/1` and
-> sibling codecs, Plugin SDK `/1` freeze decision (blockers published), and a
-> published 1.0 removal inventory. See
-> [What's New in 0.25](WHATS_NEW_0_25.md) and
-> [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+> [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) for status labels.
 
 ## Pages in this section (order)
 
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init` → validate → run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
-4. [Learning path](LEARNING_PATH.md) — week-1 → week-2 ladder
-5. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
-6. [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
+4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
+
+After first success: [Learning path](LEARNING_PATH.md) (How-to),
+[FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
+(Support), [What's New in 0.25](WHATS_NEW_0_25.md).
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without

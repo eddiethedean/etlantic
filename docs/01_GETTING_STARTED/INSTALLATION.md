@@ -33,18 +33,22 @@ python -m etlantic --version
 uv venv
 source .venv/bin/activate
 uv pip install 'etlantic==0.25.0'
-uv run etlantic --version
+python -m etlantic --version
 ```
 
 If you already have a uv project (`pyproject.toml`), you may use
-`uv add 'etlantic==0.25.0'` instead.
+`uv add 'etlantic==0.25.0'` instead. Create an **empty subdirectory** for
+`python -m etlantic init --with-toml`, or pass `--force` if the directory is
+not empty.
 
 ### Poetry
 
 ```bash
 poetry new my-pipeline && cd my-pipeline
 poetry add 'etlantic==0.25.0'
-poetry run etlantic --version
+poetry run python -m etlantic --version
+# poetry new leaves a non-empty tree — init needs --force (or an empty subdir):
+poetry run python -m etlantic init --with-toml --force
 ```
 
 ### Conda / Mamba

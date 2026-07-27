@@ -264,8 +264,8 @@ report.to_html()
 CLI examples:
 
 ```bash
-etlantic run customer.py:CustomerPipeline --profile development
-etlantic run customer.py:CustomerPipeline --profile development --format json
+python -m etlantic run customer.py:CustomerPipeline --profile development
+python -m etlantic run customer.py:CustomerPipeline --profile development --format json
 ```
 
 `etlantic report list` / `show` / `export` read the durable store at

@@ -16,7 +16,7 @@ This command is expected to fail for a pipeline that needs production
 configuration:
 
 ```bash
-etlantic validate package.pipeline:CustomerPipeline --profile production
+python -m etlantic validate package.pipeline:CustomerPipeline --profile production
 ```
 
 ## Write an explicit profile

@@ -28,7 +28,7 @@ This table describes the declared compatibility of ETLantic 0.25.0.
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
-| Package stability | Stable for documented single-tenant reference deployments (not unrestricted enterprise production) |
+| Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
 | Plugin SDK stability | Shipped protocols are Beta-compatible within the 0.25 minor; third-party plugins must pin and re-run conformance |
 
 ## Tested versus declared

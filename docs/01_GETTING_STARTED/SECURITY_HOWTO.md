@@ -39,8 +39,15 @@ Empty allowlists fail closed in production.
 
 ## 4. Validate in CI before write
 
+Do **not** use the built-in `--profile production` name — its allowlist is empty
+and fail-closed. Copy the canonical starter (clone) or paste the
+[Capabilities CI JSON](CAPABILITIES.md#ci-starter):
+
 ```bash
-python -m etlantic validate pipeline.py:SamplePipeline --profile production --format sarif
+cp docs/01_GETTING_STARTED/prod.example.json profiles/prod.json
+# Review allowlist and assets, then:
+python -m etlantic validate pipeline.py:SamplePipeline \
+  --profile ./profiles/prod.json --format sarif
 ```
 
 Pin core and plugins to the same minor (`==0.25.0`).
