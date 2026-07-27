@@ -210,7 +210,7 @@ def test_planning_context_auto_requires_dataframe_caps() -> None:
         PluginDescriptor(
             name="acme-lazy-df",
             kind="dataframe",
-            version="0.22.0",
+            version="0.23.0",
             engine="acme_lazy",
             capabilities=PluginCapabilities(
                 engine="acme_lazy",

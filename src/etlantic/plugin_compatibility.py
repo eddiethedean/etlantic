@@ -369,9 +369,10 @@ def evaluate_manifest_text(
     python_requires: str | None = None,
     core_requires: str | None = None,
     allowlist: Sequence[str] | None = None,
+    verify_digest: bool = True,
 ) -> CompatibilityRow:
     """Evaluate a raw manifest JSON document (fixture-friendly)."""
-    manifest, diagnostics = parse_plugin_manifest(text, verify_digest=False)
+    manifest, diagnostics = parse_plugin_manifest(text, verify_digest=verify_digest)
     if manifest is None:
         messages = "; ".join(d.message for d in diagnostics) or "invalid manifest"
         return CompatibilityRow(
@@ -425,10 +426,13 @@ def evaluate_installed_plugin(
     package: str,
     *,
     allowlist: Sequence[str] | None = None,
+    verify_digest: bool = True,
 ) -> CompatibilityRow:
     """Load an installed package's manifest and evaluate compatibility."""
     python_requires, core_requires = _etlantic_requirement_from_dist(package)
-    manifest, diagnostics = load_manifest_for_distribution(package, verify_digest=False)
+    manifest, diagnostics = load_manifest_for_distribution(
+        package, verify_digest=verify_digest
+    )
     if manifest is None:
         codes = {d.code for d in diagnostics}
         if "PMPLUG412" in codes:

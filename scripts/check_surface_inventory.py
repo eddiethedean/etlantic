@@ -14,6 +14,7 @@ INVENTORY = ROOT / "src" / "etlantic" / "schemas" / "surface-inventory.json"
 def main() -> int:
     sys.path.insert(0, str(ROOT / "src"))
     import etlantic
+    from etlantic.agents import PUBLIC_CLI_COMMANDS
 
     payload = json.loads(INVENTORY.read_text(encoding="utf-8"))
     stable = set(payload.get("sdk_root_stable", []))
@@ -42,6 +43,20 @@ def main() -> int:
         return 1
 
     ownership = payload.get("namespace_ownership") or {}
+    cli_stable = list(payload.get("cli_stable") or [])
+    if sorted(cli_stable) != sorted(PUBLIC_CLI_COMMANDS):
+        missing = sorted(set(PUBLIC_CLI_COMMANDS) - set(cli_stable))
+        extra = sorted(set(cli_stable) - set(PUBLIC_CLI_COMMANDS))
+        if missing:
+            print("surface-inventory cli_stable missing PUBLIC_CLI_COMMANDS:")
+            for cmd in missing:
+                print(f"  - {cmd}")
+        if extra:
+            print("surface-inventory cli_stable has undeclared commands:")
+            for cmd in extra:
+                print(f"  - {cmd}")
+        return 1
+
     for ns in sorted(namespaces):
         expected = ownership.get(ns)
         if not expected:

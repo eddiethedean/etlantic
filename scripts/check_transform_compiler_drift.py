@@ -26,6 +26,10 @@ FIRST_PARTY = {
         "package": "etlantic-sql",
         "runtime_group": "etlantic.sql_plugins",
     },
+    "datafusion": {
+        "package": "etlantic-datafusion",
+        "runtime_group": "etlantic.dataframe_plugins",
+    },
 }
 
 

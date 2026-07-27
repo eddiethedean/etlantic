@@ -141,8 +141,24 @@ class FileSchemaHistoryProvider:
                 )
                 continue
             for item in data.get("history") or []:
-                if isinstance(item, dict):
+                if not isinstance(item, dict):
+                    continue
+                try:
                     self._memory.record(_observation_from_dict(item))
+                except ValueError as exc:
+                    if "must not store source rows" in str(exc):
+                        raise
+                    _LOG.warning(
+                        "Skipping invalid schema history item in %s: %s",
+                        path,
+                        exc,
+                    )
+                except Exception as exc:
+                    _LOG.warning(
+                        "Skipping invalid schema history item in %s: %s",
+                        path,
+                        exc,
+                    )
 
     def record(self, observation: SchemaObservation) -> None:
         assert_no_row_payload(observation)

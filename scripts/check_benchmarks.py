@@ -58,6 +58,11 @@ def _compare(observed: dict[str, float], baseline: dict[str, object]) -> list[st
                 f"{name}: observed {observed[name]:.6f}s exceeds ceiling "
                 f"{ceiling:.6f}s (baseline p95={limit}, tolerance={tolerance})"
             )
+    for name in sorted(observed):
+        if name not in scenarios:
+            errors.append(
+                f"ungated benchmark scenario {name!r}; add to baseline or remove benchmark"
+            )
     return errors
 
 

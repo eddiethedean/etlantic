@@ -40,6 +40,13 @@ Tag `vX.Y.Z` publishes eleven distributions:
 2. Resolve release-blocking issues; `main` CI must be green.
 3. Confirm every package version and `__version__` equals the intended tag
    (no `v` prefix). Extras pins use `==X.Y.Z`.
+   When plugin manifest JSON changes, regenerate digests:
+
+   ```bash
+   uv run python scripts/check_plugin_manifests.py --write-digests
+   uv run python scripts/check_plugin_manifests.py
+   ```
+
 4. Update
    [CHANGELOG.md](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md)
    (Added / Changed / Fixed / Upgrade notes) and migration guide when needed.
@@ -54,6 +61,7 @@ Tag `vX.Y.Z` publishes eleven distributions:
    uv run ruff format --check .
    uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not airflow and not prefect and not keyring and not sqlmodel"
    uv run python scripts/check_docs.py
+   uv run python scripts/check_plugin_manifests.py
    uv run python scripts/check_agent_guidance.py
    uv run python scripts/check_release.py
    uv run --group polars --group pandas --group sql --group pyspark python scripts/check_transform_compiler_drift.py

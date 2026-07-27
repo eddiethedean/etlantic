@@ -13,6 +13,7 @@ from etlantic.runtime.faults import (
     clear_faults,
     fault_injection_enabled,
     maybe_inject,
+    maybe_inject_async,
     register_faults,
     reset_fault_counts,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "clear_faults",
     "fault_injection_enabled",
     "maybe_inject",
+    "maybe_inject_async",
     "register_faults",
     "reset_fault_counts",
     "with_faults",

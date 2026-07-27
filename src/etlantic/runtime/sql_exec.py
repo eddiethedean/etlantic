@@ -9,7 +9,7 @@ from typing import Any
 from etlantic.exceptions import NodeExecutionError
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
-from etlantic.runtime.faults import FaultBoundary, maybe_inject
+from etlantic.runtime.faults import FaultBoundary, maybe_inject_async
 from etlantic.runtime.state import FailureStage
 from etlantic.sql.discovery import load_sql_plugin
 from etlantic.sql.helpers import require_safe_identifier
@@ -191,7 +191,7 @@ async def execute_sql_sink(
     allow_trusted_sql: bool = False,
 ) -> SqlExecutionResult:
     """Publish a SQL query/relation into a sink without fetching intermediates."""
-    maybe_inject(FaultBoundary.LOAD, step_name=node.name)
+    await maybe_inject_async(FaultBoundary.LOAD, step_name=node.name)
     context = _context(
         plan=plan,
         node=node,

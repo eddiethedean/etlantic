@@ -110,6 +110,9 @@ sqlmodel = [
 sparkforge = [
     "etlantic-sparkforge",
 ]
+datafusion = [
+    "etlantic-datafusion",
+]
 observability = [
     "opentelemetry-api>=1.36,<2",
 ]
@@ -192,6 +195,7 @@ markers = [
     "keyring: tests requiring the keyring secret provider",
     "sqlmodel: tests requiring the SQLModel integration package",
     "sparkforge: tests for the SparkForge migration adapter",
+    "datafusion: tests for the experimental DataFusion plugin stub",
 ]
 
 [tool.ruff]
@@ -234,6 +238,7 @@ known-first-party = [
     "etlantic_keyring",
     "etlantic_sqlmodel",
     "etlantic_sparkforge",
+    "etlantic_datafusion",
 ]
 
 [tool.ruff.format]

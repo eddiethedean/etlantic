@@ -11,6 +11,7 @@ from etlantic.runtime.faults import (
     active_faults,
     fault_injection_enabled,
     maybe_inject,
+    maybe_inject_async,
     reset_fault_counts,
 )
 from etlantic.testing.faults import with_faults
@@ -187,7 +188,71 @@ def test_materialize_fault_fires_during_dataframe_step() -> None:
                 request=request,
                 pipeline_cls=_MaterializePipeline,
             )
-            with pytest.raises(Exception, match="materialize-boom"):
-                await orch.execute()
+            report = await orch.execute()
+            step = next(s for s in report.steps if s.step_name == "step")
+            assert step.status.value == "failed"
+            assert "materialize-boom" in (step.error or "")
 
     anyio.run(_run)
+
+
+def test_delay_fault_does_not_block_event_loop() -> None:
+    import anyio
+
+    started = anyio.Event()
+    done = anyio.Event()
+
+    async def worker() -> None:
+        started.set()
+        await anyio.sleep(0.05)
+        done.set()
+
+    async def _run() -> None:
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(worker)
+            await started.wait()
+            with (
+                active_faults(
+                    FaultSpec(
+                        boundary=FaultBoundary.EXTRACT,
+                        delay_seconds=0.05,
+                        message="delayed-boom",
+                    )
+                ),
+                pytest.raises(RuntimeError, match="delayed-boom"),
+            ):
+                await maybe_inject_async(FaultBoundary.EXTRACT)
+            with anyio.fail_after(0.2):
+                await done.wait()
+
+    anyio.run(_run)
+
+
+def test_after_n_calls_under_concurrency() -> None:
+    import anyio
+
+    async def _run() -> None:
+        with active_faults(
+            FaultSpec(
+                boundary=FaultBoundary.LOAD,
+                trigger=FaultTrigger.AFTER_N_CALLS,
+                after_n=3,
+                message="fourth-load",
+            )
+        ):
+            reset_fault_counts()
+
+            async def one() -> None:
+                await maybe_inject_async(FaultBoundary.LOAD)
+
+            async with anyio.create_task_group() as tg:
+                for _ in range(4):
+                    tg.start_soon(one)
+
+    with pytest.raises(BaseException) as excinfo:
+        anyio.run(_run)
+    err = excinfo.value
+    if hasattr(err, "exceptions"):
+        assert any("fourth-load" in str(e) for e in err.exceptions)
+    else:
+        assert "fourth-load" in str(err)

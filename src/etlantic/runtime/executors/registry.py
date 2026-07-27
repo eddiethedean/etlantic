@@ -1,4 +1,8 @@
-"""Engine executor adapters wrapping existing exec modules."""
+"""Engine executor adapters wrapping existing exec modules.
+
+Not wired into ``LocalOrchestrator`` in 0.23 — dispatch remains in orchestrator
+exec modules directly. Reserved for future centralized engine routing.
+"""
 
 from __future__ import annotations
 

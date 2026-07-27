@@ -243,6 +243,31 @@ def test_file_schema_history(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="source rows"):
         FileSchemaHistoryProvider(tmp_path)
 
+    # Corrupt JSON is skipped; valid history in other files still loads.
+    clean = tmp_path / "corrupt_case"
+    clean.mkdir()
+    corrupt = clean / "corrupt.json"
+    corrupt.write_text("{not-json", encoding="utf-8")
+    good = clean / "good.json"
+    good.write_text(
+        json.dumps(
+            {
+                "subject_id": "good",
+                "history": [
+                    {
+                        "subject_id": "good",
+                        "inspector": "test",
+                        "metadata": {},
+                        "schema": schema.to_dict(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    provider = FileSchemaHistoryProvider(clean)
+    assert provider.latest("good") is not None
+
 
 def test_in_memory_schema_history_rejects_rows() -> None:
     from etlantic.schema_policy import InMemorySchemaHistory

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+import threading
 import uuid
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -55,8 +56,12 @@ from etlantic.runtime.dataframe_exec import (
     resolve_dataframe_plugin,
 )
 from etlantic.runtime.events import LifecycleEvent, SecurityEvent
-from etlantic.runtime.executors import get_executor_registry
-from etlantic.runtime.faults import FaultBoundary, active_faults, maybe_inject
+from etlantic.runtime.faults import (
+    FaultBoundary,
+    active_faults,
+    maybe_inject,
+    maybe_inject_async,
+)
 from etlantic.runtime.invoke import maybe_await
 from etlantic.runtime.logging import RunLogger, redact_message
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
@@ -248,7 +253,6 @@ class LocalOrchestrator:
     def _persist_report(self, report: PipelineRunReport) -> None:
         """Persist a terminal report once, with fault-injection and gap detection."""
         try:
-            maybe_inject(FaultBoundary.REPORT_PERSIST)
             self.runtime.reports.put(report)
         except Exception as exc:
             if self._persistence.publication_committed:
@@ -285,7 +289,6 @@ class LocalOrchestrator:
         self._persistence.terminal_reports_written += 1
 
     def __post_init__(self) -> None:
-        self._executor_registry = get_executor_registry()
         if self.pipeline_cls is not None:
             self._index_transformations(self.pipeline_cls)
         if self.artifacts is None:
@@ -309,8 +312,23 @@ class LocalOrchestrator:
             if xf is not None:
                 self.transform_lookup[xf.identity()] = xf
 
-    def _resolve_executor(self, engine: str) -> Any | None:
-        return self._executor_registry.resolve(engine)
+    def _append_validation(
+        self, validations: list[ValidationResult], item: ValidationResult
+    ) -> None:
+        with self._collect_lock:
+            validations.extend([item])
+
+    def _append_diagnostic(
+        self, diagnostics: list[RunDiagnostic], item: RunDiagnostic
+    ) -> None:
+        with self._collect_lock:
+            diagnostics.extend([item])
+
+    def _append_schema_obs(
+        self, schema_obs: list[SchemaObservationResult], item: SchemaObservationResult
+    ) -> None:
+        with self._collect_lock:
+            schema_obs.extend([item])
 
     def _strategy_for(self, node_name: str, port_name: str) -> ArtifactStrategy:
         if self.request.materialization is MaterializationPolicy.NONE:
@@ -385,6 +403,7 @@ class LocalOrchestrator:
         schema_obs: list[SchemaObservationResult] = []
         cancelled = False
         status = RunStatus.RUNNING
+        self._collect_lock = threading.Lock()
         run_context = RunContext(
             run_id=run_id,
             pipeline_id=self.plan.pipeline_id,
@@ -473,6 +492,10 @@ class LocalOrchestrator:
                     pending.discard(name)
                 await self._run_ready_wave(ready, _one)
                 if failed:
+                    for name in list(pending):
+                        nodes[name].status = StepStatus.ABANDONED
+                        nodes[name].error = "Run aborted after upstream failure"
+                        pending.discard(name)
                     break
 
         cancel_exc = anyio.get_cancelled_exc_class()
@@ -486,14 +509,15 @@ class LocalOrchestrator:
                     await self.runtime.run_middleware.run(run_context, run_body)
         except TimeoutError as exc:
             status = RunStatus.TIMED_OUT
-            diagnostics.append(
+            self._append_diagnostic(
+                diagnostics,
                 RunDiagnostic(
                     code="PMEXEC408",
                     severity="error",
                     message=redact_message(
                         f"Run timed out after {self.request.timeout.run_seconds}s"
                     ),
-                )
+                ),
             )
             report = self._build_report(
                 run_id=run_id,
@@ -537,12 +561,13 @@ class LocalOrchestrator:
             raise
         except Exception as exc:
             status = RunStatus.FAILED
-            diagnostics.append(
+            self._append_diagnostic(
+                diagnostics,
                 RunDiagnostic(
                     code="PMEXEC500",
                     severity="error",
                     message=redact_message(str(exc)),
-                )
+                ),
             )
             report = self._build_report(
                 run_id=run_id,
@@ -589,7 +614,12 @@ class LocalOrchestrator:
             1
             for s in nodes.values()
             if s.status
-            in {StepStatus.FAILED, StepStatus.TIMED_OUT, StepStatus.ABANDONED}
+            in {
+                StepStatus.FAILED,
+                StepStatus.TIMED_OUT,
+                StepStatus.ABANDONED,
+                StepStatus.PENDING,
+            }
         )
         succeeded = sum(1 for s in nodes.values() if s.status is StepStatus.SUCCEEDED)
         skipped = sum(1 for s in nodes.values() if s.status is StepStatus.SKIPPED)
@@ -873,13 +903,14 @@ class LocalOrchestrator:
                         )
                         state.ended_at = datetime.now(UTC)
                         state.error = redact_message(str(retry_exc))
-                        diagnostics.append(
+                        self._append_diagnostic(
+                            diagnostics,
                             RunDiagnostic(
                                 code=retry_exc.code or "PMEXEC300",
                                 severity="error",
                                 message=redact_message(str(retry_exc)),
                                 node_name=name,
-                            )
+                            ),
                         )
                         return
                     backoff = self.request.retry.backoff_seconds * attempt
@@ -890,7 +921,8 @@ class LocalOrchestrator:
                     state.status = StepStatus.SKIPPED
                     state.metadata["continue_after_failure"] = True
                     state.ended_at = datetime.now(UTC)
-                    diagnostics.append(
+                    self._append_diagnostic(
+                        diagnostics,
                         RunDiagnostic(
                             code="PMEXEC301",
                             severity="warning",
@@ -898,13 +930,14 @@ class LocalOrchestrator:
                                 f"Step {name} continued after failure: {exc}"
                             ),
                             node_name=name,
-                        )
+                        ),
                     )
                     return
                 if action is FailureAction.SKIP:
                     state.status = StepStatus.SKIPPED
                     state.ended_at = datetime.now(UTC)
-                    diagnostics.append(
+                    self._append_diagnostic(
+                        diagnostics,
                         RunDiagnostic(
                             code="PMEXEC301",
                             severity="warning",
@@ -912,18 +945,19 @@ class LocalOrchestrator:
                                 f"Step {name} skipped after failure: {exc}"
                             ),
                             node_name=name,
-                        )
+                        ),
                     )
                     return
                 state.status = StepStatus.TIMED_OUT if timed_out else StepStatus.FAILED
                 state.ended_at = datetime.now(UTC)
-                diagnostics.append(
+                self._append_diagnostic(
+                    diagnostics,
                     RunDiagnostic(
                         code=getattr(exc, "code", None) or "PMEXEC300",
                         severity="error",
                         message=redact_message(str(exc)),
                         node_name=name,
-                    )
+                    ),
                 )
                 self.runtime.events.emit(
                     LifecycleEvent(
@@ -991,11 +1025,11 @@ class LocalOrchestrator:
     ) -> None:
         node = state.node
         if node.kind is NodeKind.SOURCE:
-            maybe_inject(FaultBoundary.EXTRACT, step_name=node.name)
+            await maybe_inject_async(FaultBoundary.EXTRACT, step_name=node.name)
         elif node.kind is NodeKind.SINK:
-            maybe_inject(FaultBoundary.LOAD, step_name=node.name)
+            await maybe_inject_async(FaultBoundary.LOAD, step_name=node.name)
         elif node.kind is NodeKind.STEP:
-            maybe_inject(FaultBoundary.TRANSFORM, step_name=node.name)
+            await maybe_inject_async(FaultBoundary.TRANSFORM, step_name=node.name)
         if node.kind is NodeKind.SOURCE:
             if is_spark_engine(self._engine_for(node.name)):
                 plugin = resolve_spark_plugin(
@@ -1027,13 +1061,14 @@ class LocalOrchestrator:
                     location=location,
                     binding=binding_name,
                 )
-                validations.append(
+                self._append_validation(
+                    validations,
                     ValidationResult(
                         node_name=node.name,
                         boundary="source",
                         status="skipped",
                         message="Spark source resolved as DatasetRef (lazy)",
-                    )
+                    ),
                 )
                 self._store_outputs(node, data, artifacts)
                 state.records_out = 0
@@ -1059,13 +1094,14 @@ class LocalOrchestrator:
                     location=location,
                     binding=binding_name,
                 )
-                validations.append(
+                self._append_validation(
+                    validations,
                     ValidationResult(
                         node_name=node.name,
                         boundary="source",
                         status="skipped",
                         message="SQL source resolved as RelationRef (no row fetch)",
-                    )
+                    ),
                 )
                 self._store_outputs(node, data, artifacts)
                 state.records_out = 0
@@ -1150,13 +1186,14 @@ class LocalOrchestrator:
                     enable_delta=enable_delta,
                 )
                 for diag in result.diagnostics:
-                    diagnostics.append(
+                    self._append_diagnostic(
+                        diagnostics,
                         RunDiagnostic(
                             code=str(diag.get("code") or "PMSPARK000"),
                             severity=str(diag.get("severity") or "warning"),
                             message=redact_message(str(diag.get("message") or "")),
                             node_name=node.name,
-                        )
+                        ),
                     )
                 error_diags = [
                     d
@@ -1221,13 +1258,14 @@ class LocalOrchestrator:
                     allow_trusted_sql=allow_trusted,
                 )
                 for diag in result.diagnostics:
-                    diagnostics.append(
+                    self._append_diagnostic(
+                        diagnostics,
                         RunDiagnostic(
                             code=str(diag.get("code") or "PMSQL000"),
                             severity=str(diag.get("severity") or "warning"),
                             message=redact_message(str(diag.get("message") or "")),
                             node_name=node.name,
-                        )
+                        ),
                     )
                 if result.outcome.value == "unknown":
                     raise NodeExecutionError(
@@ -1397,13 +1435,14 @@ class LocalOrchestrator:
                 )
                 await self._ensure_spark_session(run_id=run_id)
                 for _port_name in inputs:
-                    validations.append(
+                    self._append_validation(
+                        validations,
                         ValidationResult(
                             node_name=node.name,
                             boundary="input_validation",
                             status="skipped",
                             message="delegated to portable spark compiler",
-                        )
+                        ),
                     )
                 result = await execute_portable_spark_step(
                     plugin=plugin,
@@ -1452,13 +1491,14 @@ class LocalOrchestrator:
                 )
                 # Skip record-oriented input validation; plugin validates.
                 for _port_name in inputs:
-                    validations.append(
+                    self._append_validation(
+                        validations,
                         ValidationResult(
                             node_name=node.name,
                             boundary="input_validation",
                             status="skipped",
                             message=f"delegated to {engine} plugin",
-                        )
+                        ),
                     )
                 bundle = await execute_dataframe_step(
                     plugin=plugin,
@@ -1472,13 +1512,14 @@ class LocalOrchestrator:
                     attempt=attempt,
                 )
                 for diag in bundle.diagnostics:
-                    diagnostics.append(
+                    self._append_diagnostic(
+                        diagnostics,
                         RunDiagnostic(
                             code=str(diag.get("code") or "PMDF000"),
                             severity=str(diag.get("severity") or "warning"),
                             message=redact_message(str(diag.get("message") or "")),
                             node_name=node.name,
-                        )
+                        ),
                     )
                 outputs = dict(bundle.valid)
                 for port_name, value in bundle.invalid.items():
@@ -1492,14 +1533,15 @@ class LocalOrchestrator:
                         security_domain=self.plan.security_domain,
                     )
                     artifacts.put(ref, value, durable=False)
-                validations.append(
+                self._append_validation(
+                    validations,
                     ValidationResult(
                         node_name=node.name,
                         boundary="output_validation",
                         status=bundle.validation_decision.value,
                         records_checked=bundle.metrics.rows_out,
                         records_invalid=bundle.metrics.invalid_count or 0,
-                    )
+                    ),
                 )
                 await self._observe_schema(node, outputs, schema_obs=schema_obs)
                 for port_name, value in outputs.items():
@@ -1541,13 +1583,14 @@ class LocalOrchestrator:
                 # is handled in _gather_inputs; here inputs should already be
                 # RelationRef / SqlQuery for SQL-to-SQL.
                 for _port_name in inputs:
-                    validations.append(
+                    self._append_validation(
+                        validations,
                         ValidationResult(
                             node_name=node.name,
                             boundary="input_validation",
                             status="skipped",
                             message="delegated to sql plugin",
-                        )
+                        ),
                     )
                 result = await execute_sql_step(
                     plugin=plugin,
@@ -1636,13 +1679,14 @@ class LocalOrchestrator:
                     )
                     self._spark_compiled[spark_region.identity] = compiled
                 for _port_name in inputs:
-                    validations.append(
+                    self._append_validation(
+                        validations,
                         ValidationResult(
                             node_name=node.name,
                             boundary="input_validation",
                             status="skipped",
                             message="delegated to spark plugin",
-                        )
+                        ),
                     )
                 result = await execute_spark_step(
                     plugin=plugin,
@@ -1876,16 +1920,18 @@ class LocalOrchestrator:
 
         if not _looks_like_frame(data):
             return data
-        module = type(data).__module__ or ""
-        engine = "polars" if module.startswith("polars") else "pandas"
+        engine = self._dataframe_engine_for_frame(data)
         try:
             plugin = resolve_dataframe_plugin(
                 engine,
                 plugins=getattr(self.runtime, "dataframe_plugins", None),
             )
             return plugin.to_records(data, contract_type=contract_type)
-        except Exception:
-            # Fallback: best-effort via Arrow / to_dicts duck typing
+        except NodeExecutionError:
+            raise
+        except (AttributeError, TypeError, ValueError):
+            pass
+        try:
             if hasattr(data, "to_dicts") and callable(data.to_dicts):
                 rows = (
                     data.collect().to_dicts()
@@ -1896,7 +1942,33 @@ class LocalOrchestrator:
             if hasattr(data, "to_dict") and callable(data.to_dict):
                 orient = data.to_dict(orient="records")
                 return as_records(orient, contract_type)
-            return data
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise PipelineExecutionError(
+                redact_message(f"Failed to coerce {engine!r} frame to records: {exc}"),
+                code="PMEXEC421",
+            ) from exc
+        raise PipelineExecutionError(
+            redact_message(
+                f"Failed to coerce {engine!r} frame to records; no conversion path"
+            ),
+            code="PMEXEC421",
+        )
+
+    def _dataframe_engine_for_frame(self, data: Any) -> str:
+        settings = self.plan.execution_settings or {}
+        profile = self.plan.profile_snapshot or {}
+        for source in (settings, profile):
+            engine = source.get("dataframe_engine")
+            if engine:
+                return str(engine)
+        module = type(data).__module__ or ""
+        if module.startswith("polars"):
+            return "polars"
+        if module.startswith("pandas"):
+            return "pandas"
+        if "pyspark" in module:
+            return "pyspark"
+        return "pandas"
 
     def _store_outputs(self, node: Node, data: Any, artifacts: ArtifactStore) -> None:
         port = node.outputs[0].name if node.outputs else "result"
@@ -2195,34 +2267,37 @@ class LocalOrchestrator:
                     contract = port.contract_type
                     break
         if contract is None:
-            validations.append(
+            self._append_validation(
+                validations,
                 ValidationResult(
                     node_name=node.name,
                     boundary=boundary,
                     status="skipped",
-                )
+                ),
             )
             return data
         try:
             records = as_records(data, contract)
-            validations.append(
+            self._append_validation(
+                validations,
                 ValidationResult(
                     node_name=node.name,
                     boundary=boundary,
                     status="passed",
                     records_checked=len(records),
                     records_invalid=0,
-                )
+                ),
             )
             return records
         except Exception as exc:
-            validations.append(
+            self._append_validation(
+                validations,
                 ValidationResult(
                     node_name=node.name,
                     boundary=boundary,
                     status="failed",
                     message=redact_message(str(exc)),
-                )
+                ),
             )
             raise NodeExecutionError(
                 redact_message(
@@ -2281,29 +2356,32 @@ class LocalOrchestrator:
             security_mode=(self.plan.profile_snapshot or {}).get("security_mode"),
         )
         if declared is not None:
-            schema_obs.append(
+            self._append_schema_obs(
+                schema_obs,
                 SchemaObservationResult(
                     subject_id=node.name,
                     layer="declared",
                     fingerprint=declared.fingerprint(),
-                )
+                ),
             )
         if previous is not None:
-            schema_obs.append(
+            self._append_schema_obs(
+                schema_obs,
                 SchemaObservationResult(
                     subject_id=node.name,
                     layer="previous",
                     fingerprint=previous.schema.fingerprint(),
-                )
+                ),
             )
         if current is not None:
-            schema_obs.append(
+            self._append_schema_obs(
+                schema_obs,
                 SchemaObservationResult(
                     subject_id=node.name,
                     layer="current",
                     fingerprint=current.schema.fingerprint(),
                     drift_decision=decision.action.value,
-                )
+                ),
             )
         if decision.action is DriftAction.BLOCK:
             raise NodeExecutionError(

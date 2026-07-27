@@ -55,7 +55,8 @@ def main() -> int:
         if on_disk != rendered:
             errors.append(
                 f"on-disk guidance drift: {path.relative_to(ROOT)} "
-                "(run generate_agent_guidance)"
+                '(run `uv run python -c "from etlantic.agents import '
+                'generate_agent_guidance; generate_agent_guidance()"`)'
             )
 
     # Codex skill should mention the full public CLI set.

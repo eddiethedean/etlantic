@@ -89,5 +89,5 @@ class KeyringSecretProvider:
 
 
 def create_provider(*, service: str = "etlantic") -> KeyringSecretProvider:
-    """Entry-point factory for ``etlantic.secret_providers``."""
+    """Factory for ``runtime.register_secret_provider(...)`` / profile bindings."""
     return KeyringSecretProvider(service=service)

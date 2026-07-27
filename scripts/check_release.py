@@ -113,6 +113,13 @@ def main() -> int:
             errors.append(f"{pkg} experimental package should use Alpha classifier")
 
     root_pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    pin_suffix = f"=={version}"
+    for pkg in (*PACKAGES, *EXPERIMENTAL_PACKAGES):
+        if f"{pkg}{pin_suffix}" not in root_pyproject:
+            errors.append(
+                f"root pyproject.toml missing optional dependency pin {pkg}{pin_suffix}"
+            )
+
     if "Development Status :: 3 - Alpha" in root_pyproject:
         errors.append("root pyproject.toml still uses Alpha classifier")
     if "Development Status :: 4 - Beta" not in root_pyproject:
@@ -120,7 +127,7 @@ def main() -> int:
     if "Development Status :: 5 - Production/Stable" in root_pyproject:
         errors.append("root pyproject.toml should use Beta, not Production/Stable")
     release_yml = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
-    for pkg in PACKAGES:
+    for pkg in (*PACKAGES, *EXPERIMENTAL_PACKAGES):
         expected = pkg.replace("-", "_")
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")

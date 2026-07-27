@@ -40,13 +40,17 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_docs.py
 
+      - name: Plugin manifest check
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_plugin_manifests.py
+
       - name: Agent guidance drift check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_agent_guidance.py
 
       - name: Transform compiler drift check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run --group polars --group pandas --group sql --group pyspark python scripts/check_transform_compiler_drift.py
+        run: uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
 
       - name: Release readiness check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -409,8 +413,14 @@ jobs:
           mkdir -p dist
           uv build --package etlantic
 
-      - name: Build sparkforge wheel
-        run: uv build --package etlantic-sparkforge
+      - name: Build all plugin wheels
+        run: |
+          for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
+            etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
+            etlantic-sparkforge etlantic-datafusion; do
+            uv build --package "$pkg" --out-dir dist
+          done
+          ls -la dist/
 
       - name: Pytest against installed wheel
         shell: bash
@@ -477,6 +487,38 @@ jobs:
       - name: Benchmark gate
         run: uv run python scripts/check_benchmarks.py
 
+  datafusion:
+    name: DataFusion plugin (experimental)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.3"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with datafusion plugin
+        run: uv sync --locked --group datafusion
+
+      - name: Discovery smoke
+        run: |
+          uv run python -c "
+          from etlantic.dataframe.discovery import discover_dataframe_plugins
+          from etlantic.transform.discovery import discover_transform_compilers
+          df = discover_dataframe_plugins()
+          compilers = discover_transform_compilers()
+          assert 'datafusion' in df, df
+          assert 'datafusion' in compilers, compilers
+          print('discovered', sorted(df), sorted(compilers))
+          "
+
+      - name: Pytest datafusion stub suite
+        run: uv run pytest -q tests/ -k datafusion -m datafusion
+
   real-pyspark:
     name: Real PySpark (JVM)
     runs-on: ubuntu-latest
@@ -498,6 +540,8 @@ jobs:
           java-version: "17"
 
       - name: Sync pyspark and dataframe groups
+        # dataframes group required: real_pyspark tests import modules that use
+        # pytest.importorskip("polars") / importorskip("pandas") at import time.
         run: uv sync --locked --group pyspark --group dataframes
 
       - name: Real PySpark tests

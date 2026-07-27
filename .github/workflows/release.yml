@@ -77,9 +77,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/sbom
-          uv tool run cyclonedx-py environment \
+          if ! uv tool run cyclonedx-py environment \
             --output-format JSON \
-            --outfile dist/sbom/etlantic-environment.cdx.json || true
+            --outfile dist/sbom/etlantic-environment.cdx.json; then
+            echo "CycloneDX SBOM generation failed; writing dist/sbom/sbom-warning.txt" >&2
+            printf '%s\n' \
+              "cyclonedx-py environment failed during release build." \
+              "Release continues with per-artifact SHA256 manifests only." \
+              > dist/sbom/sbom-warning.txt
+          fi
           # Per-wheel SPDX-ish checksum manifest (always available).
           python3 - <<'PY'
           import hashlib, json
@@ -214,6 +220,14 @@ jobs:
             [ "$code" = "200" ]
           }
 
+          pypi_version_exists() {
+            local name="$1"
+            local ver="$2"
+            local code
+            code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/${name}/${ver}/json")"
+            [ "$code" = "200" ]
+          }
+
           publish_pair() {
             local name="$1"
             local wheel="$2"
@@ -257,8 +271,12 @@ jobs:
               fi
               if printf '%s' "$log" | grep -Eiq \
                 'file already exists|already uploaded|skipping.*already'; then
-                echo "Already published; continuing: $(basename "$wheel")"
-                return 0
+                if pypi_version_exists "$name" "$TAG"; then
+                  echo "Already published; verified on PyPI: ${name}==${TAG}"
+                  return 0
+                fi
+                echo "Publish reported already exists but ${name}==${TAG} not found on PyPI"
+                exit 1
               fi
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Publish failed after $max_attempts attempts: $wheel"
@@ -330,15 +348,19 @@ jobs:
           body = match.group(0).strip() if match else f"ETLantic {tag}"
           print(body)
           PY
-          assets=(dist/etlantic-${VER}-py3-none-any.whl dist/etlantic-${VER}.tar.gz)
+          assets=(dist/*.whl dist/*.tar.gz)
           if [ -f dist/sbom/release-artifacts.json ]; then
             assets+=(dist/sbom/release-artifacts.json)
           fi
           if [ -f dist/sbom/etlantic-environment.cdx.json ]; then
             assets+=(dist/sbom/etlantic-environment.cdx.json)
           fi
+          if [ -f dist/sbom/sbom-warning.txt ]; then
+            assets+=(dist/sbom/sbom-warning.txt)
+          fi
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "GitHub release $TAG already exists"
+            echo "GitHub release $TAG already exists; uploading any missing assets"
+            gh release upload "$TAG" "${assets[@]}" --clobber
           else
             gh release create "$TAG" \
               --title "ETLantic ${VER}" \

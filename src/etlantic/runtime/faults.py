@@ -7,12 +7,15 @@ active specs. Production profiles ignore injection unless the env flag is set.
 from __future__ import annotations
 
 import os
+import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import StrEnum
+
+_fault_lock = threading.Lock()
 
 
 class FaultBoundary(StrEnum):
@@ -103,15 +106,12 @@ def active_faults(*specs: FaultSpec) -> Iterator[None]:
         _active.reset(token)
 
 
-def maybe_inject(
+def _matching_spec(
+    state: _FaultState,
     boundary: FaultBoundary | str,
     *,
-    step_name: str | None = None,
-) -> None:
-    """Raise or delay when a matching fault spec is active."""
-    state = _current_state()
-    if state is None or not state.specs:
-        return
+    step_name: str | None,
+) -> FaultSpec | None:
     bkey = str(boundary)
     for spec in state.specs:
         if spec.boundary.value != bkey:
@@ -119,17 +119,54 @@ def maybe_inject(
         if spec.trigger == FaultTrigger.ON_STEP and spec.step_name != step_name:
             continue
         key = (bkey, step_name)
-        count = state.call_counts.get(key, 0) + 1
-        state.call_counts[key] = count
+        with _fault_lock:
+            count = state.call_counts.get(key, 0) + 1
+            state.call_counts[key] = count
         if spec.trigger == FaultTrigger.AFTER_N_CALLS and count <= spec.after_n:
-            continue
-        if spec.delay_seconds > 0:
-            time.sleep(spec.delay_seconds)
-        raise spec.error(spec.message)
+            return None
+        return spec
+    return None
+
+
+def maybe_inject(
+    boundary: FaultBoundary | str,
+    *,
+    step_name: str | None = None,
+) -> None:
+    """Raise or delay when a matching fault spec is active (sync callers)."""
+    state = _current_state()
+    if state is None or not state.specs:
+        return
+    spec = _matching_spec(state, boundary, step_name=step_name)
+    if spec is None:
+        return
+    if spec.delay_seconds > 0:
+        time.sleep(spec.delay_seconds)
+    raise spec.error(spec.message)
+
+
+async def maybe_inject_async(
+    boundary: FaultBoundary | str,
+    *,
+    step_name: str | None = None,
+) -> None:
+    """Raise or delay when a matching fault spec is active (async orchestration)."""
+    import anyio
+
+    state = _current_state()
+    if state is None or not state.specs:
+        return
+    spec = _matching_spec(state, boundary, step_name=step_name)
+    if spec is None:
+        return
+    if spec.delay_seconds > 0:
+        await anyio.sleep(spec.delay_seconds)
+    raise spec.error(spec.message)
 
 
 def reset_fault_counts() -> None:
     """Reset per-boundary call counters (for test isolation)."""
     state = _active.get()
     if state is not None:
-        state.call_counts.clear()
+        with _fault_lock:
+            state.call_counts.clear()

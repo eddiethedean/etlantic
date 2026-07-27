@@ -746,6 +746,9 @@ dataframes = [
     { name = "etlantic-polars" },
     { name = "pyarrow" },
 ]
+datafusion = [
+    { name = "etlantic-datafusion" },
+]
 dev = [
     { name = "hypothesis" },
     { name = "jsonschema" },
@@ -827,6 +830,7 @@ dataframes = [
     { name = "etlantic-polars", editable = "packages/etlantic-polars" },
     { name = "pyarrow", specifier = ">=14" },
 ]
+datafusion = [{ name = "etlantic-datafusion", editable = "packages/etlantic-datafusion" }]
 dev = [
     { name = "hypothesis", specifier = ">=6.100,<7" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
