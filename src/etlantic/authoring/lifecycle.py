@@ -85,12 +85,12 @@ def _validate_definition(
     defn, ctx, resolve_report = resolve_definition(
         defn, context=context, profile=profile
     )
-    resolved_policy = resolve_validation_policy(
-        policy or ctx.profile.validation_policy
-    )
+    resolved_policy = resolve_validation_policy(policy or ctx.profile.validation_policy)
     diagnostics: list[Diagnostic] = list(resolve_report.diagnostics)
     graph = logical_graph_from_definition(defn)
-    diagnostics.extend(_tag_phase(_validate_definition_graph(defn, graph), "structural"))
+    diagnostics.extend(
+        _tag_phase(_validate_definition_graph(defn, graph), "structural")
+    )
     diagnostics.extend(_tag_phase(_detect_cycles(graph), "structural"))
     diagnostics.extend(
         _tag_phase(
@@ -98,7 +98,9 @@ def _validate_definition(
             "reference",
         )
     )
-    diagnostics.extend(_tag_phase(_validate_definition_semantic(defn, graph), "semantic"))
+    diagnostics.extend(
+        _tag_phase(_validate_definition_semantic(defn, graph), "semantic")
+    )
     diagnostics.extend(
         _tag_phase(
             _validate_definition_policy(defn, graph, ctx, resolved_policy), "policy"
@@ -179,7 +181,7 @@ def _validate_definition_graph(
                     code="PMPIPE201",
                     severity=Severity.ERROR,
                     message=(
-                        f'Unknown edge endpoint '
+                        f"Unknown edge endpoint "
                         f'"{edge.producer_node}" -> "{edge.consumer_node}".'
                     ),
                     path=("pipeline", edge.consumer_node, edge.consumer_port),
@@ -259,9 +261,7 @@ def _validate_definition_semantic(
     defn: PipelineDefinition, graph: LogicalGraph
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    contracts_by_id = {
-        c.authoring_id or c.identity: c for c in defn.contracts
-    }
+    contracts_by_id = {c.authoring_id or c.identity: c for c in defn.contracts}
     for c in defn.contracts:
         contracts_by_id[c.identity] = c
     nodes = graph.node_map()
@@ -298,7 +298,9 @@ def _validate_definition_semantic(
             left = contracts_by_id.get(producer_port.contract_id)
             right = contracts_by_id.get(consumer_port.contract_id)
             left_pub = left.identity if left is not None else producer_port.contract_id
-            right_pub = right.identity if right is not None else consumer_port.contract_id
+            right_pub = (
+                right.identity if right is not None else consumer_port.contract_id
+            )
             left_auth = (
                 (left.authoring_id or left.identity)
                 if left is not None
@@ -315,12 +317,17 @@ def _validate_definition_semantic(
                         code="PMPIPE210",
                         severity=Severity.ERROR,
                         message=(
-                            f'Contract mismatch: {edge.producer_node}.{edge.producer_port} '
-                            f'({producer_port.contract_id}) -> '
-                            f'{edge.consumer_node}.{edge.consumer_port} '
-                            f'({consumer_port.contract_id}).'
+                            f"Contract mismatch: {edge.producer_node}.{edge.producer_port} "
+                            f"({producer_port.contract_id}) -> "
+                            f"{edge.consumer_node}.{edge.consumer_port} "
+                            f"({consumer_port.contract_id})."
                         ),
-                        path=("nodes", edge.consumer_node, "inputs", edge.consumer_port),
+                        path=(
+                            "nodes",
+                            edge.consumer_node,
+                            "inputs",
+                            edge.consumer_port,
+                        ),
                     )
                 )
     return diagnostics

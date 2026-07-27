@@ -143,13 +143,13 @@ def test_functional_authoring_from_scratch() -> None:
                     input_port("customers", raw_id),
                     output_port("result", cust_id),
                 ),
-                implementation_refs=(
-                    implementation_ref("local", f"{xf_id}/local"),
-                ),
+                implementation_refs=(implementation_ref("local", f"{xf_id}/local"),),
             ),
         ),
         nodes=(
-            extract_node("raw", asset="customer_source", contract_id=raw_id, pipeline_id=pid),
+            extract_node(
+                "raw", asset="customer_source", contract_id=raw_id, pipeline_id=pid
+            ),
             step_node(
                 "normalized",
                 transformation_id=xf_id,
@@ -158,10 +158,19 @@ def test_functional_authoring_from_scratch() -> None:
                 inputs=(input_port("customers", raw_id),),
                 outputs=(output_port("result", cust_id),),
             ),
-            load_node("curated", asset="customer_sink", contract_id=cust_id, pipeline_id=pid),
+            load_node(
+                "curated", asset="customer_sink", contract_id=cust_id, pipeline_id=pid
+            ),
         ),
         edges=(
-            edge("raw", "result", "normalized", "customers", producer_contract_id=raw_id, consumer_contract_id=raw_id),
+            edge(
+                "raw",
+                "result",
+                "normalized",
+                "customers",
+                producer_contract_id=raw_id,
+                consumer_contract_id=raw_id,
+            ),
             edge(
                 "normalized",
                 "result",

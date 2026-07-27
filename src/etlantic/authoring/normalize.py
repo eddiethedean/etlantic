@@ -119,7 +119,9 @@ def _contract_definition(ctype: type[Any]) -> ContractDefinition:
     )
 
 
-def _port_from_transform_port(port: Any, *, value: Any = ..., has_value: bool = False) -> PortDefinitionSpec:
+def _port_from_transform_port(
+    port: Any, *, value: Any = ..., has_value: bool = False
+) -> PortDefinitionSpec:
     direction = port.kind
     ctype = port.contract_type
     cid = contract_id(ctype) if ctype is not None else None
@@ -148,7 +150,9 @@ def _port_from_transform_port(port: Any, *, value: Any = ..., has_value: bool = 
     )
 
 
-def _transformation_definition(transform: type[Transformation]) -> TransformationDefinition:
+def _transformation_definition(
+    transform: type[Transformation],
+) -> TransformationDefinition:
     ports: list[PortDefinitionSpec] = []
     for port in transform.inputs():
         ports.append(_port_from_transform_port(port))
@@ -225,7 +229,9 @@ def definition_from_pipeline(cls: type[Pipeline]) -> PipelineDefinition:
         elif isinstance(member, Step):
             transform = member.transformation
             if transform.identity() not in transformations:
-                transformations[transform.identity()] = _transformation_definition(transform)
+                transformations[transform.identity()] = _transformation_definition(
+                    transform
+                )
             for port in (*transform.inputs(), *transform.outputs()):
                 _remember_contract(port.contract_type)
             params = tuple(
@@ -243,8 +249,12 @@ def definition_from_pipeline(cls: type[Pipeline]) -> PipelineDefinition:
                     identity=node_id(graph.pipeline_id, name),
                     transformation_id=transform.identity(),
                     transformation_name=transform.__name__,
-                    inputs=tuple(_port_from_transform_port(p) for p in transform.inputs()),
-                    outputs=tuple(_port_from_transform_port(p) for p in transform.outputs()),
+                    inputs=tuple(
+                        _port_from_transform_port(p) for p in transform.inputs()
+                    ),
+                    outputs=tuple(
+                        _port_from_transform_port(p) for p in transform.outputs()
+                    ),
                     parameters=params,
                 )
             )
@@ -401,7 +411,9 @@ def logical_graph_from_definition(defn: PipelineDefinition) -> LogicalGraph:
             for p in node.parameters
         )
         nested_graph = (
-            logical_graph_from_definition(node.nested) if node.nested is not None else None
+            logical_graph_from_definition(node.nested)
+            if node.nested is not None
+            else None
         )
         nodes.append(
             Node(

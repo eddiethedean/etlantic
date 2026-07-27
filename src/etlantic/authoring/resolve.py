@@ -71,9 +71,7 @@ def harvest_callables_from_pipeline(cls: type[Pipeline]) -> None:
             continue
         transform = member.transformation
         for engine, record in transform.implementations().items():
-            callable_registry().callables[
-                f"{transform.identity()}::{engine}"
-            ] = record
+            callable_registry().callables[f"{transform.identity()}::{engine}"] = record
 
 
 def harvest_callables_from_definition_context(
@@ -155,7 +153,12 @@ def resolve_definition(
                             f"engine {ref.engine!r}; planning may succeed but "
                             "execution will fail until the host registers it."
                         ),
-                        path=("transformations", xf.identity, "implementation_refs", ref.engine),
+                        path=(
+                            "transformations",
+                            xf.identity,
+                            "implementation_refs",
+                            ref.engine,
+                        ),
                         phase="reference",
                     )
                 )

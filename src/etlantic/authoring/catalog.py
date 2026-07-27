@@ -113,7 +113,9 @@ def catalog_from_definition(defn: PipelineDefinition) -> AuthoringCatalog:
                 display_name=xf.name,
                 description="Transformation",
                 endpoints=tuple(
-                    f"port:{p.direction}:{p.name}" for p in xf.ports if p.direction != "parameter"
+                    f"port:{p.direction}:{p.name}"
+                    for p in xf.ports
+                    if p.direction != "parameter"
                 ),
                 capabilities=tuple(sorted({r.engine for r in xf.implementation_refs})),
             )

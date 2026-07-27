@@ -80,7 +80,9 @@ def port_spec(
     )
 
 
-def input_port(name: str, contract_id: str, *, required: bool = True) -> PortDefinitionSpec:
+def input_port(
+    name: str, contract_id: str, *, required: bool = True
+) -> PortDefinitionSpec:
     return port_spec(name, "input", contract_id=contract_id, required=required)
 
 
@@ -301,9 +303,7 @@ def remove_node(defn: PipelineDefinition, name: str) -> PipelineDefinition:
     """Remove a node and any incident edges."""
     nodes = tuple(n for n in defn.nodes if n.name != name)
     edges = tuple(
-        e
-        for e in defn.edges
-        if e.producer_node != name and e.consumer_node != name
+        e for e in defn.edges if e.producer_node != name and e.consumer_node != name
     )
     updated = PipelineDefinition(
         schema=defn.schema,

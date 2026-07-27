@@ -122,9 +122,7 @@ async def arun_pipeline(
     pipeline_for_scheduler: type[Any] | None
     if isinstance(pipeline_cls, PipelineDefinition):
         if context is None:
-            context = PlanningContext.create(
-                profile=profile, registry=runtime.registry
-            )
+            context = PlanningContext.create(profile=profile, registry=runtime.registry)
         _defn, context, _ = resolve_definition(
             pipeline_cls, context=context, profile=profile
         )

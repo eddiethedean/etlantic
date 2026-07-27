@@ -40,8 +40,10 @@ def test_wire_stable_artifacts_documented_in_inventory() -> None:
     import json
     from importlib.resources import files
 
-    raw = files("etlantic.schemas").joinpath("surface-inventory.json").read_text(
-        encoding="utf-8"
+    raw = (
+        files("etlantic.schemas")
+        .joinpath("surface-inventory.json")
+        .read_text(encoding="utf-8")
     )
     inventory = json.loads(raw)
     assert inventory["wire_schemas"]["etlantic.pipeline/1"] == "stable"

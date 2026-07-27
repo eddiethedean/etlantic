@@ -77,7 +77,9 @@ class ContractDefinition:
             name=str(data["name"]),
             version=(str(data["version"]) if data.get("version") is not None else None),
             authoring_id=(
-                str(data["authoring_id"]) if data.get("authoring_id") is not None else None
+                str(data["authoring_id"])
+                if data.get("authoring_id") is not None
+                else None
             ),
             fields=tuple(FieldSpec.from_dict(f) for f in fields_raw),
             metadata=immutable_mapping(dict(data.get("metadata") or {})),
@@ -124,7 +126,9 @@ class PortDefinitionSpec:
             name=str(data["name"]),
             direction=str(data["direction"]),
             contract_id=(
-                str(data["contract_id"]) if data.get("contract_id") is not None else None
+                str(data["contract_id"])
+                if data.get("contract_id") is not None
+                else None
             ),
             value_type=(
                 str(data["value_type"]) if data.get("value_type") is not None else None
@@ -185,7 +189,9 @@ class TransformationDefinition:
             "ports": [p.to_dict() for p in self.ports],
             "implementation_refs": [r.to_dict() for r in self.implementation_refs],
             "portable_plan": (
-                mutable_copy(self.portable_plan) if self.portable_plan is not None else None
+                mutable_copy(self.portable_plan)
+                if self.portable_plan is not None
+                else None
             ),
             "metadata": mutable_copy(self.metadata),
         }
@@ -197,13 +203,17 @@ class TransformationDefinition:
             identity=str(data["identity"]),
             name=str(data["name"]),
             version=(str(data["version"]) if data.get("version") is not None else None),
-            ports=tuple(PortDefinitionSpec.from_dict(p) for p in (data.get("ports") or ())),
+            ports=tuple(
+                PortDefinitionSpec.from_dict(p) for p in (data.get("ports") or ())
+            ),
             implementation_refs=tuple(
                 ImplementationRef.from_dict(r)
                 for r in (data.get("implementation_refs") or ())
             ),
             portable_plan=(
-                immutable_mapping(dict(portable)) if isinstance(portable, Mapping) else None
+                immutable_mapping(dict(portable))
+                if isinstance(portable, Mapping)
+                else None
             ),
             metadata=immutable_mapping(dict(data.get("metadata") or {})),
         )
@@ -301,7 +311,9 @@ class NodeDefinition:
             identity=str(data["identity"]),
             asset=(str(data["asset"]) if data.get("asset") is not None else None),
             contract_id=(
-                str(data["contract_id"]) if data.get("contract_id") is not None else None
+                str(data["contract_id"])
+                if data.get("contract_id") is not None
+                else None
             ),
             transformation_id=(
                 str(data["transformation_id"])
@@ -382,7 +394,9 @@ class PipelineDefinition:
             pipeline_name=str(data["pipeline_name"]),
             version=(str(data["version"]) if data.get("version") is not None else None),
             fingerprint=(
-                str(data["fingerprint"]) if data.get("fingerprint") is not None else None
+                str(data["fingerprint"])
+                if data.get("fingerprint") is not None
+                else None
             ),
             contracts=tuple(
                 ContractDefinition.from_dict(c) for c in (data.get("contracts") or ())
@@ -394,7 +408,9 @@ class PipelineDefinition:
             nodes=tuple(NodeDefinition.from_dict(n) for n in (data.get("nodes") or ())),
             edges=tuple(EdgeDefinition.from_dict(e) for e in (data.get("edges") or ())),
             profile_ref=(
-                str(data["profile_ref"]) if data.get("profile_ref") is not None else None
+                str(data["profile_ref"])
+                if data.get("profile_ref") is not None
+                else None
             ),
             policy_refs=immutable_mapping(dict(data.get("policy_refs") or {})),
             reliability=immutable_mapping(dict(data.get("reliability") or {})),

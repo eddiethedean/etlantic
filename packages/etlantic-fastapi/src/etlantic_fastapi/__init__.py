@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from etlantic.service import AuthoringService, PolicyContext
+from fastapi import FastAPI, HTTPException
 
 __version__ = "0.24.0"
 
@@ -92,9 +92,7 @@ def create_reference_app(
     ) -> dict[str, Any]:
         body = body or RunSubmitRequest()
         try:
-            return svc.submit_run(
-                definition_id, idempotency_key=body.idempotency_key
-            )
+            return svc.submit_run(definition_id, idempotency_key=body.idempotency_key)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="definition not found") from exc
 

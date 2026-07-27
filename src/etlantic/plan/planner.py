@@ -586,7 +586,9 @@ def _select_implementations_from_definition(
         xf = xf_by_id.get(transform_id)
         identity = implementation_id(transform_id, engine)
         is_async = False
-        portable_plan = dict(xf.portable_plan) if xf is not None and xf.portable_plan else None
+        portable_plan = (
+            dict(xf.portable_plan) if xf is not None and xf.portable_plan else None
+        )
         explicit_override = node.name in context.profile.implementation_overrides
         requested_engine = engine
         compiler = compilers.get(requested_engine)
@@ -620,10 +622,14 @@ def _select_implementations_from_definition(
                 profile_name=context.profile.name,
                 engine=requested_engine,
             )
-            requirements = {
-                str(k): list(v) if isinstance(v, (list, tuple)) else [str(v)]
-                for k, v in (portable_plan.get("requirements") or {}).items()
-            } if isinstance(portable_plan.get("requirements"), dict) else {}
+            requirements = (
+                {
+                    str(k): list(v) if isinstance(v, (list, tuple)) else [str(v)]
+                    for k, v in (portable_plan.get("requirements") or {}).items()
+                }
+                if isinstance(portable_plan.get("requirements"), dict)
+                else {}
+            )
             report = compiler.analyze(
                 portable_plan,
                 context=plan_ctx,

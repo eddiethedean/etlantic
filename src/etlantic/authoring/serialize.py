@@ -112,9 +112,7 @@ def _reject_forbidden(value: Any, *, path: str = "$") -> None:
                 )
             if isinstance(child, dict):
                 bad = [
-                    str(k)
-                    for k in child
-                    if str(k).lower() in _NESTED_SECRET_MATERIAL
+                    str(k) for k in child if str(k).lower() in _NESTED_SECRET_MATERIAL
                 ]
                 if bad:
                     raise ValueError(

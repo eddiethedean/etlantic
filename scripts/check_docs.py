@@ -697,10 +697,7 @@ def main() -> None:
 
     # Honesty gate + nav SSOT
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    if (
-        "pip install etlantic" not in readme
-        and "pip install 'etlantic" not in readme
-    ):
+    if "pip install etlantic" not in readme and "pip install 'etlantic" not in readme:
         raise SystemExit("README.md missing pip-first install guidance")
     if (
         "etlantic --version" not in readme
@@ -1275,7 +1272,6 @@ def main() -> None:
         check=True,
     )
 
-
     # Curated stable-surface docstring gate (Pipeline + Profile public methods).
     import inspect
 
@@ -1356,8 +1352,7 @@ def main() -> None:
                 )
     if failures:
         raise SystemExit(
-            "Stable-surface docstring gate failed:\n- "
-            + "\n- ".join(failures)
+            "Stable-surface docstring gate failed:\n- " + "\n- ".join(failures)
         )
 
     print(f"Documentation consistency checks passed for {package_version}.")

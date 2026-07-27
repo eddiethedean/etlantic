@@ -222,7 +222,9 @@ class AuthoringService:
                 defn, profile=self.policy.profile, runtime=self.runtime
             )
             job.status = (
-                "succeeded" if report.status.value == "succeeded" else report.status.value
+                "succeeded"
+                if report.status.value == "succeeded"
+                else report.status.value
             )
             job.report = report
         except Exception as exc:
