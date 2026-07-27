@@ -42,7 +42,9 @@ Scripts marked **(CI)** run in `.github/workflows/checks.yml`. Others are
 documented and copy-paste runnable locally. Repository index:
 [examples/README.md on GitHub](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md).
 
-### In-memory quickstart (CI)
+### In-memory companion demo (clone / CI)
+
+Not the Quickstart — requires a git checkout (`examples/` is not on the PyPI wheel):
 
 ```bash
 uv run python examples/memory_customers.py

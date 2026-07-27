@@ -68,6 +68,29 @@ not_in_nav: |
   11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md
   11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md
   11_DEVELOPMENT/SPARKFORGE_ADOPTION.md
+  11_DEVELOPMENT/EXIT_GATE_0_23.md
+  11_DEVELOPMENT/EXIT_GATE_0_24.md
+  11_DEVELOPMENT/EXIT_GATE_0_25.md
+  11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
+  11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
+  11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
+  11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_24.md
+  11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md
+  11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
+  11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
+  11_DEVELOPMENT/DESIGN_PROPOSALS.md
+  11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
+  11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
+  10_REFERENCE/CONFIGURATION.md
+  10_REFERENCE/ENVIRONMENT_VARIABLES.md
+  07_PLUGIN_SDK/STORAGE_PLUGIN.md
+  07_PLUGIN_SDK/RESOURCE_PROVIDER.md
+  07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
+  06_EXECUTION/PLUGINS.md
+  06_EXECUTION/STORAGE_PLUGINS.md
+  06_EXECUTION/RESOURCE_PLUGINS.md
+  08_VISUALIZATION/DOCUMENTATION.md
+  08_VISUALIZATION/OPENAPI_FOR_PIPELINES.md
 
 validation:
   omitted_files: warn
@@ -165,7 +188,6 @@ plugins:
               - "!^_"
             separate_signature: true
             merge_init_into_class: true
-
 nav:
   - Home: README.md
   - Learn:
@@ -173,36 +195,38 @@ nav:
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
-      - Programmatic authoring: 05_PIPELINES/PROGRAMMATIC_AUTHORING.md
+      - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Current 0.25 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
-      - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-      - How-to:
-          - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
-          - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
-          - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
-          - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
-          - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
-          - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
-          - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
+  - How-to:
+      - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
+      - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
+      - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
+      - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
+      - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
+      - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
+      - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
+      - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
+      - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
+      - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
   - Evaluate:
+      - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
       - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Capabilities and Limitations: 01_GETTING_STARTED/CAPABILITIES.md
       - Compare: 01_GETTING_STARTED/COMPARE.md
-      - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
       - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
       - Security: 02_FOUNDATIONS/SECURITY.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Release notes:
       - Changelog: CHANGELOG.md
       - What's new in 0.25: 01_GETTING_STARTED/WHATS_NEW_0_25.md
-      - What's new in 0.24: 01_GETTING_STARTED/WHATS_NEW_0_24.md
-      - What's new in 0.23: 01_GETTING_STARTED/WHATS_NEW_0_23.md
-      - What's new in 0.22: 01_GETTING_STARTED/WHATS_NEW_0_22.md
       - Earlier releases:
+          - What's new in 0.24: 01_GETTING_STARTED/WHATS_NEW_0_24.md
+          - What's new in 0.23: 01_GETTING_STARTED/WHATS_NEW_0_23.md
+          - What's new in 0.22: 01_GETTING_STARTED/WHATS_NEW_0_22.md
           - What's new in 0.21: 01_GETTING_STARTED/WHATS_NEW_0_21.md
           - What's new in 0.20: 01_GETTING_STARTED/WHATS_NEW_0_20.md
           - What's new in 0.19: 01_GETTING_STARTED/WHATS_NEW_0_19.md
@@ -217,7 +241,6 @@ nav:
       - Core Concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
       - Validation Everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
       - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
-      - Security: 02_FOUNDATIONS/SECURITY.md
       - Glossary: 02_FOUNDATIONS/GLOSSARY.md
       - Philosophy (optional):
           - Vision: 02_FOUNDATIONS/VISION.md
@@ -236,6 +259,7 @@ nav:
           - DataContractModel: 03_DATA_CONTRACTS/DATACONTRACTMODEL.md
   - Transformations:
       - Overview: 04_TRANSFORMATIONS/README.md
+      - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Transformation: 04_TRANSFORMATIONS/TRANSFORMATION.md
       - Inputs: 04_TRANSFORMATIONS/INPUTS.md
       - Outputs: 04_TRANSFORMATIONS/OUTPUTS.md
@@ -259,6 +283,7 @@ nav:
       - DPCS: 05_PIPELINES/DPCS.md
       - Validation: 05_PIPELINES/PIPELINE_VALIDATION.md
       - Planning: 05_PIPELINES/PLANNING.md
+      - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
       - Profiles: 05_PIPELINES/PROFILES.md
       - Profile primer: 05_PIPELINES/PROFILE_PRIMER.md
       - Contract Generation: 05_PIPELINES/CONTRACT_GENERATION.md
@@ -367,45 +392,16 @@ nav:
       - Governance: 11_DEVELOPMENT/GOVERNANCE.md
       - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
       - API stability and deprecation: 11_DEVELOPMENT/DEPRECATION_POLICY.md
-  - Project:
+  - Maintainers:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
       - Migration 0.24 → 0.25: 11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md
-      - Exit gate 0.25: 11_DEVELOPMENT/EXIT_GATE_0_25.md
-      - 1.0 removal candidates: 11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md
-      - Documentation audit 0.24: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_24.md
+      - Documentation audit 0.25: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_25.md
       - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
       - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
-      - ADR-013 Portable Transform IR: 11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
-      - ADR-014 SOLID Core Refactor: 11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
       - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
       - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
-      - Archive (history / not product docs):
-          - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
-          - Full roadmap (GitHub): https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md
-          - Design Proposals index: 11_DEVELOPMENT/DESIGN_PROPOSALS.md
-          - Design studies (GitHub): https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES
-          - Migration 0.23 → 0.24: 11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
-          - Exit gate 0.24: 11_DEVELOPMENT/EXIT_GATE_0_24.md
-          - Migration 0.22 → 0.23: 11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md
-          - Exit gate 0.23: 11_DEVELOPMENT/EXIT_GATE_0_23.md
-          - Documentation audit 0.23: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
-          - Programmatic Authoring plan (historical): 11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
-          - FastAPI Integration Plan (historical): 11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
-          - Proposed configuration:
-              - Configuration: 10_REFERENCE/CONFIGURATION.md
-              - Environment Variables: 10_REFERENCE/ENVIRONMENT_VARIABLES.md
-          - Future Plugin SDK protocols:
-              - Storage Plugin: 07_PLUGIN_SDK/STORAGE_PLUGIN.md
-              - Resource Provider: 07_PLUGIN_SDK/RESOURCE_PROVIDER.md
-              - Observability Provider: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
-          - Execution Plugins (future pages):
-              - Overview: 06_EXECUTION/PLUGINS.md
-              - Storage Plugins: 06_EXECUTION/STORAGE_PLUGINS.md
-              - Resource Plugins: 06_EXECUTION/RESOURCE_PLUGINS.md
-          - Visualization (future):
-              - Documentation: 08_VISUALIZATION/DOCUMENTATION.md
-              - Pipeline Interface: 08_VISUALIZATION/OPENAPI_FOR_PIPELINES.md
+      - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
   - Standards:
       - Overview: specifications/README.md
       - DTCS 3.0 (canonical): specifications/DTCS.md

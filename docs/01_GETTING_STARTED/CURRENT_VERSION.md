@@ -1,20 +1,21 @@
 # ETLantic 0.25 User Guide
 
-This is the current manual for ETLantic **0.25.0**. Core onboarding paths below
+This is the current manual for ETLantic **0.25.0** — use it **after** first
+success on the docs home [green path](../README.md). Core onboarding paths below
 are available in 0.25; linked reference and design pages may also describe
 Experimental, partial, or future work and retain their own status labels.
 **Supported for documented single-tenant pilots (Beta).** This is not a 1.0
 compatibility guarantee.
 
-## Start here
+## After first success
 
 1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.25.0`
-2. [Run the five-minute quickstart](QUICKSTART.md)
+2. [Quickstart](QUICKSTART.md) — first validate → run (then the required aha)
 3. [Build your first pipeline](FIRST_PIPELINE.md)
 4. [Choose an engine](ENGINE_SELECTION.md)
 5. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 
-After first success: [Capabilities](CAPABILITIES.md),
+Next: [Capabilities](CAPABILITIES.md),
 [What's new in 0.25](WHATS_NEW_0_25.md), [Compare](COMPARE.md), or
 [Upgrade](UPGRADE.md). Prefer `import etlantic as etl` for application code.
 

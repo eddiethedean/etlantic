@@ -25,8 +25,9 @@ maintained. See `SECURITY.md` for the security-support table.
 - Production incident response or on-call coverage
 - Multi-tenant isolation and deployment topology
 - Compliance attestations (SOC2, GDPR certification, and similar)
-- SBOM/signing and advanced supply-chain controls beyond documented package
-  pins and plugin allowlists
+- Advanced supply-chain programs beyond shipped SBOM digests, GitHub build
+  provenance attestations, OIDC-preferred publish, documented package pins,
+  and plugin allowlists
 - Guarantees for Experimental APIs (including `etlantic-datafusion`)
 - Guarantees for Future design / Design Proposal pages
 

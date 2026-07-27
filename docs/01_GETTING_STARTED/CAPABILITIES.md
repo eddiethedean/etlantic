@@ -8,7 +8,7 @@ or lossless `etlantic.pipeline/1` JSON. ETLantic **0.25.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** follow the
-[Quickstart](QUICKSTART.md) (`pip install` → `init` → validate → run). Do not
+[Quickstart](QUICKSTART.md) (`pip install` → `python -m etlantic init` → validate → run). Do not
 start from repository `examples/` unless you have cloned the repo.
 
 ## Limits (read before production)
@@ -86,12 +86,12 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Public portable transform conformance suite | Available |
 | Versioned tabular interchange (`etlantic.interchange/1`) | **0.18.0 Gate A — Available** for Polars↔Pandas boundaries (runtime evidence reconciliation in 0.23) |
 | Best-effort Arrow-assisted conversion | Legacy helper; available when PyArrow is installed, but not the Gate A contract |
-| Pre-import plugin authorization + static manifests | **Available in 0.23.0** |
-| Unified SafeIoPolicy + artifact/cache isolation | **Available in 0.23.0** |
-| Outbound SSRF policy + serialization bans | **Available in 0.23.0** |
-| Runtime fault injection (test/dev) + terminal report semantics | **Available in 0.23.0** |
-| Microbenchmark baselines + CI regression gate | **Available in 0.23.0** |
-| Contract and configuration freeze | **Available in 0.23.0** — deep plan immutability, fingerprint verify, `security_mode`, strict profiles |
+| Pre-import plugin authorization + static manifests | **Available in 0.25** (shipped since **0.20**) |
+| Unified SafeIoPolicy + artifact/cache isolation | **Available in 0.25** (shipped since **0.20**) |
+| Outbound SSRF policy + serialization bans | **Available in 0.25** (shipped since **0.20**) |
+| Runtime fault injection (test/dev) + terminal report semantics | **Available in 0.25** (shipped since **0.23**) |
+| Microbenchmark baselines + CI regression gate | **Available in 0.25** (shipped since **0.23**) |
+| Contract and configuration freeze | **Available in 0.25** (shipped since **0.19**) — fingerprint verify, `security_mode`, strict profiles; plan helpers freeze nested mappings/lists/sets (not full deep object graphs). See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms). |
 | `etlantic-datafusion` | **Experimental** (Gate B) — stub package; not recommended |
 | SQL protocol + PostgreSQL reference plugin | Available (`etlantic-sql`) |
 | Spark protocol + local provider + native impl path | Available (`etlantic-pyspark`) |

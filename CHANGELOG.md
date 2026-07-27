@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Docs adoption remediation: green-path honesty, Learn/How-to/Maintainers nav,
+  Learning path / Profiles / Portable / Security howto hubs, Evaluate packet
+  roles, Capabilities/Security/SUPPORT trust stamps, freeze glossary,
+  SURFACE_INVENTORY completion, EXCEPTIONS hierarchy, `deep_freeze` honesty,
+  expanded plan docstring gate, contributor `mkdocs serve` notes
+
 ### Fixed
 - Resolve dataframe `plugin.info` as property or callable so Polars/Pandas
   ownership uses advertised `thread_safe` (default COPIED when caps missing)

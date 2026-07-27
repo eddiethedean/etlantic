@@ -29,12 +29,16 @@ released.
 
 ## Documentation audits
 
+- [Maintained 0.25 Documentation Audit](DOCUMENTATION_AUDIT_0_25.md)
 - [Maintained 0.24 Documentation Audit](DOCUMENTATION_AUDIT_0_24.md)
 - [Maintained 0.23 Documentation Audit](DOCUMENTATION_AUDIT_0_23.md)
 - [Maintained 0.21 Documentation Audit](DOCUMENTATION_AUDIT_0_21.md)
 - [Maintained 0.20 Documentation Audit](DOCUMENTATION_AUDIT_0_20.md)
 - [Maintained 0.18 Documentation Audit](DOCUMENTATION_AUDIT_0_18.md)
 - [Historical 0.17 Documentation Audit](DOCUMENTATION_AUDIT_0_17.md)
+
+Historical migrations, exit gates, ADRs, and future stubs:
+[Archive index](ARCHIVE_INDEX.md).
 
 ## Migration archive
 

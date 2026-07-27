@@ -71,7 +71,7 @@ See the [Security Model](SECURITY.md).
 
 ETLantic supports complementary authoring paths.
 
-!!! success "Available in 0.24 — shared PipelineDefinition"
+!!! success "Available since 0.24 — shared PipelineDefinition"
     Class declarations, functional builders, canonical `etlantic.pipeline/1`
     JSON, and service/visual edit paths normalize to one immutable
     `PipelineDefinition`. All paths feed the same analysis and planning layers;
@@ -95,7 +95,8 @@ Class / functions / JSON / GUI
 
 A FastAPI application may expose a transport-neutral ETLantic service facade,
 but authentication, persistence, durable job submission, and deployment remain
-host-application concerns. The 0.24 reference adapter proves schema and client
+host-application concerns. The `etlantic-fastapi` reference adapter (shipped
+since 0.24) proves schema and client
 generation; the production control API remains planned for 1.1.
 
 ### Code-first

@@ -25,6 +25,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_docs.py
 uv run python scripts/check_agent_guidance.py
+uv run python scripts/build_docs.py serve   # optional local preview
 ```
 
 For core, plugin, or release-impacting changes, run the **CI-equivalent checks**

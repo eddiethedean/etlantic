@@ -17,6 +17,10 @@ be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 ## Pre-1.0 deprecation schedule (0.19 freeze)
 
+See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
+— this is the **contract/configuration freeze**, not protocol `/1` freeze or
+full plan object-graph immutability.
+
 | Surface | Status | Target |
 |---|---|---|
 | `DataContractModel` alias | provisional | remove or hard-error by 1.0 |
@@ -64,4 +68,4 @@ documented security exception applies.
 | Production detection by name/domain | `Profile.security_mode == "production"` |
 | Unknown bare profile names | Fail closed; `--allow-adhoc-profile` |
 | Missing plan/report `schema` | Reject; no silent default |
-| Nested plan mutation | Deep-frozen; fingerprint verify at trust boundaries |
+| Nested plan mutation | Nested mappings/lists/sets frozen via `deep_freeze` (not full object graphs); fingerprint verify at trust boundaries. See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms). |

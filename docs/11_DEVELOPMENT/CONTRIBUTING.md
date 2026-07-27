@@ -163,6 +163,16 @@ Documentation should:
 See [Documentation Contributions](DOCUMENTATION.md) for page-status labels,
 current-version rules, and CI checks.
 
+### Preview docs locally
+
+```bash
+uv run python scripts/build_docs.py serve
+# equivalent: uv run mkdocs serve
+```
+
+Open the printed local URL (typically `http://127.0.0.1:8000/`). Use
+`uv run python scripts/build_docs.py` for the strict CI build.
+
 ## Plugin Contributions
 
 Core plugins should:
@@ -175,7 +185,10 @@ Core plugins should:
 - Document supported backend versions
 
 Third-party plugins may be maintained independently and distributed through
-Python package entry points.
+Python package entry points. Before opening a plugin PR, also run
+`uv run python scripts/check_transform_compiler_drift.py` and
+`uv run python scripts/check_surface_inventory.py` when touching compilers or
+public surfaces.
 
 ## Testing
 
@@ -185,6 +198,16 @@ Python package entry points.
 - `ruff check` / `ruff format --check`
 - `scripts/check_docs.py` + runnable companions + strict MkDocs build
 - Optional dataframe / SparkForge matrix jobs
+
+### FastAPI optional package tests
+
+`etlantic-fastapi` tests import repository `examples/`. From a checkout run:
+
+```bash
+PYTHONPATH=. uv run pytest tests/fastapi packages/etlantic-fastapi/tests
+```
+
+(or rely on the CI workflow path that already sets the correct roots).
 
 ### Currently enforced for portable compilers
 

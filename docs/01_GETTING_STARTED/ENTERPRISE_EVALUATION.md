@@ -1,29 +1,15 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.25.0.** A consolidated diligence packet for
-> technical evaluators and enterprise decision-makers.
+> **Status: Available in ETLantic 0.25.0.** Deep diligence packet. Start with the
+> one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
+> matrix; use this page to assemble review links and artifacts.
 
-## Residual evaluation lead
+## How to use this packet
 
-| Topic | 0.25 |
-|---|---|
-| Maturity | **Beta** (PyPI) |
-| Suitable for | Documented single-tenant pilots |
-| Not suitable for | Unrestricted enterprise production / multi-tenant control planes |
-| Support | Community; **no formal SLA** |
-| LTS / support window | Current published minor (`0.25.x`) only |
-| Compliance / SoR | Adopter-owned beyond shipped SBOM digests and GitHub attestations |
-
-ETLantic is a typed, contract-driven **pipeline framework** for Python. You
-define datasets, transformations, and pipelines once; ETLantic validates and
-plans them; optional plugins execute on Polars, Pandas, SQL, PySpark, Airflow
-(compile), and Prefect (local MVP).
-
-ETLantic is **not** a dataframe engine, distributed scheduler, warehouse, secret
-manager, or compliance audit system of record.
-
-Start with the one-page [Evaluator Brief](EVALUATOR.md) for a capability
-matrix. Use this guide to assemble a complete evaluation packet.
+1. Read [Evaluator Brief](EVALUATOR.md) (one page — residual lead + matrix).
+2. Run the green path below.
+3. Walk the checklist tables (security, ops, supply chain).
+4. Record accepted residual risks for your pilot topology.
 
 ## Evaluation checklist
 
@@ -35,11 +21,12 @@ matrix. Use this guide to assemble a complete evaluation packet.
 | [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md) | Reference topology, required controls, honest gaps |
 | [Compare](COMPARE.md) | Positioning vs dbt, Airflow, Pandera, and peers |
 | [Support](../11_DEVELOPMENT/SUPPORT.md) | Community support scope and explicit non-goals |
+| [Performance envelope](PERFORMANCE_ENVELOPE.md) | Local baselines; no capacity SLA |
 
 ### 2. Run the green path
 
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.0`
-2. [Quickstart](QUICKSTART.md) — `etlantic init`, validate, plan, run
+2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
 
@@ -47,9 +34,10 @@ matrix. Use this guide to assemble a complete evaluation packet.
 
 | Document | Purpose |
 |---|---|
+| [Security howto](SECURITY_HOWTO.md) | Day-2 allowlist / secrets / SARIF |
 | [Security](../02_FOUNDATIONS/SECURITY.md) | Threat model, trust boundaries, verification checklist |
 | [Repository SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) | Supported versions, private reporting, disclosure targets |
-| [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) | Fail-closed `production` template and allowlist behavior |
+| [Profiles hub](../05_PIPELINES/PROFILES_HUB.md) | Fail-closed `production` template and allowlist behavior |
 | [Secrets management](../06_EXECUTION/SECRETS_MANAGEMENT.md) | Shipped secret providers and future cloud managers |
 
 Key facts for evaluators:
@@ -81,16 +69,17 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
+| SBOM / attestations | Release CI digests + GitHub attestations (see Evaluator Brief) |
 
 ### 6. Optional deep dives
 
 | Goal | Guide |
 |---|---|
 | Gate A Polars↔Pandas interchange | [Interchange example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) |
-| Portable transforms | [Portable transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |
+| Portable transforms | [Portable transforms hub](../04_TRANSFORMATIONS/PORTABLE_HUB.md) |
 | Plugin SDK evaluation | [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md) |
-| Resilience / performance budgets | [Exit gate 0.23](../11_DEVELOPMENT/EXIT_GATE_0_23.md) |
-| Programmatic authoring / JSON | [Exit gate 0.24](../11_DEVELOPMENT/EXIT_GATE_0_24.md) |
+| Resilience / performance | [Performance envelope](PERFORMANCE_ENVELOPE.md), [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md) |
+| Programmatic authoring / JSON | [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
 
 ## Explicit non-goals (do not expect these from docs or product)
 

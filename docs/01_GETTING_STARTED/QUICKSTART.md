@@ -1,7 +1,9 @@
-# 5–10 Minute Quickstart
+# Quickstart
 
 > **Status: Available in ETLantic 0.25.0.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
+> Budget ~15–20 minutes if you include the required aha step below; first
+> validate → run alone is usually under 10 minutes.
 
 !!! tip "PyPI vs clone"
     This page is for **PyPI installs**. Repository `examples/` scripts need a
@@ -54,6 +56,10 @@ Python runtime (not Polars/Pandas). Add those engines later via
 
 ## 3. Validate and run (first success)
 
+Pipeline **targets** use `path/to/file.py:PipelineClass`,
+`package.module:PipelineClass`, or a path to an `etlantic.pipeline/1` JSON
+document. See [CLI — Pipeline targets](../10_REFERENCE/CLI.md).
+
 ```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
@@ -91,8 +97,9 @@ Optional later: `python -m etlantic doctor --profile development`,
 
 ## 4. Required aha — catch a bad change before write
 
-Do not skip this step. Edit `pipeline.py` and change the `Row` contract so
-`name` becomes `full_name` (or delete a required field). Re-validate:
+Do not skip this step (it is outside the “first success” timing above). Edit
+`pipeline.py` and change the `Row` contract so `name` becomes `full_name` (or
+delete a required field). Re-validate:
 
 ```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -118,10 +125,3 @@ SamplePipeline.run(profile="development")
 
 Standards acronyms (ODCS / DTCS / DPCS) and Gate A/B labels appear later in
 Capabilities and Foundations—you do not need them for first success.
-
-## Next steps
-
-- [First Pipeline](FIRST_PIPELINE.md) — uppercase transform, richer contracts
-- [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) — builders + JSON
-- [Engine selection](ENGINE_SELECTION.md) — add Polars, Pandas, SQL, or Spark
-- [Installation](INSTALLATION.md) — optional engine packages

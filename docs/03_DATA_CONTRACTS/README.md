@@ -246,13 +246,14 @@ Generated data contracts should be deterministic so changes are easy to review i
 
 Read this section in the following order:
 
-1. `DATACONTRACTMODEL.md`
-2. `PYDANTIC_INTEGRATION.md`
-3. `ODCS.md`
-4. `VALIDATION.md`
-5. `VERSIONING.md`
-6. `GENERATION.md`
-7. `LOADING.md`
+1. `PYDANTIC_INTEGRATION.md` — author contracts with `Data`
+2. `ODCS.md`
+3. `VALIDATION.md`
+4. `VERSIONING.md`
+5. `GENERATION.md`
+6. `LOADING.md`
+
+(`DATACONTRACTMODEL.md` is a **deprecated** alias page — skip for newcomers.)
 
 ## Key Principles
 
@@ -266,4 +267,6 @@ Read this section in the following order:
 
 ## Next Step
 
-Continue with **DATACONTRACTMODEL.md** to learn how to define ETLantic-ready data contracts using ContractModel-compatible Pydantic classes.
+Continue with [Pydantic Integration](PYDANTIC_INTEGRATION.md) to define
+ETLantic-ready data contracts with `Data`, then [ODCS](ODCS.md) for portable
+interchange.

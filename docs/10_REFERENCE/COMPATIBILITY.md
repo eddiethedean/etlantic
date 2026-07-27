@@ -29,7 +29,7 @@ This table describes the declared compatibility of ETLantic 0.25.0.
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Stable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Shipped protocols are Beta-compatible within the 0.24 minor; third-party plugins must pin and re-run conformance |
+| Plugin SDK stability | Shipped protocols are Beta-compatible within the 0.25 minor; third-party plugins must pin and re-run conformance |
 
 ## Tested versus declared
 

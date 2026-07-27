@@ -4,14 +4,14 @@
 > stubs, and maintainer plans. Prefer [Upgrade](../01_GETTING_STARTED/UPGRADE.md)
 > and the current [Development hub](README.md) for day-to-day work.
 
-## Current (also linked from Project nav)
+## Current (also linked from Maintainers nav)
 
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
-- [Exit gate 0.25](EXIT_GATE_0_25.md)
-- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
-- [Documentation audit 0.24](DOCUMENTATION_AUDIT_0_24.md)
+- [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap (GitHub)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+- [Exit gate 0.25](EXIT_GATE_0_25.md)
+- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
 
 ## Recent migrations and exit gates
 
@@ -41,7 +41,8 @@
 
 ## Documentation audits
 
-- [0.24](DOCUMENTATION_AUDIT_0_24.md) (current)
+- [0.25](DOCUMENTATION_AUDIT_0_25.md) (current)
+- [0.24](DOCUMENTATION_AUDIT_0_24.md)
 - [0.23](DOCUMENTATION_AUDIT_0_23.md)
 - [0.21](DOCUMENTATION_AUDIT_0_21.md)
 - [0.20](DOCUMENTATION_AUDIT_0_20.md)
@@ -54,6 +55,8 @@
 - [Design studies on GitHub](https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES)
 - [Programmatic Authoring plan (historical)](PROGRAMMATIC_AUTHORING_0_24.md)
 - [FastAPI Integration Plan (historical)](FASTAPI_INTEGRATION_PLAN.md)
+- [ADR-013 Portable Transform IR](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)
+- [ADR-014 SOLID Core Refactor](adr/ADR-014-SOLID-CORE-REFACTOR.md)
 
 ## Portable compilers and plans (history)
 

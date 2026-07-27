@@ -4,14 +4,14 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.24** and the broader
+This chapter covers **controls shipped through 0.25** and the broader
 **proposed threat model**. ETLantic 0.25.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
 attestations, deployment-topology guarantees, or advanced supply-chain
 guarantees; those controls remain adopter-owned.
 
-## Implemented through 0.24
+## Implemented through 0.25
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -725,16 +725,25 @@ Security policy participates in planning. Secret values do not.
 
 ## Diagnostics
 
-Security diagnostics use stable `PMSEC` codes:
+**Shipped** security diagnostic codes in source today:
 
 ```text
-PMSEC001: Remote references are disabled.
-PMSEC010: Resolved path escapes the configured project root.
-PMSEC020: Plugin is not in the production allowlist.
-PMSEC030: Unsafe serialization format is prohibited.
-PMSEC040: Artifact security domain does not match the consumer.
 PMSEC050: Outbound destination is not approved.
+PMSEC051: Outbound response oversized.
 PMSEC060: Sensitive value was blocked from report serialization.
+```
+
+Related trust and allowlist failures use other families (`PMTRUST*`,
+`PMCFG*`, plugin selection diagnostics)—not invented `PMSEC*` placeholders.
+
+The following codes are **proposed only** (not emitted by current `src/`):
+
+```text
+PMSEC001: Remote references are disabled.          (proposed)
+PMSEC010: Resolved path escapes project root.      (proposed)
+PMSEC020: Plugin is not in the production allowlist. (proposed; see allowlist diagnostics)
+PMSEC030: Unsafe serialization format is prohibited. (proposed; see PMSEC060 / serialization policy)
+PMSEC040: Artifact security domain does not match. (proposed)
 ```
 
 Mandatory security failures cannot be downgraded through ordinary warning
@@ -742,7 +751,7 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.19 support envelope, automated tests
+Before expanding beyond the bounded 0.25 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -776,8 +785,8 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.19 deployment is bounded stable.
-Broader production claims require:
+The documented single-tenant/reference 0.25 Beta deployment is bounded stable
+for pilots. Broader production claims require:
 
 - the threat model is reviewed
 - mandatory controls have implementation owners and tests

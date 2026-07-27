@@ -22,8 +22,8 @@ transform = etl.Transformation.portable(...)
 
 # Lazy namespaces (import on first use)
 etl.transform   # portable authoring helpers
-etl.authoring   # PipelineDefinition, builders, JSON codecs (0.24)
-etl.service     # AuthoringService / PolicyContext (0.24)
+etl.authoring   # PipelineDefinition, builders, JSON codecs
+etl.service     # AuthoringService / PolicyContext
 etl.dataframe   # dataframe plugin protocols
 etl.sql         # SQL plugin protocols
 etl.testing     # conformance suites and fault injection
@@ -61,7 +61,7 @@ from etlantic import (
 | `PipelineRuntime` | `etlantic.lifecycle` | Process-local plugins, memory, reports |
 | `PipelinePlan` | `etlantic.plan` | Immutable secret-free resolved plan (`schema` required on wire) |
 | `plan_pipeline` / `explain_plan` | `etlantic.plan` | Functional planning helpers |
-| `verify_plan_fingerprint` / `deep_freeze` | `etlantic.plan` | Trust-boundary fingerprint check; deep immutability helper |
+| `verify_plan_fingerprint` / `deep_freeze` | `etlantic.plan` | Trust-boundary fingerprint check; freeze nested mappings/lists/sets (not full object graphs). See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms). |
 | `compile_plan` | `etlantic.orchestration` | External orchestrator artifact emission (verifies fingerprint first) |
 | `ValidationReport` | `etlantic.diagnostics` | Structured validate findings |
 | `PipelineRunReport` | `etlantic.reports` | Structured run outcomes |
@@ -86,7 +86,7 @@ Optional plugins document factories in package READMEs. See
 | `Transformation.implementation(engine)` | Decorator returning the original callable | Registration replaces same class/engine in-process |
 | `Transformation.portable` | Decorator registering a symbolic definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) |
 | `Pipeline.validate(...)` | `ValidationReport` | Does not execute transforms; empty production allowlist fails closed |
-| `Pipeline.plan(...)` | Immutable, secret-free `PipelinePlan` | Missing plugins/assets/capabilities fail planning; nested nests are deep-frozen |
+| `Pipeline.plan(...)` | Immutable, secret-free `PipelinePlan` | Missing plugins/assets/capabilities fail planning; nested mappings/lists/sets are frozen via `deep_freeze` (dataclasses/unknown objects unchanged) |
 | `Pipeline.run(...)` / `arun(...)` | `PipelineRunReport` | Verifies plan fingerprint before execution; storage side effects follow the plan |
 | `Pipeline.to_mermaid()` | Mermaid flowchart string | Does not plan or execute |
 

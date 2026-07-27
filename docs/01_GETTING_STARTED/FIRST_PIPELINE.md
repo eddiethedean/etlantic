@@ -6,7 +6,8 @@
 
 ## Start from the init project
 
-If you have not already:
+If you have not already (`init` needs an **empty directory**, or pass
+`--force`):
 
 ```bash
 python -m pip install 'etlantic==0.25.0'
@@ -60,6 +61,9 @@ Asset names (`rows`, `out`) are logical. `profiles/development.json` binds them
 to JSON paths.
 
 ## Validate, plan, and run (CLI)
+
+Targets use `path.py:ClassName` (here `pipeline.py:SamplePipeline`). See
+[CLI — Pipeline targets](../10_REFERENCE/CLI.md).
 
 ```bash
 python -m etlantic inspect pipeline.py:SamplePipeline --format json
@@ -154,18 +158,6 @@ print(SamplePipeline.explain_plan(profile="development"))
 
 Planning resolves implementations, bindings, capabilities, and execution
 regions without reading data or resolving secret values.
-
-## Optional: in-memory SDK demo
-
-CLI `run` with JSON assets is the Quickstart path. For process-local memory
-seeding (no files), use a checkout companion:
-
-```bash
-uv run python examples/memory_customers.py
-```
-
-That script validates, plans, seeds `PipelineRuntime.memory`, and prints
-`succeeded` plus curated customer records. It is **not** the Quickstart.
 
 ## Current boundary
 

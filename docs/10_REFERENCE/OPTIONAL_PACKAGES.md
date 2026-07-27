@@ -29,7 +29,8 @@ Experimental (not recommended): `pip install 'etlantic[datafusion]==0.25.0'`
 or `etlantic-datafusion==0.25.0` — Gate B stub; no graduated claims.
 
 Optional reference adapter: `pip install 'etlantic-fastapi==0.25.0'` or
-`etlantic[fastapi]==0.25.0` — thin 0.24 authoring/service HTTP adapter (not
+`etlantic[fastapi]==0.25.0` — thin authoring/service HTTP adapter (shipped since
+0.24; not
 the 1.1 control plane).
 
 ## Package API index
@@ -45,7 +46,7 @@ the 1.1 control plane).
 | [`etlantic-keyring`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-keyring/README.md) | `etlantic_keyring` | OS keyring secret provider |
 | [`etlantic-sqlmodel`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sqlmodel/README.md) | `etlantic_sqlmodel` | SQLModel ↔ contract bridge |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | SparkForge adapter (medallion stays here, not in core) |
-| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (0.24) |
+| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.25.0`) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 MkDocs API generation scans core `src/` only. For optional-package constructors,

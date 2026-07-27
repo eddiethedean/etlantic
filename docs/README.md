@@ -95,7 +95,7 @@ contract meaning. Plugins and external systems perform the work.
 
 Follow the **Green path** above for first success. Optional persona forks:
 
-### I want to run something in five minutes
+### I want to run something now
 
 Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
 [Quickstart](01_GETTING_STARTED/QUICKSTART.md) →
@@ -110,12 +110,11 @@ Same as the Green path: [Installation](01_GETTING_STARTED/INSTALLATION.md) →
 
 ### I want to author pipelines
 
-1. [Getting Started](01_GETTING_STARTED/README.md)
-2. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) (class path) or
+1. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) then [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) (class path), or
    [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) (builders / JSON)
-3. [Data Contracts](03_DATA_CONTRACTS/README.md)
-4. [Transformations](04_TRANSFORMATIONS/README.md)
-5. [Pipelines](05_PIPELINES/README.md)
+2. [Data Contracts](03_DATA_CONTRACTS/README.md)
+3. [Transformations](04_TRANSFORMATIONS/README.md)
+4. [Pipelines](05_PIPELINES/README.md)
 
 ### I want to understand execution (shipped)
 
@@ -136,7 +135,7 @@ See [Examples](09_EXAMPLES/README.md) (runnable guides only in the primary nav).
 
 | Section | Purpose |
 |---|---|
-| [Getting Started](01_GETTING_STARTED/README.md) | Learn the core workflow |
+| [Getting Started](01_GETTING_STARTED/README.md) | Learn index (follow the Green path above first) |
 | [Foundations](02_FOUNDATIONS/README.md) | Philosophy and architecture |
 | [Data Contracts](03_DATA_CONTRACTS/README.md) | Typed datasets |
 | [Transformations](04_TRANSFORMATIONS/README.md) | Typed transformation interfaces |
@@ -145,7 +144,7 @@ See [Examples](09_EXAMPLES/README.md) (runnable guides only in the primary nav).
 | [Examples](09_EXAMPLES/README.md) | Runnable pointers |
 | [Reference](10_REFERENCE/README.md) | CLI, API, compatibility |
 | [Contribute](11_DEVELOPMENT/CONTRIBUTING.md) | Contributing and release |
-| [Project](11_DEVELOPMENT/README.md) | Roadmap, audits, design proposals |
+| [Maintainers](11_DEVELOPMENT/README.md) | Roadmap and maintainer docs |
 
 ## Non-Goals
 

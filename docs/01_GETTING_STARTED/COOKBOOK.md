@@ -7,7 +7,7 @@
 
 | Recipe | Link |
 |---|---|
-| Five-minute local pipeline | [Quickstart](QUICKSTART.md) (`etlantic init`) |
+| Quickstart local pipeline | [Quickstart](QUICKSTART.md) (`python -m etlantic init`) |
 | Evolve the generated project | [First Pipeline](FIRST_PIPELINE.md) |
 | Day-two habits | [Best practices](BEST_PRACTICES.md) |
 | In-memory SDK demo (checkout) | [`examples/memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py) |

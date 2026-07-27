@@ -51,6 +51,9 @@ def verify_plan_fingerprint(plan: PipelinePlan) -> None:
     Args:
         plan: Plan whose embedded fingerprint is checked.
 
+    Returns:
+        ``None`` when the fingerprint matches.
+
     Raises:
         ValueError: When the embedded fingerprint does not match the canonical
             SHA-256 of the plan content (excluding derived ``plan_id`` fields).

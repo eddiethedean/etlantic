@@ -17,8 +17,10 @@ ETLantic **0.18.0** shipped Gate A versioned tabular interchange
 (`etlantic.interchange/1`) for Polars↔Pandas. See
 [What's New in 0.18](../01_GETTING_STARTED/WHATS_NEW_0_18.md).
 
-ETLantic **0.19.0** shipped the **Contract and Configuration Freeze**:
-deep plan immutability, fingerprint trust-boundary verify, `security_mode`,
+ETLantic **0.19.0** shipped the **Contract and Configuration Freeze** (see
+[freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)):
+plan nest freeze helpers (`deep_freeze` on mappings/lists/sets — not full
+object-graph immutability), fingerprint trust-boundary verify, `security_mode`,
 strict profile resolution, wire schema gates, surface inventory, and
 pre-1.0 deprecation schedule. See
 [What's New in 0.19](../01_GETTING_STARTED/WHATS_NEW_0_19.md).

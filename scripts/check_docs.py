@@ -1316,6 +1316,13 @@ def main() -> None:
     )
 
     # Curated stable-surface docstring gate (Pipeline, Profile, authoring, service).
+    # To gate a new stable surface:
+    # 1. Import the class/function above.
+    # 2. Add methods to `curated` (or symbols to `curated_functions`).
+    # 3. If the API fails closed / raises on bad input, add to
+    #    `require_raises` or `function_require_raises`.
+    # Docstrings must include Returns:; Args: when there are non-self params;
+    # Raises: when listed in the require sets.
     import inspect
 
     def _doc_has_sections(
@@ -1358,6 +1365,9 @@ def main() -> None:
         write_pipeline_json,
     )
     from etlantic.pipeline import Pipeline
+    from etlantic.plan.freeze import deep_freeze
+    from etlantic.plan.planner import plan_pipeline
+    from etlantic.plan.serialize import verify_plan_fingerprint
     from etlantic.profile import Profile
     from etlantic.service import AuthoringService
 
@@ -1428,12 +1438,17 @@ def main() -> None:
         "etlantic.authoring.pipeline_from_dict": pipeline_from_dict,
         "etlantic.authoring.write_pipeline_json": write_pipeline_json,
         "etlantic.authoring.read_pipeline_json": read_pipeline_json,
+        "etlantic.plan.deep_freeze": deep_freeze,
+        "etlantic.plan.verify_plan_fingerprint": verify_plan_fingerprint,
+        "etlantic.plan.plan_pipeline": plan_pipeline,
     }
     function_require_raises = {
         "etlantic.authoring.apply_edit",
         "etlantic.authoring.pipeline_from_dict",
         "etlantic.authoring.read_pipeline_json",
         "etlantic.authoring.pipeline_definition",
+        "etlantic.plan.verify_plan_fingerprint",
+        "etlantic.plan.plan_pipeline",
     }
     failures: list[str] = []
     for cls, names in curated.items():

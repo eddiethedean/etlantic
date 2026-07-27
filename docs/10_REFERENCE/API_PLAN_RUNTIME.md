@@ -13,7 +13,7 @@
 | `Profile.from_dict(..., accept_legacy_bindings=False)` | Legacy `bindings`-only JSON fails closed with `PMCFG111`; pass `True` / `--accept-legacy-bindings` to allow |
 | `PipelinePlan.from_dict` / `plan_from_json` | Require wire `schema: "etlantic.plan/1"`; verify fingerprint by default |
 | `verify_plan_fingerprint(plan)` | Public check; also called before `compile_plan` and local run |
-| `deep_freeze(value)` | Recursively freeze plan-owned nests |
+| `deep_freeze(value)` | Freeze nested mappings→`MappingProxyType`, lists→tuples, sets→frozensets; dataclasses/unknown objects unchanged |
 
 See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) and
 [What's new in 0.21](../01_GETTING_STARTED/WHATS_NEW_0_21.md).

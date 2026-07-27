@@ -72,7 +72,7 @@ python -c "import etlantic; print(etlantic.__version__)"
 
 ## Next Step
 
-Continue with [Quickstart](QUICKSTART.md). `etlantic init` requires an **empty
+Continue with [Quickstart](QUICKSTART.md). `python -m etlantic init` requires an **empty
 directory** (or pass `--force`). Optional engines are below—skip them until
 after first success. Contributor checkout lives at the end of this page.
 
@@ -115,7 +115,7 @@ Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[fastapi]`,
 `[otel]`, `[arrow]`.
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.25.0'   # thin 0.24 authoring HTTP reference
+python -m pip install 'etlantic-fastapi==0.25.0'   # thin authoring/service HTTP reference (shipped since 0.24; not 1.1 control plane)
 # or: python -m pip install 'etlantic[fastapi]==0.25.0'
 ```
 

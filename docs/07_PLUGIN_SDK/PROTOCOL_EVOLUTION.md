@@ -30,6 +30,18 @@ This document is the normative policy for evolving ETLantic plugin protocols
 [Building a Plugin](BUILDING_A_PLUGIN.md), and
 [Distribution](DISTRIBUTION.md).
 
+## Freeze glossary (three different terms)
+
+Do not conflate these:
+
+| Term | What freezes | Status in 0.25 |
+|---|---|---|
+| **Contract / configuration freeze** | Authoring contracts, Profile trust fields, and related config surfaces stop incompatible churn without migration notes | Shipped since **0.19** (see [Deprecation Policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md)) |
+| **Plan immutability** | Plan graphs use fingerprint verify + `deep_freeze` on nested mappings/lists/sets; dataclasses and unknown objects are **not** recursively frozen | Shipped helper; not full object-graph immutability |
+| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.26** |
+
+Wire schemas marked “wire-stable” mean schema ids keep meaning under the additive `/1` rules above; they do **not** imply protocol `/1` freeze.
+
 ## Goals
 
 - Let third-party plugins implement against public protocols without depending
@@ -122,8 +134,9 @@ Discovery authorizes manifests before importing entry points. See
 
 ## Freeze eligibility for `/1`
 
-ETLantic **0.22 is a Plugin SDK Release Candidate**. Protocol `/1` families are
-**not declared frozen** in 0.22.0 itself.
+Protocol `/1` families remain **freeze-eligible, not frozen** in **0.25.0**
+(see freeze decision table above). Historical note: 0.22 marked the Plugin SDK
+as release-candidate quality; that did **not** freeze `/1`.
 
 `/1` becomes freeze-eligible when all of the following hold:
 

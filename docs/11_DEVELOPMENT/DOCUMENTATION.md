@@ -25,6 +25,13 @@ uv run python scripts/check_docs.py
 uv run python scripts/build_docs.py
 ```
 
+### Preview docs locally
+
+```bash
+uv run python scripts/build_docs.py serve
+# equivalent: uv run mkdocs serve
+```
+
 `check_docs.py` invokes `check_runnable_docs.py`. Run the full baseline pytest
 command from [Testing](TESTING.md) when documentation accompanies a code,
 plugin, or executable behavior change.

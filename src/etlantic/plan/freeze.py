@@ -1,4 +1,8 @@
-"""Deep immutability helpers for plan-owned nested values."""
+"""Helpers that freeze plan-owned nested mappings, lists, and sets.
+
+Not full object-graph immutability: dataclass instances and unknown objects
+pass through unchanged.
+"""
 
 from __future__ import annotations
 
@@ -9,12 +13,20 @@ from typing import Any
 
 
 def deep_freeze(value: Any) -> Any:
-    """Recursively freeze nested mappings and sequences.
+    """Freeze nested mappings, sequences, and sets for plan-owned values.
 
-    - ``dict`` / ``Mapping`` → ``MappingProxyType``
-    - ``list`` → ``tuple``
-    - ``set`` / ``frozenset`` → ``frozenset``
-    - primitives and frozen dataclass instances are left alone
+    Args:
+        value: Arbitrary nested value owned by a plan graph.
+
+    Returns:
+        A structure where mappings become ``MappingProxyType``, lists/tuples
+        become tuples, and sets become frozensets. Primitives, dataclass
+        instances, and unknown objects are returned unchanged (fields are
+        not recursively frozen).
+
+    Note:
+        Callers may still observe mutation if they retain references to
+        unfrozen dataclass fields or opaque objects.
     """
     if value is None or isinstance(value, (bool, int, float, str, bytes, complex)):
         return value
@@ -34,7 +46,15 @@ def deep_freeze(value: Any) -> Any:
 
 
 def immutable_mapping(d: Mapping[str, Any] | None = None) -> MappingProxyType[str, Any]:
-    """Return a deeply frozen mapping proxy for ``d`` (empty if ``None``)."""
+    """Return a deeply frozen mapping proxy for ``d`` (empty if ``None``).
+
+    Args:
+        d: Optional mapping to freeze.
+
+    Returns:
+        ``MappingProxyType`` with nested mappings/lists/sets frozen via
+        :func:`deep_freeze`.
+    """
     return deep_freeze(dict(d or {}))
 
 

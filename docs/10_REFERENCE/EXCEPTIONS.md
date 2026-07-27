@@ -15,11 +15,18 @@ ETLanticError
 ├── ModelDefinitionError
 ├── PipelineValidationError
 ├── InternalETLanticError
-└── PipelineExecutionError
-    ├── NodeExecutionError
-    ├── DataValidationError
-    ├── PipelineTimeoutError
-    └── PipelineCancelledError
+├── PipelineExecutionError
+│   ├── NodeExecutionError
+│   ├── DataValidationError
+│   ├── PipelineTimeoutError
+│   └── PipelineCancelledError
+├── OrchestrationCompilationError   (etlantic.orchestration.compile)
+└── UnsafeSerializationError        (etlantic.serialization_policy)
+
+ValueError
+└── InterchangeError                (etlantic.interchange.tabular)
+    ├── InterchangeSelectionError
+    └── InterchangeDescriptorError
 ```
 
 ```python
@@ -33,10 +40,21 @@ from etlantic.exceptions import (
     PipelineValidationError,
     ETLanticError,
 )
+from etlantic.orchestration.compile import OrchestrationCompilationError
+from etlantic.interchange.tabular import (
+    InterchangeError,
+    InterchangeDescriptorError,
+    InterchangeSelectionError,
+)
+from etlantic.serialization_policy import UnsafeSerializationError
 ```
 
 Root `from etlantic import …` exception aliases still work pre-1.0 but emit a
-one-time demotion warning — prefer `etlantic.exceptions`.
+one-time demotion warning — prefer owning modules (`etlantic.exceptions`,
+orchestration, interchange, serialization_policy).
+
+`InterchangeError` subclasses `ValueError` (not `ETLanticError`); catch it
+explicitly at interchange boundaries.
 
 ## Base Exception
 

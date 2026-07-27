@@ -146,7 +146,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
 → Engine selection), or as an enterprise diligence track:
 
 1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.0`
-2. [Quickstart](QUICKSTART.md) (`etlantic init`; `examples/` requires a checkout)
+2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)

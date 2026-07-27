@@ -76,9 +76,9 @@ reference controls are shipped:
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.24)
+## Shipped / adopter-owned / residual (0.25)
 
-| Concern | 0.24 status |
+| Concern | 0.25 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |
