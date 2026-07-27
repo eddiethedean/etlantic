@@ -7,12 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-07-27
+
+### Added
+- Compatibility burn-in golden fixtures for `etlantic.pipeline/1` (0.24→0.25 old↔new reader/writer)
+- CI gate `scripts/check_pipeline_codec_burn_in.py` (fingerprint lock + load verify)
+- Cross-artifact burn-in matrix: plan, run_report, profile, capabilities, interchange
+- Wire schema ranges and unsupported downgrade documentation
+- Plugin SDK `/1` freeze decision record (remaining blockers published; not frozen)
+- Published 1.0 removal candidates inventory (no removals executed)
+- Docs: What's New 0.25, Migration 0.24→0.25, Exit Gate 0.25
+- Docs adoption hubs: Learning path, Profiles hub, Portable hub, Security howto,
+  Documentation audit 0.25
+
 ### Changed
+- Official package versions align at 0.25.0; plugins require `etlantic>=0.25.0,<0.26`
+- Protocol evolution status documents freeze blockers carried to 0.26
 - Docs adoption remediation: green-path honesty, Learn/How-to/Maintainers nav,
-  Learning path / Profiles / Portable / Security howto hubs, Evaluate packet
-  roles, Capabilities/Security/SUPPORT trust stamps, freeze glossary,
-  SURFACE_INVENTORY completion, EXCEPTIONS hierarchy, `deep_freeze` honesty,
-  expanded plan docstring gate, contributor `mkdocs serve` notes
+  Evaluate packet roles, Capabilities/Security/SUPPORT trust stamps, freeze
+  glossary, SURFACE_INVENTORY completion, EXCEPTIONS hierarchy, `deep_freeze`
+  honesty, expanded plan docstring gate, contributor `mkdocs serve` notes
 
 ### Fixed
 - Resolve dataframe `plugin.info` as property or callable so Polars/Pandas
@@ -30,21 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fingerprint/content gate added
 - `VALIDATION_PHASES` includes `plugin_discovery`; `deep_freeze` freezes sets
 - Stale 0.24 install pins / current-minor docs stamps; `check_docs` hardening
-
-## [0.25.0] - 2026-07-27
-
-### Added
-- Compatibility burn-in golden fixtures for `etlantic.pipeline/1` (0.24→0.25 old↔new reader/writer)
-- CI gate `scripts/check_pipeline_codec_burn_in.py` (fingerprint lock + load verify)
-- Cross-artifact burn-in matrix: plan, run_report, profile, capabilities, interchange
-- Wire schema ranges and unsupported downgrade documentation
-- Plugin SDK `/1` freeze decision record (remaining blockers published; not frozen)
-- Published 1.0 removal candidates inventory (no removals executed)
-- Docs: What's New 0.25, Migration 0.24→0.25, Exit Gate 0.25
-
-### Changed
-- Official package versions align at 0.25.0; plugins require `etlantic>=0.25.0,<0.26`
-- Protocol evolution status documents freeze blockers carried to 0.26
 
 ## [0.24.0] - 2026-07-27
 

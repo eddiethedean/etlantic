@@ -17,6 +17,11 @@
   see [Protocol evolution](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)
 - Published [1.0 removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md)
   (inventory only — no removals in 0.25)
+- Runtime trust / diagnostics hygiene: dataframe ownership `info` resolution,
+  fail-closed missing manifest digests, validate trust exit `11`, keyed SQL
+  deduplicate fail-closed, `deep_freeze` for sets
+- Docs adoption remediation (green path, Learn/How-to/Maintainers nav, trust
+  stamps, freeze glossary, surface inventory)
 
 ## Not in 0.25
 

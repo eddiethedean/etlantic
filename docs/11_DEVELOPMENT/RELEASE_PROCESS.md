@@ -30,7 +30,7 @@ Tag `vX.Y.Z` publishes twelve distributions:
 | `etlantic-keyring` | `packages/etlantic-keyring` | stable |
 | `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | stable |
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | stable |
-| `etlantic-fastapi` | `packages/etlantic-fastapi` | thin 0.24 reference adapter |
+| `etlantic-fastapi` | `packages/etlantic-fastapi` | thin authoring/service reference adapter (since 0.24) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 
 ## Pre-Release Checklist
@@ -177,7 +177,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.23 plugins, `etlantic>=0.25.0,<0.26`). A core
+0.25 plugins, `etlantic>=0.25.0,<0.26`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

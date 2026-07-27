@@ -30,3 +30,6 @@ tmp_/
 
 # Local durable workspace (reports, artifacts, schema history)
 .etlantic/
+
+# Local authoring artifacts (not part of the repo)
+pipeline.definition.json
