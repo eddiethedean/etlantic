@@ -70,6 +70,14 @@ class PipelineRuntime:
     _entered: bool = False
     _configured_profile_key: str | None = field(default=None, repr=False)
     _plugin_diagnostics: list[Diagnostic] = field(default_factory=list, repr=False)
+    _manual_dataframe_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_sql_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_spark_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_spark_providers: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_orchestrator_plugins: dict[str, Any] = field(
+        default_factory=dict, repr=False
+    )
+    _manual_scheduler_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         if (
@@ -100,16 +108,18 @@ class PipelineRuntime:
         Idempotent per profile key. No entry points are imported until this
         method runs (or manual ``register_*_plugin`` calls).
 
-        When the profile key changes, previously loaded plugin maps are
-        **replaced** (not merged) so a switch to a tighter allowlist cannot
-        leave unauthorized plugins resident on the runtime or registry.
+        When the profile key changes, previously *discovered* plugin maps are
+        replaced (not merged) so a switch to a tighter allowlist cannot leave
+        unauthorized entry-point plugins resident. Plugins registered via
+        ``register_*_plugin`` are preserved and re-applied after discovery.
         """
         key = profile_plugin_key(profile)
         if self._configured_profile_key == key:
             return list(self._plugin_diagnostics)
 
         # Drop previously discovered (non-builtin) registry descriptors before
-        # re-registering the authorized set for the new profile.
+        # re-registering the authorized set for the new profile. Manual plugins
+        # are re-registered below after discovery.
         _BUILTIN_PLUGIN_NAMES = frozenset({"local", "null", "env-secrets"})
         for name in list(self.registry.plugins):
             if name not in _BUILTIN_PLUGIN_NAMES:
@@ -133,13 +143,63 @@ class PipelineRuntime:
             include_runtime_groups=True,
             include_transform_compilers=True,
         )
-        # Replace maps so denied engines cannot linger across profile switches.
-        self.dataframe_plugins = dict(result.dataframe_plugins)
-        self.sql_plugins = dict(result.sql_plugins)
-        self.spark_plugins = dict(result.spark_plugins)
-        self.spark_providers = dict(result.spark_providers)
-        self.orchestrator_plugins = dict(result.orchestrator_plugins)
-        self.scheduler_plugins = dict(result.scheduler_plugins)
+        # Replace discovered maps, then restore explicit manual registrations
+        # (tests / app wiring inject configured plugin instances).
+        self.dataframe_plugins = {
+            **dict(result.dataframe_plugins),
+            **self._manual_dataframe_plugins,
+        }
+        self.sql_plugins = {**dict(result.sql_plugins), **self._manual_sql_plugins}
+        self.spark_plugins = {
+            **dict(result.spark_plugins),
+            **self._manual_spark_plugins,
+        }
+        self.spark_providers = {
+            **dict(result.spark_providers),
+            **self._manual_spark_providers,
+        }
+        self.orchestrator_plugins = {
+            **dict(result.orchestrator_plugins),
+            **self._manual_orchestrator_plugins,
+        }
+        self.scheduler_plugins = {
+            **dict(result.scheduler_plugins),
+            **self._manual_scheduler_plugins,
+        }
+        if self._manual_dataframe_plugins:
+            from etlantic.dataframe.discovery import (
+                register_discovered_plugins as register_df,
+            )
+
+            register_df(
+                self.registry, plugins=self._manual_dataframe_plugins, profile=profile
+            )
+        if self._manual_sql_plugins:
+            from etlantic.sql.discovery import (
+                register_discovered_plugins as register_sql,
+            )
+
+            register_sql(
+                self.registry, plugins=self._manual_sql_plugins, profile=profile
+            )
+        if self._manual_spark_plugins:
+            from etlantic.spark.discovery import (
+                register_discovered_plugins as register_spark,
+            )
+
+            register_spark(
+                self.registry, plugins=self._manual_spark_plugins, profile=profile
+            )
+        if self._manual_orchestrator_plugins:
+            from etlantic.orchestration.discovery import (
+                register_discovered_plugins as register_orch,
+            )
+
+            register_orch(
+                self.registry,
+                plugins=self._manual_orchestrator_plugins,
+                profile=profile,
+            )
         self._configured_profile_key = key
         self._plugin_diagnostics = list(result.diagnostics)
         return list(result.diagnostics)
@@ -196,6 +256,7 @@ class PipelineRuntime:
         from etlantic.dataframe.discovery import register_discovered_plugins
 
         self.dataframe_plugins[engine] = plugin
+        self._manual_dataframe_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     def register_sql_plugin(self, engine: str, plugin: Any) -> None:
@@ -203,6 +264,7 @@ class PipelineRuntime:
         from etlantic.sql.discovery import register_discovered_plugins
 
         self.sql_plugins[engine] = plugin
+        self._manual_sql_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     def register_spark_plugin(self, engine: str, plugin: Any) -> None:
@@ -210,17 +272,20 @@ class PipelineRuntime:
         from etlantic.spark.discovery import register_discovered_plugins
 
         self.spark_plugins[engine] = plugin
+        self._manual_spark_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     def register_spark_provider(self, name: str, provider: Any) -> None:
         """Register a live Spark session provider."""
         self.spark_providers[name] = provider
+        self._manual_spark_providers[name] = provider
 
     def register_orchestrator_plugin(self, engine: str, plugin: Any) -> None:
         """Register a live orchestrator plugin and its planning descriptor."""
         from etlantic.orchestration.discovery import register_discovered_plugins
 
         self.orchestrator_plugins[engine] = plugin
+        self._manual_orchestrator_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     def register_scheduler_plugin(self, name: str, plugin: Any) -> None:
@@ -228,6 +293,7 @@ class PipelineRuntime:
         from etlantic.runtime.scheduler_discovery import register_discovered_plugins
 
         self.scheduler_plugins[name] = plugin
+        self._manual_scheduler_plugins[name] = plugin
         register_discovered_plugins(self.registry, plugins={name: plugin})
 
     def apply_plugin_allowlist(self, profile: Any) -> list[Any]:

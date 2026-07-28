@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wire schema ranges document dual-minor window and authoring-catalog N/A rationale
 
 ### Fixed
+- Preserve manually registered plugins across ``ensure_plugins_for_profile`` discovery replaces (SQL/dataframe tests and app wiring)
 - Allowlist denials (`PMPLUG402`) of sibling packages no longer abort discovery when other allowlisted plugins load
 - Replace (not merge) runtime plugin maps and prune non-builtin registry entries on profile switch so tighter allowlists cannot leave unauthorized plugins resident
 - Authorize plugins only on distribution/package identity (not engine/entry short names); exempt in-tree builtin stubs from package allowlist checks; drop `"local": null` from prod examples

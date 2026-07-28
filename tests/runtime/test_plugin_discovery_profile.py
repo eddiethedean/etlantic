@@ -140,6 +140,41 @@ def test_runtime_profile_switch_drops_unauthorized_plugins(
     assert any(d.code == "PMPLUG402" for d in diags) or _LOAD_COUNT["value"] >= 1
 
 
+def test_manual_sql_plugin_survives_ensure_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Explicit register_sql_plugin must not be wiped by discovery replace."""
+    from etlantic.capabilities import PluginCapabilities
+
+    monkeypatch.setattr(
+        "etlantic.plugin_lifecycle.discover_entry_points",
+        lambda group: ([], []),
+    )
+    caps = PluginCapabilities(engine="sql", sql=True, dataframe=False, eager=False)
+
+    class _Info:
+        name = "sql"
+        engine = "sql"
+        version = "0.0.0"
+        capabilities = caps
+        protocol_version = "etlantic.sql/1"
+        dialect = "sqlite"
+
+    class _Plugin:
+        info = _Info()
+
+        def capabilities(self):
+            return caps
+
+    runtime = PipelineRuntime()
+    plugin = _Plugin()
+    runtime.register_sql_plugin("sql", plugin)
+    runtime.ensure_plugins_for_profile(
+        Profile(name="dev", security_mode="development", sql_engine="sql")
+    )
+    assert runtime.sql_plugins["sql"] is plugin
+
+
 def test_planning_context_with_shared_registry_skips_rediscovery(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
