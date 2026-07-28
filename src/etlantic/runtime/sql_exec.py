@@ -50,7 +50,7 @@ def resolve_sql_plugin(
         f"No SQL plugin available for engine {engine!r}. Install etlantic-sql.",
         node_name="sql",
         stage=FailureStage.TRANSFORM.value,
-        code="PMEXEC430",
+        code="PMEXEC434",
     )
 
 
@@ -104,7 +104,7 @@ def _assert_trusted_sql_allowed(
             "or plugin capability; failing closed.",
             node_name=node_name,
             stage=FailureStage.TRANSFORM.value,
-            code="PMEXEC435",
+            code="PMEXEC455",
         )
 
 
@@ -172,7 +172,7 @@ async def execute_sql_step(
         f"RelationRef, or SqlWrite; got {type(result)!r}.",
         node_name=node.name,
         stage=FailureStage.TRANSFORM.value,
-        code="PMEXEC431",
+        code="PMEXEC456",
     )
 
 

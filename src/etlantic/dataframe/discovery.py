@@ -5,11 +5,33 @@ from __future__ import annotations
 from typing import Any
 
 from etlantic.dataframe.protocol import DataframePlugin
+from etlantic.diagnostics import Severity
+from etlantic.exceptions import PipelineExecutionError
 from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 from etlantic.profile import Profile
 from etlantic.registry import PluginDescriptor, RegistryBundle
 
 DATAFRAME_PLUGIN_ENTRY_POINT = "etlantic.dataframe_plugins"
+
+
+def resolve_plugin_info(plugin: Any) -> Any:
+    """Return plugin info whether exposed as a property or callable method."""
+    info = plugin.info
+    return info() if callable(info) else info
+
+
+def _fail_closed_loaded(result: Any) -> dict[str, Any]:
+    """Return loaded plugins, raising only if ERROR diags coexist with loads."""
+    errors = [d for d in result.diagnostics if d.severity is Severity.ERROR]
+    loaded = dict(result.loaded)
+    if errors and loaded:
+        raise PipelineExecutionError(
+            "; ".join(d.message for d in errors),
+            code=errors[0].code,
+        )
+    if errors:
+        return {}
+    return loaded  # type: ignore[return-value]
 
 
 def discover_dataframe_plugins(
@@ -20,15 +42,20 @@ def discover_dataframe_plugins(
 
     When ``profile`` is omitted, allowlists are open (non-production behavior).
     Production profiles require manifests and a non-empty allowlist.
+
+    Raises:
+        PipelineExecutionError: When trust ERROR diagnostics coexist with
+            loaded plugins (fail-open would otherwise occur). Trust failures
+            that reject all plugins return an empty mapping.
     """
     result = discover_evaluate_authorize_load(
         DATAFRAME_PLUGIN_ENTRY_POINT,
         profile=profile,
         key_fn=lambda item, plugin: str(
-            getattr(getattr(plugin, "info", None), "engine", None) or item.name
+            getattr(resolve_plugin_info(plugin), "engine", None) or item.name
         ),
     )
-    return result.loaded  # type: ignore[return-value]
+    return _fail_closed_loaded(result)
 
 
 def register_discovered_plugins(
@@ -42,7 +69,7 @@ def register_discovered_plugins(
         plugins if plugins is not None else discover_dataframe_plugins(profile=profile)
     )
     for engine, plugin in discovered.items():
-        info = plugin.info
+        info = resolve_plugin_info(plugin)
         caps = info.capabilities
         registry.register_plugin(
             PluginDescriptor(
@@ -73,5 +100,5 @@ def plugin_registry_snapshot(
     """Return serializable descriptors for discovered plugins."""
     out: list[dict[str, Any]] = []
     for plugin in discover_dataframe_plugins(profile=profile).values():
-        out.append(plugin.info.to_dict())
+        out.append(resolve_plugin_info(plugin).to_dict())
     return out

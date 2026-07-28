@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.utils import canonicalize_name
 from packaging.version import InvalidVersion, Version
 
 from etlantic.diagnostics import Diagnostic, Severity
@@ -303,7 +304,7 @@ def load_manifest_from_distribution(
     # Package identity must match the installed distribution.
     dist_name = str(dist.metadata["Name"] or "")
     dist_version = str(dist.version)
-    if manifest.package != dist_name:
+    if canonicalize_name(manifest.package) != canonicalize_name(dist_name):
         diagnostics.append(
             Diagnostic(
                 code="PMPLUG414",

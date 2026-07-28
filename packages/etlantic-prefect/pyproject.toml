@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-prefect"
-version = "0.25.0"
+version = "0.25.1"
 description = "Prefect ExecutionScheduler plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

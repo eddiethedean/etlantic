@@ -1,6 +1,6 @@
 # Support
 
-ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.25.1** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Community support has
 **no formal SLA** or guaranteed response time.
 

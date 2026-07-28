@@ -22,7 +22,7 @@ class JsonStorage:
         if not location:
             raise PipelineExecutionError(
                 f"JSON binding {binding!r} requires a location path",
-                code="PMEXEC420",
+                code="PMEXEC450",
             )
         return Path(location)
 
@@ -38,7 +38,7 @@ class JsonStorage:
         if not path.is_file():
             raise PipelineExecutionError(
                 f"JSON source not found: {path}",
-                code="PMEXEC421",
+                code="PMEXEC451",
             )
         text = path.read_text(encoding="utf-8")
         if self._lines or path.suffix in {".jsonl", ".ndjson"}:

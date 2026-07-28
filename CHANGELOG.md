@@ -7,10 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-07-27
+
+### Fixed
+- Skip plugin discovery/load when static manifest load fails (fail closed)
+- Discovery helpers fail closed on trust ERROR diagnostics instead of returning loaded plugins silently
+- Reject empty/whitespace `security_mode` (no silent coerce to development)
+- Stop inferring `staging` profile names as `security_mode=production`
+- Deduplicate empty production allowlist `PMPLUG401` across discovery groups (CLI no longer emits 7× copies)
+- `etlantic profile validate` maps empty production allowlist (`PMCFG200`) to exit `11` (`TRUST_FAILURE`)
+- Enrich `PMPLUG401` / `PMCFG200` remediation messages (allowlist + prod.example.json guidance)
+- Split colliding `PMEXEC420`/`421`/`430`/`431` into distinct storage vs engine codes
+- Trust failures raise coded `PipelineValidationError` / `PipelineExecutionError` instead of bare `ETLanticError`
+- Canonicalize plugin package names for manifest identity (`PMPLUG414`)
+- Invalid allowlist version pins emit `PMPLUG403` instead of looking like denials
+- Callable `plugin.info` resolved in dataframe discovery/register paths
+- Transform compiler discovery propagates allowlist trust diagnostics
+
 ### Changed
-- Docs adoption remediation: production trust examples require `security_mode`,
-  Learn nav slimmed, Support section, diagnostics catalog, migration-from-other-tools
-  stub, contributor CI checklist parity with burn-in/manifest gates
+- Official package versions align at 0.25.1; plugins still require `etlantic>=0.25.0,<0.26`
+- Docs: Troubleshooting splits `PMPLUG401` vs `PMPLUG402`; PRODUCTION_PROFILES bare-production fence clarified; CONTRIBUTING CI markers include `datafusion`; check_docs patch-pin hygiene
+
+### Upgrade notes
+- Pin core and official plugins to `==0.25.1`.
+- No authoring API breaks from 0.25.0; diagnostic code splits may require CI allowlists that matched colliding `PMEXEC42x`/`43x` meanings to update.
 
 ## [0.25.0] - 2026-07-27
 
@@ -949,6 +969,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.25.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.1
 [0.25.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.0
 [0.24.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.24.0
 [0.23.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.23.0

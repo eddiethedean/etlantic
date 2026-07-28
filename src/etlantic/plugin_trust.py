@@ -11,6 +11,23 @@ from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.profile import Profile
 
 
+_EMPTY_ALLOWLIST_REMEDIATION = (
+    "Set Profile.plugin_allowlist to a non-empty map of package→pin "
+    "(for example {'etlantic-polars': '==0.25.1'}), or copy "
+    "docs/01_GETTING_STARTED/prod.example.json. The built-in "
+    "--profile production template is empty and fail-closed."
+)
+
+
+def empty_production_allowlist_message(profile_name: str) -> str:
+    """Return a remediation-rich empty-allowlist error message."""
+    return (
+        f"Production profile {profile_name!r} requires a non-empty "
+        f"plugin_allowlist; rejecting all discovered plugins. "
+        f"{_EMPTY_ALLOWLIST_REMEDIATION}"
+    )
+
+
 def is_production_profile(
     profile: Profile | None = None,
     *,
@@ -94,10 +111,7 @@ def filter_plugins_by_allowlist(
                 Diagnostic(
                     code="PMPLUG401",
                     severity=Severity.ERROR,
-                    message=(
-                        f"Production profile {profile.name!r} requires a non-empty "
-                        "plugin_allowlist; rejecting all discovered plugins."
-                    ),
+                    message=empty_production_allowlist_message(profile.name),
                     path=("profile", "plugin_allowlist"),
                     phase="plugin_trust",
                 )
@@ -108,6 +122,8 @@ def filter_plugins_by_allowlist(
     kept: dict[str, Any] = {}
     for key, plugin in plugins.items():
         info = getattr(plugin, "info", None)
+        if callable(info):
+            info = info()
         pname = (
             getattr(info, name_attr, None)
             or getattr(info, "engine", None)
@@ -119,6 +135,27 @@ def filter_plugins_by_allowlist(
             or getattr(plugin, version_attr, None)
             or None
         )
+        listed_name = str(pname) if str(pname) in allowlist else (
+            str(key) if str(key) in allowlist else None
+        )
+        if listed_name is not None:
+            pin = allowlist.get(listed_name)
+            if pin not in (None, ""):
+                try:
+                    SpecifierSet(_normalize_version_pin(str(pin)))
+                except InvalidSpecifier:
+                    diagnostics.append(
+                        Diagnostic(
+                            code="PMPLUG403",
+                            severity=Severity.ERROR if production else Severity.WARNING,
+                            message=(
+                                f"Invalid plugin_allowlist pin for {pname!r}: {pin!r}."
+                            ),
+                            path=("plugin", str(pname)),
+                            phase="plugin_trust",
+                        )
+                    )
+                    continue
         if plugin_allowed(
             name=str(pname), version=pversion, allowlist=allowlist
         ) or plugin_allowed(name=str(key), version=pversion, allowlist=allowlist):
@@ -144,12 +181,13 @@ def assert_plugin_trust(
     profile: Profile,
 ) -> dict[str, Any]:
     """Filter plugins and raise when production trust fails closed."""
-    from etlantic.exceptions import ETLanticError
+    from etlantic.exceptions import PipelineExecutionError
 
     kept, diagnostics = filter_plugins_by_allowlist(plugins, profile)
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
     if errors:
-        raise ETLanticError(
+        raise PipelineExecutionError(
             "; ".join(d.message for d in errors),
+            code=errors[0].code,
         )
     return kept

@@ -55,11 +55,13 @@ def _resolve_profile_arg(
 def _validate_profile_semantics(profile: Profile, root: Path) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     if profile.security_mode == "production" and not profile.plugin_allowlist:
+        from etlantic.plugin_trust import empty_production_allowlist_message
+
         findings.append(
             {
                 "code": "PMCFG200",
                 "severity": "error",
-                "message": "Production profile requires non-empty plugin_allowlist",
+                "message": empty_production_allowlist_message(profile.name),
             }
         )
     for asset, descriptor in profile.assets.items():
@@ -118,6 +120,10 @@ def register_profile_commands(app: typer.Typer) -> None:
             emit_payload({"valid": False, "errors": errors}, fmt=fmt)
             raise typer.Exit(ec.INVALID_MODEL) from exc
         semantics = _validate_profile_semantics(profile, cli.workspace().root)
+        trust_error = any(
+            s["severity"] == "error" and s["code"] in {"PMCFG200", "PMPLUG401"}
+            for s in semantics
+        )
         valid = not errors and not any(s["severity"] == "error" for s in semantics)
         payload = {"valid": valid, "errors": errors, "findings": semantics}
         if fmt == "json":
@@ -130,7 +136,9 @@ def register_profile_commands(app: typer.Typer) -> None:
                 typer.echo(
                     f"  [{finding['severity']}] {finding['code']}: {finding['message']}"
                 )
-        raise typer.Exit(ec.SUCCESS if valid else ec.INVALID_MODEL)
+        if valid:
+            raise typer.Exit(ec.SUCCESS)
+        raise typer.Exit(ec.TRUST_FAILURE if trust_error else ec.INVALID_MODEL)
 
     @profile_app.command("show")
     def profile_show_cmd(

@@ -88,7 +88,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.25.1** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilot deployments. Shipped trust controls do not make an
 arbitrary multi-tenant topology safe.
 
@@ -145,14 +145,14 @@ How to read status labels in deeper chapters:
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.25.1`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.25.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.25.1`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
 8. [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) if

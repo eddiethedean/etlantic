@@ -24,7 +24,7 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ## Is ETLantic 0.25 production-supported?
 
-ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.25.1** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -200,7 +200,7 @@ Yes. Keep core and optional plugins on the same minor release. For a
 reproducible 0.25.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.25.0' 'etlantic-polars==0.25.0'
+python -m pip install 'etlantic==0.25.1' 'etlantic-polars==0.25.1'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or

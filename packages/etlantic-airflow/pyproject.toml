@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-airflow"
-version = "0.25.0"
+version = "0.25.1"
 description = "Airflow reference orchestrator compiler for ETLantic."
 readme = "README.md"
 license = "MIT"

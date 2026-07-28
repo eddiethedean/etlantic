@@ -4,7 +4,7 @@
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
 PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.25.0** is a **Beta**
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.25.1** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** follow the
@@ -177,7 +177,7 @@ Starter profile (trim allowlist to one engine for first success):
   "allow_trusted_sql": false,
   "plugin_allowlist": {
     "local": null,
-    "etlantic-polars": "==0.25.0"
+    "etlantic-polars": "==0.25.1"
   },
   "assets": {},
   "secrets": {},
@@ -201,16 +201,16 @@ See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
 [Evaluator brief](EVALUATOR.md).
 
 ```bash
-pip install 'etlantic==0.25.0'                 # core only — no engines
-pip install 'etlantic-polars==0.25.0'          # Polars reference plugin
-pip install 'etlantic-pandas==0.25.0'          # Pandas compatibility plugin
-pip install 'etlantic-sql==0.25.0'             # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.25.0'         # PySpark reference plugin
-pip install 'etlantic-airflow==0.25.0'         # Airflow DAG compiler
-pip install 'etlantic-prefect==0.25.0'         # Prefect direct-execution scheduler
-pip install 'etlantic-keyring==0.25.0'         # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.25.0'        # SQLModel contract bridge
-pip install 'etlantic-sparkforge==0.25.0'      # SparkForge → ETLantic adapter
+pip install 'etlantic==0.25.1'                 # core only — no engines
+pip install 'etlantic-polars==0.25.1'          # Polars reference plugin
+pip install 'etlantic-pandas==0.25.1'          # Pandas compatibility plugin
+pip install 'etlantic-sql==0.25.1'             # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.25.1'         # PySpark reference plugin
+pip install 'etlantic-airflow==0.25.1'         # Airflow DAG compiler
+pip install 'etlantic-prefect==0.25.1'         # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.25.1'         # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.25.1'        # SQLModel contract bridge
+pip install 'etlantic-sparkforge==0.25.1'      # SparkForge → ETLantic adapter
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.

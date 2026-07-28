@@ -154,9 +154,21 @@ The curated tables below remain the human-oriented index.
 | `PMEXEC401` | An environment-backed secret is unavailable |
 | `PMEXEC501` | Retry refused because retry-safety declares the step unsafe |
 | `PMEXEC402` | A file-backed secret cannot be loaded safely |
-| `PMEXEC420` | A dataframe plugin is unavailable, or a JSON binding lacks a location |
-| `PMEXEC430` | A SQL plugin is unavailable, or a CSV binding lacks a location |
+| `PMEXEC420` | A dataframe plugin is unavailable for the selected engine |
+| `PMEXEC421` | Dataframe materialization failed for a node output |
+| `PMEXEC422` | Dataframe implementation failed for a node |
+| `PMEXEC430` | Unknown storage provider for an extract |
+| `PMEXEC431` | Unknown storage provider for a load |
+| `PMEXEC432` | Unknown or unsupported SQL write intent |
+| `PMEXEC434` | A SQL plugin is unavailable for the selected engine |
 | `PMEXEC440` | No Spark plugin is available for the selected engine |
+| `PMEXEC450` | A JSON binding lacks a location path |
+| `PMEXEC451` | JSON source file not found |
+| `PMEXEC452` | Failed to coerce an engine frame to records |
+| `PMEXEC453` | A CSV binding lacks a location path |
+| `PMEXEC454` | CSV source file not found |
+| `PMEXEC455` | Trusted SQL fragments disabled by policy/capability |
+| `PMEXEC456` | SQL implementation returned an unsupported type |
 
 ### Backend-specific
 

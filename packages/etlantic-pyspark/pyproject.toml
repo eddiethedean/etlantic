@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pyspark"
-version = "0.25.0"
+version = "0.25.1"
 description = "PySpark reference execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

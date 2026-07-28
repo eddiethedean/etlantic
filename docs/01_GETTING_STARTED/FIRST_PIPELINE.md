@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.25.0.** This tutorial extends the project
+> **Status: Available in ETLantic 0.25.1.** This tutorial extends the project
 > created by [Quickstart](QUICKSTART.md) (`python -m etlantic init`). It uses the local
 > Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
 
@@ -10,7 +10,7 @@ If you have not already (`init` needs an **empty directory**, or pass
 `--force`):
 
 ```bash
-python -m pip install 'etlantic==0.25.0'
+python -m pip install 'etlantic==0.25.1'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```

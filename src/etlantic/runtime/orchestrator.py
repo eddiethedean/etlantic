@@ -2070,13 +2070,13 @@ class LocalOrchestrator:
         except (AttributeError, TypeError, ValueError) as exc:
             raise PipelineExecutionError(
                 redact_message(f"Failed to coerce {engine!r} frame to records: {exc}"),
-                code="PMEXEC421",
+                code="PMEXEC452",
             ) from exc
         raise PipelineExecutionError(
             redact_message(
                 f"Failed to coerce {engine!r} frame to records; no conversion path"
             ),
-            code="PMEXEC421",
+            code="PMEXEC452",
         )
 
     def _dataframe_engine_for_frame(self, data: Any) -> str:

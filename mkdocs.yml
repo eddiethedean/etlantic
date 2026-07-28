@@ -370,7 +370,7 @@ nav:
       - CLI: 10_REFERENCE/CLI.md
       - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.25.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.25.1: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md

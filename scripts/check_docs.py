@@ -964,6 +964,13 @@ def main() -> None:
         ROOT / "packages/etlantic-polars/src/etlantic_polars/compiler.py",
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
         ROOT / "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+        ROOT / "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
+        ROOT / "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
+        ROOT / "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+        ROOT / "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
+        ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/__init__.py",
+        ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+        ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
     ):
         text = component.read_text(encoding="utf-8")
         match = re.search(r'__version__\s*=\s*"([^"]+)"', text)
@@ -1310,6 +1317,27 @@ def main() -> None:
         if heading not in cli_md:
             raise SystemExit(f"CLI.md missing section for public command: {heading}")
 
+    # Current-patch install pins must match package_version on green-path pages.
+    pin = f"=={package_version}"
+    for path in (
+        ROOT / "docs/01_GETTING_STARTED/INSTALLATION.md",
+        ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md",
+        ROOT / "docs/01_GETTING_STARTED/prod.example.json",
+        ROOT / "README.md",
+    ):
+        text = path.read_text(encoding="utf-8")
+        if "0.25.0" in text and package_version != "0.25.0":
+            # Allow historical ranges like >=0.25.0,<0.26
+            if pin not in text and f"etlantic=={package_version}" not in text:
+                if "==0.25.0" in text or '"==0.25.0"' in text:
+                    raise SystemExit(
+                        f"{path} still pins ==0.25.0; expected {pin} for current release"
+                    )
+        if path.suffix == ".json" and pin not in text and f'"{package_version}"' not in text:
+            # prod.example.json allowlist values
+            if "==0.25.0" in text:
+                raise SystemExit(f"{path} allowlist pins must use {pin}")
+
     subprocess.run(
         [sys.executable, str(ROOT / "scripts/check_runnable_docs.py")],
         check=True,
@@ -1358,15 +1386,21 @@ def main() -> None:
                 "BEST_PRACTICES.md",
                 "OPS_EXAMPLES.md",
                 "COOKBOOK.md",
+                "PRODUCTION_PROFILES.md",
             }:
                 for cmd in bare_profile_production.finditer(text):
                     line_start = text.rfind("\n", 0, cmd.start()) + 1
-                    line = text[line_start : text.find("\n", cmd.start())]
+                    line_end = text.find("\n", cmd.start())
+                    line = text[line_start : line_end if line_end >= 0 else None]
                     if "fail" in line.lower() or "empty" in line.lower():
                         continue
-                    # Allow prose that says not to use the bare name.
-                    preceding = text[max(0, cmd.start() - 120) : cmd.start()].lower()
-                    if "do not" in preceding or "not use" in preceding:
+                    preceding = text[max(0, cmd.start() - 200) : cmd.start()].lower()
+                    if (
+                        "do not" in preceding
+                        or "not use" in preceding
+                        or "expected to fail" in preceding
+                        or "expected to fail" in text[max(0, line_start - 400) : line_start].lower()
+                    ):
                         continue
                     raise SystemExit(
                         f"{path}: avoid recommending bare --profile production; "

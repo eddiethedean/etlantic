@@ -1,6 +1,6 @@
 # Execute with Polars
 
-> **Status: Available in ETLantic 0.25.0.** This guide uses the CI-tested
+> **Status: Available in ETLantic 0.25.1.** This guide uses the CI-tested
 > dataframe parity example.
 
 
@@ -12,7 +12,7 @@
 ## Install and run
 
 ```bash
-python -m pip install 'etlantic==0.25.0' 'etlantic-polars==0.25.0'
+python -m pip install 'etlantic==0.25.1' 'etlantic-polars==0.25.1'
 git clone --branch v0.25.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py polars

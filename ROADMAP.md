@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current release:** ETLantic **0.25.0** (Beta / PyPI). Milestone **0.25**
+**Current release:** ETLantic **0.25.1** (Beta / PyPI). Milestone **0.25**
 (burn-in first slice) is shipped; **0.26** (burn-in second slice) is planned,
 then 0.27–0.98 continued burn-in toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short

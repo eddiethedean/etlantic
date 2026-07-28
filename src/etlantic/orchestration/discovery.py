@@ -12,6 +12,22 @@ from etlantic.registry import PluginDescriptor, RegistryBundle
 ORCHESTRATOR_PLUGIN_ENTRY_POINT = "etlantic.orchestrator_plugins"
 
 
+
+def _fail_closed_loaded(result):
+    from etlantic.diagnostics import Severity
+    from etlantic.exceptions import PipelineExecutionError
+
+    errors = [d for d in result.diagnostics if d.severity is Severity.ERROR]
+    loaded = dict(result.loaded)
+    if errors and loaded:
+        raise PipelineExecutionError(
+            "; ".join(d.message for d in errors),
+            code=errors[0].code,
+        )
+    if errors:
+        return {}
+    return loaded
+
 def discover_orchestrator_plugins(
     *,
     profile: Profile | None = None,
@@ -24,7 +40,7 @@ def discover_orchestrator_plugins(
             getattr(getattr(plugin, "info", None), "engine", None) or item.name
         ),
     )
-    return result.loaded  # type: ignore[return-value]
+    return _fail_closed_loaded(result)
 
 
 def register_discovered_plugins(

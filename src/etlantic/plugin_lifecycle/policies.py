@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 from etlantic.diagnostics import Diagnostic, Severity
-from etlantic.plugin_trust import is_production_profile, plugin_allowed
+from etlantic.plugin_trust import (
+    empty_production_allowlist_message,
+    is_production_profile,
+    plugin_allowed,
+)
 from etlantic.profile import Profile
 from etlantic.runtime.events import SecurityEvent
 
@@ -101,10 +105,7 @@ class BaseAuthorizationPolicy:
                     Diagnostic(
                         code="PMPLUG401",
                         severity=Severity.ERROR,
-                        message=(
-                            f"Production profile {profile.name!r} requires a non-empty "
-                            "plugin_allowlist; rejecting all discovered plugins."
-                        ),
+                        message=empty_production_allowlist_message(profile.name),
                         path=("profile", "plugin_allowlist"),
                         phase="plugin_authorize",
                     )

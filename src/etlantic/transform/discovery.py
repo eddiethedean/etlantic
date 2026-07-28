@@ -112,7 +112,12 @@ def discover_transform_compilers_for_profile(
     """Discover compilers applying ``profile.plugin_allowlist`` before load.
 
     Honors monkeypatches of :func:`discover_transform_compilers` (tests).
+
+    Allowlist/trust diagnostics from the latest call are exposed on
+    ``discover_transform_compilers_for_profile.last_diagnostics`` so callers
+    can surface ``PMPLUG401``/``PMPLUG402`` instead of a false "no compiler".
     """
+    discover_transform_compilers_for_profile.last_diagnostics = []  # type: ignore[attr-defined]
     discover = discover_transform_compilers
     if getattr(discover, "_etlantic_lifecycle", False):
         result = discover_evaluate_authorize_load(
@@ -120,12 +125,33 @@ def discover_transform_compilers_for_profile(
             profile=profile,
             key_fn=_key,
         )
-        return result.loaded  # type: ignore[return-value]
+        from etlantic.diagnostics import Severity
+        from etlantic.exceptions import PipelineExecutionError
+
+        diagnostics = list(result.diagnostics)
+        discover_transform_compilers_for_profile.last_diagnostics = diagnostics  # type: ignore[attr-defined]
+        errors = [d for d in diagnostics if d.severity is Severity.ERROR]
+        loaded = dict(result.loaded)
+        if errors and loaded:
+            raise PipelineExecutionError(
+                "; ".join(d.message for d in errors),
+                code=errors[0].code,
+            )
+        return {} if errors else loaded  # type: ignore[return-value]
 
     found = discover()
     if profile is None:
         return found
+    from etlantic.diagnostics import Severity
+    from etlantic.exceptions import PipelineExecutionError
     from etlantic.plugin_trust import filter_plugins_by_allowlist
 
-    kept, _diagnostics = filter_plugins_by_allowlist(found, profile)
-    return kept
+    kept, diagnostics = filter_plugins_by_allowlist(found, profile)
+    discover_transform_compilers_for_profile.last_diagnostics = list(diagnostics)  # type: ignore[attr-defined]
+    errors = [d for d in diagnostics if d.severity is Severity.ERROR]
+    if errors and kept:
+        raise PipelineExecutionError(
+            "; ".join(d.message for d in errors),
+            code=errors[0].code,
+        )
+    return {} if errors else kept

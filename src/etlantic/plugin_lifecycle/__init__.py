@@ -100,56 +100,59 @@ def discover_entry_points(
         if dist is not None:
             manifest, m_diags = load_manifest_from_distribution(dist)
             diagnostics.extend(m_diags)
-            if manifest is not None:
-                digest = manifest.digest
-                provenance = dict(manifest.provenance)
-                entry = manifest.entry_for(group=group, name=ep.name)
-                if entry is None:
-                    diagnostics.append(
-                        Diagnostic(
-                            code="PMPLUG416",
-                            severity=Severity.ERROR,
-                            message=(
-                                f"Entry point {group}:{ep.name} is not declared in "
-                                f"manifest for {dist_name!r}."
-                            ),
-                            path=("plugin", dist_name or ep.name),
-                            phase="plugin_evaluate",
-                        )
+            manifest_errors = [d for d in m_diags if d.severity == Severity.ERROR]
+            if manifest is None or manifest_errors:
+                # Digest/parse/identity failures must not discover a loadable EP.
+                continue
+            digest = manifest.digest
+            provenance = dict(manifest.provenance)
+            entry = manifest.entry_for(group=group, name=ep.name)
+            if entry is None:
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPLUG416",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Entry point {group}:{ep.name} is not declared in "
+                            f"manifest for {dist_name!r}."
+                        ),
+                        path=("plugin", dist_name or ep.name),
+                        phase="plugin_evaluate",
                     )
-                    continue
-                # Target mismatch = tampering / identity failure.
-                if entry.target != ep.value:
-                    diagnostics.append(
-                        Diagnostic(
-                            code="PMPLUG417",
-                            severity=Severity.ERROR,
-                            message=(
-                                f"Entry point target mismatch for {group}:{ep.name}: "
-                                f"manifest={entry.target!r} installed={ep.value!r}."
-                            ),
-                            path=("plugin", dist_name or ep.name),
-                            phase="plugin_evaluate",
-                        )
+                )
+                continue
+            # Target mismatch = tampering / identity failure.
+            if entry.target != ep.value:
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPLUG417",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Entry point target mismatch for {group}:{ep.name}: "
+                            f"manifest={entry.target!r} installed={ep.value!r}."
+                        ),
+                        path=("plugin", dist_name or ep.name),
+                        phase="plugin_evaluate",
                     )
-                    continue
-                protocol = entry.protocol
-                capabilities = entry.capabilities or manifest.capabilities
-                engine = entry.engine
-                if protocol and not manifest.protocol_compatible(protocol):
-                    diagnostics.append(
-                        Diagnostic(
-                            code="PMPLUG418",
-                            severity=Severity.ERROR,
-                            message=(
-                                f"Protocol {protocol!r} outside manifest range "
-                                f"{manifest.protocol_range!r} for {dist_name!r}."
-                            ),
-                            path=("plugin", dist_name or ep.name),
-                            phase="plugin_evaluate",
-                        )
+                )
+                continue
+            protocol = entry.protocol
+            capabilities = entry.capabilities or manifest.capabilities
+            engine = entry.engine
+            if protocol and not manifest.protocol_compatible(protocol):
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPLUG418",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Protocol {protocol!r} outside manifest range "
+                            f"{manifest.protocol_range!r} for {dist_name!r}."
+                        ),
+                        path=("plugin", dist_name or ep.name),
+                        phase="plugin_evaluate",
                     )
-                    continue
+                )
+                continue
         else:
             diagnostics.append(
                 Diagnostic(

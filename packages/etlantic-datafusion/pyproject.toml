@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-datafusion"
-version = "0.25.0"
+version = "0.25.1"
 description = "Experimental DataFusion dataframe + portable transform plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

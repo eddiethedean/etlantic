@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sqlmodel"
-version = "0.25.0"
+version = "0.25.1"
 description = "ContractModel ↔ SQLModel bridge for ETLantic."
 readme = "README.md"
 license = "MIT"

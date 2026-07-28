@@ -6,7 +6,7 @@ from dataclasses import replace
 from typing import Any
 
 from etlantic.capabilities import PluginCapabilities
-from etlantic.dataframe.discovery import load_dataframe_plugin
+from etlantic.dataframe.discovery import load_dataframe_plugin, resolve_plugin_info
 from etlantic.dataframe.protocol import (
     ArtifactOwnership,
     DataframeExecutionContext,
@@ -112,12 +112,6 @@ def has_fan_out(plan: PipelinePlan, node_name: str, port_name: str) -> bool:
         and b.reason == "fan_out_reuse"
         for b in plan.materialization_boundaries
     )
-
-
-def resolve_plugin_info(plugin: Any) -> Any:
-    """Return plugin info whether exposed as a property or callable method."""
-    info = plugin.info
-    return info() if callable(info) else info
 
 
 def ownership_for_engine(
@@ -480,6 +474,21 @@ async def _execute_portable(
             compiler = candidate
             break
         if compiler is None:
+            trust_errors = [
+                d
+                for d in getattr(
+                    discover_transform_compilers_for_profile, "last_diagnostics", []
+                )
+                or []
+                if getattr(d.severity, "name", None) == "ERROR"
+            ]
+            if trust_errors:
+                raise NodeExecutionError(
+                    redact_message(trust_errors[0].message),
+                    node_name=node.name,
+                    stage=FailureStage.TRANSFORM.value,
+                    code=trust_errors[0].code or "PMPLUG402",
+                )
             raise NodeExecutionError(
                 redact_message(
                     f"Planned transform compiler {descriptor.compiler_name!r}"
@@ -498,6 +507,22 @@ async def _execute_portable(
         compilers = discover_transform_compilers_for_profile(profile)
         compiler = compilers.get(descriptor.engine)
     if compiler is None:
+        trust_errors = [
+            d
+            for d in getattr(
+                discover_transform_compilers_for_profile, "last_diagnostics", []
+            )
+            or []
+            if getattr(d, "severity", None) is not None
+            and getattr(d.severity, "name", None) == "ERROR"
+        ]
+        if trust_errors:
+            raise NodeExecutionError(
+                redact_message(trust_errors[0].message),
+                node_name=node.name,
+                stage=FailureStage.TRANSFORM.value,
+                code=trust_errors[0].code or "PMPLUG402",
+            )
         raise NodeExecutionError(
             redact_message(
                 f"No transform compiler for engine {descriptor.engine!r} "

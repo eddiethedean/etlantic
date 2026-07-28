@@ -19,7 +19,7 @@ class CsvStorage:
         if not location:
             raise PipelineExecutionError(
                 f"CSV binding {binding!r} requires a location path",
-                code="PMEXEC430",
+                code="PMEXEC453",
             )
         return Path(location)
 
@@ -44,7 +44,7 @@ class CsvStorage:
         if not path.is_file():
             raise PipelineExecutionError(
                 f"CSV source not found: {path}",
-                code="PMEXEC431",
+                code="PMEXEC454",
             )
         with path.open(newline="", encoding="utf-8") as handle:
             reader = csv.DictReader(handle)

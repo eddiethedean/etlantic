@@ -124,8 +124,27 @@ class PluginDiscoveryCoordinator:
         include_transform_compilers: bool = False,
     ) -> PluginDiscoveryResult:
         from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
+        from etlantic.plugin_trust import (
+            empty_production_allowlist_message,
+            is_production_profile,
+        )
 
         result = PluginDiscoveryResult()
+
+        # Empty production allowlist is a profile-level failure — emit once and
+        # skip per-group authorize loops that would otherwise spam PMPLUG401.
+        if is_production_profile(profile) and not dict(profile.plugin_allowlist or {}):
+            result.diagnostics.append(
+                Diagnostic(
+                    code="PMPLUG401",
+                    severity=Severity.ERROR,
+                    message=empty_production_allowlist_message(profile.name),
+                    path=("profile", "plugin_allowlist"),
+                    phase="plugin_authorize",
+                )
+            )
+            return result
+
         groups = list(_RUNTIME_GROUPS) if include_runtime_groups else []
 
         for spec in groups:

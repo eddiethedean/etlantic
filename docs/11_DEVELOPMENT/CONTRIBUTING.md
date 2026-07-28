@@ -91,7 +91,7 @@ uv run ruff check .
 uv run ruff format --check .
 ./scripts/test_core.sh
 # equivalent:
-# uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+# uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 uv run pytest -q tests/authoring
 uv sync --extra fastapi
 uv run pytest -q packages/etlantic-fastapi/tests
@@ -103,10 +103,12 @@ uv run python scripts/check_plugin_manifests.py
 uv run python scripts/check_agent_guidance.py
 uv run python scripts/check_release.py
 uv run python scripts/check_surface_inventory.py
-uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
+uv run python scripts/check_transform_compiler_drift.py
 uv run python -m etlantic validate examples/memory_customers.py:CustomerPipeline --format sarif > /tmp/etlantic.sarif
 uv run python examples/memory_customers.py
 uv run python scripts/build_docs.py
+# Optional performance gate (CI benchmarks job):
+# uv run python scripts/check_benchmarks.py
 ```
 
 Optional plugins / portable examples:

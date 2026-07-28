@@ -1,6 +1,6 @@
 # Production Profiles
 
-ETLantic 0.25.0 treats production configuration as an explicit trust boundary
+ETLantic 0.25.1 treats production configuration as an explicit trust boundary
 via `Profile.security_mode == "production"`. The built-in `production` profile
 is a template, not a deployable setup.
 
@@ -12,10 +12,11 @@ and the `production` security domain label, but its `plugin_allowlist` and
 is non-empty. Real pipelines also need their logical extract and load assets
 resolved.
 
-This command is expected to fail for a pipeline that needs production
-configuration:
+This command is **expected to fail** (empty allowlist → `PMPLUG401`, exit `11`).
+Do not copy it into CI as a working gate — use an explicit JSON profile instead:
 
 ```bash
+# Expected to FAIL: built-in production template has an empty plugin_allowlist
 python -m etlantic validate package.pipeline:CustomerPipeline --profile production
 ```
 
@@ -34,7 +35,7 @@ profile = Profile(
     security_domain="production",
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.25.0",
+        "etlantic-polars": "==0.25.1",
     },
     assets={
         "customer_source": "json",

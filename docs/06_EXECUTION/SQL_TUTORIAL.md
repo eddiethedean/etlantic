@@ -1,6 +1,6 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.25.0.** SQLite is used only for this local
+> **Status: Available in ETLantic 0.25.1.** SQLite is used only for this local
 > demonstration; PostgreSQL is the reference backend.
 
 
@@ -12,7 +12,7 @@
 ## Install and run
 
 ```bash
-python -m pip install 'etlantic==0.25.0' 'etlantic-sql==0.25.0'
+python -m pip install 'etlantic==0.25.1' 'etlantic-sql==0.25.1'
 git clone --branch v0.25.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/sql_to_sql.py

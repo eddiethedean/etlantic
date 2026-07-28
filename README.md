@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.25.0'
+python -m pip install 'etlantic==0.25.1'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.25.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.25.1** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)

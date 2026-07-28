@@ -49,12 +49,43 @@ def test_production_allowlist_fail_closed() -> None:
 
     profile = Profile(
         name="production",
+        security_mode="production",
         security_domain="production",
         plugin_allowlist={"good": ">=1.0"},
     )
     kept, diags = filter_plugins_by_allowlist({"evil": _P()}, profile)
     assert kept == {}
-    assert any(d.code == "PMPLUG402" for d in diags)
+    assert any(d.code == "PMPLUG402" and d.severity is Severity.ERROR for d in diags)
+
+
+def test_empty_security_mode_rejected() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="empty string"):
+        Profile(name="x", security_mode="")  # type: ignore[arg-type]
+
+
+def test_staging_not_inferred_as_production() -> None:
+    from etlantic.profile import Profile
+
+    profile = Profile.from_dict({"name": "staging", "security_domain": "staging"})
+    assert profile.security_mode == "development"
+
+
+def test_invalid_allowlist_pin_emits_pmplug403() -> None:
+    class _P:
+        info = type(
+            "I", (), {"name": "etlantic-polars", "engine": "polars", "version": "0.25.1"}
+        )()
+
+    profile = Profile(
+        name="production",
+        security_mode="production",
+        plugin_allowlist={"etlantic-polars": "not a pin!!!"},
+    )
+    kept, diags = filter_plugins_by_allowlist({"polars": _P()}, profile)
+    assert kept == {}
+    assert any(d.code == "PMPLUG403" for d in diags)
 
 
 def test_empty_production_allowlist_rejects_all() -> None:

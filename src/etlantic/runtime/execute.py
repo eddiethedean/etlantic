@@ -108,7 +108,7 @@ async def arun_pipeline(
         resolve_definition,
     )
     from etlantic.diagnostics import Severity
-    from etlantic.exceptions import ETLanticError
+    from etlantic.exceptions import PipelineExecutionError
     from etlantic.profile import resolve_profile
 
     request = request or RunRequest()
@@ -117,7 +117,10 @@ async def arun_pipeline(
     trust_diags = runtime.ensure_plugins_for_profile(resolved)
     errors = [d for d in trust_diags if d.severity is Severity.ERROR]
     if errors:
-        raise ETLanticError("; ".join(d.message for d in errors))
+        raise PipelineExecutionError(
+            "; ".join(d.message for d in errors),
+            code=errors[0].code,
+        )
 
     pipeline_for_scheduler: type[Any] | None
     if isinstance(pipeline_cls, PipelineDefinition):

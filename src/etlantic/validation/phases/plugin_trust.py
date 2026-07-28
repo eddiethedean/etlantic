@@ -32,9 +32,13 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
         if name in selected_engines or engine in selected_engines:
             selected[name] = descriptor
 
-    for engine, compiler in discover_transform_compilers_for_profile(profile).items():
+    compilers = discover_transform_compilers_for_profile(profile)
+    transform_diags = list(
+        getattr(discover_transform_compilers_for_profile, "last_diagnostics", []) or []
+    )
+    for engine, compiler in compilers.items():
         if engine in selected_engines:
             selected[f"transform_compiler:{engine}"] = compiler
 
     _kept, diagnostics = filter_plugins_by_allowlist(selected, profile)
-    return list(diagnostics)
+    return list(diagnostics) + transform_diags

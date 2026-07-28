@@ -5,7 +5,7 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.25.0** — choose your guide:
+**ETLantic 0.25.1** — choose your guide:
 
 | From version | Ordered path to 0.25 |
 |---|---|

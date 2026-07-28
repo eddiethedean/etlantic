@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.25.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.25.1.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -48,20 +48,26 @@
 | `PMEXEC414` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC415` | `src/etlantic/storage/callable_binding.py` |
 | `PMEXEC416` | `src/etlantic/storage/callable_binding.py` |
-| `PMEXEC420` | `src/etlantic/runtime/dataframe_exec.py`, `src/etlantic/storage/json_binding.py` |
-| `PMEXEC421` | `src/etlantic/runtime/dataframe_exec.py`, `src/etlantic/runtime/orchestrator.py`, `src/etlantic/storage/json_binding.py` |
+| `PMEXEC420` | `src/etlantic/runtime/dataframe_exec.py` |
+| `PMEXEC421` | `src/etlantic/runtime/dataframe_exec.py` |
 | `PMEXEC422` | `src/etlantic/runtime/dataframe_exec.py` |
 | `PMEXEC423` | `src/etlantic/runtime/dataframe_exec.py` |
-| `PMEXEC430` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py`, `src/etlantic/storage/csv_binding.py` |
-| `PMEXEC431` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py`, `src/etlantic/storage/csv_binding.py` |
+| `PMEXEC430` | `src/etlantic/runtime/orchestrator.py` |
+| `PMEXEC431` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC432` | `src/etlantic/runtime/sql_exec.py` |
 | `PMEXEC433` | `src/etlantic/runtime/sql_exec.py` |
-| `PMEXEC434` | `src/etlantic/runtime/orchestrator.py` |
-| `PMEXEC435` | `src/etlantic/runtime/sql_exec.py` |
+| `PMEXEC434` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py` |
 | `PMEXEC436` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC437` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC440` | `src/etlantic/runtime/spark_exec.py` |
 | `PMEXEC441` | `src/etlantic/runtime/spark_exec.py` |
+| `PMEXEC450` | `src/etlantic/storage/json_binding.py` |
+| `PMEXEC451` | `src/etlantic/storage/json_binding.py` |
+| `PMEXEC452` | `src/etlantic/runtime/orchestrator.py` |
+| `PMEXEC453` | `src/etlantic/storage/csv_binding.py` |
+| `PMEXEC454` | `src/etlantic/storage/csv_binding.py` |
+| `PMEXEC455` | `src/etlantic/runtime/sql_exec.py` |
+| `PMEXEC456` | `src/etlantic/runtime/sql_exec.py` |
 | `PMEXEC500` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC501` | `src/etlantic/reliability_runtime.py` |
 | `PMEXEC502` | `src/etlantic/reliability_runtime.py` |
@@ -113,8 +119,9 @@
 | `PMPLAN414` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN415` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN501` | `src/etlantic/plan/planner.py` |
-| `PMPLUG401` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
+| `PMPLUG401` | `src/etlantic/cli/cmds/profile.py`, `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
 | `PMPLUG402` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
+| `PMPLUG403` | `src/etlantic/plugin_trust.py` |
 | `PMPLUG410` | `src/etlantic/plugin_manifest.py` |
 | `PMPLUG411` | `src/etlantic/plugin_manifest.py` |
 | `PMPLUG412` | `src/etlantic/plugin_compatibility.py`, `src/etlantic/plugin_manifest.py` |

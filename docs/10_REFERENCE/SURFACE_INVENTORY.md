@@ -98,7 +98,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.25.0`). Details:
+Pin to the same minor as core (`==0.25.1`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

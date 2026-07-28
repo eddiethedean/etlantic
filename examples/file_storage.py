@@ -1,4 +1,4 @@
-"""Runnable JSON-to-JSON and CSV-to-CSV storage examples (ETLantic 0.25.0).
+"""Runnable JSON-to-JSON and CSV-to-CSV storage examples (ETLantic 0.25.1).
 
 Requires core only (no optional engine plugins).
 

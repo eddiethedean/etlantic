@@ -556,7 +556,13 @@ def _parse_portable_policy(value: Any) -> PortableTransformPolicy:
 
 
 def _parse_security_mode(value: Any) -> SecurityMode:
-    mode = str(value or "development").strip().lower()
+    if value is None:
+        return "development"
+    mode = str(value).strip().lower()
+    if not mode:
+        raise ValueError(
+            "security_mode must be development|test|production, got empty string"
+        )
     if mode not in {"development", "test", "production"}:
         raise ValueError(
             f"security_mode must be development|test|production, got {value!r}"
@@ -568,7 +574,7 @@ def _infer_security_mode(*, name: str, security_domain: str) -> SecurityMode:
     """Best-effort inference for pre-0.19 profile JSON missing security_mode."""
     key = name.strip().lower()
     domain = security_domain.strip().lower()
-    if key in {"production", "prod", "staging"} or domain in {"production", "prod"}:
+    if key in {"production", "prod"} or domain in {"production", "prod"}:
         return "production"
     if key == "test" or domain == "test":
         return "test"

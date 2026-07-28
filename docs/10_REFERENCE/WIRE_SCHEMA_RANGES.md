@@ -1,6 +1,6 @@
 # Wire schema ranges (0.25)
 
-> **Status: Available in ETLantic 0.25.0.** Documents supported wire-schema
+> **Status: Available in ETLantic 0.25.1.** Documents supported wire-schema
 > ids for burn-in and **unsupported downgrade** behavior. Package minors may
 > advance while schema ids stay on `/1` (no wire-schema reset in 0.25).
 

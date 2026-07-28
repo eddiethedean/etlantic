@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-fastapi"
-version = "0.25.0"
+version = "0.25.1"
 description = "Thin FastAPI reference adapter for ETLantic 0.25 authoring/service contracts."
 readme = "README.md"
 license = "MIT"

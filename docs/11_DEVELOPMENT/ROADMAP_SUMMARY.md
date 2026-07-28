@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.25.0** ships **Compatibility Burn-In (first slice)**.
+ETLantic **0.25.1** ships **Compatibility Burn-In (first slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -77,7 +77,7 @@ facade, and `etlantic-fastapi` reference adapter. See
 
 ## Shipped: 0.25
 
-ETLantic **0.25.0** shipped **Compatibility Burn-In (first slice)**:
+ETLantic **0.25.1** shipped **Compatibility Burn-In (first slice)**:
 `etlantic.pipeline/1` and sibling codec upgrade fixtures, Plugin SDK `/1`
 freeze decision (blockers published), and a published 1.0 removal inventory.
 See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and

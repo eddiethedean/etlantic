@@ -14,7 +14,7 @@ from etlantic.spark.provider import (
     SparkSessionRequest,
 )
 
-__version__ = "0.25.0"
+__version__ = "0.25.1"
 
 
 class LocalSparkProvider:

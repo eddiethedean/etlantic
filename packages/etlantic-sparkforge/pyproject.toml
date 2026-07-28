@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sparkforge"
-version = "0.25.0"
+version = "0.25.1"
 description = "SparkForge-to-ETLantic migration adapter (medallion facade mapping)."
 readme = "README.md"
 license = "MIT"
