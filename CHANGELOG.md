@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Official package versions align at 0.29.0; plugins require `etlantic>=0.29.0,<0.30`
 - Medallantic IR adapter reuses shared `lower_document` path
 - [Facade packages](docs/11_DEVELOPMENT/FACADE_PACKAGES.md) documents the shipped conformance kit
+- Plugin lifecycle allowlists accept engine/entry short names consistently with trust filtering
+- Discovery APIs expose `last_diagnostics` when trust blocks loads
+
+### Fixed
+- Medallantic `LoweringError` / `AdapterError` codes now match the primary ERROR diagnostic
+- Native `MedallionDocument.from_dict` preserves explicit `0.0` accept rates
+- Unknown medallion layers fail closed (`MDL107`) instead of coercing to gold
+- Validation policies are unique per pipeline name + schema (no same-schema clobber)
+- Document metadata and step description/tags survive definition extensions
+- SparkForge IR cycle detection handles `"step.result"` source references
+- `etlantic_sparkforge` submodule imports (`adapt` / `ir` / `compat` / `reports` / `runtime_map`)
 
 ## [0.28.0] - 2026-07-28
 
