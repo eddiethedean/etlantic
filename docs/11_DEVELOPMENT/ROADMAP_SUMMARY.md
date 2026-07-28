@@ -99,14 +99,23 @@ second-wave root alias removals (reliability, schema_drift, registry). See
 [What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
 [Exit gate 0.27](EXIT_GATE_0_27.md).
 
-## Next: 0.28–0.35 — ETLantic and Medallantic co-evolution
+## Next: 0.28 — burn-in fourth slice and M0 closeout
+
+**0.28** (planned) continues compatibility burn-in (**0.26→0.27→0.28**),
+closes or re-scopes the Plugin SDK `/1` freeze, finishes Medallantic **M0**
+(redirect decision, facade release category), and executes a third wave of
+demoted root removals (`sql`, `profile`, `lifecycle`, …). Native medallion
+authoring remains **0.29**. Tracking:
+[Exit gate 0.28](EXIT_GATE_0_28.md) and
+[ROADMAP § 0.28](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#028--burn-in-fourth-slice-plugin-freeze-and-medallantic-m0-closeout).
+
+## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 
 The remaining pre-1.0 capability phases pair each Medallantic parity milestone
 with the domain-neutral ETLantic substrate it exercises:
 
 | Release | Medallantic outcome | ETLantic evolution |
 |---|---|---|
-| 0.28 | Package foundation | First-party facade boundary and release gates |
 | 0.29 | Native medallion authoring | Public facade lowering and conformance |
 | 0.30 | Quality/rules parity | Portable quality-expression and gate semantics |
 | 0.31 | Execution/materialization parity | State, write, retry, and transaction semantics |
@@ -130,10 +139,10 @@ registry/workspaces **1.2**.
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
-frozen `/1` protocols (freeze still open through 0.27; owned by 0.28+), and
+frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 0.24 functional/JSON authoring convergence, followed by core compatibility
-burn-in (**0.25** / **0.26** / **0.27**), joint Medallantic evolution
-(**0.28–0.35**), and joint compatibility burn-in (**0.36–0.98**).
+burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
+parity (**0.29–0.35**), and joint compatibility burn-in (**0.36–0.98**).
 TransformationModel incubation is deferred to post-1.0 phases.
 
 > **Production use is supported only within the documented reference

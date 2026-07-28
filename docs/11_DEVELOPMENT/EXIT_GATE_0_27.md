@@ -30,8 +30,8 @@
 
 ## Residual / follow-ons (0.28+)
 
-- Protocol `/1` freeze closure (clear blocker or re-scope again with owners)
-- Remaining demoted root aliases (`sql`, `profile`, lifecycle, …)
+- Protocol `/1` freeze closure — owned by [Exit gate 0.28](EXIT_GATE_0_28.md)
+- Remaining demoted root aliases (`sql`, `profile`, lifecycle, …) — third wave in 0.28
 - Later 1.0 inventory items (`REM-DATACONTRACTMODEL`, experimental surfaces)
 
 ## See also
@@ -40,3 +40,4 @@
 - [What's New 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md)
 - [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
 - [Exit gate 0.26](EXIT_GATE_0_26.md)
+- [Exit gate 0.28](EXIT_GATE_0_28.md) (planned)

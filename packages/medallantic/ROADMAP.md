@@ -90,7 +90,8 @@ Medallantic milestones are release-gated with ETLantic's pre-1.0 roadmap:
 
 | ETLantic release | Medallantic phase | Joint focus |
 |---|---|---|
-| 0.28 | M0 | Foundation, packaging, and facade boundary |
+| 0.27 | M0 (partial) | Rename, workspace/CI, first `medallantic` PyPI publish |
+| 0.28 | M0 closeout | Quadruple-minor burn-in, Plugin `/1` freeze, facade boundary |
 | 0.29 | M1 | Native medallion authoring and facade conformance |
 | 0.30 | M2 | Portable quality/rule semantics |
 | 0.31 | M3 | Execution, state, writes, and materialization |
@@ -197,19 +198,27 @@ legacy behavior that would be unsafe or architecturally incorrect.
 
 ## Delivery milestones
 
-### M0 / ETLantic 0.28 — Rename and release hygiene
+### M0 / ETLantic 0.27–0.28 — Rename, release hygiene, and M0 closeout
+
+**Shipped in 0.27.0**
 
 - [x] Rename distribution to `medallantic`.
 - [x] Rename import package to `medallantic`.
 - [x] Rename workspace paths, tests, documentation, extras, and release checks.
 - [x] Preserve SparkForge-specific conversion helper names where they describe
   the legacy input format.
-- [ ] Publish the first `medallantic` distribution.
+- [x] Publish the first `medallantic` distribution (`medallantic==0.27.0`).
+
+**Owned by 0.28 (M0 closeout)**
+
 - [ ] Decide whether to publish a final `etlantic-sparkforge` compatibility
   release that depends on Medallantic and emits a deprecation warning.
-- [ ] Reserve project names and configure trusted publishing.
+- [ ] Document facade-package release category and ongoing trusted-publishing
+  evidence for `medallantic`.
 
-Exit criteria: clean build, install, import, docs, lockfile, and adapter suite.
+Exit criteria: clean build, install, import, docs, lockfile, and adapter suite on
+every release; core remains importable without Medallantic; no medallion
+identifier in ETLantic wire schemas.
 
 ### M1 / ETLantic 0.29 — Native medallion authoring
 

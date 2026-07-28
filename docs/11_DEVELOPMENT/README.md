@@ -20,9 +20,12 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
+- [Exit gate 0.27](EXIT_GATE_0_27.md)
+- [Exit gate 0.28](EXIT_GATE_0_28.md) (planned)
+- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
 - [Exit gate 0.25](EXIT_GATE_0_25.md)
-- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
 - [Migration 0.23 → 0.24](MIGRATION_0_23_TO_0_24.md)
 - [Exit gate 0.24](EXIT_GATE_0_24.md)
 - [Upgrade hub (cumulative)](../01_GETTING_STARTED/UPGRADE.md)

@@ -40,6 +40,7 @@ packages = ["src/medallantic"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/src/medallantic",
+    "/docs",
     "/README.md",
     "/ROADMAP.md",
     "/pyproject.toml",

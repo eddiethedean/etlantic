@@ -13,6 +13,14 @@ SparkForge IR onto ordinary ETLantic `Extract` / `Step` / `Load`, `Profile`,
 engine-agnostic builder and live Spark/SQL parity are planned; see the
 [roadmap](ROADMAP.md).
 
+Documentation:
+
+- [Documentation index](docs/README.md)
+- [Getting started](docs/getting-started.md)
+- [SparkForge migration](docs/sparkforge-migration.md)
+- [Compatibility](docs/compatibility.md)
+- [Architecture](docs/architecture.md)
+
 ## Install
 
 ```bash

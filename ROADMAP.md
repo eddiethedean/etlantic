@@ -2371,9 +2371,10 @@ internals.
 `etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —
 can survive a real minor upgrade without a wire-schema reset. 0.25 is the
 first named slice of the broader compatibility burn-in band; **0.26** is the
-second slice; **0.27** is the third; **0.28–0.35** preserve that discipline
-while ETLantic and Medallantic co-evolve, followed by joint burn-in in
-**0.36–0.98** toward the 0.99 RC.
+second slice; **0.27** is the third; **0.28** is the fourth (quadruple-minor
+window plus Plugin `/1` freeze and Medallantic M0 closeout); **0.29–0.35**
+preserve co-evolution discipline while ETLantic and Medallantic advance feature
+parity, followed by joint burn-in in **0.36–0.98** toward the 0.99 RC.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Production
 FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain
@@ -2702,42 +2703,150 @@ migration/docs gates. Control plane and GUI remain out of scope.
 
 Tracking: [EXIT_GATE_0_27.md](docs/11_DEVELOPMENT/EXIT_GATE_0_27.md).
 
-## 0.28 — Medallantic Foundation and Release Hygiene
+## 0.28 — Burn-In (Fourth Slice), Plugin Freeze, and Medallantic M0 Closeout
 
-**Medallantic phase:** M0 — Rename and release hygiene.
+**Medallantic phase:** M0 closeout (rename and release hygiene largely shipped in
+**0.27.0**).
 
-**Objective:** establish Medallantic as the first-party medallion facade and
-make its package lifecycle part of ETLantic's release discipline without
-introducing medallion types into core.
+**Status:** Next planned minor after **0.27.0**.
 
-### Medallantic deliverables
+**Objective:** prove a **quadruple-minor** upgrade window without a wire-schema
+reset (**0.26 → 0.27 → 0.28**), **close or re-scope** the Plugin SDK `/1`
+freeze (carried from 0.22–0.27), finish Medallantic **M0** exit criteria, and
+execute the **third wave** of `REM-ROOT-DEMOTED` removals — while keeping
+native medallion authoring (**M1**) and facade conformance for **0.29**.
 
-- publish the `medallantic` distribution and `medallantic` import package
-- finish workspace, documentation, CI, trusted-publishing, and project-name
-  migration
-- retain SparkForge-specific names only on migration inputs and compatibility
-  helpers
-- decide and document whether a final `etlantic-sparkforge` redirect package
-  will be published
+This is **not** native `MedallionPipeline` authoring, quality-rule parity, or a
+control-plane / GUI milestone.
 
-### ETLantic evolution
+### Prerequisites from 0.27
 
-- add Medallantic to first-party package compatibility, release, SBOM,
-  provenance, wheel-smoke, and documentation gates
-- define a first-party **facade package** category distinct from execution,
+- Triple-minor burn-in fixtures (`v0_26/`) green in CI
+- `medallantic` distribution published (`medallantic==0.27.0`); workspace,
+  docs, CI, release, and `etlantic[medallantic]` extra aligned
+- `etlantic-sparkforge` removed from the workspace; SparkForge conversion
+  helpers retained on `medallantic` migration surfaces
+- Plugin SDK `/1` freeze **re-scoped to 0.28+** with published external
+  feedback blocker ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
+- Second-wave root removals shipped (reliability, schema_drift, registry);
+  ~53 demoted root aliases remain ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
+
+### Work packages
+
+#### WP1 — Quadruple-minor upgrade path
+
+**In scope**
+
+- golden fixtures under `tests/fixtures/burn_in/**/v0_27/` proving
+  **0.27 → 0.28** across every schema/protocol range in the triple-minor window
+- keep `v0_26/` (and documented prior trees per wire ranges) loadable so CI
+  proves **0.26 → 0.27 → 0.28** without a wire-schema reset
+- update [WIRE_SCHEMA_RANGES.md](docs/10_REFERENCE/WIRE_SCHEMA_RANGES.md) and
+  burn-in check scripts for the quadruple-minor window
+- document unsupported downgrade behavior for the expanded window
+
+**Out of scope**
+
+- schema resets; inventing new wire formats
+
+#### WP2 — Protocol `/1` freeze closure (owned by 0.28)
+
+**In scope**
+
+- satisfy the ≥1 documented external feedback cycle from a non-first-party
+  plugin author (echo CI alone remains insufficient), **or** re-scope freeze
+  again with dated owners and rationale — no silent “freeze-eligible forever”
+- if frozen: lock conformance suite versions, publish freeze record, and reject
+  provisional core protocol drift in CI
+- align [BUILDING_A_PLUGIN.md](docs/07_PLUGIN_SDK/BUILDING_A_PLUGIN.md),
+  [PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md), and
+  surface inventory with the decision
+
+**Out of scope**
+
+- new Storage / Resource / Observability protocol catalogs (post-freeze or 1.x)
+
+#### WP3 — Third-wave `REM-ROOT-DEMOTED` execution
+
+**In scope**
+
+- remove a bounded third wave of high-traffic demoted root aliases (priority:
+  `etlantic.sql`, `etlantic.profile`, `etlantic.lifecycle`, then remaining
+  clusters per inventory snapshot)
+- migration notes, What's New / Migration 0.27→0.28, and diagnostics for each
+  removed symbol group
+- keep the inventory Target column current; no new indefinite root aliases
+
+**Out of scope**
+
+- completing the entire 1.0 removal list (`REM-DATACONTRACTMODEL`, experimental
+  graduation, Prefect MVP expansion)
+- curated root facade and lazy namespaces
+
+#### WP4 — Medallantic M0 closeout
+
+**In scope**
+
+- decide and document whether a final **`etlantic-sparkforge` compatibility
+  redirect** wheel ships (depends on `medallantic`, emits deprecation warning)
+  or migration docs-only
+- reserve PyPI project names / trusted publishing hygiene for `medallantic`
+  (first publish landed in 0.27; 0.28 confirms ongoing release evidence)
+- publish facade-package guidance: medallion vocabulary stays in Medallantic;
+  core wire schemas gain no bronze/silver/gold identifiers
+- green Medallantic adapter parity suite on every release matrix job
+
+**Out of scope**
+
+- `MedallionPipeline` / native builder surfaces (**0.29 / M1**)
+- live SparkForge `PipelineBuilder` bridge (**0.32 / M4**)
+
+#### WP5 — First-party facade boundary (ETLantic)
+
+**In scope**
+
+- codify **facade package** as a release category distinct from execution,
   compiler, scheduler, storage, and model-bridge plugins
-- document facade ownership: domain vocabulary may lower to ETLantic public
-  definitions and policies but may not add domain enums to core wire schemas
-- expose only the public authoring/plan APIs needed by a facade; promote no
-  private adapter shortcuts
-- continue the consecutive-minor burn-in window through 0.28
+- extend release gates (SBOM, provenance, wheel smoke, compatibility pins) for
+  facade packages alongside execution plugins
+- document which public authoring/plan APIs facades may call; block private
+  adapter shortcuts in conformance guidance
+- optional: stub **facade conformance kit** requirements that M1 will enforce
+  (definition round-trip, graph equivalence hooks)
 
-### Joint exit gate
+**Out of scope**
 
-Medallantic builds, installs, imports, validates its IR fixtures, and ships
-through the same release evidence as ETLantic; core remains importable without
-Medallantic; no medallion identifier enters ETLantic's public logical or wire
-models.
+- promoting medallion types into `etlantic.pipeline/1` or plan wire metadata
+
+### Non-goals
+
+- native medallion authoring (**0.29**), portable quality rules (**0.30**),
+  execution/materialization parity (**0.31**)
+- production FastAPI control plane / multi-tenant API (**1.1**)
+- registry, workspaces, durable job store (**1.2**)
+- GUI, LSP, or AI authoring surfaces
+- new engines/orchestrators, DataFusion graduation, expanded streaming
+- replacing `etlantic.plan/1` or requiring a wire-schema reset
+
+### Acceptance scenarios
+
+- CI proves **0.26 → 0.27 → 0.28** without a wire-schema reset
+- Plugin SDK `/1` is **frozen** or explicitly re-scoped with owners and rationale
+- third-wave root removals ship with migration paths
+- `medallantic` installs, imports, and passes adapter parity without PySpark or
+  SparkForge; core installs without Medallantic
+- public wire schemas in the 0.28 inventory have old↔new fixtures (or documented
+  N/A)
+- What's New / Migration 0.27→0.28 / Exit Gate 0.28 pass docs gates
+
+### Exit gate
+
+0.28.0 ships the quadruple-minor upgrade proof, Plugin SDK `/1` freeze closure
+(or dated re-scope), third-wave deprecation execution, Medallantic M0 closeout,
+and facade-package release discipline. Native medallion authoring remains
+**0.29**.
+
+Tracking: [EXIT_GATE_0_28.md](docs/11_DEVELOPMENT/EXIT_GATE_0_28.md).
 
 ## 0.29 — Native Medallion Authoring
 

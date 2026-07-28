@@ -173,6 +173,17 @@ See [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
 See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
+## Planned: 0.28 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Assume Plugin SDK `/1` is frozen | Closure owned by **0.28** — see [Exit gate 0.28](../11_DEVELOPMENT/EXIT_GATE_0_28.md) |
+| Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
+| `etlantic-sparkforge` import path | `medallantic` (M0 redirect decision in 0.28) |
+| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
+
+Migration guide and What's New will ship with **0.28.0**.
+
 ## Checklist
 
 1. Pin `etlantic==X.Y.Z` and matching `etlantic-*==X.Y.Z` plugins

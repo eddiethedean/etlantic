@@ -32,7 +32,7 @@
 - **0.24** Programmatic Authoring and Lossless JSON (`PipelineDefinition`,
   `etlantic.pipeline/1`, functional builders, CLI JSON targets, visual-builder
   catalog/edit contract, and FastAPI/OpenAPI reference adapter)
-- **0.25** Compatibility burn-in first slice; **0.26** second slice (dual-minor proof, freeze re-scope, first-wave removals); **0.27** third slice; **0.28–0.98** continued burn-in
+- **0.25** Compatibility burn-in first slice; **0.26** second slice (dual-minor proof, freeze re-scope, first-wave removals); **0.27** third slice; **0.28** fourth slice (quadruple-minor, freeze closure, M0 closeout); **0.29–0.98** continued burn-in and Medallantic parity
 - Multi-worker control plane / distributed scheduler
 - Storage / Resource / Observability protocol catalogs
 - Declaring unrestricted multi-tenant enterprise production
