@@ -17,7 +17,12 @@ on:
       - "src/etlantic/dataframe/**"
       - "src/etlantic/plugin_compatibility.py"
       - "src/etlantic/plugin_manifest.py"
+      - "src/etlantic/plugin_trust.py"
+      - "src/etlantic/plugin_lifecycle/**"
       - "src/etlantic/capabilities.py"
+      - "src/etlantic/_version.py"
+      - "pyproject.toml"
+      - "packages/*/pyproject.toml"
       - ".github/workflows/external-plugin-echo.yml"
 
 concurrency:

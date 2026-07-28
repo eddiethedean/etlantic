@@ -5,7 +5,7 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.28 |
+| Topic | 0.29 |
 |---|---|
 | Maturity | Beta |
 | Support | Community; **no SLA** |

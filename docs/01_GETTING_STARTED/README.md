@@ -9,7 +9,7 @@ onboarding here.
 
 After Ada/Grace success: [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md),
 [Upgrade](UPGRADE.md), [Capabilities](CAPABILITIES.md),
-[What's New in 0.28](WHATS_NEW_0_28.md).
+[What's New in 0.29](WHATS_NEW_0_29.md).
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without

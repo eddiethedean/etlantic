@@ -32,13 +32,53 @@ from medallantic.diagnostics import (
     MDL104_MISSING_SOURCE,
     MDL105_BAD_WRITE_MODE,
     MDL106_UNKNOWN_KIND,
+    MDL107_UNKNOWN_LAYER,
     MDL110_RULES_UNENFORCED,
     MDL111_TRANSFORM_PASSTHROUGH,
+    VALID_LAYERS,
     mdl_diagnostic,
 )
 from medallantic.schema import MedallionDocument, MedallionStep
 
-_MEDALLANTIC_VERSION = "0.29.0"
+
+def _medallantic_version() -> str:
+    from importlib.metadata import version
+
+    try:
+        return version("medallantic")
+    except Exception:
+        from medallantic import __version__
+
+        return str(__version__)
+
+
+def _primary_error_code(
+    diagnostics: list[Diagnostic] | tuple[Diagnostic, ...],
+    fallback: str,
+) -> str:
+    for diagnostic in diagnostics:
+        if diagnostic.severity is Severity.ERROR:
+            return diagnostic.code
+    return fallback
+
+
+def _policy_name(doc: MedallionDocument) -> str:
+    return f"medallantic-{_safe_ident(doc.name)}-{_safe_ident(doc.schema)}"
+
+
+def _step_annotations(doc: MedallionDocument) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for step in doc.steps:
+        blob: dict[str, Any] = {}
+        if step.description is not None:
+            blob["description"] = step.description
+        if step.tags:
+            blob["tags"] = list(step.tags)
+        if step.metadata:
+            blob["metadata"] = dict(step.metadata)
+        if blob:
+            out[step.name] = blob
+    return out
 
 
 class LoweringError(Exception):
@@ -93,6 +133,8 @@ class LoweringResult:
                 "description": self.metadata.get("description"),
                 "tags": list(self.metadata.get("tags") or ()),
                 "source_name": self.metadata.get("source_name"),
+                "steps": dict(self.metadata.get("steps") or {}),
+                "document_metadata": dict(self.metadata.get("document_metadata") or {}),
             }
         }
         return replace(
@@ -100,7 +142,7 @@ class LoweringResult:
             provenance=immutable_mapping(
                 facade_provenance(
                     identity="medallantic",
-                    version=str(_MEDALLANTIC_VERSION),
+                    version=str(_medallantic_version()),
                 )
             ),
             extensions=immutable_mapping(extensions),
@@ -170,12 +212,12 @@ def build_profile(
                 if step.kind in {"silver_transform", "gold_transform"}:
                     resolved_bindings[f"{step.name}_out"] = step.asset
     return Profile(
-        name=name or f"medallantic-{doc.schema}",
+        name=name or _policy_name(doc),
         orchestrator="local",
         dataframe_engine=None if spark_engine or sql_engine else "local",
         spark_engine=spark_engine,
         sql_engine=sql_engine,
-        validation_policy=f"medallantic-{doc.schema}",
+        validation_policy=_policy_name(doc),
         assets=resolved_bindings,
         resources={"schema": doc.schema},
         required_spark_capabilities=required_spark,
@@ -201,7 +243,7 @@ def build_profile(
 def build_validation_policy(doc: MedallionDocument) -> ValidationPolicy:
     """Map layer thresholds onto a named ValidationPolicy (metadata only)."""
     return ValidationPolicy(
-        name=f"medallantic-{doc.schema}",
+        name=_policy_name(doc),
         mode=PolicyMode.DEFAULT,
         metadata={
             "min_accept_rate_ingest": doc.min_bronze_rate,
@@ -229,7 +271,7 @@ def lower_document(
         raise LoweringError(
             "Refusing to lower invalid medallion document.",
             report=ValidationReport.from_diagnostics(diagnostics),
-            code=MDL100_EMPTY,
+            code=_primary_error_code(diagnostics, MDL100_EMPTY),
         )
 
     ordered = _topo_order(doc.steps, diagnostics, phase=diagnostic_phase)
@@ -237,7 +279,7 @@ def lower_document(
         raise LoweringError(
             "Medallion lowering failed during graph ordering.",
             report=ValidationReport.from_diagnostics(diagnostics),
-            code=MDL102_CYCLE,
+            code=_primary_error_code(diagnostics, MDL102_CYCLE),
         )
 
     ns: dict[str, Any] = {}
@@ -377,7 +419,7 @@ def lower_document(
         raise LoweringError(
             "Medallion lowering failed.",
             report=ValidationReport.from_diagnostics(diagnostics),
-            code=MDL106_UNKNOWN_KIND,
+            code=_primary_error_code(diagnostics, MDL106_UNKNOWN_KIND),
         )
 
     class_name = _safe_ident(doc.name) + "Pipeline"
@@ -395,11 +437,13 @@ def lower_document(
         layer_by_node=layer_by_node,
         diagnostics=tuple(diagnostics),
         metadata={
-            "adapter_version": str(_MEDALLANTIC_VERSION),
+            "adapter_version": _medallantic_version(),
             "source_name": doc.name,
             "schema": doc.schema,
             "description": doc.description,
             "tags": list(doc.tags),
+            "document_metadata": dict(doc.metadata),
+            "steps": _step_annotations(doc),
         },
         required_delta_operations=required_delta_operations,
     )
@@ -507,6 +551,19 @@ def _validate_document(
                 phase=phase,
             )
         )
+    for step in doc.steps:
+        if step.layer not in VALID_LAYERS:
+            diagnostics.append(
+                mdl_diagnostic(
+                    MDL107_UNKNOWN_LAYER,
+                    (
+                        f"Unknown medallion layer for step {step.name!r}: "
+                        f"{step.layer!r}."
+                    ),
+                    path=("steps", step.name, "layer"),
+                    phase=phase,
+                )
+            )
     edges: dict[str, str | None] = {
         s.name: ((s.source or "").split(".", 1)[0] or None) for s in doc.steps
     }

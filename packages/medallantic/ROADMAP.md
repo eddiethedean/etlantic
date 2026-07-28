@@ -81,7 +81,8 @@ It currently provides:
 - IR fixture parity tests without SparkForge or PySpark installed
 
 The baseline in **0.28** started from the former `etlantic-sparkforge` IR
-adapter. **0.29 / M1** adds native `MedallionPipeline` authoring. Live
+adapter. **0.29 / M1** added native `MedallionPipeline` authoring (shipped in
+0.29.0). Live
 execution of legacy transformation callables and full Spark/SQL behavioral
 parity remain later milestones.
 
@@ -222,6 +223,8 @@ every release; core remains importable without Medallantic; no medallion
 identifier in ETLantic wire schemas.
 
 ### M1 / ETLantic 0.29 — Native medallion authoring
+
+**Shipped in 0.29.0**
 
 - [x] Add `MedallionPipeline`, `MedallionBuilder`, `Bronze`, `Silver`, and
   `Gold` public surfaces.

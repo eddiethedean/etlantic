@@ -105,9 +105,9 @@ class MedallionDocument:
                 MedallionStep.from_dict(s) if isinstance(s, dict) else s
                 for s in steps_raw
             ),
-            min_bronze_rate=float(data.get("min_bronze_rate") or 90.0),
-            min_silver_rate=float(data.get("min_silver_rate") or 95.0),
-            min_gold_rate=float(data.get("min_gold_rate") or 98.0),
+            min_bronze_rate=_float_field(data, "min_bronze_rate", 90.0),
+            min_silver_rate=_float_field(data, "min_silver_rate", 95.0),
+            min_gold_rate=_float_field(data, "min_gold_rate", 98.0),
             engine=str(data.get("engine") or "local"),
             description=(
                 str(data["description"])
@@ -117,3 +117,10 @@ class MedallionDocument:
             tags=tuple(str(t) for t in tags_raw),
             metadata=dict(data.get("metadata") or {}),
         )
+
+
+def _float_field(data: dict[str, Any], key: str, default: float) -> float:
+    """Parse a float, preserving explicit ``0.0`` (unlike ``or default``)."""
+    if key not in data or data[key] is None:
+        return default
+    return float(data[key])

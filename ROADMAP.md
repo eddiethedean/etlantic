@@ -2814,7 +2814,7 @@ control-plane / GUI milestone.
   facade packages alongside execution plugins
 - document which public authoring/plan APIs facades may call; block private
   adapter shortcuts in conformance guidance
-- optional: stub **facade conformance kit** requirements that M1 will enforce
+- optional: stub **facade conformance kit** requirements that M1 enforced (shipped in 0.29.0)
   (definition round-trip, graph equivalence hooks)
 
 **Out of scope**

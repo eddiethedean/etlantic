@@ -4,7 +4,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.28 |
+| Topic | 0.29 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
@@ -128,7 +128,7 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.28 |
+| Concern | Status in 0.29 |
 |---|---|
 | License | MIT (core and official plugins) |
 | Supported versions / EOL | Current Beta line is 0.29.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
@@ -138,7 +138,7 @@ How to read status labels in deeper chapters:
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) and [Upgrade hub](UPGRADE.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
@@ -155,7 +155,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
    with `etlantic-polars` + `etlantic-pandas` at `==0.29.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) if
+8. [Migration 0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

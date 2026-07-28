@@ -23,7 +23,7 @@ pip install 'etlantic-sparkforge==0.29.0'
 ```
 
 Official first-party plugins declare `etlantic>=0.29.0,<0.30`.
-Keep core and plugins on the same minor (pin all to `0.28.0` for pilots).
+Keep core and plugins on the same minor (pin all to `0.29.0` for pilots).
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 
 Experimental (not recommended): `pip install 'etlantic[datafusion]==0.29.0'`

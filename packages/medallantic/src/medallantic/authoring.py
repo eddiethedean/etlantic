@@ -153,7 +153,11 @@ class MedallionPipeline:
 
 
 def from_document(doc: MedallionDocument) -> type[MedallionPipeline]:
-    """Create an anonymous ``MedallionPipeline`` subclass from a document."""
+    """Create an anonymous ``MedallionPipeline`` subclass from a document.
+
+    Raises:
+        ValueError: When a step declares a layer outside bronze/silver/gold.
+    """
     ns: dict[str, Any] = {
         "__medallion_name__": doc.name,
         "__medallion_schema__": doc.schema,
@@ -164,50 +168,34 @@ def from_document(doc: MedallionDocument) -> type[MedallionPipeline]:
         "__min_silver_rate__": doc.min_silver_rate,
         "__min_gold_rate__": doc.min_gold_rate,
     }
+    _LAYER_CLS: dict[str, type[LayerStep]] = {
+        "bronze": Bronze,
+        "silver": Silver,
+        "gold": Gold,
+    }
     for step in doc.steps:
-        layer_cls: type[LayerStep]
-        if step.layer == "bronze":
-            layer_cls = Bronze
-            ns[step.name] = layer_cls(
-                asset=step.asset,
-                source=step.source,
-                write_mode=step.write_mode,
-                transform_ref=step.transform_ref,
-                rules=step.rules,
-                description=step.description,
-                tags=step.tags,
-                kind=step.kind,
-                metadata=step.metadata,
-                name=step.name,
+        layer_cls = _LAYER_CLS.get(step.layer)
+        if layer_cls is None:
+            raise ValueError(
+                f"Unknown medallion layer for step {step.name!r}: {step.layer!r}. "
+                "Expected one of: bronze, silver, gold."
             )
-        elif step.layer == "silver":
-            layer_cls = Silver
-            ns[step.name] = layer_cls(
-                asset=step.asset,
-                source=step.source or "",
-                write_mode=step.write_mode or "overwrite",
-                transform_ref=step.transform_ref,
-                rules=step.rules,
-                description=step.description,
-                tags=step.tags,
-                kind=step.kind,
-                metadata=step.metadata,
-                name=step.name,
-            )
-        else:
-            layer_cls = Gold
-            ns[step.name] = layer_cls(
-                asset=step.asset,
-                source=step.source or "",
-                write_mode=step.write_mode or "overwrite",
-                transform_ref=step.transform_ref,
-                rules=step.rules,
-                description=step.description,
-                tags=step.tags,
-                kind=step.kind,
-                metadata=step.metadata,
-                name=step.name,
-            )
+        kwargs: dict[str, Any] = {
+            "asset": step.asset,
+            "source": step.source,
+            "write_mode": step.write_mode,
+            "transform_ref": step.transform_ref,
+            "rules": step.rules,
+            "description": step.description,
+            "tags": step.tags,
+            "kind": step.kind,
+            "metadata": step.metadata,
+            "name": step.name,
+        }
+        if step.layer in {"silver", "gold"}:
+            kwargs["source"] = step.source or ""
+            kwargs["write_mode"] = step.write_mode or "overwrite"
+        ns[step.name] = layer_cls(**kwargs)
     return type(f"{_safe(doc.name)}Medallion", (MedallionPipeline,), ns)
 
 

@@ -27,6 +27,7 @@ from medallantic import (
     Silver,
     SparkForgePipelineSpec,
     adapt_pipeline,
+    lower_document,
 )
 from medallantic.migrate import sparkforge as sparkforge_migrate
 
@@ -204,6 +205,164 @@ def test_cycle_emits_mdl_diagnostic() -> None:
         )
     codes = {d.code for d in exc.value.report.diagnostics}
     assert MDL102_CYCLE in codes
+    assert exc.value.code == MDL102_CYCLE
+
+
+def test_duplicate_name_error_code_matches_diagnostic() -> None:
+    from medallantic import MDL101_DUPLICATE_NAME
+
+    with pytest.raises(LoweringError) as exc:
+        (
+            MedallionBuilder("dup", schema="demo")
+            .bronze("orders", asset="a")
+            .bronze("orders", asset="b")
+            .lower()
+        )
+    assert exc.value.code == MDL101_DUPLICATE_NAME
+    assert any(d.code == MDL101_DUPLICATE_NAME for d in exc.value.report.diagnostics)
+
+
+def test_bad_write_mode_error_code_matches_diagnostic() -> None:
+    from medallantic import MDL105_BAD_WRITE_MODE
+
+    with pytest.raises(LoweringError) as exc:
+        (
+            MedallionBuilder("badwrite", schema="demo")
+            .bronze("orders", asset="bronze_orders")
+            .silver(
+                "clean",
+                source="orders",
+                asset="silver_orders",
+                write_mode="not-a-mode",
+            )
+            .lower()
+        )
+    assert exc.value.code == MDL105_BAD_WRITE_MODE
+    assert any(d.code == MDL105_BAD_WRITE_MODE for d in exc.value.report.diagnostics)
+
+
+def test_zero_accept_rates_preserved_native_document() -> None:
+    from medallantic.schema import MedallionDocument
+
+    doc = MedallionDocument.from_dict(
+        {
+            "name": "zero",
+            "min_bronze_rate": 0.0,
+            "min_silver_rate": 0.0,
+            "min_gold_rate": 0.0,
+            "steps": [
+                {
+                    "name": "orders",
+                    "layer": "bronze",
+                    "kind": "bronze_rules",
+                    "asset": "b",
+                }
+            ],
+        }
+    )
+    assert doc.min_bronze_rate == 0.0
+    assert doc.min_silver_rate == 0.0
+    assert doc.min_gold_rate == 0.0
+    lowered = (
+        MedallionBuilder(
+            "zero",
+            schema="demo",
+            min_bronze_rate=0.0,
+            min_silver_rate=0.0,
+            min_gold_rate=0.0,
+        )
+        .bronze("orders", asset="b")
+        .lower()
+    )
+    rates = lowered.profile.metadata["plugin:medallantic"]["layer_rates"]
+    assert rates == {"bronze": 0.0, "silver": 0.0, "gold": 0.0}
+
+
+def test_unknown_layer_fails_closed() -> None:
+    from medallantic import MDL107_UNKNOWN_LAYER
+    from medallantic.authoring import from_document
+    from medallantic.schema import MedallionDocument, MedallionStep
+
+    with pytest.raises(ValueError, match="Unknown medallion layer"):
+        from_document(
+            MedallionDocument(
+                name="bad",
+                steps=(
+                    MedallionStep(
+                        name="x",
+                        layer="platinum",
+                        kind="bronze_rules",
+                        asset="a",
+                    ),
+                ),
+            )
+        )
+    with pytest.raises(LoweringError) as exc:
+        lower_document(
+            MedallionDocument(
+                name="bad",
+                steps=(
+                    MedallionStep(
+                        name="x",
+                        layer="platinum",
+                        kind="bronze_rules",
+                        asset="a",
+                    ),
+                ),
+            )
+        )
+    assert exc.value.code == MDL107_UNKNOWN_LAYER
+
+
+def test_validation_policy_names_do_not_collide() -> None:
+    from etlantic.policy import resolve_validation_policy
+
+    a = (
+        MedallionBuilder("pipe_a", schema="default", min_bronze_rate=50.0)
+        .bronze("orders", asset="a")
+        .lower()
+    )
+    b = (
+        MedallionBuilder("pipe_b", schema="default", min_bronze_rate=99.0)
+        .bronze("orders", asset="b")
+        .lower()
+    )
+    assert a.validation_policy.name != b.validation_policy.name
+    assert (
+        resolve_validation_policy(a.validation_policy.name).metadata[
+            "min_accept_rate_ingest"
+        ]
+        == 50.0
+    )
+    assert (
+        resolve_validation_policy(b.validation_policy.name).metadata[
+            "min_accept_rate_ingest"
+        ]
+        == 99.0
+    )
+
+
+def test_with_metadata_and_step_annotations_survive_definition() -> None:
+    lowered = (
+        MedallionBuilder("meta", schema="demo")
+        .with_metadata(team="analytics", ticket="T-1")
+        .bronze(
+            "orders",
+            asset="bronze_orders",
+            description="raw orders",
+            tags=("ingest",),
+        )
+        .lower()
+    )
+    assert lowered.metadata["document_metadata"] == {
+        "team": "analytics",
+        "ticket": "T-1",
+    }
+    assert lowered.metadata["steps"]["orders"]["description"] == "raw orders"
+    assert lowered.metadata["steps"]["orders"]["tags"] == ["ingest"]
+    ext = lowered.definition.extensions["plugin:medallantic"]
+    assert ext["document_metadata"] == {"team": "analytics", "ticket": "T-1"}
+    assert ext["steps"]["orders"]["description"] == "raw orders"
 
 
 def test_declarative_from_dict() -> None:

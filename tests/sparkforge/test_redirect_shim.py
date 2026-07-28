@@ -22,3 +22,18 @@ def test_sparkforge_shim_reexports_medallantic() -> None:
         and "medallantic" in str(w.message).lower()
     ]
     assert len(deprecated) >= 1
+
+
+@pytest.mark.medallantic
+def test_sparkforge_shim_submodules() -> None:
+    import etlantic_sparkforge.adapt as adapt
+    import etlantic_sparkforge.compat as compat
+    import etlantic_sparkforge.ir as ir
+    import etlantic_sparkforge.reports as reports
+    import etlantic_sparkforge.runtime_map as runtime_map
+
+    assert adapt.adapt_pipeline is not None
+    assert ir.SparkForgePipelineSpec is not None
+    assert compat.write_mode_from_sparkforge is not None
+    assert reports.adapt_run_result is not None
+    assert runtime_map.intent_from_sparkforge is not None

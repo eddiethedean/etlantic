@@ -73,11 +73,11 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-For a published GitHub Release asset (example: wheel from the `v0.28.0` release):
+For a published GitHub Release asset (example: wheel from the `v0.29.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
-gh attestation verify path/to/etlantic-0.28.0-*.whl \
+gh attestation verify path/to/etlantic-0.29.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```
@@ -88,8 +88,8 @@ floating ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
 `etlantic-datafusion` (Experimental Alpha), and
-[Medallantic](../09_EXAMPLES/MEDALLANTIC.md) (IR migration adapter — not a
-full medallion runtime).
+[Medallantic](../09_EXAMPLES/MEDALLANTIC.md) (native medallion authoring
+shipped in 0.29; live medallion execution remains later).
 
 ### 6. Optional deep dives
 

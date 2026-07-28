@@ -2,7 +2,7 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.28 |
+| Topic | 0.29 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
@@ -76,9 +76,9 @@ reference controls are shipped:
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.28)
+## Shipped / adopter-owned / residual (0.29)
 
-| Concern | 0.28 status |
+| Concern | 0.29 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

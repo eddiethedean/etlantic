@@ -43,6 +43,29 @@ __all__ = [
 ]
 
 
+def _primary_error_code(
+    diagnostics: list[Diagnostic] | tuple[Diagnostic, ...],
+    fallback: str,
+) -> str:
+    for diagnostic in diagnostics:
+        if diagnostic.severity is Severity.ERROR:
+            return diagnostic.code
+    return fallback
+
+
+def _mdl_to_pmsf_code(code: str) -> str:
+    return {
+        "MDL100": "PMSF304",
+        "MDL101": "PMSF305",
+        "MDL102": "PMSF306",
+        "MDL103": "PMSF312",
+        "MDL104": "PMSF302",
+        "MDL105": "PMSF307",
+        "MDL106": "PMSF303",
+        "MDL107": "PMSF303",
+    }.get(code, "PMSF301")
+
+
 class AdapterError(Exception):
     """Raised when SparkForge → ETLantic adaptation fails closed."""
 
@@ -193,7 +216,7 @@ def adapt_pipeline(
         raise AdapterError(
             "Refusing to adapt invalid SparkForge pipeline IR.",
             report=ValidationReport.from_diagnostics(diagnostics),
-            code="PMSF301",
+            code=_primary_error_code(diagnostics, "PMSF301"),
         )
 
     for ext in spec.legacy_engine_extensions:
@@ -235,17 +258,11 @@ def adapt_pipeline(
         )
     except LoweringError as exc:
         # Preserve PMSF-facing codes for migrate callers where possible.
-        code = "PMSF301"
-        if exc.code.startswith("MDL"):
-            code = {
-                "MDL100": "PMSF304",
-                "MDL101": "PMSF305",
-                "MDL102": "PMSF306",
-                "MDL103": "PMSF312",
-                "MDL104": "PMSF302",
-                "MDL105": "PMSF307",
-                "MDL106": "PMSF303",
-            }.get(exc.code, "PMSF301")
+        code = (
+            _mdl_to_pmsf_code(exc.code)
+            if exc.code.startswith("MDL")
+            else _primary_error_code(exc.report.diagnostics, "PMSF301")
+        )
         # Remap MDL diagnostics to historic PMSF codes for IR path.
         remapped = tuple(_remap_mdl_to_pmsf(d) for d in exc.report.diagnostics)
         raise AdapterError(
@@ -283,7 +300,6 @@ def adapt_pipeline(
         diagnostics=merged_diagnostics,
         metadata={
             **lowered.metadata,
-            "adapter_version": lowered.metadata.get("adapter_version", "0.29.0"),
             "migrate": "medallantic.migrate.sparkforge",
         },
         required_delta_operations=delta_ops,
@@ -299,6 +315,7 @@ def _remap_mdl_to_pmsf(diagnostic: Diagnostic) -> Diagnostic:
         "MDL104": "PMSF302",
         "MDL105": "PMSF307",
         "MDL106": "PMSF303",
+        "MDL107": "PMSF303",
         "MDL110": "PMSF411",
         "MDL111": "PMSF411",
     }
@@ -341,7 +358,9 @@ def _validate_spec(spec: SparkForgePipelineSpec, diagnostics: list[Diagnostic]) 
                 phase="sparkforge_adapter",
             )
         )
-    edges: dict[str, str | None] = {s.name: s.source for s in spec.steps}
+    edges: dict[str, str | None] = {
+        s.name: ((s.source or "").split(".", 1)[0] or None) for s in spec.steps
+    }
     for name in names:
         seen: set[str] = set()
         cur: str | None = name

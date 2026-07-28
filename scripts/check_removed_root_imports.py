@@ -15,9 +15,9 @@ SKIP_FILES = {
     "test_root_removals_0_27.py",
     "test_root_removals_0_28.py",
 }
-# Historical migration pages may show pre-removal imports intentionally.
+# Historical migration / what's-new pages may show pre-removal imports intentionally.
 DOCS_SKIP = re.compile(
-    r"(MIGRATION_0_(?:1[0-9]|2[0-5]|5|6|7|8|9)_TO_|WHATS_NEW_0_(?:1[0-9]|2[0-5])|"
+    r"(MIGRATION_0_(?:1[0-9]|2[0-9]|5|6|7|8|9)_TO_|WHATS_NEW_0_(?:1[0-9]|2[0-9])|"
     r"CURSOR_EXTRACT_LOAD|DOCUMENTATION_AUDIT_)"
 )
 _IMPORT_RE = re.compile(

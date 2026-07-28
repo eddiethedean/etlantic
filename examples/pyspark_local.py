@@ -1,4 +1,4 @@
-"""Local PySpark batch pipeline (ETLantic 0.28.0).
+"""Local PySpark batch pipeline (ETLantic 0.29.0).
 
 Requires:
 

@@ -32,14 +32,14 @@ full plan object-graph immutability.
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
 | Prefect scheduler MVP | provisional | expand or freeze protocol by 1.0 |
-| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.29.0** | remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.28.0** | remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
 
 ### Pre-1.0 burn-in discipline (0.28 line)
 
 Do **not** add new indefinite keep-forever root aliases while ETLantic is on
-the 0.28 burn-in line. Prefer owning modules or the curated root facade.
+the 0.29 burn-in line. Prefer owning modules or the curated root facade.
 
-Third-wave removals in **0.29.0** (import from owning modules):
+Third-wave removals in **0.28.0** (import from owning modules):
 
 - `etlantic.sql` — `RelationRef`, `SqlQuery`, `col`, `concat`, `select`,
   `discover_sql_plugins`

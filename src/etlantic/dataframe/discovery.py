@@ -34,11 +34,15 @@ def discover_dataframe_plugins(
     When ``profile`` is omitted, allowlists are open (non-production behavior).
     Production profiles require manifests and a non-empty allowlist.
 
+    Trust diagnostics from the latest call are exposed on
+    ``discover_dataframe_plugins.last_diagnostics``.
+
     Raises:
         PipelineExecutionError: When trust ERROR diagnostics coexist with
             loaded plugins (fail-open would otherwise occur). Trust failures
             that reject all plugins return an empty mapping.
     """
+    discover_dataframe_plugins.last_diagnostics = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         DATAFRAME_PLUGIN_ENTRY_POINT,
         profile=profile,
@@ -46,6 +50,7 @@ def discover_dataframe_plugins(
             getattr(resolve_plugin_info(plugin), "engine", None) or item.name
         ),
     )
+    discover_dataframe_plugins.last_diagnostics = list(result.diagnostics)  # type: ignore[attr-defined]
     return _fail_closed_loaded(result)
 
 

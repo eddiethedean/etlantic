@@ -108,17 +108,39 @@ def test_disallowed_plugin_rejected_before_load() -> None:
     assert all(e.kind == "plugin_authorization" for e in events)
 
 
-def test_allowlist_short_name_does_not_authorize_by_engine() -> None:
-    """Allowlist keys must match package identity, not engine/entry short names."""
+def test_allowlist_engine_short_name_authorizes() -> None:
+    """Allowlist keys may match package, distribution, entry name, or engine."""
     discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
     if not discovered:
         pytest.skip("no dataframe plugins installed")
-    # Even if a plugin's engine/name is "polars", listing only the short name
-    # must not authorize it — distribution/package identity is required.
-    profile = production_profile(plugin_allowlist={"polars": None, "local": None})
+    # Prefer an engine/entry short name that is actually present.
+    short = next(
+        (
+            c
+            for item in discovered
+            for c in (item.engine, item.name)
+            if c and c not in {"local", "null"}
+        ),
+        None,
+    )
+    if short is None:
+        pytest.skip("no non-builtin dataframe short name available")
+    profile = production_profile(plugin_allowlist={str(short): None})
     authorized, diags, _events = authorize_plugins(discovered, profile)
-    assert authorized == []
-    assert any(d.code == "PMPLUG402" for d in diags)
+    assert authorized, f"expected {short!r} to authorize; diags={diags}"
+    assert all(
+        item.authorization == "allowed"
+        for item in authorized
+        if item.engine == short or item.name == short
+    )
+
+
+def test_discover_dataframe_plugins_exposes_last_diagnostics() -> None:
+    profile = production_profile(plugin_allowlist={})
+    found = discover_dataframe_plugins(profile=profile)
+    assert found == {}
+    diags = getattr(discover_dataframe_plugins, "last_diagnostics", [])
+    assert any(getattr(d, "code", None) == "PMPLUG401" for d in diags)
 
 
 def test_builtin_local_exempt_from_package_allowlist() -> None:

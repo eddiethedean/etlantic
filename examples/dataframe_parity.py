@@ -1,4 +1,4 @@
-"""Parity example: one pipeline, Polars or Pandas via profile (ETLantic 0.28.0).
+"""Parity example: one pipeline, Polars or Pandas via profile (ETLantic 0.29.0).
 
 Requires:
 

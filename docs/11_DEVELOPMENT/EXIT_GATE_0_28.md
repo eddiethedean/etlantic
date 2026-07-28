@@ -27,7 +27,7 @@
   facade package category documented
 - [x] Wire schema ranges document the quadruple-minor window
 - [x] What's New / Migration 0.27→0.28 / this exit gate pass docs gates
-- [x] No wire-schema reset; native medallion authoring (M1) remains **0.29**
+- [x] No wire-schema reset; native medallion authoring (M1) **shipped in 0.29.0**
 
 ## Residual / follow-ons (0.30+)
 

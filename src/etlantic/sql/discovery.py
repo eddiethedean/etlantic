@@ -22,7 +22,12 @@ def discover_sql_plugins(
     *,
     profile: Profile | None = None,
 ) -> dict[str, SqlPlugin]:
-    """Discover SQL plugins with authorize-before-load (0.20)."""
+    """Discover SQL plugins with authorize-before-load (0.20).
+
+    Trust diagnostics from the latest call are exposed on
+    ``discover_sql_plugins.last_diagnostics``.
+    """
+    discover_sql_plugins.last_diagnostics = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         SQL_PLUGIN_ENTRY_POINT,
         profile=profile,
@@ -30,6 +35,7 @@ def discover_sql_plugins(
             getattr(getattr(plugin, "info", None), "engine", None) or item.name
         ),
     )
+    discover_sql_plugins.last_diagnostics = list(result.diagnostics)  # type: ignore[attr-defined]
     return _fail_closed_loaded(result)
 
 

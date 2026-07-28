@@ -217,8 +217,61 @@ def test_cycle_fail_closed() -> None:
             },
         ],
     }
-    with pytest.raises(AdapterError):
+    with pytest.raises(AdapterError) as exc:
         adapt_pipeline(SparkForgePipelineSpec.from_dict(data))
+    assert exc.value.code == "PMSF306"
+    assert any(d.code == "PMSF306" for d in exc.value.report.diagnostics)
+
+
+def test_typed_result_cycle_detected_in_adapt_precheck() -> None:
+    data = {
+        "name": "cyclic_result",
+        "steps": [
+            {
+                "name": "a",
+                "kind": "silver_transform",
+                "layer": "silver",
+                "source": "b.result",
+            },
+            {
+                "name": "b",
+                "kind": "silver_transform",
+                "layer": "silver",
+                "source": "a.result",
+            },
+        ],
+    }
+    with pytest.raises(AdapterError) as exc:
+        adapt_pipeline(SparkForgePipelineSpec.from_dict(data))
+    assert exc.value.code == "PMSF306"
+
+
+def test_empty_and_duplicate_adapter_error_codes() -> None:
+    with pytest.raises(AdapterError) as empty:
+        adapt_pipeline(SparkForgePipelineSpec.from_dict({"name": "empty", "steps": []}))
+    assert empty.value.code == "PMSF304"
+
+    with pytest.raises(AdapterError) as dup:
+        adapt_pipeline(
+            SparkForgePipelineSpec.from_dict(
+                {
+                    "name": "dup",
+                    "steps": [
+                        {
+                            "name": "a",
+                            "kind": "bronze_rules",
+                            "layer": "bronze",
+                        },
+                        {
+                            "name": "a",
+                            "kind": "bronze_rules",
+                            "layer": "bronze",
+                        },
+                    ],
+                }
+            )
+        )
+    assert dup.value.code == "PMSF305"
 
 
 def test_compatibility_matrix_present() -> None:

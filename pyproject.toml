@@ -248,6 +248,7 @@ known-first-party = [
     "etlantic_keyring",
     "etlantic_sqlmodel",
     "medallantic",
+    "etlantic_sparkforge",
     "etlantic_datafusion",
     "etlantic_fastapi",
 ]

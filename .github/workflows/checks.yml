@@ -27,6 +27,10 @@ jobs:
       - name: Sync dependencies
         run: uv sync --locked
 
+      - name: Plugin manifest check
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_plugin_manifests.py
+
       - name: Ruff check
         run: uv run ruff check .
 
@@ -47,10 +51,6 @@ jobs:
       - name: Documentation consistency
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_docs.py
-
-      - name: Plugin manifest check
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run python scripts/check_plugin_manifests.py
 
       - name: Agent guidance drift check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -114,7 +114,12 @@ jobs:
           uv run python -c "
           from etlantic.dataframe.discovery import discover_dataframe_plugins
           found = discover_dataframe_plugins()
-          assert '${{ matrix.engine }}' in found, found
+          if '${{ matrix.engine }}' not in found:
+              diags = getattr(discover_dataframe_plugins, 'last_diagnostics', [])
+              raise AssertionError({'found': found, 'diagnostics': [
+                  {'code': getattr(d, 'code', None), 'message': getattr(d, 'message', None)}
+                  for d in diags
+              ]})
           print('discovered', sorted(found))
           "
 
@@ -177,7 +182,12 @@ jobs:
           uv run python -c "
           from etlantic.sql.discovery import discover_sql_plugins
           found = discover_sql_plugins()
-          assert 'sql' in found, found
+          if 'sql' not in found:
+              diags = getattr(discover_sql_plugins, 'last_diagnostics', [])
+              raise AssertionError({'found': found, 'diagnostics': [
+                  {'code': getattr(d, 'code', None), 'message': getattr(d, 'message', None)}
+                  for d in diags
+              ]})
           print('discovered', sorted(found))
           "
 
@@ -222,7 +232,12 @@ jobs:
           uv run python -c "
           from etlantic.spark.discovery import discover_spark_plugins
           found = discover_spark_plugins()
-          assert 'pyspark' in found, found
+          if 'pyspark' not in found:
+              diags = getattr(discover_spark_plugins, 'last_diagnostics', [])
+              raise AssertionError({'found': found, 'diagnostics': [
+                  {'code': getattr(d, 'code', None), 'message': getattr(d, 'message', None)}
+                  for d in diags
+              ]})
           print('discovered', sorted(found))
           "
 
@@ -309,7 +324,12 @@ jobs:
           uv run python -c "
           from etlantic.orchestration.discovery import discover_orchestrator_plugins
           found = discover_orchestrator_plugins()
-          assert 'airflow' in found, found
+          if 'airflow' not in found:
+              diags = getattr(discover_orchestrator_plugins, 'last_diagnostics', [])
+              raise AssertionError({'found': found, 'diagnostics': [
+                  {'code': getattr(d, 'code', None), 'message': getattr(d, 'message', None)}
+                  for d in diags
+              ]})
           print('discovered', sorted(found))
           "
 

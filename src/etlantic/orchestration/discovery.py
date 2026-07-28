@@ -22,7 +22,12 @@ def discover_orchestrator_plugins(
     *,
     profile: Profile | None = None,
 ) -> dict[str, OrchestratorPlugin]:
-    """Discover orchestrator plugins with authorize-before-load (0.20)."""
+    """Discover orchestrator plugins with authorize-before-load (0.20).
+
+    Trust diagnostics from the latest call are exposed on
+    ``discover_orchestrator_plugins.last_diagnostics``.
+    """
+    discover_orchestrator_plugins.last_diagnostics = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         ORCHESTRATOR_PLUGIN_ENTRY_POINT,
         profile=profile,
@@ -30,6 +35,7 @@ def discover_orchestrator_plugins(
             getattr(getattr(plugin, "info", None), "engine", None) or item.name
         ),
     )
+    discover_orchestrator_plugins.last_diagnostics = list(result.diagnostics)  # type: ignore[attr-defined]
     return _fail_closed_loaded(result)
 
 

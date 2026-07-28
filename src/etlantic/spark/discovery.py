@@ -24,7 +24,12 @@ def discover_spark_plugins(
     *,
     profile: Profile | None = None,
 ) -> dict[str, SparkPlugin]:
-    """Discover Spark plugins with authorize-before-load (0.20)."""
+    """Discover Spark plugins with authorize-before-load (0.20).
+
+    Trust diagnostics from the latest call are exposed on
+    ``discover_spark_plugins.last_diagnostics``.
+    """
+    discover_spark_plugins.last_diagnostics = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         SPARK_PLUGIN_ENTRY_POINT,
         profile=profile,
@@ -32,6 +37,7 @@ def discover_spark_plugins(
             getattr(getattr(plugin, "info", None), "engine", None) or item.name
         ),
     )
+    discover_spark_plugins.last_diagnostics = list(result.diagnostics)  # type: ignore[attr-defined]
     return _fail_closed_loaded(result)
 
 
@@ -39,7 +45,12 @@ def discover_spark_providers(
     *,
     profile: Profile | None = None,
 ) -> dict[str, SparkProvider]:
-    """Discover Spark providers with authorize-before-load (0.20)."""
+    """Discover Spark providers with authorize-before-load (0.20).
+
+    Trust diagnostics from the latest call are exposed on
+    ``discover_spark_providers.last_diagnostics``.
+    """
+    discover_spark_providers.last_diagnostics = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         SPARK_PROVIDER_ENTRY_POINT,
         profile=profile,
@@ -47,6 +58,7 @@ def discover_spark_providers(
             getattr(getattr(plugin, "info", None), "name", None) or item.name
         ),
     )
+    discover_spark_providers.last_diagnostics = list(result.diagnostics)  # type: ignore[attr-defined]
     return _fail_closed_loaded(result)
 
 

@@ -284,6 +284,11 @@ def main() -> None:
                 f"etlantic-pandas=={prior_patch}",
                 f"etlantic-sql=={prior_patch}",
                 f"etlantic-pyspark=={prior_patch}",
+                f"| Topic | {prior_minor} |",
+                f"| Concern | Status in {prior_minor} |",
+                f"| Concern | {prior_minor} status |",
+                f"pin all to `{prior_patch}`",
+                f"(`{prior_patch}` with `{prior_patch}`)",
             ]
         )
     if "| Capability | 0.4 |" in (ROOT / "README.md").read_text(encoding="utf-8"):
@@ -428,6 +433,37 @@ def main() -> None:
         )
         if not current_migration.exists():
             raise SystemExit(f"Missing {current_migration.relative_to(ROOT)}")
+        current_exit_gate = (
+            ROOT
+            / "docs/11_DEVELOPMENT"
+            / f"EXIT_GATE_{major_minor_for_notes.replace('.', '_')}.md"
+        )
+        if not current_exit_gate.exists():
+            raise SystemExit(f"Missing {current_exit_gate.relative_to(ROOT)}")
+        development_readme = (ROOT / "docs/11_DEVELOPMENT/README.md").read_text(
+            encoding="utf-8"
+        )
+        migration_link = current_migration.name
+        exit_gate_link = current_exit_gate.name
+        if migration_link not in development_readme:
+            raise SystemExit(
+                "docs/11_DEVELOPMENT/README.md must link current migration "
+                f"{migration_link}"
+            )
+        if exit_gate_link not in development_readme:
+            raise SystemExit(
+                "docs/11_DEVELOPMENT/README.md must link current exit gate "
+                f"{exit_gate_link}"
+            )
+        getting_started = (ROOT / "docs/01_GETTING_STARTED/README.md").read_text(
+            encoding="utf-8"
+        )
+        whats_new_link = f"WHATS_NEW_{major_minor_for_notes.replace('.', '_')}.md"
+        if whats_new_link not in getting_started:
+            raise SystemExit(
+                "docs/01_GETTING_STARTED/README.md must link current What's New "
+                f"{whats_new_link}"
+            )
     if not (ROOT / "examples/portable_polars_kernel.py").exists():
         raise SystemExit("Missing examples/portable_polars_kernel.py")
     if not (ROOT / "examples/portable_pandas_kernel.py").exists():

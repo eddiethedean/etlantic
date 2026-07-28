@@ -1,4 +1,4 @@
-"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.28.0).
+"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.29.0).
 
 Requires:
 
