@@ -15,7 +15,9 @@ PLAN_SCHEMA = "etlantic.plan/1"
 
 
 def _plan_metadata_strict(profile_snapshot: dict[str, Any]) -> bool:
-    return str(profile_snapshot.get("security_mode") or "").strip().lower() == "production"
+    return (
+        str(profile_snapshot.get("security_mode") or "").strip().lower() == "production"
+    )
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,5 +10,5 @@ globs:
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
-- Medallion bronze/silver/gold stay in Medallantic — never in core.
+- Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.

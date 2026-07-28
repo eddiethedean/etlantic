@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-07-28
+
+### Added
+- Triple-minor burn-in fixtures (`v0_26/`) proving 0.26→0.27 upgrade without wire-schema reset
+- Extended CI gates for pipeline and sibling codec burn-in across `v0_24`, `v0_25`, and `v0_26`
+- What's New / Migration / Exit Gate 0.27 documentation
+- `medallantic` package (replaces `etlantic-sparkforge`) for SparkForge migration adapter
+
+### Changed
+- Official package versions align at 0.27.0; plugins require `etlantic>=0.27.0,<0.28`
+- Plugin SDK `/1` freeze re-scoped to 0.28+ (external feedback blocker remains open)
+- Wire schema ranges document the triple-minor window
+- Rename `etlantic-sparkforge` to `medallantic`; optional extra is `etlantic[medallantic]`
+
 ### Fixed
 - Close `Profile.__init__` metadata validation bypass for production profiles
 - Validate plan graph, region, boundary, and artifact metadata on decode; apply
@@ -18,20 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Harden `check_removed_root_imports` and extend `check_docs` stale-pin detection
 - Update burn-in script docstrings for `v0_26` coverage
 
-## [0.27.0] - 2026-07-27
-
-### Added
-- Triple-minor burn-in fixtures (`v0_26/`) proving 0.26→0.27 upgrade without wire-schema reset
-- Extended CI gates for pipeline and sibling codec burn-in across `v0_24`, `v0_25`, and `v0_26`
-- What's New / Migration / Exit Gate 0.27 documentation
-
-### Changed
-- Official package versions align at 0.27.0; plugins require `etlantic>=0.27.0,<0.28`
-- Plugin SDK `/1` freeze re-scoped to 0.28+ (external feedback blocker remains open)
-- Wire schema ranges document the triple-minor window
-
 ### Removed
 - Second-wave root facade aliases: reliability declarations (12), schema_drift helpers (8), registry descriptors (6); import from owning modules per Migration 0.26→0.27
+- `etlantic-sparkforge` distribution (superseded by `medallantic`)
 
 ## [0.26.0] - 2026-07-27
 

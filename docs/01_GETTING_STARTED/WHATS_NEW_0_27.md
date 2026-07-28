@@ -17,6 +17,8 @@
 - **Second-wave root alias removals** (0.27): reliability declarations,
   schema_drift helpers, and registry descriptors removed from `import etlantic`
   — use owning modules
+- **`medallantic`** replaces `etlantic-sparkforge` for the SparkForge migration
+  adapter (`pip install 'medallantic==0.27.0'` or `etlantic[medallantic]`)
 - [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) and
   [Exit gate 0.27](../11_DEVELOPMENT/EXIT_GATE_0_27.md)
 

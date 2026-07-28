@@ -47,7 +47,7 @@ Always use `uv sync --locked` so your environment matches `uv.lock`.
 
 `uv sync --locked` installs runtime dependencies, the editable workspace packages, and
 the `dev` group (pytest, ruff, mkdocs). Optional groups: `dataframes`, `sql`,
-`pyspark`, `airflow`, `prefect`, `sparkforge`, `keyring`, `sqlmodel`. The
+`pyspark`, `airflow`, `prefect`, `medallantic`, `keyring`, `sqlmodel`. The
 workspace also includes experimental `etlantic-datafusion` (Alpha; not a
 default group)—install via `uv sync --extra datafusion` or the package path
 when working on Gate B. See

@@ -8,7 +8,8 @@
 | Area | Change |
 |---|---|
 | Wire schemas | Still `etlantic.pipeline/1`, `plan/1`, `run_report/1`, … |
-| Package pin | `etlantic==0.27.0`; plugins `etlantic-*==0.27.0` |
+| Package pin | `etlantic==0.27.0`; plugins `etlantic-*==0.27.0`; `medallantic==0.27.0` |
+| SparkForge adapter | `etlantic-sparkforge` renamed to **`medallantic`** (`etlantic[medallantic]`) |
 | Plugin SDK `/1` | Freeze-eligible; **re-scoped to 0.28+** (not frozen) |
 | Root aliases | **Removed** second-wave groups (see below) |
 
@@ -36,7 +37,12 @@
    Remaining demoted aliases still warn once; see
    [Removal candidates](REMOVAL_CANDIDATES_1_0.md).
 
-4. Plugin authors: pin `etlantic>=0.27.0,<0.28` and re-run public conformance
+4. SparkForge adapter users: replace `etlantic-sparkforge` / `etlantic[sparkforge]`
+   with `medallantic` / `etlantic[medallantic]` and update imports to
+   `import medallantic` (API names such as `debug_request_from_sparkforge` are
+   unchanged).
+
+5. Plugin authors: pin `etlantic>=0.27.0,<0.28` and re-run public conformance
    suites. Protocol `/1` is not frozen yet.
 
 ## Triple-minor burn-in

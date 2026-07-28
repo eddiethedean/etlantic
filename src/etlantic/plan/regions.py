@@ -35,9 +35,7 @@ class ExecutionRegion:
         from etlantic.plan.freeze import deep_freeze
 
         metadata = dict(data.get("metadata") or {})
-        validate_extension_metadata(
-            metadata, path="region.metadata", strict=strict
-        )
+        validate_extension_metadata(metadata, path="region.metadata", strict=strict)
         region = cls(
             identity=str(data["identity"]),
             engine=str(data["engine"]),
@@ -80,9 +78,7 @@ class MaterializationBoundary:
         from etlantic.plan.freeze import deep_freeze
 
         metadata = dict(data.get("metadata") or {})
-        validate_extension_metadata(
-            metadata, path="boundary.metadata", strict=strict
-        )
+        validate_extension_metadata(metadata, path="boundary.metadata", strict=strict)
         boundary = cls(
             identity=str(data["identity"]),
             producer_node=str(data["producer_node"]),

@@ -2371,8 +2371,9 @@ internals.
 `etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —
 can survive a real minor upgrade without a wire-schema reset. 0.25 is the
 first named slice of the broader compatibility burn-in band; **0.26** is the
-second slice; **0.27** is the third; 0.28–0.98 continue the same discipline
-toward 0.99 RC.
+second slice; **0.27** is the third; **0.28–0.35** preserve that discipline
+while ETLantic and Medallantic co-evolve, followed by joint burn-in in
+**0.36–0.98** toward the 0.99 RC.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Production
 FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain

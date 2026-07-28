@@ -47,9 +47,7 @@ class ArtifactRef:
         from etlantic.plan.freeze import deep_freeze
 
         metadata = dict(data.get("metadata") or {})
-        validate_extension_metadata(
-            metadata, path="artifact.metadata", strict=strict
-        )
+        validate_extension_metadata(metadata, path="artifact.metadata", strict=strict)
         artifact = cls(
             identity=str(data["identity"]),
             logical_output=str(data["logical_output"]),

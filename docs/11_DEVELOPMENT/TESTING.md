@@ -26,7 +26,7 @@ and planning plus `tests/dataframe`, `tests/sql`, `tests/spark`,
 `tests/medallantic`.
 
 Current optional markers are `polars`, `pandas`, `sql`, `spark`,
-`real_pyspark`, `airflow`, `prefect`, `keyring`, `sqlmodel`, and `sparkforge`;
+`real_pyspark`, `airflow`, `prefect`, `keyring`, `sqlmodel`, and `medallantic`;
 `pyproject.toml` is authoritative. The baseline job excludes dependency-backed
 markers:
 
@@ -233,7 +233,7 @@ airflow
 prefect
 keyring
 sqlmodel
-sparkforge
+medallantic
 ```
 
 `unit`, `integration`, `slow`, and `network` are descriptive categories in
