@@ -30,11 +30,12 @@ def test_is_production_uses_security_mode_only() -> None:
     assert is_production_profile(production_profile()) is True
     named = Profile(name="production", security_mode="development")
     assert is_production_profile(named) is False
-    domain = Profile(
-        name="dev",
-        security_domain="production",
-        security_mode="development",
-    )
+    with pytest.warns(UserWarning, match="security_domain looks like production"):
+        domain = Profile(
+            name="dev",
+            security_domain="production",
+            security_mode="development",
+        )
     assert is_production_profile(domain) is False
     assert is_production_profile(None, security_mode="production") is True
 

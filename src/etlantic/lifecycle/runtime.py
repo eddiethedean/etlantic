@@ -99,10 +99,31 @@ class PipelineRuntime:
 
         Idempotent per profile key. No entry points are imported until this
         method runs (or manual ``register_*_plugin`` calls).
+
+        When the profile key changes, previously loaded plugin maps are
+        **replaced** (not merged) so a switch to a tighter allowlist cannot
+        leave unauthorized plugins resident on the runtime or registry.
         """
         key = profile_plugin_key(profile)
         if self._configured_profile_key == key:
             return list(self._plugin_diagnostics)
+
+        # Drop previously discovered (non-builtin) registry descriptors before
+        # re-registering the authorized set for the new profile.
+        _BUILTIN_PLUGIN_NAMES = frozenset({"local", "null", "env-secrets"})
+        for name in list(self.registry.plugins):
+            if name not in _BUILTIN_PLUGIN_NAMES:
+                descriptor = self.registry.plugins.pop(name)
+                if descriptor.engine and descriptor.engine in self.registry.engines:
+                    # Only drop engine caps when no remaining plugin claims them.
+                    still = any(
+                        d.engine == descriptor.engine
+                        for d in self.registry.plugins.values()
+                    )
+                    if not still:
+                        self.registry.engines.pop(descriptor.engine, None)
+                if name in self.registry.secret_providers:
+                    self.registry.secret_providers.pop(name, None)
 
         coordinator = PluginDiscoveryCoordinator()
         result = coordinator.discover_for_profile(
@@ -112,18 +133,13 @@ class PipelineRuntime:
             include_runtime_groups=True,
             include_transform_compilers=True,
         )
-        for key, plugin in result.dataframe_plugins.items():
-            self.dataframe_plugins.setdefault(key, plugin)
-        for key, plugin in result.sql_plugins.items():
-            self.sql_plugins.setdefault(key, plugin)
-        for key, plugin in result.spark_plugins.items():
-            self.spark_plugins.setdefault(key, plugin)
-        for key, provider in result.spark_providers.items():
-            self.spark_providers.setdefault(key, provider)
-        for key, plugin in result.orchestrator_plugins.items():
-            self.orchestrator_plugins.setdefault(key, plugin)
-        for key, plugin in result.scheduler_plugins.items():
-            self.scheduler_plugins.setdefault(key, plugin)
+        # Replace maps so denied engines cannot linger across profile switches.
+        self.dataframe_plugins = dict(result.dataframe_plugins)
+        self.sql_plugins = dict(result.sql_plugins)
+        self.spark_plugins = dict(result.spark_plugins)
+        self.spark_providers = dict(result.spark_providers)
+        self.orchestrator_plugins = dict(result.orchestrator_plugins)
+        self.scheduler_plugins = dict(result.scheduler_plugins)
         self._configured_profile_key = key
         self._plugin_diagnostics = list(result.diagnostics)
         return list(result.diagnostics)

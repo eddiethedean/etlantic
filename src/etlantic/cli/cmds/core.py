@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,8 @@ from etlantic.registry import PlanningContext
 from etlantic.reports.file_store import FileReportStore, compare_reports
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.request import RunIntent, RunRequest, RunSelection
+
+_LOG = logging.getLogger(__name__)
 
 
 def register_core_commands(
@@ -74,10 +77,22 @@ def register_core_commands(
             raise typer.Exit(ec.SUCCESS)
         from etlantic.diagnostics import Severity
 
-        trust_phases = {"plugin_trust", "plugin_discovery", "plugin_discover"}
+        trust_phases = {
+            "plugin_trust",
+            "plugin_discovery",
+            "plugin_discover",
+            "plugin_authorize",
+            "plugin_evaluate",
+            "plugin_load",
+            "plugin_probe",
+        }
         if any(
             d.severity is Severity.ERROR
-            and ((d.phase or "") in trust_phases or (d.code or "").startswith("PMPLUG"))
+            and (
+                (d.phase or "") in trust_phases
+                or (d.phase or "").startswith("plugin_")
+                or (d.code or "").startswith("PMPLUG")
+            )
             for d in report.diagnostics
         ):
             raise typer.Exit(ec.TRUST_FAILURE)
@@ -207,9 +222,16 @@ def register_core_commands(
             typer.echo(report.to_html())
         else:
             typer.echo(report.to_text())
-        code = ec.SUCCESS if report.status.value == "succeeded" else ec.PARTIAL_RUN
-        if report.status.value == "failed":
+        code = ec.SUCCESS
+        status = report.status.value
+        if status == "succeeded":
+            code = ec.SUCCESS
+        elif status == "partial":
+            code = ec.PARTIAL_RUN
+        elif status in {"failed", "timed_out", "cancelled"}:
             code = ec.EXECUTION_FAILURE
+        else:
+            code = ec.PARTIAL_RUN
         raise typer.Exit(code)
 
     def _plan_and_emit(
@@ -355,7 +377,12 @@ def register_core_commands(
                 # Legacy plan JSON without schema: attempt plan decode.
                 try:
                     return PipelinePlan.from_dict(payload)
-                except Exception:
+                except Exception as exc:
+                    _LOG.debug(
+                        "Legacy plan decode failed for %s; treating as pipeline target: %s",
+                        ref,
+                        exc,
+                    )
                     resolved, _ = cli.resolve_profile(
                         profile, allow_adhoc_profile=allow_adhoc_profile
                     )

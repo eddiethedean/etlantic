@@ -377,7 +377,8 @@ def __getattr__(name: str) -> Any:
                 f"etlantic.{name} is a pre-1.0 compatibility alias; "
                 f"prefer importing from {module_name} "
                 f"(or use the owning lazy namespace). "
-                "See docs/11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md.",
+                "See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md and "
+                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md.",
                 DeprecationWarning,
                 stacklevel=2,
             )

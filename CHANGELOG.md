@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Allowlist denials (``PMPLUG402``) of sibling packages no longer abort discovery when other allowlisted plugins load
+- Replace (not merge) runtime plugin maps and prune non-builtin registry entries on profile switch so tighter allowlists cannot leave unauthorized plugins resident
+- Authorize plugins only on distribution/package identity (not engine/entry short names); exempt in-tree builtin stubs from package allowlist checks; drop `"local": null` from prod examples
+- Compiler/differential tests import `RunStatus` from `etlantic.runtime` after 0.26 root removal; cover all `_REMOVED_0_26` symbols and guard tests/examples imports in CI
+- `discover_planning_plugins` returns immediately on empty-production `PMPLUG401` (no duplicate trust loops)
+- `require_plugin_probe` fail-closes in all security modes (not only production)
+- Warn when programmatic `security_domain` looks like production but `security_mode` is not
+- CLI maps `timed_out` / `cancelled` run status to exit `13` (`EXECUTION_FAILURE`); reserve `14` for partial success
+- Validate trust exit selection includes all `plugin_*` phases (authorize/evaluate/load/probe)
+- Split overloaded `PMPLUG421` into `PMPLUG421`–`PMPLUG424` (group / spark provider / transform compiler / load)
+- Demoted-alias warnings point at Migration 0.25→0.26 and removal candidates
+- Docs/check_docs pin hygiene for 0.26 (LEARNING_PATH, CONFIGURATION_TODAY, FIRST_PIPELINE, COMPATIBILITY, EXCEPTIONS, API_REFERENCE, FAQ, SURFACE_INVENTORY, RELEASE_PROCESS)
+- DataFusion stub messages retargeted to 0.26.0; PySpark local provider declares `etlantic.spark/1` protocol
+- Log (debug) instead of silent swallow on legacy plan decode and plugin compatibility distribution scan failures
+
 ## [0.26.0] - 2026-07-27
 
 ### Added

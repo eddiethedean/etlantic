@@ -1319,24 +1319,65 @@ def main() -> None:
 
     # Current-patch install pins must match package_version on green-path pages.
     pin = f"=={package_version}"
-    for path in (
+    parts = package_version.split(".")
+    prior_minor = (
+        f"{parts[0]}.{int(parts[1]) - 1}.0"
+        if len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) > 0
+        else None
+    )
+    green_path_docs = [
         ROOT / "docs/01_GETTING_STARTED/INSTALLATION.md",
         ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md",
+        ROOT / "docs/01_GETTING_STARTED/LEARNING_PATH.md",
+        ROOT / "docs/01_GETTING_STARTED/FIRST_PIPELINE.md",
         ROOT / "docs/01_GETTING_STARTED/prod.example.json",
+        ROOT / "docs/10_REFERENCE/CONFIGURATION_TODAY.md",
+        ROOT / "docs/10_REFERENCE/COMPATIBILITY.md",
         ROOT / "README.md",
-    ):
+    ]
+    for path in green_path_docs:
+        if not path.exists():
+            continue
         text = path.read_text(encoding="utf-8")
-        if "0.25.0" in text and package_version != "0.25.0":
-            # Allow historical ranges like >=0.25.0,<0.26
-            if pin not in text and f"etlantic=={package_version}" not in text:
-                if "==0.25.0" in text or '"==0.25.0"' in text:
-                    raise SystemExit(
-                        f"{path} still pins ==0.25.0; expected {pin} for current release"
-                    )
+        if prior_minor and prior_minor in text and package_version != prior_minor:
+            # Allow historical ranges like >=0.25.0,<0.26 and dedicated migration pages.
+            hard_pin = f"=={prior_minor}"
+            version_example = f'etlantic.version = "{prior_minor}"'
+            prints_prior = f"prints `{prior_minor}`"
+            if hard_pin in text and pin not in text and f"etlantic=={package_version}" not in text:
+                raise SystemExit(
+                    f"{path} still pins {hard_pin}; expected {pin} for current release"
+                )
+            if version_example in text:
+                raise SystemExit(
+                    f"{path} still shows {version_example}; expected "
+                    f'etlantic.version = "{package_version}"'
+                )
+            if prints_prior in text:
+                raise SystemExit(
+                    f"{path} still says prints `{prior_minor}`; expected "
+                    f"`{package_version}`"
+                )
+            # COMPATIBILITY / narrative "for 0.25.0" without current version nearby
+            if (
+                f"for {prior_minor}" in text
+                and package_version not in text
+                and f"0.{parts[1]}" not in path.name
+            ):
+                raise SystemExit(
+                    f"{path} still references tested surface for {prior_minor}; "
+                    f"retarget to {package_version}"
+                )
         if path.suffix == ".json" and pin not in text and f'"{package_version}"' not in text:
-            # prod.example.json allowlist values
-            if "==0.25.0" in text:
+            if prior_minor and f"=={prior_minor}" in text:
                 raise SystemExit(f"{path} allowlist pins must use {pin}")
+
+    exceptions_md = (ROOT / "docs/10_REFERENCE/EXCEPTIONS.md").read_text(encoding="utf-8")
+    if "still work pre-1.0" in exceptions_md or "exception aliases still work" in exceptions_md:
+        raise SystemExit(
+            "EXCEPTIONS.md must not claim removed root exception aliases still work; "
+            "see Migration 0.25→0.26"
+        )
 
     subprocess.run(
         [sys.executable, str(ROOT / "scripts/check_runnable_docs.py")],

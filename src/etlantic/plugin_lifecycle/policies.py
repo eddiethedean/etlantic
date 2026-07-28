@@ -137,8 +137,6 @@ class BaseAuthorizationPolicy:
             candidates = [
                 item.distribution_name,
                 item.manifest.package if item.manifest else None,
-                item.engine,
-                item.name,
             ]
             version = item.distribution_version or (
                 item.manifest.version if item.manifest else None

@@ -32,8 +32,11 @@ Stable root symbols (`sdk_root_stable`):
 | `ValidationReport`, `PipelineRunReport`, `SecretRef` |
 
 Prefer `etl.authoring` for programmatic definition APIs. Provisional root:
-`DataContractModel` (prefer ODCS / `Data` paths). Demoted pre-1.0 root aliases
-warn once — see [MIGRATION_0_21_TO_0_22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md).
+`DataContractModel` (prefer ODCS / `Data` paths). In **0.26**, first-wave root
+facade aliases were **removed** (see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md)). Remaining
+demoted pre-1.0 root aliases warn once — see
+[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md).
 
 ## Lazy namespaces
 

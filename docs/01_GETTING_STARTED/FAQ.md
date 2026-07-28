@@ -359,14 +359,20 @@ clone, `examples/pipeline_definition_json.py` shows builders → JSON →
 
 ------------------------------------------------------------------------
 
-## Why does `from etlantic import SomeError` warn?
+## Why does `from etlantic import SomeError` fail or warn?
 
-Specialist root exports demoted in 0.22 (including most exception types) remain
-as pre-1.0 compatibility aliases and emit a **one-time** demotion warning.
-Prefer owning modules:
+In **0.26**, many former root exception and helper aliases were **removed**
+(for example `ETLanticError`, `DataValidationError`, `MemoryStorage`,
+`RunStatus`). Importing them from `etlantic` raises `AttributeError` with a
+migration pointer — see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
+
+A smaller set of specialist root exports remain as **pre-1.0 demoted**
+aliases and emit a **one-time** demotion warning. Prefer owning modules:
 
 ```python
 from etlantic.exceptions import DataValidationError, PipelineValidationError
+from etlantic.runtime import RunStatus
 ```
 
 Curated root symbols (`Data`, `Pipeline`, `Transformation`, …) do not warn.

@@ -12,7 +12,8 @@ ETLantic follows Semantic Versioning after 1.0:
 - Major: incompatible public API or persistent-format changes
 
 During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.25.0`).
+plugin packages currently share the core minor version (for example `0.26.0`).
+Official plugins declare `etlantic>=0.26.0,<0.27`.
 
 ## Packages published on each tag
 
@@ -113,8 +114,8 @@ GitHub Actions workflow
 3. Builds all twelve wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
-5. Publishes to PyPI: **existing projects first** (including keyring/sqlmodel),
-   then brand-new names (`etlantic-prefect`, `etlantic-sparkforge`);
+5. Publishes to PyPI: **existing projects first** (all twelve packages are
+   established uploads as of 0.26; brand-new names are exceptional),
    **10-minute** gaps only between brand-new project creates; skips files
    already present via `--check-url`; retries on transient 429s.
 6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.

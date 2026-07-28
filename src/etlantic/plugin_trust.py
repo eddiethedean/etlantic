@@ -11,6 +11,12 @@ from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.profile import Profile
 
 
+# In-tree stub descriptors (registry.builtin_stub_registry). These are not
+# entry-point packages and must not require package allowlist keys — otherwise
+# adopters are pushed to list short names like ``"local": null``, which widens
+# authorization when engine/name matching is enabled.
+BUILTIN_ALLOWLIST_EXEMPT = frozenset({"local", "null", "env", "env-secrets"})
+
 _EMPTY_ALLOWLIST_REMEDIATION = (
     "Set Profile.plugin_allowlist to a non-empty map of package→pin "
     "(for example {'etlantic-polars': '==0.26.0'}), or copy "
@@ -88,6 +94,11 @@ def plugin_allowed(
         return False
 
 
+def is_builtin_allowlist_exempt(name: str | None) -> bool:
+    """Return True for in-tree stub plugin identities exempt from package pins."""
+    return str(name or "").strip().lower() in BUILTIN_ALLOWLIST_EXEMPT
+
+
 def filter_plugins_by_allowlist(
     plugins: dict[str, Any],
     profile: Profile,
@@ -100,6 +111,10 @@ def filter_plugins_by_allowlist(
     Production profiles fail closed when the allowlist is empty or a plugin is
     not listed / does not match the version pin. Non-production profiles with an
     empty allowlist remain unrestricted.
+
+    Built-in stub identities (``local``, ``null``, ``env``, ``env-secrets``) are
+    exempt from package allowlist matching so production profiles need not list
+    short engine names.
     """
     allowlist = dict(profile.plugin_allowlist or {})
     production = _is_production_profile(profile)
@@ -121,22 +136,37 @@ def filter_plugins_by_allowlist(
 
     kept: dict[str, Any] = {}
     for key, plugin in plugins.items():
+        if is_builtin_allowlist_exempt(str(key)):
+            kept[key] = plugin
+            continue
         info = getattr(plugin, "info", None)
         if callable(info):
             info = info()
+        metadata = getattr(plugin, "metadata", None) or {}
+        if not isinstance(metadata, dict):
+            metadata = {}
         pname = (
             getattr(info, name_attr, None)
-            or getattr(info, "engine", None)
             or getattr(plugin, name_attr, None)
             or key
         )
+        if is_builtin_allowlist_exempt(str(pname)):
+            kept[key] = plugin
+            continue
         pversion = (
             getattr(info, version_attr, None)
             or getattr(plugin, version_attr, None)
             or None
         )
-        listed_name = str(pname) if str(pname) in allowlist else (
-            str(key) if str(key) in allowlist else None
+        identity_candidates = [
+            str(pname),
+            str(key),
+            str(metadata.get("package") or "") or None,
+            str(metadata.get("distribution_name") or "") or None,
+        ]
+        listed_name = next(
+            (c for c in identity_candidates if c and c in allowlist),
+            None,
         )
         if listed_name is not None:
             pin = allowlist.get(listed_name)
@@ -156,9 +186,11 @@ def filter_plugins_by_allowlist(
                         )
                     )
                     continue
-        if plugin_allowed(
-            name=str(pname), version=pversion, allowlist=allowlist
-        ) or plugin_allowed(name=str(key), version=pversion, allowlist=allowlist):
+        if any(
+            plugin_allowed(name=str(c), version=pversion, allowlist=allowlist)
+            for c in identity_candidates
+            if c
+        ):
             kept[key] = plugin
         else:
             diagnostics.append(
@@ -191,3 +223,35 @@ def assert_plugin_trust(
             code=errors[0].code,
         )
     return kept
+
+
+# Per-plugin allowlist denials are expected when other packages remain allowed.
+_NON_BLOCKING_TRUST_CODES = frozenset({"PMPLUG402"})
+
+
+def loaded_plugins_after_trust(result: Any) -> dict[str, Any]:
+    """Return authorized loads from a lifecycle result.
+
+    ``PMPLUG402`` denials of non-allowlisted siblings do not invalidate plugins
+    that were authorized and loaded. Other trust ERROR codes still fail closed
+    (raise when loads coexist; otherwise return an empty mapping).
+    """
+    from etlantic.exceptions import PipelineExecutionError
+
+    errors = [
+        d
+        for d in getattr(result, "diagnostics", ()) or ()
+        if getattr(d, "severity", None) is Severity.ERROR
+    ]
+    loaded = dict(getattr(result, "loaded", {}) or {})
+    blocking = [
+        d for d in errors if getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+    ]
+    if blocking and loaded:
+        raise PipelineExecutionError(
+            "; ".join(d.message for d in blocking),
+            code=blocking[0].code,
+        )
+    if blocking:
+        return {}
+    return loaded

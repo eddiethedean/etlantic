@@ -133,7 +133,10 @@
 | `PMPLUG418` | `src/etlantic/plugin_lifecycle/__init__.py` |
 | `PMPLUG419` | `src/etlantic/plugin_lifecycle/__init__.py` |
 | `PMPLUG420` | `src/etlantic/plugin_lifecycle/__init__.py` |
-| `PMPLUG421` | `src/etlantic/plugin_lifecycle/__init__.py`, `src/etlantic/plugins/coordinator.py` |
+| `PMPLUG421` | `src/etlantic/plugins/coordinator.py` |
+| `PMPLUG422` | `src/etlantic/plugins/coordinator.py` |
+| `PMPLUG423` | `src/etlantic/plugins/coordinator.py` |
+| `PMPLUG424` | `src/etlantic/plugin_lifecycle/__init__.py` |
 | `PMPLUG430` | `src/etlantic/capability_probe.py` |
 | `PMPLUG431` | `src/etlantic/capability_probe.py` |
 | `PMPLUG432` | `src/etlantic/capability_probe.py`, `src/etlantic/plugin_lifecycle/__init__.py` |

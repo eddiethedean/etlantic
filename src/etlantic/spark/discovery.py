@@ -16,19 +16,9 @@ SPARK_PROVIDER_ENTRY_POINT = "etlantic.spark_providers"
 
 
 def _fail_closed_loaded(result):
-    from etlantic.diagnostics import Severity
-    from etlantic.exceptions import PipelineExecutionError
+    from etlantic.plugin_trust import loaded_plugins_after_trust
 
-    errors = [d for d in result.diagnostics if d.severity is Severity.ERROR]
-    loaded = dict(result.loaded)
-    if errors and loaded:
-        raise PipelineExecutionError(
-            "; ".join(d.message for d in errors),
-            code=errors[0].code,
-        )
-    if errors:
-        return {}
-    return loaded
+    return loaded_plugins_after_trust(result)
 
 def discover_spark_plugins(
     *,

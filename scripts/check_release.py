@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -194,6 +196,22 @@ def main() -> int:
                 print(f"  - {name}=={version}{note}")
     if not missing_version:
         print(f"All packages already present on PyPI at {version}.")
+
+    # Fail closed when tests/examples still import 0.26-removed root symbols.
+    guard = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_removed_root_imports.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if guard.returncode != 0:
+        detail = (guard.stdout or guard.stderr or "").strip()
+        errors.append(
+            "removed root import guard failed"
+            + (f": {detail}" if detail else "")
+        )
+    else:
+        print((guard.stdout or "").strip() or "Removed root import guard passed.")
 
     if errors:
         print("Release readiness FAILED:")

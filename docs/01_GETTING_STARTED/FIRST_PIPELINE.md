@@ -176,7 +176,7 @@ CSV, and no-write storage. Optional plugins are available today:
 - SparkForge adapter — `etlantic-sparkforge`
 
 Keep core and optional plugin minors matched—for this guide, pin both to
-`0.25.0`. See [Capabilities](CAPABILITIES.md).
+`0.26.0`. See [Capabilities](CAPABILITIES.md).
 
 Continue with [Engine selection](ENGINE_SELECTION.md). For a production profile
 starter, copy the JSON from

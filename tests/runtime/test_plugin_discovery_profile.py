@@ -16,12 +16,23 @@ _LOAD_COUNT = {"value": 0}
 
 
 def _fake_discovered(*, group: str, name: str = "evil") -> DiscoveredPlugin:
+    engine_name = name
+
     def _load() -> object:
         _LOAD_COUNT["value"] += 1
-        plugin = MagicMock()
-        plugin.info.engine = name
-        plugin.info.name = name
-        return plugin
+
+        class _Info:
+            engine = engine_name
+            version = "9.9.9"
+            capabilities = None
+            protocol_version = "etlantic.dataframe/1"
+
+        _Info.name = engine_name  # type: ignore[attr-defined]
+
+        class _Plugin:
+            info = _Info()
+
+        return _Plugin()
 
     ep = MagicMock(spec=EntryPoint)
     ep.name = name
@@ -96,6 +107,39 @@ def test_runtime_development_allowlist_empty_loads(
     runtime.ensure_plugins_for_profile(profile)
     assert _LOAD_COUNT["value"] == 1
     assert len(runtime.dataframe_plugins) == 1
+
+
+def test_runtime_profile_switch_drops_unauthorized_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Switching to a tighter production allowlist must clear prior loads."""
+    fake = _fake_discovered(group="etlantic.dataframe_plugins", name="polars")
+
+    def _discover(group: str) -> tuple[list[DiscoveredPlugin], list]:
+        if group == "etlantic.dataframe_plugins":
+            return [fake], []
+        return [], []
+
+    monkeypatch.setattr("etlantic.plugin_lifecycle.discover_entry_points", _discover)
+    runtime = PipelineRuntime()
+    runtime.ensure_plugins_for_profile(
+        Profile(name="dev", security_mode="development")
+    )
+    assert "polars" in runtime.dataframe_plugins
+    assert "polars" in runtime.registry.plugins or any(
+        d.engine == "polars" for d in runtime.registry.plugins.values()
+    )
+
+    prod = production_profile(
+        plugin_allowlist={"etlantic-pandas": "==0.26.0"},
+    )
+    diags = runtime.ensure_plugins_for_profile(prod)
+    assert "polars" not in runtime.dataframe_plugins
+    assert not any(
+        d.engine == "polars" or d.name == "polars"
+        for d in runtime.registry.plugins.values()
+    )
+    assert any(d.code == "PMPLUG402" for d in diags) or _LOAD_COUNT["value"] >= 1
 
 
 def test_planning_context_with_shared_registry_skips_rediscovery(

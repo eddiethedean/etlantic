@@ -130,28 +130,27 @@ def discover_transform_compilers_for_profile(
 
         diagnostics = list(result.diagnostics)
         discover_transform_compilers_for_profile.last_diagnostics = diagnostics  # type: ignore[attr-defined]
-        errors = [d for d in diagnostics if d.severity is Severity.ERROR]
-        loaded = dict(result.loaded)
-        if errors and loaded:
-            raise PipelineExecutionError(
-                "; ".join(d.message for d in errors),
-                code=errors[0].code,
-            )
-        return {} if errors else loaded  # type: ignore[return-value]
+        from etlantic.plugin_trust import loaded_plugins_after_trust
+
+        return loaded_plugins_after_trust(result)  # type: ignore[return-value]
 
     found = discover()
     if profile is None:
         return found
     from etlantic.diagnostics import Severity
     from etlantic.exceptions import PipelineExecutionError
-    from etlantic.plugin_trust import filter_plugins_by_allowlist
+    from etlantic.plugin_trust import (
+        _NON_BLOCKING_TRUST_CODES,
+        filter_plugins_by_allowlist,
+    )
 
     kept, diagnostics = filter_plugins_by_allowlist(found, profile)
     discover_transform_compilers_for_profile.last_diagnostics = list(diagnostics)  # type: ignore[attr-defined]
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
-    if errors and kept:
+    blocking = [d for d in errors if d.code not in _NON_BLOCKING_TRUST_CODES]
+    if blocking and kept:
         raise PipelineExecutionError(
-            "; ".join(d.message for d in errors),
-            code=errors[0].code,
+            "; ".join(d.message for d in blocking),
+            code=blocking[0].code,
         )
-    return {} if errors else kept
+    return {} if blocking else kept

@@ -108,6 +108,32 @@ def test_disallowed_plugin_rejected_before_load() -> None:
     assert all(e.kind == "plugin_authorization" for e in events)
 
 
+def test_allowlist_short_name_does_not_authorize_by_engine() -> None:
+    """Allowlist keys must match package identity, not engine/entry short names."""
+    discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
+    if not discovered:
+        pytest.skip("no dataframe plugins installed")
+    # Even if a plugin's engine/name is "polars", listing only the short name
+    # must not authorize it — distribution/package identity is required.
+    profile = production_profile(plugin_allowlist={"polars": None, "local": None})
+    authorized, diags, _events = authorize_plugins(discovered, profile)
+    assert authorized == []
+    assert any(d.code == "PMPLUG402" for d in diags)
+
+
+def test_builtin_local_exempt_from_package_allowlist() -> None:
+    from etlantic.plugin_trust import filter_plugins_by_allowlist
+    from etlantic.registry import PluginDescriptor
+
+    profile = production_profile(
+        plugin_allowlist={"etlantic-polars": "==0.26.0"},
+    )
+    local = PluginDescriptor(name="local", kind="runtime", version="0.26.0", engine="local")
+    kept, diags = filter_plugins_by_allowlist({"local": local}, profile)
+    assert "local" in kept
+    assert not any(d.code == "PMPLUG402" for d in diags)
+
+
 def test_production_empty_allowlist_rejects_all() -> None:
     discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
     if not discovered:
@@ -333,6 +359,37 @@ def test_capability_probe_failure_emits_pmplug432(
         profile=profile,
     )
     assert any(d.code == "PMPLUG432" for d in result.diagnostics)
+    assert result.loaded == {}
+
+
+def test_capability_probe_fail_closed_in_development(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _fail_probe(**kwargs):  # type: ignore[no-untyped-def]
+        return CapabilityProbeResult(
+            ok=False,
+            summary={"ok": False, "error": "simulated"},
+            diagnostics=(),
+        )
+
+    monkeypatch.setattr(
+        "etlantic.capability_probe.run_capability_probe",
+        _fail_probe,
+    )
+    discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
+    if not discovered:
+        pytest.skip("no dataframe plugins installed")
+    profile = Profile(
+        name="dev",
+        security_mode="development",
+        require_plugin_probe=True,
+    )
+    result = discover_evaluate_authorize_load(
+        "etlantic.dataframe_plugins",
+        profile=profile,
+    )
+    assert any(d.code == "PMPLUG432" for d in result.diagnostics)
+    assert result.loaded == {}
 
 
 def test_capability_probe_disabled_skips_subprocess(

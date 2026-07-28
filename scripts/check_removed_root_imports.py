@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
-"""Tests for 0.26 root alias removals and import hygiene."""
+"""Fail when tests/ or examples/ import 0.26-removed root symbols from etlantic."""
 
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
 
-import pytest
-
-import etlantic
-from etlantic import _REMOVED_0_26
-
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = (ROOT / "tests", ROOT / "examples")
 
 
-@pytest.mark.parametrize("name", sorted(_REMOVED_0_26))
-def test_removed_root_alias_raises(name: str) -> None:
-    with pytest.raises(AttributeError, match="removed from the etlantic root in 0.26.0"):
-        getattr(etlantic, name)
+def _load_removed_names() -> set[str]:
+    sys.path.insert(0, str(ROOT / "src"))
+    from etlantic import _REMOVED_0_26
+
+    return set(_REMOVED_0_26)
 
 
 def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:
@@ -28,16 +25,11 @@ def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:
             for alias in node.names:
                 if alias.name != "*":
                     found.add(alias.name)
-        elif isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.name == "etlantic":
-                    # Bare ``import etlantic`` is fine; attribute access is runtime.
-                    pass
     return found
 
 
-def test_tests_and_examples_do_not_import_removed_root_symbols() -> None:
-    removed = set(_REMOVED_0_26)
+def main() -> int:
+    removed = _load_removed_names()
     violations: list[str] = []
     for root in SCAN_ROOTS:
         if not root.exists():
@@ -54,7 +46,14 @@ def test_tests_and_examples_do_not_import_removed_root_symbols() -> None:
             if bad:
                 rel = path.relative_to(ROOT)
                 violations.append(f"{rel}: {sorted(bad)}")
-    assert not violations, (
-        "tests/examples still import 0.26-removed root symbols from etlantic:\n"
-        + "\n".join(violations)
-    )
+    if violations:
+        print("Removed root import guard FAILED:")
+        for item in violations:
+            print(f"  - {item}")
+        return 1
+    print("Removed root import guard passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

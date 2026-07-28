@@ -44,7 +44,7 @@ class DataFusionTransformCompiler:
     ) -> TransformSupportReport:
         raise NotImplementedError(
             "etlantic-datafusion portable compiler is an experimental stub as of "
-            "0.25.0; no graduated claims"
+            "0.26.0; no graduated claims"
         )
 
     def compile(

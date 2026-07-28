@@ -15,7 +15,7 @@ project = "my-pipeline"
 default_profile = "development"
 
 [metadata]
-etlantic.version = "0.25.0"
+etlantic.version = "0.26.0"
 ```
 
 Optional `[profiles]` entries may reference built-in names, `profiles/*.json`

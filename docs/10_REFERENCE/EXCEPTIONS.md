@@ -49,9 +49,9 @@ from etlantic.interchange.tabular import (
 from etlantic.serialization_policy import UnsafeSerializationError
 ```
 
-Root `from etlantic import …` exception aliases still work pre-1.0 but emit a
-one-time demotion warning — prefer owning modules (`etlantic.exceptions`,
-orchestration, interchange, serialization_policy).
+In **0.26**, root exception aliases were **removed**. Prefer owning modules
+(`etlantic.exceptions`, orchestration, interchange, serialization_policy).
+See [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
 `InterchangeError` subclasses `ValueError` (not `ETLanticError`); catch it
 explicitly at interchange boundaries.
@@ -110,8 +110,9 @@ from etlantic.interchange.tabular import (
 from etlantic.serialization_policy import UnsafeSerializationError
 ```
 
-Demoted compatibility imports from `etlantic` (warn once) remain available for
-pre-1.0 code. Prefer the owning modules above.
+Import exceptions from owning modules (root exception aliases were removed in
+0.26). Prefer the modules above; see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
 ## Internal
 

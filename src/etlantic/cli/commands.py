@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,8 @@ from etlantic.schema_drift import (
     diff_normalized_schemas,
     normalize_schema_from_model,
 )
+
+_LOG = logging.getLogger(__name__)
 from etlantic.schema_history import FileSchemaHistoryProvider
 from etlantic.schema_policy import observe_model_schema
 from etlantic.viz import (
@@ -247,7 +250,11 @@ def register_commands(
                 try:
                     if read_distribution_manifest_text(dist) is not None:
                         package_names.append(str(dist.metadata["Name"]))
-                except Exception:
+                except Exception as exc:
+                    _LOG.debug(
+                        "Skipping distribution during plugin compatibility scan: %s",
+                        exc,
+                    )
                     continue
             package_names = sorted(set(package_names), key=str.lower)
         report = build_compatibility_report(package_names, allowlist=allowlist)

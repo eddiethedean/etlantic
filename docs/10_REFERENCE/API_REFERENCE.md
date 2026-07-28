@@ -110,18 +110,23 @@ announced migrations. Review the changelog and
 
 ## Compatibility aliases (pre-1.0)
 
-ETLantic 0.22+ demoted many specialist root exports to warn-once compatibility
-aliases. They remain importable from `etlantic` but emit a one-time
-`DeprecationWarning`. Prefer lazy namespaces or owning modules.
+ETLantic **0.26** removed the first wave of root facade aliases (protocol
+consts, exceptions, storage bindings, runtime helpers, interchange helpers).
+Import those symbols from owning modules — see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
-| Category | Examples | Prefer |
+A remaining set of specialist root exports are still **demoted** (warn once).
+Prefer lazy namespaces or owning modules.
+
+| Category | Examples (still demoted) | Prefer |
 |---|---|---|
-| Runtime helpers | `RunRequest`, `RunSelection`, `RunIntent`, `DebugSession` | `etlantic.runtime` |
 | Profile helpers | `load_profile`, `development_profile`, `production_profile` | `etlantic.profile` |
 | Reliability | `WriteIntent`, `WriteMode`, `FreshnessExpectation` | `etlantic.reliability` |
-| Interchange | `diff_pipelines`, `load_bundle`, `generate_contracts` | `etlantic.interchange` |
 | Security | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
-| Storage bindings | `MemoryStorage`, `CsvStorage`, `CallableStorage` | `etlantic.storage` |
 
-See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) and
-[Surface inventory](SURFACE_INVENTORY.md) for the full demoted set.
+Removed in 0.26 (raise on root import): `RunRequest`, `RunSelection`,
+`RunIntent`, `DebugSession`, `RunStatus`, `MemoryStorage`, `diff_pipelines`,
+`generate_contracts`, and other symbols listed in the migration guide.
+
+See [Surface inventory](SURFACE_INVENTORY.md) and
+[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md).

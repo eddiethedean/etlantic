@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from etlantic.dataframe.protocol import DataframePlugin
-from etlantic.diagnostics import Severity
-from etlantic.exceptions import PipelineExecutionError
 from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 from etlantic.profile import Profile
 from etlantic.registry import PluginDescriptor, RegistryBundle
@@ -21,17 +19,10 @@ def resolve_plugin_info(plugin: Any) -> Any:
 
 
 def _fail_closed_loaded(result: Any) -> dict[str, Any]:
-    """Return loaded plugins, raising only if ERROR diags coexist with loads."""
-    errors = [d for d in result.diagnostics if d.severity is Severity.ERROR]
-    loaded = dict(result.loaded)
-    if errors and loaded:
-        raise PipelineExecutionError(
-            "; ".join(d.message for d in errors),
-            code=errors[0].code,
-        )
-    if errors:
-        return {}
-    return loaded  # type: ignore[return-value]
+    """Return loaded plugins, failing closed on blocking trust ERROR diagnostics."""
+    from etlantic.plugin_trust import loaded_plugins_after_trust
+
+    return loaded_plugins_after_trust(result)
 
 
 def discover_dataframe_plugins(

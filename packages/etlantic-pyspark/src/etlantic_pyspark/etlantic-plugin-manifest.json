@@ -3,7 +3,7 @@
     "spark",
     "portable"
   ],
-  "digest": "sha256:5a4c59bc4102ff355f060a634e4ff012d62f8111778f4338be1a7f06803b239f",
+  "digest": "sha256:bdb11335edb8a24a66692cc690b42b35c7ff9843b782bb512bfebdf1c75a1846",
   "entries": [
     {
       "capabilities": [
@@ -22,7 +22,7 @@
       "engine": "local",
       "group": "etlantic.spark_providers",
       "name": "local",
-      "protocol": null,
+      "protocol": "etlantic.spark/1",
       "target": "etlantic_pyspark:create_provider"
     },
     {

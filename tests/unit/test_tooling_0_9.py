@@ -113,6 +113,8 @@ def test_bare_version_pin_accepted() -> None:
 
 
 def test_is_production_profile_uses_security_mode() -> None:
+    import pytest
+
     from etlantic.plugin_trust import is_production_profile
 
     assert is_production_profile(Profile(name="custom", security_mode="production"))
@@ -121,12 +123,31 @@ def test_is_production_profile_uses_security_mode() -> None:
     assert not is_production_profile(Profile(name="production"))
     assert not is_production_profile(Profile(name="Prod"))
     assert not is_production_profile(Profile(name="staging"))
-    assert not is_production_profile(Profile(name="app", security_domain="production"))
+    with pytest.warns(UserWarning, match="security_domain looks like production"):
+        domain_only = Profile(name="app", security_domain="production")
+    assert not is_production_profile(domain_only)
     assert not is_production_profile(name="prod", security_domain="default")
     assert not is_production_profile(Profile(name="development"))
     assert is_production_profile(
         Profile(name="development", security_mode="production")
     )
+
+
+def test_discover_planning_plugins_early_returns_on_pmplug401() -> None:
+    from etlantic.plugins.coordinator import discover_planning_plugins
+    from etlantic.profile import production_profile
+    from etlantic.registry import builtin_stub_registry
+
+    profile = production_profile(plugin_allowlist={})
+    _trust, diags = discover_planning_plugins(
+        profile,
+        builtin_stub_registry(),
+        dataframe_engine="polars",
+        sql_engine=None,
+        spark_engine=None,
+    )
+    assert sum(1 for d in diags if d.code == "PMPLUG401") == 1
+
 
 
 def test_schema_drift_blocks_production_security_mode() -> None:
@@ -179,7 +200,7 @@ def test_production_validate_requires_allowlist() -> None:
     assert any(d.code == "PMPLUG401" for d in report.diagnostics)
 
     ok = SamplePipeline.validate(
-        profile=production_profile(plugin_allowlist={"local": None})
+        profile=production_profile(plugin_allowlist={"etlantic-polars": "==0.26.0"})
     )
     assert not any(d.code == "PMPLUG401" for d in ok.diagnostics)
 

@@ -16,9 +16,9 @@ from etlantic import (
     Pipeline,
     PipelineRuntime,
     Profile,
-    RunStatus,
     Transformation,
 )
+from etlantic.runtime import RunStatus
 from etlantic.plan import explain_plan, plan_pipeline
 from etlantic.registry import PlanningContext
 from etlantic.transform import functions as F

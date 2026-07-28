@@ -8,7 +8,7 @@
 
 | Step | Page | Done when |
 |---|---|---|
-| 1 | [Installation](INSTALLATION.md) | `python -m etlantic --version` prints `0.25.0` |
+| 1 | [Installation](INSTALLATION.md) | `python -m etlantic --version` prints `0.26.0` |
 | 2 | [Quickstart](QUICKSTART.md) | `validate` / `run` succeed; Ada/Grace in `data/out.json`; aha failure observed |
 | 3 | [First Pipeline](FIRST_PIPELINE.md) | Transform evolved; validate → plan → run still green |
 | 4 | [Engine selection](ENGINE_SELECTION.md) | One engine tutorial completed (or stay on local) |
@@ -33,7 +33,7 @@
 
 ## Reference after first success
 
-- [Current 0.25 Guide](CURRENT_VERSION.md) — task table
+- [Current 0.26 Guide](CURRENT_VERSION.md) — task table
 - [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
 - Evaluators: [Evaluator Brief](EVALUATOR.md) → [Enterprise evaluation](ENTERPRISE_EVALUATION.md)

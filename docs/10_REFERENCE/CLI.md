@@ -327,7 +327,7 @@ Documented in `etlantic.cli.exit_codes`:
 | `10` | `INVALID_MODEL` | Validation or profile model errors |
 | `11` | `TRUST_FAILURE` | Plugin trust / allowlist failure |
 | `12` | `PLANNING_FAILURE` | Planning failed |
-| `13` | `EXECUTION_FAILURE` | Run failed |
+| `13` | `EXECUTION_FAILURE` | Run failed, timed out, or cancelled |
 | `14` | `PARTIAL_RUN` | Run completed with partial success |
 | `15` | `BREAKING_CHANGE` | Diff / impact / plan-diff breaking |
 | `16` | `ENVIRONMENT_FAILURE` | Doctor / environment / missing tooling |

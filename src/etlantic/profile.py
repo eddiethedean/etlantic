@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any, Literal
@@ -218,6 +219,15 @@ class Profile:
         object.__setattr__(self, "secrets", dict(secrets or {}))
         object.__setattr__(self, "security_domain", security_domain)
         object.__setattr__(self, "security_mode", mode)
+        domain_key = str(security_domain or "").strip().lower()
+        if domain_key in {"production", "prod"} and mode != "production":
+            warnings.warn(
+                "Profile.security_domain looks like production but "
+                f"security_mode={mode!r}; fail-closed trust uses security_mode only. "
+                "Set security_mode='production' or use production_profile().",
+                UserWarning,
+                stacklevel=2,
+            )
         object.__setattr__(self, "validation_policy", validation_policy)
         object.__setattr__(self, "concurrency", concurrency)
         object.__setattr__(self, "timeout_seconds", timeout_seconds)

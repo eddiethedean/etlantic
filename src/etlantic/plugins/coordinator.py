@@ -191,7 +191,7 @@ class PluginDiscoveryCoordinator:
             except Exception as exc:
                 result.diagnostics.append(
                     Diagnostic(
-                        code="PMPLUG421",
+                        code="PMPLUG422",
                         severity=Severity.ERROR,
                         message=f"Spark provider discovery failed: {exc}",
                         path=("plugin", "spark_providers"),
@@ -223,7 +223,7 @@ class PluginDiscoveryCoordinator:
             except Exception as exc:
                 result.diagnostics.append(
                     Diagnostic(
-                        code="PMPLUG421",
+                        code="PMPLUG423",
                         severity=Severity.ERROR,
                         message=f"Transform compiler discovery failed: {exc}",
                         path=("plugin", "transform_compiler"),
@@ -293,6 +293,11 @@ def discover_planning_plugins(
     )
     trust_records = list(result.trust_records)
     diagnostics = list(result.diagnostics)
+
+    # Coordinator already fail-closed on empty production allowlist — do not
+    # re-run per-engine authorize loops that would duplicate PMPLUG401.
+    if any(d.code == "PMPLUG401" and d.severity is Severity.ERROR for d in diagnostics):
+        return trust_records, diagnostics
 
     from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 

@@ -325,7 +325,7 @@ def load_authorized_plugins(
                 warnings.warn(msg, RuntimeWarning, stacklevel=2)
             diagnostics.append(
                 Diagnostic(
-                    code="PMPLUG421",
+                    code="PMPLUG424",
                     severity=severity,
                     message=msg,
                     path=("plugin", item.distribution_name or item.name),
@@ -424,7 +424,7 @@ def discover_evaluate_authorize_load(
                 result.security_events.append(probe.event)
             if probe.ok:
                 probed.append(item)
-            elif production:
+            else:
                 result.diagnostics.append(
                     Diagnostic(
                         code="PMPLUG432",
@@ -437,7 +437,7 @@ def discover_evaluate_authorize_load(
                         phase="plugin_probe",
                     )
                 )
-        authorized = probed if production else authorized
+        authorized = probed
 
     loaded, l_diags = load_authorized_plugins(
         authorized,
