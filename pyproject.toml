@@ -40,7 +40,7 @@ airflow = ["etlantic-airflow==0.27.0"]
 prefect = ["etlantic-prefect==0.27.0"]
 keyring = ["etlantic-keyring==0.27.0"]
 sqlmodel = ["etlantic-sqlmodel==0.27.0"]
-sparkforge = ["etlantic-sparkforge==0.27.0"]
+medallantic = ["medallantic==0.27.0"]
 fastapi = ["etlantic-fastapi==0.27.0"]
 datafusion = ["etlantic-datafusion==0.27.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
@@ -109,8 +109,8 @@ keyring = [
 sqlmodel = [
     "etlantic-sqlmodel",
 ]
-sparkforge = [
-    "etlantic-sparkforge",
+medallantic = [
+    "medallantic",
 ]
 datafusion = [
     "etlantic-datafusion",
@@ -154,7 +154,7 @@ members = [
     "packages/etlantic-prefect",
     "packages/etlantic-keyring",
     "packages/etlantic-sqlmodel",
-    "packages/etlantic-sparkforge",
+    "packages/medallantic",
     "packages/etlantic-datafusion",
     "packages/etlantic-fastapi",
 ]
@@ -169,7 +169,7 @@ etlantic-airflow = { workspace = true }
 etlantic-prefect = { workspace = true }
 etlantic-keyring = { workspace = true }
 etlantic-sqlmodel = { workspace = true }
-etlantic-sparkforge = { workspace = true }
+medallantic = { workspace = true }
 etlantic-datafusion = { workspace = true }
 etlantic-fastapi = { workspace = true }
 
@@ -185,7 +185,7 @@ pythonpath = [
     "packages/etlantic-prefect/src",
     "packages/etlantic-keyring/src",
     "packages/etlantic-sqlmodel/src",
-    "packages/etlantic-sparkforge/src",
+    "packages/medallantic/src",
     "packages/etlantic-datafusion/src",
     "packages/etlantic-fastapi/src",
 ]
@@ -199,7 +199,7 @@ markers = [
     "prefect: tests requiring the Prefect scheduler plugin",
     "keyring: tests requiring the keyring secret provider",
     "sqlmodel: tests requiring the SQLModel integration package",
-    "sparkforge: tests for the SparkForge migration adapter",
+    "medallantic: tests for the Medallantic package",
     "datafusion: tests for the experimental DataFusion plugin stub",
 ]
 
@@ -242,7 +242,7 @@ known-first-party = [
     "etlantic_prefect",
     "etlantic_keyring",
     "etlantic_sqlmodel",
-    "etlantic_sparkforge",
+    "medallantic",
     "etlantic_datafusion",
     "etlantic_fastapi",
 ]

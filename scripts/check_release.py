@@ -21,7 +21,7 @@ PACKAGES = (
     "etlantic-prefect",
     "etlantic-keyring",
     "etlantic-sqlmodel",
-    "etlantic-sparkforge",
+    "medallantic",
 )
 # Thin reference adapters align with core Beta maturity (not Production/Stable plugins).
 REFERENCE_PACKAGES = ("etlantic-fastapi",)

@@ -173,7 +173,7 @@ CSV, and no-write storage. Optional plugins are available today:
 - PySpark batch — `etlantic-pyspark`
 - Airflow compile — `etlantic-airflow`
 - Prefect direct execution — `etlantic-prefect`
-- SparkForge adapter — `etlantic-sparkforge`
+- Medallantic migration adapter — `medallantic`
 
 Keep core and optional plugin minors matched—for this guide, pin both to
 `0.27.0`. See [Capabilities](CAPABILITIES.md).

@@ -2,7 +2,8 @@
 
 **Current release:** ETLantic **0.27.0** (Beta / PyPI). Milestones **0.25**
 (burn-in first slice), **0.26** (second slice), and **0.27** (third slice) are
-shipped; **0.28–0.98** continue toward 0.99 RC. See
+shipped; **0.28–0.35** co-evolve ETLantic with Medallantic before continued
+joint burn-in in **0.36–0.98** and the 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -28,7 +29,11 @@ ETLantic will provide one portable model for:
 
 ETLantic owns the logical model and coordination contracts. It does not
 become a dataframe engine, distributed scheduler, storage system, secret
-manager, or medallion framework.
+manager, or medallion framework. Medallantic is the first-party,
+engine-agnostic medallion facade that evolves alongside ETLantic while keeping
+bronze/silver/gold vocabulary and policy out of core. Its detailed parity plan
+lives in the
+[Medallantic roadmap](packages/medallantic/ROADMAP.md).
 
 ## Delivery Principles
 
@@ -110,6 +115,22 @@ Every milestone must satisfy all applicable gates.
 - Plugins declare core, SDK, plan-schema, and capability compatibility.
 - Dependency additions and tier changes follow the
   [Dependency Strategy](docs/11_DEVELOPMENT/DEPENDENCY_STRATEGY.md).
+
+### ETLantic–Medallantic co-evolution
+
+- Every Medallantic phase identifies the ETLantic capabilities it consumes,
+  the domain-neutral gaps it exposes, and the owner of each change.
+- A capability is promoted into ETLantic only when its semantics are useful
+  outside medallion architecture and belong to portable modeling, validation,
+  planning, runtime, evidence, security, or plugin coordination.
+- Medallion layer types, naming conventions, quality defaults, dependency
+  conventions, and legacy SparkForge migration behavior remain in
+  Medallantic.
+- Promoted capabilities land with ETLantic-native tests and documentation
+  before Medallantic depends on them.
+- Every joint milestone runs ETLantic core compatibility gates plus
+  Medallantic semantic conformance and, where applicable, legacy
+  differential tests.
 
 ## Workstreams
 
@@ -2680,30 +2701,323 @@ migration/docs gates. Control plane and GUI remain out of scope.
 
 Tracking: [EXIT_GATE_0_27.md](docs/11_DEVELOPMENT/EXIT_GATE_0_27.md).
 
-## 0.28–0.98 — Continued Compatibility Burn-In
+## 0.28 — Medallantic Foundation and Release Hygiene
 
-**Objective:** continue bounded, evidence-backed additions while frozen
-contracts accumulate further adoption and upgrade history after the 0.25–0.27
-burn-in slices.
+**Medallantic phase:** M0 — Rename and release hygiene.
+
+**Objective:** establish Medallantic as the first-party medallion facade and
+make its package lifecycle part of ETLantic's release discipline without
+introducing medallion types into core.
+
+### Medallantic deliverables
+
+- publish the `medallantic` distribution and `medallantic` import package
+- finish workspace, documentation, CI, trusted-publishing, and project-name
+  migration
+- retain SparkForge-specific names only on migration inputs and compatibility
+  helpers
+- decide and document whether a final `etlantic-sparkforge` redirect package
+  will be published
+
+### ETLantic evolution
+
+- add Medallantic to first-party package compatibility, release, SBOM,
+  provenance, wheel-smoke, and documentation gates
+- define a first-party **facade package** category distinct from execution,
+  compiler, scheduler, storage, and model-bridge plugins
+- document facade ownership: domain vocabulary may lower to ETLantic public
+  definitions and policies but may not add domain enums to core wire schemas
+- expose only the public authoring/plan APIs needed by a facade; promote no
+  private adapter shortcuts
+- continue the consecutive-minor burn-in window through 0.28
+
+### Joint exit gate
+
+Medallantic builds, installs, imports, validates its IR fixtures, and ships
+through the same release evidence as ETLantic; core remains importable without
+Medallantic; no medallion identifier enters ETLantic's public logical or wire
+models.
+
+## 0.29 — Native Medallion Authoring
+
+**Medallantic phase:** M1 — Native medallion authoring.
+
+**Objective:** prove that an opinionated domain facade can construct complete,
+portable ETLantic definitions without a parallel execution model.
+
+### Medallantic deliverables
+
+- native `MedallionPipeline`, builder, and bronze/silver/gold authoring
+  surfaces
+- fluent and declarative/serialized definitions
+- partial pipelines, branches, typed prior-result references, cross-schema
+  assets, descriptions, tags, deterministic names, and stable diagnostics
+- SparkForge IR isolated under a migration namespace
+
+### ETLantic evolution
+
+- harden `PipelineDefinition` as the supported lowering target for external
+  facades, including deterministic extension metadata and source attribution
+- add a facade conformance kit for definition construction, round-trip
+  serialization, graph equivalence, diagnostics, and plan determinism
+- generalize typed multi-input/multi-output and partial-graph authoring where
+  Medallantic reveals domain-neutral gaps
+- add namespaced extension points for facade annotations that survive
+  validation, planning, reports, and lineage without changing core meaning
+- ensure public builder/edit APIs can express the complete Medallantic graph
+  without private imports
+
+### Joint exit gate
+
+Representative SparkForge pipelines can be authored natively in Medallantic,
+round-trip through ETLantic's public definition schema, and produce
+deterministic, semantically equivalent graphs and plans without SparkForge or
+an execution backend installed.
+
+## 0.30 — Portable Quality and Rule Semantics
+
+**Medallantic phase:** M2 — Quality and rules parity.
+
+**Objective:** turn the common portion of legacy Spark and SQL validation rules
+into portable, contract-backed semantics while preserving explicit native
+escape hatches.
+
+### Medallantic deliverables
+
+- engine-neutral rule DSL/AST for common null, comparison, membership, range,
+  regex, length, uniqueness, and custom-contract rules
+- medallion layer quality defaults and per-step overrides
+- PySpark, SQL/Moltres, Polars, and Pandas lowering for advertised rules
+- accepted/rejected artifacts with counts and failure reasons
+
+### ETLantic evolution
+
+- promote reusable rule expressions into a versioned quality-expression
+  protocol owned jointly with ContractModel rather than by Medallantic
+- strengthen quality-gate plans for typed accepted/rejected/observed outputs,
+  rule capability requirements, validation cost, and fallback evidence
+- add engine-independent quality conformance fixtures and normalized result
+  assertions
+- extend compiler capability negotiation so unsupported rules fail during
+  analysis/planning, before data access or target mutation
+- preserve contract authority and prevent a second schema/rule system from
+  forming in ETLantic
+
+### Joint exit gate
+
+Shared fixtures produce contract-equivalent decisions, artifacts, counts, and
+diagnostics on every engine advertising the rule; native-only expressions are
+visible and capability-gated; medallion thresholds remain Medallantic policy.
+
+## 0.31 — Execution, State, and Materialization Semantics
+
+**Medallantic phase:** M3 — Execution and materialization parity.
+
+**Objective:** exercise ETLantic's runtime with real medallion lifecycle
+semantics and promote any reusable reliability primitives exposed by that use.
+
+### Medallantic deliverables
+
+- callable transforms through ETLantic implementation references
+- standard, initialize, incremental, refresh, and validation-only runs
+- watermark/cursor state mapping
+- append, replace, keyed merge, skip-if-exists, and partition-replace intents
+- explicit bronze preservation, silver refresh, and gold publication defaults
+- normalized run, layer, step, validation, artifact, write, and state results
+
+### ETLantic evolution
+
+- complete atomic state-transition and checkpoint contracts, including
+  commit-after-materialization and failed/no-write non-advancement guarantees
+- refine portable write and materialization intents for keyed merge,
+  partition replacement, atomic publication, and skip-if-exists
+- make idempotency, retry safety, transaction scope, mutation order, and
+  unknown commit outcomes explicit in plans and reports
+- generalize layer-independent lifecycle policy composition so a facade can
+  supply defaults without core knowing bronze/silver/gold
+- expand cross-engine runtime conformance around state, failure, cancellation,
+  retry, and partial-result behavior
+
+### Joint exit gate
+
+The same Medallantic definition passes normalized lifecycle fixtures on local,
+Polars, Pandas, SQL, and PySpark where capabilities are advertised; unsupported
+write/state semantics fail before mutation; Etlantic core contains only
+domain-neutral policies.
+
+## 0.32 — PySpark and Delta Differential Parity
+
+**Medallantic phase:** M4 — PySpark/SparkForge parity.
+
+**Objective:** use the legacy Spark builder as a differential corpus to harden
+distributed execution and storage capability boundaries.
+
+### Medallantic deliverables
+
+- live `PipelineBuilder` migration bridge
+- PySpark Column rules and callable transforms
+- explicit real-PySpark and Sparkless test modes
+- run-one, run-until, no-write, overrides, rerun, and downstream invalidation
+- Delta merge, optimize, vacuum, history, schema evolution, and time travel
+  through declared plugins
+- fixture-by-fixture compatibility classifications
+
+### ETLantic evolution
+
+- strengthen Spark implementation-reference, session/resource, metrics,
+  cancellation, cache, and artifact-lifetime protocols
+- add a storage-capability vocabulary for Delta operations without making
+  Delta a core dependency or treating maintenance commands as generic writes
+- generalize catalog/schema mutation authorization, JDBC/asset bindings, and
+  cross-schema planning where the behavior is portable
+- extend debug/invalidation provenance so fused or distributed artifacts
+  retain logical-step identity
+- publish differential-test hooks that compare normalized semantics rather
+  than backend dataframe objects
+
+### Joint exit gate
+
+Every supported SparkForge `pipeline_builder` fixture is classified as
+equivalent, explicitly plugin-dependent, or intentionally rejected; live
+PySpark and Delta suites pass their advertised semantics; no Spark or Delta
+dependency enters ETLantic core.
+
+## 0.33 — SQLAlchemy and Relational Differential Parity
+
+**Medallantic phase:** M5 — SQL pipeline-builder parity.
+
+**Objective:** use the legacy SQL builder to harden ETLantic's relational,
+transaction, catalog, and async execution contracts without creating a SQL
+pipeline type.
+
+### Medallantic deliverables
+
+- live `SqlPipelineBuilder` migration bridge
+- migration support for Moltres, SQLAlchemy ORM, `Select`, and compound selects
+- lazy relational step reuse without mandatory table round-trips
+- model-driven table creation and primary-key validation
+- sync/async execution, rollback behavior, and dialect support tiers
+- differential suites for SQLite and PostgreSQL
+
+### ETLantic evolution
+
+- refine relation/artifact references so adjacent SQL steps can reuse a CTE,
+  subquery, temporary relation, or durable artifact according to the plan
+- promote reusable model-to-contract/catalog mapping through the SQLModel and
+  SQL plugin boundaries
+- complete async transaction, rollback, connection-loss, and unknown-outcome
+  conformance
+- strengthen dialect capability declarations for DDL, merge, isolation,
+  returning, compound selects, duplicate columns, and identifier handling
+- add planner evidence for fusion barriers, table recreation, schema
+  mutation, and transaction scopes
+
+### Joint exit gate
+
+The SQL parity matrix passes on SQLite and PostgreSQL, additional dialect
+claims are accurately gated, failures preserve transaction guarantees, and
+one Medallantic authoring model serves SQL and non-SQL engines.
+
+## 0.34 — Operations, Evidence, and Production Readiness
+
+**Medallantic phase:** M6 — Operations, observability, and production
+readiness.
+
+**Objective:** prove that a first-party facade can meet ETLantic's production
+envelope with complete evidence and no storage-specific observability in core.
+
+### Medallantic deliverables
+
+- medallion-oriented plan/run explanation
+- layer-aware lifecycle views over normalized ETLantic events
+- durable run-history provider conformance
+- optional trend, quality, performance, and anomaly consumers
+- development, testing, and production profile templates
+- published compatibility, security, performance, and support tiers
+
+### ETLantic evolution
+
+- stabilize observability-provider and event-consumer protocols required for
+  durable run history and derived analytics
+- complete correlation across logical steps, physical regions, attempts,
+  remote jobs, writes, state transitions, and facade annotations
+- extend profile composition so facades can provide inspectable defaults while
+  production trust, allowlists, mutation, and redaction policies remain
+  authoritative
+- add production conformance for concurrency, cancellation, timeout,
+  recovery, redaction, schema mutation, and bounded metrics
+- expose evidence queries and report extensions without coupling core to a
+  log-table schema
+
+### Joint exit gate
+
+Medallantic satisfies ETLantic's documented production profile and security
+requirements; all fallback and mutation behavior is planned and reported; run
+history and analytics remain optional providers/consumers.
+
+## 0.35 — Migration Completion and Joint Freeze
+
+**Medallantic phase:** M7 — Migration completion.
+
+**Objective:** complete both legacy builder migrations and freeze the
+ETLantic/Medallantic boundary before the final compatibility-burn-in window.
+
+### Medallantic deliverables
+
+- automated SparkForge project inventory and migration report
+- safe generation of native Medallantic definitions
+- stable diagnostics for manual migration points
+- golden before/after plans and normalized reports
+- versioned deprecation timeline for legacy imports and serialized IR
+- no transitional adapter removal before a documented major release
+
+### ETLantic evolution
+
+- provide public, bounded definition-inspection and rewrite APIs needed by
+  migration tooling
+- stabilize facade protocol/version compatibility and generated-definition
+  provenance
+- include Medallantic definitions, diagnostics, and extension metadata in
+  old-reader/new-writer and new-reader/old-writer burn-in matrices
+- close remaining public API, Plugin SDK, plan/report schema, and diagnostic
+  stability blockers exposed by the full parity corpus
+- forbid migration tooling from resolving secrets, importing untrusted code,
+  reading source rows, or mutating targets during analysis
+
+### Joint exit gate
+
+Both legacy builders have tested migration paths; all claimed parity is backed
+by differential/conformance evidence; the facade/core boundary and required
+wire schemas are freeze-ready; no unresolved P0 parity gap remains.
+
+## 0.36–0.98 — Joint Compatibility Burn-In
+
+**Objective:** accumulate adoption and upgrade evidence for ETLantic and
+Medallantic together after the 0.25–0.27 core slices and the 0.28–0.35
+co-evolution phases.
 
 ### Deliver
 
-- keep exercising consecutive minor upgrade paths without a wire-schema reset
+- exercise consecutive minor upgrades for ETLantic core, first-party plugins,
+  Medallantic definitions, migration IR, plans, reports, and diagnostics
+  without an unplanned wire-schema reset
 - maintain old-reader/new-writer and new-reader/old-writer fixtures for every
   supported schema and protocol range
-- require migrations for all intentional breaking changes and keep the 1.0
-  removal inventory current rather than carrying ambiguous aliases indefinitely
-- graduate experimental engines or portable families only through their
-  existing conformance, differential, security, performance, and documentation
-  gates
+- require migrations for intentional breaking changes and keep both projects'
+  1.0 removal inventories current
+- run the Medallantic semantic conformance and legacy differential corpora as
+  first-party release gates
+- graduate experimental engines or portable families only through existing
+  conformance, differential, security, performance, and documentation gates
 - keep server, registry, LSP, remote federation, expanded streaming,
-  additional orchestrators, and AI-assisted authoring out of the stable core
+  additional orchestrators, and AI-assisted authoring out of stable core
   unless needed to prove an already-promised 1.0 abstraction
 
 ### Exit gate
 
-No unresolved naming migration, silent compatibility fallback, schema reset,
-or provisional core protocol remains on the 1.0 path.
+No unresolved naming migration, P0 Medallantic parity gap, silent capability
+fallback, schema reset, provisional facade/core protocol, or provisional core
+plugin protocol remains on the 1.0 path.
 
 ## 0.99 — 1.0 Release Candidate
 

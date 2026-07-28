@@ -1,7 +1,7 @@
-# SparkForge Adapter (runnable)
+# Medallantic (runnable migration adapter)
 
-> **Status: Available.** Uses `etlantic-sparkforge` and the IR parity suite
-> under `tests/sparkforge/`.
+> **Status: Available.** The current release provides the SparkForge IR
+> migration adapter and parity suite under `tests/medallantic/`.
 
 Map medallion SparkForge IR onto ordinary ETLantic `Extract` / `Step` /
 `Load` graphs without putting bronze/silver/gold types in core.
@@ -11,13 +11,13 @@ Map medallion SparkForge IR onto ordinary ETLantic `Extract` / `Step` /
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-uv sync --group sparkforge
+uv sync --group medallantic
 ```
 
 ## Run the parity suite
 
 ```bash
-uv run pytest -q tests/sparkforge -m sparkforge
+uv run pytest -q tests/medallantic -m medallantic
 ```
 
 ## Minimal adapt
@@ -27,7 +27,7 @@ import json
 from pathlib import Path
 
 from etlantic.plan import plan_pipeline
-from etlantic_sparkforge import (
+from medallantic import (
     SparkForgePipelineSpec,
     adapt_pipeline,
     debug_request_from_sparkforge,
@@ -35,7 +35,7 @@ from etlantic_sparkforge import (
 )
 
 data = json.loads(
-    Path("tests/sparkforge/fixtures/ecommerce.json").read_text(encoding="utf-8")
+    Path("tests/medallantic/fixtures/ecommerce.json").read_text(encoding="utf-8")
 )
 spec = SparkForgePipelineSpec.from_dict(data)
 adapted = adapt_pipeline(spec)
@@ -57,6 +57,6 @@ print(adapted.pipeline_cls.__name__, plan.plan_id, request.intent)
 
 ## See also
 
-- Package README: `packages/etlantic-sparkforge/README.md`
+- Package README: `packages/medallantic/README.md`
 - [Migration 0.9 → 0.10](../11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md)
 - [SparkForge Feature Adoption](../11_DEVELOPMENT/SPARKFORGE_ADOPTION.md)

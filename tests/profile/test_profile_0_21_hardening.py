@@ -101,3 +101,21 @@ def test_from_plan_snapshot_accepts_wire_bindings() -> None:
     empty = Profile(name="empty", security_mode="development")
     restored_empty = Profile.from_plan_snapshot(empty.to_plan_snapshot())
     assert restored_empty.assets == {}
+
+
+def test_init_production_rejects_bare_metadata() -> None:
+    with pytest.raises(ValueError, match="namespace"):
+        Profile(
+            name="prod",
+            security_mode="production",
+            metadata={"bare_key": "value"},
+        )
+
+
+def test_init_production_accepts_namespaced_metadata() -> None:
+    profile = Profile(
+        name="prod",
+        security_mode="production",
+        metadata={"plugin:owner": "team-a"},
+    )
+    assert profile.metadata["plugin:owner"] == "team-a"

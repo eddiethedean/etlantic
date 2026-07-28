@@ -252,7 +252,11 @@ class Profile:
         object.__setattr__(self, "safe_io", dict(safe_io or {}))
         object.__setattr__(self, "outbound", dict(outbound or {}))
         object.__setattr__(self, "require_plugin_probe", bool(require_plugin_probe))
-        object.__setattr__(self, "metadata", dict(metadata or {}))
+        object.__setattr__(
+            self,
+            "metadata",
+            _validated_profile_metadata(metadata or {}, strict=mode == "production"),
+        )
 
     def primary_engine(self) -> str:
         """Resolve the profile's primary execution engine (spark → sql → dataframe).

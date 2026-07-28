@@ -13,6 +13,7 @@ from etlantic.cli import exit_codes as ec
 from etlantic.cli.context import CliContext, get_cli_context
 from etlantic.cli.output import emit_payload, emit_validation_report
 from etlantic.cli.target import build_selection
+from etlantic.cli.trust_exit import trust_exit_from_report, validation_exit_from_report
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.plan.diff import diff_plans, render_plan_explain_human
 from etlantic.plan.explain import explain_plan
@@ -75,28 +76,7 @@ def register_core_commands(
         )
         if report.valid:
             raise typer.Exit(ec.SUCCESS)
-        from etlantic.diagnostics import Severity
-
-        trust_phases = {
-            "plugin_trust",
-            "plugin_discovery",
-            "plugin_discover",
-            "plugin_authorize",
-            "plugin_evaluate",
-            "plugin_load",
-            "plugin_probe",
-        }
-        if any(
-            d.severity is Severity.ERROR
-            and (
-                (d.phase or "") in trust_phases
-                or (d.phase or "").startswith("plugin_")
-                or (d.code or "").startswith("PMPLUG")
-            )
-            for d in report.diagnostics
-        ):
-            raise typer.Exit(ec.TRUST_FAILURE)
-        raise typer.Exit(ec.INVALID_MODEL)
+        raise typer.Exit(validation_exit_from_report(report))
 
     @app.command("inspect")
     def inspect_cmd(
@@ -268,6 +248,9 @@ def register_core_commands(
                 verbose=cli.globals.verbose,
                 quiet=cli.globals.quiet,
             )
+            trust_exit = trust_exit_from_report(report)
+            if trust_exit is not None:
+                raise typer.Exit(trust_exit)
             raise typer.Exit(ec.PLANNING_FAILURE)
         if explain:
             payload = explain_plan(plan)

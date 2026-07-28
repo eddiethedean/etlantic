@@ -30,7 +30,7 @@ Tag `vX.Y.Z` publishes twelve distributions:
 | `etlantic-prefect` | `packages/etlantic-prefect` | stable |
 | `etlantic-keyring` | `packages/etlantic-keyring` | stable |
 | `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | stable |
-| `etlantic-sparkforge` | `packages/etlantic-sparkforge` | stable |
+| `medallantic` | `packages/medallantic` | stable |
 | `etlantic-fastapi` | `packages/etlantic-fastapi` | thin authoring/service reference adapter (since 0.24) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 
@@ -70,8 +70,8 @@ Tag `vX.Y.Z` publishes twelve distributions:
    uv run python scripts/check_release.py
    uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
    uv run python scripts/build_docs.py
-   uv sync --locked --group sparkforge
-   uv run pytest -q tests/sparkforge -m sparkforge
+   uv sync --locked --group medallantic
+   uv run pytest -q tests/medallantic -m medallantic
    ```
 
 7. **Normal path (stable projects already on PyPI):** publish uploads to

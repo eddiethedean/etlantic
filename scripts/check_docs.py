@@ -37,6 +37,8 @@ def main() -> None:
         ROOT / "docs/01_GETTING_STARTED/FAQ.md",
         ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
         ROOT / "docs/09_EXAMPLES/README.md",
+        ROOT / "docs/10_REFERENCE/DIAGNOSTICS.md",
+        ROOT / "examples/README.md",
         ROOT / "SECURITY.md",
         ROOT / "SUPPORT.md",
     ]
@@ -524,7 +526,7 @@ def main() -> None:
     for required in (
         "etlantic-airflow",
         "etlantic-prefect",
-        "etlantic-sparkforge",
+        "medallantic",
         "etlantic-keyring",
         "Graphviz",
     ):
@@ -665,7 +667,7 @@ def main() -> None:
         ROOT / "docs/08_VISUALIZATION/LINEAGE.md",
         ROOT / "docs/09_EXAMPLES/README.md",
         ROOT / "docs/09_EXAMPLES/AIRFLOW_COMPILE.md",
-        ROOT / "docs/09_EXAMPLES/SPARKFORGE_ADAPTER.md",
+        ROOT / "docs/09_EXAMPLES/MEDALLANTIC.md",
         ROOT / "docs/10_REFERENCE/API_REFERENCE.md",
         ROOT / "docs/10_REFERENCE/README.md",
         ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md",
@@ -680,7 +682,7 @@ def main() -> None:
         ROOT / "packages/etlantic-pandas/README.md",
         ROOT / "packages/etlantic-pyspark/README.md",
         ROOT / "packages/etlantic-sql/README.md",
-        ROOT / "packages/etlantic-sparkforge/README.md",
+        ROOT / "packages/medallantic/README.md",
         ROOT / "docs/theme/javascripts/status-banner.js",
         ROOT / "mkdocs.yml",
     ]
@@ -695,7 +697,7 @@ def main() -> None:
     # Design study pages need future/design admonitions; runnable guides do not.
     runnable_guides = {
         "AIRFLOW_COMPILE.md",
-        "SPARKFORGE_ADAPTER.md",
+        "MEDALLANTIC.md",
         "PORTABLE_TRANSFORMS.md",
         "INTERCHANGE_POLARS_PANDAS.md",
         "CONTRACT_FIRST_TUTORIAL.md",
@@ -818,7 +820,7 @@ def main() -> None:
     for shipped_viz in ("GRAPHVIZ.md", "HTML.md", "LINEAGE.md"):
         if shipped_viz not in viz_block:
             raise SystemExit(f"mkdocs.yml Visualization section missing {shipped_viz}")
-    if "AIRFLOW_COMPILE.md" not in mkdocs or "SPARKFORGE_ADAPTER.md" not in mkdocs:
+    if "AIRFLOW_COMPILE.md" not in mkdocs or "MEDALLANTIC.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing runnable example guide pages")
     if "RUNTIME_CONFIGURATION.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing RUNTIME_CONFIGURATION.md")
@@ -845,7 +847,7 @@ def main() -> None:
     banner_js = (ROOT / "docs/theme/javascripts/status-banner.js").read_text(
         encoding="utf-8"
     )
-    if "AIRFLOW_COMPILE/" not in banner_js or "SPARKFORGE_ADAPTER/" not in banner_js:
+    if "AIRFLOW_COMPILE/" not in banner_js or "MEDALLANTIC/" not in banner_js:
         raise SystemExit(
             "status-banner.js must exclude runnable example guides from design banner"
         )
@@ -943,7 +945,7 @@ def main() -> None:
         ROOT / "packages/etlantic-prefect/pyproject.toml",
         ROOT / "packages/etlantic-keyring/pyproject.toml",
         ROOT / "packages/etlantic-sqlmodel/pyproject.toml",
-        ROOT / "packages/etlantic-sparkforge/pyproject.toml",
+        ROOT / "packages/medallantic/pyproject.toml",
         ROOT / "packages/etlantic-datafusion/pyproject.toml",
     ):
         plugin_version = version_from(plugin_pyproject, r'(?m)^version = "([^"]+)"')
@@ -965,7 +967,7 @@ def main() -> None:
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
         ROOT / "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
         ROOT / "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
-        ROOT / "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
+        ROOT / "packages/medallantic/src/medallantic/__init__.py",
         ROOT / "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
         ROOT / "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/__init__.py",
@@ -1111,7 +1113,7 @@ def main() -> None:
         ROOT / "packages/etlantic-airflow/README.md",
         ROOT / "packages/etlantic-keyring/README.md",
         ROOT / "packages/etlantic-sqlmodel/README.md",
-        ROOT / "packages/etlantic-sparkforge/README.md",
+        ROOT / "packages/medallantic/README.md",
         ROOT / "packages/etlantic-prefect/README.md",
         ROOT / "examples/portable_polars_kernel.py",
         ROOT / "examples/portable_pandas_kernel.py",
@@ -1123,12 +1125,30 @@ def main() -> None:
         prior_tag = f"v{prior_minor}.0"
         prior_status = f"Available in ETLantic {prior_minor}.0"
         prior_status_short = f"Available in ETLantic {prior_minor}"
+        prior_prior_minor = None
+        try:
+            maj_s, min_s = prior_minor.split(".")
+            if int(min_s) > 0:
+                prior_prior_minor = f"{maj_s}.{int(min_s) - 1}"
+        except ValueError:
+            prior_prior_minor = None
+        stale_pins: list[str] = [prior_pin]
+        if prior_prior_minor is not None:
+            stale_pins.extend(
+                [
+                    f"etlantic=={prior_prior_minor}.0",
+                    f"etlantic=={prior_prior_minor}.1",
+                    f"=={prior_prior_minor}.0",
+                    f"=={prior_prior_minor}.1",
+                ]
+            )
         for path in prior_pin_paths:
             if not path.exists():
                 continue
             text = path.read_text(encoding="utf-8")
-            if prior_pin in text:
-                raise SystemExit(f"{path} still pins {prior_pin}")
+            for stale in stale_pins:
+                if stale in text:
+                    raise SystemExit(f"{path} still pins {stale}")
             if prior_range in text or prior_range_short in text:
                 raise SystemExit(f"{path} still uses prior-minor range {prior_range}")
             if f"etlantic-polars=={prior_minor}.0" in text:

@@ -37,7 +37,7 @@ SECURITY_RULES = (
     "Production profiles require Profile.plugin_allowlist and fail closed.",
     "Schema history stores fingerprints/metadata only — never source rows.",
     "Prefer public SDK imports; do not rely on private underscore modules.",
-    "Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never in core.",
+    "Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.",
 )
 
 
@@ -105,7 +105,7 @@ public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
 
 Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
-Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never
+Medallion bronze/silver/gold stay in SparkForge / medallantic — never
 in core. Airflow compile needs the optional `etlantic-airflow` package.
 """
 
@@ -123,7 +123,7 @@ globs:
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
-- Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never in core.
+- Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.
 """
 

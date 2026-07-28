@@ -26,7 +26,7 @@ def _manifest(**overrides: object) -> str:
     payload = {
         "schema": "etlantic.plugin_manifest/1",
         "package": "etlantic-echo",
-        "version": "0.25.0",
+        "version": "0.27.0",
         "protocol_range": "etlantic.dataframe/1",
         "entries": [
             {

@@ -52,7 +52,7 @@ Install matching minors while ETLantic is pre-1.0:
 - `etlantic-prefect`
 - `etlantic-keyring`
 - `etlantic-sqlmodel`
-- `etlantic-sparkforge`
+- `medallantic`
 - `etlantic-datafusion` (experimental Gate B stub)
 - `etlantic-fastapi` (authoring/service reference adapter)
 

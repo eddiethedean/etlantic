@@ -328,7 +328,7 @@ own authentication, persistence, durable jobs, and deployment. See
 No.
 
 Bronze / silver / gold stay in SparkForge. Optional package
-`etlantic-sparkforge` maps medallion IR onto ordinary ETLantic nodes,
+`medallantic` maps medallion IR onto ordinary ETLantic nodes,
 profiles, and reports. See [Migrating 0.9 → 0.10](../11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md).
 
 ------------------------------------------------------------------------

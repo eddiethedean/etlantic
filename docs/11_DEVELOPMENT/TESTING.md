@@ -8,7 +8,7 @@ Prefer the marker-aware core suite (matches CI baseline exclusions):
 uv sync --locked
 ./scripts/test_core.sh
 # equivalent:
-# uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+# uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
 uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_docs.py
@@ -23,7 +23,7 @@ Run the narrowest relevant test directory while developing, then the complete
 suite before opening a pull request. Current test areas include core validation
 and planning plus `tests/dataframe`, `tests/sql`, `tests/spark`,
 `tests/orchestration`, `tests/airflow`, `tests/prefect`, and
-`tests/sparkforge`.
+`tests/medallantic`.
 
 Current optional markers are `polars`, `pandas`, `sql`, `spark`,
 `real_pyspark`, `airflow`, `prefect`, `keyring`, `sqlmodel`, and `sparkforge`;
@@ -31,7 +31,7 @@ Current optional markers are `polars`, `pandas`, `sql`, `spark`,
 markers:
 
 ```bash
-uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
 ```
 
 ```bash

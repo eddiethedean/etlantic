@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     path.includes("/09_EXAMPLES/") &&
     !path.endsWith("/09_EXAMPLES/") &&
     !path.includes("/09_EXAMPLES/AIRFLOW_COMPILE/") &&
-    !path.includes("/09_EXAMPLES/SPARKFORGE_ADAPTER/") &&
+    !path.includes("/09_EXAMPLES/MEDALLANTIC/") &&
     !path.includes("/09_EXAMPLES/PORTABLE_TRANSFORMS/") &&
     !path.includes("/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS/") &&
     !path.includes("/09_EXAMPLES/CONTRACT_FIRST_TUTORIAL/") &&

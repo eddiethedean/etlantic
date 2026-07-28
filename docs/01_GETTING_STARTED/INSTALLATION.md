@@ -98,7 +98,7 @@ python -m pip install 'etlantic-airflow==0.27.0'    # Airflow DAG compiler
 python -m pip install 'etlantic-prefect==0.27.0'    # Prefect direct-execution (local MVP)
 python -m pip install 'etlantic-keyring==0.27.0'    # OS keyring secret provider
 python -m pip install 'etlantic-sqlmodel==0.27.0'   # SQLModel bridge helpers
-python -m pip install 'etlantic-sparkforge==0.27.0' # SparkForge → ETLantic IR adapter
+python -m pip install 'medallantic==0.27.0' # SparkForge → ETLantic IR adapter
 ```
 
 **Equivalent extras** (same packages, same pins):
@@ -115,7 +115,7 @@ python -m pip install 'etlantic[prefect]==0.27.0'
 python -m pip install 'etlantic[datafusion]==0.27.0'
 ```
 
-Also available: `[keyring]`, `[sqlmodel]`, `[sparkforge]`, `[fastapi]`,
+Also available: `[keyring]`, `[sqlmodel]`, `[medallantic]`, `[fastapi]`,
 `[otel]`, `[arrow]`.
 
 ```bash

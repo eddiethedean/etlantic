@@ -45,15 +45,15 @@ jobs:
           PREFECT_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-prefect/pyproject.toml | head -1)"
           KEYRING_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-keyring/pyproject.toml | head -1)"
           SQLMODEL_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sqlmodel/pyproject.toml | head -1)"
-          SPARKFORGE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sparkforge/pyproject.toml | head -1)"
+          MEDALLANTIC_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/medallantic/pyproject.toml | head -1)"
           DATAFUSION_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-datafusion/pyproject.toml | head -1)"
           FASTAPI_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-fastapi/pyproject.toml | head -1)"
           if [ "$TAG" != "$VERSION" ] || [ "$TAG" != "$MODULE_VERSION" ]; then
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ]; then
-            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION'"
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$MEDALLANTIC_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION'"
             exit 1
           fi
 
@@ -70,7 +70,7 @@ jobs:
           uv build --package etlantic-prefect --out-dir dist
           uv build --package etlantic-keyring --out-dir dist
           uv build --package etlantic-sqlmodel --out-dir dist
-          uv build --package etlantic-sparkforge --out-dir dist
+          uv build --package medallantic --out-dir dist
           uv build --package etlantic-datafusion --out-dir dist
           uv build --package etlantic-fastapi --out-dir dist
           ls -la dist/
@@ -147,13 +147,13 @@ jobs:
           PREFECT="dist/etlantic_prefect-${TAG}-py3-none-any.whl"
           KEYRING="dist/etlantic_keyring-${TAG}-py3-none-any.whl"
           SQLMODEL="dist/etlantic_sqlmodel-${TAG}-py3-none-any.whl"
-          SPARKFORGE="dist/etlantic_sparkforge-${TAG}-py3-none-any.whl"
+          MEDALLANTIC="dist/medallantic-${TAG}-py3-none-any.whl"
           DATAFUSION="dist/etlantic_datafusion-${TAG}-py3-none-any.whl"
           FASTAPI="dist/etlantic_fastapi-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project \
             --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
             --with "$SPARK" --with "$AIRFLOW" --with "$PREFECT" --with "$KEYRING" \
-            --with "$SQLMODEL" --with "$SPARKFORGE" --with "$DATAFUSION" --with "$FASTAPI" \
+            --with "$SQLMODEL" --with "$MEDALLANTIC" --with "$DATAFUSION" --with "$FASTAPI" \
             python -c "
           import etlantic
           import etlantic_polars
@@ -164,7 +164,7 @@ jobs:
           import etlantic_prefect
           import etlantic_keyring
           import etlantic_sqlmodel
-          import etlantic_sparkforge
+          import medallantic
           import etlantic_datafusion
           import etlantic_fastapi
           assert etlantic.__version__ == '$TAG'
@@ -176,7 +176,7 @@ jobs:
           assert etlantic_prefect.__version__ == '$TAG'
           assert etlantic_keyring.__version__ == '$TAG'
           assert etlantic_sqlmodel.__version__ == '$TAG'
-          assert etlantic_sparkforge.__version__ == '$TAG'
+          assert medallantic.__version__ == '$TAG'
           assert etlantic_datafusion.__version__ == '$TAG'
           assert etlantic_fastapi.__version__ == '$TAG'
           from etlantic.dataframe.discovery import discover_dataframe_plugins
@@ -327,9 +327,9 @@ jobs:
           publish_pair etlantic-prefect \
             "dist/etlantic_prefect-${TAG}-py3-none-any.whl" \
             "dist/etlantic_prefect-${TAG}.tar.gz"
-          publish_pair etlantic-sparkforge \
-            "dist/etlantic_sparkforge-${TAG}-py3-none-any.whl" \
-            "dist/etlantic_sparkforge-${TAG}.tar.gz"
+          publish_pair medallantic \
+            "dist/medallantic-${TAG}-py3-none-any.whl" \
+            "dist/medallantic-${TAG}.tar.gz"
           publish_pair etlantic-datafusion \
             "dist/etlantic_datafusion-${TAG}-py3-none-any.whl" \
             "dist/etlantic_datafusion-${TAG}.tar.gz"

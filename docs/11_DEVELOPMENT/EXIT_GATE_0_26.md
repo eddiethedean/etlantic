@@ -1,5 +1,8 @@
 # Exit Gate 0.26 — Compatibility Burn-In (Second Slice)
 
+> **Superseded:** Plugin SDK `/1` freeze timeline and follow-on work continue in
+> [Exit gate 0.27](EXIT_GATE_0_27.md) (re-scoped to 0.28+).
+
 | Deliverable | Status |
 |---|---|
 | Dual-minor burn-in (`v0_24/` + `v0_25/` fixtures) | Done |

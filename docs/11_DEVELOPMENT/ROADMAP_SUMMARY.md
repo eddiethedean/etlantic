@@ -99,18 +99,41 @@ second-wave root alias removals (reliability, schema_drift, registry). See
 [What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
 [Exit gate 0.27](EXIT_GATE_0_27.md).
 
-## Next: 0.28–0.98
+## Next: 0.28–0.35 — ETLantic and Medallantic co-evolution
 
-Continued compatibility burn-in, then RC and Stable Foundation. Production
-FastAPI control API remains **1.1**; registry/workspaces **1.2**.
+The remaining pre-1.0 capability phases pair each Medallantic parity milestone
+with the domain-neutral ETLantic substrate it exercises:
+
+| Release | Medallantic outcome | ETLantic evolution |
+|---|---|---|
+| 0.28 | Package foundation | First-party facade boundary and release gates |
+| 0.29 | Native medallion authoring | Public facade lowering and conformance |
+| 0.30 | Quality/rules parity | Portable quality-expression and gate semantics |
+| 0.31 | Execution/materialization parity | State, write, retry, and transaction semantics |
+| 0.32 | PySpark/SparkForge parity | Spark, Delta, storage, and debug provenance |
+| 0.33 | SQL builder parity | Relational reuse, dialect, and transaction conformance |
+| 0.34 | Operations/production readiness | Events, history providers, evidence, and profiles |
+| 0.35 | Migration completion | Rewrite tooling, facade compatibility, and joint freeze |
+
+Bronze/silver/gold vocabulary remains in Medallantic. Only capabilities with
+domain-neutral meaning are promoted into ETLantic. See the
+[full ETLantic roadmap](../../ROADMAP.md) and
+[Medallantic roadmap](../../packages/medallantic/ROADMAP.md).
+
+## 0.36–0.98
+
+Joint ETLantic/Medallantic compatibility burn-in, then RC and Stable
+Foundation. Production FastAPI control API remains **1.1**;
+registry/workspaces **1.2**.
 
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
 frozen `/1` protocols (freeze still open through 0.27; owned by 0.28+), and
-0.24 functional/JSON authoring convergence, then compatibility burn-in
-(**0.25** / **0.26** / **0.27** slices, then 0.28–0.98 continued).
+0.24 functional/JSON authoring convergence, followed by core compatibility
+burn-in (**0.25** / **0.26** / **0.27**), joint Medallantic evolution
+(**0.28–0.35**), and joint compatibility burn-in (**0.36–0.98**).
 TransformationModel incubation is deferred to post-1.0 phases.
 
 > **Production use is supported only within the documented reference

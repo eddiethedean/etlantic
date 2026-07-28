@@ -2,8 +2,8 @@
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under
-``tests/fixtures/burn_in/*/v0_24/`` and ``v0_25/`` (pipeline fixtures remain
-under ``check_pipeline_codec_burn_in.py``).
+``tests/fixtures/burn_in/*/v0_24/``, ``v0_25/``, and ``v0_26/`` (pipeline
+fixtures remain under ``check_pipeline_codec_burn_in.py``).
 """
 
 from __future__ import annotations

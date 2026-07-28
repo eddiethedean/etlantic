@@ -1,7 +1,7 @@
 [project]
-name = "etlantic-sparkforge"
+name = "medallantic"
 version = "0.27.0"
-description = "SparkForge-to-ETLantic migration adapter (medallion facade mapping)."
+description = "Engine-agnostic medallion pipelines built on ETLantic."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -20,8 +20,8 @@ dependencies = [
     "etlantic>=0.27.0,<0.28",
 ]
 
-# IR-only adapter in 0.10: no live SparkForge / pipeline_builder dependency.
-# Fixture and parity tests run without installing SparkForge or PySpark.
+# The initial release is an IR-only SparkForge migration adapter. The roadmap
+# evolves this package into the engine-agnostic medallion facade for ETLantic.
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"
@@ -35,4 +35,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/etlantic_sparkforge"]
+packages = ["src/medallantic"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/medallantic",
+    "/README.md",
+    "/ROADMAP.md",
+    "/pyproject.toml",
+]

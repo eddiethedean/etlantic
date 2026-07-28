@@ -14,6 +14,33 @@ EXTENSION_NAMESPACE_PREFIXES: tuple[str, ...] = ("etlantic.", "plugin:")
 MAX_METADATA_BYTES = 256 * 1024
 MAX_METADATA_DEPTH = 8
 
+# First-party plan/profile wire keys (not plugin extensions).
+CORE_METADATA_KEYS: frozenset[str] = frozenset(
+    {
+        "capabilities",
+        "collection_points",
+        "conversion_boundaries",
+        "dataframe_protocol",
+        "engine",
+        "interchange",
+        "lazy_supported",
+        "ownership",
+        "planner",
+        "planner_version",
+        "plugin_trust_records",
+        "plugin_version",
+        "region",
+        "region_engine",
+        "spark_fusion",
+        "spark_protocol",
+        "spark_streaming_stability",
+        "sql_fusion",
+        "sql_protocol",
+        "streaming",
+        "validation_policy",
+    }
+)
+
 
 def _max_depth(value: Any) -> int:
     """Return nesting depth for mappings and sequences (leaves are 0)."""
@@ -30,6 +57,8 @@ def _max_depth(value: Any) -> int:
 
 def _is_namespaced(key: object) -> bool:
     text = str(key)
+    if text in CORE_METADATA_KEYS:
+        return True
     return any(text.startswith(prefix) for prefix in EXTENSION_NAMESPACE_PREFIXES)
 
 

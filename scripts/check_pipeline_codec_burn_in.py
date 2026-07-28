@@ -4,7 +4,7 @@
 Fails when golden fixtures drift (fingerprint mismatch) or cannot be verified
 by the current codec — without an updated fixture or migration helper.
 
-Checks both ``v0_24`` (0.24→0.25 proof) and ``v0_25`` (0.25→0.26 proof).
+Checks ``v0_24``, ``v0_25``, and ``v0_26`` (0.24→0.25→0.26→0.27 proof).
 """
 
 from __future__ import annotations
@@ -94,4 +94,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

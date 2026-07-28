@@ -6,7 +6,7 @@ Orchestration, SQL, Spark, and CLI surfaces from 0.8–0.9 are unchanged.
 
 ## What changed
 
-- Optional package `etlantic-sparkforge` (extra `etlantic[sparkforge]`)
+- Optional package `medallantic` (extra `etlantic[medallantic]`)
 - SparkForge-independent IR (`SparkForgePipelineSpec`) → `adapt_pipeline`
 - Debug / run-mode mapping → `RunSelection` / `RunIntent` / `DebugSession`
 - Result normalization → `PipelineRunReport`
@@ -23,8 +23,8 @@ Layer terminology stays in SparkForge and in adapter metadata only.
 
 ```bash
 pip install --upgrade 'etlantic>=0.10.0'
-pip install etlantic-sparkforge
-# or: pip install 'etlantic[sparkforge]'
+pip install medallantic
+# or: pip install 'etlantic[medallantic]'
 ```
 
 ## Progressive engine deprecation path
@@ -49,4 +49,4 @@ Legacy engine extension names discovered in IR emit diagnostic `PMSF410`.
 
 - [SparkForge Feature Adoption](SPARKFORGE_ADOPTION.md)
 - [Current Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
-- Package README: `packages/etlantic-sparkforge/README.md`
+- Package README: `packages/medallantic/README.md`

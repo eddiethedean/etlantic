@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Close `Profile.__init__` metadata validation bypass for production profiles
+- Validate plan graph, region, boundary, and artifact metadata on decode; apply
+  production strict mode from `profile_snapshot.security_mode`
+- Whitelist first-party core plan metadata keys to stop spurious bare-key warnings
+- Map `etlantic plan` trust-phase failures to exit code 11 (`TRUST_FAILURE`)
+- Correct plugin pin in Migration 0.24→0.25 guide
+- Refresh active docs, issue template, and examples README to 0.27.0
+- Harden `check_removed_root_imports` and extend `check_docs` stale-pin detection
+- Update burn-in script docstrings for `v0_26` coverage
+
 ## [0.27.0] - 2026-07-27
 
 ### Added
@@ -656,7 +667,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 
 ### Added
 
-- Optional `etlantic-sparkforge` migration adapter (IR → Pipeline / Profile)
+- Optional `medallantic` migration adapter (IR → Pipeline / Profile)
 - SparkForge debug/run-mode mapping to `RunSelection` / `RunIntent` / `DebugSession`
 - SparkForge-shaped result normalization to `PipelineRunReport` with redaction
 - Write / Delta capability compatibility helpers (fail closed)
@@ -691,7 +702,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 
 ### Upgrade notes
 
-- Install `etlantic-sparkforge` (or `etlantic[sparkforge]`) for the adapter
+- Install `medallantic` (or `etlantic[medallantic]`) for the adapter
 - ETLantic core remains free of bronze / silver / gold types
 - Full SparkForge engine retirement remains a progressive path (see migration guide)
 - Prefer `git tag v0.10.0 && git push origin v0.10.0` (not `git push --tags`)

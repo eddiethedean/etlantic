@@ -118,7 +118,7 @@ Pin to the same minor as core (`==0.27.0`). Details:
 | `etlantic-prefect` | Prefect direct-execution scheduler |
 | `etlantic-keyring` | OS keyring secret provider |
 | `etlantic-sqlmodel` | SQLModel ↔ contract bridge |
-| `etlantic-sparkforge` | SparkForge adapter (medallion stays here, not in core) |
+| `medallantic` | Engine-agnostic medallion facade and SparkForge migration adapter |
 | `etlantic-fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24) |
 | `etlantic-datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 

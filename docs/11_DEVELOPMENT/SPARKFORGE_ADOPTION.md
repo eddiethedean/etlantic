@@ -709,7 +709,7 @@ ETLantic as its engine:
 - [x] retry-safety validation
 - [x] profile templates
 - [x] cross-backend semantic conformance fixtures
-- [x] SparkForge adapter and migration test suite (`etlantic-sparkforge`, 0.10)
+- [x] SparkForge adapter and migration test suite (`medallantic`, 0.10)
 
 ## Source Notes
 

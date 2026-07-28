@@ -41,16 +41,25 @@ class ArtifactRef:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ArtifactRef:
+    def from_dict(cls, data: dict[str, Any], *, strict: bool = False) -> ArtifactRef:
         """Deserialize artifact reference."""
-        return cls(
+        from etlantic.extensions import validate_extension_metadata
+        from etlantic.plan.freeze import deep_freeze
+
+        metadata = dict(data.get("metadata") or {})
+        validate_extension_metadata(
+            metadata, path="artifact.metadata", strict=strict
+        )
+        artifact = cls(
             identity=str(data["identity"]),
             logical_output=str(data["logical_output"]),
             strategy=ArtifactStrategy(str(data["strategy"])),
             security_domain=str(data.get("security_domain") or "default"),
             cache_key=data.get("cache_key"),
-            metadata=dict(data.get("metadata") or {}),
+            metadata=metadata,
         )
+        object.__setattr__(artifact, "metadata", deep_freeze(artifact.metadata))
+        return artifact
 
 
 def _seg(value: str) -> str:

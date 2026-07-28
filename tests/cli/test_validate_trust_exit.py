@@ -3,33 +3,13 @@
 from __future__ import annotations
 
 from etlantic.cli import exit_codes as ec
+from etlantic.cli.trust_exit import validation_exit_from_report
 from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
 
 
 def _trust_exit(report: ValidationReport) -> int:
-    """Mirror validate_cmd exit selection (keep in sync with cmds/core.py)."""
-    if report.valid:
-        return ec.SUCCESS
-    trust_phases = {
-        "plugin_trust",
-        "plugin_discovery",
-        "plugin_discover",
-        "plugin_authorize",
-        "plugin_evaluate",
-        "plugin_load",
-        "plugin_probe",
-    }
-    if any(
-        d.severity is Severity.ERROR
-        and (
-            (d.phase or "") in trust_phases
-            or (d.phase or "").startswith("plugin_")
-            or (d.code or "").startswith("PMPLUG")
-        )
-        for d in report.diagnostics
-    ):
-        return ec.TRUST_FAILURE
-    return ec.INVALID_MODEL
+    """Mirror validate_cmd exit selection via shared helper."""
+    return validation_exit_from_report(report)
 
 
 def _run_status_exit(status: str) -> int:

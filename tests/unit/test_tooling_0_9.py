@@ -77,7 +77,7 @@ def test_invalid_allowlist_pin_emits_pmplug403() -> None:
         info = type(
             "I",
             (),
-            {"name": "etlantic-polars", "engine": "polars", "version": "0.26.0"},
+            {"name": "etlantic-polars", "engine": "polars", "version": "0.27.0"},
         )()
 
     profile = Profile(

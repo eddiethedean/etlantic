@@ -27,7 +27,7 @@
 3. Prefer owning-module imports for exceptions and demoted root symbols (warnings
    unchanged from 0.22+).
 
-4. Plugin authors: keep pinning `etlantic>=0.26.0,<0.27` and re-run public
+4. Plugin authors: keep pinning `etlantic>=0.25.0,<0.26` and re-run public
    conformance suites. Do not assume `/1` is frozen yet.
 
 ## Codec burn-in

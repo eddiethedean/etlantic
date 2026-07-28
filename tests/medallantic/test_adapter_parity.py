@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("etlantic_sparkforge")
+pytest.importorskip("medallantic")
 
 from etlantic.plan import explain_plan, plan_pipeline
 from etlantic.policy import resolve_validation_policy
 from etlantic.reliability import WriteMode
 from etlantic.runtime.request import MaterializationPolicy, RetryPolicy, RunIntent
 from etlantic.runtime.state import RunStatus
-from etlantic_sparkforge import (
+from medallantic import (
     COMPATIBILITY_MATRIX,
     AdapterError,
     SparkForgePipelineSpec,
@@ -31,7 +31,7 @@ from etlantic_sparkforge import (
     write_mode_metadata,
 )
 
-pytestmark = pytest.mark.sparkforge
+pytestmark = pytest.mark.medallantic
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

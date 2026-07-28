@@ -124,7 +124,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Capability | Status |
 |---|---|
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| `etlantic-datafusion` experimental engine | **Experimental in 0.25.0** (Gate B; not graduated) |
+| `etlantic-datafusion` experimental engine | **Experimental in 0.27.0** (Gate B; not graduated) |
 | `MERGE` / upsert in the reference SQL plugin | Not implemented (`sql_merge=False`; fail closed) |
 | Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
 | Event sensors / Dagster compilers | Future |
@@ -211,7 +211,7 @@ pip install 'etlantic-airflow==0.27.0'         # Airflow DAG compiler
 pip install 'etlantic-prefect==0.27.0'         # Prefect direct-execution scheduler
 pip install 'etlantic-keyring==0.27.0'         # OS keyring secret provider
 pip install 'etlantic-sqlmodel==0.27.0'        # SQLModel contract bridge
-pip install 'etlantic-sparkforge==0.27.0'      # SparkForge → ETLantic adapter
+pip install 'medallantic==0.27.0'      # SparkForge → ETLantic adapter
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.

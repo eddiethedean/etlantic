@@ -68,7 +68,7 @@ python -m pip install --upgrade \
 python -m pip install --upgrade \
   'etlantic-airflow==0.27.0' 'etlantic-prefect==0.27.0'
 python -m pip install --upgrade \
-  'etlantic-sparkforge==0.27.0'
+  'medallantic==0.27.0'
 ```
 
 From a checkout:
@@ -79,7 +79,7 @@ uv sync --group sql
 uv sync --group pyspark
 uv sync --group airflow
 uv sync --group prefect
-uv sync --group sparkforge
+uv sync --group medallantic
 uv sync --group keyring
 uv sync --group sqlmodel
 ```
@@ -243,7 +243,7 @@ Install the matching plugin and set the corresponding profile engine
 | SQL | `pip install 'etlantic-sql==0.27.0'` or `uv sync --group sql` | checkout `examples/sql_to_sql.py` |
 | PySpark | `pip install 'etlantic-pyspark==0.27.0'` or `uv sync --group pyspark` | checkout `examples/pyspark_local.py` |
 | Airflow compile | `pip install 'etlantic-airflow==0.27.0'` or `uv sync --group airflow` | checkout `examples/airflow_compile.py` |
-| SparkForge adapter | `pip install 'etlantic-sparkforge==0.27.0'` or `uv sync --group sparkforge` | `tests/sparkforge/` |
+| Medallantic | `pip install 'medallantic==0.27.0'` or `uv sync --group medallantic` | `tests/medallantic/` |
 
 Airflow compilation is available via `etlantic-airflow`. The shipped
 `etlantic-prefect` local MVP is a direct-execution scheduler
@@ -253,7 +253,7 @@ Dagster compilers are not shipped.
 ## Gate A / Polars ↔ Pandas interchange fails
 
 Gate A (`etlantic.interchange/1`) shipped in **0.18.0** for Polars ↔
-Pandas boundaries and remains available in 0.26.
+Pandas boundaries and remains available in 0.27.
 
 | Symptom | Fix |
 |---|---|

@@ -1,8 +1,8 @@
-"""etlantic-sparkforge — SparkForge → ETLantic migration adapter."""
+"""Medallantic — engine-agnostic medallion pipelines built on ETLantic."""
 
 from __future__ import annotations
 
-from etlantic_sparkforge.adapt import (
+from medallantic.adapt import (
     AdaptationResult,
     AdaptedRow,
     AdapterError,
@@ -11,21 +11,21 @@ from etlantic_sparkforge.adapt import (
     adapt_validation_policy,
     enrich_plan,
 )
-from etlantic_sparkforge.compat import (
+from medallantic.compat import (
     COMPATIBILITY_MATRIX,
     assert_delta_capabilities,
     retry_policy_from_sparkforge,
     write_mode_from_sparkforge,
     write_mode_metadata,
 )
-from etlantic_sparkforge.ir import (
+from medallantic.ir import (
     LayerKind,
     SparkForgePipelineSpec,
     SparkForgeStepSpec,
     StepKind,
 )
-from etlantic_sparkforge.reports import adapt_run_result, report_to_sparkforge_explain
-from etlantic_sparkforge.runtime_map import (
+from medallantic.reports import adapt_run_result, report_to_sparkforge_explain
+from medallantic.runtime_map import (
     bind_debug_session,
     debug_request_from_sparkforge,
     intent_from_sparkforge,

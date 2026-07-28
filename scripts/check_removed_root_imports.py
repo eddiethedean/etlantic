@@ -32,6 +32,7 @@ def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:
 def main() -> int:
     removed = _load_removed_names()
     violations: list[str] = []
+    parse_failures: list[str] = []
     for root in SCAN_ROOTS:
         if not root.exists():
             continue
@@ -41,12 +42,19 @@ def main() -> int:
             try:
                 source = path.read_text(encoding="utf-8")
                 tree = ast.parse(source, filename=str(path))
-            except (OSError, SyntaxError):
+            except (OSError, SyntaxError) as exc:
+                rel = path.relative_to(ROOT)
+                parse_failures.append(f"{rel}: {exc}")
                 continue
             bad = _names_imported_from_etlantic(tree) & removed
             if bad:
                 rel = path.relative_to(ROOT)
                 violations.append(f"{rel}: {sorted(bad)}")
+    if parse_failures:
+        print("Removed root import guard FAILED (unparseable files):")
+        for item in parse_failures:
+            print(f"  - {item}")
+        return 1
     if violations:
         print("Removed root import guard FAILED:")
         for item in violations:

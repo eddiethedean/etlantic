@@ -34,7 +34,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Pytest (core)
-        run: uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
+        run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 
       - name: Pipeline codec burn-in
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -383,8 +383,8 @@ jobs:
       - name: Pytest sqlmodel suite
         run: uv run pytest -q tests/sqlmodel -m sqlmodel
 
-  sparkforge:
-    name: SparkForge migration adapter
+  medallantic:
+    name: Medallantic
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -395,10 +395,10 @@ jobs:
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Sync with sparkforge package
-        run: uv sync --locked --group sparkforge
-      - name: Pytest sparkforge parity suite
-        run: uv run pytest -q tests/sparkforge -m sparkforge
+      - name: Sync with Medallantic
+        run: uv sync --locked --group medallantic
+      - name: Pytest Medallantic parity suite
+        run: uv run pytest -q tests/medallantic -m medallantic
 
   package:
     name: Build and test wheel
@@ -427,7 +427,7 @@ jobs:
         run: |
           for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
-            etlantic-sparkforge etlantic-datafusion; do
+            medallantic etlantic-datafusion; do
             uv build --package "$pkg" --out-dir dist
           done
           ls -la dist/
@@ -454,17 +454,17 @@ jobs:
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
             python -m pytest -q tests/unit tests/cli
 
-      - name: SparkForge wheel import smoke
+      - name: Medallantic wheel import smoke
         shell: bash
         run: |
           shopt -s nullglob
-          sf_wheels=(dist/etlantic_sparkforge-*.whl)
-          if [ "${#sf_wheels[@]}" -lt 1 ]; then
-            echo "Expected etlantic-sparkforge wheel in dist/"
+          medallantic_wheels=(dist/medallantic-*.whl)
+          if [ "${#medallantic_wheels[@]}" -lt 1 ]; then
+            echo "Expected medallantic wheel in dist/"
             ls -la dist/ || true
             exit 1
           fi
-          SF="${sf_wheels[0]}"
+          MEDALLANTIC_WHEEL="${medallantic_wheels[0]}"
           CORE=""
           for w in dist/etlantic-*.whl; do
             base="$(basename "$w")"
@@ -473,9 +473,9 @@ jobs:
               break
             fi
           done
-          echo "Smoke testing: $SF with $CORE"
-          uv run --isolated --no-project --with "$CORE" --with "$SF" \
-            python -c "import etlantic_sparkforge as s; import etlantic; assert s.__version__ == etlantic.__version__; print(s.__version__)"
+          echo "Smoke testing: $MEDALLANTIC_WHEEL with $CORE"
+          uv run --isolated --no-project --with "$CORE" --with "$MEDALLANTIC_WHEEL" \
+            python -c "import medallantic as s; import etlantic; assert s.__version__ == etlantic.__version__; print(s.__version__)"
 
   benchmarks:
     name: Microbenchmark regression gate

@@ -19,7 +19,7 @@ class _PropertyInfoPlugin:
         return DataframePluginInfo(
             name="prop",
             engine="prop",
-            version="0.25.0",
+            version="0.27.0",
             protocol_version="etlantic.dataframe/1",
             capabilities=PluginCapabilities(
                 engine="prop", dataframe=True, thread_safe=False
@@ -32,7 +32,7 @@ class _CallableInfoPlugin:
         return DataframePluginInfo(
             name="call",
             engine="call",
-            version="0.25.0",
+            version="0.27.0",
             protocol_version="etlantic.dataframe/1",
             capabilities=PluginCapabilities(
                 engine="call", dataframe=True, thread_safe=True

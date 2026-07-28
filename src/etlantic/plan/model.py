@@ -14,6 +14,10 @@ from etlantic.registry import BindingDescriptor, ImplementationDescriptor
 PLAN_SCHEMA = "etlantic.plan/1"
 
 
+def _plan_metadata_strict(profile_snapshot: dict[str, Any]) -> bool:
+    return str(profile_snapshot.get("security_mode") or "").strip().lower() == "production"
+
+
 @dataclass(frozen=True, slots=True)
 class PhysicalUnit:
     """A physical execution unit mapped from one or more logical nodes."""
@@ -35,13 +39,13 @@ class PhysicalUnit:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PhysicalUnit:
+    def from_dict(cls, data: dict[str, Any], *, strict: bool = False) -> PhysicalUnit:
         """Deserialize physical unit."""
         from etlantic.extensions import validate_extension_metadata
 
         metadata = dict(data.get("metadata") or {})
         validate_extension_metadata(
-            metadata, path="physical_unit.metadata", strict=False
+            metadata, path="physical_unit.metadata", strict=strict
         )
         unit = cls(
             identity=str(data["identity"]),
@@ -71,12 +75,14 @@ class OutputResolution:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> OutputResolution:
+    def from_dict(
+        cls, data: dict[str, Any], *, strict: bool = False
+    ) -> OutputResolution:
         """Deserialize output resolution."""
         resolution = cls(
             node_name=str(data["node_name"]),
             port_name=str(data["port_name"]),
-            artifact=ArtifactRef.from_dict(data["artifact"]),
+            artifact=ArtifactRef.from_dict(data["artifact"], strict=strict),
         )
         object.__setattr__(
             resolution.artifact,
@@ -220,8 +226,10 @@ class PipelinePlan:
             raise UnsupportedPlanSchemaError(
                 f"Unknown PipelinePlan schema {schema!r}; expected {PLAN_SCHEMA!r}."
             )
+        profile_snapshot = dict(data.get("profile_snapshot") or {})
+        strict = _plan_metadata_strict(profile_snapshot)
         metadata = dict(data.get("metadata") or {})
-        validate_extension_metadata(metadata, path="metadata", strict=False)
+        validate_extension_metadata(metadata, path="metadata", strict=strict)
         plan = cls(
             schema=str(schema),
             plan_id=str(data["plan_id"]),
@@ -229,12 +237,14 @@ class PipelinePlan:
             pipeline_name=str(data["pipeline_name"]),
             profile_name=str(data["profile_name"]),
             fingerprint=str(data["fingerprint"]),
-            logical_graph=_graph_from_dict(data["logical_graph"]),
+            logical_graph=_graph_from_dict(data["logical_graph"], strict=strict),
             regions=tuple(
-                ExecutionRegion.from_dict(r) for r in data.get("regions") or ()
+                ExecutionRegion.from_dict(r, strict=strict)
+                for r in data.get("regions") or ()
             ),
             physical_units=tuple(
-                PhysicalUnit.from_dict(u) for u in data.get("physical_units") or ()
+                PhysicalUnit.from_dict(u, strict=strict)
+                for u in data.get("physical_units") or ()
             ),
             logical_to_physical=dict(data.get("logical_to_physical") or {}),
             implementations={
@@ -247,11 +257,11 @@ class PipelinePlan:
             },
             resource_refs=dict(data.get("resource_refs") or {}),
             materialization_boundaries=tuple(
-                MaterializationBoundary.from_dict(b)
+                MaterializationBoundary.from_dict(b, strict=strict)
                 for b in data.get("materialization_boundaries") or ()
             ),
             output_resolutions=tuple(
-                OutputResolution.from_dict(o)
+                OutputResolution.from_dict(o, strict=strict)
                 for o in data.get("output_resolutions") or ()
             ),
             capability_decisions=tuple(data.get("capability_decisions") or ()),
@@ -264,7 +274,7 @@ class PipelinePlan:
             contract_versions=dict(data.get("contract_versions") or {}),
             plugin_versions=dict(data.get("plugin_versions") or {}),
             intents=dict(data.get("intents") or {}),
-            profile_snapshot=dict(data.get("profile_snapshot") or {}),
+            profile_snapshot=profile_snapshot,
             execution_settings=dict(data.get("execution_settings") or {}),
             metadata=metadata,
         )
@@ -369,8 +379,14 @@ def _node_to_dict(node: Node) -> dict[str, Any]:
     }
 
 
-def _graph_from_dict(data: dict[str, Any]) -> LogicalGraph:
-    nodes = tuple(_node_from_dict(n) for n in data.get("nodes") or ())
+def _graph_from_dict(data: dict[str, Any], *, strict: bool = False) -> LogicalGraph:
+    from etlantic.extensions import validate_extension_metadata
+
+    graph_metadata = dict(data.get("metadata") or {})
+    validate_extension_metadata(
+        graph_metadata, path="logical_graph.metadata", strict=strict
+    )
+    nodes = tuple(_node_from_dict(n, strict=strict) for n in data.get("nodes") or ())
     edges = tuple(
         Edge(
             producer_node=e["producer_node"],
@@ -387,15 +403,15 @@ def _graph_from_dict(data: dict[str, Any]) -> LogicalGraph:
         pipeline_name=str(data["pipeline_name"]),
         nodes=nodes,
         edges=edges,
-        metadata=deep_freeze(dict(data.get("metadata") or {})),
+        metadata=deep_freeze(graph_metadata),
     )
 
 
-def _node_from_dict(data: dict[str, Any]) -> Node:
+def _node_from_dict(data: dict[str, Any], *, strict: bool = False) -> Node:
     from etlantic.extensions import validate_extension_metadata
 
     node_metadata = dict(data.get("metadata") or {})
-    validate_extension_metadata(node_metadata, path="node.metadata", strict=False)
+    validate_extension_metadata(node_metadata, path="node.metadata", strict=strict)
     return Node(
         name=str(data["name"]),
         kind=NodeKind(str(data["kind"])),

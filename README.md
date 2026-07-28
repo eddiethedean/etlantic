@@ -109,7 +109,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 | Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
 | Keyring | `etlantic-keyring` | OS keyring secret provider |
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
-| SparkForge | `etlantic-sparkforge` | Medallion adapter (bronze/silver/gold stay out of core) |
+| Medallantic | `medallantic` | Engine-agnostic medallion facade (bronze/silver/gold stay out of core) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
 | FastAPI | `etlantic-fastapi` | Thin 0.27 authoring/service **reference** adapter (not the 1.1 control plane) |
 

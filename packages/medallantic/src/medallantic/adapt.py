@@ -21,12 +21,12 @@ from etlantic.plan.model import PipelinePlan
 from etlantic.policy import PolicyMode, ValidationPolicy, register_validation_policy
 from etlantic.profile import Profile
 from etlantic.reliability import WriteIntent, WriteMode
-from etlantic_sparkforge.compat import (
+from medallantic.compat import (
     assert_delta_capabilities,
     write_mode_from_sparkforge,
     write_mode_metadata,
 )
-from etlantic_sparkforge.ir import (
+from medallantic.ir import (
     SparkForgePipelineSpec,
     SparkForgeStepSpec,
     StepKind,
@@ -142,17 +142,17 @@ def adapt_profile(
                 if step.kind in {StepKind.SILVER_TRANSFORM, StepKind.GOLD_TRANSFORM}:
                     resolved_bindings[f"{step.name}_out"] = step.table_name
     return Profile(
-        name=name or f"sparkforge-{spec.schema}",
+        name=name or f"medallantic-{spec.schema}",
         orchestrator="local",
         dataframe_engine=None if spark_engine or sql_engine else "local",
         spark_engine=spark_engine,
         sql_engine=sql_engine,
-        validation_policy=f"sparkforge-{spec.schema}",
+        validation_policy=f"medallantic-{spec.schema}",
         assets=resolved_bindings,
         resources={"schema": spec.schema},
         required_spark_capabilities=required_spark,
         metadata={
-            "adapter": "etlantic-sparkforge",
+            "adapter": "medallantic",
             "source_schema": spec.schema,
             "min_accept_rates": {
                 "ingest": spec.min_bronze_rate,
@@ -171,7 +171,7 @@ def adapt_profile(
 def adapt_validation_policy(spec: SparkForgePipelineSpec) -> ValidationPolicy:
     """Map layer thresholds onto a named ValidationPolicy (metadata only)."""
     return ValidationPolicy(
-        name=f"sparkforge-{spec.schema}",
+        name=f"medallantic-{spec.schema}",
         mode=PolicyMode.DEFAULT,
         metadata={
             "min_accept_rate_ingest": spec.min_bronze_rate,

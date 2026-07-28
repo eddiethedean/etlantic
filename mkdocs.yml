@@ -365,7 +365,7 @@ nav:
           - Sample multi-file project: 09_EXAMPLES/SAMPLE_PROJECT.md
           - Prefect Direct Execution: 09_EXAMPLES/PREFECT_RUN.md
           - Airflow Compile: 09_EXAMPLES/AIRFLOW_COMPILE.md
-          - SparkForge Adapter: 09_EXAMPLES/SPARKFORGE_ADAPTER.md
+          - SparkForge Adapter: 09_EXAMPLES/MEDALLANTIC.md
           - Portable Polars Kernel: 09_EXAMPLES/PORTABLE_TRANSFORMS.md
           - Polars ↔ Pandas Interchange: 09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md
           - Contract-First Round Trip: 09_EXAMPLES/CONTRACT_FIRST_TUTORIAL.md

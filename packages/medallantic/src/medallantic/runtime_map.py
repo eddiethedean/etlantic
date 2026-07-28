@@ -12,7 +12,7 @@ from etlantic.runtime.request import (
     RunRequest,
     RunSelection,
 )
-from etlantic_sparkforge.compat import retry_policy_from_sparkforge
+from medallantic.compat import retry_policy_from_sparkforge
 
 _INTENT_MAP: dict[str, RunIntent] = {
     "standard": RunIntent.STANDARD,

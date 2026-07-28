@@ -27,15 +27,26 @@ class ExecutionRegion:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ExecutionRegion:
+    def from_dict(
+        cls, data: dict[str, Any], *, strict: bool = False
+    ) -> ExecutionRegion:
         """Deserialize region."""
-        return cls(
+        from etlantic.extensions import validate_extension_metadata
+        from etlantic.plan.freeze import deep_freeze
+
+        metadata = dict(data.get("metadata") or {})
+        validate_extension_metadata(
+            metadata, path="region.metadata", strict=strict
+        )
+        region = cls(
             identity=str(data["identity"]),
             engine=str(data["engine"]),
             node_names=tuple(data.get("node_names") or ()),
             security_domain=str(data.get("security_domain") or "default"),
-            metadata=dict(data.get("metadata") or {}),
+            metadata=metadata,
         )
+        object.__setattr__(region, "metadata", deep_freeze(region.metadata))
+        return region
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,13 +72,24 @@ class MaterializationBoundary:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> MaterializationBoundary:
+    def from_dict(
+        cls, data: dict[str, Any], *, strict: bool = False
+    ) -> MaterializationBoundary:
         """Deserialize boundary."""
-        return cls(
+        from etlantic.extensions import validate_extension_metadata
+        from etlantic.plan.freeze import deep_freeze
+
+        metadata = dict(data.get("metadata") or {})
+        validate_extension_metadata(
+            metadata, path="boundary.metadata", strict=strict
+        )
+        boundary = cls(
             identity=str(data["identity"]),
             producer_node=str(data["producer_node"]),
             producer_port=str(data["producer_port"]),
             reason=str(data["reason"]),
             security_domain=str(data.get("security_domain") or "default"),
-            metadata=dict(data.get("metadata") or {}),
+            metadata=metadata,
         )
+        object.__setattr__(boundary, "metadata", deep_freeze(boundary.metadata))
+        return boundary

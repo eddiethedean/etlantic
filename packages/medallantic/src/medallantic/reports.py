@@ -125,7 +125,7 @@ def adapt_run_result(
     payload: dict[str, Any],
     *,
     pipeline_id: str | None = None,
-    profile: str = "sparkforge",
+    profile: str = "medallantic",
 ) -> PipelineRunReport:
     """Convert a SparkForge-shaped result dict into PipelineRunReport.
 
@@ -280,7 +280,7 @@ def adapt_run_result(
 
     intent_raw = str(safe.get("intent") or safe.get("mode") or "standard").lower()
     try:
-        from etlantic_sparkforge.runtime_map import intent_from_sparkforge
+        from medallantic.runtime_map import intent_from_sparkforge
 
         intent = intent_from_sparkforge(intent_raw)
     except ValueError:
@@ -291,10 +291,10 @@ def adapt_run_result(
             pipeline_id
             or safe.get("pipeline_id")
             or safe.get("pipeline")
-            or "sparkforge"
+            or "medallantic"
         ),
-        plan_id=str(safe.get("plan_id") or "plan:sparkforge-adapted"),
-        run_id=str(safe.get("run_id") or safe.get("execution_id") or "run-sparkforge"),
+        plan_id=str(safe.get("plan_id") or "plan:medallantic-adapted"),
+        run_id=str(safe.get("run_id") or safe.get("execution_id") or "run-medallantic"),
         intent=intent,
         profile=profile,
         status=status,
@@ -307,7 +307,7 @@ def adapt_run_result(
         validations=tuple(validations),
         diagnostics=tuple(diagnostics),
         metadata={
-            "adapter": "etlantic-sparkforge",
+            "adapter": "medallantic",
             "source_keys": sorted(str(k) for k in safe),
             "status_raw": status_raw,
         },

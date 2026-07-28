@@ -14,5 +14,5 @@ public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
 
 Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
-Medallion bronze/silver/gold stay in SparkForge / etlantic-sparkforge — never
+Medallion bronze/silver/gold stay in Medallantic — never
 in core. Airflow compile needs the optional `etlantic-airflow` package.

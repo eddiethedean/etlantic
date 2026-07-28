@@ -18,9 +18,9 @@ members = [
     "etlantic-polars",
     "etlantic-prefect",
     "etlantic-pyspark",
-    "etlantic-sparkforge",
     "etlantic-sql",
     "etlantic-sqlmodel",
+    "medallantic",
 ]
 
 [[package]]
@@ -704,6 +704,9 @@ fastapi = [
 keyring = [
     { name = "etlantic-keyring" },
 ]
+medallantic = [
+    { name = "medallantic" },
+]
 observability = [
     { name = "opentelemetry-api" },
 ]
@@ -727,9 +730,6 @@ pyspark = [
 ]
 spark = [
     { name = "etlantic-pyspark" },
-]
-sparkforge = [
-    { name = "etlantic-sparkforge" },
 ]
 sql = [
     { name = "etlantic-sql" },
@@ -768,6 +768,9 @@ dev = [
 keyring = [
     { name = "etlantic-keyring" },
 ]
+medallantic = [
+    { name = "medallantic" },
+]
 observability = [
     { name = "opentelemetry-api" },
 ]
@@ -785,9 +788,6 @@ prefect = [
 pyspark = [
     { name = "etlantic-pyspark" },
     { name = "sparkless" },
-]
-sparkforge = [
-    { name = "etlantic-sparkforge" },
 ]
 sql = [
     { name = "etlantic-sql" },
@@ -814,11 +814,11 @@ requires-dist = [
     { name = "etlantic-prefect", marker = "extra == 'prefect'", editable = "packages/etlantic-prefect" },
     { name = "etlantic-pyspark", marker = "extra == 'pyspark'", editable = "packages/etlantic-pyspark" },
     { name = "etlantic-pyspark", marker = "extra == 'spark'", editable = "packages/etlantic-pyspark" },
-    { name = "etlantic-sparkforge", marker = "extra == 'sparkforge'", editable = "packages/etlantic-sparkforge" },
     { name = "etlantic-sql", marker = "extra == 'postgresql'", editable = "packages/etlantic-sql" },
     { name = "etlantic-sql", marker = "extra == 'sql'", editable = "packages/etlantic-sql" },
     { name = "etlantic-sqlmodel", marker = "extra == 'sqlmodel'", editable = "packages/etlantic-sqlmodel" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
+    { name = "medallantic", marker = "extra == 'medallantic'", editable = "packages/medallantic" },
     { name = "opentelemetry-api", marker = "extra == 'observability'", specifier = ">=1.36,<2" },
     { name = "opentelemetry-api", marker = "extra == 'otel'", specifier = ">=1.36,<2" },
     { name = "packaging", specifier = ">=24" },
@@ -826,7 +826,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "typer", specifier = ">=0.15,<1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "sparkforge", "fastapi", "datafusion", "otel", "observability", "arrow", "dataframes"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "fastapi", "datafusion", "otel", "observability", "arrow", "dataframes"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -850,6 +850,7 @@ dev = [
     { name = "ruff", specifier = ">=0.9,<1" },
 ]
 keyring = [{ name = "etlantic-keyring", editable = "packages/etlantic-keyring" }]
+medallantic = [{ name = "medallantic", editable = "packages/medallantic" }]
 observability = [{ name = "opentelemetry-api", specifier = ">=1.36,<2" }]
 pandas = [
     { name = "etlantic-pandas", editable = "packages/etlantic-pandas" },
@@ -864,7 +865,6 @@ pyspark = [
     { name = "etlantic-pyspark", editable = "packages/etlantic-pyspark" },
     { name = "sparkless", specifier = ">=4.13,<5" },
 ]
-sparkforge = [{ name = "etlantic-sparkforge", editable = "packages/etlantic-sparkforge" }]
 sql = [{ name = "etlantic-sql", editable = "packages/etlantic-sql" }]
 sqlmodel = [{ name = "etlantic-sqlmodel", editable = "packages/etlantic-sqlmodel" }]
 
@@ -1021,17 +1021,6 @@ requires-dist = [
     { name = "pyspark", specifier = ">=3.5,<4" },
 ]
 provides-extras = ["delta"]
-
-[[package]]
-name = "etlantic-sparkforge"
-version = "0.27.0"
-source = { editable = "packages/etlantic-sparkforge" }
-dependencies = [
-    { name = "etlantic" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-sql"
@@ -1660,6 +1649,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
+
+[[package]]
+name = "medallantic"
+version = "0.27.0"
+source = { editable = "packages/medallantic" }
+dependencies = [
+    { name = "etlantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "mergedeep"

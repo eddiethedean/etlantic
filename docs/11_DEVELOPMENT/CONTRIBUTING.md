@@ -66,7 +66,7 @@ Mirror [AGENTS.md](https://github.com/eddiethedean/etlantic/blob/main/AGENTS.md)
 - Never embed secret values in plans, reports, contracts, or docs.
 - Production profiles require `plugin_allowlist` and fail closed.
 - Schema history stores fingerprints/metadata only—never source rows.
-- Medallion bronze/silver/gold stay in SparkForge / `etlantic-sparkforge`.
+- Medallion bronze/silver/gold stay in SparkForge / `medallantic`.
 
 ## Minimal first PR (docs-only or tiny fix)
 
@@ -91,7 +91,7 @@ uv run ruff check .
 uv run ruff format --check .
 ./scripts/test_core.sh
 # equivalent:
-# uv run pytest -q -m "not sparkforge and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
+# uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 uv run pytest -q tests/authoring
 uv sync --extra fastapi
 uv run pytest -q packages/etlantic-fastapi/tests
@@ -118,8 +118,8 @@ uv sync --locked --group dataframes
 uv run python examples/portable_polars_kernel.py
 uv run python examples/portable_pandas_kernel.py
 uv run pytest -q -m "polars or pandas"
-uv sync --locked --group sparkforge
-uv run pytest -q tests/sparkforge -m sparkforge
+uv sync --locked --group medallantic
+uv run pytest -q tests/medallantic -m medallantic
 ```
 
 ## Making a Change

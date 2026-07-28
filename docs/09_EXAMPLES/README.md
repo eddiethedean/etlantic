@@ -29,7 +29,7 @@ excluded from the product docs nav—not installable tutorials.
   `portable_wave17.py`
 - [Polars ↔ Pandas interchange](INTERCHANGE_POLARS_PANDAS.md) —
   `examples/interchange_polars_pandas.py`
-- [SparkForge Adapter](SPARKFORGE_ADAPTER.md) — `tests/sparkforge/`
+- [Medallantic](MEDALLANTIC.md) — SparkForge migration adapter and parity fixtures
 
 ## Runnable scripts (repository `examples/`)
 
@@ -131,7 +131,7 @@ commands that go beyond the shipped surface — prefer the runnable guides and
 | PySpark batch | `examples/pyspark_local.py` |
 | Airflow compilation | [Airflow Compile](AIRFLOW_COMPILE.md) |
 | Graphviz DOT / HTML lineage | `etlantic.viz` / `etlantic viz` |
-| SparkForge migration adapter | [SparkForge Adapter](SPARKFORGE_ADAPTER.md) |
+| SparkForge migration adapter | [SparkForge Adapter](MEDALLANTIC.md) |
 | Structured Streaming | Experimental foundation only |
 | Portable PySpark-style transformations | [Portable Transformation](PORTABLE_TRANSFORMS.md) |
 
