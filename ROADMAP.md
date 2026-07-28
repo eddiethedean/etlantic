@@ -1,8 +1,8 @@
 # Roadmap
 
 **Current release:** ETLantic **0.26.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) and **0.26** (burn-in second slice) are shipped; **0.27–0.98**
-continued burn-in toward 0.99 RC. See
+(burn-in first slice) and **0.26** (burn-in second slice) are shipped; **0.27**
+is the next named burn-in slice; **0.28–0.98** continue toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2350,7 +2350,8 @@ internals.
 `etlantic.pipeline/1`, plan/report codecs, and Plugin SDK `/1` protocols —
 can survive a real minor upgrade without a wire-schema reset. 0.25 is the
 first named slice of the broader compatibility burn-in band; **0.26** is the
-second slice; 0.27–0.98 continue the same discipline toward 0.99 RC.
+second slice; **0.27** is the third; 0.28–0.98 continue the same discipline
+toward 0.99 RC.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Production
 FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain
@@ -2561,11 +2562,129 @@ fixture matrix (or documented exceptions), freeze closure, first-wave
 deprecation execution, and migration/docs gates. Control plane and GUI remain
 out of scope.
 
-## 0.27–0.98 — Continued Compatibility Burn-In
+## 0.27 — Compatibility Burn-In (Third Slice)
+
+**Status: planned (not started).**
+
+**Objective:** prove a **triple-minor** upgrade window without a wire-schema
+reset (**0.25 → 0.26 → 0.27**), close the Plugin SDK `/1` freeze external
+feedback blocker (or re-scope again with owners), and execute the second wave
+of 1.0 removal candidates — not a control-plane or GUI milestone.
+
+### Prerequisites from 0.26
+
+- Dual-minor burn-in fixtures (`v0_24/` + `v0_25/`) green in CI
+- Plugin SDK `/1` freeze re-scoped to 0.27 with published external feedback
+  blocker ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
+- First-wave root alias removals shipped; remaining inventory current
+  ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
+
+### Work packages
+
+#### WP1 — Triple-minor upgrade path
+
+**In scope**
+
+- golden fixtures under `tests/fixtures/burn_in/**/v0_26/` proving
+  **0.26 → 0.27** across every schema/protocol range covered in the dual-minor
+  window
+- keep `v0_25/` (and documented prior trees as required by wire ranges) loadable
+  so CI proves **0.25 → 0.26 → 0.27** without a wire-schema reset
+- update [WIRE_SCHEMA_RANGES.md](docs/10_REFERENCE/WIRE_SCHEMA_RANGES.md) and
+  burn-in check scripts for the triple-minor window
+- document unsupported downgrade behavior for the expanded window
+
+**Out of scope**
+
+- schema resets; inventing new wire formats
+
+#### WP2 — Protocol `/1` freeze closure
+
+**In scope**
+
+- clear the ≥1 non-first-party plugin-author external feedback blocker
+  (echo CI alone remains insufficient per Exit Gate 0.22 / 0.26 notes), **or**
+  re-scope freeze again with dated owners and rationale — no silent
+  “freeze-eligible forever”
+- if frozen: lock conformance suite versions and reject provisional core
+  protocol drifts
+
+**Out of scope**
+
+- new Storage / Resource / Observability protocol catalogs
+
+#### WP3 — Second-wave 1.0 removal execution
+
+**In scope**
+
+- execute `REM-RELIABILITY-ROOT` (~12 reliability declaration types) with
+  migrations, diagnostics, and What's New / Migration 0.26→0.27 notes
+- remove a bounded next wave of remaining `REM-ROOT-DEMOTED` symbols
+  (prefer high-traffic owning modules still demoted after 0.26 — e.g.
+  schema_drift, registry, sql, profile — exact list in PR + inventory update)
+- keep the inventory Target column current; no new indefinite aliases
+
+**Out of scope**
+
+- completing the entire 1.0 removal list (later burn-in / 0.99)
+- curated root facade and lazy namespaces
+
+#### WP4 — Wire matrix maintenance
+
+**In scope**
+
+- keep old-reader/new-writer and new-reader/old-writer coverage green for every
+  public versioned artifact in the 0.27 inventory (or explicit N/A rationale)
+- refresh codec burn-in matrix digests for `v0_26/` alongside existing trees
+
+**Out of scope**
+
+- Gate B / DataFusion graduation; new interchange physical boundaries
+
+#### WP5 — Trust / docs residuals (bounded)
+
+**In scope**
+
+- fold any residual trust, allowlist, or diagnostics hygiene follow-ons from
+  the 0.26 harden pass that are release-blocking for 0.27
+- What's New / Migration 0.26→0.27 / Exit Gate 0.27 pass docs gates
+
+**Out of scope**
+
+- production FastAPI control plane / GUI / LSP / AI authoring
+
+### Non-goals
+
+- production FastAPI control plane / multi-tenant API (1.1)
+- registry, workspaces, durable job store (1.2)
+- shipping a GUI, LSP, or AI authoring surface
+- new engines/orchestrators, expanded streaming, DataFusion graduation
+- replacing `etlantic.plan/1` or requiring a wire-schema reset
+
+### Acceptance scenarios
+
+- CI proves **0.25 → 0.26 → 0.27** without a wire-schema reset
+- Plugin SDK `/1` is frozen, or remaining blockers are cleared/rescheduled
+  with owners and a dated rationale
+- `REM-RELIABILITY-ROOT` (and the chosen demoted-alias wave) ship with
+  migration paths
+- public wire schemas in the 0.27 inventory have old↔new fixtures (or
+  documented N/A)
+- What's New / Migration 0.26→0.27 / Exit Gate 0.27 pass docs gates
+
+### Exit gate
+
+0.27.0 ships the triple-minor upgrade proof, freeze closure (or explicit
+re-scope), second-wave deprecation execution, wire matrix maintenance, and
+migration/docs gates. Control plane and GUI remain out of scope.
+
+Tracking: [EXIT_GATE_0_27.md](docs/11_DEVELOPMENT/EXIT_GATE_0_27.md).
+
+## 0.28–0.98 — Continued Compatibility Burn-In
 
 **Objective:** continue bounded, evidence-backed additions while frozen
-contracts accumulate further adoption and upgrade history after the 0.25 and
-0.26 burn-in slices.
+contracts accumulate further adoption and upgrade history after the 0.25–0.27
+burn-in slices.
 
 ### Deliver
 

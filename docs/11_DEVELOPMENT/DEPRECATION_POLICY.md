@@ -32,7 +32,7 @@ full plan object-graph immutability.
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
 | Prefect scheduler MVP | provisional | expand or freeze protocol by 1.0 |
-| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0 | remaining removals 0.27+; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0 | second wave planned in **0.27**; remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
 
 ### 0.26 discipline
 

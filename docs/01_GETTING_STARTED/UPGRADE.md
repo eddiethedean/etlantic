@@ -32,7 +32,7 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.22 → 0.23 | Resilience budgets; report persistence / retry diagnostics |
 | 0.23 → 0.24 | `PipelineDefinition` / `etlantic.pipeline/1`; functional authoring; CLI JSON targets |
 | 0.24 → 0.25 | Compatibility burn-in fixtures; no wire-schema reset; freeze blockers published |
-| 0.25 → 0.26 | Dual-minor burn-in; first-wave root alias removals; freeze re-scoped to 0.27+ |
+| 0.25 → 0.26 | Dual-minor burn-in; first-wave root alias removals; freeze owned by 0.27 |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -41,6 +41,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.26 → 0.27 | [MIGRATION_0_26_TO_0_27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) (planned) |
 | 0.25 → 0.26 | [MIGRATION_0_25_TO_0_26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) |
 | 0.24 → 0.25 | [MIGRATION_0_24_TO_0_25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
 | 0.23 → 0.24 | [MIGRATION_0_23_TO_0_24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) |
@@ -153,7 +154,7 @@ See [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) and
 | Change | Use instead |
 |---|---|
 | `from etlantic import ETLanticError`, storage, runtime, interchange helpers | Owning modules — see [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) |
-| Assume Plugin SDK `/1` is frozen | Still freeze-eligible; closure re-scoped to 0.27+ |
+| Assume Plugin SDK `/1` is frozen | Still freeze-eligible; closure owned by **0.27** |
 | Skip dual-minor burn-in gates | Keep `v0_24/` and `v0_25/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.26 |
 

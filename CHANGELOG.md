@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Planned **0.27** Compatibility Burn-In (third slice) phase docs: ROADMAP work
+  packages, Exit Gate 0.27, What's New / Migration stubs, roadmap summary
+
 ## [0.26.0] - 2026-07-27
 
 ### Added

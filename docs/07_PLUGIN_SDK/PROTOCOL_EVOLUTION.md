@@ -1,11 +1,13 @@
 # Protocol Evolution Policy
 
 > **Status (0.26.0):** Protocol `/1` families ship and remain **freeze-eligible,
-> not frozen**. 0.26 **re-scopes freeze closure to 0.27+** with maintainers as
-> owner; the external feedback blocker remains open (see below). Evidence baseline:
+> not frozen**. 0.26 **re-scopes freeze closure to 0.27** (named burn-in third
+> slice) with maintainers as owner; the external feedback blocker remains open
+> (see below). Evidence baseline:
 > [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md),
 > [EXIT_GATE_0_25](../11_DEVELOPMENT/EXIT_GATE_0_25.md),
 > [EXIT_GATE_0_26](../11_DEVELOPMENT/EXIT_GATE_0_26.md).
+> Phase tracking: [EXIT_GATE_0_27](../11_DEVELOPMENT/EXIT_GATE_0_27.md).
 
 ## Freeze decision (0.26)
 
@@ -14,12 +16,12 @@
 | First-party plugins exercise public `etlantic.testing` in CI | Met (0.22+) | Maintainers |
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met — `.github/workflows/external-plugin-echo.yml` | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
-| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker — carried to 0.27** | Maintainers + community |
+| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker — owned by 0.27** | Maintainers + community |
 | No unresolved provisional core protocol on the 1.0 path | Met for shipped `/1` families; Storage/Resource/Observability remain future | Maintainers |
 
-**Decision:** Do **not** claim `/1` frozen in 0.26.0. Re-scope freeze closure to
-**0.27+** with a dated rationale (2026-07-27). Keep additive `/1` evolution
-rules until the external feedback blocker clears or is explicitly re-scoped again.
+**Decision:** Do **not** claim `/1` frozen in 0.26.0. Freeze closure is a
+**0.27** work package (clear external feedback or re-scope again with a dated
+rationale). Keep additive `/1` evolution rules until then.
 
 ## Freeze decision (0.25) — historical
 
@@ -44,7 +46,7 @@ Do not conflate these:
 |---|---|---|
 | **Contract / configuration freeze** | Authoring contracts, Profile trust fields, and related config surfaces stop incompatible churn without migration notes | Shipped since **0.19** (see [Deprecation Policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md)) |
 | **Plan immutability** | Plan graphs use fingerprint verify + `deep_freeze` on nested mappings/lists/sets; dataclasses and unknown objects are **not** recursively frozen | Shipped helper; not full object-graph immutability |
-| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.27+** |
+| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.27** |
 
 Wire schemas marked “wire-stable” mean schema ids keep meaning under the additive `/1` rules above; they do **not** imply protocol `/1` freeze.
 

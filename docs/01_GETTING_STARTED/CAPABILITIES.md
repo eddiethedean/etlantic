@@ -136,13 +136,14 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 | Dual-minor upgrade proof | Shipped in 0.26.0 |
-| Plugin SDK `/1` freeze | Continues in 0.27+ (re-scoped from 0.26) |
+| Plugin SDK `/1` freeze | Continues in **0.27** (named third burn-in slice) |
 
 0.26 proves two consecutive minor bumps (0.24→0.25→0.26) without a schema-id
 reset (dual-minor burn-in). Plugin SDK `/1` remains freeze-eligible with the
-external feedback blocker re-scoped to 0.27+. See
+external feedback blocker owned by **0.27**. See
 [What's New in 0.26](WHATS_NEW_0_26.md) and
-[Exit gate 0.26](../11_DEVELOPMENT/EXIT_GATE_0_26.md).
+[Exit gate 0.26](../11_DEVELOPMENT/EXIT_GATE_0_26.md). Next phase:
+[Exit gate 0.27](../11_DEVELOPMENT/EXIT_GATE_0_27.md) (planned).
 
 ## CI starter
 

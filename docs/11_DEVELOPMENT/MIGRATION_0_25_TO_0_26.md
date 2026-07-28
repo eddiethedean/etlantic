@@ -9,7 +9,7 @@
 |---|---|
 | Wire schemas | Still `etlantic.pipeline/1`, `plan/1`, `run_report/1`, … |
 | Package pin | `etlantic==0.26.0`; plugins `etlantic-*==0.26.0` |
-| Plugin SDK `/1` | Freeze-eligible; **re-scoped to 0.27+** (not frozen) |
+| Plugin SDK `/1` | Freeze-eligible; **owned by 0.27** (not frozen) |
 | Root aliases | **Removed** first-wave groups (see below) |
 
 ## Upgrade steps

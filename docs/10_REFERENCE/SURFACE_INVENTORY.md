@@ -75,7 +75,7 @@ See [CLI](CLI.md).
 
 Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 [protocol `/1` freeze](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
-(still open in 0.26; freeze re-scoped to 0.27+).
+(still open in 0.26; freeze owned by [0.27](../11_DEVELOPMENT/EXIT_GATE_0_27.md)).
 
 | Schema ID | Class |
 |---|---|
