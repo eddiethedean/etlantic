@@ -22,9 +22,9 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ------------------------------------------------------------------------
 
-## Is ETLantic 0.27 production-supported?
+## Is ETLantic 0.28 production-supported?
 
-ETLantic **0.27.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.28.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -35,7 +35,7 @@ remain adopter-owned.
 
 ## What is the difference between Available and Experimental?
 
-**Available** APIs and behaviors are supported within the documented 0.27
+**Available** APIs and behaviors are supported within the documented 0.28
 single-tenant pilot envelope (the package itself remains **Beta** on PyPI).
 Features explicitly labeled **Experimental**, currently including Structured
 Streaming foundations and `etlantic-datafusion`, may change and are outside
@@ -197,10 +197,10 @@ you need Spark semantics and have a working Java environment.
 ## Must core and plugin versions match?
 
 Yes. Keep core and optional plugins on the same minor release. For a
-reproducible 0.27.0 environment, pin both exactly, for example:
+reproducible 0.28.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.27.0' 'etlantic-polars==0.27.0'
+python -m pip install 'etlantic==0.28.0' 'etlantic-polars==0.28.0'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or

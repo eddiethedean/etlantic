@@ -1,6 +1,6 @@
 # Controlled Pilot Walkthrough
 
-ETLantic 0.27.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
+ETLantic 0.28.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment. Use this walkthrough with pinned dependencies, explicit rollback,
 and reviewed plans. Multi-tenant topology, compliance/SBOM/signing, and
 advanced supply-chain controls remain adopter-owned; this is not an
@@ -12,7 +12,7 @@ Create an isolated Python 3.11–3.13 environment and pin core plus only the
 plugins the pilot needs:
 
 ```bash
-python -m pip install "etlantic==0.27.0" "etlantic-polars==0.27.0"
+python -m pip install "etlantic==0.28.0" "etlantic-polars==0.28.0"
 python -m etlantic --help
 ```
 
@@ -69,7 +69,8 @@ allowlist, and all logical bindings (or start from
 [prod.example.json](../01_GETTING_STARTED/prod.example.json)):
 
 ```python
-from etlantic import Profile, write_profile
+from etlantic import Profile
+from etlantic.profile import write_profile
 
 write_profile(
     Profile(
@@ -78,7 +79,7 @@ write_profile(
         security_mode="production",  # required for fail-closed trust
         security_domain="production",
         validation_policy="strict",
-        plugin_allowlist={"etlantic-polars": "==0.27.0"},
+        plugin_allowlist={"etlantic-polars": "==0.28.0"},
         assets={
             "customer_source": "reviewed-source",
             "customer_sink": "reviewed-sink",

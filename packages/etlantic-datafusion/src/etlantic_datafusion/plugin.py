@@ -7,7 +7,7 @@ from typing import Any
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.protocol import DataframePluginInfo
 
-__version__ = "0.27.0"
+__version__ = "0.28.0"
 
 
 class DataFusionPlugin:
@@ -31,26 +31,26 @@ class DataFusionPlugin:
 
     def materialize(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError(
-            "etlantic-datafusion is an experimental stub as of 0.27.0; "
+            "etlantic-datafusion is an experimental stub as of 0.28.0; "
             "materialize is not implemented. See CAPABILITIES."
         )
 
     def execute_transformation(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError(
             "etlantic-datafusion execute_transformation is experimental/ungraduated "
-            "as of 0.27.0"
+            "as of 0.28.0"
         )
 
     def to_records(
         self, value: Any, *, contract_type: type[Any] | None = None
     ) -> list[Any]:
         raise NotImplementedError(
-            "etlantic-datafusion to_records is ungraduated as of 0.27.0"
+            "etlantic-datafusion to_records is ungraduated as of 0.28.0"
         )
 
     def from_records(
         self, rows: list[Any], *, contract_type: type[Any] | None = None
     ) -> Any:
         raise NotImplementedError(
-            "etlantic-datafusion from_records is ungraduated as of 0.27.0"
+            "etlantic-datafusion from_records is ungraduated as of 0.28.0"
         )

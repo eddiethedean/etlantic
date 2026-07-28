@@ -1,6 +1,6 @@
 # Error Handling
 
-!!! success "Available in ETLantic 0.27.0"
+!!! success "Available in ETLantic 0.28.0"
     Structured diagnostics, validation failures, runtime
     `NodeExecutionError` paths, callback `FailureAction` results, and
     `Profile.retry_max_attempts` retry intent are shipped. Retry execution is
@@ -112,7 +112,8 @@ Shipped callbacks return `FailureAction`, while profiles declare the retry
 limit:
 
 ```python
-from etlantic import FailureAction, Profile
+from etlantic import Profile
+from etlantic.lifecycle import FailureAction
 
 
 def on_step_failed(context):

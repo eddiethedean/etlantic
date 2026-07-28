@@ -1,6 +1,6 @@
 # Callbacks
 
-> **Status: Available in ETLantic 0.27.0** for the shipped lifecycle callback
+> **Status: Available in ETLantic 0.28.0** for the shipped lifecycle callback
 > surface. Broader invalid-data quarantine APIs remain future design.
 
 Callbacks let applications respond to pipeline lifecycle outcomes without
@@ -13,7 +13,8 @@ resource injection. See
 ## Shipped surface
 
 ```python
-from etlantic import FailureAction, PipelineRuntime, StepFailureContext
+from etlantic import PipelineRuntime
+from etlantic.lifecycle import FailureAction, StepFailureContext
 from etlantic.lifecycle import CallbackRegistry
 
 runtime = PipelineRuntime()

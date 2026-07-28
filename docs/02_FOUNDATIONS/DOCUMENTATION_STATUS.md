@@ -27,7 +27,7 @@ this legend.
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.27 | Tested against the current package |
+| Available in 0.28 | Tested against the current package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

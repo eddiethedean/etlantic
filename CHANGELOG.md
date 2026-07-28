@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-07-28
+
+### Added
+- Quadruple-minor burn-in fixtures (`v0_27/`) proving 0.27→0.28 upgrade without wire-schema reset
+- Plugin SDK `/1` freeze for core protocol families; `scripts/check_protocol_freeze.py` CI gate
+- [External plugin feedback](docs/11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) record for freeze closure
+- Third-wave root alias removals (`sql`, `profile`, `lifecycle` clusters)
+- Final `etlantic-sparkforge` compatibility redirect wheel (depends on `medallantic`)
+- [Facade packages](docs/11_DEVELOPMENT/FACADE_PACKAGES.md) release category documentation
+- What's New / Migration / Exit Gate 0.28 documentation
+
+### Changed
+- Official package versions align at 0.28.0; plugins require `etlantic>=0.28.0,<0.29`
+- Plugin SDK `/1` declared **frozen** in 0.28.0 (was re-scoped in 0.27)
+- `medallantic` classified as facade package in release gates
+- Wire schema ranges document the quadruple-minor window
+
 ## [0.27.0] - 2026-07-28
 
 ### Added
@@ -1030,6 +1047,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.28.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.28.0
 [0.27.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.27.0
 [0.26.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.26.0
 [0.25.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.1

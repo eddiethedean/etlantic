@@ -1,6 +1,6 @@
 # CI Integration
 
-> **Status: Available in ETLantic 0.27.0.**
+> **Status: Available in ETLantic 0.28.0.**
 
 Validate without executing transformation code and publish SARIF diagnostics.
 
@@ -26,7 +26,8 @@ starter in [Capabilities → CI starter](../01_GETTING_STARTED/CAPABILITIES.md#c
 `security_mode="production"` (not the profile name or `security_domain` alone):
 
 ```python
-from etlantic import Profile, write_profile
+from etlantic import Profile
+from etlantic.profile import write_profile
 
 write_profile(
     Profile(
@@ -37,7 +38,7 @@ write_profile(
         validation_policy="strict",
         plugin_allowlist={
             "local": None,
-            # "etlantic-polars": "==0.27.0",
+            # "etlantic-polars": "==0.28.0",
         },
         assets={
             # Logical binding name → provider key or descriptor name
@@ -63,7 +64,7 @@ structure and resource names.
 
 Recommended gates:
 
-1. Pin ETLantic and official plugins to one tested release (`==0.27.0`).
+1. Pin ETLantic and official plugins to one tested release (`==0.28.0`).
 2. Validate every changed pipeline with an explicit allowlisted profile.
 3. Generate contracts and fail on unexpected diffs.
 4. Upload SARIF through the CI platform's supported integration.

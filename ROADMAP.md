@@ -1,8 +1,9 @@
 # Roadmap
 
-**Current release:** ETLantic **0.27.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice), **0.26** (second slice), and **0.27** (third slice) are
-shipped; **0.28–0.35** co-evolve ETLantic with Medallantic before continued
+**Current release:** ETLantic **0.28.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice), **0.26** (second slice), **0.27** (third slice), and
+**0.28** (fourth slice) are shipped; **0.29–0.35** co-evolve ETLantic with
+Medallantic before continued
 joint burn-in in **0.36–0.98** and the 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.

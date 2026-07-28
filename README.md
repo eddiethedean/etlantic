@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.27.0'
+python -m pip install 'etlantic==0.28.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.27.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.28.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -111,7 +111,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
 | Medallantic | `medallantic` | Engine-agnostic medallion facade (bronze/silver/gold stay out of core) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
-| FastAPI | `etlantic-fastapi` | Thin 0.27 authoring/service **reference** adapter (not the 1.1 control plane) |
+| FastAPI | `etlantic-fastapi` | Thin 0.28 authoring/service **reference** adapter (not the 1.1 control plane) |
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.
@@ -149,7 +149,7 @@ guides.
 
 ## Capability boundary
 
-| Capability | 0.27 |
+| Capability | 0.28 |
 |---|---|
 | Cohesive CLI (`init`, `doctor`, durable reports) | Available |
 | Typed contracts, graph validation, deterministic planning | Available |

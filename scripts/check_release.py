@@ -21,8 +21,9 @@ PACKAGES = (
     "etlantic-prefect",
     "etlantic-keyring",
     "etlantic-sqlmodel",
-    "medallantic",
 )
+FACADE_PACKAGES = ("medallantic",)
+REDIRECT_PACKAGES = ("etlantic-sparkforge",)
 # Thin reference adapters align with core Beta maturity (not Production/Stable plugins).
 REFERENCE_PACKAGES = ("etlantic-fastapi",)
 # Experimental packages may use Alpha classifiers and are optional in release CI.
@@ -99,6 +100,39 @@ def main() -> int:
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
 
+    for pkg in FACADE_PACKAGES:
+        path = ROOT / "packages" / pkg / "pyproject.toml"
+        if not path.exists():
+            errors.append(f"facade package missing: {pkg}")
+            continue
+        pkg_version = version_from(path, r'(?m)^version = "([^"]+)"')
+        if pkg_version != version:
+            errors.append(f"{pkg} version {pkg_version} != {version}")
+        text = path.read_text(encoding="utf-8")
+        if "[project.urls]" not in text:
+            errors.append(f"{pkg} missing [project.urls]")
+        if "Development Status :: 5 - Production/Stable" not in text:
+            errors.append(f"{pkg} facade package missing Production/Stable classifier")
+        major_minor = ".".join(version.split(".")[:2])
+        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
+        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        if expected_dep not in text:
+            errors.append(f"{pkg} missing core dependency {expected_dep}")
+
+    for pkg in REDIRECT_PACKAGES:
+        path = ROOT / "packages" / pkg / "pyproject.toml"
+        if not path.exists():
+            errors.append(f"redirect package missing: {pkg}")
+            continue
+        pkg_version = version_from(path, r'(?m)^version = "([^"]+)"')
+        if pkg_version != version:
+            errors.append(f"{pkg} version {pkg_version} != {version}")
+        text = path.read_text(encoding="utf-8")
+        if "Development Status :: 7 - Inactive" not in text:
+            errors.append(f"{pkg} redirect package should use Inactive classifier")
+        if "medallantic>=" not in text:
+            errors.append(f"{pkg} redirect must depend on medallantic")
+
     for pkg in REFERENCE_PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"
         if not path.exists():
@@ -141,7 +175,13 @@ def main() -> int:
 
     root_pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     pin_suffix = f"=={version}"
-    for pkg in (*PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES):
+    for pkg in (
+        *PACKAGES,
+        *FACADE_PACKAGES,
+        *REDIRECT_PACKAGES,
+        *REFERENCE_PACKAGES,
+        *EXPERIMENTAL_PACKAGES,
+    ):
         if f"{pkg}{pin_suffix}" not in root_pyproject:
             errors.append(
                 f"root pyproject.toml missing optional dependency pin {pkg}{pin_suffix}"
@@ -154,12 +194,25 @@ def main() -> int:
     if "Development Status :: 5 - Production/Stable" in root_pyproject:
         errors.append("root pyproject.toml should use Beta, not Production/Stable")
     release_yml = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
-    for pkg in (*PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES):
+    for pkg in (
+        *PACKAGES,
+        *FACADE_PACKAGES,
+        *REDIRECT_PACKAGES,
+        *REFERENCE_PACKAGES,
+        *EXPERIMENTAL_PACKAGES,
+    ):
         expected = pkg.replace("-", "_")
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")
 
-    names = ("etlantic", *PACKAGES, *REFERENCE_PACKAGES, *EXPERIMENTAL_PACKAGES)
+    names = (
+        "etlantic",
+        *PACKAGES,
+        *FACADE_PACKAGES,
+        *REDIRECT_PACKAGES,
+        *REFERENCE_PACKAGES,
+        *EXPERIMENTAL_PACKAGES,
+    )
     missing_version = [name for name in names if not pypi_exists(name, version)]
     brand_new = [name for name in names if not pypi_project_exists(name)]
     print(f"Release readiness for {version}")
@@ -174,6 +227,10 @@ def main() -> int:
                 note = " (experimental)"
             elif name in REFERENCE_PACKAGES:
                 note = " (reference adapter)"
+            elif name in FACADE_PACKAGES:
+                note = " (facade)"
+            elif name in REDIRECT_PACKAGES:
+                note = " (compatibility redirect)"
             print(f"  - {name}{note}  (will publish as {name}=={version})")
         print(
             "Release CI paces only new-project creates (10 minutes between them). "
@@ -211,6 +268,20 @@ def main() -> int:
         )
     else:
         print((guard.stdout or "").strip() or "Removed root import guard passed.")
+
+    freeze = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_protocol_freeze.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if freeze.returncode != 0:
+        detail = (freeze.stdout or freeze.stderr or "").strip()
+        errors.append(
+            "protocol freeze gate failed" + (f": {detail}" if detail else "")
+        )
+    else:
+        print((freeze.stdout or "").strip() or "Protocol freeze gate passed.")
 
     if errors:
         print("Release readiness FAILED:")

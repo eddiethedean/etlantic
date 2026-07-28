@@ -1,27 +1,31 @@
 # Protocol Evolution Policy
 
-> **Status (0.27.0):** Protocol `/1` families ship and remain **freeze-eligible,
-> not frozen**. 0.27 **re-scopes freeze closure to 0.28+** with maintainers as
-> owner; the external feedback blocker remains open (echo CI alone is
-> insufficient). Evidence baseline:
-> [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md),
-> [EXIT_GATE_0_25](../11_DEVELOPMENT/EXIT_GATE_0_25.md),
-> [EXIT_GATE_0_26](../11_DEVELOPMENT/EXIT_GATE_0_26.md),
+> **Status (0.28.0):** Plugin `/1` families are **frozen in 0.28.0** for the
+> core 1.0 path (`dataframe`, `sql`, `spark`, `orchestration`,
+> `transform-compiler`). `etlantic.scheduler/1` remains provisional (not on the
+> freeze path). External feedback evidence:
+> [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md).
+> Prior freeze-eligible status:
 > [EXIT_GATE_0_27](../11_DEVELOPMENT/EXIT_GATE_0_27.md).
 
-## Freeze decision (0.27)
+## Freeze decision (0.28)
 
 | Criterion | Status | Owner |
 |---|---|---|
 | First-party plugins exercise public `etlantic.testing` in CI | Met (0.22+) | Maintainers |
-| Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met — `.github/workflows/external-plugin-echo.yml` | Maintainers |
+| Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
-| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker — carried to 0.28+** | Maintainers + community |
-| No unresolved provisional core protocol on the 1.0 path | Met for shipped `/1` families; Storage/Resource/Observability remain future | Maintainers |
+| ≥1 documented external feedback cycle from a non-first-party plugin author | **Met** — see [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) | Maintainers + community |
+| No unresolved provisional core protocol on the 1.0 path | Met (`scheduler/1` excluded from freeze path) | Maintainers |
 
-**Decision:** Do **not** claim `/1` frozen in 0.27.0. Re-scope freeze closure to
-**0.28+** with a dated rationale (2026-07-27). Keep additive `/1` evolution
-rules until the external feedback blocker clears or is explicitly re-scoped again.
+**Decision:** Declare core Plugin SDK `/1` **frozen in 0.28.0**. Only additive
+optional evolution within `/1` is permitted; incompatible changes require a
+new protocol major. CI gate: `scripts/check_protocol_freeze.py`.
+
+## Freeze decision (0.27) — historical
+
+0.27 triple-minor burn-in and second-wave removals left freeze owned by 0.28.
+The external feedback criterion was not cleared in 0.27; see table above.
 
 ## Freeze decision (0.26) — historical
 
@@ -48,11 +52,11 @@ This document is the normative policy for evolving ETLantic plugin protocols
 
 Do not conflate these:
 
-| Term | What freezes | Status in 0.27 |
+| Term | What freezes | Status in 0.28 |
 |---|---|---|
 | **Contract / configuration freeze** | Authoring contracts, Profile trust fields, and related config surfaces stop incompatible churn without migration notes | Shipped since **0.19** (see [Deprecation Policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md)) |
 | **Plan immutability** | Plan graphs use fingerprint verify + `deep_freeze` on nested mappings/lists/sets; dataclasses and unknown objects are **not** recursively frozen | Shipped helper; not full object-graph immutability |
-| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.28+** |
+| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Frozen in 0.28.0** for core `/1` families |
 
 Wire schemas marked “wire-stable” mean schema ids keep meaning under the additive `/1` rules above; they do **not** imply protocol `/1` freeze.
 
@@ -104,7 +108,7 @@ Rules:
 While ETLantic is pre-1.0:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.27: `etlantic>=0.27.0,<0.28`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.28: `etlantic>=0.28.0,<0.29`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

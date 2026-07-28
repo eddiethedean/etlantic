@@ -93,7 +93,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.27.0,<0.28",
+    "etlantic>=0.28.0,<0.29",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [
@@ -269,7 +269,7 @@ and filesystem boundaries. Every plugin must follow these rules:
 For this example:
 
 ```python
-from etlantic import production_profile
+from etlantic.profile import production_profile
 
 profile = production_profile(
     plugin_allowlist={"etlantic-acme": "==0.1.0"}

@@ -1205,6 +1205,7 @@ def main() -> None:
         next_minor = None
     experimental_packages = {"etlantic-datafusion"}
     reference_packages = {"etlantic-fastapi"}
+    redirect_packages = {"etlantic-sparkforge"}
     root_pyproject_path = ROOT / "pyproject.toml"
     root_text = root_pyproject_path.read_text(encoding="utf-8")
     if root_beta_classifier not in root_text:
@@ -1238,6 +1239,17 @@ def main() -> None:
                 if expected_alt not in text:
                     raise SystemExit(
                         f"{path} must depend on {expected_alt} (found mismatched core range)"
+                    )
+            continue
+        if pkg_name in redirect_packages:
+            inactive_classifier = "Development Status :: 7 - Inactive"
+            if inactive_classifier not in text:
+                raise SystemExit(f"{path} redirect package should use Inactive classifier")
+            if next_minor is not None:
+                expected_med = f"medallantic>={major_minor}.0,<{next_minor}"
+                if expected_med not in text:
+                    raise SystemExit(
+                        f"{path} must depend on {expected_med} (found mismatched medallantic range)"
                     )
             continue
         if alpha_classifier in text:

@@ -9,12 +9,13 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 | `test_core.sh` | Marker-aware core pytest (excludes optional plugin markers) | Checks (via docs/CONTRIBUTING parity) |
 | `check_docs.py` | Version stamps, banned phrases, trust-example gate, docstring gate | Checks |
 | `check_runnable_docs.py` | Invoked by `check_docs.py` for runnable-doc invariants | Checks |
-| `check_pipeline_codec_burn_in.py` | `etlantic.pipeline/1` golden burn-in | Checks |
-| `check_codec_burn_in_matrix.py` | Cross-artifact burn-in matrix | Checks |
+| `check_pipeline_codec_burn_in.py` | `etlantic.pipeline/1` golden burn-in (`v0_24`–`v0_27`) | Checks |
+| `check_codec_burn_in_matrix.py` | Cross-artifact burn-in matrix (`v0_24`–`v0_27`) | Checks |
 | `check_plugin_manifests.py` | Plugin manifest digests / trust metadata | Checks |
 | `check_agent_guidance.py` | AGENTS.md / agent surface consistency | Checks |
 | `check_release.py` | Release readiness (versions, packages) | Checks |
 | `check_surface_inventory.py` | Public surface inventory gate | Checks |
+| `check_protocol_freeze.py` | Plugin SDK `/1` freeze vs surface inventory | Checks |
 | `check_transform_compiler_drift.py` | Portable compiler drift across engines | Checks |
 | `check_benchmarks.py` | Microbenchmark baseline gate | Benchmarks job |
 | `build_docs.py` | Build MkDocs site | Checks |

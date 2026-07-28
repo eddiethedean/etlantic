@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from etlantic_prefect.plugin import PrefectScheduler, create_plugin
 
-__version__ = "0.27.0"
+__version__ = "0.28.0"
 
 __all__ = [
     "PrefectScheduler",

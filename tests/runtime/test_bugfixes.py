@@ -10,7 +10,6 @@ import pytest
 from etlantic import (
     Data,
     Extract,
-    Inject,
     Input,
     Load,
     Output,
@@ -20,6 +19,7 @@ from etlantic import (
     SecretRef,
     Transformation,
 )
+from etlantic.lifecycle import Inject
 from etlantic.lifecycle.callbacks import FailureAction
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.request import MaterializationPolicy, RunRequest, RunSelection

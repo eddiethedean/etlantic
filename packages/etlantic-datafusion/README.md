@@ -8,5 +8,5 @@ until conformance, differentials, Gate A Arrow boundaries, and a measured
 advantage are complete.
 
 ```bash
-pip install 'etlantic[datafusion]==0.27.0'
+pip install 'etlantic[datafusion]==0.28.0'
 ```

@@ -14,6 +14,11 @@
     "v0_26/interchange/polars_pandas_arrow.json": "sha256:68961d0bc806161ab159e7473caf07d5d31ba7e108a7b4eb2ce282431f6b43f3",
     "v0_26/plan/sample_local.json": "sha256:3ecef675be9969f83487f3b8e469a0ab33e9fc5b78c5b09d0a0ce3d8c3333329",
     "v0_26/profile/development_local.json": "sha256:e60d82c66415d39d5f04b45aefc3fda35229ec34fdafdec8a81fa8016cfb80bf",
-    "v0_26/run_report/sample_succeeded.json": "sha256:97cf77c6f8be52b8f8eb4808a76818cc13457965afc6993d4d45c318ec5c6d76"
+    "v0_26/run_report/sample_succeeded.json": "sha256:97cf77c6f8be52b8f8eb4808a76818cc13457965afc6993d4d45c318ec5c6d76",
+    "v0_27/capabilities/local_dataframe.json": "sha256:c5b4ba0ea986e0534ef676f919f38bfac468706c9f91ec5db708d28f82fbeb05",
+    "v0_27/interchange/polars_pandas_arrow.json": "sha256:68961d0bc806161ab159e7473caf07d5d31ba7e108a7b4eb2ce282431f6b43f3",
+    "v0_27/plan/sample_local.json": "sha256:3ecef675be9969f83487f3b8e469a0ab33e9fc5b78c5b09d0a0ce3d8c3333329",
+    "v0_27/profile/development_local.json": "sha256:e60d82c66415d39d5f04b45aefc3fda35229ec34fdafdec8a81fa8016cfb80bf",
+    "v0_27/run_report/sample_succeeded.json": "sha256:97cf77c6f8be52b8f8eb4808a76818cc13457965afc6993d4d45c318ec5c6d76"
   }
 }

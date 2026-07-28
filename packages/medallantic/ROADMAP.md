@@ -209,11 +209,11 @@ legacy behavior that would be unsafe or architecturally incorrect.
   the legacy input format.
 - [x] Publish the first `medallantic` distribution (`medallantic==0.27.0`).
 
-**Owned by 0.28 (M0 closeout)**
+**Shipped in 0.28.0 (M0 closeout)**
 
-- [ ] Decide whether to publish a final `etlantic-sparkforge` compatibility
-  release that depends on Medallantic and emits a deprecation warning.
-- [ ] Document facade-package release category and ongoing trusted-publishing
+- [x] Publish final `etlantic-sparkforge` compatibility release depending on
+  Medallantic with a deprecation warning.
+- [x] Document facade-package release category and ongoing trusted-publishing
   evidence for `medallantic`.
 
 Exit criteria: clean build, install, import, docs, lockfile, and adapter suite on

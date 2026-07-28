@@ -1,4 +1,4 @@
-"""Cross-artifact dual-minor codec burn-in matrix (WP1/WP2)."""
+"""Cross-artifact quadruple-minor codec burn-in matrix."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from etlantic.reports.model import REPORT_SCHEMA, PipelineRunReport
 from etlantic.reports.upgrade import UnsupportedReportSchemaError, upgrade_report_dict
 
 BURN_IN = Path(__file__).resolve().parents[1] / "fixtures" / "burn_in"
-VERSIONS = ("v0_24", "v0_25", "v0_26")
+VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
 
 
 def _load(rel: str) -> dict:

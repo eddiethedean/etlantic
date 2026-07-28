@@ -12,26 +12,40 @@ ETLantic follows Semantic Versioning after 1.0:
 - Major: incompatible public API or persistent-format changes
 
 During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.27.0`).
-Official plugins declare `etlantic>=0.27.0,<0.28`.
+plugin packages currently share the core minor version (for example `0.28.0`).
+Official plugins declare `etlantic>=0.28.0,<0.29`.
+
+## Package categories
+
+| Category | Examples | Classifier |
+|---|---|---|
+| Core | `etlantic` | Beta |
+| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable |
+| Facade | `medallantic` | Production/Stable |
+| Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) |
+| Reference adapter | `etlantic-fastapi` | Beta |
+| Experimental | `etlantic-datafusion` | Alpha |
+
+See [Facade packages](FACADE_PACKAGES.md).
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes twelve distributions:
+Tag `vX.Y.Z` publishes thirteen distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
 | `etlantic` | repo root | core |
-| `etlantic-polars` | `packages/etlantic-polars` | stable |
-| `etlantic-pandas` | `packages/etlantic-pandas` | stable |
-| `etlantic-sql` | `packages/etlantic-sql` | stable |
-| `etlantic-pyspark` | `packages/etlantic-pyspark` | stable |
-| `etlantic-airflow` | `packages/etlantic-airflow` | stable |
-| `etlantic-prefect` | `packages/etlantic-prefect` | stable |
-| `etlantic-keyring` | `packages/etlantic-keyring` | stable |
-| `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | stable |
-| `medallantic` | `packages/medallantic` | stable |
-| `etlantic-fastapi` | `packages/etlantic-fastapi` | thin authoring/service reference adapter (since 0.24) |
+| `etlantic-polars` | `packages/etlantic-polars` | execution plugin |
+| `etlantic-pandas` | `packages/etlantic-pandas` | execution plugin |
+| `etlantic-sql` | `packages/etlantic-sql` | execution plugin |
+| `etlantic-pyspark` | `packages/etlantic-pyspark` | execution plugin |
+| `etlantic-airflow` | `packages/etlantic-airflow` | execution plugin |
+| `etlantic-prefect` | `packages/etlantic-prefect` | execution plugin |
+| `etlantic-keyring` | `packages/etlantic-keyring` | execution plugin |
+| `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | execution plugin |
+| `medallantic` | `packages/medallantic` | **facade** |
+| `etlantic-sparkforge` | `packages/etlantic-sparkforge` | **compatibility redirect** → medallantic |
+| `etlantic-fastapi` | `packages/etlantic-fastapi` | thin reference adapter (since 0.24) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 
 ## Pre-Release Checklist
@@ -180,7 +194,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.25 plugins, `etlantic>=0.27.0,<0.28`). A core
+0.25 plugins, `etlantic>=0.28.0,<0.29`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

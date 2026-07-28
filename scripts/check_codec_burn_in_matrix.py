@@ -2,7 +2,7 @@
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under
-``tests/fixtures/burn_in/*/v0_24/``, ``v0_25/``, and ``v0_26/`` (pipeline
+``tests/fixtures/burn_in/*/v0_24/``, ``v0_25/``, ``v0_26/``, and ``v0_27/`` (pipeline
 fixtures remain under ``check_pipeline_codec_burn_in.py``).
 """
 
@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BURN_IN = ROOT / "tests" / "fixtures" / "burn_in"
 MANIFEST = BURN_IN / "sibling_manifest.json"
-VERSIONS = ("v0_24", "v0_25", "v0_26")
+VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
 
 SIBLINGS: tuple[tuple[str, str | None], ...] = (
     ("plan", "etlantic.plan/1"),

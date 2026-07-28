@@ -57,14 +57,14 @@ def test_curated_identity_across_import_styles() -> None:
 
 def test_demoted_alias_warns_once() -> None:
     # Clear cached demoted binding if a prior test populated it.
-    etlantic.__dict__.pop("col", None)
-    etlantic._warned_demoted.discard("col")
+    etlantic.__dict__.pop("Edge", None)
+    etlantic._warned_demoted.discard("Edge")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        first = etlantic.col
-        second = etlantic.col
+        first = etlantic.Edge
+        second = etlantic.Edge
     assert first is second
-    assert first is etlantic.sql.col
+    assert first is etlantic.model.Edge
     demoted = [
         w
         for w in caught

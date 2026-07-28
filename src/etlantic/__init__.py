@@ -99,19 +99,14 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "DiagnosticAction": ("etlantic.diagnostics", "DiagnosticAction"),
     "DriftAction": ("etlantic.schema_policy", "DriftAction"),
     "Edge": ("etlantic.model", "Edge"),
-    "Emit": ("etlantic.lifecycle", "Emit"),
-    "FailureAction": ("etlantic.lifecycle", "FailureAction"),
     "ImplementationRecord": ("etlantic.transformation", "ImplementationRecord"),
-    "Inject": ("etlantic.lifecycle", "Inject"),
     "LogicalGraph": ("etlantic.model", "LogicalGraph"),
     "Node": ("etlantic.model", "Node"),
     "NodeKind": ("etlantic.model", "NodeKind"),
-    "OutboundEvent": ("etlantic.lifecycle", "OutboundEvent"),
     "OutboundPolicy": ("etlantic.outbound", "OutboundPolicy"),
     "OutputRef": ("etlantic.refs", "OutputRef"),
     "PluginCapabilities": ("etlantic.capabilities", "PluginCapabilities"),
     "PluginManifest": ("etlantic.plugin_manifest", "PluginManifest"),
-    "RelationRef": ("etlantic.sql", "RelationRef"),
     "ReportStore": ("etlantic.reports", "ReportStore"),
     "SafeIoPolicy": ("etlantic.io_policy", "SafeIoPolicy"),
     "SchemaDriftPolicy": ("etlantic.schema_policy", "SchemaDriftPolicy"),
@@ -119,14 +114,9 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "Severity": ("etlantic.diagnostics", "Severity"),
     "SourceLocation": ("etlantic.diagnostics", "SourceLocation"),
     "SparkUdfPolicy": ("etlantic.spark", "SparkUdfPolicy"),
-    "SqlQuery": ("etlantic.sql", "SqlQuery"),
     "Step": ("etlantic.transformation", "Step"),
-    "StepFailureContext": ("etlantic.lifecycle", "StepFailureContext"),
     "SubpipelineInstance": ("etlantic.pipeline", "SubpipelineInstance"),
     "ValidationPolicy": ("etlantic.policy", "ValidationPolicy"),
-    "col": ("etlantic.sql", "col"),
-    "concat": ("etlantic.sql", "concat"),
-    "development_profile": ("etlantic.profile", "development_profile"),
     "discover_dataframe_plugins": ("etlantic.dataframe", "discover_dataframe_plugins"),
     "discover_orchestrator_plugins": (
         "etlantic.orchestration",
@@ -134,15 +124,8 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     ),
     "discover_spark_plugins": ("etlantic.spark", "discover_spark_plugins"),
     "discover_spark_providers": ("etlantic.spark", "discover_spark_providers"),
-    "discover_sql_plugins": ("etlantic.sql", "discover_sql_plugins"),
     "load_data_contract": ("etlantic.contracts", "load_data_contract"),
-    "load_profile": ("etlantic.profile", "load_profile"),
-    "production_profile": ("etlantic.profile", "production_profile"),
-    "resolve_profile": ("etlantic.profile", "resolve_profile"),
-    "select": ("etlantic.sql", "select"),
-    "test_profile": ("etlantic.profile", "test_profile"),
     "write_odcs": ("etlantic.contracts", "write_odcs"),
-    "write_profile": ("etlantic.profile", "write_profile"),
 }
 
 _REMOVED_AUTHORING = {
@@ -415,6 +398,77 @@ _REMOVED_0_27: dict[str, str] = {
     ),
 }
 
+_REMOVED_0_28: dict[str, str] = {
+    "Emit": (
+        "Emit was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.lifecycle instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "FailureAction": (
+        "FailureAction was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.lifecycle instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "Inject": (
+        "Inject was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.lifecycle instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "OutboundEvent": (
+        "OutboundEvent was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.lifecycle instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "RelationRef": (
+        "RelationRef was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "SqlQuery": (
+        "SqlQuery was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "StepFailureContext": (
+        "StepFailureContext was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.lifecycle instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "col": (
+        "col was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "concat": (
+        "concat was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "development_profile": (
+        "development_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "discover_sql_plugins": (
+        "discover_sql_plugins was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "load_profile": (
+        "load_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "production_profile": (
+        "production_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "resolve_profile": (
+        "resolve_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "select": (
+        "select was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "test_profile": (
+        "test_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+    "write_profile": (
+        "write_profile was removed from the etlantic root in 0.28.0; "
+        "import from etlantic.profile instead. See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md."
+    ),
+}
+
 _warned_demoted: set[str] = set()
 
 __all__ = [
@@ -428,8 +482,9 @@ def __dir__() -> list[str]:
         | set(_DEMOTED_ALIASES)
         | set(_REMOVED_0_26)
         | set(_REMOVED_0_27)
+        | set(_REMOVED_0_28)
         | {"DataContractModel"}
-        | set(globals())
+        | set(_LAZY_NAMESPACES)
     )
 
 
@@ -447,6 +502,8 @@ def __getattr__(name: str) -> Any:
         raise AttributeError(_REMOVED_0_26[name])
     if name in _REMOVED_0_27:
         raise AttributeError(_REMOVED_0_27[name])
+    if name in _REMOVED_0_28:
+        raise AttributeError(_REMOVED_0_28[name])
     if name in _LAZY_NAMESPACES:
         module = importlib.import_module(_LAZY_NAMESPACES[name])
         globals()[name] = module
@@ -459,7 +516,7 @@ def __getattr__(name: str) -> Any:
                 f"etlantic.{name} is a pre-1.0 compatibility alias; "
                 f"prefer importing from {module_name} "
                 f"(or use the owning lazy namespace). "
-                "See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md and "
+                "See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md and "
                 "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md.",
                 DeprecationWarning,
                 stacklevel=2,

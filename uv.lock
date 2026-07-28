@@ -18,6 +18,7 @@ members = [
     "etlantic-polars",
     "etlantic-prefect",
     "etlantic-pyspark",
+    "etlantic-sparkforge",
     "etlantic-sql",
     "etlantic-sqlmodel",
     "medallantic",
@@ -670,7 +671,7 @@ wheels = [
 
 [[package]]
 name = "etlantic"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -731,6 +732,9 @@ pyspark = [
 spark = [
     { name = "etlantic-pyspark" },
 ]
+sparkforge = [
+    { name = "etlantic-sparkforge" },
+]
 sql = [
     { name = "etlantic-sql" },
 ]
@@ -769,6 +773,7 @@ keyring = [
     { name = "etlantic-keyring" },
 ]
 medallantic = [
+    { name = "etlantic-sparkforge" },
     { name = "medallantic" },
 ]
 observability = [
@@ -814,6 +819,7 @@ requires-dist = [
     { name = "etlantic-prefect", marker = "extra == 'prefect'", editable = "packages/etlantic-prefect" },
     { name = "etlantic-pyspark", marker = "extra == 'pyspark'", editable = "packages/etlantic-pyspark" },
     { name = "etlantic-pyspark", marker = "extra == 'spark'", editable = "packages/etlantic-pyspark" },
+    { name = "etlantic-sparkforge", marker = "extra == 'sparkforge'", editable = "packages/etlantic-sparkforge" },
     { name = "etlantic-sql", marker = "extra == 'postgresql'", editable = "packages/etlantic-sql" },
     { name = "etlantic-sql", marker = "extra == 'sql'", editable = "packages/etlantic-sql" },
     { name = "etlantic-sqlmodel", marker = "extra == 'sqlmodel'", editable = "packages/etlantic-sqlmodel" },
@@ -826,7 +832,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "typer", specifier = ">=0.15,<1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "fastapi", "datafusion", "otel", "observability", "arrow", "dataframes"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "otel", "observability", "arrow", "dataframes"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -850,7 +856,10 @@ dev = [
     { name = "ruff", specifier = ">=0.9,<1" },
 ]
 keyring = [{ name = "etlantic-keyring", editable = "packages/etlantic-keyring" }]
-medallantic = [{ name = "medallantic", editable = "packages/medallantic" }]
+medallantic = [
+    { name = "etlantic-sparkforge", editable = "packages/etlantic-sparkforge" },
+    { name = "medallantic", editable = "packages/medallantic" },
+]
 observability = [{ name = "opentelemetry-api", specifier = ">=1.36,<2" }]
 pandas = [
     { name = "etlantic-pandas", editable = "packages/etlantic-pandas" },
@@ -870,7 +879,7 @@ sqlmodel = [{ name = "etlantic-sqlmodel", editable = "packages/etlantic-sqlmodel
 
 [[package]]
 name = "etlantic-airflow"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-airflow" }
 dependencies = [
     { name = "etlantic" },
@@ -881,7 +890,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-datafusion"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-datafusion" }
 dependencies = [
     { name = "etlantic" },
@@ -892,7 +901,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-fastapi"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-fastapi" }
 dependencies = [
     { name = "etlantic" },
@@ -928,7 +937,7 @@ dev = [
 
 [[package]]
 name = "etlantic-keyring"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-keyring" }
 dependencies = [
     { name = "etlantic" },
@@ -943,7 +952,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-pandas"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-pandas" }
 dependencies = [
     { name = "etlantic" },
@@ -965,7 +974,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-polars"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-polars" }
 dependencies = [
     { name = "etlantic" },
@@ -987,7 +996,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-prefect"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-prefect" }
 dependencies = [
     { name = "etlantic" },
@@ -1002,7 +1011,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-pyspark"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-pyspark" }
 dependencies = [
     { name = "etlantic" },
@@ -1023,8 +1032,19 @@ requires-dist = [
 provides-extras = ["delta"]
 
 [[package]]
+name = "etlantic-sparkforge"
+version = "0.28.0"
+source = { editable = "packages/etlantic-sparkforge" }
+dependencies = [
+    { name = "medallantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "medallantic", editable = "packages/medallantic" }]
+
+[[package]]
 name = "etlantic-sql"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-sql" }
 dependencies = [
     { name = "etlantic" },
@@ -1042,7 +1062,7 @@ provides-extras = ["sqlite"]
 
 [[package]]
 name = "etlantic-sqlmodel"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/etlantic-sqlmodel" }
 dependencies = [
     { name = "etlantic" },
@@ -1652,7 +1672,7 @@ wheels = [
 
 [[package]]
 name = "medallantic"
-version = "0.27.0"
+version = "0.28.0"
 source = { editable = "packages/medallantic" }
 dependencies = [
     { name = "etlantic" },

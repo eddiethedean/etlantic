@@ -1,0 +1,42 @@
+[project]
+name = "etlantic-sparkforge"
+version = "0.28.0"
+description = "Final compatibility redirect to Medallantic (deprecated)."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = [
+    "medallantic>=0.28.0,<0.29",
+]
+
+[project.urls]
+Homepage = "https://github.com/eddiethedean/etlantic"
+Documentation = "https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic"
+Repository = "https://github.com/eddiethedean/etlantic"
+Issues = "https://github.com/eddiethedean/etlantic/issues"
+Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/etlantic_sparkforge"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/etlantic_sparkforge",
+    "/README.md",
+    "/pyproject.toml",
+]

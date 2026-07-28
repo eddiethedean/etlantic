@@ -5,13 +5,14 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.27.0** — choose your guide:
+**ETLantic 0.28.0** — choose your guide:
 
-| From version | Ordered path to 0.27 |
+| From version | Ordered path to 0.28 |
 |---|---|
-| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) |
-| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) |
-| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → 0.25→0.26 → 0.26→0.27 |
+| 0.27.x | [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
+| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) → [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
+| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → 0.26→0.27 → 0.27→0.28 |
+| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → then the 0.25 chain |
 | 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → then the 0.24 chain |
 | 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → then the 0.23 chain |
 | 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then the 0.22 chain |
@@ -19,9 +20,9 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.20 chain |
 | 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.19 chain |
 | 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.18 chain |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.27 |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.28 |
 
-### Breaking highlights on the way to 0.27
+### Breaking highlights on the way to 0.28
 
 | Span | Watch for |
 |---|---|
@@ -35,6 +36,7 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.24 → 0.25 | Compatibility burn-in fixtures; no wire-schema reset; freeze blockers published |
 | 0.25 → 0.26 | Dual-minor burn-in; first-wave root alias removals; freeze owned by 0.27 |
 | 0.26 → 0.27 | Triple-minor burn-in; second-wave root removals; freeze re-scoped to 0.28+ |
+| 0.27 → 0.28 | Quadruple-minor burn-in; third-wave root removals; Plugin `/1` **frozen** |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -43,6 +45,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.27 → 0.28 | [MIGRATION_0_27_TO_0_28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
 | 0.26 → 0.27 | [MIGRATION_0_26_TO_0_27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) |
 | 0.25 → 0.26 | [MIGRATION_0_25_TO_0_26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) |
 | 0.24 → 0.25 | [MIGRATION_0_24_TO_0_25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
@@ -173,16 +176,17 @@ See [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
 See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
-## Planned: 0.28 configuration cheat sheet
+## 0.28 configuration cheat sheet
 
 | Change | Use instead |
 |---|---|
-| Assume Plugin SDK `/1` is frozen | Closure owned by **0.28** — see [Exit gate 0.28](../11_DEVELOPMENT/EXIT_GATE_0_28.md) |
+| Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
+| `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.28.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
-| `etlantic-sparkforge` import path | `medallantic` (M0 redirect decision in 0.28) |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
-Migration guide and What's New will ship with **0.28.0**.
+See [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md).
 
 ## Checklist
 

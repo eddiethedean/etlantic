@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.27.0** ships **Compatibility Burn-In (third slice)**.
+ETLantic **0.28.0** ships **Compatibility Burn-In (third slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -91,23 +91,28 @@ first-wave root alias removals. See
 [What's New in 0.26](../01_GETTING_STARTED/WHATS_NEW_0_26.md) and
 [Exit gate 0.26](EXIT_GATE_0_26.md).
 
+## Shipped: 0.28
+
+ETLantic **0.28.0** shipped **Compatibility Burn-In (fourth slice)**:
+quadruple-minor burn-in proof (0.26→0.27→0.28), Plugin SDK `/1` **frozen**,
+third-wave root alias removals, Medallantic M0 closeout, and facade package
+discipline. See
+[What's New in 0.28](../01_GETTING_STARTED/WHATS_NEW_0_28.md) and
+[Exit gate 0.28](EXIT_GATE_0_28.md).
+
 ## Shipped: 0.27
 
-ETLantic **0.27.0** shipped **Compatibility Burn-In (third slice)**:
+ETLantic **0.28.0** shipped **Compatibility Burn-In (third slice)**:
 triple-minor burn-in proof (0.25→0.26→0.27), freeze re-scoped to 0.28+, and
 second-wave root alias removals (reliability, schema_drift, registry). See
 [What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
 [Exit gate 0.27](EXIT_GATE_0_27.md).
 
-## Next: 0.28 — burn-in fourth slice and M0 closeout
+## Next: 0.29 — native medallion authoring (M1)
 
-**0.28** (planned) continues compatibility burn-in (**0.26→0.27→0.28**),
-closes or re-scopes the Plugin SDK `/1` freeze, finishes Medallantic **M0**
-(redirect decision, facade release category), and executes a third wave of
-demoted root removals (`sql`, `profile`, `lifecycle`, …). Native medallion
-authoring remains **0.29**. Tracking:
-[Exit gate 0.28](EXIT_GATE_0_28.md) and
-[ROADMAP § 0.28](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#028--burn-in-fourth-slice-plugin-freeze-and-medallantic-m0-closeout).
+**0.29** (planned) introduces native `MedallionPipeline` authoring and facade
+conformance. See
+[ROADMAP § 0.29](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#029--native-medallion-authoring).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 

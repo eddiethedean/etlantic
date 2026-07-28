@@ -1,4 +1,4 @@
-"""Local PySpark batch pipeline (ETLantic 0.27.0).
+"""Local PySpark batch pipeline (ETLantic 0.28.0).
 
 Requires:
 
@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.27.0 etlantic-pyspark==0.27.0
+    pip install etlantic==0.28.0 etlantic-pyspark==0.28.0
 
 Run with:
 

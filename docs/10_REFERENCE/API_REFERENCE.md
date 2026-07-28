@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.27.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.28.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -101,7 +101,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.27.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.28.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
@@ -110,19 +110,24 @@ announced migrations. Review the changelog and
 
 ## Compatibility aliases (pre-1.0)
 
-ETLantic **0.27** removed the first wave of root facade aliases (protocol
-consts, exceptions, storage bindings, runtime helpers, interchange helpers).
-Import those symbols from owning modules — see
-[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
+ETLantic **0.28** removed the third wave of root facade aliases (`sql`,
+`profile`, `lifecycle` clusters). Import those symbols from owning modules — see
+[Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md).
+
+ETLantic **0.27** removed the second wave (reliability, schema_drift,
+registry). See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
 A remaining set of specialist root exports are still **demoted** (warn once).
 Prefer lazy namespaces or owning modules.
 
 | Category | Examples (still demoted) | Prefer |
 |---|---|---|
-| Profile helpers | `load_profile`, `development_profile`, `production_profile` | `etlantic.profile` |
-| Reliability | `WriteIntent`, `WriteMode`, `FreshnessExpectation` | `etlantic.reliability` |
-| Security | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
+| Model graph | `Edge`, `Node`, `LogicalGraph` | `etlantic.model` |
+| Reliability | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
+
+Removed in 0.28 (raise on root import): `col`, `select`, `load_profile`,
+`write_profile`, `Inject`, `FailureAction`, and other symbols listed in the
+migration guide.
 
 Removed in 0.27 (raise on root import): `RunRequest`, `RunSelection`,
 `RunIntent`, `DebugSession`, `RunStatus`, `MemoryStorage`, `diff_pipelines`,

@@ -27,7 +27,7 @@
 - [x] `import etlantic as etl` minimal, typed, lazy namespaces, identity-stable (`tests/unit/test_root_facade.py`)
 - [x] Surface inventory + import budget + typing fixtures enforce ownership
 - [x] No architectural dependency on first-party engine identity sets in planner/coordinator/runtime
-- [ ] Protocol `/1` **frozen** — **not** claimed in 0.22.0; freeze after ≥1 external feedback cycle post-RC (see below)
+- [ ] Protocol `/1` **frozen** — **done in 0.28.0**; see [EXIT_GATE_0_28](EXIT_GATE_0_28.md)
 
 ## Freeze note
 

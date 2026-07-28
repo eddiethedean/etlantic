@@ -9,14 +9,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = (ROOT / "tests", ROOT / "examples")
-SKIP_FILES = {"test_root_removals_0_26.py", "test_root_removals_0_27.py"}
+SKIP_FILES = {
+    "test_root_removals_0_26.py",
+    "test_root_removals_0_27.py",
+    "test_root_removals_0_28.py",
+}
 
 
 def _load_removed_names() -> set[str]:
     sys.path.insert(0, str(ROOT / "src"))
-    from etlantic import _REMOVED_0_26, _REMOVED_0_27
+    from etlantic import _REMOVED_0_26, _REMOVED_0_27, _REMOVED_0_28
 
-    return set(_REMOVED_0_26) | set(_REMOVED_0_27)
+    return set(_REMOVED_0_26) | set(_REMOVED_0_27) | set(_REMOVED_0_28)
 
 
 def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:

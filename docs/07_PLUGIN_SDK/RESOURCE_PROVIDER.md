@@ -92,7 +92,7 @@ An annotation-oriented form may also be used by implementation callables:
 ```python
 from typing import Annotated
 
-from etlantic import Inject
+from etlantic.lifecycle import Inject
 
 Warehouse = Annotated[SqlDatabase, Inject("warehouse")]
 

@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This table describes the declared compatibility of ETLantic 0.27.0.
+This table describes the declared compatibility of ETLantic 0.28.0.
 
 | Surface | Supported range or version |
 |---|---|
@@ -14,29 +14,31 @@ This table describes the declared compatibility of ETLantic 0.27.0.
 | Dataframe protocol | `etlantic.dataframe/1` |
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
-| Polars plugin | `etlantic-polars==0.27.0` |
-| Pandas plugin | `etlantic-pandas==0.27.0` |
-| SQL plugin | `etlantic-sql==0.27.0` |
-| PySpark plugin | `etlantic-pyspark==0.27.0` |
-| Airflow plugin | `etlantic-airflow==0.27.0` |
-| Prefect scheduler | `etlantic-prefect==0.27.0` |
-| Keyring provider | `etlantic-keyring==0.27.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.27.0` |
-| Medallantic | `medallantic==0.27.0` |
-| DataFusion plugin | `etlantic-datafusion==0.27.0` (**Experimental** Gate B stub; no graduated claims) |
+| Polars plugin | `etlantic-polars==0.28.0` |
+| Pandas plugin | `etlantic-pandas==0.28.0` |
+| SQL plugin | `etlantic-sql==0.28.0` |
+| PySpark plugin | `etlantic-pyspark==0.28.0` |
+| Airflow plugin | `etlantic-airflow==0.28.0` |
+| Prefect scheduler | `etlantic-prefect==0.28.0` |
+| Keyring provider | `etlantic-keyring==0.28.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.28.0` |
+| Medallantic (facade) | `medallantic==0.28.0` |
+| SparkForge redirect | `etlantic-sparkforge==0.28.0` (compatibility shim; prefer `medallantic`) |
+| DataFusion plugin | `etlantic-datafusion==0.28.0` (**Experimental** Gate B stub; no graduated claims) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Shipped protocols are Beta-compatible within the 0.26 minor; third-party plugins must pin and re-run conformance |
+| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.28.0,<0.29` and re-run conformance |
 
 ## Tested versus declared
 
 The core CI matrix runs linting and the core test suite on Ubuntu, Windows, and
 macOS with Python 3.11, 3.12, and 3.13. This is the broadest tested platform
-surface for 0.27.0. Dual-minor wire codec burn-in covers the 0.25→0.26 upgrade
-window; see [Wire schema ranges](WIRE_SCHEMA_RANGES.md).
+surface for 0.28.0. Quadruple-minor wire codec burn-in covers the
+0.24→0.25→0.26→0.27→0.28 upgrade window; see
+[Wire schema ranges](WIRE_SCHEMA_RANGES.md).
 
 Optional plugin jobs run primarily on Ubuntu with Python 3.11. Polars and
 Pandas each have dedicated dataframe/compiler/conformance jobs. SQL runs
@@ -66,11 +68,11 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.27.0` plus every official plugin to `==0.27.0`.
+`etlantic==0.28.0` plus every official plugin to `==0.28.0`.
 
 Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.27.0` depends on `etlantic-polars==0.27.0`. Official
-plugin source metadata accepts core `etlantic>=0.27.0,<0.28`, which is
+`etlantic[polars]==0.28.0` depends on `etlantic-polars==0.28.0`. Official
+plugin source metadata accepts core `etlantic>=0.28.0,<0.29`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

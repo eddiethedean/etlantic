@@ -1,8 +1,8 @@
-"""Dual-minor burn-in fixtures for etlantic.pipeline/1.
+"""Quadruple-minor burn-in fixtures for etlantic.pipeline/1.
 
-Golden documents under ``tests/fixtures/burn_in/pipeline/v0_24/`` capture
-0.24 wire semantics; ``v0_25/`` captures 0.25 semantics. Current minors must
-read and rewrite both without a schema-id bump (no wire-schema reset).
+Golden documents under ``tests/fixtures/burn_in/pipeline/v0_24/`` through
+``v0_27/`` capture consecutive minor wire semantics. Current minors must read
+and rewrite all trees without a schema-id bump (no wire-schema reset).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from etlantic.authoring import (
 from etlantic.authoring.upgrade import UnsupportedPipelineSchemaError
 
 BURN_IN = Path(__file__).resolve().parents[1] / "fixtures" / "burn_in" / "pipeline"
-VERSIONS = ("v0_24", "v0_25", "v0_26")
+VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
 
 
 def _fixture_paths(version: str) -> list[Path]:
