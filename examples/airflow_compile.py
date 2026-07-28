@@ -1,4 +1,4 @@
-"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.29.0).
+"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.30.0).
 
 Requires:
 
@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.29.0 etlantic-airflow==0.29.0
+    pip install etlantic==0.30.0 etlantic-airflow==0.30.0
 
 Run with:
 

@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Quality gate factory resolves ContractModel port types and invalid-role rejected outputs
+- Name-only `custom_contract` rules fail closed at evaluate time (no silent pass)
+- Quality capability asserts run before native implementation selection so SQL/PySpark profiles emit `PMPLAN420`/`421` instead of `PMPLAN302`
+- Plan metadata recomputes quality fingerprints so embedded hashes cannot drift
+- Optional `required=False` quality rules skip rejection while recording soft diagnostics
+- Regex / range / length DSL evaluation no longer crashes the gate on bad inputs
+- `field_constraints_dict` projects `nullable`, compare ops, and composite `unique_fields`
+- Medallantic quality gates attach `{step}__rejected` sink Loads (invalid→sink wiring allowed)
+- PySpark stops advertising `invalid_row_separation` without `dataframe`
+- Surface / agent / capability / diagnostics catalogs reflect `etlantic.quality` for 0.30
 
 ## [0.29.0] - 2026-07-28
 

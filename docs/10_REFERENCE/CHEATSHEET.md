@@ -46,7 +46,7 @@ etl.authoring   # PipelineDefinition, builders, JSON, catalog, edits
 etl.service     # AuthoringService, PolicyContext
 etl.transform   # portable authoring helpers
 etl.dataframe / etl.sql / etl.spark
-etl.orchestration / etl.viz / etl.secrets / etl.testing
+etl.orchestration / etl.viz / etl.secrets / etl.testing / etl.quality
 ```
 
 Minimal definition path:

@@ -61,6 +61,7 @@ def quality_from_dict(
     *,
     verify: bool = True,
     fingerprint: bool = True,
+    recompute_fingerprint: bool = False,
 ) -> QualityExpression:
     """Deserialize a quality expression, upgrading schema when needed.
 
@@ -68,10 +69,12 @@ def quality_from_dict(
         data: Mapping with ``schema`` ``etlantic.quality/1``.
         verify: When True, verify embedded fingerprint if present.
         fingerprint: When True and fingerprint missing, compute and attach one.
+        recompute_fingerprint: When True, always replace fingerprint with the
+            recomputed canonical hash (plan metadata must not trust drift).
     """
     upgraded = upgrade_quality_dict(data)
     expr = QualityExpression.from_dict(upgraded)
-    if fingerprint and expr.fingerprint is None:
+    if recompute_fingerprint or (fingerprint and expr.fingerprint is None):
         expr = QualityExpression(
             schema=expr.schema,
             expression_id=expr.expression_id,
@@ -79,7 +82,7 @@ def quality_from_dict(
             fingerprint=quality_fingerprint(expr),
             metadata=expr.metadata,
         )
-    if verify and expr.fingerprint is not None:
+    elif verify and expr.fingerprint is not None:
         verify_quality_fingerprint(expr)
     if expr.schema != QUALITY_SCHEMA:
         raise ValueError(

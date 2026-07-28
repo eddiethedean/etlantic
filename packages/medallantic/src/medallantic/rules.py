@@ -91,28 +91,47 @@ def _parse_string(field: str, raw: str) -> QualityRule:
         parts = text.split(":")
         if len(parts) != 3:
             raise RuleDSLError(f"Invalid range shorthand {raw!r}")
-        return rule_range(field, min_value=_num(parts[1]), max_value=_num(parts[2]))
+        return rule_range(
+            field,
+            min_value=_num(parts[1], raw=raw),
+            max_value=_num(parts[2], raw=raw),
+        )
     if lower.startswith("length:"):
         parts = text.split(":")
         if len(parts) == 3:
             return rule_length(
-                field, min_length=int(parts[1]), max_length=int(parts[2])
+                field,
+                min_length=_int_bound(parts[1], raw=raw),
+                max_length=_int_bound(parts[2], raw=raw),
             )
         raise RuleDSLError(f"Invalid length shorthand {raw!r}")
     if lower.startswith("min_length:"):
-        return rule_length(field, min_length=int(text.split(":", 1)[1]))
+        return rule_length(field, min_length=_int_bound(text.split(":", 1)[1], raw=raw))
     if lower.startswith("max_length:"):
-        return rule_length(field, max_length=int(text.split(":", 1)[1]))
+        return rule_length(field, max_length=_int_bound(text.split(":", 1)[1], raw=raw))
     for op in ("ge", "le", "gt", "lt", "eq", "ne"):
         if lower.startswith(f"{op}:"):
-            return rule_compare(field, op, _num(text.split(":", 1)[1]))
+            return rule_compare(field, op, _num(text.split(":", 1)[1], raw=raw))
     if lower.startswith("custom:"):
         return rule_custom_contract(text.split(":", 1)[1], field=field)
     raise RuleDSLError(f"Unknown rule shorthand {raw!r} for field {field!r}")
 
 
-def _num(value: str) -> Any:
+def _int_bound(value: str, *, raw: str) -> int:
     text = value.strip()
+    if not text:
+        raise RuleDSLError(f"Invalid length/numeric bound in {raw!r}")
+    try:
+        return int(text)
+    except ValueError as exc:
+        raise RuleDSLError(f"Invalid integer bound in {raw!r}") from exc
+
+
+def _num(value: str, *, raw: str | None = None) -> Any:
+    text = value.strip()
+    if not text:
+        label = raw or value
+        raise RuleDSLError(f"Empty numeric bound in {label!r}")
     try:
         if "." in text:
             return float(text)

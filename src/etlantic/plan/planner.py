@@ -618,6 +618,13 @@ def _select_implementations_from_definition(
         requested_engine = engine
         compiler = compilers.get(requested_engine)
 
+        _assert_quality_capabilities_for_step(
+            transform=None,
+            node=node,
+            requested_engine=requested_engine,
+            context=context,
+        )
+
         registry_key = f"{transform_id}::{engine}"
         registry_impl = context.registry.implementations.get(registry_key)
         if registry_impl is not None and (
@@ -792,6 +799,15 @@ def _select_implementations(
 
         requested_engine = engine
         compiler = compilers.get(requested_engine)
+
+        # Quality gates must fail closed against the *requested* engine before
+        # native autopick can raise PMPLAN302 for local/polars/pandas-only impls.
+        _assert_quality_capabilities_for_step(
+            transform=transform,
+            node=node,
+            requested_engine=requested_engine,
+            context=context,
+        )
 
         # Registry fallback: transform_id::engine. Do not short-circuit
         # prefer/require when a portable definition + compiler exist — that
@@ -1091,6 +1107,42 @@ def _capability_records(context: PlanningContext, engine: str) -> list[dict[str,
     ]
 
 
+def _assert_quality_capabilities_for_step(
+    *,
+    transform: Any | None,
+    node: Any,
+    requested_engine: str,
+    context: PlanningContext,
+) -> None:
+    """Fail closed on quality rules before native implementation selection."""
+    from etlantic.planning.capabilities import assert_quality_rule_capabilities
+    from etlantic.quality.analyze import analyze_quality
+    from etlantic.quality.gate import (
+        QUALITY_METADATA_KEY,
+        quality_expression_from_transform,
+    )
+    from etlantic.quality.serialize import quality_from_dict
+
+    raw: dict[str, Any] | None = None
+    if transform is not None:
+        raw = quality_expression_from_transform(transform)
+    if raw is None:
+        meta = dict(getattr(node, "metadata", None) or {})
+        candidate = meta.get(QUALITY_METADATA_KEY)
+        if isinstance(candidate, dict):
+            raw = candidate
+    if raw is None:
+        return
+    expr = quality_from_dict(raw, verify=False, recompute_fingerprint=True)
+    analysis = analyze_quality(expr)
+    assert_quality_rule_capabilities(
+        required_capabilities=analysis.required_capabilities,
+        available=context.registry.engines.get(requested_engine),
+        engine=requested_engine,
+        node_name=node.name,
+    )
+
+
 def _analyze_quality_gates(
     graph: LogicalGraph,
     context: PlanningContext,
@@ -1109,7 +1161,7 @@ def _analyze_quality_gates(
         raw = dict(node.metadata or {}).get(QUALITY_METADATA_KEY)
         if not isinstance(raw, dict):
             continue
-        expr = quality_from_dict(raw, verify=False, fingerprint=True)
+        expr = quality_from_dict(raw, verify=False, recompute_fingerprint=True)
         analysis = analyze_quality(expr)
         engine = _node_engine(node.name, implementations, default_engine)
         total_cost += analysis.validation_cost

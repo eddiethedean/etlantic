@@ -41,6 +41,7 @@
     "expected_node_order": [
       "orders__ingest",
       "orders",
+      "orders__rejected",
       "clean_orders",
       "clean_orders_out",
       "order_kpis",

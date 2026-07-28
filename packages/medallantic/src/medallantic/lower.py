@@ -34,7 +34,7 @@ from medallantic.diagnostics import (
     MDL105_BAD_WRITE_MODE,
     MDL106_UNKNOWN_KIND,
     MDL107_UNKNOWN_LAYER,
-    MDL110_RULES_UNENFORCED,
+    MDL110_RULES_INVALID,
     MDL111_TRANSFORM_PASSTHROUGH,
     VALID_LAYERS,
     mdl_diagnostic,
@@ -302,7 +302,7 @@ def lower_document(
                 except RuleDSLError as exc:
                     diagnostics.append(
                         mdl_diagnostic(
-                            MDL110_RULES_UNENFORCED,
+                            MDL110_RULES_INVALID,
                             f"Invalid bronze rules on {step.name!r}: {exc}",
                             path=("steps", step.name, "rules"),
                             phase=diagnostic_phase,
@@ -326,6 +326,17 @@ def lower_document(
                 step_map[step.name] = f"gate:{step.name}"
                 layer_by_node[step.name] = step.layer
                 layer_by_node[ingest_name] = step.layer
+                _attach_rejected_sink(
+                    step_name=step.name,
+                    gate=gate,
+                    layer=step.layer,
+                    ns=ns,
+                    annotations=annotations,
+                    members=members,
+                    step_map=step_map,
+                    layer_by_node=layer_by_node,
+                    write_intents=write_intents,
+                )
             else:
                 ns[step.name] = source
                 annotations[step.name] = Extract[MedallionRow]
@@ -362,7 +373,7 @@ def lower_document(
                 except RuleDSLError as exc:
                     diagnostics.append(
                         mdl_diagnostic(
-                            MDL110_RULES_UNENFORCED,
+                            MDL110_RULES_INVALID,
                             f"Invalid rules on {step.name!r}: {exc}",
                             path=("steps", step.name, "rules"),
                             phase=diagnostic_phase,
@@ -375,7 +386,9 @@ def lower_document(
                     name=f"{_safe_ident(step.name)}Gate",
                     expression_id=step.name,
                 )
+                quality_gate = True
             else:
+                quality_gate = False
                 if step.rules and step.transform_ref:
                     diagnostics.append(
                         mdl_diagnostic(
@@ -401,6 +414,18 @@ def lower_document(
             members[step.name] = step_inst
             step_map[step.name] = f"step:{step.name}"
             layer_by_node[step.name] = step.layer
+            if quality_gate:
+                _attach_rejected_sink(
+                    step_name=step.name,
+                    gate=step_inst,
+                    layer=step.layer,
+                    ns=ns,
+                    annotations=annotations,
+                    members=members,
+                    step_map=step_map,
+                    layer_by_node=layer_by_node,
+                    write_intents=write_intents,
+                )
 
             try:
                 mode = write_mode_from_sparkforge(step.write_mode)
@@ -500,6 +525,42 @@ def lower_document(
             "steps": _step_annotations(doc),
         },
         required_delta_operations=required_delta_operations,
+    )
+
+
+def _attach_rejected_sink(
+    *,
+    step_name: str,
+    gate: Any,
+    layer: str,
+    ns: dict[str, Any],
+    annotations: dict[str, Any],
+    members: dict[str, Any],
+    step_map: dict[str, str],
+    layer_by_node: dict[str, str],
+    write_intents: list[WriteIntent],
+) -> None:
+    """Retain quality-gate rejected rows as a no-write Load artifact."""
+    reject_name = f"{step_name}__rejected"
+    binding = reject_name
+    sink = Load[MedallionRow](input=gate.rejected, asset=binding)
+    ns[reject_name] = sink
+    annotations[reject_name] = Load[MedallionRow]
+    members[reject_name] = sink
+    step_map[reject_name] = f"sink:{reject_name}"
+    layer_by_node[reject_name] = layer
+    write_intents.append(
+        WriteIntent(
+            subject_id=binding,
+            mode=WriteMode.NO_WRITE,
+            keys=(),
+            metadata={
+                "step": step_name,
+                "layer": layer,
+                "role": "rejected",
+                "quality_gate": True,
+            },
+        )
     )
 
 

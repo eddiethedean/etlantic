@@ -6,7 +6,7 @@ Polars dataframe plugin **and** Polars portable transform compiler for
 ```bash
 pip install 'etlantic==0.30.0' 'etlantic-polars==0.30.0'
 # optional Arrow interchange
-pip install 'etlantic-polars[arrow]==0.29.0'
+pip install 'etlantic-polars[arrow]==0.30.0'
 ```
 
 ## Dataframe plugin

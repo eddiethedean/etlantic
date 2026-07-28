@@ -30,6 +30,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.viz",
     "etlantic.secrets",
     "etlantic.testing",
+    "etlantic.quality",
 )
 
 SECURITY_RULES = (

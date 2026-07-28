@@ -13,7 +13,7 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 
-Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`, `etlantic.testing`
+Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`, `etlantic.testing`, `etlantic.quality`
 
 ## Security
 

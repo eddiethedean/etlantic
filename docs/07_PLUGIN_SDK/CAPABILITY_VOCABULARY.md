@@ -25,6 +25,26 @@ without the implied root is inconsistent and fails
 | `orch_scheduling`, `orch_retries`, `orch_timeouts`, `orch_parallel`, `orch_sensors`, `orch_artifacts_only_xcom` | `orchestration` |
 | `lazy`, `arrow_import`, `arrow_export`, `zero_copy`, `invalid_row_separation` | `dataframe` |
 
+## Portable quality extras (`etlantic.quality/1`)
+
+Quality rule capabilities are advertised as **extras** (not boolean
+`PluginCapabilities` fields). Engines that implement the portable core should
+advertise the matching keys (Polars/Pandas/`local` do in 0.30):
+
+| Extra | Rule kind |
+|---|---|
+| `quality.not_null` | `not_null` |
+| `quality.compare` | `compare` |
+| `quality.membership` | `membership` |
+| `quality.range` | `range` |
+| `quality.regex` | `regex` |
+| `quality.length` | `length` |
+| `quality.uniqueness` | `uniqueness` |
+| `quality.custom_contract` | `custom_contract` (opt-in only) |
+
+Gates also require `invalid_row_separation`. Missing required quality extras
+fail closed at plan time with `PMPLAN420` / `PMPLAN421`.
+
 Call `capability_implications()` for the authoritative map used by validation.
 
 ## Conflicts

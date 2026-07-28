@@ -122,7 +122,7 @@
 | `PMPLAN421` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN501` | `src/etlantic/plan/planner.py` |
 | `PMPLUG401` | `src/etlantic/cli/cmds/profile.py`, `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
-| `PMPLUG402` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
+| `PMPLUG402` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py`, `src/etlantic/runtime/dataframe_exec.py` |
 | `PMPLUG403` | `src/etlantic/plugin_trust.py` |
 | `PMPLUG410` | `src/etlantic/plugin_manifest.py` |
 | `PMPLUG411` | `src/etlantic/plugin_manifest.py` |
@@ -153,6 +153,8 @@
 | `PMPLUG448` | `src/etlantic/plugin_compatibility.py` |
 | `PMPLUG449` | `src/etlantic/plugin_compatibility.py` |
 | `PMPLUG450` | `src/etlantic/plugin_compatibility.py` |
+| `PMQTY400` | `src/etlantic/quality/evaluate.py` |
+| `PMQTY410` | `src/etlantic/quality/evaluate.py` |
 | `PMSCHED101` | `src/etlantic/runtime/scheduler.py` |
 | `PMSCHED102` | `src/etlantic/runtime/scheduler.py`, `src/etlantic/testing/scheduler.py` |
 | `PMSEC050` | `src/etlantic/outbound.py` |

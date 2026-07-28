@@ -62,10 +62,13 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
         max_value = node.get("max_value")
         if value is None:
             return f"{field} is null"
-        if min_value is not None and value < min_value:
-            return f"{field} below min_value"
-        if max_value is not None and value > max_value:
-            return f"{field} above max_value"
+        try:
+            if min_value is not None and value < min_value:
+                return f"{field} below min_value"
+            if max_value is not None and value > max_value:
+                return f"{field} above max_value"
+        except TypeError:
+            return f"{field} range type error"
         return None
 
     if kind == "regex":
@@ -74,8 +77,11 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
             return f"{field} is null"
         if not isinstance(value, str):
             return f"{field} is not a string"
-        if re.search(pattern, value) is None:
-            return f"{field} does not match pattern"
+        try:
+            if re.search(pattern, value) is None:
+                return f"{field} does not match pattern"
+        except re.error as exc:
+            return f"{field} invalid regex pattern: {exc}"
         return None
 
     if kind == "length":
@@ -86,10 +92,13 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
             return f"{field} has no length"
         min_length = node.get("min_length")
         max_length = node.get("max_length")
-        if min_length is not None and length < int(min_length):
-            return f"{field} shorter than min_length"
-        if max_length is not None and length > int(max_length):
-            return f"{field} longer than max_length"
+        try:
+            if min_length is not None and length < int(min_length):
+                return f"{field} shorter than min_length"
+            if max_length is not None and length > int(max_length):
+                return f"{field} longer than max_length"
+        except (TypeError, ValueError):
+            return f"{field} length bound type error"
         return None
 
     if kind == "uniqueness":
@@ -97,15 +106,10 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
         return None
 
     if kind == "custom_contract":
-        # Custom checks are opaque at the portable evaluator; callers that
-        # need ContractModel validators should run them separately.
+        # Portable core cannot evaluate custom contracts; always fail closed.
+        # Engines that advertise quality.custom_contract must supply their own
+        # evaluator rather than relying on this path.
         name = str(node.get("name") or "custom")
-        expression = node.get("expression")
-        if expression is None:
-            return None
-        # Fail closed: unevaluated expressions are not silently passed when
-        # required — callers should advertise quality.custom_contract only
-        # when they can evaluate. Here we treat missing engine support as fail.
         return f"custom_contract {name!r} not evaluated by portable core"
 
     return f"unknown rule kind {kind!r}"
@@ -118,9 +122,10 @@ def split_by_quality(
     """Split records into accepted/rejected using portable quality rules.
 
     Uniqueness rules are applied after per-row checks using the first
-    occurrence as accepted.
+    occurrence as accepted. Optional (``required=False``) rule failures are
+    recorded as soft diagnostics and do not reject the row.
     """
-    uniqueness_fields: list[tuple[str, ...]] = []
+    uniqueness_specs: list[tuple[tuple[str, ...], bool]] = []
     row_rules = []
     for rule in ruleset.rules:
         if rule.kind == "uniqueness":
@@ -128,7 +133,7 @@ def split_by_quality(
                 rule.node.get("fields") or ([rule.field] if rule.field else [])
             )
             if fields:
-                uniqueness_fields.append(fields)
+                uniqueness_specs.append((fields, bool(rule.required)))
         else:
             row_rules.append(rule)
 
@@ -136,7 +141,7 @@ def split_by_quality(
     invalid: list[Any] = []
     diagnostics: list[dict[str, Any]] = []
     seen_keys: dict[tuple[str, ...], set[tuple[Any, ...]]] = {
-        fields: set() for fields in uniqueness_fields
+        fields: set() for fields, _required in uniqueness_specs
     }
 
     for index, item in enumerate(records):
@@ -155,18 +160,39 @@ def split_by_quality(
             continue
 
         reasons: list[str] = []
+        soft_reasons: list[str] = []
         for rule in row_rules:
             reason = evaluate_rule(rule, row)
-            if reason is not None:
+            if reason is None:
+                continue
+            if rule.required:
                 reasons.append(reason)
+            else:
+                soft_reasons.append(reason)
 
-        for fields in uniqueness_fields:
+        for fields, required in uniqueness_specs:
             key = tuple(row.get(f) for f in fields)
             bucket = seen_keys[fields]
             if key in bucket:
-                reasons.append(f"duplicate key on {','.join(fields)}")
+                message = f"duplicate key on {','.join(fields)}"
+                if required:
+                    reasons.append(message)
+                else:
+                    soft_reasons.append(message)
             else:
                 bucket.add(key)
+
+        if soft_reasons:
+            diagnostics.append(
+                {
+                    "code": "PMQTY410",
+                    "message": "; ".join(soft_reasons),
+                    "row_index": index,
+                    "severity": "warning",
+                    "reasons": soft_reasons,
+                    "optional": True,
+                }
+            )
 
         if reasons:
             invalid.append(item)

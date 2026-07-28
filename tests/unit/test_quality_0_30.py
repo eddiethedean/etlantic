@@ -115,3 +115,68 @@ def test_analyze_requires_capabilities() -> None:
     assert "quality.regex" in analysis.optional_capabilities
     assert analysis.validation_cost >= 1
     assert analysis.required_rule_count == 1
+
+
+def test_custom_contract_fails_closed_without_expression() -> None:
+    from etlantic.quality import evaluate_rule, split_by_quality
+
+    rule = rule_custom_contract("ck")
+    assert evaluate_rule(rule, {"n": 1}) is not None
+    valid, invalid, diags = split_by_quality([{"n": 1}], QualityRuleset(rules=(rule,)))
+    assert valid == []
+    assert len(invalid) == 1
+    assert diags[0]["code"] == "PMQTY410"
+
+
+def test_optional_rule_does_not_reject() -> None:
+    from etlantic.quality import split_by_quality
+
+    ruleset = QualityRuleset(
+        rules=(rule_regex("email", r"^a@", required=False), rule_not_null("id"))
+    )
+    valid, invalid, diags = split_by_quality(
+        [{"id": 1, "email": "z@x.com"}],
+        ruleset,
+    )
+    assert len(valid) == 1
+    assert invalid == []
+    soft = [d for d in diags if d.get("optional")]
+    assert soft and soft[0]["severity"] == "warning"
+
+
+def test_invalid_regex_and_range_type_errors_are_reasons() -> None:
+    from etlantic.quality import evaluate_rule
+
+    assert "invalid regex" in (evaluate_rule(rule_regex("s", "("), {"s": "x"}) or "")
+    assert "type error" in (
+        evaluate_rule(rule_range("n", min_value=1), {"n": "x"}) or ""
+    )
+
+
+def test_field_constraints_dict_projects_nullable_and_compare_ops() -> None:
+    mapped = map_rule_to_contract(rule_not_null("id"))
+    assert mapped.field_constraints_dict()["nullable"] is False
+    gt = map_rule_to_contract(rule_compare("n", "gt", 3))
+    data = gt.field_constraints_dict()
+    assert any(item.get("type") == "compare" for item in data["custom"])
+    uniq = map_rule_to_contract(rule_uniqueness("a", fields=("a", "b")))
+    assert uniq.field_constraints_dict()["unique_fields"] == ["a", "b"]
+
+
+def test_recompute_fingerprint_ignores_stale_embedded() -> None:
+    expr = QualityExpression(
+        ruleset=QualityRuleset(rules=(rule_not_null("id"),)),
+        fingerprint="deadbeef",
+    )
+    data = quality_to_dict(expr)
+    loaded = quality_from_dict(data, verify=False, recompute_fingerprint=True)
+    assert loaded.fingerprint == quality_fingerprint(
+        QualityExpression(ruleset=QualityRuleset(rules=(rule_not_null("id"),)))
+    )
+
+
+def test_public_exports_include_rule_builders() -> None:
+    from etlantic import quality as q
+
+    assert hasattr(q, "rule_not_null")
+    assert hasattr(q, "PORTABLE_QUALITY_CAPABILITIES")

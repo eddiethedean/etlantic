@@ -90,6 +90,10 @@ The curated tables below remain the human-oriented index.
 | `PMPLAN401` | No plugin capabilities are registered for the selected engine |
 | `PMPLAN402` | A required capability is unsupported |
 | `PMPLAN403` | Planning selected an allowed capability fallback |
+| `PMPLAN420` | Quality gate requires `invalid_row_separation` unsupported by the engine |
+| `PMPLAN421` | Required portable `quality.*` capability unsupported by the engine |
+| `PMQTY400` | Quality evaluator could not coerce a row to a mapping |
+| `PMQTY410` | Row failed one or more portable quality rules |
 
 ### Plugin trust and portable transforms
 

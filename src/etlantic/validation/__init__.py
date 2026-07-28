@@ -13,7 +13,7 @@ from etlantic.diagnostics import (
     ValidationReport,
 )
 from etlantic.identity import contract_id, published_contract_id
-from etlantic.model import LogicalGraph
+from etlantic.model import LogicalGraph, NodeKind
 from etlantic.policy import ValidationPolicy, resolve_validation_policy
 from etlantic.symbols import node_symbol, pipeline_symbol, port_symbol
 from etlantic.transformation import Step, Transformation
@@ -257,10 +257,12 @@ def _phase_semantic(
     graph: LogicalGraph, pipeline_cls: type[Pipeline]
 ) -> list[Diagnostic]:
     diagnostics = _validate_port_compatibility(graph, pipeline_cls)
-    # Valid/invalid output roles: invalid outputs must not feed required inputs
+    # Valid/invalid output roles: invalid outputs may only feed sink nodes
+    # (dedicated quarantine / reject loads), never step or other consumers.
     nodes = graph.node_map()
     for edge in graph.edges:
         producer = nodes.get(edge.producer_node)
+        consumer = nodes.get(edge.consumer_node)
         if producer is None:
             continue
         producer_port = next(
@@ -269,6 +271,8 @@ def _phase_semantic(
         if producer_port is None:
             continue
         if producer_port.role == "invalid":
+            if consumer is not None and consumer.kind is NodeKind.SINK:
+                continue
             diagnostics.append(
                 Diagnostic(
                     code="PMPIPE220",

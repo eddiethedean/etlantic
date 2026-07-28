@@ -7,12 +7,12 @@
 |---|---|
 | Provisional `etlantic.quality/1` AST + JSON Schema (portable core) | Done |
 | ContractModel-backed mapping; no parallel schema/rule system | Done |
-| Quality-gate plans: accepted/rejected/observed, cost, fallback evidence | Done |
+| Quality-gate plans: accepted/rejected ports, cost, fallback evidence (`observed` deferred) | Done |
 | Plan-time fail-closed for unsupported required rules (`PMPLAN420`/`421`) | Done |
 | Engine-independent quality conformance fixtures | Done |
 | Live Polars + Pandas (+ local) for portable core | Done |
 | SQL / PySpark capability ads + plan-time fail-closed (live subset classified) | Done |
-| Medallantic shorthand DSL → quality AST; layer defaults + per-step overrides | Done |
+| Medallantic shorthand DSL → quality AST; layer defaults; accept-rate helper | Done |
 | Replace `MDL110` unenforced passthrough with real gate lowering | Done |
 | Docs: What's New / Migration 0.29→0.30 / this exit gate | Done |
 | Core + plugins + medallantic bumped to 0.30.0 | Done |

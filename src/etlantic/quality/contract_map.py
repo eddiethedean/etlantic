@@ -38,11 +38,23 @@ class ContractConstraintMapping:
 
     def field_constraints_dict(self) -> dict[str, Any]:
         """Return a FieldConstraints-shaped mapping (ContractModel 0.2)."""
+        custom = [dict(item) for item in self.custom]
+        for item in self.compare_ops:
+            custom.append(
+                {
+                    "name": f"compare_{item.get('op')}",
+                    "type": "compare",
+                    "expression": dict(item),
+                    "metadata": {},
+                }
+            )
         data: dict[str, Any] = {
             "unique": self.unique,
             "immutable": False,
-            "custom": [dict(item) for item in self.custom],
+            "custom": custom,
         }
+        if self.nullable is not None:
+            data["nullable"] = self.nullable
         if self.min_value is not None:
             data["min_value"] = self.min_value
         if self.max_value is not None:
@@ -59,6 +71,8 @@ class ContractConstraintMapping:
             data["allowed_values"] = list(self.allowed_values)
         if self.disallowed_values is not None:
             data["disallowed_values"] = list(self.disallowed_values)
+        if self.unique_fields:
+            data["unique_fields"] = list(self.unique_fields)
         return data
 
 

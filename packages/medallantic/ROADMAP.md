@@ -255,9 +255,11 @@ when classified). Native Column / Moltres-only rules stay **0.32 / 0.33**.
 - [x] Live Polars and Pandas rule compilers for the portable core; SQL and
   PySpark participate in capability ads and plan-time fail-closed (live core
   subset optional when classified in the compatibility matrix)
-- [x] Return accepted and rejected typed artifacts with counts and reasons
-- [x] Implement named per-layer defaults and per-step overrides; compare
-  accept-rate thresholds against validation outcomes where policy requires
+- [x] Return accepted and rejected typed artifacts (rejected retained via
+  `{step}__rejected` no-write Load); diagnostics available from the portable
+  evaluator
+- [x] Implement named per-layer defaults; `evaluate_accept_rates` helper
+  available for adopters (automatic threshold enforcement remains later)
 - [x] Replace `MDL110` / `MDL111` unenforced passthrough with real gate lowering
   (or keep `MDL111` only for transform_ref until **0.31**)
 - [x] Make validation cost and unsupported-rule fallback visible in plans

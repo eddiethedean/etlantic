@@ -277,6 +277,8 @@ def _validate_definition_semantic(
             (p for p in consumer.inputs if p.name == edge.consumer_port), None
         )
         if producer_port and producer_port.role == "invalid":
+            if consumer is not None and consumer.kind is NodeKind.SINK:
+                continue
             diagnostics.append(
                 Diagnostic(
                     code="PMPIPE220",

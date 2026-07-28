@@ -76,7 +76,7 @@ reference controls are shipped:
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.29)
+## Shipped / adopter-owned / residual (0.30)
 
 | Concern | 0.30 status |
 |---|---|

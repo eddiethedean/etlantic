@@ -61,6 +61,9 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | `@Transformation.portable` / `etlantic.transform` → `dtcs.transform-plan/2` | Available |
 | `Profile.portable_transform_policy` (`prefer` / `require` / `native`) | Available |
 | DTCS 3.0 plan models / Rich Portable Analytics profiles | Available (install `dtcs>=0.13,<1`; normative content floor `dtcs` 0.14.0 where specs say so) |
+| Portable quality AST (`etlantic.quality/1`) + `make_quality_gate` | Available (provisional; `etl.quality`) |
+| Quality plan fail-closed (`PMPLAN420` / `PMPLAN421`) | Available |
+| Quality conformance suite (`run_quality_conformance_suite`) | Available |
 
 ### Local execution and storage
 

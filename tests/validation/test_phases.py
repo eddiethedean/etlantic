@@ -41,9 +41,20 @@ class GoodPipeline(Pipeline):
 
 
 class BadInvalidWire(Pipeline):
+    """Invalid outputs must not feed transformation inputs."""
+
     raw: Extract[Item] = Extract(asset="in")
     step = Pass.step(items=raw)
-    out: Load[Item] = Load(input=step.rejected, asset="out")
+    again = Pass.step(items=step.rejected)
+
+
+class GoodInvalidSink(Pipeline):
+    """Invalid outputs may feed dedicated sink/quarantine loads."""
+
+    raw: Extract[Item] = Extract(asset="in")
+    step = Pass.step(items=raw)
+    out: Load[Item] = Load(input=step.result, asset="out")
+    rejected: Load[Item] = Load(input=step.rejected, asset="rejected")
 
 
 class UnboundPipeline(Pipeline):
@@ -92,6 +103,11 @@ def test_validation_phases_present() -> None:
 def test_invalid_output_cannot_feed_consumer() -> None:
     report = BadInvalidWire.validate()
     assert any(d.code == "PMPIPE220" for d in report.errors)
+
+
+def test_invalid_output_may_feed_sink() -> None:
+    report = GoodInvalidSink.validate()
+    assert not any(d.code == "PMPIPE220" for d in report.errors)
 
 
 def test_capability_fail_closed_unsupported_dataframe() -> None:

@@ -26,6 +26,7 @@ Facades may import from:
 - `etlantic.plan`, `etlantic.runtime`, `etlantic.reliability`
 - `etlantic.capabilities`, `etlantic.diagnostics`, `etlantic.secrets`
 - Public `etlantic.testing` for conformance (not private `_` modules)
+- Provisional `etlantic.quality` for portable quality AST / gates
 
 Facades must **not** depend on private `etlantic._*` modules or first-party
 adapter internals.
@@ -46,7 +47,7 @@ Standard facade provenance helper:
 ```python
 from etlantic.extensions import facade_provenance
 
-provenance = facade_provenance(identity="medallantic", version="0.29.0")
+provenance = facade_provenance(identity="medallantic", version="0.30.0")
 ```
 
 ## Release category

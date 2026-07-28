@@ -42,11 +42,28 @@ def test_bronze_rules_lower_to_quality_gate() -> None:
     names = [n.name for n in result.pipeline_cls.inspect().nodes]
     assert "orders__ingest" in names
     assert "orders" in names
+    assert "orders__rejected" in names
     # Gate step carries quality expression metadata
     gate_node = next(
         n for n in result.pipeline_cls.inspect().nodes if n.name == "orders"
     )
     assert "etlantic.quality" in dict(gate_node.metadata)
+
+
+def test_invalid_length_shorthand_is_mdl110() -> None:
+    with pytest.raises(RuleDSLError):
+        parse_rules_shorthand({"name": ["length:a:b"]})
+    from medallantic import MedallionBuilder
+    from medallantic.diagnostics import MDL110_RULES_INVALID
+    from medallantic.lower import LoweringError
+
+    with pytest.raises(LoweringError) as exc:
+        (
+            MedallionBuilder("demo", schema="s")
+            .bronze("orders", asset="b", rules={"name": ["length:a:b"]})
+            .lower()
+        )
+    assert any(d.code == MDL110_RULES_INVALID for d in exc.value.report.diagnostics)
 
 
 def test_accept_rate_threshold_findings() -> None:

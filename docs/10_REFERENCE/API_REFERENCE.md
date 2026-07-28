@@ -27,6 +27,7 @@ etl.service     # AuthoringService / PolicyContext
 etl.dataframe   # dataframe plugin protocols
 etl.sql         # SQL plugin protocols
 etl.testing     # conformance suites and fault injection
+etl.quality     # provisional portable quality AST / gates
 ```
 
 You may also import curated symbols directly:

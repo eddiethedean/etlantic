@@ -95,3 +95,68 @@ def test_missing_row_separation_fails_closed() -> None:
         )
     codes = {d.code for d in exc_info.value.report.diagnostics}
     assert "PMPLAN420" in codes
+
+
+def _non_dataframe_quality_context(engine: str, *, kind: str) -> PlanningContext:
+    registry = builtin_stub_registry()
+    caps = PluginCapabilities(
+        engine=engine,
+        dataframe=False,
+        sql=engine == "sql",
+        spark=engine in {"spark", "pyspark"},
+        invalid_row_separation=False,
+        extras=frozenset({engine}),
+    )
+    registry.register_plugin(
+        PluginDescriptor(
+            name=f"etlantic-{engine}",
+            kind=kind,
+            version="0.30.0",
+            engine=engine,
+            capabilities=caps,
+        )
+    )
+    profile_kwargs: dict = {"name": "dev"}
+    if engine == "sql":
+        profile_kwargs["sql_engine"] = "sql"
+    else:
+        profile_kwargs["spark_engine"] = engine
+    return PlanningContext(
+        profile=Profile(**profile_kwargs),
+        registry=registry,
+        required_capabilities=[],
+    )
+
+
+@pytest.mark.parametrize(
+    ("engine", "kind"),
+    [("sql", "sql"), ("pyspark", "spark"), ("spark", "spark")],
+)
+def test_sql_spark_quality_gates_fail_with_pmplan42x_not_302(
+    engine: str, kind: str
+) -> None:
+    with pytest.raises(PipelineValidationError) as exc_info:
+        plan_pipeline(
+            QualityPipeline,
+            context=_non_dataframe_quality_context(engine, kind=kind),
+        )
+    codes = {d.code for d in exc_info.value.report.diagnostics}
+    assert "PMPLAN302" not in codes
+    assert "PMPLAN420" in codes or "PMPLAN421" in codes
+
+
+def test_plan_recomputes_stale_quality_fingerprint() -> None:
+    extras = frozenset({"quality.not_null", "quality.regex"})
+    # Corrupt embedded fingerprint on the transform class metadata.
+
+    raw = dict(Gate.__quality_expression__)
+    raw["fingerprint"] = "0" * 64
+    Gate.__quality_expression__ = raw
+    plan = plan_pipeline(QualityPipeline, context=_context(extras=extras))
+    gate_meta = (plan.metadata.get("etlantic.quality") or {})["gates"][0]
+    assert gate_meta["fingerprint"] != "0" * 64
+    # restore for other tests
+    from etlantic.quality.serialize import quality_fingerprint, quality_from_dict
+
+    expr = quality_from_dict(raw, verify=False, recompute_fingerprint=True)
+    Gate.__quality_expression__ = {**raw, "fingerprint": quality_fingerprint(expr)}

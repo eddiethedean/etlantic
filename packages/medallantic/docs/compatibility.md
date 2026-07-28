@@ -62,7 +62,7 @@ only in explicit plan-only mode.
 | Legacy report normalization/redaction | Available |
 | SparkForge callable execution | Not available (0.31+) |
 | Native PySpark Column / Moltres-only rules | Not available (0.32 / 0.33) |
-| Native Medallantic builder | Available (0.29) |
+| Native Medallantic builder | Available (0.30) |
 | Live PySpark differential parity | Planned (0.32) |
 | Live SQLAlchemy/Moltres differential parity | Planned (0.33) |
 | Delta maintenance execution | Plugin-dependent and planned |

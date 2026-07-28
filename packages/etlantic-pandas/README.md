@@ -5,7 +5,7 @@ Pandas dataframe plugin **and** portable transform compiler for
 
 ```bash
 pip install 'etlantic==0.30.0' 'etlantic-pandas==0.30.0'
-pip install 'etlantic-pandas[arrow]==0.29.0'  # optional Arrow interchange
+pip install 'etlantic-pandas[arrow]==0.30.0'  # optional Arrow interchange
 ```
 
 ## Dataframe plugin

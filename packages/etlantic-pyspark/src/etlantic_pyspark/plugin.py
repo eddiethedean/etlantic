@@ -77,7 +77,7 @@ class PySparkPlugin:
             streaming=True,
             checkpoints=True,
             schema_inspection=True,
-            invalid_row_separation=True,
+            invalid_row_separation=False,
             cancellation=True,
             spark_delta=True,
             spark_merge=True,

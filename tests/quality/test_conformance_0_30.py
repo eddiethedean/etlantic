@@ -95,3 +95,30 @@ def test_polars_with_quality_caps_plans() -> None:
         ),
     )
     assert (plan.metadata.get("etlantic.quality") or {}).get("gates")
+
+
+def test_polars_pandas_frame_gate_paths() -> None:
+    pytest.importorskip("polars")
+    pytest.importorskip("pandas")
+    import pandas as pd
+    import polars as pl
+
+    from etlantic.quality.gate import make_quality_gate
+    from etlantic.quality.model import QualityRuleset, rule_not_null
+
+    GateCls = make_quality_gate(
+        Row,
+        QualityRuleset(rules=(rule_not_null("id"),)),
+        name="FrameGate",
+    )
+    impls = GateCls.implementations()
+    polars_fn = impls["polars"].callable
+    pandas_fn = impls["pandas"].callable
+    frame = pl.DataFrame({"id": [1, None]})
+    out = polars_fn(frame)
+    assert out["result"].height == 1
+    assert out["rejected"].height == 1
+    pdf = pd.DataFrame({"id": [1, None]})
+    out_pd = pandas_fn(pdf)
+    assert len(out_pd["result"]) == 1
+    assert len(out_pd["rejected"]) == 1

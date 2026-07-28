@@ -21,11 +21,20 @@ from etlantic.quality.gate import (
     quality_expression_from_transform,
 )
 from etlantic.quality.model import (
+    PORTABLE_QUALITY_CAPABILITIES,
     PORTABLE_RULE_KINDS,
     QUALITY_SCHEMA,
     QualityExpression,
     QualityRule,
     QualityRuleset,
+    rule_compare,
+    rule_custom_contract,
+    rule_length,
+    rule_membership,
+    rule_not_null,
+    rule_range,
+    rule_regex,
+    rule_uniqueness,
 )
 from etlantic.quality.serialize import (
     quality_fingerprint,
@@ -39,6 +48,7 @@ from etlantic.quality.upgrade import (
 )
 
 __all__ = [
+    "PORTABLE_QUALITY_CAPABILITIES",
     "PORTABLE_RULE_KINDS",
     "QUALITY_METADATA_KEY",
     "QUALITY_SCHEMA",
@@ -58,6 +68,14 @@ __all__ = [
     "quality_fingerprint",
     "quality_from_dict",
     "quality_to_dict",
+    "rule_compare",
+    "rule_custom_contract",
+    "rule_length",
+    "rule_membership",
+    "rule_not_null",
+    "rule_range",
+    "rule_regex",
+    "rule_uniqueness",
     "split_by_quality",
     "upgrade_quality_dict",
     "verify_quality_fingerprint",
