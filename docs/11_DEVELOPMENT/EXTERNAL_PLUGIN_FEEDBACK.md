@@ -1,7 +1,7 @@
 # External plugin feedback (Protocol `/1` freeze evidence)
 
 > **Status:** Documents the ≥1 external feedback cycle required before claiming
-> Plugin SDK `/1` **frozen** in **0.28.0**. Echo CI alone is insufficient per
+> Plugin SDK `/1` **frozen** in **0.29.0**. Echo CI alone is insufficient per
 > [Exit gate 0.22](EXIT_GATE_0_22.md).
 
 ## Feedback cycle: `etlantic-plugin-echo`

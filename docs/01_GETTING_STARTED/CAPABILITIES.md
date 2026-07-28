@@ -1,10 +1,10 @@
 # Current Capabilities and Limitations
 
-## What you can do in 0.28
+## What you can do in 0.29
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
 PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.28.0** is a **Beta**
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.29.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** follow the
@@ -13,7 +13,7 @@ start from repository `examples/` unless you have cloned the repo.
 
 ## Limits (read before production)
 
-| Topic | 0.28 |
+| Topic | 0.29 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
@@ -43,7 +43,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
     below). Repository checkout demos such as `memory_customers.py` and
     `file_storage.py` require a clone and are optional after first success.
 
-## Available in 0.28
+## Available in 0.29
 
 ### Core authoring and validation
 
@@ -119,30 +119,30 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 |---|---|
 | Structured Streaming foundation | **Experimental** |
 
-## Not included in 0.28
+## Not included in 0.29
 
 Residual gaps for **unrestricted** production (not the Beta pilot envelope):
 
 | Capability | Status |
 |---|---|
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| `etlantic-datafusion` experimental engine | **Experimental in 0.28.0** (Gate B; not graduated) |
+| `etlantic-datafusion` experimental engine | **Experimental in 0.29.0** (Gate B; not graduated) |
 | `MERGE` / upsert in the reference SQL plugin | Not implemented (`sql_merge=False`; fail closed) |
 | Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
 | Event sensors / Dagster compilers | Future |
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
-| Production FastAPI control plane | Continues in 1.1 (0.28 ships only the thin reference adapter) |
-| Medallantic transform execution | IR/planning adapter only — no SparkForge callable execution yet |
+| Production FastAPI control plane | Continues in 1.1 (0.29 ships only the thin reference adapter) |
+| Medallantic transform execution | Native authoring ships in 0.29; callable/rule execution is 0.30+ |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 
-**Shipped in 0.28** (not residual): quadruple-minor burn-in proof and Plugin SDK
+**Shipped in 0.28–0.29** (not residual): quadruple-minor burn-in proof and Plugin SDK
 `/1` freeze for core families. See
-[What's New in 0.28](WHATS_NEW_0_28.md) and
-[Exit gate 0.28](../11_DEVELOPMENT/EXIT_GATE_0_28.md).
+[What's New in 0.29](WHATS_NEW_0_29.md) and
+[Exit gate 0.29](../11_DEVELOPMENT/EXIT_GATE_0_29.md).
 
 ## CI starter
 
@@ -178,7 +178,7 @@ Starter profile (trim allowlist to one engine for first success):
   "allow_trusted_sql": false,
   "plugin_allowlist": {
     "local": null,
-    "etlantic-polars": "==0.28.0"
+    "etlantic-polars": "==0.29.0"
   },
   "assets": {},
   "secrets": {},
@@ -202,16 +202,16 @@ See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
 [Evaluator brief](EVALUATOR.md).
 
 ```bash
-pip install 'etlantic==0.28.0'                 # core only — no engines
-pip install 'etlantic-polars==0.28.0'          # Polars reference plugin
-pip install 'etlantic-pandas==0.28.0'          # Pandas compatibility plugin
-pip install 'etlantic-sql==0.28.0'             # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.28.0'         # PySpark reference plugin
-pip install 'etlantic-airflow==0.28.0'         # Airflow DAG compiler
-pip install 'etlantic-prefect==0.28.0'         # Prefect direct-execution scheduler
-pip install 'etlantic-keyring==0.28.0'         # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.28.0'        # SQLModel contract bridge
-pip install 'medallantic==0.28.0'      # SparkForge → ETLantic adapter
+pip install 'etlantic==0.29.0'                 # core only — no engines
+pip install 'etlantic-polars==0.29.0'          # Polars reference plugin
+pip install 'etlantic-pandas==0.29.0'          # Pandas compatibility plugin
+pip install 'etlantic-sql==0.29.0'             # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.29.0'         # PySpark reference plugin
+pip install 'etlantic-airflow==0.29.0'         # Airflow DAG compiler
+pip install 'etlantic-prefect==0.29.0'         # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.29.0'         # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.29.0'        # SQLModel contract bridge
+pip install 'medallantic==0.29.0'              # medallion facade (native + IR migrate)
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.

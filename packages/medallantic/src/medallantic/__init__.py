@@ -11,6 +11,8 @@ from medallantic.adapt import (
     adapt_validation_policy,
     enrich_plan,
 )
+from medallantic.authoring import Bronze, Gold, MedallionPipeline, Silver, from_document
+from medallantic.builder import MedallionBuilder
 from medallantic.compat import (
     COMPATIBILITY_MATRIX,
     assert_delta_capabilities,
@@ -18,11 +20,28 @@ from medallantic.compat import (
     write_mode_from_sparkforge,
     write_mode_metadata,
 )
+from medallantic.diagnostics import (
+    MDL100_EMPTY,
+    MDL101_DUPLICATE_NAME,
+    MDL102_CYCLE,
+    MDL103_UNKNOWN_SOURCE,
+    MDL104_MISSING_SOURCE,
+    MDL105_BAD_WRITE_MODE,
+    MDL106_UNKNOWN_KIND,
+    MDL110_RULES_UNENFORCED,
+    MDL111_TRANSFORM_PASSTHROUGH,
+)
 from medallantic.ir import (
     LayerKind,
     SparkForgePipelineSpec,
     SparkForgeStepSpec,
     StepKind,
+)
+from medallantic.lower import (
+    LoweringError,
+    LoweringResult,
+    MedallionRow,
+    lower_document,
 )
 from medallantic.reports import adapt_run_result, report_to_sparkforge_explain
 from medallantic.runtime_map import (
@@ -31,15 +50,35 @@ from medallantic.runtime_map import (
     intent_from_sparkforge,
     selection_from_sparkforge,
 )
+from medallantic.schema import MedallionDocument, MedallionStep
 
-__version__ = "0.28.0"
+__version__ = "0.29.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",
+    "MDL100_EMPTY",
+    "MDL101_DUPLICATE_NAME",
+    "MDL102_CYCLE",
+    "MDL103_UNKNOWN_SOURCE",
+    "MDL104_MISSING_SOURCE",
+    "MDL105_BAD_WRITE_MODE",
+    "MDL106_UNKNOWN_KIND",
+    "MDL110_RULES_UNENFORCED",
+    "MDL111_TRANSFORM_PASSTHROUGH",
     "AdaptationResult",
     "AdaptedRow",
     "AdapterError",
+    "Bronze",
+    "Gold",
     "LayerKind",
+    "LoweringError",
+    "LoweringResult",
+    "MedallionBuilder",
+    "MedallionDocument",
+    "MedallionPipeline",
+    "MedallionRow",
+    "MedallionStep",
+    "Silver",
     "SparkForgePipelineSpec",
     "SparkForgeStepSpec",
     "StepKind",
@@ -52,7 +91,9 @@ __all__ = [
     "bind_debug_session",
     "debug_request_from_sparkforge",
     "enrich_plan",
+    "from_document",
     "intent_from_sparkforge",
+    "lower_document",
     "report_to_sparkforge_explain",
     "retry_policy_from_sparkforge",
     "selection_from_sparkforge",

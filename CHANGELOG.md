@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-07-28
+
+### Added
+- Medallantic M1 native authoring: `MedallionPipeline`, `MedallionBuilder`, `Bronze` / `Silver` / `Gold`
+- Declarative medallion documents and stable `MDL1xx` construction/graph diagnostics
+- `medallantic.migrate.sparkforge` migration namespace (shared lowering with native path)
+- Facade conformance kit: `etlantic.testing.run_facade_conformance_suite`
+- Definition extension-bag validation on codec write; namespaced facade extensions copied onto plans
+- `etlantic.extensions.facade_provenance` helper
+- What's New / Migration / Exit Gate 0.29 documentation
+
+### Changed
+- Official package versions align at 0.29.0; plugins require `etlantic>=0.29.0,<0.30`
+- Medallantic IR adapter reuses shared `lower_document` path
+- [Facade packages](docs/11_DEVELOPMENT/FACADE_PACKAGES.md) documents the shipped conformance kit
+
 ## [0.28.0] - 2026-07-28
 
 ### Added
@@ -1047,6 +1063,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.29.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.29.0
 [0.28.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.28.0
 [0.27.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.27.0
 [0.26.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.26.0

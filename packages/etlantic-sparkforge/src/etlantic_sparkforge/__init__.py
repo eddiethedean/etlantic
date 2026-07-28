@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import warnings
 
+from medallantic import *  # noqa: F403
+from medallantic import __all__ as __all__
+
 warnings.warn(
     "etlantic-sparkforge is deprecated; install and import medallantic instead. "
     "See packages/medallantic/docs/sparkforge-migration.md.",
@@ -11,7 +14,4 @@ warnings.warn(
     stacklevel=2,
 )
 
-from medallantic import *  # noqa: F403
-from medallantic import __all__ as __all__
-
-__version__ = "0.28.0"
+__version__ = "0.29.0"

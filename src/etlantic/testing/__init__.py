@@ -11,6 +11,10 @@ from etlantic.testing.dataframe import (
     assert_roundtrip_records,
     run_conformance_suite,
 )
+from etlantic.testing.facade import (
+    assert_facade_public_imports,
+    run_facade_conformance_suite,
+)
 from etlantic.testing.faults import (
     FaultBoundary,
     FaultSpec,
@@ -59,6 +63,7 @@ __all__ = [
     "FaultTrigger",
     "assert_capability_claims_consistent",
     "assert_capability_matches_behavior",
+    "assert_facade_public_imports",
     "assert_missing_secret_fails",
     "assert_orchestrator_plugin_info",
     "assert_plugin_info",
@@ -76,6 +81,7 @@ __all__ = [
     "register_faults",
     "reset_fault_counts",
     "run_conformance_suite",
+    "run_facade_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_portable_transform_conformance_suite",
     "run_scheduler_conformance_suite",

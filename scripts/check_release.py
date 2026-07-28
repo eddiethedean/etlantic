@@ -282,9 +282,7 @@ def main() -> int:
     )
     if freeze.returncode != 0:
         detail = (freeze.stdout or freeze.stderr or "").strip()
-        errors.append(
-            "protocol freeze gate failed" + (f": {detail}" if detail else "")
-        )
+        errors.append("protocol freeze gate failed" + (f": {detail}" if detail else ""))
     else:
         print((freeze.stdout or "").strip() or "Protocol freeze gate passed.")
 

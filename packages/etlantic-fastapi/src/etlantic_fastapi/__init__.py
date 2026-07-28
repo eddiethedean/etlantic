@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from etlantic.service import AuthoringService, PolicyContext
 from fastapi import FastAPI, HTTPException
 
-__version__ = "0.28.0"
+__version__ = "0.29.0"
 
 
 class DefinitionDocument(BaseModel):
@@ -30,7 +30,7 @@ def create_reference_app(
     *,
     service: AuthoringService | None = None,
     title: str = "ETLantic Authoring Reference",
-    version: str = "0.28.0",
+    version: str = "0.29.0",
 ) -> FastAPI:
     """Create a FastAPI app exposing the public authoring/service facade."""
     svc = service or AuthoringService(policy=PolicyContext())

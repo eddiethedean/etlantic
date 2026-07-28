@@ -219,7 +219,7 @@ nav:
       - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
       - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Current 0.28 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.29 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Support:
       - FAQ: 01_GETTING_STARTED/FAQ.md
@@ -235,6 +235,7 @@ nav:
       - Migration from other tools: 01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.29: 01_GETTING_STARTED/WHATS_NEW_0_29.md
       - What's new in 0.28: 01_GETTING_STARTED/WHATS_NEW_0_28.md
       - What's new in 0.27: 01_GETTING_STARTED/WHATS_NEW_0_27.md
       - What's new in 0.26: 01_GETTING_STARTED/WHATS_NEW_0_26.md
@@ -373,7 +374,7 @@ nav:
       - CLI: 10_REFERENCE/CLI.md
       - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.28.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.29.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -401,9 +402,11 @@ nav:
   - Maintainers:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+      - Exit gate 0.29: 11_DEVELOPMENT/EXIT_GATE_0_29.md
       - Exit gate 0.28: 11_DEVELOPMENT/EXIT_GATE_0_28.md
       - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md
       - External plugin feedback: 11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
+      - Migration 0.28 → 0.29: 11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md
       - Migration 0.27 → 0.28: 11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md
       - Migration 0.26 → 0.27: 11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md
       - Migration 0.25 → 0.26: 11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md

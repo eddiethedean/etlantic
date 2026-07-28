@@ -1297,7 +1297,9 @@ def main() -> None:
         if pkg_name in redirect_packages:
             inactive_classifier = "Development Status :: 7 - Inactive"
             if inactive_classifier not in text:
-                raise SystemExit(f"{path} redirect package should use Inactive classifier")
+                raise SystemExit(
+                    f"{path} redirect package should use Inactive classifier"
+                )
             if next_minor is not None:
                 expected_med = f"medallantic>={major_minor}.0,<{next_minor}"
                 if expected_med not in text:

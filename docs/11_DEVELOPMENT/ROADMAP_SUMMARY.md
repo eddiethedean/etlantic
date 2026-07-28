@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.28.0** ships **Compatibility Burn-In (fourth slice)**.
+ETLantic **0.29.0** ships **Compatibility Burn-In (fourth slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -109,11 +109,19 @@ discipline. See
 [What's New in 0.28](../01_GETTING_STARTED/WHATS_NEW_0_28.md) and
 [Exit gate 0.28](EXIT_GATE_0_28.md).
 
-## Next: 0.29 — native medallion authoring (M1)
+## Shipped: 0.29
 
-**0.29** (planned) introduces native `MedallionPipeline` authoring and facade
-conformance. See
-[ROADMAP § 0.29](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#029--native-medallion-authoring).
+ETLantic **0.29.0** shipped **Native Medallion Authoring (M1)**:
+`MedallionPipeline` / builder surfaces, facade conformance kit, and SparkForge
+IR under `medallantic.migrate.sparkforge`. See
+[What's New in 0.29](../01_GETTING_STARTED/WHATS_NEW_0_29.md) and
+[Exit gate 0.29](EXIT_GATE_0_29.md).
+
+## Next: 0.30 — portable quality and rules (M2)
+
+**0.30** (planned) turns common validation rules into portable,
+contract-backed semantics. See
+[ROADMAP § 0.30](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#030--portable-quality-and-rule-semantics).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 

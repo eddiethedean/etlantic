@@ -413,8 +413,88 @@ def _build_plan(
         intents["timeout"] = {"seconds": profile.timeout_seconds}
 
     from etlantic.engines import get_engine_registry
+    from etlantic.extensions import namespaced_extension_items
 
     _engine_registry = get_engine_registry()
+    plan_metadata: dict[str, Any] = {
+        "planner": "etlantic.plan.planner",
+        "planner_version": __version__,
+        "plugin_trust_records": list(context.plugin_trust_records),
+        "dataframe_protocol": "etlantic.dataframe/1",
+        "sql_protocol": "etlantic.sql/1",
+        "spark_protocol": "etlantic.spark/1",
+        "spark_streaming_stability": "experimental",
+        "sql_fusion": [
+            {
+                "region": r.identity,
+                "engine": r.engine,
+                "nodes": list(r.node_names),
+                "strategy": (
+                    "temp_relation"
+                    if _engine_registry.is_sql_engine(
+                        r.engine, context.registry.engines
+                    )
+                    else None
+                ),
+            }
+            for r in regions
+            if _engine_registry.is_sql_engine(r.engine, context.registry.engines)
+        ],
+        "spark_fusion": [
+            {
+                "region": r.identity,
+                "engine": r.engine,
+                "nodes": list(r.node_names),
+                "strategy": "lazy_dataframe",
+                "streaming": bool((r.metadata or {}).get("streaming")),
+                "logical_identities": list(r.node_names),
+            }
+            for r in regions
+            if _engine_registry.is_spark_engine(r.engine, context.registry.engines)
+        ],
+        "collection_points": [
+            {
+                "identity": b.identity,
+                "producer_node": b.producer_node,
+                "producer_port": b.producer_port,
+                "reason": b.reason,
+                "interchange": b.metadata.get("interchange"),
+            }
+            for b in boundaries
+            if b.reason
+            in {
+                "collection_point",
+                "sink_publication",
+                "cross_engine",
+                "validation_boundary",
+                "spark_checkpoint",
+                "spark_cache",
+            }
+        ],
+        "conversion_boundaries": [
+            {
+                "identity": b.identity,
+                "producer_node": b.producer_node,
+                "producer_port": b.producer_port,
+                "reason": b.reason,
+            }
+            for b in boundaries
+            if b.reason == "cross_engine"
+        ],
+        "validation_policy": {
+            "input_outcome": "fail",
+            "output_outcome": "fail",
+        },
+    }
+    if definition is not None:
+        plan_metadata.update(
+            namespaced_extension_items(
+                dict(getattr(definition, "extensions", {}) or {})
+            )
+        )
+        provenance = dict(getattr(definition, "provenance", {}) or {})
+        if provenance:
+            plan_metadata["etlantic.provenance"] = provenance
     plan = PipelinePlan(
         schema=PLAN_SCHEMA,
         plan_id="",
@@ -439,76 +519,7 @@ def _build_plan(
         intents=intents,
         profile_snapshot=profile_snapshot,
         execution_settings=execution_settings,
-        metadata={
-            "planner": "etlantic.plan.planner",
-            "planner_version": __version__,
-            "plugin_trust_records": list(context.plugin_trust_records),
-            "dataframe_protocol": "etlantic.dataframe/1",
-            "sql_protocol": "etlantic.sql/1",
-            "spark_protocol": "etlantic.spark/1",
-            "spark_streaming_stability": "experimental",
-            "sql_fusion": [
-                {
-                    "region": r.identity,
-                    "engine": r.engine,
-                    "nodes": list(r.node_names),
-                    "strategy": (
-                        "temp_relation"
-                        if _engine_registry.is_sql_engine(
-                            r.engine, context.registry.engines
-                        )
-                        else None
-                    ),
-                }
-                for r in regions
-                if _engine_registry.is_sql_engine(r.engine, context.registry.engines)
-            ],
-            "spark_fusion": [
-                {
-                    "region": r.identity,
-                    "engine": r.engine,
-                    "nodes": list(r.node_names),
-                    "strategy": "lazy_dataframe",
-                    "streaming": bool((r.metadata or {}).get("streaming")),
-                    "logical_identities": list(r.node_names),
-                }
-                for r in regions
-                if _engine_registry.is_spark_engine(r.engine, context.registry.engines)
-            ],
-            "collection_points": [
-                {
-                    "identity": b.identity,
-                    "producer_node": b.producer_node,
-                    "producer_port": b.producer_port,
-                    "reason": b.reason,
-                    "interchange": b.metadata.get("interchange"),
-                }
-                for b in boundaries
-                if b.reason
-                in {
-                    "collection_point",
-                    "sink_publication",
-                    "cross_engine",
-                    "validation_boundary",
-                    "spark_checkpoint",
-                    "spark_cache",
-                }
-            ],
-            "conversion_boundaries": [
-                {
-                    "identity": b.identity,
-                    "producer_node": b.producer_node,
-                    "producer_port": b.producer_port,
-                    "reason": b.reason,
-                }
-                for b in boundaries
-                if b.reason == "cross_engine"
-            ],
-            "validation_policy": {
-                "input_outcome": "fail",
-                "output_outcome": "fail",
-            },
-        },
+        metadata=plan_metadata,
     )
     fingerprint = plan_fingerprint(plan)
     outputs = _resolve_outputs(

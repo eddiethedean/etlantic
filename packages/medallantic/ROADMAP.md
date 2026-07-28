@@ -80,9 +80,10 @@ It currently provides:
 - Delta capability checks
 - IR fixture parity tests without SparkForge or PySpark installed
 
-The baseline does **not** yet provide a native `MedallionPipeline` builder,
-execute legacy transformation callables, or reach live Spark/SQL behavioral
-parity.
+The baseline in **0.28** started from the former `etlantic-sparkforge` IR
+adapter. **0.29 / M1** adds native `MedallionPipeline` authoring. Live
+execution of legacy transformation callables and full Spark/SQL behavioral
+parity remain later milestones.
 
 ## Joint pre-1.0 sequence
 
@@ -222,15 +223,15 @@ identifier in ETLantic wire schemas.
 
 ### M1 / ETLantic 0.29 — Native medallion authoring
 
-- [ ] Add `MedallionPipeline`, `MedallionBuilder`, `Bronze`, `Silver`, and
+- [x] Add `MedallionPipeline`, `MedallionBuilder`, `Bronze`, `Silver`, and
   `Gold` public surfaces.
-- [ ] Support fluent and declarative/serialized authoring.
-- [ ] Map every layer definition to ordinary ETLantic nodes, typed ports,
+- [x] Support fluent and declarative/serialized authoring.
+- [x] Map every layer definition to ordinary ETLantic nodes, typed ports,
   quality gates, sinks, and policies.
-- [ ] Support partial pipelines, multiple branches, prior-result references,
+- [x] Support partial pipelines, multiple branches, prior-result references,
   cross-schema bindings, descriptions, tags, and deterministic names.
-- [ ] Add stable `MDL1xx` construction and graph diagnostics.
-- [ ] Keep the current IR adapter as `medallantic.migrate.sparkforge`.
+- [x] Add stable `MDL1xx` construction and graph diagnostics.
+- [x] Keep the current IR adapter as `medallantic.migrate.sparkforge`.
 
 Exit criteria: representative SparkForge pipelines can be authored natively,
 validated, planned, serialized, and explained without SparkForge installed.

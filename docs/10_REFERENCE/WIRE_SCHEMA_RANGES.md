@@ -1,6 +1,6 @@
 # Wire schema ranges (0.28)
 
-> **Status: Available in ETLantic 0.28.0.** Documents supported wire-schema
+> **Status: Available in ETLantic 0.29.0.** Documents supported wire-schema
 > ids for quadruple-minor burn-in and **unsupported downgrade** behavior. Package
 > minors may advance while schema ids stay on `/1` (no wire-schema reset in
 > 0.28).
@@ -24,7 +24,7 @@ changes must register a documented upgrader — **no silent field drops**.
 
 ## Quadruple-minor window (0.25 ↔ 0.28)
 
-ETLantic 0.28 proves **four consecutive** minor upgrade paths without a
+ETLantic 0.29 proves **four consecutive** minor upgrade paths without a
 wire-schema reset:
 
 1. **0.24 → 0.25** — fixtures under `*/v0_24/`

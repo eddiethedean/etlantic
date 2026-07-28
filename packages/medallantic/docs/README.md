@@ -7,19 +7,43 @@ reports, and plugin integration.
 
 ## Current status
 
-Medallantic 0.28 is a migration and planning adapter. It can:
+Medallantic **0.29** (M1) adds native authoring. It can:
 
-- parse secret-free SparkForge pipeline IR
+- author bronze/silver/gold pipelines with `MedallionPipeline`,
+  `MedallionBuilder`, `Bronze`, `Silver`, and `Gold`
+- emit public `PipelineDefinition` / `etlantic.pipeline/1` documents
+- parse secret-free SparkForge pipeline IR via
+  `medallantic.migrate.sparkforge` (top-level `adapt_pipeline` remains)
 - map medallion steps onto an ordinary ETLantic graph
-- validate dependencies and reject cycles
+- validate dependencies and reject cycles (`MDL1xx` / `PMSF*` diagnostics)
 - map layer thresholds, write modes, retries, run intents, and selections
 - enrich plans with write intents
 - normalize legacy run results into `PipelineRunReport`
 - verify declared Delta requirements against plugin capabilities
+- pass `etlantic.testing.run_facade_conformance_suite`
 
 It does not yet execute SparkForge transformation callables or enforce legacy
-rule expressions. Those paths currently produce `PMSF411` warnings and use
-passthrough transformations for planning parity.
+rule expressions. Those paths currently produce `MDL110` / `MDL111` (or
+`PMSF411` on the migrate path) warnings and use passthrough transformations
+for planning parity. Portable rules are **0.30 / M2**.
+
+## Quick start (native)
+
+```python
+from medallantic import MedallionBuilder
+from etlantic.authoring import validate_pipeline_like, plan_pipeline_like
+
+lowered = (
+    MedallionBuilder("ecommerce", schema="demo")
+    .bronze("orders", asset="bronze_orders")
+    .silver("clean", source="orders", asset="silver_orders")
+    .gold("kpis", source="clean", asset="gold_kpis", write_mode="merge")
+    .lower()
+)
+defn = lowered.definition
+report = validate_pipeline_like(defn, profile=lowered.profile)
+plan = plan_pipeline_like(defn, profile=lowered.profile)
+```
 
 ## Documentation map
 
@@ -30,15 +54,13 @@ passthrough transformations for planning parity.
 - [Compatibility](compatibility.md) — supported mappings and current limits
 - [Architecture](architecture.md) — package boundaries and extension rules
 - [Development](development.md) — local tests and contribution constraints
-- [Roadmap](../ROADMAP.md) — native builder and full-parity milestones
+- [Roadmap](../ROADMAP.md) — parity milestones (M2+)
 
 ## Choose the right starting point
 
-Use the current adapter when you need to inspect or migrate an existing
+Use **native authoring** for new medallion pipelines.
+
+Use the **migrate** adapter when you need to inspect or migrate an existing
 SparkForge definition without installing SparkForge or PySpark.
 
 Use ETLantic directly when the pipeline does not need medallion vocabulary.
-
-Do not design against planned APIs such as `MedallionPipeline` yet. Planned
-examples become supported only after their milestone acceptance tests pass.
-

@@ -29,9 +29,9 @@
 - [x] What's New / Migration 0.27→0.28 / this exit gate pass docs gates
 - [x] No wire-schema reset; native medallion authoring (M1) remains **0.29**
 
-## Residual / follow-ons (0.29+)
+## Residual / follow-ons (0.30+)
 
-- Native `MedallionPipeline` authoring and facade conformance kit (**M1 / 0.29**)
+- Portable quality / rule DSL (**M2 / 0.30**)
 - Remaining demoted root aliases toward 1.0
 - `REM-DATACONTRACTMODEL`, experimental surface graduation
 

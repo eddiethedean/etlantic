@@ -1,6 +1,6 @@
 # Interchange Gate A FAQ
 
-> **Status: Available in ETLantic 0.28.0 (Gate A).** Public versioned tabular
+> **Status: Available in ETLantic 0.29.0 (Gate A).** Public versioned tabular
 > interchange for Polars ↔ Pandas boundaries.
 
 ## What shipped in Gate A?
@@ -27,7 +27,7 @@ boundaries or fingerprints that changed. See
 ## How do I try it?
 
 ```bash
-pip install 'etlantic==0.28.0' 'etlantic-polars==0.28.0' 'etlantic-pandas==0.28.0'
+pip install 'etlantic==0.29.0' 'etlantic-polars==0.29.0' 'etlantic-pandas==0.29.0'
 # from a checkout:
 uv run python examples/interchange_polars_pandas.py
 ```

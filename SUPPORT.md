@@ -1,12 +1,12 @@
 # Support
 
-ETLantic **0.28.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.29.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Community support has
 **no formal SLA** or guaranteed response time.
 
 ## What we support
 
-- Bug reports against the **current published minor** (`0.28.x`)
+- Bug reports against the **current published minor** (`0.29.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 

@@ -1,6 +1,6 @@
 # Async Pipelines
 
-!!! warning "Design study—not a runnable ETLantic 0.28 API guide. Prefer CAPABILITIES and runnable Examples."
+!!! warning "Design study—not a runnable ETLantic 0.29 API guide. Prefer CAPABILITIES and runnable Examples."
     This page previously contained aspirational copy-paste code (including
     deprecated `Source`/`Sink` / `DataContractModel` authoring). Those samples
     are removed so they cannot be mistaken for ETLantic 0.23 APIs.

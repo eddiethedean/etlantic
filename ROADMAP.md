@@ -1,10 +1,9 @@
 # Roadmap
 
-**Current release:** ETLantic **0.28.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice), **0.26** (second slice), **0.27** (third slice), and
-**0.28** (fourth slice) are shipped; **0.29–0.35** co-evolve ETLantic with
-Medallantic before continued
-joint burn-in in **0.36–0.98** and the 0.99 RC. See
+**Current release:** ETLantic **0.29.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.28** (fourth slice) and **0.29** (native
+medallion authoring / Medallantic M1) are shipped; **0.30–0.35** continue
+Medallantic parity before joint burn-in in **0.36–0.98** and the 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2847,12 +2846,14 @@ control-plane / GUI milestone.
 
 0.28.0 ships the quadruple-minor upgrade proof, Plugin SDK `/1` freeze closure
 (or dated re-scope), third-wave deprecation execution, Medallantic M0 closeout,
-and facade-package release discipline. Native medallion authoring remains
+and facade-package release discipline. Native medallion authoring shipped in
 **0.29**.
 
 Tracking: [EXIT_GATE_0_28.md](docs/11_DEVELOPMENT/EXIT_GATE_0_28.md).
 
 ## 0.29 — Native Medallion Authoring
+
+> **Status: Shipped in ETLantic 0.29.0.**
 
 **Medallantic phase:** M1 — Native medallion authoring.
 
@@ -2887,6 +2888,8 @@ Representative SparkForge pipelines can be authored natively in Medallantic,
 round-trip through ETLantic's public definition schema, and produce
 deterministic, semantically equivalent graphs and plans without SparkForge or
 an execution backend installed.
+
+Tracking: [EXIT_GATE_0_29.md](docs/11_DEVELOPMENT/EXIT_GATE_0_29.md).
 
 ## 0.30 — Portable Quality and Rule Semantics
 

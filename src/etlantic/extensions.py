@@ -62,6 +62,32 @@ def _is_namespaced(key: object) -> bool:
     return any(text.startswith(prefix) for prefix in EXTENSION_NAMESPACE_PREFIXES)
 
 
+def facade_provenance(
+    *,
+    identity: str,
+    version: str | None = None,
+) -> dict[str, Any]:
+    """Return standard provenance for a domain facade package.
+
+    Facades stamp ``kind="facade"`` plus ``identity`` (package name) so
+    ``PipelineDefinition.provenance`` attributes definitions without putting
+    domain vocabulary into core wire schemas.
+    """
+    payload: dict[str, Any] = {"kind": "facade", "identity": str(identity)}
+    if version is not None:
+        payload["version"] = str(version)
+    return payload
+
+
+def namespaced_extension_items(
+    mapping: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Return only keys that use reserved extension namespaces or core keys."""
+    if not mapping:
+        return {}
+    return {str(k): v for k, v in mapping.items() if _is_namespaced(k)}
+
+
 def validate_extension_metadata(
     metadata: dict[str, Any],
     *,

@@ -1,7 +1,7 @@
 [project]
 name = "medallantic"
-version = "0.28.0"
-description = "SparkForge IR → ETLantic migration adapter (planning/validate; not a full medallion runtime)."
+version = "0.29.0"
+description = "Engine-agnostic medallion facade on ETLantic (native authoring + SparkForge IR migrate)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -17,10 +17,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.28.0,<0.29",
+    "etlantic>=0.29.0,<0.30",
 ]
 
-# IR-only SparkForge migration adapter. Native medallion authoring is 0.29+.
+# Native MedallionPipeline authoring (M1) plus SparkForge IR migrate adapter.
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"

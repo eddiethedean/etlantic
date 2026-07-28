@@ -1,6 +1,6 @@
 # Portable vs Native Implementations
 
-> **Status: Available in ETLantic 0.28.0.**
+> **Status: Available in ETLantic 0.29.0.**
 
 ## Decision guide
 

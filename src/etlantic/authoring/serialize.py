@@ -13,8 +13,36 @@ from etlantic.authoring.upgrade import (
     UnsupportedPipelineSchemaError,
     upgrade_pipeline_dict,
 )
+from etlantic.extensions import validate_extension_metadata
 from etlantic.interchange.security import DEFAULT_MAX_BYTES, read_text_bounded
 from etlantic.plan.freeze import mutable_copy
+
+
+def _validate_definition_extension_bags(
+    defn: PipelineDefinition,
+    *,
+    strict: bool = False,
+) -> None:
+    """Validate definition / node extension bags for size, depth, and namespaces."""
+    validate_extension_metadata(
+        mutable_copy(defn.extensions), path="extensions", strict=strict
+    )
+    validate_extension_metadata(
+        mutable_copy(defn.metadata), path="metadata", strict=strict
+    )
+    for node in defn.nodes:
+        validate_extension_metadata(
+            mutable_copy(node.metadata),
+            path=f"nodes.{node.name}.metadata",
+            strict=strict,
+        )
+    for contract in defn.contracts:
+        validate_extension_metadata(
+            mutable_copy(contract.metadata),
+            path=f"contracts.{contract.identity}.metadata",
+            strict=strict,
+        )
+
 
 _FORBIDDEN_KEYS = frozenset(
     {
@@ -184,6 +212,7 @@ def pipeline_to_dict(
     Returns:
         A JSON-friendly mapping suitable for ``pipeline_from_dict``.
     """
+    _validate_definition_extension_bags(defn, strict=False)
     data = defn.to_dict()
     if with_fingerprint:
         data["fingerprint"] = pipeline_fingerprint(defn)
@@ -265,6 +294,7 @@ def pipeline_from_dict(
     _reject_forbidden(data)
     upgraded = upgrade_pipeline_dict(mutable_copy(data))
     defn = PipelineDefinition.from_dict(upgraded)
+    _validate_definition_extension_bags(defn, strict=False)
     if verify:
         if defn.schema != PIPELINE_SCHEMA:
             raise UnsupportedPipelineSchemaError(

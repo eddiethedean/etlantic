@@ -1,6 +1,6 @@
-# Configuration in 0.28.0
+# Configuration in 0.29.0
 
-ETLantic 0.28.0 configures execution with a `Profile` object, a JSON profile
+ETLantic 0.29.0 configures execution with a `Profile` object, a JSON profile
 document, and an optional project `etlantic.toml`. Prefer **`assets`** for
 logical-to-physical maps; legacy `bindings` fail closed (`PMCFG111`) unless
 `--accept-legacy-bindings` / `accept_legacy_bindings=True`.
@@ -15,7 +15,7 @@ project = "my-pipeline"
 default_profile = "development"
 
 [metadata]
-etlantic.version = "0.28.0"
+etlantic.version = "0.29.0"
 ```
 
 Optional `[profiles]` entries may reference built-in names, `profiles/*.json`
@@ -114,7 +114,7 @@ from `DATABASE_PASSWORD_TOKEN`. Applications may instantiate
 `EnvSecretProvider(prefix="ETLANTIC_SECRET_")` themselves and register it on a
 runtime, but `ETLANTIC_SECRET_*` is not an ambient core convention.
 
-ETLantic 0.28.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
+ETLantic 0.29.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
 `ETLANTIC_PROJECT`, logging overrides, or output-format overrides. Names on
 [Environment Variables](ENVIRONMENT_VARIABLES.md) beyond this page remain
 proposed 1.0 design unless listed here as shipped.

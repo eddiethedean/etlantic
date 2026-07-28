@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.28.0.** Deep diligence packet. Start with the
+> **Status: Available in ETLantic 0.29.0.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -25,7 +25,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.28.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.29.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -64,7 +64,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.28.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.29.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -83,7 +83,7 @@ gh attestation verify path/to/etlantic-0.28.0-*.whl \
 ```
 
 SBOM digests are attached as release workflow artifacts / notes on the tagged
-Release. Prefer exact pins (`etlantic==0.28.0` and matching plugins) over
+Release. Prefer exact pins (`etlantic==0.29.0` and matching plugins) over
 floating ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
@@ -121,6 +121,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.28 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.29 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

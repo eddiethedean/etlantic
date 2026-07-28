@@ -5,10 +5,10 @@
 Medallantic follows Etlantic's pre-1.0 minor line. Pin matching minors:
 
 ```text
-medallantic 0.28.x  <->  etlantic 0.28.x
+medallantic 0.29.x  <->  etlantic 0.29.x
 ```
 
-The package metadata currently requires `etlantic>=0.28.0,<0.29`.
+The package metadata currently requires `etlantic>=0.29.0,<0.30`.
 
 ## Engine mapping
 

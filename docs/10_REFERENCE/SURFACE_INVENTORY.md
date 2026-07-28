@@ -1,17 +1,17 @@
-# Public Surface Inventory (0.28)
+# Public Surface Inventory (0.29)
 
-> **Status: Available in ETLantic 0.28.0.** Canonical public surface for the
-> **0.28 reference envelope**.
+> **Status: Available in ETLantic 0.29.0.** Canonical public surface for the
+> **0.29 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Regenerated from that file for the
-**0.28 reference envelope**.
+**0.29 reference envelope**.
 
 Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.28 reference envelope |
+| `stable` | Supported within the documented 0.29 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -106,7 +106,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.28.0`). Details:
+Pin to the same minor as core (`==0.29.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

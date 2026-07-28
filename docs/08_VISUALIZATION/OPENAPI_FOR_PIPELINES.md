@@ -1,6 +1,6 @@
 # OpenAPI for Pipelines
 
-!!! warning "Future design—not an ETLantic 0.28 API guide"
+!!! warning "Future design—not an ETLantic 0.29 API guide"
     This page describes a **derived pipeline-interface** documentation view.
     It is not the shipped authoring HTTP API. For the 0.24 service/OpenAPI
     reference, see [Application integration](APPLICATION_INTEGRATION.md) and
