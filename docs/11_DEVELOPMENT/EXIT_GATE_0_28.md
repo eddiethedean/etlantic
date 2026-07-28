@@ -44,4 +44,4 @@
 
 - [ROADMAP § 0.28](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#028--burn-in-fourth-slice-plugin-freeze-and-medallantic-m0-closeout)
 - [Exit gate 0.27](EXIT_GATE_0_27.md)
-- [Medallantic roadmap](../../packages/medallantic/ROADMAP.md)
+- [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md)

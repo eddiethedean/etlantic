@@ -126,8 +126,8 @@ with the domain-neutral ETLantic substrate it exercises:
 
 Bronze/silver/gold vocabulary remains in Medallantic. Only capabilities with
 domain-neutral meaning are promoted into ETLantic. See the
-[full ETLantic roadmap](../../ROADMAP.md) and
-[Medallantic roadmap](../../packages/medallantic/ROADMAP.md).
+[full ETLantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) and
+[Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md).
 
 ## 0.36–0.98
 
