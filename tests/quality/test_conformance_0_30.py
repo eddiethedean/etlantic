@@ -59,7 +59,7 @@ def _dataframe_context(
         PluginDescriptor(
             name=f"etlantic-{engine}",
             kind="dataframe",
-            version="0.30.0",
+            version="0.31.0",
             engine=engine,
             capabilities=caps,
         )

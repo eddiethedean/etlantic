@@ -49,7 +49,7 @@ def _context(
         PluginDescriptor(
             name="etlantic-polars",
             kind="dataframe",
-            version="0.30.0",
+            version="0.31.0",
             engine="polars",
             capabilities=caps,
         )
@@ -111,7 +111,7 @@ def _non_dataframe_quality_context(engine: str, *, kind: str) -> PlanningContext
         PluginDescriptor(
             name=f"etlantic-{engine}",
             kind=kind,
-            version="0.30.0",
+            version="0.31.0",
             engine=engine,
             capabilities=caps,
         )

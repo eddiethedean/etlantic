@@ -3,7 +3,7 @@
 > **Status:** Documents the ≥1 external feedback cycle required before claiming
 > Plugin SDK `/1` **frozen** in **0.28.0**. Echo CI alone is insufficient per
 > [Exit gate 0.22](EXIT_GATE_0_22.md). Revalidated against workspace core
-> **0.30.0** after the echo package pin refresh.
+> **0.31.0** after the echo package pin refresh.
 
 ## Feedback cycle: `etlantic-plugin-echo`
 
@@ -11,7 +11,7 @@
 |---|---|
 | Plugin | [`etlantic-plugin-echo`](https://github.com/eddiethedean/etlantic-plugin-echo) |
 | Maintainer | Out-of-monorepo reference author (not first-party engine code) |
-| Date | 2026-07-28 (freeze evidence in 0.28; revalidated on 0.30.0) |
+| Date | 2026-07-28 (freeze evidence in 0.28; revalidated on 0.31.0) |
 | Surfaces exercised | `etlantic.dataframe/1`, public `etlantic.testing` conformance suites, plugin manifest + `etlantic plugin compatibility` |
 | CI evidence | [`.github/workflows/external-plugin-echo.yml`](https://github.com/eddiethedean/etlantic/blob/main/.github/workflows/external-plugin-echo.yml) — weekly + on Plugin SDK path changes |
 | Outcome | Public conformance suite green against workspace core; compatibility JSON report accepted without protocol drift |

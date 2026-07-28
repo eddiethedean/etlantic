@@ -309,3 +309,96 @@ def assert_quality_rule_capabilities(
         "Unsupported quality rule capabilities.",
         report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
     )
+
+
+def assert_write_mode_capabilities(
+    *,
+    mode: str,
+    available: PluginCapabilities | None,
+    engine: str,
+    node_name: str | None = None,
+    partition_replace: bool = False,
+) -> None:
+    """Fail closed when a declared write mode is unsupported by the engine.
+
+    Emits ``PMPLAN430`` when engine capabilities are missing and ``PMPLAN431``
+    when a required ``write.*`` extra is absent.
+    """
+    from etlantic.reliability import WriteMode, write_capability_for_mode
+
+    try:
+        write_mode = WriteMode(mode)
+    except ValueError:
+        diagnostics = [
+            Diagnostic(
+                code="PMPLAN431",
+                severity=Severity.ERROR,
+                message=f"Unknown write mode {mode!r} for engine {engine!r}.",
+                path=("nodes", node_name or engine, "write_mode"),
+                phase="capability",
+            )
+        ]
+        raise PipelineValidationError(
+            "Unknown write mode.",
+            report=ValidationReport.from_diagnostics(
+                diagnostics, phases=("capability",)
+            ),
+        ) from None
+
+    if write_mode is WriteMode.NO_WRITE:
+        return
+
+    if available is None:
+        diagnostics = [
+            Diagnostic(
+                code="PMPLAN430",
+                severity=Severity.ERROR,
+                message=(
+                    f"Cannot negotiate write mode {write_mode.value!r} for "
+                    f"engine {engine!r}: engine capabilities are not registered."
+                ),
+                path=("capability", "write", engine),
+                phase="capability",
+            )
+        ]
+        raise PipelineValidationError(
+            "Missing engine capabilities for write mode.",
+            report=ValidationReport.from_diagnostics(
+                diagnostics, phases=("capability",)
+            ),
+        )
+
+    # Engines that do not advertise any write.* extras are treated as supporting
+    # append/overwrite only (local/memory default). Explicit merge/skip/partition
+    # require extras or sql_merge/spark_merge legacy flags.
+    required = write_capability_for_mode(
+        write_mode, partition_replace=partition_replace
+    )
+    if available.supports(required):
+        return
+    if write_mode in {WriteMode.APPEND, WriteMode.OVERWRITE}:
+        # Default portable modes remain available without explicit extras.
+        return
+    if write_mode in {WriteMode.MERGE, WriteMode.UPSERT} and (
+        available.supports("sql_merge") or available.supports("spark_merge")
+    ):
+        return
+    path: tuple[str, ...] = ("capability", "write", required)
+    if node_name:
+        path = ("nodes", node_name, "write", required)
+    diagnostics = [
+        Diagnostic(
+            code="PMPLAN431",
+            severity=Severity.ERROR,
+            message=(
+                f"Required write capability {required!r} unsupported by "
+                f"{engine!r}; failing before target mutation."
+            ),
+            path=path,
+            phase="capability",
+        )
+    ]
+    raise PipelineValidationError(
+        "Unsupported write mode capabilities.",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )

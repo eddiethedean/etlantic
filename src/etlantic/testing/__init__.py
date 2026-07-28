@@ -27,6 +27,7 @@ from etlantic.testing.faults import (
     with_faults,
 )
 from etlantic.testing.interchange import run_tabular_interchange_conformance_smoke
+from etlantic.testing.lifecycle_conformance import run_lifecycle_conformance_suite
 from etlantic.testing.orchestrator import (
     assert_orchestrator_plugin_info,
     run_orchestrator_conformance_suite,
@@ -83,6 +84,7 @@ __all__ = [
     "reset_fault_counts",
     "run_conformance_suite",
     "run_facade_conformance_suite",
+    "run_lifecycle_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_portable_transform_conformance_suite",
     "run_quality_conformance_suite",

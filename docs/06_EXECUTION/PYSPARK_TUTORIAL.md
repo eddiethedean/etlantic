@@ -1,23 +1,23 @@
 # Run a Local PySpark Batch
 
-> **Status: Available in ETLantic 0.30.0.** Structured Streaming remains
+> **Status: Available in ETLantic 0.31.0.** Structured Streaming remains
 > experimental.
 
 
 !!! note "Repository examples"
     Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.30.0` tag) and use
+    wheel. Clone a matching checkout (prefer the `v0.31.0` tag) and use
     `uv sync` / the documented dependency group before running them.
 
 ## Prerequisites
 
 - Python 3.11+
 - A Java runtime supported by your PySpark installation
-- `etlantic-pyspark==0.30.0`
+- `etlantic-pyspark==0.31.0`
 
 ```bash
-python -m pip install 'etlantic==0.30.0' 'etlantic-pyspark==0.30.0'
-git clone --branch v0.30.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.31.0' 'etlantic-pyspark==0.31.0'
+git clone --branch v0.31.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py
 ```

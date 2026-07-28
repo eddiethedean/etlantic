@@ -273,21 +273,23 @@ Tracking: [EXIT_GATE_0_30.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_30.md).
 
 ### M3 / ETLantic 0.31 — Execution and materialization parity
 
-- [ ] Execute native callable transforms through ETLantic implementation
+- [x] Execute native callable transforms through ETLantic implementation
   references.
-- [ ] Implement initial, incremental, refresh, standard, and validation-only
+- [x] Implement initial, incremental, refresh, standard, and validation-only
   behavior.
-- [ ] Map incremental columns and watermarks to atomic ETLantic state
+- [x] Map incremental columns and watermarks to atomic ETLantic state
   transitions.
-- [ ] Implement append, replace, keyed merge, skip-if-exists, and partition
+- [x] Implement append, replace, keyed merge, skip-if-exists, and partition
   replacement with capability checks.
-- [ ] Implement layer defaults for bronze preservation, silver refresh, and
+- [x] Implement layer defaults for bronze preservation, silver refresh, and
   gold publication without hard-coding them into ETLantic core.
-- [ ] Support retries only when the planned operation is safely retryable.
-- [ ] Normalize run, step, validation, artifact, write, and state results.
+- [x] Support retries only when the planned operation is safely retryable.
+- [x] Normalize run, step, validation, artifact, write, and state results.
 
 Exit criteria: engine-neutral conformance fixtures pass for local, Polars,
 Pandas, SQL, and PySpark where each engine advertises support.
+
+Tracking: [EXIT_GATE_0_31.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_31.md).
 
 ### M4 / ETLantic 0.32 — PySpark/SparkForge parity
 

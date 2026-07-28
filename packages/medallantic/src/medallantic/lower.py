@@ -24,6 +24,10 @@ from etlantic.policy import PolicyMode, ValidationPolicy, register_validation_po
 from etlantic.profile import Profile
 from etlantic.quality.gate import make_quality_gate
 from etlantic.reliability import WriteIntent, WriteMode
+from medallantic.callables import (
+    make_callable_transformation,
+    resolve_transform_callable,
+)
 from medallantic.compat import write_mode_from_sparkforge, write_mode_metadata
 from medallantic.diagnostics import (
     MDL100_EMPTY,
@@ -38,6 +42,11 @@ from medallantic.diagnostics import (
     MDL111_TRANSFORM_PASSTHROUGH,
     VALID_LAYERS,
     mdl_diagnostic,
+)
+from medallantic.lifecycle import (
+    default_write_mode_for_layer,
+    incremental_strategy_for_step,
+    lifecycle_policy_for_layer,
 )
 from medallantic.rules import RuleDSLError, parse_rules_shorthand
 from medallantic.schema import MedallionDocument, MedallionStep
@@ -152,7 +161,7 @@ class LoweringResult:
         )
 
     def enrich_plan(self, plan: PipelinePlan) -> PipelinePlan:
-        """Attach write intents onto ``plan.intents['write_intents']``."""
+        """Attach write intents and incremental strategies onto the plan."""
         write_map: dict[str, Any] = {}
         for intent in self.write_intents:
             blob = {
@@ -168,8 +177,38 @@ class LoweringResult:
             if isinstance(step_name, str) and step_name:
                 write_map[f"{step_name}_out"] = blob
                 write_map[step_name] = blob
+        strategy_map: dict[str, Any] = {}
+        for node, layer in self.layer_by_node.items():
+            meta = {}
+            for intent in self.write_intents:
+                if intent.metadata.get("step") == node or intent.subject_id == node:
+                    meta = dict(intent.metadata)
+                    break
+            strategy = incremental_strategy_for_step(
+                subject_id=str(meta.get("subject_id") or node),
+                layer=layer,
+                incremental_column=meta.get("incremental_column")
+                if isinstance(meta.get("incremental_column"), str)
+                else None,
+                watermark_column=meta.get("watermark_column")
+                if isinstance(meta.get("watermark_column"), str)
+                else None,
+            )
+            # Also accept nested lifecycle policy incremental_field.
+            if strategy is None:
+                policy = meta.get("lifecycle_policy")
+                if isinstance(policy, dict) and policy.get("incremental_field"):
+                    strategy = incremental_strategy_for_step(
+                        subject_id=str(policy.get("subject_id") or node),
+                        layer=layer,
+                        watermark_column=str(policy["incremental_field"]),
+                    )
+            if strategy is not None:
+                strategy_map[strategy.subject_id] = strategy.to_dict()
         intents = dict(plan.intents)
         intents["write_intents"] = write_map
+        if strategy_map:
+            intents["incremental_strategies"] = strategy_map
         return replace(plan, intents=intents)
 
     def to_dict(self) -> dict[str, Any]:
@@ -352,22 +391,61 @@ def lower_document(
             if upstream is None:
                 continue
 
-            if step.transform_ref:
-                diagnostics.append(
-                    mdl_diagnostic(
-                        MDL111_TRANSFORM_PASSTHROUGH,
-                        (
-                            f"Transform {step.name!r} maps to a passthrough "
-                            "implementation; transform_ref is not executed "
-                            "(callable transforms are 0.31)."
-                        ),
-                        severity=Severity.WARNING,
-                        path=("steps", step.name),
-                        phase=diagnostic_phase,
-                    )
-                )
+            transform_cls: type[Transformation] | None = None
+            quality_gate = False
 
-            if step.rules and not step.transform_ref:
+            if step.transform_ref:
+                ref = step.transform_ref.strip()
+                looks_like_import = ("." in ref) or (":" in ref)
+                try:
+                    if looks_like_import:
+                        resolve_transform_callable(ref)
+                        transform_cls = make_callable_transformation(
+                            step.name,
+                            transform_ref=ref,
+                            row_type=MedallionRow,
+                        )
+                    else:
+                        # Symbolic SparkForge-style names stay passthrough until
+                        # callers supply an importable module path.
+                        diagnostics.append(
+                            mdl_diagnostic(
+                                MDL111_TRANSFORM_PASSTHROUGH,
+                                (
+                                    f"Transform {step.name!r} transform_ref "
+                                    f"{ref!r} is a symbolic name (not "
+                                    "module:attr); using passthrough until an "
+                                    "importable callable is provided."
+                                ),
+                                severity=Severity.WARNING,
+                                path=("steps", step.name, "transform_ref"),
+                                phase=diagnostic_phase,
+                            )
+                        )
+                        transform_cls = _make_passthrough_transformation(
+                            step.name, transform_ref=ref
+                        )
+                except Exception as exc:
+                    severity = Severity.ERROR if looks_like_import else Severity.WARNING
+                    diagnostics.append(
+                        mdl_diagnostic(
+                            MDL111_TRANSFORM_PASSTHROUGH,
+                            (
+                                f"Transform {step.name!r} transform_ref "
+                                f"{ref!r} could not be resolved: {exc}"
+                            ),
+                            severity=severity,
+                            path=("steps", step.name, "transform_ref"),
+                            phase=diagnostic_phase,
+                        )
+                    )
+                    if looks_like_import:
+                        continue
+                    transform_cls = _make_passthrough_transformation(
+                        step.name, transform_ref=ref
+                    )
+
+            if step.rules:
                 try:
                     ruleset = parse_rules_shorthand(step.rules, name=step.name)
                 except RuleDSLError as exc:
@@ -380,35 +458,44 @@ def lower_document(
                         )
                     )
                     continue
-                transform_cls = make_quality_gate(
+                gate_cls = make_quality_gate(
                     MedallionRow,
                     ruleset,
                     name=f"{_safe_ident(step.name)}Gate",
                     expression_id=step.name,
                 )
+                if transform_cls is not None:
+                    # Compose: callable transform, then quality gate.
+                    if isinstance(upstream, Extract):
+                        xform_inst = transform_cls.step(rows=upstream)
+                    else:
+                        xform_inst = transform_cls.step(rows=upstream.result)
+                    ns[f"{step.name}__xform"] = xform_inst
+                    annotations[f"{step.name}__xform"] = type(xform_inst)
+                    members[f"{step.name}__xform"] = xform_inst
+                    step_map[f"{step.name}__xform"] = f"step:{step.name}__xform"
+                    layer_by_node[f"{step.name}__xform"] = step.layer
+                    step_inst = gate_cls.step(rows=xform_inst.result)
+                else:
+                    if isinstance(upstream, Extract):
+                        step_inst = gate_cls.step(rows=upstream)
+                    else:
+                        step_inst = gate_cls.step(rows=upstream.result)
                 quality_gate = True
+            elif transform_cls is not None:
+                if isinstance(upstream, Extract):
+                    step_inst = transform_cls.step(rows=upstream)
+                else:
+                    step_inst = transform_cls.step(rows=upstream.result)
             else:
-                quality_gate = False
-                if step.rules and step.transform_ref:
-                    diagnostics.append(
-                        mdl_diagnostic(
-                            MDL111_TRANSFORM_PASSTHROUGH,
-                            (
-                                f"Rules on {step.name!r} are deferred while "
-                                "transform_ref passthrough is active (0.31)."
-                            ),
-                            severity=Severity.WARNING,
-                            path=("steps", step.name, "rules"),
-                            phase=diagnostic_phase,
-                        )
-                    )
                 transform_cls = _make_passthrough_transformation(
-                    step.name, transform_ref=step.transform_ref
+                    step.name, transform_ref=None
                 )
-            if isinstance(upstream, Extract):
-                step_inst = transform_cls.step(rows=upstream)
-            else:
-                step_inst = transform_cls.step(rows=upstream.result)
+                if isinstance(upstream, Extract):
+                    step_inst = transform_cls.step(rows=upstream)
+                else:
+                    step_inst = transform_cls.step(rows=upstream.result)
+
             ns[step.name] = step_inst
             annotations[step.name] = type(step_inst)
             members[step.name] = step_inst
@@ -428,7 +515,10 @@ def lower_document(
                 )
 
             try:
-                mode = write_mode_from_sparkforge(step.write_mode)
+                if step.write_mode:
+                    mode = write_mode_from_sparkforge(step.write_mode)
+                else:
+                    mode = default_write_mode_for_layer(step.layer)
             except ValueError as exc:
                 diagnostics.append(
                     mdl_diagnostic(
@@ -441,6 +531,22 @@ def lower_document(
                 continue
 
             mode_meta = write_mode_metadata(step.write_mode)
+            policy = lifecycle_policy_for_layer(
+                subject_id=step.asset or step.name,
+                layer=step.layer,
+                incremental_field=str(
+                    step.metadata.get("incremental_column")
+                    or step.metadata.get("watermark_column")
+                    or ""
+                )
+                or None,
+            )
+            mode_meta["lifecycle_action"] = policy.default_action.value
+            mode_meta["lifecycle_policy"] = policy.to_dict()
+            if step.metadata.get("incremental_column"):
+                mode_meta["incremental_column"] = step.metadata["incremental_column"]
+            if step.metadata.get("watermark_column"):
+                mode_meta["watermark_column"] = step.metadata["watermark_column"]
             merge_keys = step.metadata.get("merge_keys") or step.metadata.get("keys")
             keys: tuple[str, ...] = ()
             if isinstance(merge_keys, (list, tuple)):

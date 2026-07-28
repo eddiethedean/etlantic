@@ -18,6 +18,21 @@ def _as_mapping(row: Any) -> dict[str, Any]:
     raise TypeError(f"Cannot coerce row of type {type(row)!r} to mapping")
 
 
+def _is_missing(value: Any) -> bool:
+    """True for None and IEEE / pandas missing float values."""
+    if value is None:
+        return True
+    try:
+        import math
+
+        if isinstance(value, float) and math.isnan(value):
+            return True
+    except Exception:
+        pass
+    # Avoid importing pandas on the hot path; recognize common NA sentinels.
+    return type(value).__name__ in {"NAType", "NaTType"}
+
+
 def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
     """Return a failure reason string, or ``None`` when the rule passes."""
     kind = rule.kind
@@ -26,14 +41,14 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
     value = row.get(field) if field else None
 
     if kind == "not_null":
-        if value is None:
+        if _is_missing(value):
             return f"{field} is null"
         return None
 
     if kind == "compare":
         op = str(node.get("op") or "")
         expected = node.get("value")
-        if value is None:
+        if _is_missing(value):
             return f"{field} is null"
         try:
             ok = {
@@ -60,7 +75,7 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
     if kind == "range":
         min_value = node.get("min_value")
         max_value = node.get("max_value")
-        if value is None:
+        if _is_missing(value):
             return f"{field} is null"
         try:
             if min_value is not None and value < min_value:
@@ -73,7 +88,7 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
 
     if kind == "regex":
         pattern = str(node.get("pattern") or "")
-        if value is None:
+        if _is_missing(value):
             return f"{field} is null"
         if not isinstance(value, str):
             return f"{field} is not a string"
@@ -85,7 +100,7 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
         return None
 
     if kind == "length":
-        if value is None:
+        if _is_missing(value):
             return f"{field} is null"
         length = len(value) if hasattr(value, "__len__") else None
         if length is None:

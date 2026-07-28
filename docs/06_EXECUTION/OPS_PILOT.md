@@ -1,6 +1,6 @@
 # Ops Pilot Guide
 
-> **Status: Available in ETLantic 0.30.0 (Beta) for the documented
+> **Status: Available in ETLantic 0.31.0 (Beta) for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
 > product and is not unrestricted enterprise production.
 
@@ -12,9 +12,9 @@ adopter-owned.
 ## Pin matrix
 
 ```bash
-pip install 'etlantic==0.30.0'
+pip install 'etlantic==0.31.0'
 # Only the engines you need:
-pip install 'etlantic-polars==0.30.0'   # or pandas / sql / pyspark / airflow / prefect
+pip install 'etlantic-polars==0.31.0'   # or pandas / sql / pyspark / airflow / prefect
 ```
 
 Record the exact versions in your lockfile. Production profiles should pin

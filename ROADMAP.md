@@ -1,9 +1,9 @@
 # Roadmap
 
-**Current release:** ETLantic **0.30.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.29** (native medallion authoring / Medallantic
-M1) and **0.30** (portable quality / M2) are shipped; **0.31–0.35** continue
-Medallantic parity before joint burn-in in **0.36–0.98** and the 0.99 RC. See
+**Current release:** ETLantic **0.31.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.31** (execution/materialization / Medallantic
+M3) are shipped; **0.32–0.35** continue Medallantic parity before joint burn-in
+in **0.36–0.98** and the 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2895,7 +2895,7 @@ Tracking: [EXIT_GATE_0_29.md](docs/11_DEVELOPMENT/EXIT_GATE_0_29.md).
 
 **Medallantic phase:** M2 — Quality and rules parity.
 
-**Status:** Shipped in ETLantic **0.30.0**.
+**Status:** Shipped in ETLantic **0.31.0**.
 
 **Objective:** turn the common portion of legacy Spark and SQL validation rules
 into portable, contract-backed semantics while preserving explicit native
@@ -3069,6 +3069,8 @@ Tracking: [EXIT_GATE_0_30.md](docs/11_DEVELOPMENT/EXIT_GATE_0_30.md).
 ## 0.31 — Execution, State, and Materialization Semantics
 
 **Medallantic phase:** M3 — Execution and materialization parity.
+
+**Status:** Shipped in ETLantic **0.31.0**.
 
 **Objective:** exercise ETLantic's runtime with real medallion lifecycle
 semantics and promote any reusable reliability primitives exposed by that use.

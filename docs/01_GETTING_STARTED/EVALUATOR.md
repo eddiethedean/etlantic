@@ -4,12 +4,12 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.30 |
+| Topic | 0.31 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
-| LTS | Current published minor only (`0.30.x`) |
+| LTS | Current published minor only (`0.31.x`) |
 | Not included | Multi-tenant control plane; unrestricted enterprise production |
 
 ## What ETLantic is
@@ -21,7 +21,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.30.0
+## What is ready in bounded 0.31.0
 
 | Area | Ready? |
 |---|---|
@@ -64,7 +64,7 @@ manager.
   manifests, artifact/cache isolation keys, outbound default-deny,
   unsafe-serialization prohibition, versioned `SecurityEvent`, release SBOM
   digests and GitHub attestations
-- Report vulnerabilities privately; security fixes are supported on 0.30.x
+- Report vulnerabilities privately; security fixes are supported on 0.31.x
 
 ### Shipped trust controls vs residual gaps
 
@@ -88,7 +88,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.30.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.31.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilot deployments. Shipped trust controls do not make an
 arbitrary multi-tenant topology safe.
 
@@ -128,34 +128,34 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.30 |
+| Concern | Status in 0.31 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current Beta line is 0.30.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current Beta line is 0.31.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) and [Upgrade hub](UPGRADE.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.29 → 0.31](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.30.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.31.0`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.30.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.31.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) if
+8. [Migration 0.29 → 0.31](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

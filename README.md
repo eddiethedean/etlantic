@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.30.0'
+python -m pip install 'etlantic==0.31.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.30.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.31.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -149,7 +149,7 @@ guides.
 
 ## Capability boundary
 
-| Capability | 0.30 |
+| Capability | 0.31 |
 |---|---|
 | Cohesive CLI (`init`, `doctor`, durable reports) | Available |
 | Typed contracts, graph validation, deterministic planning | Available |
@@ -169,7 +169,7 @@ See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING
 guide for precise guarantees and limitations.
 
 Release notes:
-[What's New in 0.30](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_30/).
+[What's New in 0.31](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_31/).
 
 ## Learn more
 

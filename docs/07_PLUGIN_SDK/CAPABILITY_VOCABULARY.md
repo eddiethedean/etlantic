@@ -1,6 +1,6 @@
 # Capability Vocabulary
 
-> **Status: Available in ETLantic 0.30.0** via `etlantic.capabilities`.
+> **Status: Available in ETLantic 0.31.0** via `etlantic.capabilities`.
 
 Plugins declare what they support through `PluginCapabilities`. The vocabulary
 is versioned independently of package and protocol versions as
@@ -25,11 +25,28 @@ without the implied root is inconsistent and fails
 | `orch_scheduling`, `orch_retries`, `orch_timeouts`, `orch_parallel`, `orch_sensors`, `orch_artifacts_only_xcom` | `orchestration` |
 | `lazy`, `arrow_import`, `arrow_export`, `zero_copy`, `invalid_row_separation` | `dataframe` |
 
+## Portable write extras (`write.*`)
+
+Write and materialization capabilities are advertised as **extras** (in addition
+to legacy `sql_merge` / `spark_merge` flags):
+
+| Extra | Meaning |
+|---|---|
+| `write.append` | Append-only writes |
+| `write.overwrite` | Full replace |
+| `write.merge` / `write.upsert` | Keyed merge / upsert |
+| `write.skip_if_exists` | Skip when target already exists |
+| `write.partition_replace` | Partition overwrite / replace |
+
+Missing required write extras fail closed before mutation with `PMPLAN430` /
+`PMPLAN431`. Default append/overwrite remain available without explicit extras
+on local/memory engines.
+
 ## Portable quality extras (`etlantic.quality/1`)
 
 Quality rule capabilities are advertised as **extras** (not boolean
 `PluginCapabilities` fields). Engines that implement the portable core should
-advertise the matching keys (Polars/Pandas/`local` do in 0.30):
+advertise the matching keys (Polars/Pandas/`local` do in 0.31):
 
 | Extra | Rule kind |
 |---|---|

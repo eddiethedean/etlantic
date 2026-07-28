@@ -41,8 +41,25 @@ class MemoryStorage:
     ) -> dict[str, Any]:
         key = self._key(binding, location)
         records = as_records(data, contract_type)
-        self._store[key] = list(records)
-        return {"binding": binding, "location": key, "records": len(records)}
+        mode = str((context or {}).get("write_mode") or "overwrite").lower()
+        existing = self._store.get(key)
+        if mode in {"skip_if_exists", "skip"} and existing:
+            return {
+                "binding": binding,
+                "location": key,
+                "records": len(existing),
+                "skipped": True,
+            }
+        if mode == "append" and existing:
+            self._store[key] = list(existing) + list(records)
+        else:
+            self._store[key] = list(records)
+        return {
+            "binding": binding,
+            "location": key,
+            "records": len(self._store[key]),
+            "skipped": False,
+        }
 
     def seed(self, binding: str, data: Any, *, location: str | None = None) -> None:
         """Seed data for tests and callable pipelines."""

@@ -16,7 +16,38 @@ class WriteMode(StrEnum):
     OVERWRITE = "overwrite"
     MERGE = "merge"
     UPSERT = "upsert"
+    SKIP_IF_EXISTS = "skip_if_exists"
     NO_WRITE = "no_write"
+
+
+# Capability extras engines advertise for write/materialization semantics.
+WRITE_CAPABILITY_EXTRAS: frozenset[str] = frozenset(
+    {
+        "write.append",
+        "write.overwrite",
+        "write.merge",
+        "write.upsert",
+        "write.skip_if_exists",
+        "write.partition_replace",
+    }
+)
+
+
+def write_capability_for_mode(
+    mode: WriteMode, *, partition_replace: bool = False
+) -> str:
+    """Return the capability extra required for a write mode."""
+    if partition_replace:
+        return "write.partition_replace"
+    mapping = {
+        WriteMode.APPEND: "write.append",
+        WriteMode.OVERWRITE: "write.overwrite",
+        WriteMode.MERGE: "write.merge",
+        WriteMode.UPSERT: "write.upsert",
+        WriteMode.SKIP_IF_EXISTS: "write.skip_if_exists",
+        WriteMode.NO_WRITE: "write.overwrite",  # no mutation; still portable
+    }
+    return mapping[mode]
 
 
 class MaterializationMode(StrEnum):

@@ -1,6 +1,6 @@
 # Storage Today
 
-> **Status: Available in ETLantic 0.30.0.** This page describes what ships
+> **Status: Available in ETLantic 0.31.0.** This page describes what ships
 > today. Cloud warehouse and object-store storage plugins are **not** shipped.
 
 ## What you can use now

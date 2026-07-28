@@ -1,6 +1,6 @@
 # Runnable Examples
 
-These examples use APIs and dependencies shipped in ETLantic **0.30.0**.
+These examples use APIs and dependencies shipped in ETLantic **0.31.0**.
 
 **Which path am I on?**
 
@@ -11,7 +11,7 @@ These examples use APIs and dependencies shipped in ETLantic **0.30.0**.
 
 **Clone required.** The PyPI wheel does **not** include `examples/`. Commands
 below assume a **repository checkout** with `uv sync` / `uv run`, after
-installing matching `==0.30.0` optional packages as needed.
+installing matching `==0.31.0` optional packages as needed.
 
 **CI vs local:** `.github/workflows/checks.yml` runs the scripts marked
 **(CI)** below. Scripts marked **(docs / local)** are copy-paste runnable and

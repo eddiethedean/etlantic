@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-07-28
+
+### Added
+- `IncrementalStrategy` and `StateStore` (`MemoryStateStore`, `FileStateStore`) with commit-after-materialization
+- `WriteMode.SKIP_IF_EXISTS` and write capability extras (`write.*`) with `PMPLAN430` / `PMPLAN431`
+- Run-intent write-mode resolution (VALIDATE / INITIALIZE / INCREMENTAL / REFRESH / STANDARD)
+- Lifecycle policy helpers and Medallantic bronze/silver/gold facade defaults
+- Medallantic live `transform_ref` execution (`medallantic.callables`) composed with quality gates
+- `enforce_accept_rates` / `MDL120` for threshold failures
+- `etlantic.testing.run_lifecycle_conformance_suite`
+- What's New / Migration / Exit Gate 0.31 documentation
+
+### Changed
+- Official package versions align at 0.31.0; plugins require `etlantic>=0.31.0,<0.32`
+- Local memory storage honors `append` and `skip_if_exists` write modes
+- Medallantic `skip`/`ignore` write modes map to `SKIP_IF_EXISTS`
+- Orchestrator records `state_transitions` on run reports when state commits
+
+### Fixed
+- VALIDATE / no-write runs no longer advance incremental state
+
 ## [0.30.0] - 2026-07-28
 
 ### Added
@@ -1105,6 +1126,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.31.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.31.0
 [0.30.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.30.0
 [0.29.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.29.0
 [0.28.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.28.0

@@ -13,6 +13,7 @@ from etlantic.capabilities import PluginCapabilities
 from etlantic.diagnostics import Diagnostic
 from etlantic.profile import Profile, resolve_profile
 from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
+from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.secrets import SecretRef
 
 
@@ -196,7 +197,9 @@ def builtin_stub_registry() -> RegistryBundle:
         schema_inspection=True,
         cancellation=True,
         invalid_row_separation=True,
-        extras=frozenset({"python", "records"}) | PORTABLE_QUALITY_CAPABILITIES,
+        extras=frozenset({"python", "records"})
+        | PORTABLE_QUALITY_CAPABILITIES
+        | WRITE_CAPABILITY_EXTRAS,
     )
     null_caps = PluginCapabilities(
         engine="null",

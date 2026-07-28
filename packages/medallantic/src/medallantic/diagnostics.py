@@ -17,6 +17,7 @@ MDL110_RULES_INVALID = "MDL110"
 # Historical alias — M2 replaced unenforced passthrough with parse-error use.
 MDL110_RULES_UNENFORCED = MDL110_RULES_INVALID
 MDL111_TRANSFORM_PASSTHROUGH = "MDL111"
+MDL120_ACCEPT_RATE = "MDL120"
 
 VALID_LAYERS = frozenset({"bronze", "silver", "gold"})
 

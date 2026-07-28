@@ -31,11 +31,13 @@ from etlantic.reliability import (
     FreshnessExpectation,
     PartitionCompletenessExpectation,
     RetrySafetyDeclaration,
+    WriteMode,
 )
 from etlantic.reliability_runtime import (
     assert_retry_safe,
     check_freshness,
     check_partition_completeness,
+    resolve_declared_write_mode,
     resolve_freshness_observed_at,
     write_mode_for_request,
 )
@@ -45,6 +47,7 @@ from etlantic.reports.model import (
     RunDiagnostic,
     RunSummary,
     SchemaObservationResult,
+    StateTransitionResult,
     StepRunReport,
     ValidationResult,
 )
@@ -62,6 +65,7 @@ from etlantic.runtime.faults import (
     maybe_inject,
     maybe_inject_async,
 )
+from etlantic.runtime.incremental import MemoryStateStore, may_advance_state
 from etlantic.runtime.invoke import maybe_await
 from etlantic.runtime.logging import RunLogger, redact_message, redact_value
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
@@ -233,6 +237,75 @@ class LocalOrchestrator:
     _persistence: _RunPersistenceState = field(
         default_factory=_RunPersistenceState, repr=False
     )
+    state_store: Any | None = field(default=None, repr=False)
+    _state_transitions: list[StateTransitionResult] = field(
+        default_factory=list, repr=False
+    )
+
+    def __post_init__(self) -> None:
+        if self.state_store is None:
+            self.state_store = MemoryStateStore()
+        if self.pipeline_cls is not None:
+            self._index_transformations(self.pipeline_cls)
+        if self.artifacts is None:
+            self.artifacts = ArtifactStore(workspace=self.workspace)
+        elif self.workspace is not None and self.artifacts.workspace is None:
+            self.artifacts.workspace = self.workspace
+
+    def _effective_write_mode(
+        self, node: Node, binding_name: str | None = None
+    ) -> WriteMode:
+        descriptor = self._binding_descriptor(
+            node, binding_name or node.binding or node.name
+        )
+        meta = dict(descriptor.metadata) if descriptor is not None else {}
+        declared = resolve_declared_write_mode(
+            binding_metadata=meta,
+            plan_write_intents=dict(self.plan.intents.get("write_intents") or {}),
+            node_name=node.name,
+            binding_name=binding_name or node.binding,
+        )
+        return write_mode_for_request(self.request, declared=declared)
+
+    def _commit_state_after_write(
+        self,
+        *,
+        node: Node,
+        run_succeeded_so_far: bool = True,
+    ) -> None:
+        """Commit incremental state only after successful materialization."""
+        if self.state_store is None:
+            return
+        if not may_advance_state(
+            intent=self.request.intent,
+            no_write=self.request.no_write
+            or write_mode_for_request(self.request) is WriteMode.NO_WRITE,
+            succeeded=run_succeeded_so_far,
+        ):
+            return
+        strategies = self.plan.intents.get("incremental_strategies") or {}
+        if not isinstance(strategies, dict):
+            return
+        for subject_id, raw in strategies.items():
+            if not isinstance(raw, dict):
+                continue
+            # Prefer candidate from request metadata, else strategy metadata.
+            candidate = None
+            candidates = self.request.metadata.get("state_candidates") or {}
+            if isinstance(candidates, dict) and subject_id in candidates:
+                candidate = candidates[subject_id]
+            elif "candidate" in raw:
+                candidate = raw.get("candidate")
+            elif "value" in raw:
+                candidate = raw.get("value")
+            if candidate is None:
+                continue
+            transition = self.state_store.commit(
+                str(subject_id),
+                None if candidate is None else str(candidate),
+                reason=f"materialized:{node.name}",
+            )
+            self._state_transitions.append(transition)
 
     def _mark_publication(self) -> None:
         self._persistence.publication_committed = True
@@ -325,14 +398,6 @@ class LocalOrchestrator:
                 "Leave cooperative=True (default) and omit abandon_after_seconds.",
                 code="PMEXEC411",
             )
-
-    def __post_init__(self) -> None:
-        if self.pipeline_cls is not None:
-            self._index_transformations(self.pipeline_cls)
-        if self.artifacts is None:
-            self.artifacts = ArtifactStore(workspace=self.workspace)
-        elif self.workspace is not None and self.artifacts.workspace is None:
-            self.artifacts.workspace = self.workspace
 
     async def _run_ready_wave(self, ready: list[str], run_one: Any) -> None:
         """Run one ready wave via the built-in anyio group or a plugin runner."""
@@ -757,6 +822,7 @@ class LocalOrchestrator:
             validations=tuple(validations),
             diagnostics=tuple(diagnostics),
             schema_observations=tuple(schema_obs),
+            state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
                 {
@@ -822,6 +888,7 @@ class LocalOrchestrator:
             validations=tuple(validations),
             diagnostics=tuple(diagnostics),
             schema_observations=tuple(schema_obs),
+            state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
                 {
@@ -1290,6 +1357,7 @@ class LocalOrchestrator:
                         "provider": provider,
                     }
                     self._notify_publication(run_id=run_id, node=node, attempt=attempt)
+                    self._commit_state_after_write(node=node)
                     return
                 enable_delta = provider in {"delta", "pyspark"} or write_mode in {
                     "merge",
@@ -1523,6 +1591,7 @@ class LocalOrchestrator:
                 )
             )
             self._mark_publication()
+            self._commit_state_after_write(node=node)
             return
 
         if node.kind is NodeKind.STEP:
@@ -2267,11 +2336,51 @@ class LocalOrchestrator:
     async def _write_sink(self, node: Node, data: Any, *, run_id: str) -> None:
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
+        mode = self._effective_write_mode(node, binding_name)
+        if mode is not WriteMode.NO_WRITE:
+            from etlantic.planning.capabilities import assert_write_mode_capabilities
+            from etlantic.registry import builtin_stub_registry
+
+            engine = self._engine_for(node.name)
+            caps = builtin_stub_registry().engines.get(engine)
+            # Prefer runtime-discovered engines when the planning registry was
+            # copied onto request metadata.
+            runtime_engines = self.request.metadata.get("engine_capabilities")
+            if isinstance(runtime_engines, dict) and engine in runtime_engines:
+                caps = runtime_engines[engine]
+            try:
+                meta: dict[str, Any] = {}
+                descriptor_preview = self._binding_descriptor(node, binding_name)
+                if descriptor_preview is not None:
+                    meta = dict(descriptor_preview.metadata or {})
+                intent_entry = (self.plan.intents.get("write_intents") or {}).get(
+                    node.name, {}
+                )
+                if isinstance(intent_entry, dict):
+                    meta = {**meta, **dict(intent_entry.get("metadata") or {})}
+                assert_write_mode_capabilities(
+                    mode=mode.value,
+                    available=caps,
+                    engine=engine,
+                    node_name=node.name,
+                    partition_replace=bool(meta.get("partition_overwrite")),
+                )
+            except Exception as exc:
+                from etlantic.exceptions import PipelineValidationError
+
+                if isinstance(exc, PipelineValidationError):
+                    raise NodeExecutionError(
+                        redact_message(str(exc)),
+                        node_name=node.name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMPLAN431",
+                    ) from exc
+                raise
         descriptor = self._binding_descriptor(node, binding_name)
         provider_name = descriptor.provider if descriptor is not None else "memory"
         if provider_name in {"local", "python"}:
             provider_name = "memory"
-        if self.request.no_write:
+        if self.request.no_write or mode is WriteMode.NO_WRITE:
             provider_name = "null"
         storage = self.runtime.storage.get(provider_name)
         if storage is None:
@@ -2286,7 +2395,11 @@ class LocalOrchestrator:
                     code="PMEXEC431",
                 )
         location = descriptor.location if descriptor is not None else None
-        context: dict[str, Any] = {"run_id": run_id, "node": node.name}
+        context: dict[str, Any] = {
+            "run_id": run_id,
+            "node": node.name,
+            "write_mode": mode.value,
+        }
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name

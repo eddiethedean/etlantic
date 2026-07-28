@@ -11,6 +11,7 @@ SUPPORTED_WRITE_MODES = (
     WriteMode.OVERWRITE,
     WriteMode.MERGE,
     WriteMode.UPSERT,
+    WriteMode.SKIP_IF_EXISTS,
     WriteMode.NO_WRITE,
 )
 

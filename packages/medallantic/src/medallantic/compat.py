@@ -16,8 +16,10 @@ _WRITE_MODE_MAP: dict[str, WriteMode] = {
     "overwrite_partitions": WriteMode.OVERWRITE,
     "merge": WriteMode.MERGE,
     "upsert": WriteMode.UPSERT,
+    "skip": WriteMode.SKIP_IF_EXISTS,
+    "skip_if_exists": WriteMode.SKIP_IF_EXISTS,
+    "ignore": WriteMode.SKIP_IF_EXISTS,
     "no_write": WriteMode.NO_WRITE,
-    "skip": WriteMode.NO_WRITE,
     "none": WriteMode.NO_WRITE,
     "": WriteMode.OVERWRITE,
 }

@@ -368,16 +368,19 @@ def evaluate_accept_rates(
             invalid = item.records_invalid
             node = item.node_name
             status = item.status
+            item_layer = (item.metadata or {}).get("layer") if item.metadata else None
         else:
             checked = item.get("records_checked")
             invalid = item.get("records_invalid")
             node = str(item.get("node_name") or "unknown")
             status = str(item.get("status") or "")
+            item_layer = (item.get("metadata") or {}).get("layer")
         if checked is None or int(checked) <= 0:
             continue
         accepted = int(checked) - int(invalid or 0)
         rate = 100.0 * accepted / float(checked)
-        meta_key = layer_key.get((layer or "").lower())
+        resolved_layer = layer or (str(item_layer) if item_layer else None)
+        meta_key = layer_key.get((resolved_layer or "").lower())
         threshold = policy_metadata.get(meta_key) if meta_key else None
         if threshold is None:
             for key in (
@@ -397,6 +400,7 @@ def evaluate_accept_rates(
                     "status": status,
                     "accept_rate": rate,
                     "threshold": float(threshold),
+                    "layer": resolved_layer,
                     "message": (
                         f"Accept rate {rate:.2f}% below threshold "
                         f"{float(threshold):.2f}% for {node}"
@@ -404,3 +408,59 @@ def evaluate_accept_rates(
                 }
             )
     return findings
+
+
+def enforce_accept_rates(
+    report: PipelineRunReport,
+    *,
+    policy_metadata: dict[str, Any],
+    layer_by_node: dict[str, str] | None = None,
+) -> PipelineRunReport:
+    """Fail a successful report when accept-rate thresholds are violated.
+
+    Returns the original report when thresholds pass or are absent. On
+    violation, returns a replaced report with ``FAILED`` status and
+    ``MDL120`` diagnostics.
+    """
+    from dataclasses import replace
+
+    from etlantic.runtime.state import RunStatus
+
+    findings: list[dict[str, Any]] = []
+    for validation in report.validations:
+        layer = None
+        if layer_by_node and validation.node_name in layer_by_node:
+            layer = layer_by_node[validation.node_name]
+        findings.extend(
+            evaluate_accept_rates(
+                policy_metadata=policy_metadata,
+                validations=[validation],
+                layer=layer,
+            )
+        )
+    if not findings:
+        return report
+    diagnostics = list(report.diagnostics)
+    for finding in findings:
+        diagnostics.append(
+            RunDiagnostic(
+                code="MDL120",
+                severity="error",
+                message=str(finding["message"]),
+                node_name=str(finding.get("node_name") or None),
+                metadata={
+                    "accept_rate": finding.get("accept_rate"),
+                    "threshold": finding.get("threshold"),
+                    "layer": finding.get("layer"),
+                },
+            )
+        )
+    return replace(
+        report,
+        status=RunStatus.FAILED,
+        diagnostics=tuple(diagnostics),
+        metadata={
+            **dict(report.metadata),
+            "medallantic.accept_rate_findings": findings,
+        },
+    )

@@ -61,8 +61,8 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.30.0** /
-0.30.x).
+These codes are emitted by the installed ETLantic package (currently **0.31.0** /
+0.31.x).
 The message, path, metadata, and severity provide the case-specific detail.
 
 **Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
@@ -92,6 +92,8 @@ The curated tables below remain the human-oriented index.
 | `PMPLAN403` | Planning selected an allowed capability fallback |
 | `PMPLAN420` | Quality gate requires `invalid_row_separation` unsupported by the engine |
 | `PMPLAN421` | Required portable `quality.*` capability unsupported by the engine |
+| `PMPLAN430` | Write-mode negotiation missing engine capabilities |
+| `PMPLAN431` | Required `write.*` capability unsupported (fail before mutation) |
 | `PMQTY400` | Quality evaluator could not coerce a row to a mapping |
 | `PMQTY410` | Row failed one or more portable quality rules |
 

@@ -30,9 +30,10 @@ from etlantic.dataframe.protocol import (
 )
 from etlantic.interchange.tabular import InterchangeMechanism
 from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
+from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.30.0"
+__version__ = "0.31.0"
 
 __all__ = [
     "PandasDataframePlugin",
@@ -97,7 +98,9 @@ class PandasDataframePlugin:
             cancellation=False,
             thread_safe=False,
             interchange_mechanisms=frozenset(mechanisms),
-            extras=frozenset({"pandas"}) | PORTABLE_QUALITY_CAPABILITIES,
+            extras=frozenset({"pandas"})
+            | PORTABLE_QUALITY_CAPABILITIES
+            | WRITE_CAPABILITY_EXTRAS,
         )
         self._info = DataframePluginInfo(
             name="etlantic-pandas",

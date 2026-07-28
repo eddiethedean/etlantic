@@ -224,7 +224,57 @@ def invalidation_targets(
     return set(graph_nodes[idx:])
 
 
-def write_mode_for_request(request: RunRequest) -> WriteMode:
+def write_mode_for_request(
+    request: RunRequest,
+    *,
+    declared: WriteMode | None = None,
+) -> WriteMode:
+    """Resolve effective write mode from run intent and optional declared intent.
+
+    Precedence:
+    1. ``no_write`` or ``VALIDATE`` → ``NO_WRITE``
+    2. Explicit ``declared`` sink WriteMode when present
+    3. Intent defaults: INITIALIZE/REFRESH → OVERWRITE; INCREMENTAL → APPEND;
+       otherwise OVERWRITE
+    """
     if request.no_write or request.intent is RunIntent.VALIDATE:
         return WriteMode.NO_WRITE
+    if declared is not None and declared is not WriteMode.NO_WRITE:
+        return declared
+    if request.intent in {RunIntent.INITIALIZE, RunIntent.REFRESH}:
+        return WriteMode.OVERWRITE
+    if request.intent is RunIntent.INCREMENTAL:
+        return WriteMode.APPEND
     return WriteMode.OVERWRITE
+
+
+def resolve_declared_write_mode(
+    *,
+    binding_metadata: dict[str, Any] | None,
+    plan_write_intents: dict[str, Any] | None,
+    node_name: str,
+    binding_name: str | None = None,
+) -> WriteMode | None:
+    """Resolve a declared WriteMode from binding metadata or plan intents."""
+    meta = dict(binding_metadata or {})
+    raw = meta.get("write_mode") or meta.get("write_intent")
+    if raw:
+        try:
+            return WriteMode(str(raw))
+        except ValueError:
+            return None
+    intents = dict(plan_write_intents or {})
+    for key in (node_name, binding_name or "", f"{node_name}.result"):
+        if not key or key not in intents:
+            continue
+        entry = intents[key]
+        if isinstance(entry, dict):
+            mode = entry.get("mode") or entry.get("intent")
+        else:
+            mode = entry
+        if mode:
+            try:
+                return WriteMode(str(mode))
+            except ValueError:
+                return None
+    return None

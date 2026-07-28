@@ -1,6 +1,6 @@
 # Execution
 
-!!! success "Available in ETLantic 0.30.0"
+!!! success "Available in ETLantic 0.31.0"
     Portable Polars + PySpark + Pandas relational compilation (shipped since
     0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
     executes registered native implementations and, when
@@ -134,7 +134,7 @@ your project:
 9. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
 10. [Compilation](COMPILATION.md)
 
-!!! note "Future design (not in the 0.30 operator path)"
+!!! note "Future design (not in the 0.31 operator path)"
     [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
     [Plugins overview](PLUGINS.md),
     [Storage Plugins](STORAGE_PLUGINS.md), and

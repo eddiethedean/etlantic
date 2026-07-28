@@ -20,15 +20,19 @@ __all__ = [
     "CancellationPolicy",
     "DebugSession",
     "FailureStage",
+    "FileStateStore",
+    "IncrementalStrategy",
     "InvalidationMode",
     "LocalOrchestrator",
     "LocalScheduler",
     "MaterializationPolicy",
+    "MemoryStateStore",
     "RetryPolicy",
     "RunIntent",
     "RunRequest",
     "RunSelection",
     "RunStatus",
+    "StateStore",
     "StepStatus",
     "TimeoutPolicy",
     "arun_pipeline",
@@ -49,4 +53,13 @@ def __getattr__(name: str) -> Any:
         from etlantic.runtime.scheduler import LocalScheduler
 
         return LocalScheduler
+    if name in {
+        "FileStateStore",
+        "IncrementalStrategy",
+        "MemoryStateStore",
+        "StateStore",
+    }:
+        from etlantic.runtime import incremental as _incremental
+
+        return getattr(_incremental, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
