@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/quality-expression.json",
+  "title": "ETLantic QualityExpression",
+  "description": "Provisional wire document for portable quality expressions (schema const etlantic.quality/1). ContractModel remains semantic authority for constraints.",
+  "type": "object",
+  "required": ["schema", "expression_id", "ruleset"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "etlantic.quality/1" },
+    "expression_id": { "type": "string" },
+    "fingerprint": { "type": ["string", "null"] },
+    "metadata": { "type": "object", "additionalProperties": true },
+    "ruleset": { "$ref": "#/$defs/ruleset" }
+  },
+  "$defs": {
+    "ruleset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rule" }
+        }
+      },
+      "required": ["rules"]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "field"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "not_null",
+            "compare",
+            "membership",
+            "range",
+            "regex",
+            "length",
+            "uniqueness",
+            "custom_contract"
+          ]
+        },
+        "field": { "type": "string" },
+        "node": { "type": "object", "additionalProperties": true },
+        "required": { "type": "boolean" },
+        "rule_id": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

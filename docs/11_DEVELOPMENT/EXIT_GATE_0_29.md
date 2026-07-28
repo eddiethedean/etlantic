@@ -28,7 +28,8 @@
 
 ## Residual / follow-ons (0.30+)
 
-- Portable quality / rule DSL (**M2 / 0.30**)
+- Portable quality / rule DSL (**M2 / 0.30**) — see
+  [Exit gate 0.30](EXIT_GATE_0_30.md)
 - Execution, state, and materialization parity (**M3 / 0.31**)
 - Remaining demoted root aliases toward 1.0
 - Joint burn-in band resumes at **0.36+**

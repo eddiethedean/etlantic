@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.29.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.30.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -118,6 +118,8 @@
 | `PMPLAN413` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN414` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN415` | `src/etlantic/planning/capabilities.py` |
+| `PMPLAN420` | `src/etlantic/planning/capabilities.py` |
+| `PMPLAN421` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN501` | `src/etlantic/plan/planner.py` |
 | `PMPLUG401` | `src/etlantic/cli/cmds/profile.py`, `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
 | `PMPLUG402` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |

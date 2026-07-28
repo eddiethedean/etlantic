@@ -20,6 +20,8 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.29 → 0.30](MIGRATION_0_29_TO_0_30.md)
+- [Exit gate 0.30](EXIT_GATE_0_30.md) (Done — portable quality / M2)
 - [Migration 0.28 → 0.29](MIGRATION_0_28_TO_0_29.md)
 - [Exit gate 0.29](EXIT_GATE_0_29.md) (Done)
 - [Migration 0.27 → 0.28](MIGRATION_0_27_TO_0_28.md)

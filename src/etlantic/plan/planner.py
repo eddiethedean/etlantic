@@ -238,6 +238,7 @@ def _build_plan(
     from etlantic.planning.capabilities import (
         assert_capabilities_supported,
         assert_dataframe_engines_available,
+        assert_quality_rule_capabilities,
         assert_spark_capabilities,
         assert_spark_engines_available,
         assert_sql_engines_available,
@@ -251,6 +252,16 @@ def _build_plan(
     assert_spark_capabilities(context, implementations, default_engine)
     capability_decisions = _capability_records(context, default_engine)
     assert_capabilities_supported(capability_decisions, context, default_engine)
+    quality_plan = _analyze_quality_gates(
+        graph, context, implementations, default_engine
+    )
+    for item in quality_plan["gates"]:
+        assert_quality_rule_capabilities(
+            required_capabilities=frozenset(item["required_capabilities"]),
+            available=context.registry.engines.get(item["engine"]),
+            engine=item["engine"],
+            node_name=item["node"],
+        )
 
     # Bindings resolve early so source/sink engines follow providers, not only neighbors.
     bindings = _resolve_bindings(graph, context)
@@ -334,6 +345,7 @@ def _build_plan(
             context.registry.engines,
         )
     )
+    boundaries.extend(_quality_validation_boundaries(graph, quality_plan))
 
     # 8. Output resolutions
     provisional_fp = "provisional"
@@ -484,7 +496,9 @@ def _build_plan(
         "validation_policy": {
             "input_outcome": "fail",
             "output_outcome": "fail",
+            **dict(quality_plan.get("validation_policy") or {}),
         },
+        "etlantic.quality": quality_plan,
     }
     if definition is not None:
         plan_metadata.update(
@@ -1075,6 +1089,84 @@ def _capability_records(context: PlanningContext, engine: str) -> list[dict[str,
             allow_fallback=context.allow_capability_fallback,
         )
     ]
+
+
+def _analyze_quality_gates(
+    graph: LogicalGraph,
+    context: PlanningContext,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+) -> dict[str, Any]:
+    """Collect quality expressions from nodes and build plan metadata."""
+    from etlantic.quality.analyze import analyze_quality
+    from etlantic.quality.gate import QUALITY_METADATA_KEY
+    from etlantic.quality.serialize import quality_from_dict
+
+    gates: list[dict[str, Any]] = []
+    total_cost = 0
+    fallback_evidence: list[str] = []
+    for node in graph.nodes:
+        raw = dict(node.metadata or {}).get(QUALITY_METADATA_KEY)
+        if not isinstance(raw, dict):
+            continue
+        expr = quality_from_dict(raw, verify=False, fingerprint=True)
+        analysis = analyze_quality(expr)
+        engine = _node_engine(node.name, implementations, default_engine)
+        total_cost += analysis.validation_cost
+        fallback_evidence.extend(analysis.fallback_evidence)
+        gates.append(
+            {
+                "node": node.name,
+                "engine": engine,
+                "expression_id": expr.expression_id,
+                "fingerprint": expr.fingerprint,
+                "required_capabilities": sorted(analysis.required_capabilities),
+                "optional_capabilities": sorted(analysis.optional_capabilities),
+                "validation_cost": analysis.validation_cost,
+                "rule_count": analysis.rule_count,
+                "required_rule_count": analysis.required_rule_count,
+                "kinds": list(analysis.kinds),
+                "fallback_evidence": list(analysis.fallback_evidence),
+                "outputs": {
+                    "accepted": "result",
+                    "rejected": "rejected",
+                    "observed": None,
+                },
+            }
+        )
+    return {
+        "gates": gates,
+        "validation_cost": total_cost,
+        "fallback_evidence": fallback_evidence,
+        "validation_policy": {
+            "quality_gate_count": len(gates),
+        },
+    }
+
+
+def _quality_validation_boundaries(
+    graph: LogicalGraph,
+    quality_plan: dict[str, Any],
+) -> list[MaterializationBoundary]:
+    """Emit validation_boundary markers for quality-gate accepted/rejected splits."""
+    boundaries: list[MaterializationBoundary] = []
+    gate_nodes = {item["node"] for item in quality_plan.get("gates") or []}
+    for node in graph.nodes:
+        if node.name not in gate_nodes:
+            continue
+        for port in node.outputs:
+            if port.role not in {"valid", "invalid"}:
+                continue
+            boundaries.append(
+                MaterializationBoundary(
+                    identity=f"validation:{node.name}:{port.name}",
+                    producer_node=node.name,
+                    producer_port=port.name,
+                    reason="validation_boundary",
+                    metadata={"role": port.role, "quality_gate": True},
+                )
+            )
+    return boundaries
 
 
 def _collection_boundaries(

@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.29.0** ships **Compatibility Burn-In (fourth slice)**.
+ETLantic **0.30.0** ships **Portable Quality and Rule Semantics (M2)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -117,11 +117,21 @@ IR under `medallantic.migrate.sparkforge`. See
 [What's New in 0.29](../01_GETTING_STARTED/WHATS_NEW_0_29.md) and
 [Exit gate 0.29](EXIT_GATE_0_29.md).
 
-## Next: 0.30 — portable quality and rules (M2)
+## Shipped: 0.30
 
-**0.30** (planned) turns common validation rules into portable,
-contract-backed semantics. See
-[ROADMAP § 0.30](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#030--portable-quality-and-rule-semantics).
+ETLantic **0.30.0** shipped **Portable Quality and Rule Semantics (M2)**:
+provisional `etlantic.quality/1`, quality-gate planning with plan-time
+fail-closed capability negotiation, Polars/Pandas live portable core,
+Medallantic rule DSL enforcement, and SQL/PySpark advertise+fail-closed
+classification. See
+[What's New in 0.30](../01_GETTING_STARTED/WHATS_NEW_0_30.md) and
+[Exit gate 0.30](EXIT_GATE_0_30.md).
+
+## Next: 0.31 — execution and materialization (M3)
+
+**0.31** (planned) covers callable transforms, run intents, watermarks, write
+modes, and normalized lifecycle results. See
+[ROADMAP § 0.31](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#031--execution-state-and-materialization-semantics).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 
@@ -131,7 +141,7 @@ with the domain-neutral ETLantic substrate it exercises:
 | Release | Medallantic outcome | ETLantic evolution |
 |---|---|---|
 | 0.29 | Native medallion authoring | Public facade lowering and conformance |
-| 0.30 | Quality/rules parity | Portable quality-expression and gate semantics |
+| 0.30 | Quality/rules parity | Provisional `etlantic.quality/1` + gate planning |
 | 0.31 | Execution/materialization parity | State, write, retry, and transaction semantics |
 | 0.32 | PySpark/SparkForge parity | Spark, Delta, storage, and debug provenance |
 | 0.33 | SQL builder parity | Relational reuse, dialect, and transaction conformance |

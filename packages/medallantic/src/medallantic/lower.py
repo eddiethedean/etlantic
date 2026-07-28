@@ -22,6 +22,7 @@ from etlantic.plan.freeze import immutable_mapping
 from etlantic.plan.model import PipelinePlan
 from etlantic.policy import PolicyMode, ValidationPolicy, register_validation_policy
 from etlantic.profile import Profile
+from etlantic.quality.gate import make_quality_gate
 from etlantic.reliability import WriteIntent, WriteMode
 from medallantic.compat import write_mode_from_sparkforge, write_mode_metadata
 from medallantic.diagnostics import (
@@ -38,6 +39,7 @@ from medallantic.diagnostics import (
     VALID_LAYERS,
     mdl_diagnostic,
 )
+from medallantic.rules import RuleDSLError, parse_rules_shorthand
 from medallantic.schema import MedallionDocument, MedallionStep
 
 
@@ -294,24 +296,42 @@ def lower_document(
         if step.kind == "bronze_rules":
             binding = step.asset or step.name
             source = Extract[MedallionRow](asset=binding)
-            ns[step.name] = source
-            annotations[step.name] = Extract[MedallionRow]
-            members[step.name] = source
-            step_map[step.name] = f"source:{step.name}"
-            layer_by_node[step.name] = step.layer
             if step.rules:
-                diagnostics.append(
-                    mdl_diagnostic(
-                        MDL110_RULES_UNENFORCED,
-                        (
-                            f"Bronze rules on {step.name!r} are not enforced in M1 "
-                            "(passthrough planning only; portable rules are 0.30)."
-                        ),
-                        severity=Severity.WARNING,
-                        path=("steps", step.name, "rules"),
-                        phase=diagnostic_phase,
+                try:
+                    ruleset = parse_rules_shorthand(step.rules, name=step.name)
+                except RuleDSLError as exc:
+                    diagnostics.append(
+                        mdl_diagnostic(
+                            MDL110_RULES_UNENFORCED,
+                            f"Invalid bronze rules on {step.name!r}: {exc}",
+                            path=("steps", step.name, "rules"),
+                            phase=diagnostic_phase,
+                        )
                     )
+                    continue
+                ingest_name = f"{step.name}__ingest"
+                ns[ingest_name] = source
+                annotations[ingest_name] = Extract[MedallionRow]
+                members[ingest_name] = source
+                gate_cls = make_quality_gate(
+                    MedallionRow,
+                    ruleset,
+                    name=f"{_safe_ident(step.name)}Gate",
+                    expression_id=step.name,
                 )
+                gate = gate_cls.step(rows=source)
+                ns[step.name] = gate
+                annotations[step.name] = type(gate)
+                members[step.name] = gate
+                step_map[step.name] = f"gate:{step.name}"
+                layer_by_node[step.name] = step.layer
+                layer_by_node[ingest_name] = step.layer
+            else:
+                ns[step.name] = source
+                annotations[step.name] = Extract[MedallionRow]
+                members[step.name] = source
+                step_map[step.name] = f"source:{step.name}"
+                layer_by_node[step.name] = step.layer
             continue
 
         if step.kind in {"silver_transform", "gold_transform"}:
@@ -321,13 +341,14 @@ def lower_document(
             if upstream is None:
                 continue
 
-            if step.transform_ref or step.rules:
+            if step.transform_ref:
                 diagnostics.append(
                     mdl_diagnostic(
                         MDL111_TRANSFORM_PASSTHROUGH,
                         (
                             f"Transform {step.name!r} maps to a passthrough "
-                            "implementation; transform_ref/rules are not executed."
+                            "implementation; transform_ref is not executed "
+                            "(callable transforms are 0.31)."
                         ),
                         severity=Severity.WARNING,
                         path=("steps", step.name),
@@ -335,9 +356,42 @@ def lower_document(
                     )
                 )
 
-            transform_cls = _make_passthrough_transformation(
-                step.name, transform_ref=step.transform_ref
-            )
+            if step.rules and not step.transform_ref:
+                try:
+                    ruleset = parse_rules_shorthand(step.rules, name=step.name)
+                except RuleDSLError as exc:
+                    diagnostics.append(
+                        mdl_diagnostic(
+                            MDL110_RULES_UNENFORCED,
+                            f"Invalid rules on {step.name!r}: {exc}",
+                            path=("steps", step.name, "rules"),
+                            phase=diagnostic_phase,
+                        )
+                    )
+                    continue
+                transform_cls = make_quality_gate(
+                    MedallionRow,
+                    ruleset,
+                    name=f"{_safe_ident(step.name)}Gate",
+                    expression_id=step.name,
+                )
+            else:
+                if step.rules and step.transform_ref:
+                    diagnostics.append(
+                        mdl_diagnostic(
+                            MDL111_TRANSFORM_PASSTHROUGH,
+                            (
+                                f"Rules on {step.name!r} are deferred while "
+                                "transform_ref passthrough is active (0.31)."
+                            ),
+                            severity=Severity.WARNING,
+                            path=("steps", step.name, "rules"),
+                            phase=diagnostic_phase,
+                        )
+                    )
+                transform_cls = _make_passthrough_transformation(
+                    step.name, transform_ref=step.transform_ref
+                )
             if isinstance(upstream, Extract):
                 step_inst = transform_cls.step(rows=upstream)
             else:

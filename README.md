@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.29.0'
+python -m pip install 'etlantic==0.30.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.29.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.30.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -109,9 +109,9 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 | Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
 | Keyring | `etlantic-keyring` | OS keyring secret provider |
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
-| Medallantic | `medallantic` | SparkForge IR → ETLantic migration adapter (native authoring + IR migrate in 0.29; prefer `medallantic` over deprecated `etlantic-sparkforge`) |
+| Medallantic | `medallantic` | SparkForge IR → ETLantic migration adapter (native authoring + quality gates in 0.30; prefer `medallantic` over deprecated `etlantic-sparkforge`) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
-| FastAPI | `etlantic-fastapi` | Thin 0.29 authoring/service **reference** adapter (not the 1.1 control plane) |
+| FastAPI | `etlantic-fastapi` | Thin 0.30 authoring/service **reference** adapter (not the 1.1 control plane) |
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.
@@ -149,12 +149,13 @@ guides.
 
 ## Capability boundary
 
-| Capability | 0.29 |
+| Capability | 0.30 |
 |---|---|
 | Cohesive CLI (`init`, `doctor`, durable reports) | Available |
 | Typed contracts, graph validation, deterministic planning | Available |
 | Local, Polars, Pandas, SQL, and PySpark execution paths | Available |
 | Portable compilers for Polars, Pandas, SQL, and PySpark | Available |
+| Portable quality expressions (`etlantic.quality/1`) | Available (Polars/Pandas/local; SQL/PySpark fail-closed) |
 | ODCS, DTCS, DPCS, schema drift, lineage, reports, and SARIF | Available |
 | Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
 | Versioned Polars↔Pandas tabular interchange | Available |
@@ -168,7 +169,7 @@ See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING
 guide for precise guarantees and limitations.
 
 Release notes:
-[What's New in 0.29](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_29/).
+[What's New in 0.30](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_30/).
 
 ## Learn more
 

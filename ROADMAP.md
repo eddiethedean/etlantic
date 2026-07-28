@@ -1,8 +1,8 @@
 # Roadmap
 
-**Current release:** ETLantic **0.29.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.28** (fourth slice) and **0.29** (native
-medallion authoring / Medallantic M1) are shipped; **0.30–0.35** continue
+**Current release:** ETLantic **0.30.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.29** (native medallion authoring / Medallantic
+M1) and **0.30** (portable quality / M2) are shipped; **0.31–0.35** continue
 Medallantic parity before joint burn-in in **0.36–0.98** and the 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
@@ -2895,36 +2895,176 @@ Tracking: [EXIT_GATE_0_29.md](docs/11_DEVELOPMENT/EXIT_GATE_0_29.md).
 
 **Medallantic phase:** M2 — Quality and rules parity.
 
+**Status:** Shipped in ETLantic **0.30.0**.
+
 **Objective:** turn the common portion of legacy Spark and SQL validation rules
 into portable, contract-backed semantics while preserving explicit native
-escape hatches.
+escape hatches and failing closed at plan time when a required rule is
+unsupported.
 
-### Medallantic deliverables
+This is **not** execution/materialization parity (**0.31**), native PySpark
+Column / Moltres-only expressions (**0.32 / 0.33**), or quality-trend analytics
+(**0.34**).
 
-- engine-neutral rule DSL/AST for common null, comparison, membership, range,
-  regex, length, uniqueness, and custom-contract rules
-- medallion layer quality defaults and per-step overrides
-- PySpark, SQL/Moltres, Polars, and Pandas lowering for advertised rules
-- accepted/rejected artifacts with counts and failure reasons
+### Protocol and engine decisions
 
-### ETLantic evolution
+- **Protocol home:** ETLantic ships a provisional versioned quality-expression
+  envelope (`etlantic.quality/1`). ContractModel remains the **semantic
+  authority** for field and constraint meaning; every portable rule must map
+  to ContractModel-compatible constraints or an explicit custom-contract
+  check. Joint ownership is documented; ContractModel may later absorb or
+  align the expression schema. **0.30 does not block** on ContractModel
+  shipping a full bounded-validation protocol first.
+- **Engine exit bar:** live lowering and shared conformance on **Polars and
+  Pandas** (plus the existing local ContractModel row-validation path) for
+  the portable core rule set. **SQL and PySpark** must advertise rule
+  capabilities and **fail closed at plan/analysis** when a required rule is
+  unsupported; live SQL/PySpark compilers for the portable core are in scope
+  when cheap, but incomplete live coverage is allowed when classified in
+  Medallantic docs and gated in CI. Native PySpark Column / Moltres expression
+  rules remain **0.32 / 0.33**.
 
-- promote reusable rule expressions into a versioned quality-expression
-  protocol owned jointly with ContractModel rather than by Medallantic
-- strengthen quality-gate plans for typed accepted/rejected/observed outputs,
-  rule capability requirements, validation cost, and fallback evidence
-- add engine-independent quality conformance fixtures and normalized result
-  assertions
-- extend compiler capability negotiation so unsupported rules fail during
-  analysis/planning, before data access or target mutation
-- preserve contract authority and prevent a second schema/rule system from
-  forming in ETLantic
+### Prerequisites from 0.29 (satisfied)
 
-### Joint exit gate
+- Native `MedallionPipeline` / builder / Bronze·Silver·Gold authoring shipped
+- Facade conformance kit (`etlantic.testing.facade`) green
+- Medallantic `rules=` retained as opaque bags with `MDL110` / `MDL111`
+  (unenforced passthrough; portable rules deferred to this milestone)
+- Layer accept-rate thresholds mapped into `ValidationPolicy.metadata` only
+- Typed `Output.as_invalid()` ports, `invalid_row_separation`, and
+  `ValidationResult` hooks exist without a portable rule DSL
 
-Shared fixtures produce contract-equivalent decisions, artifacts, counts, and
-diagnostics on every engine advertising the rule; native-only expressions are
-visible and capability-gated; medallion thresholds remain Medallantic policy.
+### Work packages
+
+#### WP1 — Provisional `etlantic.quality/1` (ETLantic)
+
+**In scope**
+
+- versioned quality-expression AST and JSON Schema for the portable core:
+  `not_null`, comparisons, membership, range, regex, length, uniqueness, and
+  `custom_contract`
+- deterministic serialization and identity/fingerprint rules for expressions
+- map every portable node onto ContractModel-compatible constraints or an
+  explicit custom-contract check; forbid a parallel schema/rule vocabulary
+- document joint ownership with ContractModel and the provisional status of
+  `etlantic.quality/1`
+
+**Out of scope**
+
+- waiting for ContractModel 0.3 bounded-validation protocol
+- engine-native Column / Moltres expression ASTs as portable nodes
+- medallion layer names or thresholds inside the quality schema
+
+#### WP2 — Quality-gate planning (ETLantic)
+
+**In scope**
+
+- strengthen plans for typed accepted / rejected / observed outputs (building
+  on existing port roles and `invalid_row_separation`)
+- declare rule capability requirements, validation cost, and fallback evidence
+  on the plan
+- fail unsupported **required** rules during analysis/planning, before data
+  access or target mutation, with stable diagnostics
+- preserve reserved plan hooks such as `validation_boundary` where they aid
+  collection and explain
+
+**Out of scope**
+
+- validation-only run intents and write/materialization lifecycle (**0.31**)
+- changing `etlantic.plan/1` major version or resetting the wire schema
+
+#### WP3 — Conformance fixtures and engine lowering (ETLantic + plugins)
+
+**In scope**
+
+- engine-independent quality conformance fixtures and normalized result
+  assertions (decisions, accepted/rejected counts, reasons, diagnostics)
+- live Polars and Pandas compilers for the portable core, plus the local
+  ContractModel row-validation path
+- SQL and PySpark: capability vocabulary participation and plan-time
+  fail-closed fixtures; live portable-core subset when present and classified
+- every engine that **advertises** a rule must pass the shared fixtures for
+  that rule
+
+**Out of scope**
+
+- full live parity of every portable rule on SQL and PySpark as a hard exit
+  requirement
+- native PySpark Column / Moltres-only rules as portable (**0.32 / 0.33**)
+
+#### WP4 — Medallantic rule DSL and layer policy (Medallantic)
+
+**In scope**
+
+- engine-neutral shorthand DSL → `etlantic.quality/1` AST for common rules
+- named per-layer quality defaults and per-step overrides
+- replace `MDL110` unenforced passthrough with real quality-gate lowering onto
+  public ETLantic definitions
+- compare layer accept-rate thresholds against validation outcomes where the
+  named medallion policy requires it
+- keep bronze/silver/gold vocabulary and threshold ownership in Medallantic
+
+**Out of scope**
+
+- promoting medallion types into `etlantic.pipeline/1` or plan wire metadata
+- execution of legacy transform callables (**0.31**)
+- live SparkForge `PipelineBuilder` bridge (**0.32**)
+
+#### WP5 — Docs and release gates
+
+**In scope**
+
+- What's New in 0.30, Migration 0.29→0.30, and
+  [Exit gate 0.30](docs/11_DEVELOPMENT/EXIT_GATE_0_30.md)
+- Medallantic compatibility matrix classifying portable vs native-only vs
+  deferred (SQL/PySpark live coverage called out explicitly)
+- surface inventory / wire-range notes for `etlantic.quality/1` without a
+  plan-schema reset
+
+**Out of scope**
+
+- production FastAPI control plane / GUI / LSP / AI authoring
+- quality-trend / anomaly analytics providers (**0.34**)
+
+### Non-goals
+
+- execution, state, and materialization parity (**0.31**)
+- native PySpark Column / Moltres-only expressions as portable
+  (**0.32 / 0.33**)
+- trend, quality, and anomaly analytics consumers (**0.34**)
+- production FastAPI control plane / multi-tenant API (**1.1**)
+- registry, workspaces, durable job store (**1.2**)
+- GUI, LSP, or AI authoring surfaces
+- replacing `etlantic.plan/1` or requiring a wire-schema reset
+- a second schema/rule system outside ContractModel authority
+- blocking 0.30 on ContractModel releasing a full validation protocol first
+
+### Acceptance scenarios
+
+- shared fixtures produce contract-equivalent decisions, accepted/rejected
+  artifacts, counts, reasons, and diagnostics on every engine that advertises
+  a given portable rule
+- unsupported required rules fail at plan/analysis with stable diagnostics and
+  never silently pass
+- Polars and Pandas (plus local ContractModel validation) are green for the
+  portable core rule set
+- SQL and PySpark either lower the portable core live or advertise + fail
+  closed, with coverage classified in Medallantic docs and gated in CI
+- Medallantic shorthand lowers to `etlantic.quality/1`; layer thresholds remain
+  Medallantic policy; native-only expressions are capability-gated
+- What's New / Migration 0.29→0.30 / Exit Gate 0.30 pass docs gates
+
+### Exit gate
+
+0.30.0 ships provisional `etlantic.quality/1`, quality-gate planning with
+plan-time fail-closed capability negotiation, engine-independent conformance
+fixtures with Polars/Pandas live coverage for the portable core, Medallantic
+rule DSL and layer-policy enforcement (replacing `MDL110` passthrough), and
+docs/compatibility classification for SQL/PySpark and native escape hatches.
+Medallion vocabulary stays out of core wire schemas. ContractModel remains
+semantic authority; no second rule system.
+
+Tracking: [EXIT_GATE_0_30.md](docs/11_DEVELOPMENT/EXIT_GATE_0_30.md).
 
 ## 0.31 — Execution, State, and Materialization Semantics
 

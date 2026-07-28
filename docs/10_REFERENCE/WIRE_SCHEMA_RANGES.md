@@ -1,9 +1,9 @@
-# Wire schema ranges (through 0.28; current package 0.29)
+# Wire schema ranges (through 0.30; current package 0.30)
 
-> **Status: Available in ETLantic 0.29.0.** Documents supported wire-schema
+> **Status: Available in ETLantic 0.30.0.** Documents supported wire-schema
 > ids for quadruple-minor burn-in and **unsupported downgrade** behavior. Package
 > minors may advance while schema ids stay on `/1` (no wire-schema reset in
-> 0.28).
+> 0.28–0.30).
 
 ## Supported schema ranges
 
@@ -16,9 +16,10 @@
 | `etlantic.capabilities/1` | 0.25 → 0.26 → 0.27 → 0.28 | Vocabulary major `/1`; see `vocabulary_major_compatible` |
 | `etlantic.interchange/1` | 0.25 → 0.26 → 0.27 → 0.28 | Gate A tabular descriptors |
 | `etlantic.authoring-catalog/1` | N/A (not burn-in versioned) | Stable schema id; catalog envelopes are tooling metadata, not burn-in upgrade artifacts — see [Surface inventory](SURFACE_INVENTORY.md) |
+| `etlantic.quality/1` | 0.30+ (provisional) | Portable quality expressions; no burn-in goldens required for first ship; ContractModel remains semantic authority |
 
-Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`, and
-`etlantic.reports.upgrade`. Empty `_UPGRADERS` maps mean the current `/1`
+Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`,
+`etlantic.reports.upgrade`, and `etlantic.quality.upgrade`. Empty `_UPGRADERS` maps mean the current `/1`
 document is accepted as-is (additive compatibility). Intentional incompatible
 changes must register a documented upgrader — **no silent field drops**.
 

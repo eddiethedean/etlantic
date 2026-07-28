@@ -30,10 +30,11 @@ from etlantic.dataframe.protocol import (
     ValidationDecision,
 )
 from etlantic.interchange.tabular import InterchangeMechanism
+from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
 
-__version__ = "0.29.0"
+__version__ = "0.30.0"
 
 __all__ = [
     "PolarsDataframePlugin",
@@ -80,7 +81,7 @@ class PolarsDataframePlugin:
             cancellation=False,
             thread_safe=False,
             interchange_mechanisms=frozenset(mechanisms),
-            extras=frozenset({"polars"}),
+            extras=frozenset({"polars"}) | PORTABLE_QUALITY_CAPABILITIES,
         )
         self._info = DataframePluginInfo(
             name="etlantic-polars",

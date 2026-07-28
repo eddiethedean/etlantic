@@ -1,6 +1,6 @@
 # Public Surface Inventory (0.29)
 
-> **Status: Available in ETLantic 0.29.0.** Canonical public surface for the
+> **Status: Available in ETLantic 0.30.0.** Canonical public surface for the
 > **0.29 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
@@ -11,7 +11,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.29 reference envelope |
+| `stable` | Supported within the documented 0.30 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -90,6 +90,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.authoring-catalog/1` | stable (not dual-minor burn-in — tooling metadata; see [Wire schema ranges](WIRE_SCHEMA_RANGES.md)) |
 | `etlantic.interchange/1` | stable |
 | `etlantic.capabilities/1` | stable |
+| `etlantic.quality/1` | provisional (portable quality expressions; ContractModel remains semantic authority) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 
@@ -106,7 +107,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.29.0`). Details:
+Pin to the same minor as core (`==0.30.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

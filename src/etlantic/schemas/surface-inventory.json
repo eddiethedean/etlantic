@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "classes": [
     "stable",
     "provisional",
@@ -37,7 +37,8 @@
     "viz",
     "secrets",
     "testing",
-    "service"
+    "service",
+    "quality"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -49,7 +50,8 @@
     "viz": "etlantic.viz",
     "secrets": "etlantic.secrets",
     "testing": "etlantic.testing",
-    "service": "etlantic.service"
+    "service": "etlantic.service",
+    "quality": "etlantic.quality"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",
@@ -88,7 +90,8 @@
     "etlantic.run_report/1": "stable",
     "etlantic.interchange/1": "stable",
     "etlantic.capabilities/1": "stable",
-    "etlantic.authoring-catalog/1": "stable"
+    "etlantic.authoring-catalog/1": "stable",
+    "etlantic.quality/1": "provisional"
   },
   "protocols": {
     "etlantic.dataframe/1": "stable",

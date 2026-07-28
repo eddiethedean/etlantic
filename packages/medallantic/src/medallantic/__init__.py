@@ -44,7 +44,12 @@ from medallantic.lower import (
     MedallionRow,
     lower_document,
 )
-from medallantic.reports import adapt_run_result, report_to_sparkforge_explain
+from medallantic.reports import (
+    adapt_run_result,
+    evaluate_accept_rates,
+    report_to_sparkforge_explain,
+)
+from medallantic.rules import RuleDSLError, parse_rules_shorthand
 from medallantic.runtime_map import (
     bind_debug_session,
     debug_request_from_sparkforge,
@@ -53,7 +58,7 @@ from medallantic.runtime_map import (
 )
 from medallantic.schema import MedallionDocument, MedallionStep
 
-__version__ = "0.29.0"
+__version__ = "0.30.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",
@@ -80,6 +85,7 @@ __all__ = [
     "MedallionPipeline",
     "MedallionRow",
     "MedallionStep",
+    "RuleDSLError",
     "Silver",
     "SparkForgePipelineSpec",
     "SparkForgeStepSpec",
@@ -93,9 +99,11 @@ __all__ = [
     "bind_debug_session",
     "debug_request_from_sparkforge",
     "enrich_plan",
+    "evaluate_accept_rates",
     "from_document",
     "intent_from_sparkforge",
     "lower_document",
+    "parse_rules_shorthand",
     "report_to_sparkforge_explain",
     "retry_policy_from_sparkforge",
     "selection_from_sparkforge",

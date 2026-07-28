@@ -2,14 +2,14 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.29 |
+| Topic | 0.30 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
 | Not included | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.29.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
+ETLantic 0.30.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment on this page. Experimental features remain experimental. Broader
 deployment topology, multi-tenancy, compliance attestations beyond shipped
 SBOM digests/GitHub attestations, and advanced supply-chain programs remain
@@ -33,7 +33,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.29.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.30.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -78,7 +78,7 @@ reference controls are shipped:
 
 ## Shipped / adopter-owned / residual (0.29)
 
-| Concern | 0.29 status |
+| Concern | 0.30 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

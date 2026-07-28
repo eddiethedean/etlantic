@@ -35,6 +35,7 @@ from etlantic.testing.portable_transform_conformance import (
     normalize_rows,
     run_portable_transform_conformance_suite,
 )
+from etlantic.testing.quality_conformance import run_quality_conformance_suite
 from etlantic.testing.scheduler import (
     assert_scheduler_plugin_info,
     run_scheduler_conformance_suite,
@@ -84,6 +85,7 @@ __all__ = [
     "run_facade_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_portable_transform_conformance_suite",
+    "run_quality_conformance_suite",
     "run_scheduler_conformance_suite",
     "run_secret_conformance_suite",
     "run_spark_conformance_suite",

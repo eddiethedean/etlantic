@@ -1,6 +1,6 @@
 # Quickstart
 
-> **Status: Available in ETLantic 0.29.0.** Use `python -m etlantic init` for the
+> **Status: Available in ETLantic 0.30.0.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 > Budget ~15–20 minutes if you include the required aha step below; first
 > validate → run alone is usually under 10 minutes.
@@ -19,7 +19,7 @@ block you.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.29.0'
+python -m pip install 'etlantic==0.30.0'
 python -m etlantic --version
 ```
 
@@ -29,7 +29,7 @@ python -m etlantic --version
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.29.0'
+py -3.11 -m pip install 'etlantic==0.30.0'
 py -3.11 -m etlantic --version
 ```
 

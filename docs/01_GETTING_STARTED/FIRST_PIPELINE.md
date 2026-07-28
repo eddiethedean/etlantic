@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.29.0.** This tutorial extends the project
+> **Status: Available in ETLantic 0.30.0.** This tutorial extends the project
 > created by [Quickstart](QUICKSTART.md) (`python -m etlantic init`). It uses the local
 > Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
 
@@ -10,7 +10,7 @@ If you have not already (`init` needs an **empty directory**, or pass
 `--force`):
 
 ```bash
-python -m pip install 'etlantic==0.29.0'
+python -m pip install 'etlantic==0.30.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
@@ -176,7 +176,7 @@ CSV, and no-write storage. Optional plugins are available today:
 - Medallantic migration adapter — `medallantic`
 
 Keep core and optional plugin minors matched—for this guide, pin both to
-`0.29.0`. See [Capabilities](CAPABILITIES.md).
+`0.30.0`. See [Capabilities](CAPABILITIES.md).
 
 Continue with [Engine selection](ENGINE_SELECTION.md). For a production profile
 starter, copy the JSON from

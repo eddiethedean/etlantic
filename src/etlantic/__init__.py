@@ -15,7 +15,7 @@ and ``__version__``.
 
 Lazy namespaces (import-safe; no optional engines until accessed):
 ``transform``, ``dataframe``, ``sql``, ``spark``, ``orchestration``, ``viz``,
-``secrets``, and ``testing`` (for example ``etl.sql`` after
+``secrets``, ``testing``, and ``quality`` (for example ``etl.sql`` after
 ``import etlantic as etl``).
 
 ``from etlantic import Data, Pipeline`` and public submodule imports remain
@@ -77,6 +77,7 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "dataframe": "etlantic.dataframe",
     "sql": "etlantic.sql",
     "spark": "etlantic.spark",
+    "quality": "etlantic.quality",
     "orchestration": "etlantic.orchestration",
     "viz": "etlantic.viz",
     "secrets": "etlantic.secrets",

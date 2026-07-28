@@ -1,9 +1,9 @@
-# ETLantic 0.29 User Guide
+# ETLantic 0.30 User Guide
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.29.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.30.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots. Linked reference and design pages may describe Experimental, partial,
 or future work and retain their own status labels.
 
@@ -11,29 +11,27 @@ or future work and retain their own status labels.
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — what you can use today
-3. [What's new in 0.29](WHATS_NEW_0_29.md)
+3. [What's new in 0.30](WHATS_NEW_0_30.md)
 4. [Learning path](LEARNING_PATH.md)
 5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 
-Prefer `import etlantic as etl` for application code.
+Prefer `import etlantic as etl` for application code. Portable quality rules live
+under `etl.quality` (`etlantic.quality/1`).
 
 ## Choose your next task
 
 | Goal | Guide |
 |---|---|
 | Author without classes / JSON round trip | [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
-| Native bronze/silver/gold pipelines | `pip install medallantic` / [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md) |
+| Native bronze/silver/gold + portable rules | `pip install medallantic` / [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md) |
 | Visual builder / service integration | [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | FastAPI reference adapter | `pip install etlantic-fastapi` / [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | Read and write JSON or CSV | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Execute with Polars | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Upgrade from 0.28 | [Migration 0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) |
-| Upgrade hub (all minors) | [Upgrade](UPGRADE.md) |
-| Day-0 CLI / SDK reminders | [Cheatsheet](../10_REFERENCE/CHEATSHEET.md) |
+| Upgrade from 0.29 | [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
 
-## Status labels
+## Status vocabulary
 
-Pages and tables use **Available**, **Partial**, **Experimental**, **Gap**,
-and **Future design**. **Available** means supported for documented
-single-tenant **Beta** pilots in 0.29—not a 1.0 production compatibility
-guarantee.
+Pages use **Available**, **Experimental**, **Partial**, and **Future design**
+labels. Prefer Available paths for pilots; treat Experimental and Future design
+as non-contractual.

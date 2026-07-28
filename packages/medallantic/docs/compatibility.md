@@ -5,10 +5,10 @@
 Medallantic follows Etlantic's pre-1.0 minor line. Pin matching minors:
 
 ```text
-medallantic 0.29.x  <->  etlantic 0.29.x
+medallantic 0.30.x  <->  etlantic 0.30.x
 ```
 
-The package metadata currently requires `etlantic>=0.29.0,<0.30`.
+The package metadata currently requires `etlantic>=0.30.0,<0.31`.
 
 ## Engine mapping
 
@@ -56,14 +56,15 @@ only in explicit plan-only mode.
 | IR parsing and graph mapping | Available |
 | Dependency and cycle validation | Available |
 | Profile and quality-threshold mapping | Available |
+| Portable rule DSL → `etlantic.quality/1` gates | Available (Polars/Pandas/local live; SQL/PySpark fail-closed) |
 | Write/retry/run-selection mapping | Available |
 | Plan enrichment | Available |
 | Legacy report normalization/redaction | Available |
-| SparkForge callable execution | Not available |
-| Legacy rule execution | Not available |
-| Native Medallantic builder | Planned |
-| Live PySpark differential parity | Planned |
-| Live SQLAlchemy/Moltres differential parity | Planned |
+| SparkForge callable execution | Not available (0.31+) |
+| Native PySpark Column / Moltres-only rules | Not available (0.32 / 0.33) |
+| Native Medallantic builder | Available (0.29) |
+| Live PySpark differential parity | Planned (0.32) |
+| Live SQLAlchemy/Moltres differential parity | Planned (0.33) |
 | Delta maintenance execution | Plugin-dependent and planned |
 
 See the [roadmap](../ROADMAP.md) for phase exit criteria. A roadmap item is not

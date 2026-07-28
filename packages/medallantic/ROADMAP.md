@@ -137,13 +137,13 @@ legacy behavior that would be unsafe or architecturally incorrect.
 | Prior silver result access | Yes | Yes | Run-scoped artifact context | P0 |
 | Cross-schema reads and writes | Yes | Yes | Dataset bindings plus profiles | P0 |
 | Layer descriptions and metadata | Yes | Partial | Portable metadata | P1 |
-| Per-layer validation thresholds | Yes | Yes | Named medallion quality policy | P0 |
-| Multiple rules per column | Yes | Yes | Contract-backed quality gates | P0 |
-| Valid/invalid row separation | Yes | Yes | Typed accepted/rejected outputs | P0 |
-| Validation-only steps and runs | Yes | Yes | `RunIntent.VALIDATE`, no writes | P0 |
-| PySpark expression rules | Yes | No | PySpark compiler/plugin | P0 |
-| String rule shorthand | Yes | No | Medallantic rule DSL | P1 |
-| Moltres expression rules | No | Yes | SQL compiler compatibility | P0 |
+| Per-layer validation thresholds | Yes | Yes | Named medallion quality policy (**0.30**) | P0 |
+| Multiple rules per column | Yes | Yes | Contract-backed quality gates (**0.30**) | P0 |
+| Valid/invalid row separation | Yes | Yes | Typed accepted/rejected outputs (**0.30**) | P0 |
+| Validation-only steps and runs | Yes | Yes | `RunIntent.VALIDATE`, no writes (**0.31**) | P0 |
+| PySpark expression rules | Yes | No | PySpark compiler/plugin (**0.32**) | P0 |
+| String rule shorthand | Yes | No | Medallantic DSL → `etlantic.quality/1` (**0.30**) | P0 |
+| Moltres expression rules | No | Yes | SQL compiler compatibility (**0.33**) | P0 |
 | SQLAlchemy expression compatibility | No | Yes | SQL migration adapter | P0 |
 | Callable transforms | Yes | Yes | Backend implementation refs | P0 |
 | Initial load | Yes | Yes | Initialize intent | P0 |
@@ -241,17 +241,33 @@ validated, planned, serialized, and explained without SparkForge installed.
 
 ### M2 / ETLantic 0.30 — Quality and rules parity
 
-- [ ] Define an engine-neutral rule AST/DSL for common shorthand:
-  `not_null`, comparisons, membership, ranges, regex, length, uniqueness,
-  and custom contract rules.
-- [ ] Compile rules to ETLantic/ContractModel quality gates.
-- [ ] Add PySpark, SQL/Moltres, Polars, and Pandas rule compilers.
-- [ ] Return accepted and rejected typed artifacts with counts and reasons.
-- [ ] Implement named per-layer defaults and per-step overrides.
-- [ ] Make validation cost and unsupported-rule fallback visible in plans.
+Aligned with [ROADMAP § 0.30](../../ROADMAP.md#030--portable-quality-and-rule-semantics)
+work packages. Protocol: provisional `etlantic.quality/1` with ContractModel as
+semantic authority. Engine bar: live Polars/Pandas (+ local) for the portable
+core; SQL/PySpark advertise and fail closed at plan time (live core subset
+when classified). Native Column / Moltres-only rules stay **0.32 / 0.33**.
+
+- [x] **WP1 consumer:** lower Medallantic shorthand onto `etlantic.quality/1`
+  (portable core: `not_null`, comparisons, membership, ranges, regex, length,
+  uniqueness, custom contract rules) — core owns the versioned AST
+- [x] Compile rules to ContractModel-backed ETLantic quality gates (no parallel
+  schema/rule system)
+- [x] Live Polars and Pandas rule compilers for the portable core; SQL and
+  PySpark participate in capability ads and plan-time fail-closed (live core
+  subset optional when classified in the compatibility matrix)
+- [x] Return accepted and rejected typed artifacts with counts and reasons
+- [x] Implement named per-layer defaults and per-step overrides; compare
+  accept-rate thresholds against validation outcomes where policy requires
+- [x] Replace `MDL110` / `MDL111` unenforced passthrough with real gate lowering
+  (or keep `MDL111` only for transform_ref until **0.31**)
+- [x] Make validation cost and unsupported-rule fallback visible in plans
 
 Exit criteria: shared fixtures produce equivalent pass/fail decisions,
-accepted/rejected counts, and diagnostics across supported engines.
+accepted/rejected counts, and diagnostics on every engine that advertises a
+rule; unsupported required rules fail at plan/analysis; medallion thresholds
+remain Medallantic policy; SQL/PySpark coverage is classified and CI-gated.
+
+Tracking: [EXIT_GATE_0_30.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_30.md).
 
 ### M3 / ETLantic 0.31 — Execution and materialization parity
 

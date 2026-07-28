@@ -247,3 +247,65 @@ def assert_capabilities_supported(
         "Unsupported dataframe capabilities.",
         report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
     )
+
+
+def assert_quality_rule_capabilities(
+    *,
+    required_capabilities: frozenset[str] | set[str] | list[str],
+    available: PluginCapabilities | None,
+    engine: str,
+    node_name: str | None = None,
+) -> None:
+    """Fail closed when required portable quality rules are unsupported.
+
+    Emits ``PMPLAN420`` for missing ``invalid_row_separation`` and
+    ``PMPLAN421`` for unsupported ``quality.*`` rule capabilities.
+    """
+    if available is None:
+        diagnostics = [
+            Diagnostic(
+                code="PMPLAN420",
+                severity=Severity.ERROR,
+                message=(
+                    f"Cannot negotiate quality rules for engine {engine!r}: "
+                    "engine capabilities are not registered."
+                ),
+                path=("capability", "quality", engine),
+                phase="capability",
+            )
+        ]
+        raise PipelineValidationError(
+            "Missing engine capabilities for quality rules.",
+            report=ValidationReport.from_diagnostics(
+                diagnostics, phases=("capability",)
+            ),
+        )
+
+    missing: list[tuple[str, str]] = []
+    for req in sorted(required_capabilities):
+        if available.supports(req):
+            continue
+        code = "PMPLAN420" if req == "invalid_row_separation" else "PMPLAN421"
+        missing.append((code, req))
+    if not missing:
+        return
+    path_prefix: tuple[str, ...] = ("capability", "quality")
+    if node_name:
+        path_prefix = ("nodes", node_name, "quality")
+    diagnostics = [
+        Diagnostic(
+            code=code,
+            severity=Severity.ERROR,
+            message=(
+                f"Required quality capability {req!r} unsupported by "
+                f"{engine!r}; failing before data access."
+            ),
+            path=(*path_prefix, req),
+            phase="capability",
+        )
+        for code, req in missing
+    ]
+    raise PipelineValidationError(
+        "Unsupported quality rule capabilities.",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )

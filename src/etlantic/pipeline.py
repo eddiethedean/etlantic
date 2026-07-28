@@ -746,6 +746,19 @@ class Pipeline(metaclass=_PipelineMeta):
         return SubpipelineInstance(pipeline_cls=cls, bindings=dict(bindings))
 
 
+def _step_quality_metadata(transform: type[Any]) -> MappingProxyType:
+    """Copy embedded quality expression onto node metadata for planning."""
+    from etlantic.quality.gate import (
+        QUALITY_METADATA_KEY,
+        quality_expression_from_transform,
+    )
+
+    expr = quality_expression_from_transform(transform)
+    if expr is None:
+        return MappingProxyType({})
+    return MappingProxyType({QUALITY_METADATA_KEY: expr})
+
+
 def _annotation_contract(cls: type[Any], name: str) -> type[Any] | None:
     """Extract a contract type from an Extract[T] / Load[T] class annotation."""
     annotations = _class_annotations(cls)
@@ -923,6 +936,7 @@ def _build_logical_graph(cls: type[Pipeline]) -> LogicalGraph:
                     inputs=inputs,
                     outputs=outputs,
                     parameters=params,
+                    metadata=_step_quality_metadata(transform),
                 )
             )
         elif isinstance(member, Load):

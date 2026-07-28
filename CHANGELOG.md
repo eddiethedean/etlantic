@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-07-28
+
+### Added
+- Provisional `etlantic.quality/1` portable quality-expression AST + JSON Schema
+- `etlantic.quality` helpers: serialize/fingerprint, ContractModel mapping, analyze, evaluate, `make_quality_gate`
+- Plan metadata for quality gates (cost, capabilities, fallback evidence, `validation_boundary`)
+- Plan-time fail-closed diagnostics `PMPLAN420` / `PMPLAN421` for unsupported required quality capabilities
+- Portable quality conformance suite: `etlantic.testing.run_quality_conformance_suite`
+- Polars / Pandas advertise portable quality rule capabilities
+- Medallantic rule DSL (`parse_rules_shorthand`) and real quality-gate lowering (replaces `MDL110` passthrough)
+- Medallantic `evaluate_accept_rates` for layer threshold comparison
+- What's New / Migration / Exit Gate 0.30 documentation
+
+### Changed
+- Official package versions align at 0.30.0; plugins require `etlantic>=0.30.0,<0.31`
+- Local stub registry advertises portable quality capabilities for plan-time negotiation
+- Medallantic bronze steps with rules insert `{name}__ingest` + gate nodes
+- Surface inventory marks `etlantic.quality/1` provisional and adds `quality` lazy namespace
+
+### Fixed
+- Quality gate factory resolves ContractModel port types and invalid-role rejected outputs
+
 ## [0.29.0] - 2026-07-28
 
 ### Added
@@ -1074,6 +1096,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.30.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.30.0
 [0.29.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.29.0
 [0.28.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.28.0
 [0.27.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.27.0

@@ -339,3 +339,68 @@ def report_to_sparkforge_explain(report: PipelineRunReport) -> dict[str, Any]:
         "diagnostics": [d.to_dict() for d in report.diagnostics],
         "summary": report.summary.to_dict(),
     }
+
+
+def evaluate_accept_rates(
+    *,
+    policy_metadata: dict[str, Any],
+    validations: list[ValidationResult] | list[dict[str, Any]],
+    layer: str | None = None,
+) -> list[dict[str, Any]]:
+    """Compare validation accept rates against Medallantic layer thresholds.
+
+    Threshold keys live on ``ValidationPolicy.metadata`` as
+    ``min_accept_rate_{ingest,clean,publish}`` (bronze/silver/gold).
+    Returns a list of findings; empty when thresholds are satisfied or absent.
+    """
+    layer_key = {
+        "bronze": "min_accept_rate_ingest",
+        "silver": "min_accept_rate_clean",
+        "gold": "min_accept_rate_publish",
+        "ingest": "min_accept_rate_ingest",
+        "clean": "min_accept_rate_clean",
+        "publish": "min_accept_rate_publish",
+    }
+    findings: list[dict[str, Any]] = []
+    for item in validations:
+        if isinstance(item, ValidationResult):
+            checked = item.records_checked
+            invalid = item.records_invalid
+            node = item.node_name
+            status = item.status
+        else:
+            checked = item.get("records_checked")
+            invalid = item.get("records_invalid")
+            node = str(item.get("node_name") or "unknown")
+            status = str(item.get("status") or "")
+        if checked is None or int(checked) <= 0:
+            continue
+        accepted = int(checked) - int(invalid or 0)
+        rate = 100.0 * accepted / float(checked)
+        meta_key = layer_key.get((layer or "").lower())
+        threshold = policy_metadata.get(meta_key) if meta_key else None
+        if threshold is None:
+            for key in (
+                "min_accept_rate_publish",
+                "min_accept_rate_clean",
+                "min_accept_rate_ingest",
+            ):
+                if key in policy_metadata:
+                    threshold = policy_metadata[key]
+                    break
+        if threshold is None:
+            continue
+        if rate + 1e-9 < float(threshold):
+            findings.append(
+                {
+                    "node_name": node,
+                    "status": status,
+                    "accept_rate": rate,
+                    "threshold": float(threshold),
+                    "message": (
+                        f"Accept rate {rate:.2f}% below threshold "
+                        f"{float(threshold):.2f}% for {node}"
+                    ),
+                }
+            )
+    return findings

@@ -7,7 +7,7 @@ reports, and plugin integration.
 
 ## Current status
 
-Medallantic **0.29** (M1) adds native authoring. It can:
+Medallantic **0.30** (M2) builds on native authoring (**0.29 / M1**). It can:
 
 - author bronze/silver/gold pipelines with `MedallionPipeline`,
   `MedallionBuilder`, `Bronze`, `Silver`, and `Gold`
@@ -21,11 +21,12 @@ Medallantic **0.29** (M1) adds native authoring. It can:
 - normalize legacy run results into `PipelineRunReport`
 - verify declared Delta requirements against plugin capabilities
 - pass `etlantic.testing.run_facade_conformance_suite`
+- enforce portable `rules=` via `etlantic.quality/1` gates (Polars/Pandas/local
+  live; SQL/PySpark fail closed at plan time when capabilities are missing)
 
-It does not yet execute SparkForge transformation callables or enforce legacy
-rule expressions. Those paths currently produce `MDL110` / `MDL111` (or
-`PMSF411` on the migrate path) warnings and use passthrough transformations
-for planning parity. Portable rules are **0.30 / M2**.
+It does not yet execute SparkForge transformation callables (`transform_ref`
+still emits `MDL111` until **0.31**). Native PySpark Column / Moltres-only
+rules remain **0.32 / 0.33**.
 
 ## Quick start (native)
 

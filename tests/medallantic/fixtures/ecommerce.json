@@ -39,6 +39,7 @@
   "metadata": {
     "fixture": "representative_ecommerce",
     "expected_node_order": [
+      "orders__ingest",
       "orders",
       "clean_orders",
       "clean_orders_out",

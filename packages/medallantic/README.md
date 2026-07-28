@@ -10,8 +10,9 @@ plugin coordination underneath it. **ETLantic core never gains medallion
 types.**
 
 **0.29 (M1)** ships `MedallionPipeline`, `MedallionBuilder`, `Bronze` /
-`Silver` / `Gold`, and `medallantic.migrate.sparkforge`. Transform callables
-and portable rules remain later milestones (passthrough planning today).
+`Silver` / `Gold`, and `medallantic.migrate.sparkforge`. **0.30 (M2)** enforces
+portable `rules=` via `etlantic.quality/1` gates (Polars/Pandas/local live;
+SQL/PySpark fail-closed). Transform callables remain **0.31**.
 
 Documentation:
 
@@ -24,7 +25,7 @@ Documentation:
 ## Install
 
 ```bash
-pip install 'etlantic==0.29.0' 'medallantic==0.29.0'
+pip install 'etlantic==0.30.0' 'medallantic==0.30.0'
 # or
 pip install 'etlantic[medallantic]'
 ```

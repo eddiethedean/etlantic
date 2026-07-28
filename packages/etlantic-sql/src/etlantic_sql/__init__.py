@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.29.0"
+__version__ = "0.30.0"
 
 from etlantic_sql.plugin import PostgresSqlPlugin, create_plugin
 from etlantic_sql.transform_compiler import (
