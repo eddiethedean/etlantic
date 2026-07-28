@@ -1,23 +1,21 @@
 # ETLantic 0.28 User Guide
 
-This is the current manual for ETLantic **0.28.0** — use it **after** first
-success on the docs home [green path](../README.md). Core onboarding paths below
-are available in 0.28; linked reference and design pages may also describe
-Experimental, partial, or future work and retain their own status labels.
-**Supported for documented single-tenant pilots (Beta).** This is not a 1.0
-compatibility guarantee.
+Use this page **after** Ada/Grace success on the docs home
+[green path](../README.md). Do **not** start here for install.
+
+ETLantic **0.28.0** is a **Beta** (PyPI) release for documented single-tenant
+pilots. Linked reference and design pages may describe Experimental, partial,
+or future work and retain their own status labels.
 
 ## After first success
 
-1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.28.0`
-2. [Quickstart](QUICKSTART.md) — first validate → run (then the required aha)
-3. [Build your first pipeline](FIRST_PIPELINE.md)
-4. [Choose an engine](ENGINE_SELECTION.md)
-5. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
+2. [Capabilities](CAPABILITIES.md) — what you can use today
+3. [What's new in 0.28](WHATS_NEW_0_28.md)
+4. [Learning path](LEARNING_PATH.md)
+5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 
-Next: [Capabilities](CAPABILITIES.md),
-[What's new in 0.28](WHATS_NEW_0_28.md), [Compare](COMPARE.md), or
-[Upgrade](UPGRADE.md). Prefer `import etlantic as etl` for application code.
+Prefer `import etlantic as etl` for application code.
 
 ## Choose your next task
 
@@ -29,7 +27,7 @@ Next: [Capabilities](CAPABILITIES.md),
 | Read and write JSON or CSV | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Execute with Polars | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
 | Upgrade from 0.27 | [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| Upgrade from 0.24 | [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
+| Upgrade hub (all minors) | [Upgrade](UPGRADE.md) |
 | Day-0 CLI / SDK reminders | [Cheatsheet](../10_REFERENCE/CHEATSHEET.md) |
 
 ## Status labels

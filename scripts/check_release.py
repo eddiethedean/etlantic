@@ -111,8 +111,13 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         if "[project.urls]" not in text:
             errors.append(f"{pkg} missing [project.urls]")
-        if "Development Status :: 5 - Production/Stable" not in text:
-            errors.append(f"{pkg} facade package missing Production/Stable classifier")
+        if "Development Status :: 4 - Beta" not in text:
+            errors.append(f"{pkg} facade package should use Beta classifier")
+        if "Development Status :: 5 - Production/Stable" in text:
+            errors.append(
+                f"{pkg} facade package should use Beta, not Production/Stable "
+                "(IR/migration adapter honesty)"
+            )
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
         expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"

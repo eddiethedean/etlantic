@@ -121,6 +121,8 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 
 ## Not included in 0.28
 
+Residual gaps for **unrestricted** production (not the Beta pilot envelope):
+
 | Capability | Status |
 |---|---|
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
@@ -131,15 +133,14 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
 | Production FastAPI control plane | Continues in 1.1 (0.28 ships only the thin reference adapter) |
+| Medallantic transform execution | IR/planning adapter only — no SparkForge callable execution yet |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
-| Dedicated deployment / multi-worker ops guide | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
-| Quadruple-minor upgrade proof | Shipped in 0.28.0 |
-| Plugin SDK `/1` freeze | **Frozen in 0.28.0** |
+| Dedicated multi-worker / multi-tenant ops control plane | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 
-0.28 proves four consecutive minor bumps (0.25→0.26→0.27→0.28) without a schema-id
-reset (quadruple-minor burn-in). Plugin SDK `/1` is frozen for core families. See
+**Shipped in 0.28** (not residual): quadruple-minor burn-in proof and Plugin SDK
+`/1` freeze for core families. See
 [What's New in 0.28](WHATS_NEW_0_28.md) and
 [Exit gate 0.28](../11_DEVELOPMENT/EXIT_GATE_0_28.md).
 

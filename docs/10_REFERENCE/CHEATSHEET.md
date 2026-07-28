@@ -11,9 +11,12 @@ Prefer `python -m etlantic` and `import etlantic as etl`.
 |---|---|
 | `init` | Scaffold empty-dir project (`--force` if needed) |
 | `doctor` | Environment / plugin / profile checks |
+| `profile` | List / show / write profiles |
 | `validate TARGET` | Validate without executing transforms |
 | `inspect TARGET` | Print logical graph |
 | `plan TARGET` | Emit secret-free `PipelinePlan` |
+| `plan explain` | Human/JSON plan explanation |
+| `plan diff` | Diff two plans / targets |
 | `run TARGET` | Execute in-process |
 | `compile TARGET` | Compile (e.g. Airflow; needs plugin) |
 | `generate TARGET` | Contracts, or `--kind definition` JSON |

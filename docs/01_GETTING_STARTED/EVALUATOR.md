@@ -74,7 +74,7 @@ manager.
 | Production plugin allowlist (selection, not sandbox) | **Shipped** |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
-| Release SBOM digests + GitHub attestations | **Shipped** |
+| Release SBOM digests + GitHub attestations | **Shipped** — verify with `gh attestation verify` (see [Enterprise evaluation](ENTERPRISE_EVALUATION.md#verify-release-attestations)) |
 | Cross-tenant / multi-tenant isolation guarantees | **Residual / adopter-owned** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
@@ -138,7 +138,7 @@ How to read status labels in deeper chapters:
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
@@ -155,7 +155,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
    with `etlantic-polars` + `etlantic-pandas` at `==0.28.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) if
+8. [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

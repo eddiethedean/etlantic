@@ -39,7 +39,8 @@ python -m etlantic --version
 If you already have a uv project (`pyproject.toml`), you may use
 `uv add 'etlantic==0.28.0'` instead. Create an **empty subdirectory** for
 `python -m etlantic init --with-toml`, or pass `--force` if the directory is
-not empty.
+not empty. **`--force` can overwrite** existing `pipeline.py` / `pyproject.toml`
+scaffolding — prefer an empty subdirectory when unsure.
 
 ### Poetry
 

@@ -21,7 +21,7 @@ Official plugins declare `etlantic>=0.28.0,<0.29`.
 |---|---|---|
 | Core | `etlantic` | Beta |
 | Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable |
-| Facade | `medallantic` | Production/Stable |
+| Facade | `medallantic` | Beta (IR/migration adapter; not a full runtime) |
 | Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) |
 | Reference adapter | `etlantic-fastapi` | Beta |
 | Experimental | `etlantic-datafusion` | Alpha |
@@ -125,10 +125,10 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all twelve wheels/sdists.
+3. Builds all thirteen wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
-5. Publishes to PyPI: **existing projects first** (all twelve packages are
+5. Publishes to PyPI: **existing projects first** (all thirteen packages are
    established uploads as of 0.26; brand-new names are exceptional),
    **10-minute** gaps only between brand-new project creates; skips files
    already present via `--check-url`; retries on transient 429s.

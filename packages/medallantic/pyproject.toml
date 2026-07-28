@@ -1,13 +1,13 @@
 [project]
 name = "medallantic"
 version = "0.28.0"
-description = "Engine-agnostic medallion pipelines built on ETLantic."
+description = "SparkForge IR → ETLantic migration adapter (planning/validate; not a full medallion runtime)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -20,12 +20,11 @@ dependencies = [
     "etlantic>=0.28.0,<0.29",
 ]
 
-# The initial release is an IR-only SparkForge migration adapter. The roadmap
-# evolves this package into the engine-agnostic medallion facade for ETLantic.
+# IR-only SparkForge migration adapter. Native medallion authoring is 0.29+.
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"
-Documentation = "https://github.com/eddiethedean/etlantic/tree/main/docs"
+Documentation = "https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic/docs"
 Repository = "https://github.com/eddiethedean/etlantic"
 Issues = "https://github.com/eddiethedean/etlantic/issues"
 Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"

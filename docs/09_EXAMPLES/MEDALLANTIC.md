@@ -57,6 +57,8 @@ print(adapted.pipeline_cls.__name__, plan.plan_id, request.intent)
 
 ## See also
 
-- Package README: `packages/medallantic/README.md`
-- [Migration 0.9 → 0.10](../11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md)
+- [Package README](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md)
+- [Medallantic docs index](https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic/docs)
+- [Getting started (package)](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/getting-started.md)
+- [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md)
 - [SparkForge Feature Adoption](../11_DEVELOPMENT/SPARKFORGE_ADOPTION.md)

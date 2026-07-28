@@ -29,8 +29,8 @@ excluded from the product docs nav—not installable tutorials.
   `portable_wave17.py`
 - [Polars ↔ Pandas interchange](INTERCHANGE_POLARS_PANDAS.md) —
   `examples/interchange_polars_pandas.py`
-- [Medallantic](MEDALLANTIC.md) — SparkForge migration adapter and parity fixtures
-
+- [Medallantic](MEDALLANTIC.md) — SparkForge IR migration adapter (planning/validate only)
+- Programmatic JSON authoring — `examples/pipeline_definition_json.py` (clone; CI)
 ## Runnable scripts (repository `examples/`)
 
 !!! note "Clone required"

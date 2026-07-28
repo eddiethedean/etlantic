@@ -40,19 +40,36 @@ Install with `pip install 'etlantic==0.28.0'`.
 
 ## Minimal working example
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.28.0'
-mkdir my-pipeline && cd my-pipeline
-python -m etlantic init --with-toml
-python -m etlantic validate pipeline.py:SamplePipeline --profile development
-python -m etlantic run pipeline.py:SamplePipeline --profile development
-cat data/out.json
-```
+=== "Unix / macOS"
+
+    ```bash
+    python -m venv .venv && source .venv/bin/activate
+    python -m pip install --upgrade pip
+    python -m pip install 'etlantic==0.28.0'
+    mkdir my-pipeline && cd my-pipeline
+    python -m etlantic init --with-toml
+    python -m etlantic validate pipeline.py:SamplePipeline --profile development
+    python -m etlantic run pipeline.py:SamplePipeline --profile development
+    cat data/out.json
+    ```
+
+=== "Windows (PowerShell)"
+
+    ```powershell
+    py -3.11 -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    python -m pip install 'etlantic==0.28.0'
+    mkdir my-pipeline; cd my-pipeline
+    python -m etlantic init --with-toml
+    python -m etlantic validate pipeline.py:SamplePipeline --profile development
+    python -m etlantic run pipeline.py:SamplePipeline --profile development
+    Get-Content data\out.json
+    ```
 
 You should see `succeeded` and Ada/Grace sample rows (identity transform).
-Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
+`init` requires an **empty directory** (or pass `--force` — it can overwrite
+scaffolded files). Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
 
 !!! note "PyPI vs clone"
     **PyPI users:** stay on Installation → Quickstart → First Pipeline. The

@@ -1,6 +1,6 @@
 # Lifecycle Extension Mechanisms
 
-!!! warning "Design study—not a runnable ETLantic 0.25 API guide. Prefer CAPABILITIES and examples/."
+!!! warning "Design study—not a runnable ETLantic 0.28 API guide. Prefer CAPABILITIES and examples/."
 
 Lifecycle hooks below describe intended lifespan / middleware / resource
 injection surfaces that are not fully shipped. Prefer

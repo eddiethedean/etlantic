@@ -40,6 +40,30 @@ python -m etlantic validate TARGET --format sarif            # CI
 Start from `etlantic init` for JSON-backed assets so CLI `run` works without
 memory seeding. Use in-memory demos only inside one Python process.
 
+## Anti-patterns (and what happens)
+
+1. **Empty production allowlist** — `security_mode="production"` with
+   `plugin_allowlist: {}` fails closed (`PMPLUG401`). Copy
+   [prod.example.json](prod.example.json) and pin exact plugin versions.
+2. **Root imports removed in 0.28** — importing `load_profile` or `col` from the
+   package root raises `AttributeError`. Prefer
+   `etlantic.profile.load_profile` / `etlantic.sql.col`
+   (see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md)).
+3. **Validate on one profile, run on another** — assets/engines diverge and
+   failures look like “random” runtime errors. Pass the same `--profile` for
+   validate, plan, and run.
+4. **Skip validate after a contract edit** — wiring errors surface as
+   `PMPIPE*` on validate; running first may write nothing useful or fail late.
+
+## Failed validate / run stories
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `PMPIPE210` (or wiring diagnostic) after editing Load | Load contract ≠ upstream Output | Restore matching `Load[T]` or change the transform Output |
+| `PMPLUG401` on production profile | Empty allowlist | Pin plugins in profile JSON |
+| `ModuleNotFoundError: pipeline` after Quickstart SDK snippet | Wrong cwd | `cd` to the `init` project root |
+| Validate green, run has no rows | In-memory assets without seed | Use JSON/CSV assets from `init`, or seed via `PipelineRuntime.memory` |
+
 ## CI
 
 1. Fail the build on validate errors (JSON or SARIF).

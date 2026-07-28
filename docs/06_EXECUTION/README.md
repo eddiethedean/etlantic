@@ -134,7 +134,7 @@ your project:
 9. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
 10. [Compilation](COMPILATION.md)
 
-!!! note "Future design (not in the 0.25 operator path)"
+!!! note "Future design (not in the 0.28 operator path)"
     [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
     [Plugins overview](PLUGINS.md),
     [Storage Plugins](STORAGE_PLUGINS.md), and

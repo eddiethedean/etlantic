@@ -69,7 +69,27 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
-| SBOM / attestations | Release CI digests + GitHub attestations (see Evaluator Brief) |
+| SBOM / attestations | Release CI digests + GitHub attestations — see [Verify release attestations](#verify-release-attestations) below |
+
+### Verify release attestations
+
+For a published GitHub Release asset (example: wheel from the `v0.28.0` release):
+
+```bash
+# Download the wheel from the GitHub Release, then:
+gh attestation verify path/to/etlantic-0.28.0-*.whl \
+  --owner eddiethedean \
+  --repo etlantic
+```
+
+SBOM digests are attached as release workflow artifacts / notes on the tagged
+Release. Prefer exact pins (`etlantic==0.28.0` and matching plugins) over
+floating ranges when recording diligence evidence.
+
+Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
+`etlantic-datafusion` (Experimental Alpha), and
+[Medallantic](../09_EXAMPLES/MEDALLANTIC.md) (IR migration adapter — not a
+full medallion runtime).
 
 ### 6. Optional deep dives
 

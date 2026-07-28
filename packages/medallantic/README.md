@@ -1,17 +1,17 @@
 # Medallantic
 
-Engine-agnostic medallion pipelines built on ETLantic.
+SparkForge IR → ETLantic **migration adapter** (planning/validate). Prefer
+`medallantic` over the deprecated `etlantic-sparkforge` redirect.
 
-Medallantic owns bronze/silver/gold authoring and conventions. ETLantic owns
+Medallantic will own bronze/silver/gold authoring conventions; ETLantic owns
 the portable contracts, graph, validation, planning, execution lifecycle, and
 plugin coordination underneath it. **ETLantic core never gains medallion
-types.**
+types.** Native medallion authoring is planned for **0.29+**.
 
-The current release is the renamed SparkForge migration adapter. It maps
-SparkForge IR onto ordinary ETLantic `Extract` / `Step` / `Load`, `Profile`,
-`RunSelection` / `RunIntent`, and `PipelineRunReport` surfaces. A native
-engine-agnostic builder and live Spark/SQL parity are planned; see the
-[roadmap](ROADMAP.md).
+The current **0.28** release maps SparkForge IR onto ordinary ETLantic
+`Extract` / `Step` / `Load`, `Profile`, `RunSelection` / `RunIntent`, and
+`PipelineRunReport` surfaces. It does **not** execute SparkForge transformation
+callables.
 
 Documentation:
 

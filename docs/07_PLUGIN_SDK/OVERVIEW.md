@@ -53,7 +53,7 @@ a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
 ## Appendix — future / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.25.0** (still Future design):
+protocols in **0.28.0** (still Future design):
 
 - General storage plugins (Snowflake, S3, Iceberg, …) — see
   [Storage today](../06_EXECUTION/STORAGE_TODAY.md)

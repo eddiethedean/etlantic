@@ -109,7 +109,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 | Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
 | Keyring | `etlantic-keyring` | OS keyring secret provider |
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
-| Medallantic | `medallantic` | Engine-agnostic medallion facade (bronze/silver/gold stay out of core) |
+| Medallantic | `medallantic` | SparkForge IR → ETLantic migration adapter (planning/validate only in 0.28; prefer `medallantic` over deprecated `etlantic-sparkforge`) |
 | DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
 | FastAPI | `etlantic-fastapi` | Thin 0.28 authoring/service **reference** adapter (not the 1.1 control plane) |
 
@@ -168,7 +168,7 @@ See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING
 guide for precise guarantees and limitations.
 
 Release notes:
-[What's New in 0.25](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_25/).
+[What's New in 0.28](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_28/).
 
 ## Learn more
 

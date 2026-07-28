@@ -3,6 +3,44 @@
 > **Status: Available in ETLantic 0.28.0.** Short recipes for shipped workflows.
 > Prefer these over Design Studies.
 
+## Worked recipes
+
+### Local JSON pipeline (copy-paste)
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: py -3.11 -m venv .venv && .venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install 'etlantic==0.28.0'
+mkdir my-pipeline && cd my-pipeline
+python -m etlantic init --with-toml
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic run pipeline.py:SamplePipeline --profile development
+```
+
+Expect `succeeded` and Ada/Grace rows in `data/out.json`.
+
+### Polars engine (after local success)
+
+```bash
+python -m pip install 'etlantic[polars]==0.28.0'
+# set Profile.dataframe_engine="polars" (or use a profile JSON), then:
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+python -m etlantic run pipeline.py:SamplePipeline --profile development
+```
+
+Full walkthrough: [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md).
+
+### Production allowlist (fail closed)
+
+```bash
+cp path/to/prod.example.json profiles/prod.json
+# edit plugin_allowlist pins to ==0.28.0 and fill assets
+python -m etlantic validate pipeline.py:SamplePipeline --profile profiles/prod.json
+```
+
+Empty allowlists fail with `PMPLUG401`. See
+[Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).
+
 ## First success
 
 | Recipe | Link |

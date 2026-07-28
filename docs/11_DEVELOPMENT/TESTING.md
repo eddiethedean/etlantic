@@ -242,6 +242,10 @@ this guide, not registered pytest markers in 0.17. Add a marker to
 
 ## End-to-End Tests
 
+The following list is a **coverage wishlist**, not a mandatory CI gate for every
+PR. Enforced suites live under `tests/` and optional plugin markers in
+`pyproject.toml`.
+
 Each primary workflow should validate the complete path:
 
 ```text

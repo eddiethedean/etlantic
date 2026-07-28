@@ -78,11 +78,16 @@ uv run python scripts/check_docs.py
 uv run python scripts/check_agent_guidance.py
 ```
 
-Then open a PR against `main`. Expand to the full CI-equivalent checklist below
-for core, plugin, or release-impacting changes.
+Then open a PR against `main`.
 
-## CI-equivalent checks
+Security vulnerabilities: follow the private process in
+[SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md)
+— do not open a public issue with exploit details.
 
+## Full CI-equivalent checks (core / plugin / release-impacting)
+
+Use this longer checklist for changes that touch runtime, plugins, schemas,
+or release packaging. Docs-only PRs do **not** need the full list.
 Baseline (core + docs):
 
 ```bash

@@ -41,7 +41,7 @@ package and its documentation.
 | Tier | Examples | Classifier | Core pin |
 |---|---|---|---|
 | Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable | `etlantic>=X.Y,<X.(Y+1)` |
-| **Facade** | `medallantic` | Production/Stable | same |
+| **Facade** | `medallantic` | Beta (IR/migration adapter) | same |
 | Reference adapter | `etlantic-fastapi` | Beta | same |
 | Compatibility redirect | `etlantic-sparkforge` | Inactive | depends on facade |
 | Experimental | `etlantic-datafusion` | Alpha | same |

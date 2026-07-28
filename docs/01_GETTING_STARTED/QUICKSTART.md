@@ -97,23 +97,40 @@ Optional later: `python -m etlantic doctor --profile development`,
 
 ## 4. Required aha — catch a bad change before write
 
-Do not skip this step (it is outside the “first success” timing above). Edit
-`pipeline.py` and change the `Row` contract so `name` becomes `full_name` (or
-delete a required field). Re-validate:
+Do not skip this step (it is outside the “first success” timing above).
+
+Add a second contract and wire `Load` to it (leave `Extract` / `Row` unchanged):
+
+```python
+# In pipeline.py — add beside Row, then change ONLY the Load annotation:
+
+class Other(Data):
+    id: int
+    other_name: str
+
+class SamplePipeline(Pipeline):
+    # ...
+    out = Load[Other](...)   # was Load[Row]
+```
+
+Re-validate:
 
 ```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 ```
 
-You should see a validation error and **no** new write to `data/out.json` until
-you fix the wiring. That is the product promise: validate before write.
+Expect a wiring diagnostic such as **`PMPIPE210`** and **no** new write under
+`data/out.json` until you restore `Load[Row]`. That is the product promise:
+validate before write.
 
-Restore the contract (or continue with an intentional uppercase transform) in
-[First Pipeline](FIRST_PIPELINE.md).
+Restore `Load[Row]` (or continue with an intentional uppercase transform) in
+[First Pipeline](FIRST_PIPELINE.md). If you already completed that wiring demo,
+you can skip repeating it there.
 
 ## 5. Python SDK path (optional)
 
-From the same project directory:
+From the **same project directory** created by `init` (so `pipeline.py` is
+importable as a top-level module):
 
 ```python
 from pipeline import SamplePipeline
@@ -122,6 +139,9 @@ report = SamplePipeline.validate(profile="development")
 report.raise_for_errors()
 SamplePipeline.run(profile="development")
 ```
+
+If you see `ModuleNotFoundError: pipeline`, `cd` into the init project root
+(the directory that contains `pipeline.py`) and retry.
 
 Standards acronyms (ODCS / DTCS / DPCS) and Gate A/B labels appear later in
 Capabilities and Foundations—you do not need them for first success.

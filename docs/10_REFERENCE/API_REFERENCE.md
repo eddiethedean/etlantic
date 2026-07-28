@@ -8,7 +8,7 @@
 | Persona | Start with | Then |
 |---|---|---|
 | Pipeline author | Author essentials below, [CLI](CLI.md) | [Authoring API](API_AUTHORING.md), [Plan and runtime](API_PLAN_RUNTIME.md) |
-| Plugin author | [Protocols](API_PROTOCOLS.md) | [Plugin SDK](../07_PLUGIN_SDK/README.md), Testing helpers |
+| Plugin author | [Protocols](API_PROTOCOLS.md) | [Plugin SDK](../07_PLUGIN_SDK/README.md), [Testing plugins](../07_PLUGIN_SDK/TESTING_PLUGINS.md) |
 | CI / ops | [CLI](CLI.md), [Runtime configuration](RUNTIME_CONFIGURATION.md) | [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) |
 
 ## Recommended imports
@@ -47,7 +47,10 @@ from etlantic import (
 
 `DataContractModel` is a deprecated alias for `Data`.
 
-## Author essentials
+## Author essentials (curated root)
+
+These symbols are on the curated root facade (`from etlantic import …` or
+`import etlantic as etl`). Prefer owning-module imports for everything else.
 
 | Symbol | Module | One-liner |
 |---|---|---|
@@ -57,7 +60,6 @@ from etlantic import (
 | `Extract` / `Load` | `etlantic.pipeline` | Pipeline entry / publication boundaries |
 | `Pipeline` | `etlantic.pipeline` | Declarative graph; `validate` / `plan` / `run` / `explain_plan` |
 | `Profile` | `etlantic.profile` | Environment + allowlist + engine selection; `security_mode` for trust |
-| `resolve_profile` | `etlantic.profile` | Named/path resolve; unknown names fail closed unless `allow_adhoc_profile=True` |
 | `PipelineRuntime` | `etlantic.lifecycle` | Process-local plugins, memory, reports |
 | `PipelinePlan` | `etlantic.plan` | Immutable secret-free resolved plan (`schema` required on wire) |
 | `plan_pipeline` / `explain_plan` | `etlantic.plan` | Functional planning helpers |
@@ -66,12 +68,18 @@ from etlantic import (
 | `ValidationReport` | `etlantic.diagnostics` | Structured validate findings |
 | `PipelineRunReport` | `etlantic.reports` | Structured run outcomes |
 | `SecretRef` | `etlantic.secrets` | Runtime-only secret reference |
-| `BackfillRequest` | `etlantic.reliability_runtime` | Reliability backfill request helper |
-| Gate A tabular types | `etlantic.interchange.tabular` | Descriptors, mechanism selection, fidelity, evidence (`etlantic.interchange/1`) |
+
+Owning-module helpers (not curated root — import from the module):
+
+| Symbol | Import | Notes |
+|---|---|---|
+| `resolve_profile` | `from etlantic.profile import resolve_profile` | Removed from root in 0.28 |
+| `load_profile` / `write_profile` | `from etlantic.profile import …` | Removed from root in 0.28 |
+| Gate A tabular types | `from etlantic.interchange.tabular import …` | Descriptors / fidelity (`etlantic.interchange/1`) |
+| `BackfillRequest` | `from etlantic.reliability_runtime import BackfillRequest` | Demoted if accessed via root |
 
 Optional plugins document factories in package READMEs. See
 [Optional Packages](OPTIONAL_PACKAGES.md).
-
 ## Generated API pages
 
 - [Authoring](API_AUTHORING.md) — contracts, transformations, pipelines, ports
