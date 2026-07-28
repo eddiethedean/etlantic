@@ -150,25 +150,26 @@ Plugins ship `etlantic-plugin-manifest.json` (schema
 Discovery authorizes manifests before importing entry points. See
 [Distribution](DISTRIBUTION.md) and [Building a Plugin](BUILDING_A_PLUGIN.md).
 
-## Freeze eligibility for `/1`
+## Pre-freeze eligibility criteria for `/1` (historical)
 
-Protocol `/1` families remain **freeze-eligible, not frozen** in **0.25.0**
-(see freeze decision table above). Historical note: 0.22 marked the Plugin SDK
-as release-candidate quality; that did **not** freeze `/1`.
-
-`/1` becomes freeze-eligible when all of the following hold:
+Protocol `/1` families are **frozen in 0.28.0** (see freeze decision table
+above). Before freeze, `/1` became freeze-eligible when all of the following
+held:
 
 1. First-party plugins exercise **only** public `etlantic.testing` suites in CI
 2. At least one out-of-monorepo reference plugin
    (`etlantic-plugin-echo` or equivalent) is green against published/workspace
    core via public suites + `etlantic plugin compatibility`
 3. External feedback cycles documented in
-   [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md) are complete
+   [EXTERNAL_PLUGIN_FEEDBACK](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md)
+   and [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md) are complete
    (default: freeze after **N ≥ 1** external feedback cycles post-RC)
 4. No unresolved architectural dependency on first-party engine identity sets
 
-Until freeze, additive optional methods and vocabulary clarifications may land
-in core minors that still speak `/1`. Incompatible changes require `/2`.
+After freeze, only additive optional methods and vocabulary clarifications may
+land in core minors that still speak `/1`. Incompatible changes require `/2`.
+Historical note: 0.22 marked the Plugin SDK as release-candidate quality; that
+did **not** freeze `/1` — freeze closed in **0.28.0**.
 
 ## Related commands and docs
 
@@ -181,5 +182,6 @@ etlantic plugin compatibility etlantic-polars --format json
 - [Testing Plugins](TESTING_PLUGINS.md)
 - [Building a Plugin](BUILDING_A_PLUGIN.md)
 - [Distribution](DISTRIBUTION.md)
+- [External plugin feedback](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md)
 - [CLI reference](../10_REFERENCE/CLI.md)
 - [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md)

@@ -946,6 +946,8 @@ def main() -> None:
         ROOT / "packages/etlantic-keyring/pyproject.toml",
         ROOT / "packages/etlantic-sqlmodel/pyproject.toml",
         ROOT / "packages/medallantic/pyproject.toml",
+        ROOT / "packages/etlantic-sparkforge/pyproject.toml",
+        ROOT / "packages/etlantic-fastapi/pyproject.toml",
         ROOT / "packages/etlantic-datafusion/pyproject.toml",
     ):
         plugin_version = version_from(plugin_pyproject, r'(?m)^version = "([^"]+)"')
@@ -967,6 +969,7 @@ def main() -> None:
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
         ROOT / "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
         ROOT / "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
+        ROOT / "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
         ROOT / "packages/medallantic/src/medallantic/__init__.py",
         ROOT / "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
         ROOT / "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
@@ -1024,6 +1027,27 @@ def main() -> None:
                 raise SystemExit(f"{path}: impossible version range {match.group(0)!r}")
 
     if prior_minor is not None:
+        # Case-insensitive "Current {prior} Guide" drift (title case variants).
+        current_guide_re = re.compile(
+            rf"Current\s+{re.escape(prior_minor)}\s+Guide",
+            re.IGNORECASE,
+        )
+        for path in (
+            ROOT / "docs/01_GETTING_STARTED/LEARNING_PATH.md",
+            ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+            ROOT / "docs/01_GETTING_STARTED/CURRENT_VERSION.md",
+            ROOT / "docs/01_GETTING_STARTED/README.md",
+            ROOT / "mkdocs.yml",
+        ):
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8")
+            if current_guide_re.search(text):
+                raise SystemExit(
+                    f"{path} still presents Current {prior_minor} Guide "
+                    f"(case-insensitive)"
+                )
+
         for path in (
             ROOT / "docs/01_GETTING_STARTED/README.md",
             ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
@@ -1052,6 +1076,35 @@ def main() -> None:
                 raise SystemExit(
                     f"{path} support line still names {prior_minor}.x as current"
                 )
+
+        # Version placeholders outside normal scrub paths.
+        prior_patch = f"{prior_minor}.0"
+        for path, needles in (
+            (
+                ROOT / ".github/ISSUE_TEMPLATE/bug_report.yml",
+                (prior_patch, f"etlantic-polars=={prior_patch}"),
+            ),
+            (
+                ROOT / "packages/medallantic/docs/compatibility.md",
+                (f"medallantic {prior_minor}.x", f"etlantic {prior_minor}.x"),
+            ),
+            (
+                ROOT / "packages/medallantic/docs/README.md",
+                (f"Medallantic {prior_minor} ",),
+            ),
+            (
+                ROOT / "src/etlantic/plugin_trust.py",
+                (f"=={prior_patch}",),
+            ),
+        ):
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8")
+            for needle in needles:
+                if needle in text:
+                    raise SystemExit(
+                        f"{path} still contains stale prior-minor pin {needle!r}"
+                    )
 
     # Active install/tutorial pins must not target the prior minor release.
     prior_pin_paths = [

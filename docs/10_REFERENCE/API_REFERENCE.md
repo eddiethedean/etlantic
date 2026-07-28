@@ -129,7 +129,7 @@ Removed in 0.28 (raise on root import): `col`, `select`, `load_profile`,
 `write_profile`, `Inject`, `FailureAction`, and other symbols listed in the
 migration guide.
 
-Removed in 0.27 (raise on root import): `RunRequest`, `RunSelection`,
+Removed in 0.26 (raise on root import): `RunRequest`, `RunSelection`,
 `RunIntent`, `DebugSession`, `RunStatus`, `MemoryStorage`, `diff_pipelines`,
 `generate_contracts`, and other symbols listed in the migration guide.
 

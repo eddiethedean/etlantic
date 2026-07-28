@@ -2709,10 +2709,10 @@ Tracking: [EXIT_GATE_0_27.md](docs/11_DEVELOPMENT/EXIT_GATE_0_27.md).
 **Medallantic phase:** M0 closeout (rename and release hygiene largely shipped in
 **0.27.0**).
 
-**Status:** Next planned minor after **0.27.0**.
+**Status:** Shipped in ETLantic **0.28.0**.
 
 **Objective:** prove a **quadruple-minor** upgrade window without a wire-schema
-reset (**0.26 → 0.27 → 0.28**), **close or re-scope** the Plugin SDK `/1`
+reset (**0.26 → 0.27 → 0.28**), **close** the Plugin SDK `/1`
 freeze (carried from 0.22–0.27), finish Medallantic **M0** exit criteria, and
 execute the **third wave** of `REM-ROOT-DEMOTED` removals — while keeping
 native medallion authoring (**M1**) and facade conformance for **0.29**.
@@ -2720,17 +2720,20 @@ native medallion authoring (**M1**) and facade conformance for **0.29**.
 This is **not** native `MedallionPipeline` authoring, quality-rule parity, or a
 control-plane / GUI milestone.
 
-### Prerequisites from 0.27
+### Prerequisites from 0.27 (satisfied)
 
 - Triple-minor burn-in fixtures (`v0_26/`) green in CI
-- `medallantic` distribution published (`medallantic==0.27.0`); workspace,
-  docs, CI, release, and `etlantic[medallantic]` extra aligned
-- `etlantic-sparkforge` removed from the workspace; SparkForge conversion
-  helpers retained on `medallantic` migration surfaces
-- Plugin SDK `/1` freeze **re-scoped to 0.28+** with published external
-  feedback blocker ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
+- `medallantic` distribution published; workspace, docs, CI, release, and
+  `etlantic[medallantic]` extra aligned
+- Final `etlantic-sparkforge` compatibility redirect wheel published (depends
+  on `medallantic`); SparkForge conversion helpers retained on `medallantic`
+  migration surfaces
+- Plugin SDK `/1` freeze **closed in 0.28.0**
+  ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md);
+  [EXTERNAL_PLUGIN_FEEDBACK.md](docs/11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md))
 - Second-wave root removals shipped (reliability, schema_drift, registry);
-  ~53 demoted root aliases remain ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
+  ~36 demoted root aliases remain after the 0.28 third wave
+  ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
 
 ### Work packages
 

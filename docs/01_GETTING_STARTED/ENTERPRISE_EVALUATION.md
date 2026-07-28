@@ -66,7 +66,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 |---|---|
 | Version pins | Pin `etlantic==0.28.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 | SBOM / attestations | Release CI digests + GitHub attestations (see Evaluator Brief) |
@@ -101,6 +101,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.25 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.28 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

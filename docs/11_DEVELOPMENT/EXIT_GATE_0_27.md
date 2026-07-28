@@ -40,4 +40,4 @@
 - [What's New 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md)
 - [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
 - [Exit gate 0.26](EXIT_GATE_0_26.md)
-- [Exit gate 0.28](EXIT_GATE_0_28.md) (planned)
+- [Exit gate 0.28](EXIT_GATE_0_28.md) (Done)

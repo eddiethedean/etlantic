@@ -130,7 +130,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 | Event sensors / Dagster compilers | Future |
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
-| Production FastAPI control plane | Continues in 1.1 (0.27 ships only the thin reference adapter) |
+| Production FastAPI control plane | Continues in 1.1 (0.28 ships only the thin reference adapter) |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |

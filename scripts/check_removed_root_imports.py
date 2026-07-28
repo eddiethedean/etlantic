@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Fail when tests/ or examples/ import removed root symbols from etlantic."""
+"""Fail when tests/, examples/, or docs import removed root symbols from etlantic."""
 
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from pathlib import Path
 
@@ -14,6 +15,15 @@ SKIP_FILES = {
     "test_root_removals_0_27.py",
     "test_root_removals_0_28.py",
 }
+# Historical migration pages may show pre-removal imports intentionally.
+DOCS_SKIP = re.compile(
+    r"(MIGRATION_0_(?:1[0-9]|2[0-5]|5|6|7|8|9)_TO_|WHATS_NEW_0_(?:1[0-9]|2[0-5])|"
+    r"CURSOR_EXTRACT_LOAD|DOCUMENTATION_AUDIT_)"
+)
+_IMPORT_RE = re.compile(
+    r"from\s+etlantic\s+import\s+(\([^)]+\)|[^\n]+)",
+    re.MULTILINE,
+)
 
 
 def _load_removed_names() -> set[str]:
@@ -30,6 +40,16 @@ def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:
             for alias in node.names:
                 if alias.name != "*":
                     found.add(alias.name)
+    return found
+
+
+def _names_from_import_clause(clause: str) -> set[str]:
+    chunk = clause.replace("(", "").replace(")", "")
+    found: set[str] = set()
+    for part in chunk.split(","):
+        name = part.strip().split(" as ")[0].strip().split("#")[0].strip()
+        if name and name != "*":
+            found.add(name)
     return found
 
 
@@ -54,6 +74,23 @@ def main() -> int:
             if bad:
                 rel = path.relative_to(ROOT)
                 violations.append(f"{rel}: {sorted(bad)}")
+
+    docs_root = ROOT / "docs"
+    if docs_root.exists():
+        for path in docs_root.rglob("*.md"):
+            if DOCS_SKIP.search(path.name):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except OSError as exc:
+                parse_failures.append(f"{path.relative_to(ROOT)}: {exc}")
+                continue
+            for match in _IMPORT_RE.finditer(text):
+                bad = _names_from_import_clause(match.group(1)) & removed
+                if bad:
+                    rel = path.relative_to(ROOT)
+                    violations.append(f"{rel}: {sorted(bad)}")
+
     if parse_failures:
         print("Removed root import guard FAILED (unparseable files):")
         for item in parse_failures:

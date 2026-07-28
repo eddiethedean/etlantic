@@ -11,9 +11,13 @@ This table describes the declared compatibility of ETLantic 0.28.0.
 | DTCS toolkit | `>=0.13,<1` |
 | DPCS toolkit | `>=0.13,<1` |
 | Pipeline plan schema | `etlantic.plan/1` |
+| Pipeline authoring wire | `etlantic.pipeline/1` |
+| Run report wire | `etlantic.run_report/1` |
+| Capabilities vocabulary | `etlantic.capabilities/1` |
 | Dataframe protocol | `etlantic.dataframe/1` |
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
+| Spark protocol | `etlantic.spark/1` |
 | Polars plugin | `etlantic-polars==0.28.0` |
 | Pandas plugin | `etlantic-pandas==0.28.0` |
 | SQL plugin | `etlantic-sql==0.28.0` |
@@ -22,6 +26,7 @@ This table describes the declared compatibility of ETLantic 0.28.0.
 | Prefect scheduler | `etlantic-prefect==0.28.0` |
 | Keyring provider | `etlantic-keyring==0.28.0` |
 | SQLModel bridge | `etlantic-sqlmodel==0.28.0` |
+| FastAPI reference adapter | `etlantic-fastapi==0.28.0` (reference only; not a control plane) |
 | Medallantic (facade) | `medallantic==0.28.0` |
 | SparkForge redirect | `etlantic-sparkforge==0.28.0` (compatibility shim; prefer `medallantic`) |
 | DataFusion plugin | `etlantic-datafusion==0.28.0` (**Experimental** Gate B stub; no graduated claims) |
@@ -77,6 +82,10 @@ minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and
 official plugin minor versions, and prefer exact pins for reproducibility.
+
+Root import changes in 0.28 (third-wave removals of demoted aliases): see
+[Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md).
+Package inventory: [Optional packages](OPTIONAL_PACKAGES.md).
 
 ## Portable transformation profiles
 

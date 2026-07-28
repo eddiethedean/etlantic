@@ -34,10 +34,22 @@ full plan object-graph immutability.
 | Prefect scheduler MVP | provisional | expand or freeze protocol by 1.0 |
 | Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.28.0** | remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
 
-### 0.26 discipline
+### Pre-1.0 burn-in discipline (0.28 line)
 
-Do **not** add new indefinite keep-forever root aliases while ETLantic is on the
-0.26 burn-in line. Prefer owning modules or the curated root facade.
+Do **not** add new indefinite keep-forever root aliases while ETLantic is on
+the 0.28 burn-in line. Prefer owning modules or the curated root facade.
+
+Third-wave removals in **0.28.0** (import from owning modules):
+
+- `etlantic.sql` — `RelationRef`, `SqlQuery`, `col`, `concat`, `select`,
+  `discover_sql_plugins`
+- `etlantic.profile` — `development_profile`, `load_profile`,
+  `production_profile`, `resolve_profile`, `test_profile`, `write_profile`
+- `etlantic.lifecycle` — `Emit`, `FailureAction`, `Inject`, `OutboundEvent`,
+  `StepFailureContext`
+
+See [Migration 0.27 → 0.28](MIGRATION_0_27_TO_0_28.md).
+
 ## Breaking-change requirements
 
 A breaking 0.x change requires a changelog entry, migration guide, before/after

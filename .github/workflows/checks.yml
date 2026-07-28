@@ -431,7 +431,7 @@ jobs:
         run: |
           for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
-            medallantic etlantic-datafusion; do
+            medallantic etlantic-sparkforge etlantic-fastapi etlantic-datafusion; do
             uv build --package "$pkg" --out-dir dist
           done
           ls -la dist/
@@ -480,6 +480,33 @@ jobs:
           echo "Smoke testing: $MEDALLANTIC_WHEEL with $CORE"
           uv run --isolated --no-project --with "$CORE" --with "$MEDALLANTIC_WHEEL" \
             python -c "import medallantic as s; import etlantic; assert s.__version__ == etlantic.__version__; print(s.__version__)"
+
+      - name: SparkForge redirect wheel import smoke
+        shell: bash
+        run: |
+          shopt -s nullglob
+          SPARKFORGE_WHEEL=""
+          for w in dist/etlantic_sparkforge-*.whl; do
+            SPARKFORGE_WHEEL="$w"
+            break
+          done
+          if [ -z "$SPARKFORGE_WHEEL" ]; then
+            echo "Expected etlantic-sparkforge wheel in dist/"
+            ls -la dist/ || true
+            exit 1
+          fi
+          MEDALLANTIC_WHEEL=$(ls dist/medallantic-*.whl | head -1)
+          CORE=""
+          for w in dist/etlantic-*.whl; do
+            base="$(basename "$w")"
+            if [[ "$base" =~ ^etlantic-[0-9] ]]; then
+              CORE="$w"
+              break
+            fi
+          done
+          echo "Smoke testing: $SPARKFORGE_WHEEL with $CORE + $MEDALLANTIC_WHEEL"
+          uv run --isolated --no-project --with "$CORE" --with "$MEDALLANTIC_WHEEL" --with "$SPARKFORGE_WHEEL" \
+            python -c "import warnings; warnings.simplefilter('ignore', DeprecationWarning); import etlantic_sparkforge as s; import medallantic; assert s.__version__ == medallantic.__version__; print(s.__version__)"
 
   benchmarks:
     name: Microbenchmark regression gate

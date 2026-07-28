@@ -186,7 +186,6 @@ Transformation implementations and callbacks declare typed requirements:
 ```python
 from typing import Annotated
 
-from etlantic import Resource
 from etlantic.lifecycle import Inject
 
 Warehouse = Annotated[SqlDatabase, Inject("warehouse")]

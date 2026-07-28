@@ -34,8 +34,8 @@ def normalize_polars(rows: pl.DataFrame) -> pl.DataFrame: ...
 SQL implementations use `"sql"` and receive `RelationRef` inputs:
 
 ```python
-from etlantic import Profile, col, concat, select
-from etlantic.sql import RelationRef
+from etlantic import Profile
+from etlantic.sql import RelationRef, col, concat, select
 
 @Normalize.implementation("sql")
 def normalize_sql(customers: RelationRef):

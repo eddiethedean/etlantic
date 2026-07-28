@@ -33,7 +33,7 @@
 
 ## Reference after first success
 
-- [Current 0.27 Guide](CURRENT_VERSION.md) — task table
+- [Current 0.28 Guide](CURRENT_VERSION.md) — task table
 - [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
 - Evaluators: [Evaluator Brief](EVALUATOR.md) → [Enterprise evaluation](ENTERPRISE_EVALUATION.md)

@@ -7,7 +7,7 @@ reports, and plugin integration.
 
 ## Current status
 
-Medallantic 0.27 is a migration and planning adapter. It can:
+Medallantic 0.28 is a migration and planning adapter. It can:
 
 - parse secret-free SparkForge pipeline IR
 - map medallion steps onto an ordinary ETLantic graph

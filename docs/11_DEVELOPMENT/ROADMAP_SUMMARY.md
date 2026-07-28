@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.28.0** ships **Compatibility Burn-In (third slice)**.
+ETLantic **0.28.0** ships **Compatibility Burn-In (fourth slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -52,7 +52,8 @@ ETLantic **0.22.0** shipped the **Plugin SDK Release Candidate**:
 capability-driven engine identity, `etlantic.capabilities/1`, hardened
 public conformance (including Spark), curated `import etlantic as etl`,
 `etlantic plugin compatibility`, and out-of-monorepo
-`etlantic-plugin-echo`. Protocol `/1` is freeze-eligible, not frozen. See
+`etlantic-plugin-echo`. Protocol `/1` is freeze-eligible, not frozen
+(superseded — frozen in 0.28.0). See
 [What's New in 0.22](../01_GETTING_STARTED/WHATS_NEW_0_22.md) and
 [Exit gate 0.22](EXIT_GATE_0_22.md).
 
@@ -91,6 +92,14 @@ first-wave root alias removals. See
 [What's New in 0.26](../01_GETTING_STARTED/WHATS_NEW_0_26.md) and
 [Exit gate 0.26](EXIT_GATE_0_26.md).
 
+## Shipped: 0.27
+
+ETLantic **0.27.0** shipped **Compatibility Burn-In (third slice)**:
+triple-minor burn-in proof (0.25→0.26→0.27), freeze re-scoped to 0.28+, and
+second-wave root alias removals (reliability, schema_drift, registry). See
+[What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
+[Exit gate 0.27](EXIT_GATE_0_27.md).
+
 ## Shipped: 0.28
 
 ETLantic **0.28.0** shipped **Compatibility Burn-In (fourth slice)**:
@@ -99,14 +108,6 @@ third-wave root alias removals, Medallantic M0 closeout, and facade package
 discipline. See
 [What's New in 0.28](../01_GETTING_STARTED/WHATS_NEW_0_28.md) and
 [Exit gate 0.28](EXIT_GATE_0_28.md).
-
-## Shipped: 0.27
-
-ETLantic **0.28.0** shipped **Compatibility Burn-In (third slice)**:
-triple-minor burn-in proof (0.25→0.26→0.27), freeze re-scoped to 0.28+, and
-second-wave root alias removals (reliability, schema_drift, registry). See
-[What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
-[Exit gate 0.27](EXIT_GATE_0_27.md).
 
 ## Next: 0.29 — native medallion authoring (M1)
 
