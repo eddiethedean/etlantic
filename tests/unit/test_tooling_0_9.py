@@ -75,7 +75,9 @@ def test_staging_not_inferred_as_production() -> None:
 def test_invalid_allowlist_pin_emits_pmplug403() -> None:
     class _P:
         info = type(
-            "I", (), {"name": "etlantic-polars", "engine": "polars", "version": "0.26.0"}
+            "I",
+            (),
+            {"name": "etlantic-polars", "engine": "polars", "version": "0.26.0"},
         )()
 
     profile = Profile(
@@ -147,7 +149,6 @@ def test_discover_planning_plugins_early_returns_on_pmplug401() -> None:
         spark_engine=None,
     )
     assert sum(1 for d in diags if d.code == "PMPLUG401") == 1
-
 
 
 def test_schema_drift_blocks_production_security_mode() -> None:

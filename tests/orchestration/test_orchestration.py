@@ -19,8 +19,8 @@ from etlantic import (
     compile_plan,
     plan_pipeline,
 )
-from etlantic.orchestration import ORCHESTRATION_PROTOCOL_VERSION
 from etlantic.orchestration import (
+    ORCHESTRATION_PROTOCOL_VERSION,
     ArtifactTransportPolicy,
     CompilationContext,
     ExecutionIntent,

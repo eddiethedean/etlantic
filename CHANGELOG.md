@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-07-27
+
+### Added
+- Dual-minor burn-in fixtures (`v0_25/`) proving 0.25→0.26 upgrade without wire-schema reset
+- Extended CI gates for pipeline and sibling codec burn-in across `v0_24` and `v0_25`
+- What's New / Migration / Exit Gate 0.26 documentation
+
+### Changed
+- Official package versions align at 0.26.0; plugins require `etlantic>=0.26.0,<0.27`
+- Plugin SDK `/1` freeze re-scoped to 0.27+ (external feedback blocker remains open)
+- Wire schema ranges document dual-minor window and authoring-catalog N/A rationale
+
 ### Fixed
-- Allowlist denials (``PMPLUG402``) of sibling packages no longer abort discovery when other allowlisted plugins load
+- Allowlist denials (`PMPLUG402`) of sibling packages no longer abort discovery when other allowlisted plugins load
 - Replace (not merge) runtime plugin maps and prune non-builtin registry entries on profile switch so tighter allowlists cannot leave unauthorized plugins resident
 - Authorize plugins only on distribution/package identity (not engine/entry short names); exempt in-tree builtin stubs from package allowlist checks; drop `"local": null` from prod examples
 - Compiler/differential tests import `RunStatus` from `etlantic.runtime` after 0.26 root removal; cover all `_REMOVED_0_26` symbols and guard tests/examples imports in CI
@@ -22,18 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs/check_docs pin hygiene for 0.26 (LEARNING_PATH, CONFIGURATION_TODAY, FIRST_PIPELINE, COMPATIBILITY, EXCEPTIONS, API_REFERENCE, FAQ, SURFACE_INVENTORY, RELEASE_PROCESS)
 - DataFusion stub messages retargeted to 0.26.0; PySpark local provider declares `etlantic.spark/1` protocol
 - Log (debug) instead of silent swallow on legacy plan decode and plugin compatibility distribution scan failures
-
-## [0.26.0] - 2026-07-27
-
-### Added
-- Dual-minor burn-in fixtures (`v0_25/`) proving 0.25→0.26 upgrade without wire-schema reset
-- Extended CI gates for pipeline and sibling codec burn-in across `v0_24` and `v0_25`
-- What's New / Migration / Exit Gate 0.26 documentation
-
-### Changed
-- Official package versions align at 0.26.0; plugins require `etlantic>=0.26.0,<0.27`
-- Plugin SDK `/1` freeze re-scoped to 0.27+ (external feedback blocker remains open)
-- Wire schema ranges document dual-minor window and authoring-catalog N/A rationale
 
 ### Removed
 - First-wave root facade aliases: protocol consts, exceptions, storage, runtime, interchange helpers (37 symbols); import from owning modules per Migration 0.25→0.26

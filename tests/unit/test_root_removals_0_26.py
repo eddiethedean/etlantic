@@ -17,7 +17,9 @@ SCAN_ROOTS = (ROOT / "tests", ROOT / "examples")
 
 @pytest.mark.parametrize("name", sorted(_REMOVED_0_26))
 def test_removed_root_alias_raises(name: str) -> None:
-    with pytest.raises(AttributeError, match="removed from the etlantic root in 0.26.0"):
+    with pytest.raises(
+        AttributeError, match=r"removed from the etlantic root in 0\.26\.0"
+    ):
         getattr(etlantic, name)
 
 

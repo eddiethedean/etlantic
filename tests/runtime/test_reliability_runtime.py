@@ -16,8 +16,6 @@ from etlantic import (
     PipelineRuntime,
     Transformation,
 )
-from etlantic.runtime.request import RunRequest
-from etlantic.runtime.state import RunStatus
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.reliability import (
     FreshnessExpectation,
@@ -32,7 +30,8 @@ from etlantic.reliability_runtime import (
     minimum_safe_repair,
     resolve_freshness_observed_at,
 )
-from etlantic.runtime.request import InvalidationMode, RetryPolicy
+from etlantic.runtime.request import InvalidationMode, RetryPolicy, RunRequest
+from etlantic.runtime.state import RunStatus
 
 
 class Row(Data):

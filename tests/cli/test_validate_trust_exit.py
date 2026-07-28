@@ -58,7 +58,9 @@ def test_validate_exit_trust_failure_for_pmplug() -> None:
     assert _trust_exit(report) == ec.TRUST_FAILURE
 
 
-def test_validate_exit_trust_failure_for_authorize_phase_without_pmplug_prefix() -> None:
+def test_validate_exit_trust_failure_for_authorize_phase_without_pmplug_prefix() -> (
+    None
+):
     report = ValidationReport(
         diagnostics=(
             Diagnostic(

@@ -17,7 +17,6 @@ from etlantic import (
     PipelineRuntime,
     Transformation,
 )
-from etlantic.runtime.state import RunStatus
 from etlantic.dataframe.discovery import discover_dataframe_plugins
 from etlantic.dataframe.protocol import (
     DataframeExecutionContext,
@@ -30,6 +29,7 @@ from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.profile import Profile
 from etlantic.registry import PlanningContext
 from etlantic.runtime.artifacts import ArtifactStore
+from etlantic.runtime.state import RunStatus
 from etlantic.schema_drift import normalize_schema_from_fields
 
 

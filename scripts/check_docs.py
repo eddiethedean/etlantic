@@ -1344,7 +1344,11 @@ def main() -> None:
             hard_pin = f"=={prior_minor}"
             version_example = f'etlantic.version = "{prior_minor}"'
             prints_prior = f"prints `{prior_minor}`"
-            if hard_pin in text and pin not in text and f"etlantic=={package_version}" not in text:
+            if (
+                hard_pin in text
+                and pin not in text
+                and f"etlantic=={package_version}" not in text
+            ):
                 raise SystemExit(
                     f"{path} still pins {hard_pin}; expected {pin} for current release"
                 )
@@ -1368,12 +1372,22 @@ def main() -> None:
                     f"{path} still references tested surface for {prior_minor}; "
                     f"retarget to {package_version}"
                 )
-        if path.suffix == ".json" and pin not in text and f'"{package_version}"' not in text:
-            if prior_minor and f"=={prior_minor}" in text:
-                raise SystemExit(f"{path} allowlist pins must use {pin}")
+        if (
+            path.suffix == ".json"
+            and pin not in text
+            and f'"{package_version}"' not in text
+            and prior_minor
+            and f"=={prior_minor}" in text
+        ):
+            raise SystemExit(f"{path} allowlist pins must use {pin}")
 
-    exceptions_md = (ROOT / "docs/10_REFERENCE/EXCEPTIONS.md").read_text(encoding="utf-8")
-    if "still work pre-1.0" in exceptions_md or "exception aliases still work" in exceptions_md:
+    exceptions_md = (ROOT / "docs/10_REFERENCE/EXCEPTIONS.md").read_text(
+        encoding="utf-8"
+    )
+    if (
+        "still work pre-1.0" in exceptions_md
+        or "exception aliases still work" in exceptions_md
+    ):
         raise SystemExit(
             "EXCEPTIONS.md must not claim removed root exception aliases still work; "
             "see Migration 0.25→0.26"
@@ -1416,8 +1430,8 @@ def main() -> None:
                 window = text[start:end]
                 if not mode_present.search(window):
                     raise SystemExit(
-                        f"{path}: security_domain=\"production\" without nearby "
-                        "security_mode=\"production\" (fail-closed trust requires "
+                        f'{path}: security_domain="production" without nearby '
+                        'security_mode="production" (fail-closed trust requires '
                         "security_mode)"
                     )
             # Day-2 howtos must not recommend bare --profile production as a
@@ -1440,7 +1454,8 @@ def main() -> None:
                         "do not" in preceding
                         or "not use" in preceding
                         or "expected to fail" in preceding
-                        or "expected to fail" in text[max(0, line_start - 400) : line_start].lower()
+                        or "expected to fail"
+                        in text[max(0, line_start - 400) : line_start].lower()
                     ):
                         continue
                     raise SystemExit(

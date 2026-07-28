@@ -19,8 +19,6 @@ from etlantic.schema_drift import (
     diff_normalized_schemas,
     normalize_schema_from_model,
 )
-
-_LOG = logging.getLogger(__name__)
 from etlantic.schema_history import FileSchemaHistoryProvider
 from etlantic.schema_policy import observe_model_schema
 from etlantic.viz import (
@@ -29,6 +27,8 @@ from etlantic.viz import (
     lineage_export,
     logical_graph_to_ir,
 )
+
+_LOG = logging.getLogger(__name__)
 
 
 def register_commands(

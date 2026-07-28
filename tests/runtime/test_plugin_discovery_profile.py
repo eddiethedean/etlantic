@@ -122,9 +122,7 @@ def test_runtime_profile_switch_drops_unauthorized_plugins(
 
     monkeypatch.setattr("etlantic.plugin_lifecycle.discover_entry_points", _discover)
     runtime = PipelineRuntime()
-    runtime.ensure_plugins_for_profile(
-        Profile(name="dev", security_mode="development")
-    )
+    runtime.ensure_plugins_for_profile(Profile(name="dev", security_mode="development"))
     assert "polars" in runtime.dataframe_plugins
     assert "polars" in runtime.registry.plugins or any(
         d.engine == "polars" for d in runtime.registry.plugins.values()

@@ -20,7 +20,12 @@ from etlantic import (
     load_data_contract,
     write_odcs,
 )
-from etlantic.interchange import diff_pipelines, graphs_equivalent, load_bundle, write_contracts
+from etlantic.interchange import (
+    diff_pipelines,
+    graphs_equivalent,
+    load_bundle,
+    write_contracts,
+)
 from etlantic.interchange.bundle import BundleError
 from etlantic.interchange.diff import diff_transformations
 from etlantic.interchange.dtcs import transformation_from_dtcs

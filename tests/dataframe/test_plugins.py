@@ -16,10 +16,10 @@ from etlantic import (
     PipelineRuntime,
     Transformation,
 )
-from etlantic.runtime.state import RunStatus
 from etlantic.plan import explain_plan, plan_pipeline
 from etlantic.profile import Profile
 from etlantic.registry import PlanningContext, builtin_stub_registry
+from etlantic.runtime.state import RunStatus
 
 
 @pytest.fixture

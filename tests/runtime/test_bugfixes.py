@@ -20,11 +20,10 @@ from etlantic import (
     SecretRef,
     Transformation,
 )
-from etlantic.runtime.request import RunRequest, RunSelection
-from etlantic.runtime.state import RunStatus
 from etlantic.lifecycle.callbacks import FailureAction
 from etlantic.registry import BindingDescriptor, PlanningContext
-from etlantic.runtime.request import MaterializationPolicy
+from etlantic.runtime.request import MaterializationPolicy, RunRequest, RunSelection
+from etlantic.runtime.state import RunStatus
 from etlantic.schema_drift import (
     SchemaObservation,
     normalize_schema_from_fields,

@@ -88,7 +88,9 @@ def main() -> None:
     for version in VERSIONS:
         fps = _check_version(version)
         total += len(fps)
-    print(f"Pipeline codec burn-in gate passed ({total} fixtures across {len(VERSIONS)} versions).")
+    print(
+        f"Pipeline codec burn-in gate passed ({total} fixtures across {len(VERSIONS)} versions)."
+    )
 
 
 if __name__ == "__main__":

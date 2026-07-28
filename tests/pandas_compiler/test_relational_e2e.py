@@ -17,9 +17,9 @@ from etlantic import (
     Profile,
     Transformation,
 )
-from etlantic.runtime import RunStatus
 from etlantic.plan import plan_pipeline
 from etlantic.registry import PlanningContext
+from etlantic.runtime import RunStatus
 from etlantic.transform import functions as F
 from etlantic.transform.compiler import TransformPlanningContext
 from etlantic_pandas import create_plugin, create_transform_compiler

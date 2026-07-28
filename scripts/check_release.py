@@ -207,8 +207,7 @@ def main() -> int:
     if guard.returncode != 0:
         detail = (guard.stdout or guard.stderr or "").strip()
         errors.append(
-            "removed root import guard failed"
-            + (f": {detail}" if detail else "")
+            "removed root import guard failed" + (f": {detail}" if detail else "")
         )
     else:
         print((guard.stdout or "").strip() or "Removed root import guard passed.")

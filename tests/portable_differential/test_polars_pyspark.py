@@ -21,8 +21,8 @@ from etlantic import (
     Profile,
     Transformation,
 )
-from etlantic.runtime import RunStatus
 from etlantic.registry import PlanningContext
+from etlantic.runtime import RunStatus
 from etlantic.transform import functions as F
 from etlantic_pandas import create_plugin as create_pandas_plugin
 from etlantic_polars import create_plugin as create_polars_plugin

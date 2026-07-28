@@ -349,7 +349,11 @@ __all__ = [
 
 def __dir__() -> list[str]:
     return sorted(
-        set(__all__) | set(_DEMOTED_ALIASES) | set(_REMOVED_0_26) | {"DataContractModel"} | set(globals())
+        set(__all__)
+        | set(_DEMOTED_ALIASES)
+        | set(_REMOVED_0_26)
+        | {"DataContractModel"}
+        | set(globals())
     )
 
 

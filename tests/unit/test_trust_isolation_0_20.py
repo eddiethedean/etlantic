@@ -128,7 +128,9 @@ def test_builtin_local_exempt_from_package_allowlist() -> None:
     profile = production_profile(
         plugin_allowlist={"etlantic-polars": "==0.26.0"},
     )
-    local = PluginDescriptor(name="local", kind="runtime", version="0.26.0", engine="local")
+    local = PluginDescriptor(
+        name="local", kind="runtime", version="0.26.0", engine="local"
+    )
     kept, diags = filter_plugins_by_allowlist({"local": local}, profile)
     assert "local" in kept
     assert not any(d.code == "PMPLUG402" for d in diags)

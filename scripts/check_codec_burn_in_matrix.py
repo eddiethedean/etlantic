@@ -54,7 +54,10 @@ def _check_siblings() -> dict[str, str]:
             for path in paths:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 key = f"{version}/{family}/{path.name}"
-                if expected_schema is not None and data.get("schema") != expected_schema:
+                if (
+                    expected_schema is not None
+                    and data.get("schema") != expected_schema
+                ):
                     raise SystemExit(
                         f"{key}: expected schema {expected_schema!r}, "
                         f"got {data.get('schema')!r}"

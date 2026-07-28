@@ -10,7 +10,6 @@ from packaging.version import InvalidVersion, Version
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.profile import Profile
 
-
 # In-tree stub descriptors (registry.builtin_stub_registry). These are not
 # entry-point packages and must not require package allowlist keys — otherwise
 # adopters are pushed to list short names like ``"local": null``, which widens
@@ -146,9 +145,7 @@ def filter_plugins_by_allowlist(
         if not isinstance(metadata, dict):
             metadata = {}
         pname = (
-            getattr(info, name_attr, None)
-            or getattr(plugin, name_attr, None)
-            or key
+            getattr(info, name_attr, None) or getattr(plugin, name_attr, None) or key
         )
         if is_builtin_allowlist_exempt(str(pname)):
             kept[key] = plugin

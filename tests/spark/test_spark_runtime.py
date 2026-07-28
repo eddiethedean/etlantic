@@ -17,7 +17,6 @@ from etlantic import (
     explain_plan,
     plan_pipeline,
 )
-from etlantic.spark import SPARK_PROTOCOL_VERSION, STREAMING_STABILITY
 from etlantic.exceptions import NodeExecutionError, PipelineValidationError
 from etlantic.registry import PlanningContext
 from etlantic.runtime.spark_exec import (
@@ -25,6 +24,7 @@ from etlantic.runtime.spark_exec import (
     assert_udf_policy,
     is_spark_engine,
 )
+from etlantic.spark import SPARK_PROTOCOL_VERSION, STREAMING_STABILITY
 from etlantic.spark.protocol import (
     ExpressionStrategy,
     SchemaCompatibility,

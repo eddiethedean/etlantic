@@ -56,14 +56,10 @@ def main() -> None:
             f"> **Status: Available in ETLantic {version}.** Machine-readable "
             "inventory of"
         )
-        print(
-            "> diagnostic code literals found under `src/etlantic`. Regenerate with:"
-        )
+        print("> diagnostic code literals found under `src/etlantic`. Regenerate with:")
         print(">")
         print("> ```bash")
-        print(
-            "> uv run python scripts/generate_diagnostics_catalog.py --markdown \\"
-        )
+        print("> uv run python scripts/generate_diagnostics_catalog.py --markdown \\")
         print(">   > docs/10_REFERENCE/DIAGNOSTICS_CATALOG.md")
         print("> ```")
         print(">")
@@ -71,9 +67,7 @@ def main() -> None:
             "> Prefer the curated tables in [Diagnostics](DIAGNOSTICS.md) for "
             "human-oriented"
         )
-        print(
-            "> meanings. This page is the exhaustive code→source index."
-        )
+        print("> meanings. This page is the exhaustive code→source index.")
         print()
         print("| Code | Example source paths |")
         print("|---|---|")
