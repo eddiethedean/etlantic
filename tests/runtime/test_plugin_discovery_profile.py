@@ -129,7 +129,7 @@ def test_runtime_profile_switch_drops_unauthorized_plugins(
     )
 
     prod = production_profile(
-        plugin_allowlist={"etlantic-pandas": "==0.26.0"},
+        plugin_allowlist={"etlantic-pandas": "==0.27.0"},
     )
     diags = runtime.ensure_plugins_for_profile(prod)
     assert "polars" not in runtime.dataframe_plugins

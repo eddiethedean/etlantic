@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BURN_IN = ROOT / "tests" / "fixtures" / "burn_in" / "pipeline"
-VERSIONS = ("v0_24", "v0_25")
+VERSIONS = ("v0_24", "v0_25", "v0_26")
 
 
 def _check_version(version: str) -> dict[str, str]:

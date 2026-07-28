@@ -14,7 +14,6 @@ from etlantic import (
     Output,
     Pipeline,
     PipelinePlan,
-    PlanningContext,
     SecretRef,
     Transformation,
 )
@@ -30,6 +29,7 @@ from etlantic.plan import (
 )
 from etlantic.plan.artifacts import ArtifactStrategy
 from etlantic.profile import Profile
+from etlantic.registry import PlanningContext
 
 
 class Customer(Data):

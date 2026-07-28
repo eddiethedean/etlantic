@@ -1,0 +1,216 @@
+{
+  "contracts": [
+    {
+      "authoring_id": "burnin:RawCustomer",
+      "fields": [
+        {
+          "name": "customer_id",
+          "nullable": false,
+          "required": true,
+          "type": "int"
+        },
+        {
+          "name": "first_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "last_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "identity": "burnin:RawCustomer",
+      "metadata": {},
+      "name": "RawCustomer",
+      "version": null
+    },
+    {
+      "authoring_id": "burnin:Customer",
+      "fields": [
+        {
+          "name": "customer_id",
+          "nullable": false,
+          "required": true,
+          "type": "int"
+        },
+        {
+          "name": "full_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "identity": "burnin:Customer",
+      "metadata": {},
+      "name": "Customer",
+      "version": null
+    }
+  ],
+  "edges": [
+    {
+      "consumer_contract_id": "burnin:RawCustomer",
+      "consumer_node": "normalized",
+      "consumer_port": "customers",
+      "producer_contract_id": "burnin:RawCustomer",
+      "producer_node": "raw",
+      "producer_port": "result"
+    },
+    {
+      "consumer_contract_id": "burnin:Customer",
+      "consumer_node": "curated",
+      "consumer_port": "input",
+      "producer_contract_id": "burnin:Customer",
+      "producer_node": "normalized",
+      "producer_port": "result"
+    }
+  ],
+  "extensions": {},
+  "fingerprint": "44f6b7fb0dd393fe21650f5d0e2f6f5b78de09dd1b2e842ba3160269f2fbc5b0",
+  "metadata": {},
+  "nodes": [
+    {
+      "asset": "customer_source",
+      "bindings": {},
+      "contract_id": "burnin:RawCustomer",
+      "identity": "burnin:MultiNode/raw",
+      "inputs": [],
+      "kind": "source",
+      "metadata": {},
+      "name": "raw",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [
+        {
+          "contract_id": "burnin:RawCustomer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    },
+    {
+      "asset": null,
+      "bindings": {},
+      "contract_id": null,
+      "identity": "burnin:MultiNode/normalized",
+      "inputs": [
+        {
+          "contract_id": "burnin:RawCustomer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "customers",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "kind": "step",
+      "metadata": {},
+      "name": "normalized",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [
+        {
+          "contract_id": "burnin:Customer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "parameters": [],
+      "transformation_id": "burnin:Normalize",
+      "transformation_name": "NormalizeCustomers"
+    },
+    {
+      "asset": "customer_sink",
+      "bindings": {},
+      "contract_id": "burnin:Customer",
+      "identity": "burnin:MultiNode/curated",
+      "inputs": [
+        {
+          "contract_id": "burnin:Customer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "input",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "kind": "sink",
+      "metadata": {},
+      "name": "curated",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    }
+  ],
+  "pipeline_id": "burnin:MultiNode",
+  "pipeline_name": "MultiNodeDemo",
+  "policy_refs": {},
+  "profile_ref": null,
+  "provenance": {
+    "kind": "functional"
+  },
+  "reliability": {},
+  "schema": "etlantic.pipeline/1",
+  "transformations": [
+    {
+      "identity": "burnin:Normalize",
+      "implementation_refs": [
+        {
+          "engine": "local",
+          "identity": "burnin:Normalize:local",
+          "is_async": false,
+          "kind": "native"
+        }
+      ],
+      "metadata": {},
+      "name": "NormalizeCustomers",
+      "portable_plan": null,
+      "ports": [
+        {
+          "contract_id": "burnin:RawCustomer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "customers",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        },
+        {
+          "contract_id": "burnin:Customer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "version": null
+    }
+  ],
+  "version": null
+}

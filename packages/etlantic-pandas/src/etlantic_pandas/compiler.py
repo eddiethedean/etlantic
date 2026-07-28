@@ -28,7 +28,7 @@ from etlantic_pandas.lowering.actions import (
     apply_action,
 )
 
-__version__ = "0.26.0"
+__version__ = "0.27.0"
 
 KERNEL_FUNCTIONS = frozenset(
     {

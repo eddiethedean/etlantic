@@ -22,9 +22,9 @@ Prefect direct execution via the shipped `etlantic-prefect`
 
 ------------------------------------------------------------------------
 
-## Is ETLantic 0.26 production-supported?
+## Is ETLantic 0.27 production-supported?
 
-ETLantic **0.26.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.27.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md). Multi-tenant
@@ -35,7 +35,7 @@ remain adopter-owned.
 
 ## What is the difference between Available and Experimental?
 
-**Available** APIs and behaviors are supported within the documented 0.26
+**Available** APIs and behaviors are supported within the documented 0.27
 single-tenant pilot envelope (the package itself remains **Beta** on PyPI).
 Features explicitly labeled **Experimental**, currently including Structured
 Streaming foundations and `etlantic-datafusion`, may change and are outside
@@ -197,10 +197,10 @@ you need Spark semantics and have a working Java environment.
 ## Must core and plugin versions match?
 
 Yes. Keep core and optional plugins on the same minor release. For a
-reproducible 0.26.0 environment, pin both exactly, for example:
+reproducible 0.27.0 environment, pin both exactly, for example:
 
 ```bash
-python -m pip install 'etlantic==0.26.0' 'etlantic-polars==0.26.0'
+python -m pip install 'etlantic==0.27.0' 'etlantic-polars==0.27.0'
 ```
 
 A mismatched plugin may fail discovery, protocol checks, validation, or
@@ -361,11 +361,12 @@ clone, `examples/pipeline_definition_json.py` shows builders → JSON →
 
 ## Why does `from etlantic import SomeError` fail or warn?
 
-In **0.26**, many former root exception and helper aliases were **removed**
-(for example `ETLanticError`, `DataValidationError`, `MemoryStorage`,
-`RunStatus`). Importing them from `etlantic` raises `AttributeError` with a
-migration pointer — see
-[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
+In **0.26** and **0.27**, many former root exception and helper aliases were
+**removed** (for example `ETLanticError`, `MemoryStorage`, `RunStatus`,
+`PlanningContext`, `WriteMode`). Importing them from `etlantic` raises
+`AttributeError` with a migration pointer — see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) and
+[Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
 A smaller set of specialist root exports remain as **pre-1.0 demoted**
 aliases and emit a **one-time** demotion warning. Prefer owning modules:

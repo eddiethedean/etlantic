@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.26.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
+ETLantic 0.27.0 is a Beta (PyPI) release suitable for documented single-tenant pilots—not unrestricted enterprise production,
 while remaining pre-1.0. Breaking changes remain possible, but they must not
 be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
@@ -8,7 +8,7 @@ be silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.26 public imports | Supported for the 0.26.x line |
+| Documented 0.27 public imports | Supported for the 0.27.x line |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |
@@ -32,7 +32,7 @@ full plan object-graph immutability.
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
 | Prefect scheduler MVP | provisional | expand or freeze protocol by 1.0 |
-| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0 | second wave planned in **0.27**; remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second wave removed in **0.27.0** | remainder by 1.0; see [Removal candidates](REMOVAL_CANDIDATES_1_0.md) |
 
 ### 0.26 discipline
 

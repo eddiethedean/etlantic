@@ -1,14 +1,17 @@
-# Public Surface Inventory (0.26)
+# Public Surface Inventory (0.27)
+
+> **Status: Available in ETLantic 0.27.0.** Canonical public surface for the
+> **0.27 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Regenerated from that file for the
-**0.26 reference envelope**.
+**0.27 reference envelope**.
 
 Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.26 reference envelope |
+| `stable` | Supported within the documented 0.27 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -32,9 +35,10 @@ Stable root symbols (`sdk_root_stable`):
 | `ValidationReport`, `PipelineRunReport`, `SecretRef` |
 
 Prefer `etl.authoring` for programmatic definition APIs. Provisional root:
-`DataContractModel` (prefer ODCS / `Data` paths). In **0.26**, first-wave root
-facade aliases were **removed** (see
-[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md)). Remaining
+`DataContractModel` (prefer ODCS / `Data` paths). In **0.26**/**0.27**, root
+facade aliases were removed in waves (see
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) and
+[Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md)). Remaining
 demoted pre-1.0 root aliases warn once — see
 [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md).
 
@@ -75,7 +79,7 @@ See [CLI](CLI.md).
 
 Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 [protocol `/1` freeze](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
-(still open in 0.26; freeze owned by [0.27](../11_DEVELOPMENT/EXIT_GATE_0_27.md)).
+(still open in 0.27; freeze owned by [0.28+](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)).
 
 | Schema ID | Class |
 |---|---|
@@ -101,7 +105,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.26.0`). Details:
+Pin to the same minor as core (`==0.27.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

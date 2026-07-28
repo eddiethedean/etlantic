@@ -9,7 +9,7 @@
 | Support | Community; **no SLA** |
 | Not included | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.26.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
+ETLantic 0.27.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment on this page. Experimental features remain experimental. Broader
 deployment topology, multi-tenancy, compliance attestations beyond shipped
 SBOM digests/GitHub attestations, and advanced supply-chain programs remain
@@ -33,7 +33,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.26.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.27.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.

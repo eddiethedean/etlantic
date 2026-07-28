@@ -13,12 +13,11 @@ from etlantic import (
     Load,
     Output,
     Pipeline,
-    PlanningContext,
     Transformation,
 )
 from etlantic.plan import plan_from_json, plan_pipeline, plan_to_json
 from etlantic.profile import Profile
-from etlantic.registry import BindingDescriptor, builtin_stub_registry
+from etlantic.registry import BindingDescriptor, PlanningContext, builtin_stub_registry
 from etlantic.secrets import SecretRef
 
 

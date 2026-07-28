@@ -201,7 +201,7 @@ def test_production_validate_requires_allowlist() -> None:
     assert any(d.code == "PMPLUG401" for d in report.diagnostics)
 
     ok = SamplePipeline.validate(
-        profile=production_profile(plugin_allowlist={"etlantic-polars": "==0.26.0"})
+        profile=production_profile(plugin_allowlist={"etlantic-polars": "==0.27.0"})
     )
     assert not any(d.code == "PMPLUG401" for d in ok.diagnostics)
 

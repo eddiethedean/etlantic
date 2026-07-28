@@ -90,9 +90,7 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "ArtifactOwnership": ("etlantic.dataframe", "ArtifactOwnership"),
     "ArtifactRef": ("etlantic.plan", "ArtifactRef"),
     "ArtifactStrategy": ("etlantic.plan", "ArtifactStrategy"),
-    "BackfillDeclaration": ("etlantic.reliability", "BackfillDeclaration"),
     "BackfillRequest": ("etlantic.reliability_runtime", "BackfillRequest"),
-    "BindingDescriptor": ("etlantic.registry", "BindingDescriptor"),
     "CapabilityDecision": ("etlantic.capabilities", "CapabilityDecision"),
     "DataframeValidationOutcome": ("etlantic.dataframe", "DataframeValidationOutcome"),
     "DataframeValidationPolicy": ("etlantic.dataframe", "DataframeValidationPolicy"),
@@ -100,44 +98,23 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "Diagnostic": ("etlantic.diagnostics", "Diagnostic"),
     "DiagnosticAction": ("etlantic.diagnostics", "DiagnosticAction"),
     "DriftAction": ("etlantic.schema_policy", "DriftAction"),
-    "DriftImpact": ("etlantic.schema_drift", "DriftImpact"),
     "Edge": ("etlantic.model", "Edge"),
     "Emit": ("etlantic.lifecycle", "Emit"),
     "FailureAction": ("etlantic.lifecycle", "FailureAction"),
-    "FreshnessExpectation": ("etlantic.reliability", "FreshnessExpectation"),
-    "IdempotencyDeclaration": ("etlantic.reliability", "IdempotencyDeclaration"),
-    "ImplementationDescriptor": ("etlantic.registry", "ImplementationDescriptor"),
     "ImplementationRecord": ("etlantic.transformation", "ImplementationRecord"),
     "Inject": ("etlantic.lifecycle", "Inject"),
     "LogicalGraph": ("etlantic.model", "LogicalGraph"),
-    "MaterializationIntent": ("etlantic.reliability", "MaterializationIntent"),
-    "MaterializationMode": ("etlantic.reliability", "MaterializationMode"),
     "Node": ("etlantic.model", "Node"),
     "NodeKind": ("etlantic.model", "NodeKind"),
-    "NormalizedSchema": ("etlantic.schema_drift", "NormalizedSchema"),
     "OutboundEvent": ("etlantic.lifecycle", "OutboundEvent"),
     "OutboundPolicy": ("etlantic.outbound", "OutboundPolicy"),
     "OutputRef": ("etlantic.refs", "OutputRef"),
-    "PartitionCompletenessExpectation": (
-        "etlantic.reliability",
-        "PartitionCompletenessExpectation",
-    ),
-    "PlanningContext": ("etlantic.registry", "PlanningContext"),
     "PluginCapabilities": ("etlantic.capabilities", "PluginCapabilities"),
-    "PluginDescriptor": ("etlantic.registry", "PluginDescriptor"),
     "PluginManifest": ("etlantic.plugin_manifest", "PluginManifest"),
-    "ReconciliationDeclaration": ("etlantic.reliability", "ReconciliationDeclaration"),
-    "RegistryBundle": ("etlantic.registry", "RegistryBundle"),
     "RelationRef": ("etlantic.sql", "RelationRef"),
-    "ReliabilityEvidence": ("etlantic.reliability", "ReliabilityEvidence"),
-    "RepairDeclaration": ("etlantic.reliability", "RepairDeclaration"),
     "ReportStore": ("etlantic.reports", "ReportStore"),
-    "RetrySafetyDeclaration": ("etlantic.reliability", "RetrySafetyDeclaration"),
     "SafeIoPolicy": ("etlantic.io_policy", "SafeIoPolicy"),
-    "SchemaChange": ("etlantic.schema_drift", "SchemaChange"),
-    "SchemaChangeSet": ("etlantic.schema_drift", "SchemaChangeSet"),
     "SchemaDriftPolicy": ("etlantic.schema_policy", "SchemaDriftPolicy"),
-    "SchemaObservation": ("etlantic.schema_drift", "SchemaObservation"),
     "SecretValue": ("etlantic.secrets", "SecretValue"),
     "Severity": ("etlantic.diagnostics", "Severity"),
     "SourceLocation": ("etlantic.diagnostics", "SourceLocation"),
@@ -147,14 +124,9 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "StepFailureContext": ("etlantic.lifecycle", "StepFailureContext"),
     "SubpipelineInstance": ("etlantic.pipeline", "SubpipelineInstance"),
     "ValidationPolicy": ("etlantic.policy", "ValidationPolicy"),
-    "WriteIntent": ("etlantic.reliability", "WriteIntent"),
-    "WriteMode": ("etlantic.reliability", "WriteMode"),
-    "builtin_stub_registry": ("etlantic.registry", "builtin_stub_registry"),
     "col": ("etlantic.sql", "col"),
     "concat": ("etlantic.sql", "concat"),
     "development_profile": ("etlantic.profile", "development_profile"),
-    "diff_contract_schemas": ("etlantic.schema_drift", "diff_contract_schemas"),
-    "diff_normalized_schemas": ("etlantic.schema_drift", "diff_normalized_schemas"),
     "discover_dataframe_plugins": ("etlantic.dataframe", "discover_dataframe_plugins"),
     "discover_orchestrator_plugins": (
         "etlantic.orchestration",
@@ -165,10 +137,6 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "discover_sql_plugins": ("etlantic.sql", "discover_sql_plugins"),
     "load_data_contract": ("etlantic.contracts", "load_data_contract"),
     "load_profile": ("etlantic.profile", "load_profile"),
-    "normalize_schema_from_model": (
-        "etlantic.schema_drift",
-        "normalize_schema_from_model",
-    ),
     "production_profile": ("etlantic.profile", "production_profile"),
     "resolve_profile": ("etlantic.profile", "resolve_profile"),
     "select": ("etlantic.sql", "select"),
@@ -340,6 +308,113 @@ _REMOVED_0_26: dict[str, str] = {
     ),
 }
 
+_REMOVED_0_27: dict[str, str] = {
+    "BackfillDeclaration": (
+        "BackfillDeclaration was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "BindingDescriptor": (
+        "BindingDescriptor was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "DriftImpact": (
+        "DriftImpact was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "FreshnessExpectation": (
+        "FreshnessExpectation was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "IdempotencyDeclaration": (
+        "IdempotencyDeclaration was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "ImplementationDescriptor": (
+        "ImplementationDescriptor was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "MaterializationIntent": (
+        "MaterializationIntent was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "MaterializationMode": (
+        "MaterializationMode was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "NormalizedSchema": (
+        "NormalizedSchema was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "PartitionCompletenessExpectation": (
+        "PartitionCompletenessExpectation was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "PlanningContext": (
+        "PlanningContext was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "PluginDescriptor": (
+        "PluginDescriptor was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "ReconciliationDeclaration": (
+        "ReconciliationDeclaration was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "RegistryBundle": (
+        "RegistryBundle was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "ReliabilityEvidence": (
+        "ReliabilityEvidence was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "RepairDeclaration": (
+        "RepairDeclaration was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "RetrySafetyDeclaration": (
+        "RetrySafetyDeclaration was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "SchemaChange": (
+        "SchemaChange was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "SchemaChangeSet": (
+        "SchemaChangeSet was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "SchemaObservation": (
+        "SchemaObservation was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "WriteIntent": (
+        "WriteIntent was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "WriteMode": (
+        "WriteMode was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.reliability instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "builtin_stub_registry": (
+        "builtin_stub_registry was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.registry instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "diff_contract_schemas": (
+        "diff_contract_schemas was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "diff_normalized_schemas": (
+        "diff_normalized_schemas was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+    "normalize_schema_from_model": (
+        "normalize_schema_from_model was removed from the etlantic root in 0.27.0; "
+        "import from etlantic.schema_drift instead. See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md."
+    ),
+}
+
 _warned_demoted: set[str] = set()
 
 __all__ = [
@@ -352,6 +427,7 @@ def __dir__() -> list[str]:
         set(__all__)
         | set(_DEMOTED_ALIASES)
         | set(_REMOVED_0_26)
+        | set(_REMOVED_0_27)
         | {"DataContractModel"}
         | set(globals())
     )
@@ -369,6 +445,8 @@ def __getattr__(name: str) -> Any:
         raise AttributeError(_REMOVED_AUTHORING[name])
     if name in _REMOVED_0_26:
         raise AttributeError(_REMOVED_0_26[name])
+    if name in _REMOVED_0_27:
+        raise AttributeError(_REMOVED_0_27[name])
     if name in _LAZY_NAMESPACES:
         module = importlib.import_module(_LAZY_NAMESPACES[name])
         globals()[name] = module
@@ -381,7 +459,7 @@ def __getattr__(name: str) -> Any:
                 f"etlantic.{name} is a pre-1.0 compatibility alias; "
                 f"prefer importing from {module_name} "
                 f"(or use the owning lazy namespace). "
-                "See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md and "
+                "See docs/11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md and "
                 "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md.",
                 DeprecationWarning,
                 stacklevel=2,

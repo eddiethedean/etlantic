@@ -21,7 +21,7 @@
 
 ## Not in 0.26
 
-- Freezing Plugin SDK `/1` (**0.27**)
+- Freezing Plugin SDK `/1` (owned by 0.27 at ship; later re-scoped to 0.28+)
 - Complete 1.0 removal list (later burn-in / 0.99)
 - Production FastAPI control plane / GUI / new engines / DataFusion graduation
 

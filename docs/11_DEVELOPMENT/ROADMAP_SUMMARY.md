@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.26.0** ships **Compatibility Burn-In (second slice)**.
+ETLantic **0.27.0** ships **Compatibility Burn-In (third slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -86,21 +86,20 @@ See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and
 ## Shipped: 0.26
 
 ETLantic **0.26.0** shipped **Compatibility Burn-In (second slice)**:
-dual-minor burn-in proof (0.24→0.25→0.26), freeze owned by 0.27, and
+dual-minor burn-in proof (0.24→0.25→0.26), freeze re-scoped to 0.27, and
 first-wave root alias removals. See
 [What's New in 0.26](../01_GETTING_STARTED/WHATS_NEW_0_26.md) and
 [Exit gate 0.26](EXIT_GATE_0_26.md).
 
-## Next: 0.27
+## Shipped: 0.27
 
-**Compatibility Burn-In (third slice)** — planned: triple-minor proof
-(0.25→0.26→0.27), Protocol `/1` freeze closure or re-scope, and second-wave
-root removals (`REM-RELIABILITY-ROOT` + demoted wave). See
-[What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) (planned),
-[Exit gate 0.27](EXIT_GATE_0_27.md), and
-[Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md) (planned).
+ETLantic **0.27.0** shipped **Compatibility Burn-In (third slice)**:
+triple-minor burn-in proof (0.25→0.26→0.27), freeze re-scoped to 0.28+, and
+second-wave root alias removals (reliability, schema_drift, registry). See
+[What's New in 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md) and
+[Exit gate 0.27](EXIT_GATE_0_27.md).
 
-## Later: 0.28–0.98
+## Next: 0.28–0.98
 
 Continued compatibility burn-in, then RC and Stable Foundation. Production
 FastAPI control API remains **1.1**; registry/workspaces **1.2**.
@@ -109,10 +108,10 @@ FastAPI control API remains **1.1**; registry/workspaces **1.2**.
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
-frozen `/1` protocols (0.25–0.26 freeze closure), and 0.24 functional/JSON
-authoring convergence, then compatibility burn-in (**0.25** / **0.26** /
-**0.27** slices, then 0.28–0.98 continued). TransformationModel incubation is
-deferred to post-1.0 phases.
+frozen `/1` protocols (freeze still open through 0.27; owned by 0.28+), and
+0.24 functional/JSON authoring convergence, then compatibility burn-in
+(**0.25** / **0.26** / **0.27** slices, then 0.28–0.98 continued).
+TransformationModel incubation is deferred to post-1.0 phases.
 
 > **Production use is supported only within the documented reference
 > envelope.** See the [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md).

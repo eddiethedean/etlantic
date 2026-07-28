@@ -126,10 +126,10 @@ def test_builtin_local_exempt_from_package_allowlist() -> None:
     from etlantic.registry import PluginDescriptor
 
     profile = production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.26.0"},
+        plugin_allowlist={"etlantic-polars": "==0.27.0"},
     )
     local = PluginDescriptor(
-        name="local", kind="runtime", version="0.26.0", engine="local"
+        name="local", kind="runtime", version="0.27.0", engine="local"
     )
     kept, diags = filter_plugins_by_allowlist({"local": local}, profile)
     assert "local" in kept

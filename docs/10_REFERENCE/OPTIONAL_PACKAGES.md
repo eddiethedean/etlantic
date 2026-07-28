@@ -1,6 +1,6 @@
 # Optional Packages
 
-> **Status: Available in ETLantic 0.26.0.** Core `etlantic` does not install
+> **Status: Available in ETLantic 0.27.0.** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 ## Install pins
@@ -8,28 +8,28 @@
 Prefer exact pins for a controlled pilot:
 
 ```bash
-pip install 'etlantic==0.26.0'
-pip install 'etlantic-polars==0.26.0'
-pip install 'etlantic-pandas==0.26.0'
-pip install 'etlantic-sql==0.26.0'
-pip install 'etlantic-pyspark==0.26.0'
-pip install 'etlantic-airflow==0.26.0'
-pip install 'etlantic-prefect==0.26.0'
-pip install 'etlantic-keyring==0.26.0'
-pip install 'etlantic-sqlmodel==0.26.0'
-pip install 'etlantic-sparkforge==0.26.0'
+pip install 'etlantic==0.27.0'
+pip install 'etlantic-polars==0.27.0'
+pip install 'etlantic-pandas==0.27.0'
+pip install 'etlantic-sql==0.27.0'
+pip install 'etlantic-pyspark==0.27.0'
+pip install 'etlantic-airflow==0.27.0'
+pip install 'etlantic-prefect==0.27.0'
+pip install 'etlantic-keyring==0.27.0'
+pip install 'etlantic-sqlmodel==0.27.0'
+pip install 'etlantic-sparkforge==0.27.0'
 ```
 
-Official first-party plugins declare `etlantic>=0.26.0,<0.27`.
+Official first-party plugins declare `etlantic>=0.27.0,<0.28`.
 Keep core and plugins on the same minor (for 0.25.x pilots, pin all to
 `0.25.0`). Cross-minor mixes are unsupported and commonly fail plugin
 discovery.
 
-Experimental (not recommended): `pip install 'etlantic[datafusion]==0.26.0'`
-or `etlantic-datafusion==0.26.0` — Gate B stub; no graduated claims.
+Experimental (not recommended): `pip install 'etlantic[datafusion]==0.27.0'`
+or `etlantic-datafusion==0.27.0` — Gate B stub; no graduated claims.
 
-Optional reference adapter: `pip install 'etlantic-fastapi==0.26.0'` or
-`etlantic[fastapi]==0.26.0` — thin authoring/service HTTP adapter (shipped since
+Optional reference adapter: `pip install 'etlantic-fastapi==0.27.0'` or
+`etlantic[fastapi]==0.27.0` — thin authoring/service HTTP adapter (shipped since
 0.24; not
 the 1.1 control plane).
 
@@ -46,7 +46,7 @@ the 1.1 control plane).
 | [`etlantic-keyring`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-keyring/README.md) | `etlantic_keyring` | OS keyring secret provider |
 | [`etlantic-sqlmodel`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sqlmodel/README.md) | `etlantic_sqlmodel` | SQLModel ↔ contract bridge |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | SparkForge adapter (medallion stays here, not in core) |
-| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.26.0`) |
+| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.27.0`) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 MkDocs API generation scans core `src/` only. For optional-package constructors,

@@ -11,13 +11,12 @@ from etlantic import (
     Load,
     Output,
     Pipeline,
-    PlanningContext,
     Transformation,
 )
 from etlantic.capabilities import PluginCapabilities
 from etlantic.policy import STRICT_POLICY
 from etlantic.profile import Profile
-from etlantic.registry import PluginDescriptor, RegistryBundle
+from etlantic.registry import PlanningContext, PluginDescriptor, RegistryBundle
 
 
 class Item(Data):

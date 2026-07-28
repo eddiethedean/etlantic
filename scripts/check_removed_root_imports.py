@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when tests/ or examples/ import 0.26-removed root symbols from etlantic."""
+"""Fail when tests/ or examples/ import removed root symbols from etlantic."""
 
 from __future__ import annotations
 
@@ -9,13 +9,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = (ROOT / "tests", ROOT / "examples")
+SKIP_FILES = {"test_root_removals_0_26.py", "test_root_removals_0_27.py"}
 
 
 def _load_removed_names() -> set[str]:
     sys.path.insert(0, str(ROOT / "src"))
-    from etlantic import _REMOVED_0_26
+    from etlantic import _REMOVED_0_26, _REMOVED_0_27
 
-    return set(_REMOVED_0_26)
+    return set(_REMOVED_0_26) | set(_REMOVED_0_27)
 
 
 def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:
@@ -35,7 +36,7 @@ def main() -> int:
         if not root.exists():
             continue
         for path in root.rglob("*.py"):
-            if path.name == "test_root_removals_0_26.py":
+            if path.name in SKIP_FILES:
                 continue
             try:
                 source = path.read_text(encoding="utf-8")

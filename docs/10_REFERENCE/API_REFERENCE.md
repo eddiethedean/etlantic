@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.26.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.27.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -101,7 +101,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.26.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.27.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
@@ -110,7 +110,7 @@ announced migrations. Review the changelog and
 
 ## Compatibility aliases (pre-1.0)
 
-ETLantic **0.26** removed the first wave of root facade aliases (protocol
+ETLantic **0.27** removed the first wave of root facade aliases (protocol
 consts, exceptions, storage bindings, runtime helpers, interchange helpers).
 Import those symbols from owning modules — see
 [Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
@@ -124,7 +124,7 @@ Prefer lazy namespaces or owning modules.
 | Reliability | `WriteIntent`, `WriteMode`, `FreshnessExpectation` | `etlantic.reliability` |
 | Security | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
 
-Removed in 0.26 (raise on root import): `RunRequest`, `RunSelection`,
+Removed in 0.27 (raise on root import): `RunRequest`, `RunSelection`,
 `RunIntent`, `DebugSession`, `RunStatus`, `MemoryStorage`, `diff_pipelines`,
 `generate_contracts`, and other symbols listed in the migration guide.
 

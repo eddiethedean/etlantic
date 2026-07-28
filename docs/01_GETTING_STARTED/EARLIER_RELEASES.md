@@ -1,11 +1,13 @@
 # Earlier release notes
 
-> **Status: Available in ETLantic 0.26.0.** Historical “What's new” pages for
-> prior minors. Start with [What's new in 0.25](WHATS_NEW_0_25.md) and the
+> **Status: Available in ETLantic 0.27.0.** Historical “What's new” pages for
+> prior minors. Start with [What's new in 0.26](WHATS_NEW_0_26.md) and the
 > [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
 |---|---|
+| 0.26 | [What's new in 0.26](WHATS_NEW_0_26.md) |
+| 0.25 | [What's new in 0.25](WHATS_NEW_0_25.md) |
 | 0.24 | [What's new in 0.24](WHATS_NEW_0_24.md) |
 | 0.23 | [What's new in 0.23](WHATS_NEW_0_23.md) |
 | 0.22 | [What's new in 0.22](WHATS_NEW_0_22.md) |

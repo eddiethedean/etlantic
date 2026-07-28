@@ -6,7 +6,7 @@ ETLantic catches incompatible data-pipeline wiring **before** you process
 data. Define typed datasets, transformations, and pipelines in Python;
 validate and plan them once; run locally or through optional engine plugins.
 
-> **Project status:** ETLantic **0.26.0** is a **Beta** (PyPI) release suitable within the documented
+> **Project status:** ETLantic **0.27.0** is a **Beta** (PyPI) release suitable within the documented
 > single-tenant reference deployment boundary. **First run:** follow the
 > [docs home green path](../README.md) (Installation → Quickstart → First Pipeline → Engine selection).
 > This page is the Learn section index. Experimental features and broader
@@ -16,14 +16,14 @@ validate and plan them once; run locally or through optional engine plugins.
 
 ## Pages in this section (order)
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.26.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.27.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init` → validate → run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — then an engine tutorial
 
 After first success: [Learning path](LEARNING_PATH.md) (How-to),
 [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
-(Support), [What's New in 0.25](WHATS_NEW_0_25.md).
+(Support), [What's New in 0.27](WHATS_NEW_0_27.md).
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without
@@ -66,7 +66,7 @@ PipelinePlan (secret-free, deterministic)
 Run locally  |  Compile (Airflow)  |  Generate contracts
 ```
 
-ETLantic 0.26.0 can execute registered Python implementations with its local
+ETLantic 0.27.0 can execute registered Python implementations with its local
 runtime and optional Polars/Pandas/SQL/PySpark plugins, compile plans to
 Airflow DAGs via `etlantic-airflow`, execute plans through the Prefect local
 MVP, and compile supported portable transformation families without native
