@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.25.1** ships **Compatibility Burn-In (first slice)**.
+ETLantic **0.26.0** ships **Compatibility Burn-In (second slice)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -77,20 +77,21 @@ facade, and `etlantic-fastapi` reference adapter. See
 
 ## Shipped: 0.25
 
-ETLantic **0.25.1** shipped **Compatibility Burn-In (first slice)**:
+ETLantic **0.25.0** / **0.25.1** shipped **Compatibility Burn-In (first slice)**:
 `etlantic.pipeline/1` and sibling codec upgrade fixtures, Plugin SDK `/1`
 freeze decision (blockers published), and a published 1.0 removal inventory.
 See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and
 [Exit gate 0.25](EXIT_GATE_0_25.md).
 
-## Next: 0.26
+## Shipped: 0.26
 
-**Compatibility Burn-In (second slice):** dual-minor upgrade proof
-(0.24→0.25 and 0.25→0.26), freeze closure, and first-wave 1.0 removal
-execution — see
-[0.26 roadmap section](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#026--compatibility-burn-in-second-slice).
+ETLantic **0.26.0** shipped **Compatibility Burn-In (second slice)**:
+dual-minor burn-in proof (0.24→0.25→0.26), freeze re-scoped to 0.27+, and
+first-wave root alias removals. See
+[What's New in 0.26](../01_GETTING_STARTED/WHATS_NEW_0_26.md) and
+[Exit gate 0.26](EXIT_GATE_0_26.md).
 
-## Then: 0.27–0.98 → 0.99 → 1.0
+## Next: 0.27–0.98
 
 Continued compatibility burn-in, then RC and Stable Foundation. Production
 FastAPI control API remains **1.1**; registry/workspaces **1.2**.

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sparkforge"
-version = "0.25.1"
+version = "0.26.0"
 description = "SparkForge-to-ETLantic migration adapter (medallion facade mapping)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.25.0,<0.26",
+    "etlantic>=0.26.0,<0.27",
 ]
 
 # IR-only adapter in 0.10: no live SparkForge / pipeline_builder dependency.

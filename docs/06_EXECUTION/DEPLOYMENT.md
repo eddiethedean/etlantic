@@ -1,6 +1,6 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.25.1.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.26.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not a managed control plane.
 
 ## Residual evaluation lead
@@ -27,7 +27,7 @@ runtime. ETLantic 0.25 does not coordinate a multi-worker runtime.
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.25.1` and matching plugins in a lockfile.
+1. Pin `etlantic==0.26.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -51,7 +51,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.25.1`.
+1. Install `etlantic-prefect==0.26.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.

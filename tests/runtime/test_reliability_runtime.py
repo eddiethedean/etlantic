@@ -14,10 +14,10 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    RunRequest,
-    RunStatus,
     Transformation,
 )
+from etlantic.runtime.request import RunRequest
+from etlantic.runtime.state import RunStatus
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.reliability import (
     FreshnessExpectation,

@@ -1,14 +1,14 @@
-# Public Surface Inventory (0.25)
+# Public Surface Inventory (0.26)
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Regenerated from that file for the
-**0.25 reference envelope**.
+**0.26 reference envelope**.
 
 Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.25 reference envelope |
+| `stable` | Supported within the documented 0.26 reference envelope |
 | `provisional` | Public but may change with migration notes before 1.0 |
 | `experimental` | May change or be removed without 1.0 obligation |
 | `compatibility` | Pre-1.0 root alias (warn once); prefer the owning namespace |
@@ -72,14 +72,14 @@ See [CLI](CLI.md).
 
 Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 [protocol `/1` freeze](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
-(still open in 0.25).
+(still open in 0.26; freeze re-scoped to 0.27+).
 
 | Schema ID | Class |
 |---|---|
 | `etlantic.pipeline/1` | stable (authoring) |
 | `etlantic.plan/1` | stable (resolved execution IR — **not** authoring round-trip) |
 | `etlantic.run_report/1` | stable |
-| `etlantic.authoring-catalog/1` | stable |
+| `etlantic.authoring-catalog/1` | stable (not dual-minor burn-in — tooling metadata; see [Wire schema ranges](WIRE_SCHEMA_RANGES.md)) |
 | `etlantic.interchange/1` | stable |
 | `etlantic.capabilities/1` | stable |
 | Profile JSON | stable |
@@ -98,7 +98,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.25.1`). Details:
+Pin to the same minor as core (`==0.26.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

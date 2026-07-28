@@ -15,9 +15,9 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    RunStatus,
     Transformation,
 )
+from etlantic.runtime.state import RunStatus
 from etlantic.dataframe.discovery import discover_dataframe_plugins
 from etlantic.dataframe.protocol import (
     DataframeExecutionContext,

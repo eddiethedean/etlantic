@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 import pytest
 
 from etlantic import (
-    ORCHESTRATION_PROTOCOL_VERSION,
     Data,
     Extract,
     Input,
@@ -20,6 +19,7 @@ from etlantic import (
     compile_plan,
     plan_pipeline,
 )
+from etlantic.orchestration import ORCHESTRATION_PROTOCOL_VERSION
 from etlantic.orchestration import (
     ArtifactTransportPolicy,
     CompilationContext,

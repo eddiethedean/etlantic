@@ -15,13 +15,10 @@ from etlantic import (
     Output,
     Pipeline,
     Transformation,
-    diff_data_contracts,
-    graphs_equivalent,
-    load_bundle,
     load_data_contract,
-    write_contracts,
     write_odcs,
 )
+from etlantic.interchange import diff_data_contracts, graphs_equivalent, load_bundle, write_contracts
 from etlantic.interchange.dtcs import DtcsError, transformation_from_dtcs
 from etlantic.interchange.policy import check_dtcs_version, check_odcs_version
 from etlantic.interchange.security import UnsafeLoadError, read_text_bounded

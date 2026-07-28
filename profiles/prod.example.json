@@ -9,10 +9,10 @@
   "name": "prod-example",
   "orchestrator": "local",
   "plugin_allowlist": {
-    "etlantic-pandas": "==0.25.1",
-    "etlantic-polars": "==0.25.1",
-    "etlantic-pyspark": "==0.25.1",
-    "etlantic-sql": "==0.25.1",
+    "etlantic-pandas": "==0.26.0",
+    "etlantic-polars": "==0.26.0",
+    "etlantic-pyspark": "==0.26.0",
+    "etlantic-sql": "==0.26.0",
     "local": null
   },
   "portable_transform_policy": "require",

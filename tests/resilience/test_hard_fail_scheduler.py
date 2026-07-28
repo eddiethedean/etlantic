@@ -10,9 +10,9 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    RunStatus,
     Transformation,
 )
+from etlantic.runtime.state import RunStatus
 
 
 class Row(Data):

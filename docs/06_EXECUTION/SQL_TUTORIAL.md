@@ -1,19 +1,19 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.25.1.** SQLite is used only for this local
+> **Status: Available in ETLantic 0.26.0.** SQLite is used only for this local
 > demonstration; PostgreSQL is the reference backend.
 
 
 !!! note "Repository examples"
     Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.25.0` tag) and use
+    wheel. Clone a matching checkout (prefer the `v0.26.0` tag) and use
     `uv sync` / the documented dependency group before running them.
 
 ## Install and run
 
 ```bash
-python -m pip install 'etlantic==0.25.1' 'etlantic-sql==0.25.1'
-git clone --branch v0.25.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.26.0' 'etlantic-sql==0.26.0'
+git clone --branch v0.26.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/sql_to_sql.py
 ```

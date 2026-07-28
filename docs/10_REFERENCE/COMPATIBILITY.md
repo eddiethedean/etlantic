@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This table describes the declared compatibility of ETLantic 0.25.1.
+This table describes the declared compatibility of ETLantic 0.26.0.
 
 | Surface | Supported range or version |
 |---|---|
@@ -14,16 +14,16 @@ This table describes the declared compatibility of ETLantic 0.25.1.
 | Dataframe protocol | `etlantic.dataframe/1` |
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
-| Polars plugin | `etlantic-polars==0.25.1` |
-| Pandas plugin | `etlantic-pandas==0.25.1` |
-| SQL plugin | `etlantic-sql==0.25.1` |
-| PySpark plugin | `etlantic-pyspark==0.25.1` |
-| Airflow plugin | `etlantic-airflow==0.25.1` |
-| Prefect scheduler | `etlantic-prefect==0.25.1` |
-| Keyring provider | `etlantic-keyring==0.25.1` |
-| SQLModel bridge | `etlantic-sqlmodel==0.25.1` |
-| SparkForge adapter | `etlantic-sparkforge==0.25.1` |
-| DataFusion plugin | `etlantic-datafusion==0.25.1` (**Experimental** Gate B stub; no graduated claims) |
+| Polars plugin | `etlantic-polars==0.26.0` |
+| Pandas plugin | `etlantic-pandas==0.26.0` |
+| SQL plugin | `etlantic-sql==0.26.0` |
+| PySpark plugin | `etlantic-pyspark==0.26.0` |
+| Airflow plugin | `etlantic-airflow==0.26.0` |
+| Prefect scheduler | `etlantic-prefect==0.26.0` |
+| Keyring provider | `etlantic-keyring==0.26.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.26.0` |
+| SparkForge adapter | `etlantic-sparkforge==0.26.0` |
+| DataFusion plugin | `etlantic-datafusion==0.26.0` (**Experimental** Gate B stub; no graduated claims) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
@@ -65,11 +65,11 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.25.1` plus every official plugin to `==0.25.1`.
+`etlantic==0.26.0` plus every official plugin to `==0.26.0`.
 
 Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.25.1` depends on `etlantic-polars==0.25.1`. Official
-plugin source metadata accepts core `etlantic>=0.25.0,<0.26`, which is
+`etlantic[polars]==0.26.0` depends on `etlantic-polars==0.26.0`. Official
+plugin source metadata accepts core `etlantic>=0.26.0,<0.27`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

@@ -1,6 +1,6 @@
 # Learning path
 
-> **Status: Available in ETLantic 0.25.1.** One ordered ladder from first
+> **Status: Available in ETLantic 0.26.0.** One ordered ladder from first
 > install to week-2 CI. First paste still lives on the
 > [docs home green path](../README.md).
 

@@ -1,25 +1,31 @@
 # Protocol Evolution Policy
 
-> **Status (0.25.0):** Protocol `/1` families ship and remain **freeze-eligible,
-> not frozen**. 0.25 records an explicit freeze decision: **remaining blockers
-> published** (see below). Freeze **closure** (lock conformance suite versions
-> or clear blockers) is owned by **0.26**. Evidence baseline:
+> **Status (0.26.0):** Protocol `/1` families ship and remain **freeze-eligible,
+> not frozen**. 0.26 **re-scopes freeze closure to 0.27+** with maintainers as
+> owner; the external feedback blocker remains open (see below). Evidence baseline:
 > [EXIT_GATE_0_22](../11_DEVELOPMENT/EXIT_GATE_0_22.md),
-> [EXIT_GATE_0_25](../11_DEVELOPMENT/EXIT_GATE_0_25.md).
+> [EXIT_GATE_0_25](../11_DEVELOPMENT/EXIT_GATE_0_25.md),
+> [EXIT_GATE_0_26](../11_DEVELOPMENT/EXIT_GATE_0_26.md).
 
-## Freeze decision (0.25)
+## Freeze decision (0.26)
 
 | Criterion | Status | Owner |
 |---|---|---|
 | First-party plugins exercise public `etlantic.testing` in CI | Met (0.22+) | Maintainers |
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met — `.github/workflows/external-plugin-echo.yml` | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
-| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker** | Maintainers + community |
+| ≥1 documented external feedback cycle from a non-first-party plugin author | **Open blocker — carried to 0.27** | Maintainers + community |
 | No unresolved provisional core protocol on the 1.0 path | Met for shipped `/1` families; Storage/Resource/Observability remain future | Maintainers |
 
-**Decision:** Do **not** claim `/1` frozen in 0.25.0. Publish the open external
-feedback blocker and keep additive `/1` evolution rules. 0.26 must either clear
-the blocker and freeze, or re-scope with an explicit plan.
+**Decision:** Do **not** claim `/1` frozen in 0.26.0. Re-scope freeze closure to
+**0.27+** with a dated rationale (2026-07-27). Keep additive `/1` evolution
+rules until the external feedback blocker clears or is explicitly re-scoped again.
+
+## Freeze decision (0.25) — historical
+
+0.25 published the open external feedback blocker and deferred closure to 0.26.
+0.26 executed dual-minor burn-in and first-wave removals but did **not** clear
+the external feedback criterion; see table above.
 
 This document is the normative policy for evolving ETLantic plugin protocols
 (`etlantic.dataframe/1`, `etlantic.sql/1`, `etlantic.spark/1`,
@@ -34,11 +40,11 @@ This document is the normative policy for evolving ETLantic plugin protocols
 
 Do not conflate these:
 
-| Term | What freezes | Status in 0.25 |
+| Term | What freezes | Status in 0.26 |
 |---|---|---|
 | **Contract / configuration freeze** | Authoring contracts, Profile trust fields, and related config surfaces stop incompatible churn without migration notes | Shipped since **0.19** (see [Deprecation Policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md)) |
 | **Plan immutability** | Plan graphs use fingerprint verify + `deep_freeze` on nested mappings/lists/sets; dataclasses and unknown objects are **not** recursively frozen | Shipped helper; not full object-graph immutability |
-| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.26** |
+| **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Freeze-eligible, not frozen** — external feedback blocker open; closure owned by **0.27+** |
 
 Wire schemas marked “wire-stable” mean schema ids keep meaning under the additive `/1` rules above; they do **not** imply protocol `/1` freeze.
 
@@ -90,7 +96,7 @@ Rules:
 While ETLantic is pre-1.0:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.25: `etlantic>=0.25,<0.26`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.25: `etlantic>=0.26.0,<0.27`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

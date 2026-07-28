@@ -16,7 +16,7 @@ pipelines and coordinating their execution through the tools you already
 choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 !!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.25.1`
+    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.26.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
     4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
@@ -29,8 +29,8 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 ## Project status
 
-**ETLantic 0.25.1** is a **Beta** release for documented single-tenant pilots.
-Install with `pip install 'etlantic==0.25.1'`.
+**ETLantic 0.26.0** is a **Beta** release for documented single-tenant pilots.
+Install with `pip install 'etlantic==0.26.0'`.
 
 - **Use today:** single-tenant pilots and reference deployments (see
   [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)).
@@ -43,7 +43,7 @@ Install with `pip install 'etlantic==0.25.1'`.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.25.1'
+python -m pip install 'etlantic==0.26.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic validate pipeline.py:SamplePipeline --profile development

@@ -1,6 +1,6 @@
 # Polars ↔ Pandas Interchange
 
-!!! success "**Status: Available in ETLantic 0.25.1**"
+!!! success "**Status: Available in ETLantic 0.26.0**"
     Gate A versioned tabular interchange (`etlantic.interchange/1`) shipped in
     0.18.0 for compatible Polars↔Pandas cross-engine boundaries.
 
@@ -15,7 +15,7 @@ uv run python examples/interchange_polars_pandas.py
 Or from published packages:
 
 ```bash
-pip install 'etlantic[dataframes]==0.25.1'
+pip install 'etlantic[dataframes]==0.26.0'
 python examples/interchange_polars_pandas.py
 ```
 

@@ -87,39 +87,20 @@ _LAZY_NAMESPACES: dict[str, str] = {
 # Pre-1.0 compatibility aliases for symbols demoted off the curated root.
 # Values are (module, attribute). Access warns once per process.
 _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
-    "DATAFRAME_PROTOCOL_VERSION": ("etlantic.dataframe", "DATAFRAME_PROTOCOL_VERSION"),
-    "ORCHESTRATION_PROTOCOL_VERSION": (
-        "etlantic.orchestration",
-        "ORCHESTRATION_PROTOCOL_VERSION",
-    ),
-    "PLUGIN_MANIFEST_SCHEMA": ("etlantic.plugin_manifest", "PLUGIN_MANIFEST_SCHEMA"),
-    "SPARK_PROTOCOL_VERSION": ("etlantic.spark", "SPARK_PROTOCOL_VERSION"),
-    "SQL_PROTOCOL_VERSION": ("etlantic.sql", "SQL_PROTOCOL_VERSION"),
-    "STREAMING_STABILITY": ("etlantic.spark", "STREAMING_STABILITY"),
     "ArtifactOwnership": ("etlantic.dataframe", "ArtifactOwnership"),
-    "ArtifactProvenance": ("etlantic.interchange", "ArtifactProvenance"),
     "ArtifactRef": ("etlantic.plan", "ArtifactRef"),
     "ArtifactStrategy": ("etlantic.plan", "ArtifactStrategy"),
     "BackfillDeclaration": ("etlantic.reliability", "BackfillDeclaration"),
     "BackfillRequest": ("etlantic.reliability_runtime", "BackfillRequest"),
     "BindingDescriptor": ("etlantic.registry", "BindingDescriptor"),
-    "CallableStorage": ("etlantic.storage", "CallableStorage"),
     "CapabilityDecision": ("etlantic.capabilities", "CapabilityDecision"),
-    "ContractBundle": ("etlantic.interchange", "ContractBundle"),
-    "CsvStorage": ("etlantic.storage", "CsvStorage"),
-    "DataValidationError": ("etlantic.exceptions", "DataValidationError"),
-    "DataframeValidationOutcome": (
-        "etlantic.dataframe",
-        "DataframeValidationOutcome",
-    ),
+    "DataframeValidationOutcome": ("etlantic.dataframe", "DataframeValidationOutcome"),
     "DataframeValidationPolicy": ("etlantic.dataframe", "DataframeValidationPolicy"),
     "DatasetRef": ("etlantic.spark", "DatasetRef"),
-    "DebugSession": ("etlantic.runtime", "DebugSession"),
     "Diagnostic": ("etlantic.diagnostics", "Diagnostic"),
     "DiagnosticAction": ("etlantic.diagnostics", "DiagnosticAction"),
     "DriftAction": ("etlantic.schema_policy", "DriftAction"),
     "DriftImpact": ("etlantic.schema_drift", "DriftImpact"),
-    "ETLanticError": ("etlantic.exceptions", "ETLanticError"),
     "Edge": ("etlantic.model", "Edge"),
     "Emit": ("etlantic.lifecycle", "Emit"),
     "FailureAction": ("etlantic.lifecycle", "FailureAction"),
@@ -128,18 +109,12 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "ImplementationDescriptor": ("etlantic.registry", "ImplementationDescriptor"),
     "ImplementationRecord": ("etlantic.transformation", "ImplementationRecord"),
     "Inject": ("etlantic.lifecycle", "Inject"),
-    "JsonStorage": ("etlantic.storage", "JsonStorage"),
     "LogicalGraph": ("etlantic.model", "LogicalGraph"),
     "MaterializationIntent": ("etlantic.reliability", "MaterializationIntent"),
     "MaterializationMode": ("etlantic.reliability", "MaterializationMode"),
-    "MaterializationPolicy": ("etlantic.runtime", "MaterializationPolicy"),
-    "MemoryStorage": ("etlantic.storage", "MemoryStorage"),
-    "ModelDefinitionError": ("etlantic.exceptions", "ModelDefinitionError"),
     "Node": ("etlantic.model", "Node"),
-    "NodeExecutionError": ("etlantic.exceptions", "NodeExecutionError"),
     "NodeKind": ("etlantic.model", "NodeKind"),
     "NormalizedSchema": ("etlantic.schema_drift", "NormalizedSchema"),
-    "NullStorage": ("etlantic.storage", "NullStorage"),
     "OutboundEvent": ("etlantic.lifecycle", "OutboundEvent"),
     "OutboundPolicy": ("etlantic.outbound", "OutboundPolicy"),
     "OutputRef": ("etlantic.refs", "OutputRef"),
@@ -147,29 +122,17 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
         "etlantic.reliability",
         "PartitionCompletenessExpectation",
     ),
-    "PipelineCancelledError": ("etlantic.exceptions", "PipelineCancelledError"),
-    "PipelineExecutionError": ("etlantic.exceptions", "PipelineExecutionError"),
-    "PipelineTimeoutError": ("etlantic.exceptions", "PipelineTimeoutError"),
-    "PipelineValidationError": ("etlantic.exceptions", "PipelineValidationError"),
     "PlanningContext": ("etlantic.registry", "PlanningContext"),
     "PluginCapabilities": ("etlantic.capabilities", "PluginCapabilities"),
     "PluginDescriptor": ("etlantic.registry", "PluginDescriptor"),
     "PluginManifest": ("etlantic.plugin_manifest", "PluginManifest"),
-    "ProvenanceKind": ("etlantic.interchange", "ProvenanceKind"),
-    "ReconciliationDeclaration": (
-        "etlantic.reliability",
-        "ReconciliationDeclaration",
-    ),
+    "ReconciliationDeclaration": ("etlantic.reliability", "ReconciliationDeclaration"),
     "RegistryBundle": ("etlantic.registry", "RegistryBundle"),
     "RelationRef": ("etlantic.sql", "RelationRef"),
     "ReliabilityEvidence": ("etlantic.reliability", "ReliabilityEvidence"),
     "RepairDeclaration": ("etlantic.reliability", "RepairDeclaration"),
     "ReportStore": ("etlantic.reports", "ReportStore"),
     "RetrySafetyDeclaration": ("etlantic.reliability", "RetrySafetyDeclaration"),
-    "RunIntent": ("etlantic.runtime", "RunIntent"),
-    "RunRequest": ("etlantic.runtime", "RunRequest"),
-    "RunSelection": ("etlantic.runtime", "RunSelection"),
-    "RunStatus": ("etlantic.runtime", "RunStatus"),
     "SafeIoPolicy": ("etlantic.io_policy", "SafeIoPolicy"),
     "SchemaChange": ("etlantic.schema_drift", "SchemaChange"),
     "SchemaChangeSet": ("etlantic.schema_drift", "SchemaChangeSet"),
@@ -183,10 +146,6 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "Step": ("etlantic.transformation", "Step"),
     "StepFailureContext": ("etlantic.lifecycle", "StepFailureContext"),
     "SubpipelineInstance": ("etlantic.pipeline", "SubpipelineInstance"),
-    "UnsafeSerializationError": (
-        "etlantic.serialization_policy",
-        "UnsafeSerializationError",
-    ),
     "ValidationPolicy": ("etlantic.policy", "ValidationPolicy"),
     "WriteIntent": ("etlantic.reliability", "WriteIntent"),
     "WriteMode": ("etlantic.reliability", "WriteMode"),
@@ -195,14 +154,8 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "concat": ("etlantic.sql", "concat"),
     "development_profile": ("etlantic.profile", "development_profile"),
     "diff_contract_schemas": ("etlantic.schema_drift", "diff_contract_schemas"),
-    "diff_data_contracts": ("etlantic.interchange", "diff_data_contracts"),
     "diff_normalized_schemas": ("etlantic.schema_drift", "diff_normalized_schemas"),
-    "diff_pipelines": ("etlantic.interchange", "diff_pipelines"),
-    "diff_transformations": ("etlantic.interchange", "diff_transformations"),
-    "discover_dataframe_plugins": (
-        "etlantic.dataframe",
-        "discover_dataframe_plugins",
-    ),
+    "discover_dataframe_plugins": ("etlantic.dataframe", "discover_dataframe_plugins"),
     "discover_orchestrator_plugins": (
         "etlantic.orchestration",
         "discover_orchestrator_plugins",
@@ -210,12 +163,8 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "discover_spark_plugins": ("etlantic.spark", "discover_spark_plugins"),
     "discover_spark_providers": ("etlantic.spark", "discover_spark_providers"),
     "discover_sql_plugins": ("etlantic.sql", "discover_sql_plugins"),
-    "generate_contracts": ("etlantic.interchange", "generate_contracts"),
-    "graphs_equivalent": ("etlantic.interchange", "graphs_equivalent"),
-    "load_bundle": ("etlantic.interchange", "load_bundle"),
     "load_data_contract": ("etlantic.contracts", "load_data_contract"),
     "load_profile": ("etlantic.profile", "load_profile"),
-    "normalize_pipeline": ("etlantic.interchange", "normalize_pipeline"),
     "normalize_schema_from_model": (
         "etlantic.schema_drift",
         "normalize_schema_from_model",
@@ -224,7 +173,6 @@ _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "resolve_profile": ("etlantic.profile", "resolve_profile"),
     "select": ("etlantic.sql", "select"),
     "test_profile": ("etlantic.profile", "test_profile"),
-    "write_contracts": ("etlantic.interchange", "write_contracts"),
     "write_odcs": ("etlantic.contracts", "write_odcs"),
     "write_profile": ("etlantic.profile", "write_profile"),
 }
@@ -240,6 +188,158 @@ _REMOVED_AUTHORING = {
     ),
 }
 
+
+_REMOVED_0_26: dict[str, str] = {
+    "ArtifactProvenance": (
+        "ArtifactProvenance was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "CallableStorage": (
+        "CallableStorage was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.storage instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "ContractBundle": (
+        "ContractBundle was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "CsvStorage": (
+        "CsvStorage was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.storage instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "DATAFRAME_PROTOCOL_VERSION": (
+        "DATAFRAME_PROTOCOL_VERSION was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.dataframe instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "DataValidationError": (
+        "DataValidationError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "DebugSession": (
+        "DebugSession was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "ETLanticError": (
+        "ETLanticError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "JsonStorage": (
+        "JsonStorage was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.storage instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "MaterializationPolicy": (
+        "MaterializationPolicy was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "MemoryStorage": (
+        "MemoryStorage was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.storage instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "ModelDefinitionError": (
+        "ModelDefinitionError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "NodeExecutionError": (
+        "NodeExecutionError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "NullStorage": (
+        "NullStorage was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.storage instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "ORCHESTRATION_PROTOCOL_VERSION": (
+        "ORCHESTRATION_PROTOCOL_VERSION was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.orchestration instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "PLUGIN_MANIFEST_SCHEMA": (
+        "PLUGIN_MANIFEST_SCHEMA was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.plugin_manifest instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "PipelineCancelledError": (
+        "PipelineCancelledError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "PipelineExecutionError": (
+        "PipelineExecutionError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "PipelineTimeoutError": (
+        "PipelineTimeoutError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "PipelineValidationError": (
+        "PipelineValidationError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.exceptions instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "ProvenanceKind": (
+        "ProvenanceKind was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "RunIntent": (
+        "RunIntent was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "RunRequest": (
+        "RunRequest was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "RunSelection": (
+        "RunSelection was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "RunStatus": (
+        "RunStatus was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "SPARK_PROTOCOL_VERSION": (
+        "SPARK_PROTOCOL_VERSION was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "SQL_PROTOCOL_VERSION": (
+        "SQL_PROTOCOL_VERSION was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.sql instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "STREAMING_STABILITY": (
+        "STREAMING_STABILITY was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "UnsafeSerializationError": (
+        "UnsafeSerializationError was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.serialization_policy instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "diff_data_contracts": (
+        "diff_data_contracts was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "diff_pipelines": (
+        "diff_pipelines was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "diff_transformations": (
+        "diff_transformations was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "generate_contracts": (
+        "generate_contracts was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "graphs_equivalent": (
+        "graphs_equivalent was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "load_bundle": (
+        "load_bundle was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "normalize_pipeline": (
+        "normalize_pipeline was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+    "write_contracts": (
+        "write_contracts was removed from the etlantic root in 0.26.0; "
+        "import from etlantic.interchange instead. See docs/11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md."
+    ),
+}
+
 _warned_demoted: set[str] = set()
 
 __all__ = [
@@ -249,7 +349,7 @@ __all__ = [
 
 def __dir__() -> list[str]:
     return sorted(
-        set(__all__) | set(_DEMOTED_ALIASES) | {"DataContractModel"} | set(globals())
+        set(__all__) | set(_DEMOTED_ALIASES) | set(_REMOVED_0_26) | {"DataContractModel"} | set(globals())
     )
 
 
@@ -263,6 +363,8 @@ def __getattr__(name: str) -> Any:
         return Data
     if name in _REMOVED_AUTHORING:
         raise AttributeError(_REMOVED_AUTHORING[name])
+    if name in _REMOVED_0_26:
+        raise AttributeError(_REMOVED_0_26[name])
     if name in _LAZY_NAMESPACES:
         module = importlib.import_module(_LAZY_NAMESPACES[name])
         globals()[name] = module

@@ -4,7 +4,7 @@ PostgreSQL reference SQL execution plugin for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.20.
 
 ```bash
-pip install 'etlantic==0.25.1' 'etlantic-sql==0.25.1'
+pip install 'etlantic==0.26.0' 'etlantic-sql==0.26.0'
 # or: pip install 'etlantic[sql]'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # SQLite is fine for demos only:

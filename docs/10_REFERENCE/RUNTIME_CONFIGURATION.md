@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: Available in ETLantic 0.25.1.** Configure profiles, bindings, and
+> **Status: Available in ETLantic 0.26.0.** Configure profiles, bindings, and
 > engines in Python or JSON. Optional `etlantic.toml` may set `default_profile`
 > and named profile references. Only the environment variables listed here are
 > read by shipped code.
@@ -19,8 +19,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.25.1",
-        "etlantic-sql": "==0.25.1",
+        "etlantic-polars": "==0.26.0",
+        "etlantic-sql": "==0.26.0",
     },
     assets={"customer_source": "customers"},
 )

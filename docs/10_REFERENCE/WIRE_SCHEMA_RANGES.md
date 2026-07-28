@@ -1,24 +1,38 @@
-# Wire schema ranges (0.25)
+# Wire schema ranges (0.26)
 
-> **Status: Available in ETLantic 0.25.1.** Documents supported wire-schema
-> ids for burn-in and **unsupported downgrade** behavior. Package minors may
-> advance while schema ids stay on `/1` (no wire-schema reset in 0.25).
+> **Status: Available in ETLantic 0.26.0.** Documents supported wire-schema
+> ids for dual-minor burn-in and **unsupported downgrade** behavior. Package
+> minors may advance while schema ids stay on `/1` (no wire-schema reset in
+> 0.26).
 
 ## Supported schema ranges
 
 | Wire id | Package minors proven | Notes |
 |---|---|---|
-| `etlantic.pipeline/1` | 0.24 → 0.25 | Golden fixtures under `tests/fixtures/burn_in/pipeline/v0_24/` |
-| `etlantic.plan/1` | 0.24 → 0.25 | Golden fixtures under `tests/fixtures/burn_in/plan/v0_24/` |
-| `etlantic.run_report/1` | 0.24 → 0.25 | Golden fixtures under `tests/fixtures/burn_in/run_report/v0_24/` |
-| Profile JSON (no schema id) | 0.24 → 0.25 | Round-trip via `Profile.to_dict` / `from_dict` |
-| `etlantic.capabilities/1` | 0.24 → 0.25 | Vocabulary major `/1`; see `vocabulary_major_compatible` |
-| `etlantic.interchange/1` | 0.24 → 0.25 | Gate A tabular descriptors |
+| `etlantic.pipeline/1` | 0.24 → 0.25 → 0.26 | Goldens under `tests/fixtures/burn_in/pipeline/v0_24/` and `v0_25/` |
+| `etlantic.plan/1` | 0.24 → 0.25 → 0.26 | Goldens under `tests/fixtures/burn_in/plan/v0_24/` and `v0_25/` |
+| `etlantic.run_report/1` | 0.24 → 0.25 → 0.26 | Goldens under `tests/fixtures/burn_in/run_report/v0_24/` and `v0_25/` |
+| Profile JSON (no schema id) | 0.24 → 0.25 → 0.26 | Round-trip via `Profile.to_dict` / `from_dict` |
+| `etlantic.capabilities/1` | 0.24 → 0.25 → 0.26 | Vocabulary major `/1`; see `vocabulary_major_compatible` |
+| `etlantic.interchange/1` | 0.24 → 0.25 → 0.26 | Gate A tabular descriptors |
+| `etlantic.authoring-catalog/1` | N/A (not burn-in versioned) | Stable schema id; catalog envelopes are tooling metadata, not dual-minor upgrade artifacts — see [Surface inventory](SURFACE_INVENTORY.md) |
 
 Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`, and
 `etlantic.reports.upgrade`. Empty `_UPGRADERS` maps mean the current `/1`
 document is accepted as-is (additive compatibility). Intentional incompatible
 changes must register a documented upgrader — **no silent field drops**.
+
+## Dual-minor window (0.24 ↔ 0.26)
+
+ETLantic 0.26 proves **two consecutive** minor upgrade paths without a
+wire-schema reset:
+
+1. **0.24 → 0.25** — fixtures under `*/v0_24/`
+2. **0.25 → 0.26** — fixtures under `*/v0_25/`
+
+Current codecs must load and rewrite both golden trees. CI gates:
+`scripts/check_pipeline_codec_burn_in.py` and
+`scripts/check_codec_burn_in_matrix.py`.
 
 ## Unsupported downgrade behavior
 
@@ -29,15 +43,17 @@ ETLantic does **not** silently downgrade documents:
 | Unknown major (`…/99`, `…/2` before support) | Fail closed (`Unsupported*SchemaError` / descriptor error) |
 | Missing required `schema` field | Fail closed |
 | Hostile / secret-bearing payloads in pipeline JSON | Fail closed |
-| Writing `/1` then reading with a hypothetical older codec that lacks new optional fields | Older readers may ignore unknown optional keys only if they already did; 0.25 does not promise downgrade of **new required** fields |
+| Writing `/1` then reading with a hypothetical older codec that lacks new optional fields | Older readers may ignore unknown optional keys only if they already did; 0.26 does not promise downgrade of **new required** fields |
 
 There is **no** supported path to emit an older wire major from a newer runtime.
 To move between package minors on the same `/1` id, use the burn-in fixtures and
-[Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md).
+[Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) /
+[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md).
 
 ## CI gates
 
-- `scripts/check_pipeline_codec_burn_in.py` — pipeline golden fingerprints
+- `scripts/check_pipeline_codec_burn_in.py` — pipeline golden fingerprints (`v0_24` + `v0_25`)
+- `scripts/check_codec_burn_in_matrix.py` — sibling artifact digests (`v0_24` + `v0_25`)
 - `tests/authoring/test_pipeline_upgrade_burn_in.py`
 - `tests/compatibility/test_codec_burn_in_matrix.py`
 

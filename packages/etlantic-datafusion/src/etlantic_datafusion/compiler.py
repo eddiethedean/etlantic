@@ -16,7 +16,7 @@ from etlantic.transform.compiler import (
     TransformSupportReport,
 )
 
-__version__ = "0.25.1"
+__version__ = "0.26.0"
 
 
 class DataFusionTransformCompiler:

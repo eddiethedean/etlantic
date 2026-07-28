@@ -5,7 +5,7 @@ Local workstation secret provider for
 [`keyring`](https://keyring.readthedocs.io/) library and OS credential stores.
 
 ```bash
-pip install 'etlantic==0.25.1' 'etlantic-keyring==0.25.1'
+pip install 'etlantic==0.26.0' 'etlantic-keyring==0.26.0'
 # or: pip install 'etlantic[keyring]'
 ```
 

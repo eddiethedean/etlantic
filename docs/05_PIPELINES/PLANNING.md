@@ -1,6 +1,6 @@
 # Planning
 
-> **Status: Available in ETLantic 0.25.1** for deterministic
+> **Status: Available in ETLantic 0.26.0** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs. Plans are
 > secret-free and do not execute transforms. Some advanced analysis surfaces
 > described later on this page may still be design-forward—prefer CLI JSON

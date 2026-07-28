@@ -10,7 +10,7 @@ surfaces. **ETLantic core never gains medallion types.**
 ## Install
 
 ```bash
-pip install 'etlantic==0.25.1' 'etlantic-sparkforge==0.25.1'
+pip install 'etlantic==0.26.0' 'etlantic-sparkforge==0.26.0'
 # or
 pip install 'etlantic[sparkforge]'
 ```

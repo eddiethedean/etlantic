@@ -1,6 +1,6 @@
 # Storage Today
 
-> **Status: Available in ETLantic 0.25.1.** This page describes what ships
+> **Status: Available in ETLantic 0.26.0.** This page describes what ships
 > today. Cloud warehouse and object-store storage plugins are **not** shipped.
 
 ## What you can use now
@@ -20,7 +20,8 @@ datasets). Those are engine capabilities, not a separate portable storage
 plugin protocol.
 
 ```python
-from etlantic import CsvStorage, JsonStorage, MemoryStorage, PipelineRuntime
+from etlantic import PipelineRuntime
+from etlantic.storage import CsvStorage, JsonStorage, MemoryStorage
 
 runtime = PipelineRuntime(storage=MemoryStorage())
 # or JsonStorage / CsvStorage for durable local files — see examples/file_storage.py

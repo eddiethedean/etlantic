@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from etlantic import RunStatus
+from etlantic.runtime.state import RunStatus
 
 
 def test_memory_customers_example() -> None:

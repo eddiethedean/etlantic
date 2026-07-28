@@ -1,6 +1,6 @@
 # ETLantic 0.25 User Guide
 
-This is the current manual for ETLantic **0.25.1** — use it **after** first
+This is the current manual for ETLantic **0.26.0** — use it **after** first
 success on the docs home [green path](../README.md). Core onboarding paths below
 are available in 0.25; linked reference and design pages may also describe
 Experimental, partial, or future work and retain their own status labels.
@@ -9,7 +9,7 @@ compatibility guarantee.
 
 ## After first success
 
-1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.25.1`
+1. [Install core](INSTALLATION.md) — Python 3.11+ and `pip install etlantic==0.26.0`
 2. [Quickstart](QUICKSTART.md) — first validate → run (then the required aha)
 3. [Build your first pipeline](FIRST_PIPELINE.md)
 4. [Choose an engine](ENGINE_SELECTION.md)

@@ -13,8 +13,8 @@ from etlantic import (
     Output,
     Pipeline,
     Transformation,
-    graphs_equivalent,
 )
+from etlantic.interchange import graphs_equivalent
 from etlantic.model import NodeKind
 from etlantic.plan.planner import plan_pipeline
 from etlantic.profile import Profile

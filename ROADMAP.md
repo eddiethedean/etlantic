@@ -1,8 +1,8 @@
 # Roadmap
 
-**Current release:** ETLantic **0.25.1** (Beta / PyPI). Milestone **0.25**
-(burn-in first slice) is shipped; **0.26** (burn-in second slice) is planned,
-then 0.27–0.98 continued burn-in toward 0.99 RC. See
+**Current release:** ETLantic **0.26.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) and **0.26** (burn-in second slice) are shipped; **0.27–0.98**
+continued burn-in toward 0.99 RC. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -2457,7 +2457,7 @@ GUI remain out of scope.
 
 ## 0.26 — Compatibility Burn-In (Second Slice)
 
-**Status: planned — after 0.25.0.**
+**Status: shipped in 0.26.0.**
 
 **Objective:** prove **two consecutive** minor upgrade paths without a
 wire-schema reset (**0.24 → 0.25** and **0.25 → 0.26**), close remaining

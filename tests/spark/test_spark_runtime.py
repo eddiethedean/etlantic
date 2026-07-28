@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from etlantic import (
-    SPARK_PROTOCOL_VERSION,
-    STREAMING_STABILITY,
     Data,
     Extract,
     Input,
@@ -19,6 +17,7 @@ from etlantic import (
     explain_plan,
     plan_pipeline,
 )
+from etlantic.spark import SPARK_PROTOCOL_VERSION, STREAMING_STABILITY
 from etlantic.exceptions import NodeExecutionError, PipelineValidationError
 from etlantic.registry import PlanningContext
 from etlantic.runtime.spark_exec import (

@@ -1,6 +1,6 @@
 """Unit tests for diagnostics and reports."""
 
-from etlantic import Diagnostic, Severity, ValidationReport
+from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
 from etlantic.exceptions import PipelineValidationError
 
 

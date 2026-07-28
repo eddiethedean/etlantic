@@ -75,7 +75,7 @@ def test_staging_not_inferred_as_production() -> None:
 def test_invalid_allowlist_pin_emits_pmplug403() -> None:
     class _P:
         info = type(
-            "I", (), {"name": "etlantic-polars", "engine": "polars", "version": "0.25.1"}
+            "I", (), {"name": "etlantic-polars", "engine": "polars", "version": "0.26.0"}
         )()
 
     profile = Profile(

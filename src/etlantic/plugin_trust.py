@@ -13,7 +13,7 @@ from etlantic.profile import Profile
 
 _EMPTY_ALLOWLIST_REMEDIATION = (
     "Set Profile.plugin_allowlist to a non-empty map of package→pin "
-    "(for example {'etlantic-polars': '==0.25.1'}), or copy "
+    "(for example {'etlantic-polars': '==0.26.0'}), or copy "
     "docs/01_GETTING_STARTED/prod.example.json. The built-in "
     "--profile production template is empty and fail-closed."
 )

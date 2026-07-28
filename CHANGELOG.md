@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-07-27
+
+### Added
+- Dual-minor burn-in fixtures (`v0_25/`) proving 0.25→0.26 upgrade without wire-schema reset
+- Extended CI gates for pipeline and sibling codec burn-in across `v0_24` and `v0_25`
+- What's New / Migration / Exit Gate 0.26 documentation
+
+### Changed
+- Official package versions align at 0.26.0; plugins require `etlantic>=0.26.0,<0.27`
+- Plugin SDK `/1` freeze re-scoped to 0.27+ (external feedback blocker remains open)
+- Wire schema ranges document dual-minor window and authoring-catalog N/A rationale
+
+### Removed
+- First-wave root facade aliases: protocol consts, exceptions, storage, runtime, interchange helpers (37 symbols); import from owning modules per Migration 0.25→0.26
+
 ## [0.25.1] - 2026-07-27
 
 ### Fixed
@@ -969,6 +984,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.26.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.26.0
 [0.25.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.1
 [0.25.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.25.0
 [0.24.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.24.0
