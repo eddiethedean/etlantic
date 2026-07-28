@@ -190,6 +190,7 @@ plugins:
         python:
           paths:
             - src
+            - packages/medallantic/src
           options:
             docstring_style: google
             members_order: source
@@ -300,6 +301,17 @@ nav:
       - Deprecated:
           - Sources: 05_PIPELINES/SOURCES.md
           - Sinks: 05_PIPELINES/SINKS.md
+  - Medallantic:
+      - Overview: 09_MEDALLANTIC/README.md
+      - Getting started: 09_MEDALLANTIC/GETTING_STARTED.md
+      - Native authoring: 09_MEDALLANTIC/AUTHORING.md
+      - Quality rules: 09_MEDALLANTIC/QUALITY.md
+      - Execution and reports: 09_MEDALLANTIC/EXECUTION.md
+      - SparkForge migration: 09_MEDALLANTIC/SPARKFORGE_MIGRATION.md
+      - Compatibility: 09_MEDALLANTIC/COMPATIBILITY.md
+      - Troubleshooting: 09_MEDALLANTIC/TROUBLESHOOTING.md
+      - Architecture: 09_MEDALLANTIC/ARCHITECTURE.md
+      - API reference: 09_MEDALLANTIC/API_REFERENCE.md
   - Integrations and Execution:
       - Overview: 06_EXECUTION/README.md
       - Storage today: 06_EXECUTION/STORAGE_TODAY.md
@@ -367,7 +379,7 @@ nav:
           - Sample multi-file project: 09_EXAMPLES/SAMPLE_PROJECT.md
           - Prefect Direct Execution: 09_EXAMPLES/PREFECT_RUN.md
           - Airflow Compile: 09_EXAMPLES/AIRFLOW_COMPILE.md
-          - Medallantic (IR adapter): 09_EXAMPLES/MEDALLANTIC.md
+          - Medallantic migration example: 09_EXAMPLES/MEDALLANTIC.md
           - Portable Polars Kernel: 09_EXAMPLES/PORTABLE_TRANSFORMS.md
           - Polars ↔ Pandas Interchange: 09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md
           - Contract-First Round Trip: 09_EXAMPLES/CONTRACT_FIRST_TUTORIAL.md

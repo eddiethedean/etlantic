@@ -1,5 +1,9 @@
 # Medallantic (runnable migration adapter)
 
+For the complete native-authoring, quality, execution, compatibility, and
+migration documentation, start with the
+[Medallantic guide](../09_MEDALLANTIC/README.md).
+
 > **Status: Available.** The current release provides the SparkForge IR
 > migration adapter and parity suite under `tests/medallantic/`.
 
