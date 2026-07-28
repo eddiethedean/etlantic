@@ -80,6 +80,95 @@ Shared models should include:
 - acknowledgement, approval, and remediation references;
 - deterministic fingerprints where possible.
 
+## Durable Host Recovery Integration
+
+### Boundary
+
+Applications and orchestrator plugins own durable job admission, SQL/queue
+records, worker claims, leases, heartbeats, fencing, scheduler leadership,
+retry timing, and process recovery. ETLantic core must not become a queue,
+scheduler, worker supervisor, or database.
+
+ETLantic should provide the portable semantic evidence those hosts need to
+decide whether a failed or abandoned execution may be retried, resumed,
+reconciled, or must stop for review.
+
+### Portable execution-attempt context
+
+A future versioned attempt context should carry only host-neutral values:
+
+- logical run and attempt identity;
+- immutable pipeline definition and plan fingerprints;
+- run intent and selection;
+- prior attempt/report reference;
+- retry/replay/resume reason;
+- idempotency scope/key references without secret material;
+- available durable artifact and checkpoint references;
+- cancellation/deadline context;
+- correlation and trace identifiers;
+- host fencing token as opaque evidence when needed by providers.
+
+The context must be serializable, secret-free, and optional for local
+single-attempt execution. ETLantic must not interpret a host lease as proof of
+side-effect safety.
+
+### Recovery classification
+
+Normalized reports and provider results should distinguish:
+
+- no externally visible effect began;
+- effect is known not committed;
+- effect is known committed;
+- effect outcome is unknown;
+- checkpoint/artifact was durably published;
+- cleanup or compensation completed/failed.
+
+An unknown commit outcome is not an ordinary transient failure. Automatic retry
+must fail closed unless the plan/provider supplies a valid deduplication,
+transaction, reconciliation, or idempotency proof.
+
+### Resume and checkpoint contract
+
+ETLantic should expose enough stable evidence for a host to request:
+
+- whole-run retry;
+- replay from the original inputs/state;
+- resume from a durable publication boundary;
+- minimum-safe repair closure;
+- reconciliation-only/manual-review flow.
+
+Resume is legal only when the checkpoint/artifact binds to the exact plan,
+pipeline revision, input snapshot, implementation identities, security domain,
+and state transition. Checkpoint advancement remains compare-and-swap and
+commit-after-materialization. A failed or no-write attempt cannot advance it.
+
+### Plugin/provider conformance
+
+Execution and storage plugins should declare and test:
+
+- cancellation and timeout behavior;
+- transaction/commit boundary;
+- idempotency scope and duplicate suppression;
+- retry and resume capability;
+- checkpoint/artifact durability;
+- unknown-outcome and reconciliation behavior;
+- attempt-aware report attribution.
+
+Hosts may impose a stricter retry limit or refuse resume. They must never
+weaken an ETLantic unsafe-retry or unknown-outcome decision.
+
+### Acceptance
+
+- a process may disappear after any execution boundary without ETLantic
+  reporting a false success;
+- a conforming host can make a deterministic retry/resume/manual-review
+  decision from the plan and normalized attempt evidence;
+- two attempts remain distinguishable while contributing to one logical run
+  history;
+- a stale/fenced host cannot use ETLantic evidence to legitimize an otherwise
+  rejected state or publication commit;
+- reports, checkpoints, and recovery diagnostics contain no secret values.
+
 ## Freshness and Partition Completeness
 
 ### Problem

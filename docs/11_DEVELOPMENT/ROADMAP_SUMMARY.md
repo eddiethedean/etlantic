@@ -168,6 +168,22 @@ Joint ETLantic/Medallantic compatibility burn-in, then RC and Stable
 Foundation. Production FastAPI control API remains **1.1**;
 registry/workspaces **1.2**.
 
+## Post-1.0 recovery and federation
+
+Durable execution hosts remain outside ETLantic core, while ETLantic supplies
+the portable evidence needed to recover safely:
+
+- **1.3 Incremental State and Reproducibility** adds a secret-free
+  execution-attempt context, checkpoint/resume evidence, and normalized
+  known/unknown external-effect outcomes.
+- **1.8 Remote Execution Federation** adds host-neutral recovery negotiation,
+  fenced attempt attribution, resumable observation, and conformance semantics
+  for retry, replay, repair, reconciliation, and manual review.
+
+The queue, worker claim/lease store, heartbeat service, and scheduler leadership
+remain responsibilities of applications and orchestrator plugins. See
+[ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md#durable-host-recovery-integration).
+
 ## Toward 1.0
 
 The 1.0 goal is a stable foundation with frozen contracts (0.19), completed

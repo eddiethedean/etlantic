@@ -3,7 +3,8 @@
 **Current release:** ETLantic **0.31.0** (Beta / PyPI). Milestones **0.25**
 (burn-in first slice) through **0.31** (execution/materialization / Medallantic
 M3) are shipped; **0.32–0.35** continue Medallantic parity before joint burn-in
-in **0.36–0.98** and the 0.99 RC. See
+in **0.36**, the **0.37** release candidate, and the **0.38** stable
+foundation. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
@@ -221,7 +222,7 @@ with explicit provenance and no domain semantics duplicated in ETLantic.
 - Compatibility acceptance for existing ContractModel subclasses wherever a
   `Data` type is accepted
 - Deprecation path for the uneven ETLantic-facing `DataContractModel` name
-  before 1.0
+  before the stable foundation
 - Multi-phase structural, reference, semantic, policy, and capability validation
 - Named validation and quality-gate policies
 - Valid and invalid output declarations
@@ -1210,7 +1211,7 @@ already exists in 0.11 IR. Those families are **not** part of the 0.15 exit
 gate; they graduate later under
 [0.17](#017--portable-coverage-expansion-platform--multi-family-graduation)
 (historically
-[0.15 continuation](#015-continuation-profile-graduation)).
+[0.15 Profile Graduation Work Package](#015-profile-graduation-work-package)).
 
 ### Goals
 
@@ -1227,7 +1228,8 @@ gate; they graduate later under
 
 ### Non-goals
 
-- Production readiness, SLA, HA, or multi-tenant isolation (remain 1.0)
+- Production readiness, SLA, HA, or multi-tenant isolation (remain
+  stable-foundation work)
 - Graduating window, complex-value, reshape, statistics, or related advanced
   families in the 0.15 exit gate
 - Replacing native `@implementation("sql")` as the supported SQL path until
@@ -1273,7 +1275,7 @@ The required standards work is detailed in the
 and
 [DTCS 3.0 Rich Portable Analytics Publication Record](docs/11_DEVELOPMENT/DTCS_3_0_SPEC_PROPOSAL.md).
 
-## 0.15 continuation (profile graduation)
+### 0.15 Profile Graduation Work Package
 
 **Status: superseded by [0.17](#017--portable-coverage-expansion-platform--multi-family-graduation).**
 Historical ownership of rich portable family graduation after the 0.15 SQL
@@ -1318,7 +1320,8 @@ native-to-portable migration note. Until a family graduates, keep native
 must not wait on Prefect. Optional `etlantic-prefect` (Gate B) may ship in the
 same minor when ready, but it does not block Gate A. Portable profile
 graduation is owned by [0.17](#017--portable-coverage-expansion-platform--multi-family-graduation)
-(historically tracked as [0.15 continuation](#015-continuation-profile-graduation)),
+(historically tracked as the
+[0.15 Profile Graduation Work Package](#015-profile-graduation-work-package)),
 not 0.16.
 
 **Prerequisites already shipped in 0.15:** `ExecutionScheduler` /
@@ -1396,7 +1399,7 @@ tests use `Extract`, `Load`, and `asset=` only.
 - making Prefect the automatic `production` profile orchestrator
 - Prefect deployment/serve or durable scheduling (post-0.16 Prefect follow-on)
 - fusion-driven `physical_units` as the Prefect (or local) execution grain
-  (post-0.16 / before 1.0 runtime work)
+  (post-0.16 / before stable-foundation runtime work)
 - the full scheduler conformance corpus from the scheduler plan (later)
 - treating Prefect as an Airflow-style `compile_plan` / DAG artifact compiler
 - passing large datasets through scheduler control payloads
@@ -1404,7 +1407,8 @@ tests use `Extract`, `Load`, and `asset=` only.
   validation, security, or materialization semantics
 - replacing Airflow compilation
 - portable profile graduation ([0.17](#017--portable-coverage-expansion-platform--multi-family-graduation))
-- production-default orchestrator selection or the full 1.0 security matrix
+- production-default orchestrator selection or the full stable-foundation
+  security matrix
 
 #### Acceptance scenarios
 
@@ -1434,7 +1438,9 @@ remains the external compiler. Gate B does not block Gate A.
 0.17 has three **sequenced** gates. Gate A (platform and truthful
 discoverability) must ship. Gates B and C graduate declared DTCS profile
 families under the existing two-compiler rule. Families not listed in Gates B
-or C remain in [0.17 continuation](#017-continuation) and do not block the
+or C remain in the
+[0.17 Coverage Graduation Work Package](#017-coverage-graduation-work-package)
+and do not block the
 0.17 exit gate.
 
 **Prerequisites already shipped:** Polars, Pandas, SQL, and PySpark ship the
@@ -1442,7 +1448,7 @@ kernel and `portable-relational/1` baseline with public conformance and
 cross-engine differentials. Rich-family authoring and fixtures exist; compiler
 claims remain baseline-only until Gates B and C graduate them. Profile
 graduation ownership moves here from
-[0.15 continuation](#015-continuation-profile-graduation).
+[0.15 Profile Graduation Work Package](#015-profile-graduation-work-package).
 
 This requirement applies to first-party dataframe, SQL, and Spark execution
 plugins. It does not apply to plugins that do not execute transformations,
@@ -1583,7 +1589,7 @@ Wave 2 families only.
 All three Wave 2 families meet the two-compiler graduation bar with matrix,
 conformance, differentials, examples, and guide alignment.
 
-### 0.17 continuation
+### 0.17 Coverage Graduation Work Package
 
 **Status: planned — after the 0.17 exit gate.** Not required to close 0.17.
 
@@ -1709,7 +1715,7 @@ What’s New / Migration describe the formal boundary (not best-effort
 conversion). Existing plugins pass Gate A before a new analytical engine is
 added.
 
-### Gate B — Experimental `etlantic-datafusion` (non-blocking; 0.19+)
+### Gate B — Experimental `etlantic-datafusion` (non-blocking)
 
 Begins only after Gate A / 0.18.0. DataFusion is initially an experimental
 first-party plugin and does not replace Polars as the reference dataframe
@@ -1751,7 +1757,8 @@ and portable conformance, cross-engine differentials, Arrow boundary tests,
 failure/redaction tests, and demonstrates a distinct measured advantage in at
 least one of local analytical performance, streaming/laziness, conversion
 cost, or external interoperability. Otherwise it remains experimental or is
-stopped without changing the core default and without creating a 1.0
+stopped without changing the core default and without creating a
+stable-foundation
 compatibility obligation.
 
 ### Program success measures
@@ -1779,7 +1786,8 @@ core compatibility obligation.
 **Objective:** turn the shipped logical model and plan boundary into a precise,
 deeply immutable, versioned contract before adding further stable surface area.
 The experimental DataFusion Gate B may proceed in parallel, but it cannot
-change or weaken these gates and does not become a 1.0 obligation unless it
+change or weaken these gates and does not become a stable-foundation obligation
+unless it
 graduates independently.
 
 ### Deliver
@@ -1806,7 +1814,8 @@ graduates independently.
   reads only through a diagnosed compatibility or migration path
 - inventory the top-level SDK, submodule SDKs, CLI, schemas, diagnostic codes,
   and plugin protocols as stable, provisional, experimental, or private
-- decide every pre-1.0 deprecation and publish the final removal/migration
+- decide every pre-foundation deprecation and publish the final
+  removal/migration
   schedule
 
 ### Acceptance scenarios
@@ -1986,7 +1995,7 @@ outside the monorepo before freezing protocol `/1` surfaces.
   minimal-install behavior and prevent optional plugin imports
 - retain explicit `from etlantic import ...` and public submodule imports as
   supported alternatives; migrate misplaced specialist root exports only
-  through documented pre-1.0 compatibility aliases
+  through documented pre-foundation compatibility aliases
 - publish and test the root-versus-namespace ownership rule in the public
   surface inventory, generated API reference, type-consumer fixtures, and
   import-time budget
@@ -2374,11 +2383,11 @@ first named slice of the broader compatibility burn-in band; **0.26** is the
 second slice; **0.27** is the third; **0.28** is the fourth (quadruple-minor
 window plus Plugin `/1` freeze and Medallantic M0 closeout); **0.29–0.35**
 preserve co-evolution discipline while ETLantic and Medallantic advance feature
-parity, followed by joint burn-in in **0.36–0.98** toward the 0.99 RC.
+parity, followed by joint burn-in in **0.36** toward the 0.37 release candidate.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Production
-FastAPI (1.1), registry/workspaces (1.2), and TransformationModel remain
-post-1.0 / later 1.x tracks.
+TransformationModel (0.39), FastAPI (0.40), and registry/workspaces (0.41)
+remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -2422,24 +2431,25 @@ post-1.0 / later 1.x tracks.
 
 - close the 0.22 freeze-eligible checklist: external plugin conformance
   (`etlantic-plugin-echo` + documented third-party path), packaging/manifest
-  gates, and “no provisional core protocol” on the 1.0 path
+  gates, and “no provisional core protocol” on the stable-foundation path
 - record an explicit freeze **or** publish remaining blockers
 
 **Out of scope**
 
 - new plugin protocols (Storage / Resource / Observability catalogs stay future)
 
-#### WP4 — 1.0 removal inventory
+#### WP4 — Stable-foundation removal inventory
 
 **In scope**
 
-- catalog ambiguous aliases and pre-1.0 compatibility shims
+- catalog ambiguous aliases and pre-foundation compatibility shims
 - each candidate gets a removal ticket and migration note (no new indefinite
   aliases)
 
 **Out of scope**
 
-- performing the 1.0 removals in 0.25 (inventory and discipline only)
+- performing the stable-foundation removals in 0.25 (inventory and discipline
+  only)
 
 #### WP5 — Bounded authoring polish (fixture-driven only)
 
@@ -2468,14 +2478,16 @@ post-1.0 / later 1.x tracks.
 - at least one additional versioned artifact (plan or run report) has the same
   fixture discipline in CI
 - Plugin SDK `/1` freeze decision is recorded (freeze or explicit blockers)
-- a published “1.0 removal candidates” list exists; no new silent keep-forever
+- a published “stable-foundation removal candidates” list exists; no new
+  silent keep-forever
   aliases land in 0.25
 - What's New / Migration 0.24→0.25 / Exit Gate 0.25 pass docs gates
 
 ### Exit gate
 
 0.25.0 ships with upgrade fixtures for `pipeline/1` (and at least one sibling
-artifact), a Plugin SDK `/1` freeze decision on record, a 1.0 removal
+artifact), a Plugin SDK `/1` freeze decision on record, a stable-foundation
+removal
 inventory, and migration/docs gates. No wire-schema reset. Control plane and
 GUI remain out of scope.
 
@@ -2485,7 +2497,8 @@ GUI remain out of scope.
 
 **Objective:** prove **two consecutive** minor upgrade paths without a
 wire-schema reset (**0.24 → 0.25** and **0.25 → 0.26**), close remaining
-freeze/fixture gaps from 0.25, and execute the first wave of 1.0 removal
+freeze/fixture gaps from 0.25, and execute the first wave of stable-foundation
+removal
 candidates with migrations — not a control-plane or GUI milestone.
 
 ### Prerequisites from 0.25
@@ -2493,7 +2506,8 @@ candidates with migrations — not a control-plane or GUI milestone.
 - Documented `0.24 → 0.25` upgrade path with `pipeline/1` (and sibling)
   reader/writer fixtures in CI
 - Plugin SDK `/1` freeze decision recorded (freeze **or** published blockers)
-- Published 1.0 removal inventory (tickets + migration notes; no removals yet)
+- Published stable-foundation removal inventory (tickets + migration notes; no
+  removals yet)
 
 ### Work packages
 
@@ -2536,7 +2550,7 @@ candidates with migrations — not a control-plane or GUI milestone.
 
 - new Storage / Resource / Observability protocol catalogs
 
-#### WP4 — First-wave 1.0 removal execution
+#### WP4 — First-wave stable-foundation removal execution
 
 **In scope**
 
@@ -2546,7 +2560,7 @@ candidates with migrations — not a control-plane or GUI milestone.
 
 **Out of scope**
 
-- completing the entire 1.0 removal list (later burn-in / 0.99)
+- completing the entire stable-foundation removal list (later burn-in / 0.37)
 
 #### WP5 — Authoring parity completion (bounded)
 
@@ -2592,7 +2606,8 @@ out of scope.
 **Objective:** prove a **triple-minor** upgrade window without a wire-schema
 reset (**0.25 → 0.26 → 0.27**), close the Plugin SDK `/1` freeze external
 feedback blocker (or re-scope again with owners), and execute the second wave
-of 1.0 removal candidates — not a control-plane or GUI milestone.
+of stable-foundation removal candidates — not a control-plane or GUI
+milestone.
 
 ### Prerequisites from 0.26
 
@@ -2636,7 +2651,7 @@ of 1.0 removal candidates — not a control-plane or GUI milestone.
 
 - new Storage / Resource / Observability protocol catalogs
 
-#### WP3 — Second-wave 1.0 removal execution
+#### WP3 — Second-wave stable-foundation removal execution
 
 **In scope**
 
@@ -2649,7 +2664,7 @@ of 1.0 removal candidates — not a control-plane or GUI milestone.
 
 **Out of scope**
 
-- completing the entire 1.0 removal list (later burn-in / 0.99)
+- completing the entire stable-foundation removal list (later burn-in / 0.37)
 - curated root facade and lazy namespaces
 
 #### WP4 — Wire matrix maintenance
@@ -2767,7 +2782,8 @@ control-plane / GUI milestone.
 
 **Out of scope**
 
-- new Storage / Resource / Observability protocol catalogs (post-freeze or 1.x)
+- new Storage / Resource / Observability protocol catalogs (post-freeze or
+  later 0.x)
 
 #### WP3 — Third-wave `REM-ROOT-DEMOTED` execution
 
@@ -2782,7 +2798,8 @@ control-plane / GUI milestone.
 
 **Out of scope**
 
-- completing the entire 1.0 removal list (`REM-DATACONTRACTMODEL`, experimental
+- completing the entire stable-foundation removal list
+  (`REM-DATACONTRACTMODEL`, experimental
   graduation, Prefect MVP expansion)
 - curated root facade and lazy namespaces
 
@@ -3249,11 +3266,11 @@ Both legacy builders have tested migration paths; all claimed parity is backed
 by differential/conformance evidence; the facade/core boundary and required
 wire schemas are freeze-ready; no unresolved P0 parity gap remains.
 
-## 0.36–0.98 — Joint Compatibility Burn-In
+## 0.36 — Joint Compatibility Burn-In
 
 **Objective:** accumulate adoption and upgrade evidence for ETLantic and
 Medallantic together after the 0.25–0.27 core slices and the 0.28–0.35
-co-evolution phases.
+co-evolution phases, then close burn-in as one bounded release.
 
 ### Deliver
 
@@ -3263,35 +3280,51 @@ co-evolution phases.
 - maintain old-reader/new-writer and new-reader/old-writer fixtures for every
   supported schema and protocol range
 - require migrations for intentional breaking changes and keep both projects'
-  1.0 removal inventories current
+  stable-foundation removal inventories current
 - run the Medallantic semantic conformance and legacy differential corpora as
   first-party release gates
 - graduate experimental engines or portable families only through existing
   conformance, differential, security, performance, and documentation gates
 - keep server, registry, LSP, remote federation, expanded streaming,
   additional orchestrators, and AI-assisted authoring out of stable core
-  unless needed to prove an already-promised 1.0 abstraction
+  unless needed to prove an already-promised stable-foundation abstraction
+
+### Quantified acceptance
+
+- the `0.34 → 0.35` and `0.35 → 0.36` joint upgrade paths pass for ETLantic,
+  every first-party plugin, and Medallantic
+- old-reader/new-writer and new-reader/old-writer fixtures pass for 100% of
+  supported public wire schemas and protocol ranges
+- 100% of first-party plugins pass the frozen public conformance suite from
+  isolated wheels
+- the Medallantic semantic corpus and legacy differential corpus pass with zero
+  unexplained semantic differences
+- there are zero unresolved P0 compatibility, security, parity, or migration
+  findings and zero unversioned wire-schema changes
+- every remaining P1 finding has an owner, target phase, and documented reason
+  it does not block the stable foundation
 
 ### Exit gate
 
 No unresolved naming migration, P0 Medallantic parity gap, silent capability
 fallback, schema reset, provisional facade/core protocol, or provisional core
-plugin protocol remains on the 1.0 path.
+plugin protocol remains on the stable-foundation path.
 
-## 0.99 — 1.0 Release Candidate
+## 0.37 — Stable Foundation Release Candidate
 
 **Objective:** rehearse the final release, upgrade, rollback, security, and
-support process against the exact artifacts intended for 1.0.
+support process against the exact artifacts intended for the stable foundation.
 
 ### Deliver
 
 - freeze public API and schema snapshots and require explicit review for any
   change
-- run the complete 1.0 acceptance suite from both source and built wheels on
+- run the complete stable-foundation acceptance suite from both source and
+  built wheels on
   every supported Python version and operating system
 - test every documented extra individually and in supported combinations from
   isolated wheel installations
-- rehearse upgrades from every supported pre-1.0 line, rejected downgrades,
+- rehearse upgrades from every supported earlier 0.x line, rejected downgrades,
   data/schema migrations, and documented rollback paths
 - map every mandatory security control to implementation, automated evidence,
   owner, and residual risk
@@ -3309,7 +3342,7 @@ compatibility, packaging, and rollback rehearsals. Any required semantic,
 schema, or protocol change returns the affected area to the appropriate
 earlier gate.
 
-## 1.0 — Stable Foundation
+## 0.38 — Stable Foundation
 
 ### Public stability
 
@@ -3340,7 +3373,7 @@ earlier gate.
 - Durable, cross-process CLI reports and declarative provider configuration
 - Complete tutorials, references, migration guides, and executable examples
 
-### 1.0 acceptance suite
+### Stable-foundation acceptance suite
 
 The release candidate must demonstrate:
 
@@ -3363,7 +3396,8 @@ The release candidate must demonstrate:
     explicit ownership/collection/copy evidence, and a diagnosed fallback.
 15. Any graduated DataFusion integration passing its Gate B conformance,
     differential, dependency-isolation, and semantic-preservation gates;
-    experiments that did not graduate create no 1.0 compatibility obligation.
+    experiments that did not graduate create no stable-foundation compatibility
+    obligation.
 16. Rejection of mutated, corrupt, incorrectly fingerprinted, unknown-version,
     or cross-security-domain plans before plugin loading or external mutation.
 17. Authorization of an allowed plugin and rejection of a disallowed installed
@@ -3377,7 +3411,7 @@ The release candidate must demonstrate:
 
 ### Exit gate
 
-ETLantic 1.0 ships only when:
+ETLantic's stable foundation ships only when:
 
 - Typed authoring, contract interoperability, validation, planning, execution,
   reporting, and plugin coordination work together end to end.
@@ -3394,22 +3428,24 @@ ETLantic 1.0 ships only when:
 - SparkForge migration has proved the core abstractions without moving
   medallion semantics into ETLantic.
 
-## 1.x Strategy
+## Defined Post-Foundation Sequence
 
-The 1.x series expands ETLantic around the stable 1.0 model without turning
-the core into a server, catalog, scheduler, IDE, or AI platform.
+Phases 0.39 through 0.48 expand ETLantic around the stable-foundation model
+without turning the core into a server, catalog, scheduler, IDE, or AI
+platform. Each initiative has one assigned phase and its own acceptance gates;
+none is an open-ended placeholder.
 
 Each minor release should:
 
 - add one coherent integration or capability family;
-- preserve 1.0 plan, report, and Plugin SDK compatibility unless an explicitly
-  versioned schema extension is required;
+- preserve stable-foundation plan, report, and Plugin SDK compatibility unless
+  an explicitly versioned schema extension is required;
 - ship independently installable integrations for heavyweight concerns;
 - use adoption evidence to adjust ordering without collapsing boundaries.
 
-### Post-1.0 — TransformationModel Incubation
+## 0.39 — TransformationModel Incubation
 
-**Status:** deferred from the 0.20+ track; begins after ETLantic 1.0 ships.
+**Status:** deferred from the 0.20+ track; begins after ETLantic 0.38 ships.
 
 **Objective:** incubate a reusable, Python-native transformation modeling
 package at `packages/transformationmodel` while ETLantic remains the integration,
@@ -3460,16 +3496,16 @@ orchestration, plugin-loading, secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-After 1.0, ETLantic may consume TransformationModel from the workspace behind
+During 0.39, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
-package boundary. No 1.x compatibility promise may depend exclusively on the
-incubating API until graduation.
+package boundary. No later 0.x compatibility promise may depend exclusively on
+the incubating API until graduation.
 
 See the
 [TransformationModel Incubation Plan](docs/11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md).
 
-### 1.1 — FastAPI Control API
+## 0.40 — FastAPI Control API
 
 Deliver:
 
@@ -3513,7 +3549,7 @@ Acceptance:
 
 See [FastAPI Integration Plan](docs/11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md).
 
-### 1.2 — Registry, Workspaces, and Discovery
+## 0.41 — Registry, Workspaces, and Discovery
 
 Deliver:
 
@@ -3544,11 +3580,14 @@ Acceptance:
 - accepting an operational baseline never mutates or aliases the authoritative
   contract revision.
 
-### 1.3 — Incremental State and Reproducibility
+## 0.42 — Incremental State and Reproducibility
 
 Deliver:
 
 - state-provider protocol;
+- versioned, secret-free execution-attempt context that lets hosts correlate
+  retries, replay, resume, cancellation, deadlines, checkpoints, and reports
+  without making ETLantic a queue or worker supervisor;
 - versioned cursors, watermarks, checkpoints, partitions, and snapshot
   identities;
 - compare-and-swap and atomic checkpoint advancement;
@@ -3564,6 +3603,9 @@ Deliver:
 - dry-run state transition explanation.
 - optional SQLModel-backed state, checkpoint, and idempotency reference
   provider with transactional concurrency controls.
+- normalized external-effect outcome (`none`, known committed/not committed,
+  or unknown), durable-publication, compensation, and reconciliation evidence
+  for host recovery decisions.
 
 Acceptance:
 
@@ -3573,8 +3615,11 @@ Acceptance:
   secret versions where safe, and state transition used by the original run.
 - replay identifies the schema observations and baseline decisions used by the
   original run.
+- an unknown external commit outcome fails closed against automatic retry
+  unless a provider supplies valid transaction, deduplication, reconciliation,
+  or idempotency evidence.
 
-### 1.4 — Policy, Governance, and Supply-Chain Assurance
+## 0.43 — Policy, Governance, and Supply-Chain Assurance
 
 Deliver:
 
@@ -3601,7 +3646,7 @@ Acceptance:
 - forged, cross-tenant, or cross-environment schema observations cannot satisfy
   a deployment or execution gate.
 
-### 1.5 — Developer Intelligence: LSP, IDE, and Static Analysis
+## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis
 
 Deliver:
 
@@ -3703,7 +3748,7 @@ Acceptance:
 - quick fixes never import untrusted modules or resolve remote references
   implicitly.
 
-### 1.6 — Planner and Optimization SDK
+## 0.45 — Planner and Optimization SDK
 
 Deliver:
 
@@ -3724,11 +3769,11 @@ Acceptance:
 - users can compare baseline and optimized plans before execution;
 - an optimization that cannot prove boundary preservation is rejected.
 
-### 1.7 — Streaming and Event-Driven Pipelines
+## 0.46 — Streaming and Event-Driven Pipelines
 
 Deliver:
 
-- stable streaming semantics beyond the 1.0 foundation;
+- stable streaming semantics beyond the 0.38 foundation;
 - event-time, watermark, trigger, state, late-data, and replay contracts;
 - Kafka and additional streaming provider integrations;
 - continuous `PipelineRunReport` snapshots and terminal/nonterminal status;
@@ -3742,7 +3787,7 @@ Acceptance:
 - restart and replay do not silently duplicate externally visible effects;
 - backpressure and late-data behavior are visible in plans and reports.
 
-### 1.8 — Remote Execution Federation
+## 0.47 — Remote Execution Federation
 
 Deliver:
 
@@ -3752,6 +3797,10 @@ Deliver:
 - signed plan envelopes and content-addressed artifact exchange;
 - resumable event, log, and report synchronization;
 - cancellation, retries, leases, heartbeats, and disconnected-client behavior;
+- fenced attempt ownership and normalized attempt history while leaving the
+  durable queue/lease implementation to the conforming remote runtime;
+- recovery negotiation for whole-run retry, checkpoint resume, replay, repair,
+  reconciliation, or manual review;
 - placement across multiple approved execution environments;
 - FastAPI gateway support without requiring FastAPI in workers.
 
@@ -3763,8 +3812,10 @@ Acceptance:
   state;
 - a remote runtime cannot request undeclared secrets, plugins, or network
   authority.
+- loss of a worker after an external commit cannot be reported as safely
+  retryable when the commit outcome is unknown.
 
-### 1.9 — AI-Assisted, Human-Governed Engineering
+## 0.48 — AI-Assisted, Human-Governed Engineering
 
 Deliver:
 
@@ -3827,7 +3878,7 @@ Acceptance:
 See [Schema Drift and Evolution Plan](docs/11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md).
 See [ETL Reliability and Recovery Plan](docs/11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md).
 
-### 1.x Candidate Themes
+## Unscheduled Candidate Themes
 
 These remain candidates rather than promised release numbers:
 
