@@ -129,13 +129,20 @@ with 0.40–0.43 incubation gates and a 0.44 graduation gate.
 
 See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
-## Residual appendix (not unrestricted production)
+## Planned and residual appendix (not unrestricted production)
 
 | Capability | Status |
 |---|---|
+| Application-pipeline testing helpers | Preview planned for 0.35; burn-in and graduation through 0.38 |
+| Source/sink/storage connector SDK and reference set | Planned first-class for 0.39 |
+| OpenLineage metadata interoperability | Planned as a tenant-aware 0.41 gate |
+| GitOps preview-to-production workflow | Planned across 0.42–0.44 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
-| Event sensors / Dagster compilers | Future |
+| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.48; optional supported packs planned for 0.52 |
+| Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.50 |
+| Read-only-first operator console | Planned first-class for 0.51 |
+| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.52 |
+| TransformationModel incubation | Deferred to 0.53 |
 | Full LSP server productization | Continues in 0.45 |
 | Registry-backed schema history | Continues in 0.41 |
 | Production multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation (0.34 ships only the thin reference adapter) |

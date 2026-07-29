@@ -1,5 +1,10 @@
 # Resource Providers
 
+> **Status: planned design — not shipped in ETLantic 0.34.** Kubernetes and
+> managed execution reference proof is assigned to 0.48; supported enterprise
+> provider packs are assigned to 0.52. See the
+> [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).
+
 Resource providers give ETLantic access to runtime resources required
 to execute a Pipeline Plan.
 

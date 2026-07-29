@@ -50,7 +50,7 @@ manager.
 | Public portable transform conformance suite | Yes (0.14) |
 | Multi-tenant durable orchestration | No — planned through CP3 / 0.42 |
 | Formal SLA / support response times | No |
-| Production GUI | No |
+| Production GUI | No in 0.34 — read-only-first operator console planned for 0.51 |
 | Multi-tenant control plane | No in 0.34 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.40–0.43 incubation and 0.44 graduation |
 
 ## Security posture
@@ -119,11 +119,12 @@ How to read status labels in deeper chapters:
 - Copying long Airflow **design study** tutorials into production—use
   `examples/airflow_compile.py` and `etlantic-airflow` instead
 - Treating Structured Streaming APIs as stable (they are experimental)
-- AWS Secrets Manager / Vault (not shipped); OS keyring **is** available via
-  `etlantic-keyring`
+- AWS Secrets Manager / Vault (not shipped; optional provider packs planned for
+  0.52); OS keyring **is** available via `etlantic-keyring`
 - Process-local / durable file reports as an audit system of record
 - Stable-foundation compatibility guarantees (planned for 0.38)
-- Managed Databricks/EMR/Connect Spark providers
+- Managed Databricks/EMR/Connect Spark providers (reference proof planned for
+  0.48; supported packs planned for 0.52)
 - **Undocumented advanced portable profiles** — Polars and PySpark ship the
   documented 0.17 Wave 1 / Wave 2 families; Pandas and SQL remain at kernel +
   `portable-relational/1`. Continuation profiles remain outside the advertised

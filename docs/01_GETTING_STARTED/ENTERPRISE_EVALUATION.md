@@ -105,14 +105,15 @@ remains in Medallantic—not core.
 
 ## Explicit non-goals (do not expect these from docs or product)
 
-- Multi-tenant isolation guarantees or a managed control plane **in 0.33**;
+- Multi-tenant isolation guarantees or a managed control plane **in 0.34**;
   these are a
   [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
   not a current capability
 - SOC2, GDPR, HIPAA, or other compliance attestations
-- HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs
+- HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs in
+  0.34; Kubernetes execution proof is planned for 0.48
 - Cloud secret managers (Vault, AWS Secrets Manager)—OS keyring ships via
-  `etlantic-keyring`
+  `etlantic-keyring`; optional cloud provider packs are planned for 0.52
 - Formal support SLAs or guaranteed response times
 
 ## Decision summary

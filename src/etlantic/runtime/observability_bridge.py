@@ -18,7 +18,9 @@ from etlantic.runtime.logging import LogRecord, redact_message, redact_value
 _LOG = logging.getLogger(__name__)
 
 
-def _redact_event(event: LifecycleEvent | SecurityEvent) -> LifecycleEvent | SecurityEvent:
+def _redact_event(
+    event: LifecycleEvent | SecurityEvent,
+) -> LifecycleEvent | SecurityEvent:
     if isinstance(event, LifecycleEvent):
         return LifecycleEvent(
             kind=event.kind,

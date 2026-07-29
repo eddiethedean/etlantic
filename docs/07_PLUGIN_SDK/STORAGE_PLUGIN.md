@@ -1,8 +1,10 @@
 # Storage Plugin
 
-!!! warning "Future design—not a shipped 0.33 entry-point protocol"
+!!! warning "Planned for 0.39—not a shipped 0.34 entry-point protocol"
     Storage plugins are not a discoverable entry-point protocol in ETLantic
-    0.33. This page describes a proposed extension surface. Prefer the
+    0.34. This page describes the extension surface assigned to the
+    [first-class connectivity program](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#data-connectivity-and-connector-sdk).
+    Prefer the
     shipped dataframe / SQL / Spark / orchestration plugin categories for
     current work.
 

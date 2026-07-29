@@ -76,6 +76,7 @@ These pages sequence future work. They are not product user guides:
 - [0.18 Gate A — Versioned Tabular Interchange (shipped record)](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md)
 - [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md)
+- [Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md)
 - [Programmatic Authoring and Lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md)
 - [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md)

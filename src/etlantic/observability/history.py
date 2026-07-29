@@ -112,7 +112,9 @@ class RunHistoryProvider(Protocol):
 
     def read_run(self, run_id: str) -> dict[str, Any] | None: ...
 
-    def list_runs(self, query: RunHistoryQuery | None = None) -> list[RunHistoryEntry]: ...
+    def list_runs(
+        self, query: RunHistoryQuery | None = None
+    ) -> list[RunHistoryEntry]: ...
 
 
 @dataclass
@@ -160,9 +162,7 @@ class InMemoryRunHistoryProvider:
         event: LifecycleEvent | SecurityEvent | RunHistoryRecord,
     ) -> None:
         payload = (
-            event.to_dict()
-            if hasattr(event, "to_dict")
-            else dict(event)  # type: ignore[arg-type]
+            event.to_dict() if hasattr(event, "to_dict") else dict(event)  # type: ignore[arg-type]
         )
         run_id = str(payload.get("run_id") or "")
         with self._lock:
@@ -381,9 +381,7 @@ class FileRunHistoryProvider:
             meta_path = run_dir / "meta.json"
             meta = dict(self._memory._runs.get(report.run_id, {}))
             meta["status"] = report.status.value
-            meta["ended_at"] = (
-                report.ended_at.isoformat() if report.ended_at else None
-            )
+            meta["ended_at"] = report.ended_at.isoformat() if report.ended_at else None
             write_text_safe(
                 meta_path,
                 json.dumps(meta, sort_keys=True, indent=2),

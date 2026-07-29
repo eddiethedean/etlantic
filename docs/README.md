@@ -41,8 +41,13 @@ Install with `pip install 'etlantic==0.34.0'`.
 - **Planned first-class:** multi-tenant control plane through the
   [0.40–0.43 incubation and 0.44 graduation program](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
   it is not included in 0.34.
+- **Planned ecosystem:** pipeline testing, connectivity, metadata/GitOps
+  integration, brownfield bridges, an operator console, and managed providers
+  have assigned 0.x gates in the
+  [Adoption, Connectivity, and Operations Plan](11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md);
+  none is included merely because it is planned.
 - **Not included:** managed Spark, SLA, and unrestricted enterprise compliance
-  beyond shipped SBOM/attestations.
+  beyond shipped SBOM/attestations in 0.34.
 - **Experimental:** Structured Streaming; `etlantic-datafusion` (Gate B stub).
 
 ## Minimal working example

@@ -1,8 +1,9 @@
 # Spark Provider
 
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
-Managed providers (Databricks/EMR/Kubernetes/Spark Connect) remain future
-adapters.
+Kubernetes and one managed Spark reference path are planned for 0.48; supported
+Databricks, EMR, and Spark Connect provider packs are assigned to 0.52. See the
+[Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
 
 A **Spark Provider** implements the ETLantic Resource Provider API for
 creating, configuring, supplying, reusing, and disposing Apache Spark sessions

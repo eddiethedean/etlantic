@@ -424,6 +424,7 @@ nav:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
       - Multi-tenant control plane plan: 11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md
+      - Adoption, connectivity, and operations plan: 11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md
       - Exit gate 0.34: 11_DEVELOPMENT/EXIT_GATE_0_34.md
       - Exit gate 0.33: 11_DEVELOPMENT/EXIT_GATE_0_33.md
       - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md

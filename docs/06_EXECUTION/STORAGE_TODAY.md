@@ -46,5 +46,5 @@ contracts and plans.
 
 - [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) — memory seed/run
 - [File storage example](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py)
-- [Storage plugin protocol (future)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
+- [Storage plugin protocol (planned 0.39)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
 - [Storage plugins design study (not shipped)](STORAGE_PLUGINS.md)

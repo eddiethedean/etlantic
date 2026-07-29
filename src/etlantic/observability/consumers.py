@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -87,7 +88,7 @@ class InMemoryTrendConsumer:
         metric = merged.get("quality_metric")
         value = merged.get("quality_value")
         if metric is not None and value is not None:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 self._quality.append(
                     QualityObservation(
                         subject_id=str(merged.get("subject_id") or self.subject_id),
@@ -100,13 +101,13 @@ class InMemoryTrendConsumer:
                         },
                     )
                 )
-            except (TypeError, ValueError):
-                pass
 
     def flush(self) -> None:
         return None
 
-    def quality_history(self, subject_id: str | None = None) -> list[QualityObservation]:
+    def quality_history(
+        self, subject_id: str | None = None
+    ) -> list[QualityObservation]:
         sid = subject_id or self.subject_id
         return [o for o in self._quality if o.subject_id == sid]
 

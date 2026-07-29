@@ -2,8 +2,9 @@
 
 > **Status: Available in ETLantic 0.5+** (protocol in `etlantic.secrets`).
 > Built-in providers: environment variables and mounted files. Optional OS
-> keyring via `etlantic-keyring`. AWS Secrets Manager / Vault remain future
-> design.
+> keyring via `etlantic-keyring`. AWS Secrets Manager, Azure Key Vault, Google
+> Cloud Secret Manager, and HashiCorp Vault are planned as optional 0.52
+> provider packs; they are not shipped in 0.34.
 
 A Secret Provider resolves logical `SecretRef` objects into short-lived,
 redacted values for authorized runtime consumers.

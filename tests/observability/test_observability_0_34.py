@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from etlantic.observability import (
     FileRunHistoryProvider,
     InMemoryRunHistoryProvider,
@@ -11,8 +9,12 @@ from etlantic.observability import (
     JsonConsoleObservabilityProvider,
 )
 from etlantic.runtime.events import LifecycleEvent
-from etlantic.testing.event_consumer_conformance import run_event_consumer_conformance_suite
-from etlantic.testing.observability_conformance import run_observability_conformance_suite
+from etlantic.testing.event_consumer_conformance import (
+    run_event_consumer_conformance_suite,
+)
+from etlantic.testing.observability_conformance import (
+    run_observability_conformance_suite,
+)
 from etlantic.testing.run_history_conformance import run_run_history_conformance_suite
 
 

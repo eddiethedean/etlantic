@@ -483,7 +483,11 @@ def register_core_commands(
 
         history = cli.run_history()
         if history is not None:
-            payload = {"runs": query_history(history, pipeline_id=pipeline_id, status=status, limit=limit)}
+            payload = {
+                "runs": query_history(
+                    history, pipeline_id=pipeline_id, status=status, limit=limit
+                )
+            }
         else:
             payload = {
                 "reports": [

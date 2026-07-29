@@ -8,8 +8,8 @@ capability order, not release-date commitments.
 |---|---:|---|---|
 | Current | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
 | Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
-| Then | 0.35 | Migration completion and joint freeze (M7) | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
+| Post-foundation | 0.39–0.53 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -169,7 +169,8 @@ See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and
 
 ## Next: 0.35 — Migration completion and joint freeze (M7)
 
-**0.35** covers SparkForge migration inventory and joint freeze prep. See
+**0.35** covers SparkForge migration inventory, joint freeze prep, and the
+public application-pipeline testing preview in `etlantic.testing`. See
 [ROADMAP § 0.35](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#035--migration-completion-and-joint-freeze).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
@@ -194,9 +195,29 @@ domain-neutral meaning are promoted into ETLantic. See the
 
 ## Foundation sequence: 0.36–0.38
 
-- **0.36:** joint ETLantic/Medallantic compatibility burn-in
-- **0.37:** stable-foundation release-candidate rehearsal
-- **0.38:** stable foundation
+- **0.36:** joint ETLantic/Medallantic compatibility burn-in, including
+  cross-engine application-pipeline test cases
+- **0.37:** stable-foundation release-candidate rehearsal with an independent
+  user of the public testing API
+- **0.38:** stable foundation, including deterministic and bounded
+  application-pipeline testing helpers
+
+## 0.39 — First-class data connectivity
+
+The former TransformationModel slot now belongs to the higher-adoption data
+connectivity and connector SDK program:
+
+- versioned source, sink, and storage provider protocols;
+- secret-free logical bindings and capability negotiation;
+- connector development and conformance tooling;
+- local, object-storage/Parquet, open-table-format, cloud-warehouse, and
+  relational reference paths;
+- explicit incremental cursor, transaction, publication, reconciliation, and
+  cleanup semantics;
+- measurable connector maturity and support levels.
+
+TransformationModel incubation moves to 0.53. See the
+[Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md).
 
 ## First-class control-plane program
 
@@ -204,12 +225,15 @@ The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
 - **0.40 / CP1:** typed API, identity context, authorization, and idempotency
-- **0.41 / CP2:** tenant/workspace registry and persistence isolation
-- **0.42 / CP3:** durable submission, leases, fencing, state, and recovery
-- **0.43 / CP4:** policy, quotas, audit evidence, and release-candidate proof
+- **0.41 / CP2:** tenant/workspace registry, persistence isolation, stable
+  metadata identities, and outbound OpenLineage preview
+- **0.42 / CP3:** durable submission, leases, fencing, state, recovery, and
+  bounded GitOps preview workspaces
+- **0.43 / CP4:** policy, quotas, audit evidence, preview promotion controls,
+  and release-candidate proof
 - **0.44 / CP-GA:** integrated production graduation after every gate passes
 
-The program remains outside the 0.33 single-tenant envelope and never treats
+The program remains outside the 0.34 single-tenant envelope and never treats
 in-process Python context as a tenant boundary. See the
 [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
@@ -218,11 +242,16 @@ in-process Python context as a tenant boundary. See the
 - **0.45:** developer intelligence, LSP, IDE, and static analysis
 - **0.46:** planner and optimization SDK
 - **0.47:** streaming and event-driven pipelines
-- **0.48:** remote execution federation
+- **0.48:** remote execution federation with Kubernetes and a managed Spark
+  reference provider
 - **0.49:** AI-assisted, human-governed engineering
+- **0.50:** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **0.51:** read-only-first operator console
+- **0.52:** managed runtime and enterprise provider packs
+- **0.53:** TransformationModel incubation
 
-These are the only assigned post-control-plane phases. The roadmap does not
-reserve a 1.0 or 1.x phase.
+These are assigned post-control-plane phases with explicit acceptance gates.
+The roadmap does not reserve a 1.0 or 1.x phase.
 
 ## Post-foundation recovery and federation
 
@@ -249,8 +278,8 @@ frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), release
 candidate (**0.37**), and stable foundation (**0.38**).
-TransformationModel incubation is deferred to post-stable-foundation phases
-(0.39+).
+TransformationModel incubation is deferred to **0.53** so connectivity,
+interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference
 > envelope.** See the [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md).

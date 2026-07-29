@@ -11,13 +11,15 @@ candidate, and the **0.38** stable foundation.
 | Current | 0.34 | Operations, evidence, and production readiness (M6) | Shipped |
 | Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
-| Post-foundation | 0.39–0.49 | Modeling incubation → control plane → developer intelligence → federation and governed AI | Planned |
+| Post-foundation | 0.39–0.53 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
 
 For shipped evidence, see
 [What's New in 0.34](docs/01_GETTING_STARTED/WHATS_NEW_0_34.md) and the
 [0.34 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_34.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
-adopter-facing view.
+adopter-facing view and the
+[Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md)
+for the cross-phase ecosystem gates.
 
 This roadmap sequences ETLantic from a typed modeling library into a
 stable, secure orchestration model and plugin platform.
@@ -2401,9 +2403,9 @@ window plus Plugin `/1` freeze and Medallantic M0 closeout); **0.29–0.35**
 preserve co-evolution discipline while ETLantic and Medallantic advance feature
 parity, followed by joint burn-in in **0.36** toward the 0.37 release candidate.
 
-This is **not** a control-plane, GUI, or new-engine milestone. Production
-TransformationModel (0.39), FastAPI (0.40), and registry/workspaces (0.41)
-remain post-foundation phases.
+This is **not** a control-plane, GUI, or new-engine milestone. Data
+connectivity (0.39), FastAPI (0.40), registry/workspaces (0.41), and
+TransformationModel incubation (0.53) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3281,6 +3283,10 @@ ETLantic/Medallantic boundary before the final compatibility-burn-in window.
 
 - provide public, bounded definition-inspection and rewrite APIs needed by
   migration tooling
+- add public application-pipeline testing helpers in `etlantic.testing` for
+  static logical inputs, expected normalized outputs, fake providers,
+  deterministic clocks/identities, plan/report snapshots, and bounded fault
+  scenarios without contacting production systems
 - stabilize facade protocol/version compatibility and generated-definition
   provenance
 - include Medallantic definitions, diagnostics, and extension metadata in
@@ -3295,6 +3301,11 @@ ETLantic/Medallantic boundary before the final compatibility-burn-in window.
 Both legacy builders have tested migration paths; all claimed parity is backed
 by differential/conformance evidence; the facade/core boundary and required
 wire schemas are freeze-ready; no unresolved P0 parity gap remains.
+
+The testing preview must also prove that an independently maintained pipeline
+can exercise validate → plan → run → report through public installed-wheel
+imports with explicit fixtures and no resolved secrets or retained source
+rows.
 
 ## 0.36 — Joint Compatibility Burn-In
 
@@ -3315,6 +3326,9 @@ co-evolution phases, then close burn-in as one bounded release.
   stable-foundation removal inventories current
 - run the Medallantic semantic conformance and legacy differential corpora as
   first-party release gates
+- burn in application-pipeline tests across supported local engines, SQL, and
+  PySpark for their advertised capability intersection, including deterministic
+  snapshot migration and normalized failure evidence
 - graduate experimental engines or portable families only through existing
   conformance, differential, security, performance, and documentation gates
 - keep server, registry, LSP, remote federation, expanded streaming,
@@ -3329,6 +3343,9 @@ co-evolution phases, then close burn-in as one bounded release.
   supported public wire schemas and protocol ranges
 - 100% of first-party plugins pass the frozen public conformance suite from
   isolated wheels
+- representative user pipeline cases pass from isolated wheels across every
+  supported engine intersection, and all deliberate failures produce stable
+  diagnostics and normalized reports
 - the Medallantic semantic corpus and legacy differential corpus pass with zero
   unexplained semantic differences
 - there are zero unresolved P0 compatibility, security, parity, or migration
@@ -3366,6 +3383,8 @@ support process against the exact artifacts intended for the stable foundation.
   response, private reporting, and release reproducibility
 - complete tutorials, reference material, compatibility tables, migration
   guides, support policy, and deprecation policy against runnable fixtures
+- prove the application-pipeline testing API through a maintained external
+  project, with documented passing and failing output
 - resolve every release-blocking diagnostic, documentation contradiction, and
   provisional compatibility alias
 
@@ -3384,6 +3403,7 @@ earlier gate.
 
 - Stable authoring API
 - Stable Plugin SDK protocols
+- Stable application-pipeline testing helpers for public pipeline projects
 - Stable `PipelinePlan`, result, event, and `PipelineRunReport` schemas
 - Deeply immutable plans with canonical serialization and verified fingerprints
 - Strict schema-version handling and explicit compatibility migrations
@@ -3444,6 +3464,9 @@ The release candidate must demonstrate:
     cancellation, and cleanup boundaries without duplicate committed effects.
 20. An independently maintained third-party plugin passing public conformance
     and compatibility checks without private core imports or reserved names.
+21. An independently maintained application pipeline tested with static
+    inputs, expected normalized outputs, explicit snapshot review, and injected
+    write/cancellation failures using only public `etlantic.testing` imports.
 
 ### Exit gate
 
@@ -3461,6 +3484,8 @@ ETLantic's stable foundation ships only when:
 - Stable reference paths meet published performance, memory, cancellation,
   cleanup, persistence, and scale budgets.
 - The public examples describe tested behavior rather than aspirations.
+- Application-pipeline fixtures, fake providers, and snapshot helpers are
+  deterministic, bounded, redacted, and usable without production access.
 - SparkForge migration has proved the core abstractions without moving
   medallion semantics into ETLantic.
 
@@ -3471,10 +3496,11 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.39 through 0.49 expand ETLantic around the stable-foundation model
-without turning the core into a server, catalog, scheduler, IDE, or AI
-platform. Each initiative has one assigned phase and its own acceptance gates;
-none is an open-ended placeholder.
+Phases 0.39 through 0.53 expand ETLantic around the stable-foundation model
+without turning the core into a storage system, server, catalog, scheduler,
+IDE, cloud control plane, or AI platform. Each initiative has one assigned
+phase or a named gate in an integrated multi-phase program; none is an
+open-ended placeholder.
 
 Each minor release should:
 
@@ -3484,67 +3510,72 @@ Each minor release should:
 - ship independently installable integrations for heavyweight concerns;
 - use adoption evidence to adjust ordering without collapsing boundaries.
 
-## 0.39 — TransformationModel Incubation
+## 0.39 — Data Connectivity and Connector SDK
 
-**Status:** deferred from the 0.20+ track; begins after ETLantic 0.38 ships.
+**Status:** planned first-class connectivity program; begins after ETLantic
+0.38 ships.
 
-**Objective:** incubate a reusable, Python-native transformation modeling
-package at `packages/transformationmodel` while ETLantic remains the integration,
-planning, and execution system.
+**Objective:** graduate logical source, sink, and storage bindings from Future
+design studies into a versioned, capability-driven connector family with
+supported reference implementations.
 
-TransformationModel is the DTCS counterpart to ContractModel: `dtcs` remains
-the authority for DTCS document parsing, canonical representation, validation,
-diagnostics, portable plans, and compatibility semantics; TransformationModel
-provides ergonomic typed authoring, translation, and fidelity APIs over that
-standard. The package must not import ETLantic or acquire backend execution,
-orchestration, plugin-loading, secret-resolution, or mutable-resource concerns.
+ETLantic remains the owner of logical assets, deterministic planning,
+capability negotiation, and normalized evidence. Vendor clients, credentials,
+physical endpoints, and backend-specific behavior remain in optional provider
+packages.
 
-#### Incubation deliverables
+#### Deliver
 
-- create `packages/transformationmodel` as an independently buildable, typed
-  package with its own public API, tests, documentation, changelog, and release
-  policy
-- define `TransformationModel`, typed input/output references, expressions,
-  capability requirements, and extension protocols without ETLantic imports
-- depend on public `dtcs` APIs for normative DTCS semantics instead of copying
-  specification rules or portable-plan behavior
-- provide deterministic DTCS import, export, canonical serialization,
-  fingerprinting, structured diagnostics, semantic diff, and explicit
-  loss/fidelity reports
-- extract reusable transformation authoring and lowering behavior from ETLantic
-  incrementally, preserving compatibility shims at the ETLantic public surface
-- keep Pandas, Polars, PySpark, SQL, orchestration, and other backend realization
-  in ETLantic plugins or provider packages rather than TransformationModel core
-- publish a DTCS and Python compatibility matrix and exercise upstream DTCS
-  conformance fixtures across every supported version
-- retain `dtcs` as a direct ETLantic dependency while low-level APIs are used;
-  dependency ownership may become transitive only after the boundary is proven
+- versioned source, sink, and storage provider protocols with static manifests
+  and pre-import production trust checks;
+- typed, secret-free binding configuration and deterministic plan snapshots;
+- capability vocabulary for batch snapshot, partitioned access, incremental
+  cursor, predicate/projection pushdown, schema discovery, append, merge,
+  replace, atomic publication, transactions, idempotency, reconciliation, and
+  cleanup;
+- a connector development kit with reusable configuration validation,
+  checkpoint, retry, pagination, rate-limit, observability, packaging, and
+  documentation helpers;
+- capability-selected fake and live conformance suites;
+- measurable experimental, preview, supported, and deprecated maturity levels;
+- bounded schema/statistics inspection that never retains arbitrary source
+  rows;
+- a compatibility matrix for ETLantic, connector, external service or format,
+  and Python versions;
+- at least one independently maintained third-party connector.
 
-#### Graduation gates
+#### Reference set
 
-- at least one consumer independent of ETLantic can author, validate, inspect,
-  round-trip, and diff a transformation
-- equivalent definitions serialize and fingerprint identically across supported
-  Python versions and operating systems
-- every conversion reports unsupported or lossy semantics explicitly and fails
-  closed where fidelity is required
-- ETLantic's transformation conformance suite passes through the package without
-  weakening DTCS validation, portability, or diagnostic guarantees
-- the package has a stable public protocol, semantic-versioning policy,
-  deprecation policy, `py.typed` marker, and no dependency on ETLantic internals
-- installation keeps backend engines optional and introduces no runtime plugin
-  imports or external effects during model inspection and validation
+The exit candidate must prove:
 
-#### ETLantic adoption
+- one local reference connector suitable for deterministic CI;
+- one S3-compatible object-storage path with Parquet;
+- one open table-format path using Iceberg or Delta;
+- one cloud warehouse path using Snowflake or BigQuery;
+- one relational path exercising transaction, rollback, and unknown-outcome
+  semantics.
 
-During 0.39, ETLantic may consume TransformationModel from the workspace behind
-provisional boundaries. It becomes a required ETLantic dependency only after
-the graduation gates pass and a separately released version has proven the
-package boundary. No later 0.x compatibility promise may depend exclusively on
-the incubating API until graduation.
+Reference selection does not make vendor libraries core dependencies. Each
+integration remains independently installable and production profiles must
+allowlist it explicitly.
+
+#### Acceptance
+
+- one logical pipeline runs against a local reference, object storage, and a
+  warehouse without changing the authoring model;
+- unsupported write, transaction, schema, or pushdown semantics fail during
+  planning rather than degrading silently;
+- incremental resume cannot advance a cursor after an uncommitted write;
+- partial object-store publication cannot appear as a committed dataset;
+- connector configuration, diagnostics, plans, and reports contain no resolved
+  secrets;
+- live-system conformance publishes isolation, cost, rate-limit, and cleanup
+  controls;
+- an independent connector passes public conformance without private imports.
 
 See the
-[TransformationModel Incubation Plan](docs/11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md).
+[Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md)
+and the [Storage Plugin design](docs/07_PLUGIN_SDK/STORAGE_PLUGIN.md).
 
 ### First-class control-plane program
 
@@ -3640,6 +3671,11 @@ Deliver:
   transformations, outputs, sinks, and downstream pipelines;
 - searchable metadata indexes without storing arbitrary dataset contents;
 - registry events and cache-invalidation protocol;
+- stable metadata identity mapping for pipeline, step, run, attempt, input,
+  output, contract, plan, schema observation, and artifact revisions;
+- optional `etlantic-openlineage` provider for tenant-aware design-time and
+  runtime metadata export, with documented namespace, ordering, retry, and
+  reconciliation semantics;
 - FastAPI registry routes and CLI parity;
 - optional SQLModel-backed registry, revision, and history reference provider.
 
@@ -3657,6 +3693,11 @@ Acceptance:
   path;
 - backup, restore, mixed-version migration, and rollback preserve tenant scope;
 - shared-service profiles prove a second independent isolation control.
+- design-time and runtime OpenLineage events join on stable identities across
+  local, compiled, and remote execution without exposing secrets or source
+  rows;
+- outbound catalog export cannot mutate authoritative contracts, plans,
+  baselines, or promotion state.
 
 ## 0.42 — Durable Submission, State, and Reproducibility
 
@@ -3688,6 +3729,12 @@ Deliver:
   handling;
 - state migration and corruption diagnostics;
 - dry-run state transition explanation.
+- commit- and pull-request-qualified preview workspaces with bounded lifecycle,
+  time-to-live, cleanup, quotas, and immutable base/candidate revision links;
+- base-versus-candidate contract, graph, plan, schema, policy, cost, and
+  environment diffs plus impacted-subgraph selection;
+- explicitly authorized shadow execution whose effects can never be promoted
+  as authoritative production outputs;
 - optional SQLModel-backed state, checkpoint, and idempotency reference
   provider with transactional concurrency controls.
 - normalized external-effect outcome (`none`, known committed/not committed,
@@ -3708,6 +3755,10 @@ Acceptance:
 - API or worker loss cannot lose an accepted request or permit a stale attempt
   to publish terminal state, checkpoints, or artifacts;
 - duplicate submissions and broker retries do not duplicate work;
+- preview cleanup is idempotent, fully scoped, and unable to delete shared or
+  production resources;
+- preview evidence becomes stale when its code, plan, dependency, policy, or
+  target-environment identity changes;
 - multi-worker chaos, disconnect/resume, and recovery tests pass.
 
 ## 0.43 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
@@ -3735,6 +3786,8 @@ Deliver:
 - policy gates for stale or incomplete inputs, unsafe retries, destructive
   writes, backfills, reconciliation failures, plan drift, environment drift,
   quality trends, and privacy-sensitive statistical profiling;
+- source-revision provenance, untrusted-fork restrictions, preview budgets,
+  separation of duties, promotion approvals, supersession, and rollback policy;
 - compatibility rules for policy revisions.
 
 Acceptance:
@@ -3749,6 +3802,9 @@ Acceptance:
   to documented degraded modes;
 - noisy-neighbor, backup/restore, migration, redaction, and external security
   review gates pass.
+- preview workspaces receive no implicit secret or production authority, and
+  promotion revalidates the exact approved revision against current policy and
+  environment state.
 
 ## 0.44 — First-Class Multi-Tenant Control-Plane Graduation
 
@@ -3757,7 +3813,8 @@ only after CP1–CP4 pass as an integrated system. Graduation requires a frozen
 supported-isolation-profile matrix, public compatibility/migration policy,
 cross-tenant conformance for every public operation, measured capacity
 envelopes, multi-replica failure injection, operator runbooks, backup/restore
-evidence, and no unresolved critical/high isolation finding.
+evidence, a supported preview-to-production GitOps workflow, stable outbound
+metadata identity/export, and no unresolved critical/high isolation finding.
 
 Failure of a mandatory gate keeps the program in release-candidate status. The
 project does not weaken “multi-tenant” to meet a release date.
@@ -3891,6 +3948,12 @@ Deliver:
 
 - stable streaming semantics beyond the 0.38 foundation;
 - event-time, watermark, trigger, state, late-data, and replay contracts;
+- versioned change-event envelopes with insert, update, delete/tombstone,
+  transaction, source-position, ordering, and schema-revision evidence;
+- bounded snapshot-to-change-stream handoff with explicit gap and overlap
+  handling;
+- source offset, cursor, checkpoint, deduplication, and idempotent sink
+  semantics shared with the 0.39 connector protocol;
 - Kafka and additional streaming provider integrations;
 - continuous `PipelineRunReport` snapshots and terminal/nonterminal status;
 - event-driven run triggers with deduplication and backpressure;
@@ -3902,6 +3965,10 @@ Acceptance:
   documented semantic equivalence;
 - restart and replay do not silently duplicate externally visible effects;
 - backpressure and late-data behavior are visible in plans and reports.
+- snapshot/stream handoff proves no silent loss, duplication, or position
+  advance across restart and concurrent schema change;
+- unsupported delete, ordering, transaction, or schema-evolution semantics fail
+  capability negotiation rather than degrading to append-only behavior.
 
 ## 0.48 — Remote Execution Federation
 
@@ -3918,6 +3985,11 @@ Deliver:
 - recovery negotiation for whole-run retry, checkpoint resume, replay, repair,
   reconciliation, or manual review;
 - placement across multiple approved execution environments;
+- a Kubernetes Job reference provider with workload identity, resource limits,
+  cancellation, log/event correlation, terminal-state reconciliation, and
+  bounded provider-owned cleanup;
+- versioned OCI execution-image contracts and at least one maintained managed
+  Spark reference path using Databricks, EMR, or Spark Connect;
 - FastAPI gateway support without requiring FastAPI in workers.
 
 Acceptance:
@@ -3930,6 +4002,9 @@ Acceptance:
   authority.
 - loss of a worker after an external commit cannot be reported as safely
   retryable when the commit outcome is unknown.
+- the Kubernetes and managed Spark references pass public conformance from
+  isolated deployments, prefer workload identity, and leave no unscoped
+  resources after cancellation or failure.
 
 ## 0.49 — AI-Assisted, Human-Governed Engineering
 
@@ -3994,6 +4069,182 @@ Acceptance:
 See [Schema Drift and Evolution Plan](docs/11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md).
 See [ETL Reliability and Recovery Plan](docs/11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md).
 
+## 0.50 — Brownfield Adoption Bridges
+
+**Objective:** let teams introduce ETLantic alongside existing dbt and
+orchestrator projects through bounded metadata import, explicit fidelity
+reports, and incremental migration rather than a flag-day rewrite.
+
+Deliver:
+
+- a versioned dbt `manifest.json` reader covering models, tests, sources,
+  exposures, metrics, groups, selectors, and dependency maps;
+- an intermediate migration model that classifies exact, lossy, unsupported,
+  and externally owned semantics;
+- deterministic contract and pipeline skeleton generation with provenance,
+  reviewable diffs, and no implicit overwrite;
+- semantic diff between source artifacts and generated ETLantic definitions;
+- optional Dagster Definitions compiler;
+- expanded Prefect compile/deployment integration distinct from the shipped
+  local `ExecutionScheduler` MVP;
+- an Argo Workflow compiler consuming only valid plans;
+- side-by-side validation, plan, lineage, and normalized report comparison;
+- compatibility fixtures for every supported upstream artifact version.
+
+Acceptance:
+
+- metadata import does not execute arbitrary project Python, Jinja, macros, or
+  hooks;
+- unsupported dynamic graphs, macros, sensors, or platform semantics are
+  diagnosed rather than guessed;
+- dbt-owned transformations may remain external while ETLantic imports their
+  contracts and lineage;
+- each compiler fails when required plan semantics cannot be preserved;
+- generated files never overwrite user work without an explicit target and
+  review;
+- at least one real project adopts ETLantic incrementally without a flag-day
+  rewrite.
+
+## 0.51 — Operator Console
+
+**Objective:** provide a separately deployable, read-only-first operations UI
+over the graduated multi-tenant control plane.
+
+Deliver:
+
+- a version-pinned client generated from the control-plane OpenAPI schema;
+- scoped views for definitions, revisions, plans, diffs, runs, attempts,
+  lineage, partitions, checkpoints, quality, schema drift, repair, backfill,
+  quotas, policy, approvals, audit evidence, providers, and deployment health;
+- resumable live events with durable-history fallback;
+- explicit privileged actions for cancellation, retry, replay, repair,
+  acknowledgement, approval, promotion, suspension, and containment;
+- bounded, sampled, visibly truncated, and redacted artifact previews;
+- accessibility, localization readiness, interactive latency budgets, and
+  large-workspace pagination/virtualization;
+- maintained operator workflows and visual fixtures.
+
+Acceptance:
+
+- the console is never an independent source of truth or authorization path;
+- every mutation uses the same typed API, policy, idempotency, and audit path as
+  other clients;
+- unauthorized resources do not leak through counts, search, links, errors,
+  caches, browser history, or event streams;
+- reconnect or refresh cannot duplicate a privileged action;
+- hostile schemas, logs, and artifacts remain bounded and redacted;
+- ETLantic core and the control API remain usable without frontend
+  dependencies.
+
+## 0.52 — Managed Runtime and Enterprise Provider Packs
+
+**Objective:** graduate common cloud integrations into maintained,
+independently installable production profiles without coupling ETLantic core to
+vendor SDKs.
+
+Deliver:
+
+- reference OCI images and Helm deployment profiles for the control plane and
+  execution hosts;
+- production hardening of the 0.48 Kubernetes Job execution provider;
+- managed Spark providers for Databricks, EMR, and Spark Connect with truthful
+  capability profiles;
+- optional secret-provider packages for AWS Secrets Manager, Azure Key Vault,
+  Google Cloud Secret Manager, and HashiCorp Vault;
+- cloud storage and warehouse providers promoted from the 0.39 connector
+  program through live conformance;
+- short-lived workload identity and credential flows where supported;
+- provider-specific compatibility, support, cost, quota, region, deprecation,
+  upgrade, and rollback matrices;
+- maintained infrastructure recipes only where automated tests prove them.
+
+Acceptance:
+
+- every provider is independently versioned, installable, removable, and
+  allowlistable;
+- secret providers resolve only at authorized runtime boundaries and prove
+  redaction, rotation, missing-secret, and outage behavior;
+- plans, reports, deployment manifests, examples, and support evidence contain
+  no static or resolved credential values;
+- managed execution loss produces a normalized known or unknown external-effect
+  outcome before retry;
+- Kubernetes cleanup is bounded to provider-owned, fully scoped resources;
+- live conformance uses isolated accounts or projects and proves cleanup;
+- no provider-specific type or SDK becomes a mandatory core dependency.
+
+## 0.53 — TransformationModel Incubation
+
+**Status:** deferred from the 0.20+ and former 0.39 tracks; begins only after
+the higher-adoption connectivity, control-plane, interoperability, operations,
+and provider programs have assigned ownership.
+
+**Objective:** incubate a reusable, Python-native transformation modeling
+package at `packages/transformationmodel` while ETLantic remains the
+integration, planning, and execution system.
+
+TransformationModel is the [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) counterpart
+to ContractModel: `dtcs` remains the authority for
+[DTCS](docs/04_TRANSFORMATIONS/DTCS.md) document parsing, canonical
+representation, validation, diagnostics, portable plans, and compatibility
+semantics; TransformationModel provides ergonomic typed authoring,
+translation, and fidelity APIs over that standard. The package must not import
+ETLantic or acquire backend execution, orchestration, plugin-loading,
+secret-resolution, or mutable-resource concerns.
+
+#### Incubation deliverables
+
+- create `packages/transformationmodel` as an independently buildable, typed
+  package with its own public API, tests, documentation, changelog, and release
+  policy;
+- define `TransformationModel`, typed input/output references, expressions,
+  capability requirements, and extension protocols without ETLantic imports;
+- depend on public `dtcs` APIs for normative
+  [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) semantics instead of copying
+  specification rules or portable-plan behavior;
+- provide deterministic [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) import, export,
+  canonical serialization, fingerprinting, structured diagnostics, semantic
+  diff, and explicit loss/fidelity reports;
+- extract reusable transformation authoring and lowering behavior from
+  ETLantic incrementally, preserving compatibility shims at the ETLantic
+  public surface;
+- keep Pandas, Polars, PySpark, SQL, orchestration, and other backend
+  realization in ETLantic plugins or provider packages rather than
+  TransformationModel core;
+- publish a [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) and Python compatibility
+  matrix and exercise upstream conformance fixtures across every supported
+  version;
+- retain `dtcs` as a direct ETLantic dependency while low-level APIs are used;
+  dependency ownership may become transitive only after the boundary is
+  proven.
+
+#### Graduation gates
+
+- at least one consumer independent of ETLantic can author, validate, inspect,
+  round-trip, and diff a transformation;
+- equivalent definitions serialize and fingerprint identically across
+  supported Python versions and operating systems;
+- every conversion reports unsupported or lossy semantics explicitly and
+  fails closed where fidelity is required;
+- ETLantic's transformation conformance suite passes through the package
+  without weakening [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) validation,
+  portability, or diagnostic guarantees;
+- the package has a stable public protocol, semantic-versioning policy,
+  deprecation policy, `py.typed` marker, and no dependency on ETLantic
+  internals;
+- installation keeps backend engines optional and introduces no runtime plugin
+  imports or external effects during model inspection and validation.
+
+#### ETLantic adoption
+
+During 0.53, ETLantic may consume TransformationModel from the workspace behind
+provisional boundaries. It becomes a required ETLantic dependency only after
+the graduation gates pass and a separately released version has proven the
+package boundary. No later 0.x compatibility promise may depend exclusively on
+the incubating API until graduation.
+
+See the
+[TransformationModel Incubation Plan](docs/11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md).
+
 ## Unscheduled Candidate Themes
 
 These remain candidates rather than promised release numbers:
@@ -4002,11 +4253,10 @@ These remain candidates rather than promised release numbers:
 - schema-drift frequency, recurring-change, and source-stability trends;
 - freshness, completeness, reconciliation, quality, statistical-drift, plan,
   and environment stability trends;
-- additional orchestrators, dataframe engines, SQL dialects, and stores;
+- additional orchestrators, dataframe engines, SQL dialects, connectors, and
+  stores beyond the assigned reference and support matrices;
 - declarative data previews with bounded privacy budgets;
 - Wasm or isolated remote transformations where ecosystem maturity permits;
-- portable testing environments and ephemeral integration stacks;
-- contract-aware generated user interfaces;
 - cross-organization contract federation.
 
 ## SparkForge Replacement Gate

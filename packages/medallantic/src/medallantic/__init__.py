@@ -34,23 +34,23 @@ from medallantic.diagnostics import (
     MDL111_TRANSFORM_PASSTHROUGH,
     MDL120_ACCEPT_RATE,
 )
+from medallantic.explain import explain_medallion_plan
 from medallantic.ir import (
     LayerKind,
     SparkForgePipelineSpec,
     SparkForgeStepSpec,
     StepKind,
 )
+from medallantic.lifecycle_views import (
+    enrich_lifecycle_event,
+    group_events_by_layer,
+    layer_run_summary,
+)
 from medallantic.lower import (
     LoweringError,
     LoweringResult,
     MedallionRow,
     lower_document,
-)
-from medallantic.explain import explain_medallion_plan
-from medallantic.lifecycle_views import (
-    enrich_lifecycle_event,
-    group_events_by_layer,
-    layer_run_summary,
 )
 from medallantic.profiles import (
     medallion_development_profile,

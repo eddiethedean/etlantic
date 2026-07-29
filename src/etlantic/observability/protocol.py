@@ -99,9 +99,7 @@ class ObservabilityProvider(Protocol):
     @property
     def descriptor(self) -> ObservabilityProviderDescriptor: ...
 
-    def lifespan(
-        self, context: ObservabilityContext
-    ) -> AsyncIterator[None]: ...
+    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]: ...
 
     async def emit_event(self, event: LifecycleEvent | SecurityEvent) -> None: ...
 
@@ -140,9 +138,7 @@ class JsonConsoleObservabilityProvider:
             ),
         )
 
-    def lifespan(
-        self, context: ObservabilityContext
-    ) -> AsyncIterator[None]:
+    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]:
         from contextlib import asynccontextmanager
 
         @asynccontextmanager
@@ -222,9 +218,7 @@ class OpenTelemetryAdapter:
             ),
         )
 
-    def lifespan(
-        self, context: ObservabilityContext
-    ) -> AsyncIterator[None]:
+    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]:
         from contextlib import asynccontextmanager
 
         @asynccontextmanager

@@ -2,8 +2,10 @@
 
 ## Status
 
-Proposed post-foundation 0.39 incubation plan (deferred from 0.20+). The package and APIs
-described here are not shipped behavior.
+Proposed post-foundation **0.53** incubation plan (deferred from 0.20+ and the
+former 0.39 slot). Higher-adoption connectivity, control-plane,
+interoperability, operations, and provider work now precedes this package. The
+package and APIs described here are not shipped behavior.
 
 TransformationModel begins as an independently buildable workspace package at
 `packages/transformationmodel`. It may become a separately released ETLantic

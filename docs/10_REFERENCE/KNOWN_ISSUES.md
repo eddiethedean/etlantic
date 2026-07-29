@@ -27,11 +27,12 @@
   until claimed.
 - Local execution is in-process; ETLantic is not a distributed scheduler.
 - Spark batch execution is available via `etlantic-pyspark` (0.7+). Managed
-  cloud providers (Databricks/EMR/Connect) are not.
+  cloud providers (Databricks/EMR/Connect) are not in 0.34. Reference proof is
+  planned for 0.48 and supported provider packs for 0.52.
 - Airflow DAG compilation is available via `etlantic-airflow` (0.8+).
-  Dagster compilers are not shipped. Optional Prefect 3.x local scheduling
-  ships via `etlantic-prefect` (0.16+) as an `ExecutionScheduler` (not a DAG
-  compiler).
+  Dagster and expanded Prefect compilers are planned for 0.50, not shipped.
+  Optional Prefect 3.x local scheduling ships via `etlantic-prefect` (0.16+)
+  as an `ExecutionScheduler` (not a DAG compiler).
 - Structured Streaming APIs are experimental in 0.7+.
 - SQL plugins do not treat untrusted raw SQL as safe; use the typed expression
   model and dialect identifier/parameter APIs.

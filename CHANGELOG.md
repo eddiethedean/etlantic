@@ -1221,6 +1221,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.34.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.34.0
 [0.33.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.33.0
 [0.32.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.32.0
 [0.31.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.31.0

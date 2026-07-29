@@ -22,7 +22,7 @@ durable orchestrator.
 | **dbt** | SQL transformation project / warehouse analytics | Complementary |
 | **Airflow** | Orchestration and scheduling | Complementary — `etlantic-airflow` **compiles** plans to DAG artifacts (does not install Airflow) |
 | **Prefect** | Orchestration and scheduling | Complementary — `etlantic-prefect` is a local direct-execution scheduler MVP, not a DAG compiler |
-| **Dagster** | Orchestration and software-defined assets | Complementary — Dagster compiler remains future |
+| **Dagster** | Orchestration and software-defined assets | Complementary — compiler bridge planned for 0.50, not shipped |
 | **Pandera / GE** | Dataframe / table validation libraries | Complementary — ETLantic validates wiring and contracts; row suites stay engine-side |
 | **Polars / Pandas / Spark / SQL engines** | Execution | Complementary — install matching `etlantic-*` plugins |
 

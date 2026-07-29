@@ -32,10 +32,10 @@ field.
 |---|---|---|
 | 0.38 prerequisite | Stable library foundation and frozen core contracts | Single-tenant stable foundation |
 | 0.40 / CP1 | Typed control API, identity context, authorization envelope | Control API incubation |
-| 0.41 / CP2 | Tenant/workspace registry and persistence isolation | Tenant-aware metadata preview |
-| 0.42 / CP3 | Durable submission, state, leases, replay, and recovery | Multi-worker preview |
-| 0.43 / CP4 | Policy, quotas, audit evidence, and supply-chain gates | Multi-tenant release candidate |
-| 0.44 / CP-GA | Operational graduation of the complete program | First supported multi-tenant control plane |
+| 0.41 / CP2 | Tenant/workspace registry, persistence isolation, metadata identity, and outbound OpenLineage | Tenant-aware registry and metadata-export preview |
+| 0.42 / CP3 | Durable submission, state, leases, recovery, and GitOps preview workspaces | Multi-worker and preview-workspace preview |
+| 0.43 / CP4 | Policy, quotas, audit, supply-chain, and preview-promotion gates | Multi-tenant release candidate |
+| 0.44 / CP-GA | Operational graduation of the complete program, including preview-to-production evidence | First supported multi-tenant control plane |
 
 The 0.40–0.43 releases are implementation and burn-in phases. They do not
 independently authorize an unrestricted production claim. The 0.44 gate is a
@@ -499,6 +499,11 @@ Deliver:
 - registry, schema-history, artifact-metadata, report, event, and policy
   repositories;
 - promotion, aliases, signatures, provenance, and tenant-scoped cursors;
+- stable identity mappings for pipeline, step, run, attempt, input, output,
+  contract, plan, schema-observation, and artifact revisions;
+- optional outbound OpenLineage provider with tenant/workspace/environment
+  scoping, design-time/runtime correlation, bounded delivery, and
+  reconciliation;
 - isolation and migration conformance suites.
 
 Exit:
@@ -508,6 +513,10 @@ Exit:
 - backup/restore preserves scope and integrity;
 - a supported shared-service profile has a verified second isolation control;
 - cross-tenant cache, artifact, cursor, and idempotency collisions fail closed.
+- design-time and runtime metadata join on stable identities across local,
+  compiled, and remote execution;
+- outbound metadata contains neither resolved secrets nor source rows and
+  cannot mutate authoritative registry state.
 
 ### CP3 — Durable execution coordination (0.42)
 
@@ -518,6 +527,10 @@ Deliver:
 - leases, fencing, heartbeats, cancellation, and attempt history;
 - replay, resume, repair, backfill, reconciliation, and checkpoint evidence;
 - per-tenant admission control and orchestrator capacity handoff;
+- commit- and pull-request-qualified preview workspaces with bounded lifecycle,
+  time-to-live, cleanup, quotas, and immutable base/candidate links;
+- contract, graph, plan, schema, policy, cost, and environment diffs plus
+  impacted-subgraph selection and explicitly authorized shadow runs;
 - resumable durable events and disconnected-client behavior.
 
 Exit:
@@ -526,6 +539,10 @@ Exit:
 - duplicate requests do not create duplicate work;
 - stale attempts cannot publish state or artifacts;
 - unknown external commit outcomes never become automatic safe retries;
+- preview cleanup is idempotent and cannot delete shared or production
+  resources;
+- preview evidence is invalidated when its code, dependencies, plan, policy, or
+  target-environment identity changes;
 - multi-worker chaos and recovery tests pass.
 
 ### CP4 — Policy, quota, audit, and release candidate (0.43)
@@ -537,6 +554,8 @@ Deliver:
 - integrity-protected audit evidence and retention/export controls;
 - plugin, provider, secret, egress, residency, and classification policies;
 - signed execution envelopes and supply-chain evidence;
+- source-revision provenance, untrusted-fork restrictions, preview budgets,
+  separation of duties, promotion approval, supersession, and rollback policy;
 - operator dashboards, alerts, runbooks, and measured capacity profiles.
 
 Exit:
@@ -545,6 +564,9 @@ Exit:
 - audit evidence covers every privileged mutation without secrets or source
   rows;
 - noisy-neighbor tests stay within published budgets;
+- preview workspaces receive no implicit secret or production authority, and
+  promotion revalidates the exact approved revision against current policy and
+  environment state;
 - security review and independent deployment exercise are complete;
 - remaining risks are documented for the 0.44 graduation decision.
 
@@ -564,6 +586,10 @@ The 0.44 claim requires all CP1–CP4 gates plus:
 9. No unresolved critical/high isolation or authorization findings.
 10. A release record that clearly separates supported profiles from
     experimental and adopter-owned integrations.
+11. Stable outbound metadata identities and a reconciled design/runtime lineage
+    scenario across local, compiled, and remote execution.
+12. A preview-to-production workflow proving isolation, staleness detection,
+    approval, promotion revalidation, rollback evidence, and bounded cleanup.
 
 Failure of any mandatory gate keeps the feature in release-candidate status.
 The project must not weaken the meaning of “multi-tenant” to ship on a date.
@@ -580,6 +606,9 @@ This plan is authoritative for multi-tenant control-plane graduation:
   recovery evidence.
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) owns observation and
   acknowledgement semantics.
+- [Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md)
+  owns metadata interoperability, GitOps preview, operator-console, connector,
+  migration, and provider-program gates.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns current controls and the
   threat model.
 - [Deployment](../06_EXECUTION/DEPLOYMENT.md) remains the current 0.34
@@ -598,7 +627,9 @@ These decisions block the indicated gates and cannot remain implicit:
 | Freeze identity/scope model and non-enumeration policy | Core + security maintainers | Before CP1 schema freeze |
 | Select supported isolation profiles and second controls | Security + persistence maintainers | Before CP2 implementation freeze |
 | Select reference database and migration support matrix | SQLModel maintainers | Before CP2 conformance |
+| Freeze metadata namespace, identity, and OpenLineage facet mappings | Registry + observability maintainers | Before CP2 conformance |
 | Select durable broker/outbox and lease reference strategy | Runtime + integration maintainers | Before CP3 conformance |
+| Define preview workspace lifecycle, cleanup, and untrusted-fork policy | Runtime + security maintainers | Before CP3 conformance |
 | Define quota/fairness semantics and outage policy | Operations + security maintainers | Before CP4 release candidate |
 | Define audit integrity, retention, and export profile | Security + operations maintainers | Before CP4 release candidate |
 | Publish support envelope and 0.44 compatibility policy | Release + governance maintainers | Before CP-GA |

@@ -2,8 +2,9 @@
 
 !!! warning "Future design overview — not an operator manual"
     This page sketches a broad plugin catalog (including unshipped backends
-    such as Dagster/Kafka and aspirational storage). For **shipped** protocols,
-    use [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) and
+    such as Dagster (planned 0.50), Kafka (planned 0.47), and storage providers
+    (planned 0.39). For **shipped** protocols, use
+    [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) and
     [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md). For storage that
     exists today, see [Storage today](STORAGE_TODAY.md).
 

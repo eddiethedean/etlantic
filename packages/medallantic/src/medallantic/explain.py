@@ -9,7 +9,9 @@ from etlantic.plan.explain import explain_plan
 from etlantic.plan.model import PipelinePlan
 
 
-def _layer_by_node(plan: PipelinePlan, definition: PipelineDefinition | None) -> dict[str, str]:
+def _layer_by_node(
+    plan: PipelinePlan, definition: PipelineDefinition | None
+) -> dict[str, str]:
     if definition is not None:
         ext = dict(definition.extensions or {})
         layer_map = ext.get("plugin:medallantic.layers")
@@ -59,10 +61,14 @@ def explain_medallion_plan(
         steps.append(enriched)
     accept_rates: dict[str, Any] = {}
     if definition is not None:
-        plugin_meta = dict((definition.extensions or {}).get("plugin:medallantic") or {})
+        plugin_meta = dict(
+            (definition.extensions or {}).get("plugin:medallantic") or {}
+        )
         accept_rates = dict(plugin_meta.get("accept_rates") or {})
     elif isinstance(plan.metadata.get("plugin:medallantic"), dict):
-        accept_rates = dict(plan.metadata["plugin:medallantic"].get("accept_rates") or {})
+        accept_rates = dict(
+            plan.metadata["plugin:medallantic"].get("accept_rates") or {}
+        )
     return {
         **base,
         "schema": "medallantic.explain/1",

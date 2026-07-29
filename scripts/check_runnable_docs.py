@@ -23,9 +23,7 @@ RUNNABLE_PAGES = {
     "docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md": "examples/pipeline_definition_json.py",
 }
 
-EXPECTED_OUTPUT = re.compile(
-    r"(?ms)^## Expected output\s*$\n(?P<body>.*?)(?=^## |\Z)"
-)
+EXPECTED_OUTPUT = re.compile(r"(?ms)^## Expected output\s*$\n(?P<body>.*?)(?=^## |\Z)")
 OUTPUT_FENCE = re.compile(r"(?ms)^```(?:console|json|text|yaml)\s*$.*?^```\s*$")
 
 

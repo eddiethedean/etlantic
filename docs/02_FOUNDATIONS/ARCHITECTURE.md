@@ -273,7 +273,7 @@ Region formation depends on:
 
 The core depends on public protocols rather than backend packages.
 
-**Shipped** extension families (0.33):
+**Shipped** extension families (0.34):
 
 | Extension | Responsibility |
 |---|---|
@@ -283,14 +283,14 @@ The core depends on public protocols rather than backend packages.
 | PySpark plugin | Build and submit Spark-native regions |
 | Orchestrator / scheduler plugin | Compile plans (Airflow) or execute plans (Prefect local MVP) |
 | Built-in storage bindings | Memory, callable, JSON, CSV, and no-write asset resolution |
+| Observability provider and event consumer | Route lifecycle events, normalized history, metrics, traces, logs, and derived analytics |
 
-**Future design** (not shipped as public plugin protocols—see Design Proposals):
+**Planned or future design** (not shipped as public plugin protocols):
 
 | Extension | Responsibility |
 |---|---|
-| Storage plugin protocol catalog | Pluggable persistent dataset providers beyond built-ins |
-| Resource provider protocol | Acquire managed runtime dependencies |
-| Observability provider protocol | Route logs, metrics, traces, and lifecycle events |
+| Storage plugin protocol catalog (planned 0.39) | Pluggable persistent dataset providers beyond built-ins |
+| Managed resource providers (reference proof 0.48; supported packs 0.52) | Acquire managed runtime dependencies |
 | Notification provider protocol | Deliver typed outbound events beyond built-in outbound policy |
 
 Plugins advertise capabilities. The planner selects them only when those

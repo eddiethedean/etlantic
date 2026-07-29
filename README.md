@@ -158,7 +158,7 @@ guides.
 | Local, Polars, Pandas, SQL, and PySpark execution paths | Available |
 | Portable compilers for Polars, Pandas, SQL, and PySpark | Available |
 | Portable quality expressions (`etlantic.quality/1`) | Available (Polars/Pandas/local; SQL/PySpark fail-closed) |
-| ODCS, DTCS, DPCS, schema drift, lineage, reports, and SARIF | Available |
+| [ODCS](docs/03_DATA_CONTRACTS/ODCS.md), [DTCS](docs/04_TRANSFORMATIONS/DTCS.md), [DPCS](docs/05_PIPELINES/DPCS.md), schema drift, lineage, reports, and SARIF | Available |
 | Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
 | Versioned Polars↔Pandas tabular interchange | Available |
 | Contract and configuration freeze (deep plans, security_mode) | Available |
@@ -166,12 +166,15 @@ guides.
 | Structured Streaming | Experimental |
 | `etlantic-datafusion` | Experimental |
 | Multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation; not included in 0.34 |
+| Pipeline testing, connector SDK, metadata/GitOps, brownfield bridges, operator console, and managed providers | **Planned first-class** across assigned 0.35–0.52 gates; not included in 0.34 |
 | Formal SLA / unrestricted enterprise support | Not included |
 
 See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
 guide for precise guarantees and limitations.
 The hardened program gates are in the
 [Multi-Tenant Control Plane Plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+The ecosystem phase ownership and acceptance criteria are in the
+[Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).
 
 Release notes:
 [What's New in 0.34](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_34/).

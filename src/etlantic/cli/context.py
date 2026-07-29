@@ -12,9 +12,9 @@ from etlantic.cli.output import render_diagnostic_human
 from etlantic.diagnostics import Severity
 from etlantic.io_policy import SafeIoPolicy
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.observability.history import FileRunHistoryProvider
 from etlantic.profile import Profile
 from etlantic.project import resolve_project_profile
-from etlantic.observability.history import FileRunHistoryProvider
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.store import ReportStore
 from etlantic.workspace import (

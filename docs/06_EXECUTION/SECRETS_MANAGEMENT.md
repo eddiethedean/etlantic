@@ -2,8 +2,9 @@
 
 > **Available:** `env` and mounted-file secret providers (0.5+).
 > Optional OS keyring provider via `etlantic-keyring` (0.9+).
-> AWS Secrets Manager, Vault, and cloud identity providers remain
-> **future design**—do not configure them yet.
+> AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, and Vault
+> are **planned 0.52 optional providers**—they are not shipped, so do not
+> configure them yet.
 
 ETLantic treats secrets as runtime dependencies that are referenced during
 configuration and resolved only inside an authorized execution boundary.
@@ -76,7 +77,7 @@ Resolved secrets use `SecretValue`:
 - Missing or unreadable secrets fail closed at runtime
 - Redact exception messages before they enter reports or logs
 
-## Future providers (not shipped)
+## Planned provider packs (not shipped)
 
 The following belong in later milestones. Configuration examples that mention
 them are design sketches only. **OS keyring is available today** via
@@ -85,14 +86,16 @@ them are design sketches only. **OS keyring is available today** via
 | Target environment | Status |
 |---|---|
 | Developer workstation (`etlantic-keyring`) | Available (optional package) |
-| AWS Secrets Manager | Future |
-| Azure Key Vault | Future |
-| Google Cloud Secret Manager | Future |
-| HashiCorp Vault | Future |
-| 1Password | Future |
+| AWS Secrets Manager | Planned 0.52 optional provider |
+| Azure Key Vault | Planned 0.52 optional provider |
+| Google Cloud Secret Manager | Planned 0.52 optional provider |
+| HashiCorp Vault | Planned 0.52 optional provider |
+| 1Password | Unscheduled candidate |
 
 See the [Secret Provider SDK](../07_PLUGIN_SDK/SECRET_PROVIDER.md) (future
-design) for the intended plugin shape.
+design) for the intended plugin shape and the
+[Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs)
+for the assigned production gates.
 
 ## See Also
 

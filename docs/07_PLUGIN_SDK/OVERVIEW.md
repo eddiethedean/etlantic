@@ -46,23 +46,28 @@ a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
 
 - **Stable interfaces** within 0.x compatibility rules
 - **Capability driven** — plugins declare what they support
-- **Portable semantics** — preserve [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS, and [DPCS](../05_PIPELINES/DPCS.md) meaning
+- **Portable semantics** — preserve
+  [ODCS](../03_DATA_CONTRACTS/ODCS.md),
+  [DTCS](../04_TRANSFORMATIONS/DTCS.md), and
+  [DPCS](../05_PIPELINES/DPCS.md) meaning
 - **Honest capabilities** — unsupported semantics fail during planning
 - **Secret safety** — plans contain references, never resolved credentials
 
-## Appendix — future / not shipped
+## Appendix — planned / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.34.0** (still Future design):
+protocols in **0.34.0**:
 
-- General storage plugins (Snowflake, S3, Iceberg, …) — see
-  [Storage today](../06_EXECUTION/STORAGE_TODAY.md)
-- Resource providers
-- Registry plugins / approval workflows
-- Observability provider protocol (beyond today's OTEL optional hooks)
+- General storage plugins (Snowflake, S3, Iceberg, …) — planned for 0.39; see
+  [Storage today](../06_EXECUTION/STORAGE_TODAY.md).
+- Managed resource providers — Kubernetes/reference proof in 0.48 and
+  supported provider packs in 0.52.
+- Registry plugins / approval workflows — planned through 0.41–0.44.
 
-See [STORAGE_PLUGIN](STORAGE_PLUGIN.md), [RESOURCE_PROVIDER](RESOURCE_PROVIDER.md),
-and [OBSERVABILITY_PROVIDER](OBSERVABILITY_PROVIDER.md) (Future design banners).
+See [Storage Plugin](STORAGE_PLUGIN.md) and
+[Resource Provider](RESOURCE_PROVIDER.md). The
+[Observability Provider](OBSERVABILITY_PROVIDER.md) protocol is available in
+0.34.
 
 ## Next Step
 

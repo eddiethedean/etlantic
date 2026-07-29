@@ -16,9 +16,7 @@ MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^)\s]+)"
     r"(?:\s+[\"'][^)\n]*[\"'])?\s*\)"
 )
-MARKDOWN_REFERENCE_RE = re.compile(
-    r"(?m)^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|[^\s]+)"
-)
+MARKDOWN_REFERENCE_RE = re.compile(r"(?m)^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|[^\s]+)")
 PYTHON_FENCE_RE = re.compile(r"```(?:python|py)\s*\n(.*?)```", re.DOTALL)
 INLINE_MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]\n]*\]\([^)\n]*\)|\[[^\]\n]*\]\[[^\]\n]*\]"
@@ -82,14 +80,13 @@ def check_local_markdown_links() -> None:
             resolved = (path.parent / target).resolve()
             try:
                 resolved.relative_to(root_resolved)
-            except ValueError:
+            except ValueError as err:
                 raise SystemExit(
                     f"{path}: relative Markdown link leaves repository: {raw_target!r}"
-                )
+                ) from err
             if not resolved.exists():
                 raise SystemExit(
-                    f"{path}: local Markdown link target does not exist: "
-                    f"{raw_target!r}"
+                    f"{path}: local Markdown link target does not exist: {raw_target!r}"
                 )
 
 
@@ -136,9 +133,7 @@ def check_standard_links() -> None:
                 if raw_target.startswith("<") and raw_target.endswith(">"):
                     raw_target = raw_target[1:-1]
                 target = unquote(raw_target).split("#", 1)[0].split("?", 1)[0]
-                if not target or re.match(
-                    r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target
-                ):
+                if not target or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target):
                     continue
                 if (path.parent / target).resolve() == canonical.resolve():
                     linked_to_canonical = True
@@ -171,16 +166,13 @@ def check_standard_links() -> None:
                     continue
 
                 code_spans = [
-                    match.span()
-                    for match in re.finditer(r"(?<!`)`[^`\n]+`(?!`)", line)
+                    match.span() for match in re.finditer(r"(?<!`)`[^`\n]+`(?!`)", line)
                 ]
                 link_spans = [
                     match.span() for match in INLINE_MARKDOWN_LINK_RE.finditer(line)
                 ]
                 for mention in re.finditer(rf"\b{acronym}\b", line):
-                    if any(
-                        start <= mention.start() < end for start, end in code_spans
-                    ):
+                    if any(start <= mention.start() < end for start, end in code_spans):
                         continue
                     first_mention_linked = any(
                         start <= mention.start() < end for start, end in link_spans
@@ -191,8 +183,7 @@ def check_standard_links() -> None:
 
             if first_mention_linked is False:
                 raise SystemExit(
-                    f"{path}: first prose mention of {acronym} must be a "
-                    "Markdown link"
+                    f"{path}: first prose mention of {acronym} must be a Markdown link"
                 )
 
 
@@ -258,9 +249,9 @@ def check_control_plane_plan() -> None:
     if plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
         raise SystemExit("mkdocs.yml must promote the multi-tenant plan in nav")
 
-    capabilities = (
-        ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md"
-    ).read_text(encoding="utf-8")
+    capabilities = (ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md").read_text(
+        encoding="utf-8"
+    )
     if "Partial — see [Ops Pilot]" in capabilities:
         raise SystemExit(
             "Capabilities must not label the unshipped multi-tenant control "
@@ -276,17 +267,39 @@ def check_zero_x_roadmap_phases() -> None:
     required_markers = (
         "This roadmap has no\n1.0 or 1.x phase",
         "## 0.38 — Stable Foundation",
-        "## 0.39 — TransformationModel Incubation",
+        "## 0.39 — Data Connectivity and Connector SDK",
         "## 0.44 — First-Class Multi-Tenant Control-Plane Graduation",
         "## 0.45 — Developer Intelligence: LSP, IDE, and Static Analysis",
         "## 0.46 — Planner and Optimization SDK",
         "## 0.47 — Streaming and Event-Driven Pipelines",
         "## 0.48 — Remote Execution Federation",
         "## 0.49 — AI-Assisted, Human-Governed Engineering",
+        "## 0.50 — Brownfield Adoption Bridges",
+        "## 0.51 — Operator Console",
+        "## 0.52 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.53 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
             raise SystemExit(f"{roadmap_path}: missing 0.x roadmap marker {marker!r}")
+
+    adoption_plan = ROOT / "docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md"
+    adoption_text = adoption_plan.read_text(encoding="utf-8")
+    for marker in (
+        "## AP — Application-Pipeline Testing",
+        "## DC — Data Connectivity and Connector SDK",
+        "## MI — Metadata and Catalog Interoperability",
+        "## GP — GitOps Preview and Promotion Workflow",
+        "## BA — Brownfield Adoption Bridges",
+        "## OC — Operator Console",
+        "## EP — Managed Runtime and Enterprise Provider Packs",
+    ):
+        if marker not in adoption_text:
+            raise SystemExit(f"{adoption_plan}: missing first-class program {marker!r}")
+
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    if adoption_plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
+        raise SystemExit("mkdocs.yml must promote the adoption/ecosystem plan in nav")
 
     phase_heading = re.compile(r"(?m)^#{1,4}\s+1\.(?:0|[1-9][0-9]*|x)\b")
     forward_phase_language = re.compile(
