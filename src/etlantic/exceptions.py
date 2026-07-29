@@ -61,9 +61,7 @@ class NodeExecutionError(PipelineExecutionError):
         code: str | None = None,
         cause: BaseException | None = None,
     ) -> None:
-        super().__init__(
-            message, run_id=run_id, report=report, code=code, stage=stage
-        )
+        super().__init__(message, run_id=run_id, report=report, code=code, stage=stage)
         self.node_name = node_name
         self.cause = cause
 

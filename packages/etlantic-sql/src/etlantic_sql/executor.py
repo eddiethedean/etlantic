@@ -247,7 +247,11 @@ class SqlExecutor:
             return SqlExecutionResult(
                 outcome=_classify_failure(exc, started=started),
                 diagnostics=[
-                    {"code": "PMSQL520", "severity": "error", "message": redact_message(str(exc))}
+                    {
+                        "code": "PMSQL520",
+                        "severity": "error",
+                        "message": redact_message(str(exc)),
+                    }
                 ],
             )
 
@@ -299,7 +303,11 @@ class SqlExecutor:
             return SqlExecutionResult(
                 outcome=_classify_failure(exc, started=started),
                 diagnostics=[
-                    {"code": "PMSQL510", "severity": "error", "message": redact_message(str(exc))}
+                    {
+                        "code": "PMSQL510",
+                        "severity": "error",
+                        "message": redact_message(str(exc)),
+                    }
                 ],
             )
 

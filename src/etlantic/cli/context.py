@@ -120,8 +120,7 @@ class CliContext:
         errors = [
             d
             for d in diags
-            if d.severity is Severity.ERROR
-            and not is_non_blocking_trust_diagnostic(d)
+            if d.severity is Severity.ERROR and not is_non_blocking_trust_diagnostic(d)
         ]
         if errors:
             if fmt == "sarif":

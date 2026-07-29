@@ -22,9 +22,7 @@ def test_normalize_assets_map_rejects_userinfo() -> None:
     from etlantic.bindings import normalize_assets_map, parse_asset_descriptor
 
     with pytest.raises(ValueError, match="userinfo"):
-        normalize_assets_map(
-            {"db": "postgresql://admin:hunter2@db.example/app"}
-        )
+        normalize_assets_map({"db": "postgresql://admin:hunter2@db.example/app"})
     with pytest.raises(ValueError, match="userinfo"):
         parse_asset_descriptor(
             {"provider": "postgresql", "location": "admin:hunter2@db.example/app"}
@@ -192,11 +190,15 @@ def test_redact_full_userinfo_and_dsn_keys() -> None:
 def test_pmexec353_is_security_hard_failure() -> None:
     from etlantic.runtime.orchestrator import LocalOrchestrator
 
-    err = PipelineExecutionError("trusted sql mismatch", code="PMEXEC353", stage="security")
+    err = PipelineExecutionError(
+        "trusted sql mismatch", code="PMEXEC353", stage="security"
+    )
     assert LocalOrchestrator._is_security_hard_failure(err)
 
 
-def test_run_maps_raised_pmplug_to_trust_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_maps_raised_pmplug_to_trust_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from typer.testing import CliRunner
 
     import etlantic.cli.globals as globals_mod

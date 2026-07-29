@@ -120,8 +120,7 @@ async def arun_pipeline(
     errors = [
         d
         for d in trust_diags
-        if d.severity is Severity.ERROR
-        and not is_non_blocking_trust_diagnostic(d)
+        if d.severity is Severity.ERROR and not is_non_blocking_trust_diagnostic(d)
     ]
     if errors:
         raise PipelineExecutionError(

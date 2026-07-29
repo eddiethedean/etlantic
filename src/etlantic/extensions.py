@@ -174,9 +174,7 @@ _SECRET_KEY_FRAGMENT_RE = re.compile(
     re.IGNORECASE,
 )
 
-_URL_USERINFO_VALUE_RE = re.compile(
-    r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@"
-)
+_URL_USERINFO_VALUE_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@")
 
 
 def _is_secret_like_key(key: str) -> bool:

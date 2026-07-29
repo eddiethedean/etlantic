@@ -81,9 +81,7 @@ class AssetBindingRef:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AssetBindingRef:
-        location = (
-            str(data["location"]) if data.get("location") is not None else None
-        )
+        location = str(data["location"]) if data.get("location") is not None else None
         _reject_location_userinfo(location)
         return cls(
             name=str(data["name"]),

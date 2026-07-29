@@ -321,8 +321,7 @@ def adapt_run_result(
     bad_steps = [
         s
         for s in steps
-        if s.status
-        in {StepStatus.FAILED, StepStatus.CANCELLED, StepStatus.TIMED_OUT}
+        if s.status in {StepStatus.FAILED, StepStatus.CANCELLED, StepStatus.TIMED_OUT}
     ]
     if bad_steps and status is RunStatus.SUCCEEDED:
         if any(s.status is StepStatus.CANCELLED for s in bad_steps):

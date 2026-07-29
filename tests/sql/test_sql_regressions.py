@@ -162,7 +162,9 @@ def test_redact_dsn_credentials() -> None:
     msg = "could not connect to postgresql+psycopg://alice:s3cret@localhost:5432/db"
     redacted = redact_message(msg)
     assert "s3cret" not in redacted
-    assert "alice:***@" in redacted
+    assert "alice:s3cret@" not in redacted
+    assert "***@" in redacted
+    assert "alice:***@" not in redacted  # full userinfo redacted, not password-only
 
 
 def test_safe_staging_name_is_identifier() -> None:

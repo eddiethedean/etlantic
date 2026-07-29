@@ -34,9 +34,7 @@ _SECRET_NEEDLES = (
     "bearer ",
 )
 
-_URL_USERINFO_RE = re.compile(
-    r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@"
-)
+_URL_USERINFO_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@")
 
 
 def create_plugin() -> AirflowOrchestratorPlugin:
@@ -226,7 +224,9 @@ class AirflowOrchestratorPlugin:
                 context=context,
             )
             diagnostics.extend(_scan_for_secrets(source, subject_id=dag_id))
-            if any(d.severity == "error" and d.code == "PMORCH342" for d in diagnostics):
+            if any(
+                d.severity == "error" and d.code == "PMORCH342" for d in diagnostics
+            ):
                 source = _fail_closed_source(
                     dag_id,
                     ["rendered DAG source failed secret scan"],

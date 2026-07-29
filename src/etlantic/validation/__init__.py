@@ -93,9 +93,7 @@ def validate_pipeline(
     discovery = _dedupe_diagnostics(
         _tag_phase(list(context.plugin_discovery_diagnostics), "plugin_discovery")
     )
-    discovery = [
-        d for d in discovery if not is_non_blocking_trust_diagnostic(d)
-    ]
+    discovery = [d for d in discovery if not is_non_blocking_trust_diagnostic(d)]
     diagnostics.extend(discovery)
 
     trust = phase_plugin_trust(context)
