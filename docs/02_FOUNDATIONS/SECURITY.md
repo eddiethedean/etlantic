@@ -4,14 +4,14 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.31** and the broader
+This chapter covers **controls shipped through 0.32** and the broader
 **proposed threat model**. ETLantic 0.32.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
 attestations, deployment-topology guarantees, or advanced supply-chain
 guarantees; those controls remain adopter-owned.
 
-## Implemented through 0.31
+## Implemented through 0.32
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -115,13 +115,13 @@ The analysis boundary must not require runtime privileges.
 | Contract loading | parser abuse, traversal, SSRF | bounded safe loaders and approved resolvers | Available (SafeIoPolicy) |
 | Python discovery | import-time execution | static discovery or explicit trusted import | Available (manifest-first authorize-before-load) |
 | Planning | code or secret resolution | pure, secret-free planning | Strong |
-| Plugins | supply-chain execution | curated installs, allowlists, pins, provenance | Available (pre-import allowlist + manifests; probe optional) |
-| Resource providers | excessive authority | scopes, least privilege, cleanup | Strong concept |
+| Plugins | supply-chain execution | curated installs, allowlists, pins, provenance | Available (allowlist before `entry_point.load()`; manifests; probe optional) |
+| Resource providers | excessive authority | scopes, least privilege, cleanup | Future design (protocol not shipped) |
 | SQL | injection and query leakage | structured compilation and parameters | Strong |
 | PySpark | remote code and cluster overreach | isolation and provider policy | Partial |
 | Artifacts | cross-run or cross-tenant exposure | identity, authorization, integrity, expiry | Available (isolation keys; retention optional) |
 | Caching | unauthorized reuse | security-domain-aware cache keys | Available |
-| Logging and reports | secret or regulated-data leakage | central redaction | Strong |
+| Logging and reports | secret or regulated-data leakage | central redaction | Available (shipped redaction; no separate logging provider protocol) |
 | HTML and docs | script or template injection | escaping and safe renderers | Strong |
 | Outbound events | SSRF and exfiltration | bound destinations and payload policy | Available (default deny) |
 | CLI | shell injection and unsafe writes | argument lists and approved roots | Partial |
@@ -279,10 +279,13 @@ and [compiler protocol](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md).
 Python plugins execute with host-process privileges. Entry-point discovery is a
 trust decision, not a sandbox.
 
-**Important:** `Profile.plugin_allowlist` filters which discovered plugins may
-be *selected* for planning and execution. Discovery still loads entry-point
-factories at runtime construction time, so an installed malicious package can
-run import-time code before the allowlist is applied. Install only trusted
+**Normative allowlist semantics (0.32):** Production profiles require
+`Profile.plugin_allowlist`. Lifecycle is **discover → evaluate → authorize →
+load**. Discovery attaches static manifests without importing plugin code.
+Authorization selects allowlisted packages; only authorized plugins reach
+`entry_point.load()`. Treat **package install** as the trust boundary—the
+allowlist is **selection policy**, not a sandbox that prevents import-time code
+if some other path imports an untrusted installed package. Install only trusted
 packages, prefer locked environments, and isolate untrusted evaluation.
 
 **Shipped in 0.9+:** production profiles fail closed unless
@@ -761,7 +764,7 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.28 Beta support envelope, automated tests
+Before expanding beyond the bounded 0.32 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -795,7 +798,7 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.28 Beta deployment is bounded stable
+The documented single-tenant/reference 0.32 Beta deployment is bounded stable
 for pilots. Broader production claims require:
 
 - the threat model is reviewed

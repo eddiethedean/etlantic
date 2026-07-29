@@ -504,3 +504,99 @@ def assert_storage_delta_capabilities(
         "Unsupported Delta storage capabilities.",
         report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
     )
+
+
+def collect_required_delta_operations(
+    *,
+    profile: Any,
+    graph: Any | None = None,
+    definition: Any | None = None,
+) -> list[str]:
+    """Collect declared Delta ops from profile / graph / definition metadata."""
+    ops: list[str] = []
+    required_caps = list(getattr(profile, "required_spark_capabilities", ()) or ())
+    for cap in required_caps:
+        text = str(cap).strip().lower()
+        if text.startswith("storage.delta."):
+            ops.append(text.removeprefix("storage.delta."))
+        elif text in {"spark_merge", "write.merge", "write.upsert"}:
+            ops.append("merge")
+
+    for source in (
+        getattr(profile, "metadata", None),
+        getattr(definition, "metadata", None) if definition is not None else None,
+        getattr(graph, "metadata", None) if graph is not None else None,
+    ):
+        if not isinstance(source, dict):
+            continue
+        for key in ("required_delta_operations", "delta_operations", "delta_ops"):
+            raw = source.get(key)
+            if raw:
+                ops.extend(str(x).strip().lower() for x in list(raw) if str(x).strip())
+
+    if graph is not None:
+        nodes = getattr(graph, "nodes", None)
+        if isinstance(nodes, dict):
+            node_iter = nodes.values()
+        elif isinstance(nodes, (list, tuple)):
+            node_iter = nodes
+        else:
+            node_iter = ()
+        for node in node_iter:
+            meta = getattr(node, "metadata", None) or {}
+            if not isinstance(meta, dict):
+                continue
+            for key in ("required_delta_operations", "delta_operations", "delta_ops"):
+                raw = meta.get(key)
+                if raw:
+                    ops.extend(
+                        str(x).strip().lower() for x in list(raw) if str(x).strip()
+                    )
+            write_mode = str(meta.get("write_mode") or meta.get("mode") or "").lower()
+            if write_mode in {"merge", "upsert"}:
+                ops.append("merge")
+
+    # Preserve order, drop empties/duplicates.
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for op in ops:
+        if not op or op in seen:
+            continue
+        seen.add(op)
+        ordered.append(op)
+    return ordered
+
+
+def assert_profile_storage_delta_capabilities(
+    context: PlanningContext,
+    implementations: dict[str, ImplementationDescriptor],
+    default_engine: str,
+    *,
+    graph: Any | None = None,
+    definition: Any | None = None,
+) -> None:
+    """Negotiate declared Delta storage ops against Spark engine capabilities."""
+    ops = collect_required_delta_operations(
+        profile=context.profile,
+        graph=graph,
+        definition=definition,
+    )
+    if not ops:
+        return
+    registry = get_engine_registry()
+    engines = {default_engine} | {impl.engine for impl in implementations.values()}
+    spark_engines = [e for e in engines if registry.is_spark_engine(e)]
+    if not spark_engines:
+        # Delta ops require a Spark engine; fail closed when none is selected.
+        assert_storage_delta_capabilities(
+            operations=ops,
+            available=None,
+            engine=default_engine,
+        )
+        return
+    for engine in spark_engines:
+        assert_storage_delta_capabilities(
+            operations=ops,
+            available=context.registry.engines.get(engine),
+            engine=engine,
+        )

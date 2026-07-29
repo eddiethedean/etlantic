@@ -40,14 +40,35 @@ Empty allowlists fail closed in production.
 ## 4. Validate in CI before write
 
 Do **not** use the built-in `--profile production` name — its allowlist is empty
-and fail-closed. Copy the canonical starter (clone) or paste the
-[Capabilities CI JSON](CAPABILITIES.md#ci-starter):
+and fail-closed. Paste the [Capabilities CI JSON](CAPABILITIES.md#ci-starter)
+into `profiles/prod.json`, or copy [prod.example.json](prod.example.json) from
+this docs tree (checkout) / the embedded JSON on Capabilities (PyPI readers):
 
 ```bash
-cp docs/01_GETTING_STARTED/prod.example.json profiles/prod.json
+# From a docs checkout:
+# cp docs/01_GETTING_STARTED/prod.example.json profiles/prod.json
+# Or create profiles/prod.json from the Capabilities CI starter JSON.
 # Review allowlist and assets, then:
 python -m etlantic validate pipeline.py:SamplePipeline \
   --profile ./profiles/prod.json --format sarif
+```
+
+Example starter (trim allowlist to packages you install):
+
+```json
+{
+  "name": "prod-example",
+  "security_mode": "production",
+  "security_domain": "production",
+  "orchestrator": "local",
+  "dataframe_engine": "polars",
+  "validation_policy": "strict",
+  "portable_transform_policy": "require",
+  "plugin_allowlist": {
+    "etlantic-polars": "==0.32.0"
+  },
+  "assets": {}
+}
 ```
 
 Pin core and plugins to the same minor (`==0.32.0`).

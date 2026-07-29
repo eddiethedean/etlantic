@@ -51,9 +51,11 @@ the 1.1 control plane).
 | [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.32.0`) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
-MkDocs API generation scans core `src/` only. For optional-package constructors,
-registration, protocol versions, and failure modes, use the linked package
-README and the corresponding engine tutorial.
+MkDocs API generation scans core `src/` (plus Medallantic where linked). The
+docs site **API Reference** is therefore **core-first**, not a complete catalog
+of every optional-package constructor. For plugin factories, registration,
+protocol versions, and failure modes, use the linked package README and the
+corresponding engine tutorial.
 
 ## Related
 

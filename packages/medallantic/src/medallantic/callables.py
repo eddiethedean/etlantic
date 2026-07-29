@@ -67,7 +67,10 @@ def make_callable_transformation(
     def _local(rows: list[Any]) -> list[Any]:
         result = callable_fn(rows)
         if result is None:
-            return list(rows)
+            raise TypeError(
+                f"transform_ref {transform_ref!r} returned None; "
+                "callables must return rows (use an explicit identity if needed)"
+            )
         if isinstance(result, list):
             return result
         return list(result)
@@ -84,7 +87,10 @@ def make_callable_transformation(
                 f"PySpark transform_ref {transform_ref!r} failed on DataFrame: {exc}"
             ) from exc
         if out is None:
-            return rows
+            raise TypeError(
+                f"PySpark transform_ref {transform_ref!r} returned None; "
+                "callables must return a DataFrame"
+            )
         return out
 
     try:
@@ -95,12 +101,22 @@ def make_callable_transformation(
 
             if isinstance(rows, pl.DataFrame):
                 out = callable_fn(rows)
+                if out is None:
+                    raise TypeError(
+                        f"transform_ref {transform_ref!r} returned None; "
+                        "callables must return a DataFrame"
+                    )
                 if isinstance(out, pl.DataFrame):
                     return out
-                return pl.DataFrame(list(out) if out is not None else rows.to_dicts())
+                return pl.DataFrame(list(out))
             records = rows.to_dicts() if hasattr(rows, "to_dicts") else list(rows)
             out = callable_fn(records)
-            return pl.DataFrame(out if out is not None else records)
+            if out is None:
+                raise TypeError(
+                    f"transform_ref {transform_ref!r} returned None; "
+                    "callables must return rows"
+                )
+            return pl.DataFrame(out)
 
     except ImportError:
         pass
@@ -113,16 +129,24 @@ def make_callable_transformation(
 
             if isinstance(rows, pd.DataFrame):
                 out = callable_fn(rows)
+                if out is None:
+                    raise TypeError(
+                        f"transform_ref {transform_ref!r} returned None; "
+                        "callables must return a DataFrame"
+                    )
                 if isinstance(out, pd.DataFrame):
                     return out
-                return pd.DataFrame(
-                    list(out) if out is not None else rows.to_dict("records")
-                )
+                return pd.DataFrame(list(out))
             records = (
                 rows.to_dict("records") if hasattr(rows, "to_dict") else list(rows)
             )
             out = callable_fn(records)
-            return pd.DataFrame(out if out is not None else records)
+            if out is None:
+                raise TypeError(
+                    f"transform_ref {transform_ref!r} returned None; "
+                    "callables must return rows"
+                )
+            return pd.DataFrame(out)
 
     except ImportError:
         pass

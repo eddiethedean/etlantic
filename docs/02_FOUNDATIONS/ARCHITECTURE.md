@@ -52,6 +52,8 @@ See the [Security Model](SECURITY.md).
 │ Profiles • bindings • capabilities • execution regions       │
 │ resources • materialization boundaries                       │
 │ Gate A interchange descriptors (Polars ↔ Pandas; shipped 0.18, current) │
+│ Quality gates (`etlantic.quality/1`; provisional since 0.30)           │
+│ Delta storage extras (`storage.delta.*`; since 0.32)                   │
 └──────────────────────────────┬───────────────────────────────┘
                                ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -66,6 +68,9 @@ See the [Security Model](SECURITY.md).
               Runtime plugins      Backend artifacts, docs,
                                    diagrams, lineage
 ```
+
+Medallion bronze/silver/gold vocabulary and SparkForge migration live in
+**Medallantic** (facade), not core. See [Medallantic](../09_MEDALLANTIC/README.md).
 
 ## Authoring Layer
 
@@ -419,8 +424,10 @@ load and before profile or artifact files are read from disk.
 
 - Static **plugin manifests** ship inside each distribution; tampered manifests
   fail with diagnostic `PMPLUG411`.
-- **Production profiles** require a non-empty `plugin_allowlist`; unauthorized
-  plugins never reach `entry_point.load()`.
+- **Production profiles** require a non-empty `plugin_allowlist`. Lifecycle is
+  discover → evaluate → authorize → load: unauthorized plugins never reach
+  `entry_point.load()`. Package install remains the trust boundary (allowlist
+  is selection, not a sandbox).
 - Optional **capability probes** (`require_plugin_probe`) validate entry points
   in an isolated subprocess before load.
 

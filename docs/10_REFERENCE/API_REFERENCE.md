@@ -85,7 +85,13 @@ Optional plugins document factories in package READMEs. See
 
 - [Authoring](API_AUTHORING.md) — contracts, transformations, pipelines, ports
 - [Plan and runtime](API_PLAN_RUNTIME.md) — validation, profiles, plan, runtime, storage, secrets, contract interchange, **Gate A tabular interchange**
+- [Quality](API_QUALITY.md) — provisional `etlantic.quality/1` AST, gates, codecs
 - [Protocols](API_PROTOCOLS.md) — dataframe, SQL, Spark, orchestration, viz, testing, reliability
+
+!!! note "Core API Reference scope"
+    MkDocs API generation covers **core** `src/etlantic` (and Medallantic where
+    linked). Optional engine packages (`etlantic-polars`, …) document factories
+    in package READMEs — see [Optional Packages](OPTIONAL_PACKAGES.md).
 
 ## Core behavioral contracts
 

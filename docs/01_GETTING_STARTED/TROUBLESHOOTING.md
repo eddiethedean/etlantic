@@ -128,19 +128,14 @@ that engine with `portable_transform_policy="require"`. See
 ## Portable compiler not discovered / `PMXFORM302`
 
 ```bash
-python -c "from etlantic.transform.discovery import discover_transform_compilers; print(discover_transform_compilers())"
-```
-
-If the map is empty, install a matching `etlantic-polars==0.32.0` into the same
-environment as core. Entry-point discovery uses installed distribution
-metadata, so reinstall the plugin after editable-install or interpreter
-changes. Confirm with:
-
-```bash
+python -m etlantic plugin list --profile development --format json
 python -m pip show etlantic etlantic-polars
-python -c "from etlantic.transform.discovery import discover_transform_compilers; print(sorted(discover_transform_compilers()))"
 ```
 
+If no transform compiler appears for Polars, install a matching
+`etlantic-polars==0.32.0` into the same environment as core. Entry-point
+discovery uses installed distribution metadata, so reinstall the plugin after
+editable-install or interpreter changes.
 ## `PMXFORM301` unsupported action or function
 
 `PMXFORM301` means the selected compiler does not support an action, function,
@@ -305,8 +300,8 @@ resources separately.
 
 The shipped CLI includes:
 
-`validate`, `inspect`, `plan`, `run`, `compile`, `generate`, `diff`,
-`plugin`, `schema`, `reliability`, `viz`, `report`
+`init`, `doctor`, `validate`, `inspect`, `plan`, `profile`, `run`, `compile`,
+`generate`, `diff`, `plugin`, `schema`, `reliability`, `viz`, `report`
 
 See the [CLI reference](../10_REFERENCE/CLI.md). Pages marked **Future
 design** may show commands that are not shipped—check

@@ -1,5 +1,10 @@
 # Current Capabilities and Limitations
 
+!!! tip "Adopter brief"
+    Read this section and [Limits](#limits-read-before-production) first.
+    Gate history, residual Medallantic tables, and CI JSON live further down
+    for evaluators—skip them on day one.
+
 ## What you can do in 0.32
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or

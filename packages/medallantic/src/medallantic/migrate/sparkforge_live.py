@@ -14,8 +14,20 @@ from medallantic.column_rules import is_native_rule_entry
 from medallantic.ir import (
     LayerKind,
     SparkForgePipelineSpec,
-    SparkForgeStepSpec,
     StepKind,
+)
+
+_SECRET_KEY_FRAGMENTS = (
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "credential",
+    "api_key",
+    "apikey",
+    "access_key",
+    "private_key",
+    "auth",
 )
 
 
@@ -42,13 +54,7 @@ def sparkforge_available() -> bool:
         importlib.import_module("sparkforge.pipeline_builder")
         return True
     except ImportError:
-        try:
-            import importlib
-
-            importlib.import_module("pipeline_builder")
-            return True
-        except ImportError:
-            return False
+        return False
 
 
 def from_pipeline_builder(
@@ -67,7 +73,10 @@ def from_pipeline_builder(
     if isinstance(builder, SparkForgePipelineSpec):
         return builder, diagnostics
     if isinstance(builder, dict):
-        return SparkForgePipelineSpec.parse(builder)
+        cleaned = _sanitize_mapping(dict(builder), diagnostics=diagnostics, path=())
+        spec, parse_diags = SparkForgePipelineSpec.parse(cleaned)
+        diagnostics.extend(parse_diags)
+        return spec, diagnostics
 
     data = _builder_to_mapping(builder, diagnostics=diagnostics)
     if name:
@@ -94,14 +103,16 @@ def _builder_to_mapping(
         if callable(fn):
             raw = fn()
             if isinstance(raw, dict):
-                return _sanitize_mapping(raw, diagnostics=diagnostics)
+                return _sanitize_mapping(raw, diagnostics=diagnostics, path=())
 
     name = str(
         getattr(builder, "name", None)
         or getattr(builder, "pipeline_name", None)
         or type(builder).__name__
     )
-    schema = str(getattr(builder, "schema", None) or getattr(builder, "db_schema", None) or "default")
+    schema = str(
+        getattr(builder, "schema", None) or getattr(builder, "db_schema", None) or "default"
+    )
     steps_raw = (
         getattr(builder, "steps", None)
         or getattr(builder, "_steps", None)
@@ -126,21 +137,13 @@ def _builder_to_mapping(
         metadata["delta_operations"] = [str(x) for x in list(delta_ops)]
     meta_attr = getattr(builder, "metadata", None)
     if isinstance(meta_attr, dict):
-        # Drop anything that looks like a secret.
-        for key, value in meta_attr.items():
-            key_l = str(key).lower()
-            if any(s in key_l for s in ("password", "secret", "token", "credential")):
-                diagnostics.append(
-                    Diagnostic(
-                        code="PMSF351",
-                        severity=Severity.WARNING,
-                        message=f"Omitting secret-like metadata key {key!r} from IR.",
-                        path=("metadata", str(key)),
-                        phase="sparkforge_live",
-                    )
-                )
-                continue
-            metadata[str(key)] = value
+        metadata.update(
+            _scrub_mapping(
+                meta_attr,
+                diagnostics=diagnostics,
+                path=("metadata",),
+            )
+        )
 
     return {
         "name": name,
@@ -164,7 +167,7 @@ def _extract_step(
     diagnostics: list[Diagnostic],
 ) -> dict[str, Any] | None:
     if isinstance(step, dict):
-        return _sanitize_step_dict(step, diagnostics=diagnostics)
+        return _sanitize_step_dict(step, diagnostics=diagnostics, index=index)
     name = getattr(step, "name", None)
     if name is None or not str(name).strip():
         diagnostics.append(
@@ -183,10 +186,16 @@ def _extract_step(
     transform_ref = getattr(step, "transform_ref", None) or getattr(
         step, "transform", None
     )
-    if callable(transform_ref) and not isinstance(transform_ref, str):
+    if callable(transform_ref) and not isinstance(transform_ref, (str, type)):
         transform_ref = (
-            f"{transform_ref.__module__}:{getattr(transform_ref, '__qualname__', transform_ref.__name__)}"
+            f"{transform_ref.__module__}:"
+            f"{getattr(transform_ref, '__qualname__', transform_ref.__name__)}"
         )
+    step_meta = _scrub_mapping(
+        dict(getattr(step, "metadata", None) or {}),
+        diagnostics=diagnostics,
+        path=("steps", str(name), "metadata"),
+    )
     return {
         "name": str(name),
         "kind": kind,
@@ -198,7 +207,7 @@ def _extract_step(
         "transform_ref": str(transform_ref) if transform_ref is not None else None,
         "rules": rules,
         "write_mode": getattr(step, "write_mode", None),
-        "metadata": dict(getattr(step, "metadata", None) or {}),
+        "metadata": step_meta,
     }
 
 
@@ -212,6 +221,17 @@ def _normalize_rules(rules: Any) -> dict[str, Any]:
         for item in items:
             if isinstance(item, str) or isinstance(item, dict):
                 normalized.append(item)
+            elif callable(item) and not isinstance(item, type):
+                normalized.append(
+                    {
+                        "kind": "pyspark_callable",
+                        "expr_ref": (
+                            f"{item.__module__}:"
+                            f"{getattr(item, '__qualname__', getattr(item, '__name__', 'fn'))}"
+                        ),
+                        "metadata": {"callable_type": type(item).__name__},
+                    }
+                )
             elif is_native_rule_entry(item):
                 normalized.append(
                     {
@@ -228,27 +248,64 @@ def _normalize_rules(rules: Any) -> dict[str, Any]:
     return out
 
 
-def _sanitize_mapping(
+def _is_secret_key(key: str) -> bool:
+    key_l = str(key).lower()
+    return any(fragment in key_l for fragment in _SECRET_KEY_FRAGMENTS)
+
+
+def _scrub_mapping(
     data: dict[str, Any],
     *,
     diagnostics: list[Diagnostic],
+    path: tuple[str, ...],
 ) -> dict[str, Any]:
-    cleaned = dict(data)
-    meta = dict(cleaned.get("metadata") or {})
-    for key in list(meta):
-        key_l = str(key).lower()
-        if any(s in key_l for s in ("password", "secret", "token", "credential")):
+    cleaned: dict[str, Any] = {}
+    for key, value in data.items():
+        key_s = str(key)
+        if _is_secret_key(key_s):
             diagnostics.append(
                 Diagnostic(
                     code="PMSF351",
                     severity=Severity.WARNING,
-                    message=f"Omitting secret-like metadata key {key!r} from IR.",
-                    path=("metadata", str(key)),
+                    message=f"Omitting secret-like metadata key {key_s!r} from IR.",
+                    path=path + (key_s,),
                     phase="sparkforge_live",
                 )
             )
-            meta.pop(key, None)
-    cleaned["metadata"] = meta
+            continue
+        if isinstance(value, dict):
+            cleaned[key_s] = _scrub_mapping(
+                value,
+                diagnostics=diagnostics,
+                path=path + (key_s,),
+            )
+        else:
+            cleaned[key_s] = value
+    return cleaned
+
+
+def _sanitize_mapping(
+    data: dict[str, Any],
+    *,
+    diagnostics: list[Diagnostic],
+    path: tuple[str, ...],
+) -> dict[str, Any]:
+    cleaned = dict(data)
+    meta = cleaned.get("metadata")
+    if isinstance(meta, dict):
+        cleaned["metadata"] = _scrub_mapping(
+            meta,
+            diagnostics=diagnostics,
+            path=path + ("metadata",),
+        )
+    steps = cleaned.get("steps")
+    if isinstance(steps, list):
+        cleaned["steps"] = [
+            _sanitize_step_dict(step, diagnostics=diagnostics, index=i)
+            if isinstance(step, dict)
+            else step
+            for i, step in enumerate(steps)
+        ]
     return cleaned
 
 
@@ -256,11 +313,19 @@ def _sanitize_step_dict(
     step: dict[str, Any],
     *,
     diagnostics: list[Diagnostic],
+    index: int = 0,
 ) -> dict[str, Any]:
-    _ = diagnostics
     out = dict(step)
+    name = str(out.get("name") or index)
     if "rules" in out:
         out["rules"] = _normalize_rules(out.get("rules") or {})
+    meta = out.get("metadata")
+    if isinstance(meta, dict):
+        out["metadata"] = _scrub_mapping(
+            meta,
+            diagnostics=diagnostics,
+            path=("steps", name, "metadata"),
+        )
     return out
 
 

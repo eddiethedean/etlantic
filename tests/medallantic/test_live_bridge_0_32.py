@@ -21,12 +21,14 @@ def test_from_pipeline_builder_dict_path() -> None:
         {
             "name": "live_dict",
             "engine": "spark",
+            "metadata": {"password": "hunter2", "owner": "team"},
             "steps": [
                 {
                     "name": "orders",
                     "kind": "bronze_rules",
                     "layer": "bronze",
                     "rules": {"id": ["not_null"]},
+                    "metadata": {"api_key": "abc", "label": "ok"},
                 },
                 {
                     "name": "clean",
@@ -40,7 +42,11 @@ def test_from_pipeline_builder_dict_path() -> None:
     )
     assert spec.name == "live_dict"
     assert len(spec.steps) == 2
-    assert diags == []
+    assert "password" not in spec.metadata
+    assert spec.metadata.get("owner") == "team"
+    assert "api_key" not in (spec.steps[0].metadata or {})
+    assert (spec.steps[0].metadata or {}).get("label") == "ok"
+    assert any(d.code == "PMSF351" for d in diags)
     result = adapt_pipeline(spec, strict_delta=False)
     assert "orders" in result.step_map
 

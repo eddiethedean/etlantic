@@ -327,9 +327,10 @@ own authentication, persistence, durable jobs, and deployment. See
 
 No.
 
-Bronze / silver / gold stay in SparkForge. Optional package
-`medallantic` maps medallion IR onto ordinary ETLantic nodes,
-profiles, and reports. See [Migrating 0.9 → 0.10](../11_DEVELOPMENT/MIGRATION_0_9_TO_0_10.md).
+Bronze / silver / gold stay in SparkForge / Medallantic. Optional package
+`medallantic` maps medallion IR onto ordinary ETLantic nodes, profiles, and
+reports. See [Medallantic](../09_MEDALLANTIC/README.md) and
+[Migration 0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md).
 
 ------------------------------------------------------------------------
 

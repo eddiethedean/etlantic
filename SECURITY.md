@@ -78,7 +78,8 @@ artifacts if necessary, and publish a replacement after rotating credentials.
 ## Residual deployment responsibilities
 
 The stable support boundary does not provide in-process multi-tenant isolation
-or guarantees for adopter deployment topology, compliance attestations,
-SBOM/signing, or advanced supply-chain controls. Adopters must supply those
+or guarantees for adopter deployment topology, compliance attestations, or
+advanced supply-chain controls beyond shipped release **SBOM digests** and
+GitHub build provenance **attestations**. Adopters must supply remaining
 controls and isolate separate tenants or trust domains in separate execution
 environments. Experimental features do not receive stable API guarantees.

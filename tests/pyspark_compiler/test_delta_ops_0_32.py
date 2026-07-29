@@ -79,19 +79,55 @@ def test_cancel_without_session_is_safe() -> None:
 
 
 @pytest.mark.spark
+def test_storage_merge_error_is_no_write() -> None:
+    plugin = PySparkPlugin()
+    target = DatasetRef(name="t", path="/tmp/x.delta", format="delta")
+    result = plugin.execute_storage_op(
+        operation="merge",
+        target=target,
+        context=_ctx("merge"),
+        options={},  # missing source → error
+    )
+    assert any(str(d.get("severity")) == "error" for d in result.diagnostics)
+    assert result.metrics.actions == ["no_write"]
+
+
+@pytest.mark.spark
+def test_merge_write_requires_delta_format() -> None:
+    from etlantic.spark.protocol import SparkWrite, SparkWriteMode
+
+    plugin = PySparkPlugin()
+    plugin._delta_enabled = True
+    # Bind a minimal session-less path by stubbing _to_dataframe after format gate.
+    write = SparkWrite(
+        mode=SparkWriteMode.MERGE,
+        source=[{"id": 1}],
+        target=DatasetRef(name="t", path="/tmp/x.parquet", format="parquet"),
+        merge_keys=("id",),
+    )
+
+    class _FakeSession:
+        pass
+
+    plugin._session = _FakeSession()
+
+    def _fake_to_df(_session: object, value: object) -> object:
+        return value
+
+    plugin._to_dataframe = _fake_to_df  # type: ignore[method-assign]
+    result = plugin.execute_write(write, context=_ctx("w"))
+    assert any(d.get("code") == "PMSPARK331" for d in result.diagnostics)
+    assert result.metrics.actions == ["no_write"]
+
+
+@pytest.mark.spark
 @pytest.mark.skipif(
-    os.environ.get("SPARKLESS_TEST_MODE", "").lower() == "pyspark"
-    and False,  # placeholder — live Delta gated below
-    reason="sparkless default",
+    os.environ.get("ETLANTIC_DELTA_LIVE", "").strip().lower()
+    not in {"1", "true", "yes"},
+    reason="Set ETLANTIC_DELTA_LIVE=1 for live Delta tests",
 )
 def test_delta_live_optional() -> None:
     """Live Delta suite runs only when delta-spark + real PySpark are available."""
-    if os.environ.get("ETLANTIC_DELTA_LIVE", "").strip().lower() not in {
-        "1",
-        "true",
-        "yes",
-    }:
-        pytest.skip("Set ETLANTIC_DELTA_LIVE=1 for live Delta tests")
     pytest.importorskip("delta")
     # Live path exercised by plugin integration environments; keep marker honest.
     assert PySparkPlugin().capabilities().supports("storage.delta.merge")

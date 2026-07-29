@@ -157,13 +157,13 @@ class SparkDataFrameHandle:
     @property
     def logical_step_id(self) -> str:
         """Stable logical-step identity for fused / distributed artifacts."""
-        if self.step_name:
-            return str(self.step_name)
         meta_step = self.metadata.get("logical_step_id") or self.metadata.get(
             "step_name"
         )
         if meta_step:
             return str(meta_step)
+        if self.step_name:
+            return str(self.step_name)
         return self.identity
 
 

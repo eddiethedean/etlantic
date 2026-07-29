@@ -66,7 +66,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 |---|---|
 | Version pins | Pin `etlantic==0.32.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 | SBOM / attestations | Release CI digests + GitHub attestations — see [Verify release attestations](#verify-release-attestations) below |
@@ -88,8 +88,10 @@ floating ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
 `etlantic-datafusion` (Experimental Alpha), and
-[Medallantic](../09_EXAMPLES/MEDALLANTIC.md) (native medallion authoring
-shipped in 0.29; live medallion execution remains later).
+[Medallantic](../09_MEDALLANTIC/README.md) (native medallion authoring in
+0.29+; portable quality gates in 0.30+; execution/state semantics in 0.31+;
+PySpark/Delta differential parity in 0.32). Bronze/silver/gold vocabulary
+remains in Medallantic—not core.
 
 ### 6. Optional deep dives
 

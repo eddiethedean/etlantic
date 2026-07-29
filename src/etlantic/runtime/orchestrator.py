@@ -71,6 +71,7 @@ from etlantic.runtime.logging import RunLogger, redact_message, redact_value
 from etlantic.runtime.request import MaterializationPolicy, RunRequest
 from etlantic.runtime.spark_exec import (
     acquire_session,
+    cancel_spark_jobs,
     execute_portable_spark_step,
     execute_spark_sink,
     execute_spark_source,
@@ -715,6 +716,13 @@ class LocalOrchestrator:
                     with contextlib.suppress(Exception):
                         cleanup()
             if self._spark_session is not None:
+                with contextlib.suppress(Exception):
+                    await cancel_spark_jobs(
+                        plugins=getattr(self.runtime, "spark_plugins", None),
+                        plan=self.plan,
+                        run_id=run_id,
+                        job_group=(self.request.metadata or {}).get("job_group"),
+                    )
                 with contextlib.suppress(Exception):
                     providers = getattr(self.runtime, "spark_providers", None) or {}
                     provider = resolve_spark_provider("local", providers=providers)

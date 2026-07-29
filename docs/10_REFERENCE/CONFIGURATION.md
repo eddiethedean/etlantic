@@ -1,12 +1,15 @@
 # Configuration Reference
 
-!!! warning "Mixed: optional toml ships in 0.21; most of this page is 1.0 design"
-    ETLantic **0.21** loads an optional minimal `etlantic.toml` (`default_profile`,
-    optional `[profiles]`). Most keys and env vars on this page remain proposed
-    1.0 design. For what is shipped today, see
+!!! warning "Future design / proposed 1.0"
+    Most keys and env vars on this page remain **proposed** for ETLantic 1.0.
+    Do **not** implement against this page for 0.32 pilots. Use
     [Configuration today](CONFIGURATION_TODAY.md) and
     [Runtime configuration](RUNTIME_CONFIGURATION.md).
 
+!!! warning "Mixed: optional toml ships since 0.21; most of this page is 1.0 design"
+    ETLantic loads an optional minimal `etlantic.toml` (`default_profile`,
+    optional `[profiles]`). Most keys and env vars on this page remain proposed
+    1.0 design.
 
 ETLantic configuration binds portable pipeline models to concrete
 environments without embedding execution details in `Pipeline`,

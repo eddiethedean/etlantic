@@ -8,7 +8,8 @@
 ### Local JSON pipeline (copy-paste)
 
 ```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: py -3.11 -m venv .venv && .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate
+# Windows PowerShell: py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.32.0'
 mkdir my-pipeline && cd my-pipeline
@@ -21,14 +22,35 @@ Expect `succeeded` and Ada/Grace rows in `data/out.json`.
 
 ### Polars engine (after local success)
 
+The `init` scaffold only implements `"local"`. Installing the Polars plugin and
+flipping `dataframe_engine` is **not** enough—you must also register a Polars
+implementation.
+
 ```bash
 python -m pip install 'etlantic[polars]==0.32.0'
-# set Profile.dataframe_engine="polars" (or use a profile JSON), then:
+```
+
+Then either follow the [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md),
+or add a Polars implementation and set the profile engine:
+
+```python
+@Identity.implementation("polars")
+def identity_polars(rows):
+    import polars as pl
+
+    if hasattr(rows, "with_columns"):
+        return rows
+    return pl.DataFrame(
+        [row.model_dump() if hasattr(row, "model_dump") else row for row in rows]
+    )
+```
+
+In `profiles/development.json`, set `"dataframe_engine": "polars"`, then:
+
+```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
-
-Full walkthrough: [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md).
 
 ### Production allowlist (fail closed)
 

@@ -151,4 +151,43 @@ def test_logical_identities_and_handle() -> None:
         region_id="region-1",
         metadata={"logical_step_id": "region-1:clean"},
     )
-    assert handle.logical_step_id == "clean"
+    assert handle.logical_step_id == "region-1:clean"
+
+
+def test_catalog_default_deny_and_production_flag() -> None:
+    # Non-production default deny when allow_mutations is False.
+    denied = CatalogMutationPolicy(allow_mutations=False)
+    assert denied.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development") is False
+
+    # Explicit allow works in non-production.
+    allowed = CatalogMutationPolicy(allow_mutations=True)
+    assert allowed.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development") is True
+
+    # production_fail_closed=False falls back to allow_mutations (still deny here).
+    openish = CatalogMutationPolicy(
+        allow_mutations=False,
+        production_fail_closed=False,
+    )
+    assert (
+        openish.allows(
+            CatalogMutationKind.CREATE_TABLE,
+            profile_name="production",
+            security_mode="production",
+        )
+        is False
+    )
+
+
+def test_collect_and_plan_storage_delta_ops() -> None:
+    from etlantic.planning.capabilities import collect_required_delta_operations
+    from etlantic.profile import Profile
+
+    profile = Profile(
+        name="spark",
+        spark_engine="pyspark",
+        required_spark_capabilities=("storage.delta.optimize", "write.merge"),
+    )
+    ops = collect_required_delta_operations(profile=profile)
+    assert "optimize" in ops
+    assert "merge" in ops
+

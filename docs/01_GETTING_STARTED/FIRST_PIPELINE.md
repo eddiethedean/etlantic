@@ -81,6 +81,12 @@ rows (identity transform).
 
 ## Try an intentional wiring error
 
+!!! tip "Already did this in Quickstart?"
+    If you completed the `Other` / `PMPIPE210` aha in
+    [Quickstart §4](QUICKSTART.md#required-aha),
+    skip to [Evolve the transform](#evolve-the-transform). The paste below is
+    the same canonical demo.
+
 Add a second contract and change **only** the Load annotation so the graph
 wiring is inconsistent (keep `input=` and `asset=` complete so the file still
 parses):

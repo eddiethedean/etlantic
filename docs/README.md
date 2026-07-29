@@ -19,7 +19,9 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
     1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.32.0`
     2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
     3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
-    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then an engine tutorial
+    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then a **PyPI** engine tutorial
+       (Polars/Pandas; SQL/PySpark are clone-assisted)
+    5. [Learning path](01_GETTING_STARTED/LEARNING_PATH.md) — week-by-week after first success
 
     That is the whole first-hour path. Optional later:
     [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md),
@@ -72,11 +74,12 @@ You should see `succeeded` and Ada/Grace sample rows (identity transform).
 scaffolded files). Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
 
 !!! note "PyPI vs clone"
-    **PyPI users:** stay on Installation → Quickstart → First Pipeline. The
-    wheel does **not** include `examples/`.
+    **PyPI users:** Installation → Quickstart → First Pipeline → Polars/Pandas
+    tutorials (PyPI path). The wheel does **not** include `examples/`.
     **Contributors / clone users:** after `uv sync`, optional demos live under
     [`examples/`](https://github.com/eddiethedean/etlantic/tree/main/examples)
     (see [examples/README](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md)).
+    SQL and PySpark tutorials are clone-assisted.
 
 ## After first success
 

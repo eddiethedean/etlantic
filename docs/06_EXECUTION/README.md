@@ -27,20 +27,18 @@ external systems perform backend-specific work.
 
 ## What This Section Covers
 
-This section explains how to:
+This section explains **shipped** operator paths:
 
-- Execute Pipeline Plans
-- Build execution plugins
-- Select execution engines
-- Support synchronous and asynchronous execution
-- Manage resources
-- Resolve secrets through external providers
-- Handle retries and failures
-- Integrate callbacks
-- Report diagnostics
-- Emit structured, correlated logs
-- Extend execution through lifespan, middleware, resources, and callbacks
+- Execute Pipeline Plans (local, Polars, Pandas, SQL, PySpark)
+- Select execution engines and register native / portable implementations
+- Resolve secrets through shipped providers
+- Handle retries and failures where documented
+- Report diagnostics and run reports
+- Emit structured logs (today’s logging guidance)
 - Preserve pipeline semantics across runtimes
+
+Lifecycle extensions, general storage plugins, and resource-provider protocols
+remain **Future design** — see the note under Reading Order below.
 
 ## Execution Lifecycle
 
@@ -134,7 +132,7 @@ your project:
 9. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
 10. [Compilation](COMPILATION.md)
 
-!!! note "Future design (not in the 0.31 operator path)"
+!!! note "Future design (not in the 0.32 operator path)"
     [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
     [Plugins overview](PLUGINS.md),
     [Storage Plugins](STORAGE_PLUGINS.md), and

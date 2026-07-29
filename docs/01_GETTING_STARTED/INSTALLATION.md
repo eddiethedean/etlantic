@@ -11,17 +11,17 @@
 - Python 3.11, 3.12, or 3.13
 - A virtual environment (strongly recommended)
 
-## Install core (2 minutes)
+## Install core (Day-0 — 2 minutes)
 
 Pin the published **0.32.0** release for reproducible evaluation. Use a virtual
 environment. Prefer `python -m pip` and `python -m etlantic` so the interpreter
 you intend is the one that runs.
 
-### pip
+### pip (recommended)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
+source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.32.0'
 python -m etlantic --version
@@ -42,6 +42,35 @@ If you already have a uv project (`pyproject.toml`), you may use
 not empty. **`--force` can overwrite** existing `pipeline.py` / `pyproject.toml`
 scaffolding — prefer an empty subdirectory when unsure.
 
+### Windows (pip)
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -3.11 -m pip install --upgrade pip
+py -3.11 -m pip install 'etlantic==0.32.0'
+py -3.11 -m etlantic --version
+```
+
+Verify the import:
+
+```bash
+python -c "import etlantic; print(etlantic.__version__)"
+```
+
+## Next Step
+
+Continue with [Quickstart](QUICKSTART.md). `python -m etlantic init` requires an **empty
+directory** (or `--force`). After first success, see [Engine selection](ENGINE_SELECTION.md)
+and the [Learning path](LEARNING_PATH.md).
+
+---
+
+## Advanced installers (optional)
+
+Use these only if your org already standardizes on Poetry or Conda. They are
+**not** required for first success.
+
 ### Poetry
 
 ```bash
@@ -61,30 +90,9 @@ python -m pip install 'etlantic==0.32.0'
 python -m etlantic --version
 ```
 
-### Windows (pip)
-
-```powershell
-py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.32.0'
-py -3.11 -m etlantic --version
-```
-
-Verify the import:
-
-```bash
-python -c "import etlantic; print(etlantic.__version__)"
-```
-
-## Next Step
-
-Continue with [Quickstart](QUICKSTART.md). `python -m etlantic init` requires an **empty
-directory** (or pass `--force`). Optional engines are below—skip them until
-after first success. Contributor checkout lives at the end of this page.
-
 ---
 
 ## Optional engine plugins
-
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
 explicitly and **match the core minor** (`0.32.0` with `0.32.0`).
 

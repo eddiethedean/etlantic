@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import uuid
+from typing import Any
 
 from etlantic.capabilities import PluginCapabilities
 from etlantic.spark.provider import (
@@ -70,16 +71,13 @@ class LocalSparkProvider:
         # Resolve secret refs at acquire time only — never store values on the handle.
         resolved_config: dict[str, str] = {}
         for key, ref in request.config_refs.items():
-            if context.resolve_secret is not None and ref.startswith("secret:"):
-                resolved_config[key] = str(context.resolve_secret(ref[7:]))
-            else:
-                resolved_config[key] = ref
-        for _key, ref in request.secret_refs.items():
-            # Secret values used only for builder config; not retained on handle.
-            if context.resolve_secret is not None:
-                _ = context.resolve_secret(
-                    ref if not isinstance(ref, dict) else ref.get("key", "")
-                )
+            resolved_config[str(key)] = self._resolve_config_value(
+                ref, context=context, required=False
+            )
+        for key, ref in request.secret_refs.items():
+            resolved_config[str(key)] = self._resolve_config_value(
+                ref, context=context, required=True
+            )
 
         if request.ownership is SessionOwnership.EXTERNAL:
             # Expect an externally managed session passed via metadata.
@@ -93,7 +91,7 @@ class LocalSparkProvider:
                 ownership=SessionOwnership.EXTERNAL,
                 app_name=request.app_name,
                 master=request.master,
-                delta_enabled=request.enable_delta,
+                delta_enabled=bool(request.enable_delta),
                 metadata={"run_id": context.run_id},
                 _session=external,
             )
@@ -116,8 +114,9 @@ class LocalSparkProvider:
             builder = builder.config(
                 "spark.sql.streaming.checkpointLocation", request.checkpoint_root
             )
+        delta_enabled = False
         if request.enable_delta:
-            with contextlib.suppress(Exception):
+            try:
                 builder = builder.config(
                     "spark.sql.extensions",
                     "io.delta.sql.DeltaSparkSessionExtension",
@@ -125,6 +124,11 @@ class LocalSparkProvider:
                     "spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog",
                 )
+                delta_enabled = True
+            except Exception as exc:
+                raise RuntimeError(
+                    "Failed to apply Delta session configuration; failing closed."
+                ) from exc
 
         session = builder.getOrCreate()
         handle = SparkSessionHandle(
@@ -132,7 +136,7 @@ class LocalSparkProvider:
             ownership=SessionOwnership.PROVIDER,
             app_name=request.app_name,
             master=request.master or "local[2]",
-            delta_enabled=request.enable_delta,
+            delta_enabled=delta_enabled,
             metadata={
                 "run_id": context.run_id,
                 "plan_id": context.plan_id,
@@ -158,6 +162,44 @@ class LocalSparkProvider:
         if session is not None:
             with contextlib.suppress(Exception):
                 session.stop()
+
+    @staticmethod
+    def _resolve_config_value(
+        ref: Any,
+        *,
+        context: ResourceContext,
+        required: bool,
+    ) -> str:
+        if isinstance(ref, dict):
+            key = str(ref.get("key") or "")
+            if not key:
+                if required:
+                    raise RuntimeError("secret_refs entry missing 'key'")
+                return ""
+            if context.resolve_secret is None:
+                if required:
+                    raise RuntimeError(
+                        f"secret_refs requires resolve_secret for key {key!r}"
+                    )
+                return key
+            return str(context.resolve_secret(key))
+        text = str(ref)
+        if text.startswith("secret:"):
+            key = text[7:]
+            if context.resolve_secret is None:
+                if required:
+                    raise RuntimeError(
+                        f"secret_refs requires resolve_secret for key {key!r}"
+                    )
+                return key
+            return str(context.resolve_secret(key))
+        if required and context.resolve_secret is not None:
+            return str(context.resolve_secret(text))
+        if required and context.resolve_secret is None:
+            raise RuntimeError(
+                f"secret_refs requires resolve_secret for key {text!r}"
+            )
+        return text
 
 
 def create_provider() -> LocalSparkProvider:

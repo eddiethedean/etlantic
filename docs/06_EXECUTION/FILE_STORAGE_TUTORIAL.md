@@ -12,10 +12,14 @@ registry is constructed inside `run_files()`. Use `python examples/file_storage.
 for execution, and use the CLI for `inspect` / `validate` / `plan` against
 import-safe pipeline modules.
 
+!!! warning "Clone-assisted path"
+    This companion uses repository `examples/` (not in the PyPI wheel). For
+    file-backed pipelines on PyPI alone, use `etlantic init` JSON assets from
+    [Quickstart](../01_GETTING_STARTED/QUICKSTART.md).
+
 ## Prerequisites
 
-Repository examples are not installed with the PyPI wheel. Clone a matching
-release checkout (prefer the `v0.32.0` tag) and use `uv`:
+Clone a matching release checkout (prefer the `v0.32.0` tag) and use `uv`:
 
 ```bash
 git clone --branch v0.32.0 https://github.com/eddiethedean/etlantic.git

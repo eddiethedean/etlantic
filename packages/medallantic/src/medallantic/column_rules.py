@@ -53,8 +53,8 @@ def is_native_rule_entry(item: Any) -> bool:
     module = type(item).__module__ or ""
     if "Column" in type_name and ("pyspark" in module or "sparkless" in module):
         return True
-    if callable(item) and not isinstance(item, (str, bytes, dict, list, tuple)):
-        # Bare callables in rules are treated as native validators.
+    if callable(item) and not isinstance(item, (str, bytes, dict, list, tuple, type)):
+        # Bare callables in rules are treated as native validators (not classes).
         return True
     return False
 
@@ -107,7 +107,7 @@ def _to_native(field: str, item: Any) -> NativeColumnRule:
             required=bool(item.get("required", True)),
             metadata=meta,
         )
-    if callable(item) and not isinstance(item, (str, bytes)):
+    if callable(item) and not isinstance(item, (str, bytes, type)):
         return NativeColumnRule(
             field=field,
             kind="pyspark_callable",

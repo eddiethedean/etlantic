@@ -4,6 +4,13 @@
 > (Medallantic **M4**): storage capability vocabulary, live SparkForge bridge,
 > Column rules, and classified differential fixtures.
 
+!!! tip "Local / Polars / Pandas adopters"
+    If you only use core local JSON pipelines or Polars/Pandas, you can skip
+    most of this page. Pin `etlantic==0.32.0` (and matching plugins) and follow
+    [Quickstart](QUICKSTART.md) → [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md).
+    The highlights below matter when you use PySpark, Delta storage ops, or
+    Medallantic SparkForge migration.
+
 ## Highlights
 
 - **`storage.delta.*` extras** for merge / optimize / vacuum / history /

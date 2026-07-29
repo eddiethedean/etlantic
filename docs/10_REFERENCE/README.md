@@ -5,15 +5,18 @@ interfaces.
 
 ## Shipped
 
+- [Python API](API_REFERENCE.md) — hub + [Authoring](API_AUTHORING.md) /
+  [Plan and runtime](API_PLAN_RUNTIME.md) / [Quality](API_QUALITY.md) /
+  [Protocols](API_PROTOCOLS.md)
 - [Command-Line Interface](CLI.md)
 - [Cheatsheet](CHEATSHEET.md)
-- [Python API](API_REFERENCE.md)
 - [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
   (`PipelineDefinition`, `etlantic.pipeline/1`, builders, service)
 - [Runtime configuration](RUNTIME_CONFIGURATION.md) (Profile, optional `etlantic.toml`, env vars)
-- [Configuration today](CONFIGURATION_TODAY.md) (shipped 0.21 profile + project toml)
+- [Configuration today](CONFIGURATION_TODAY.md) (shipped profile + project toml)
 - [Compatibility Matrix](COMPATIBILITY.md)
 - [Portable Compiler Matrix](PORTABLE_COMPILER_MATRIX.md)
+- [Optional Packages](OPTIONAL_PACKAGES.md) (core-first API; plugin READMEs on GitHub)
 - [Known Limitations](KNOWN_ISSUES.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Exceptions](EXCEPTIONS.md)
@@ -27,8 +30,8 @@ interfaces.
 
 ## Future design / proposed 1.0
 
-- [Configuration](CONFIGURATION.md) (proposed 1.0 surface beyond shipped toml)
-- [Environment Variables](ENVIRONMENT_VARIABLES.md) (proposed names beyond shipped)
+- [Configuration](CONFIGURATION.md) (**proposed** 1.0 — do not implement for 0.32)
+- [Environment Variables](ENVIRONMENT_VARIABLES.md) (**proposed** names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,
   `portable-temporal-iana/1`, `portable-nondeterministic/1`,
   `portable-window/2`) — see the

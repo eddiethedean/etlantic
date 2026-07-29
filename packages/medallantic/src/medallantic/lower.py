@@ -352,8 +352,10 @@ def lower_document(
                         diagnostics=diagnostics,
                         phase=diagnostic_phase,
                     )
-                if not portable_rules and native_rules:
-                    # Native-only bronze: still extract; gate deferred to plugin.
+                if not portable_rules:
+                    # Native-only bronze: extract only when no required native
+                    # errors were recorded (callables may be deferred); otherwise
+                    # keep building so MDL130 raises at the end.
                     ns[step.name] = source
                     annotations[step.name] = Extract[MedallionRow]
                     members[step.name] = source
@@ -362,7 +364,7 @@ def lower_document(
                     continue
                 try:
                     ruleset = parse_rules_shorthand(portable_rules, name=step.name)
-                except RuleDSLError as exc:
+                except (RuleDSLError, ValueError) as exc:
                     diagnostics.append(
                         mdl_diagnostic(
                             MDL110_RULES_INVALID,
@@ -418,6 +420,23 @@ def lower_document(
             transform_cls: type[Transformation] | None = None
             quality_gate = False
 
+            # Process rules before transform_ref failure continues so native
+            # Column diagnostics (MDL130) are never skipped.
+            portable_rules: dict[str, Any] = {}
+            native_rules: list[Any] = []
+            if step.rules:
+                portable_rules, native_rules = split_portable_and_native_rules(
+                    step.rules
+                )
+                if native_rules:
+                    _record_native_column_rules(
+                        step=step,
+                        native_rules=native_rules,
+                        engine=doc.engine,
+                        diagnostics=diagnostics,
+                        phase=diagnostic_phase,
+                    )
+
             if step.transform_ref:
                 ref = step.transform_ref.strip()
                 looks_like_import = ("." in ref) or (":" in ref)
@@ -469,57 +488,45 @@ def lower_document(
                         step.name, transform_ref=ref
                     )
 
-            if step.rules:
-                portable_rules, native_rules = split_portable_and_native_rules(
-                    step.rules
+            if portable_rules:
+                try:
+                    ruleset = parse_rules_shorthand(
+                        portable_rules, name=step.name
+                    )
+                except (RuleDSLError, ValueError) as exc:
+                    diagnostics.append(
+                        mdl_diagnostic(
+                            MDL110_RULES_INVALID,
+                            f"Invalid rules on {step.name!r}: {exc}",
+                            path=("steps", step.name, "rules"),
+                            phase=diagnostic_phase,
+                        )
+                    )
+                    continue
+                gate_cls = make_quality_gate(
+                    MedallionRow,
+                    ruleset,
+                    name=f"{_safe_ident(step.name)}Gate",
+                    expression_id=step.name,
                 )
-                if native_rules:
-                    _record_native_column_rules(
-                        step=step,
-                        native_rules=native_rules,
-                        engine=doc.engine,
-                        diagnostics=diagnostics,
-                        phase=diagnostic_phase,
-                    )
-                if portable_rules:
-                    try:
-                        ruleset = parse_rules_shorthand(
-                            portable_rules, name=step.name
-                        )
-                    except RuleDSLError as exc:
-                        diagnostics.append(
-                            mdl_diagnostic(
-                                MDL110_RULES_INVALID,
-                                f"Invalid rules on {step.name!r}: {exc}",
-                                path=("steps", step.name, "rules"),
-                                phase=diagnostic_phase,
-                            )
-                        )
-                        continue
-                    gate_cls = make_quality_gate(
-                        MedallionRow,
-                        ruleset,
-                        name=f"{_safe_ident(step.name)}Gate",
-                        expression_id=step.name,
-                    )
-                    if transform_cls is not None:
-                        # Compose: callable transform, then quality gate.
-                        if isinstance(upstream, Extract):
-                            xform_inst = transform_cls.step(rows=upstream)
-                        else:
-                            xform_inst = transform_cls.step(rows=upstream.result)
-                        ns[f"{step.name}__xform"] = xform_inst
-                        annotations[f"{step.name}__xform"] = type(xform_inst)
-                        members[f"{step.name}__xform"] = xform_inst
-                        step_map[f"{step.name}__xform"] = f"step:{step.name}__xform"
-                        layer_by_node[f"{step.name}__xform"] = step.layer
-                        step_inst = gate_cls.step(rows=xform_inst.result)
+                if transform_cls is not None:
+                    # Compose: callable transform, then quality gate.
+                    if isinstance(upstream, Extract):
+                        xform_inst = transform_cls.step(rows=upstream)
                     else:
-                        if isinstance(upstream, Extract):
-                            step_inst = gate_cls.step(rows=upstream)
-                        else:
-                            step_inst = gate_cls.step(rows=upstream.result)
-                    quality_gate = True
+                        xform_inst = transform_cls.step(rows=upstream.result)
+                    ns[f"{step.name}__xform"] = xform_inst
+                    annotations[f"{step.name}__xform"] = type(xform_inst)
+                    members[f"{step.name}__xform"] = xform_inst
+                    step_map[f"{step.name}__xform"] = f"step:{step.name}__xform"
+                    layer_by_node[f"{step.name}__xform"] = step.layer
+                    step_inst = gate_cls.step(rows=xform_inst.result)
+                else:
+                    if isinstance(upstream, Extract):
+                        step_inst = gate_cls.step(rows=upstream)
+                    else:
+                        step_inst = gate_cls.step(rows=upstream.result)
+                quality_gate = True
             elif transform_cls is not None:
                 if isinstance(upstream, Extract):
                     step_inst = transform_cls.step(rows=upstream)
@@ -878,27 +885,36 @@ def _record_native_column_rules(
     diagnostics: list[Diagnostic],
     phase: str,
 ) -> None:
-    """Attach native Column rule metadata and fail closed off PySpark engines."""
+    """Attach native Column rule metadata and fail closed when not executable.
+
+    Opaque Column objects and unresolved refs always emit ``MDL130``.
+    Required native rules never succeed as metadata-only no-ops — including on
+    spark/pyspark/delta — until a concrete evaluator exists for the rule form.
+    """
     payload = [rule.to_dict() for rule in native_rules]
     step.metadata.setdefault("native_column_rules", payload)
     step.metadata.setdefault("required_quality_capabilities", [NATIVE_QUALITY_CAPABILITY])
+    required = [r for r in native_rules if getattr(r, "required", True)]
+    if not required:
+        return
     engine_key = (engine or "local").lower()
-    if engine_key not in {"spark", "pyspark", "delta"}:
-        required = [r for r in native_rules if getattr(r, "required", True)]
-        if required:
-            diagnostics.append(
-                mdl_diagnostic(
-                    MDL130_NATIVE_COLUMN_RULE,
-                    (
-                        f"Step {step.name!r} declares PySpark Column / native "
-                        f"rules requiring {NATIVE_QUALITY_CAPABILITY!r}; engine "
-                        f"{engine!r} cannot execute them. Use spark/pyspark or "
-                        "remove native rules."
-                    ),
-                    path=("steps", step.name, "rules"),
-                    phase=phase,
-                )
-            )
+    # Fail closed for all engines: native Column rules are not yet executed by
+    # a portable gate. Callable refs are recorded for a future executor; until
+    # then required rules refuse to lower.
+    diagnostics.append(
+        mdl_diagnostic(
+            MDL130_NATIVE_COLUMN_RULE,
+            (
+                f"Step {step.name!r} declares PySpark Column / native "
+                f"rules requiring {NATIVE_QUALITY_CAPABILITY!r}; required "
+                f"native rules are not executable yet on engine {engine_key!r} "
+                "(failing closed). Use portable etlantic.quality rules, or "
+                "remove native Column rules."
+            ),
+            path=("steps", step.name, "rules"),
+            phase=phase,
+        )
+    )
 
 
 def _safe_ident(name: str) -> str:

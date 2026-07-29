@@ -1,9 +1,10 @@
 # Environment Variables
 
 !!! warning "Future design—most names are proposed 1.0"
-    This page lists proposed 1.0 environment variables. ETLantic **0.21** loads
-    an optional project `etlantic.toml` for `default_profile` but does **not**
-    auto-read most variables below.
+    This page lists proposed 1.0 environment variables. Do **not** treat it as
+    the 0.32 configuration contract. ETLantic loads an optional project
+    `etlantic.toml` for `default_profile` but does **not** auto-read most
+    variables below.
 
     **Shipped today:** see [Runtime configuration](RUNTIME_CONFIGURATION.md)
     for `ETLANTIC_SQL_URL`, secret prefixes, and related vars; see

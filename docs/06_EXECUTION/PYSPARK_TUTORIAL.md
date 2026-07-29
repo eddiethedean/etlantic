@@ -3,17 +3,17 @@
 > **Status: Available in ETLantic 0.32.0.** Structured Streaming remains
 > experimental.
 
-
-!!! note "Repository examples"
-    Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.32.0` tag) and use
-    `uv sync` / the documented dependency group before running them.
+!!! warning "Clone-assisted path"
+    PySpark demos need repository `examples/` and a Java runtime. They are
+    **not** a PyPI-only Quickstart continuation. Prefer local/Polars first.
 
 ## Prerequisites
 
 - Python 3.11+
 - A Java runtime supported by your PySpark installation
 - `etlantic-pyspark==0.32.0`
+
+## Install and run (clone companion)
 
 ```bash
 python -m pip install 'etlantic==0.32.0' 'etlantic-pyspark==0.32.0'

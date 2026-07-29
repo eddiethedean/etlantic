@@ -83,7 +83,8 @@ def test_native_rules_fail_closed_on_local_engine() -> None:
     assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
 
 
-def test_native_rules_allowed_on_pyspark_engine() -> None:
+def test_native_rules_fail_closed_on_pyspark_engine() -> None:
+    """Required native Column rules fail closed until a real executor exists."""
     doc = MedallionDocument(
         name="native_spark",
         engine="pyspark",
@@ -101,12 +102,40 @@ def test_native_rules_allowed_on_pyspark_engine() -> None:
             ),
         ),
     )
-    result = lower_document(doc)
-    assert result.pipeline_cls is not None
-    assert "orders" in result.step_map
-    assert result.diagnostics == () or all(
-        d.code != MDL130_NATIVE_COLUMN_RULE for d in result.diagnostics
+    with pytest.raises(LoweringError) as exc:
+        lower_document(doc)
+    assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
+
+
+def test_native_only_silver_does_not_crash() -> None:
+    doc = (
+        MedallionBuilder("demo", engine="local")
+        .bronze("orders", asset="orders")
+        .silver(
+            "clean",
+            source="orders",
+            rules={"id": [{"kind": "pyspark_column", "expr_ref": "mod:ok"}]},
+        )
+        .to_document()
     )
+    with pytest.raises(LoweringError) as exc:
+        lower_document(doc)
+    assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
+
+
+def test_callable_none_raises() -> None:
+    def _none(_rows: list[object]) -> None:
+        return None
+
+    transform_cls = make_callable_transformation(
+        "none_out",
+        transform_ref="tests.medallantic.test_column_rules_0_32:_none",
+        fn=_none,
+        row_type=MedallionRow,
+    )
+    impl = transform_cls.__implementations__["local"].callable
+    with pytest.raises(TypeError, match="returned None"):
+        impl([{"id": 1}])
 
 
 def test_pyspark_callable_invokes_df_transform() -> None:

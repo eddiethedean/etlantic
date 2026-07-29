@@ -10,8 +10,8 @@ Start with core local Python. Add one engine at a time.
 |---|---|---|---|
 | Learn the model with JSON files | `etlantic==0.32.0` | `development` | [Quickstart](QUICKSTART.md) |
 | JSON / CSV files | core only | file storage bindings | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
-| Fast local dataframes | `etlantic[polars]==0.32.0` | `dataframe_engine="polars"` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Pandas compatibility | `etlantic[pandas]==0.32.0` | `dataframe_engine="pandas"` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
+| Fast local dataframes | `etlantic[polars]==0.32.0` | `dataframe_engine="polars"` **plus** a `"polars"` implementation | [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md) |
+| Pandas compatibility | `etlantic[pandas]==0.32.0` | `dataframe_engine="pandas"` **plus** a `"pandas"` implementation | [Pandas tutorial (PyPI path)](../06_EXECUTION/PANDAS_TUTORIAL.md) |
 | Cross-engine Polars↔Pandas | `etlantic[dataframes]==0.32.0` | both plugins allowlisted | [Interchange example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) |
 | Keep work in SQL | `etlantic[sql]==0.32.0` | `sql_engine="sql"` | [SQL tutorial](../06_EXECUTION/SQL_TUTORIAL.md) |
 | Local Spark batch | `etlantic[pyspark]==0.32.0` | `spark_engine="pyspark"` | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) |

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import inspect
+from collections.abc import Mapping
 from typing import Any
 
 from etlantic.exceptions import NodeExecutionError
@@ -243,6 +246,44 @@ async def release_session(
         security_domain=plan.security_domain,
     )
     provider.release(handle, ctx)
+
+
+async def cancel_spark_jobs(
+    *,
+    plugins: Mapping[str, Any] | None,
+    plan: PipelinePlan,
+    run_id: str,
+    job_group: str | None = None,
+) -> None:
+    """Best-effort job-group cancel on plugins that advertise cancellation."""
+    from etlantic.spark.protocol import SparkExecutionContext
+
+    for plugin in (plugins or {}).values():
+        cancel = getattr(plugin, "cancel", None)
+        caps = getattr(plugin, "capabilities", None)
+        if not callable(cancel):
+            continue
+        advertised = True
+        if callable(caps):
+            try:
+                advertised = bool(caps().supports("cancellation"))
+            except Exception:
+                advertised = True
+        if not advertised:
+            continue
+        context = SparkExecutionContext(
+            run_id=run_id,
+            pipeline_id=plan.pipeline_id,
+            plan_id=plan.plan_id,
+            step_name="__cancel__",
+            region_id=None,
+            engine=getattr(getattr(plugin, "info", None), "engine", "pyspark") or "pyspark",
+            job_group=job_group,
+        )
+        with contextlib.suppress(Exception):
+            result = cancel(context=context, job_group=job_group)
+            if inspect.isawaitable(result):
+                await result
 
 
 async def execute_spark_source(

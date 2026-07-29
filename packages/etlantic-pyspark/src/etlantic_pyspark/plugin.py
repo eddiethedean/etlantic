@@ -102,7 +102,6 @@ class PySparkPlugin:
                     "storage.delta.history",
                     "storage.delta.time_travel",
                     "storage.delta.schema_evolution",
-                    "quality.pyspark_column",
                 }
             ),
         )
@@ -202,14 +201,14 @@ class PySparkPlugin:
                 )
             )
             materialization_points.append(region.node_names[-1])
-        if region.streaming:
-            actions.append(
-                SparkAction(
-                    kind=SparkActionKind.STREAMING_START,
-                    node_name=region.node_names[-1],
-                    reason="streaming_region",
+            if region.streaming:
+                actions.append(
+                    SparkAction(
+                        kind=SparkActionKind.STREAMING_START,
+                        node_name=region.node_names[-1],
+                        reason="streaming_region",
+                    )
                 )
-            )
         logical_ids = logical_identities_for_region(
             region.node_names, region_id=region.identity
         )
@@ -290,6 +289,8 @@ class PySparkPlugin:
             logical_step_ids=logical_ids,
             extras={"region_id": compiled.region_id},
         )
+        if context.job_group and self._active_job_group == context.job_group:
+            self._active_job_group = None
         return SparkExecutionResult(
             handle=last_handle,
             metrics=metrics,
@@ -308,8 +309,13 @@ class PySparkPlugin:
             spark_context = getattr(self._session, "sparkContext", None)
             cancel = getattr(spark_context, "cancelJobGroup", None)
             if callable(cancel):
-                cancel(group)
-                cancelled = True
+                try:
+                    cancel(group)
+                    cancelled = True
+                except Exception:
+                    cancelled = False
+        if group and group == self._active_job_group:
+            self._active_job_group = None
         return SparkExecutionResult(
             metrics=SparkMetrics(
                 actions=[SparkActionKind.CANCEL.value],
@@ -411,7 +417,7 @@ class PySparkPlugin:
             )
 
         if mode in {SparkWriteMode.MERGE, SparkWriteMode.UPSERT}:
-            if fmt != "delta" and not self._delta_enabled:
+            if fmt != "delta" or not self._delta_enabled:
                 return SparkExecutionResult(
                     write=write,
                     metrics=SparkMetrics(rows_affected=0, actions=["no_write"]),
@@ -419,7 +425,10 @@ class PySparkPlugin:
                         {
                             "code": "PMSPARK331",
                             "severity": "error",
-                            "message": "MERGE/UPSERT requires Delta; failing closed.",
+                            "message": (
+                                "MERGE/UPSERT requires Delta format and an "
+                                "enabled Delta session; failing closed."
+                            ),
                         }
                     ],
                 )
@@ -629,6 +638,16 @@ class PySparkPlugin:
             )
         df = self._to_dataframe(self._session, source)
         diagnostics = self._delta_merge(df, path, merge_keys)
+        if any(str(d.get("severity")) == "error" for d in diagnostics):
+            return SparkExecutionResult(
+                metrics=SparkMetrics(
+                    rows_affected=0,
+                    actions=["no_write"],
+                    phases=["publish"],
+                    logical_step_ids=[context.step_name],
+                ),
+                diagnostics=diagnostics,
+            )
         return SparkExecutionResult(
             metrics=SparkMetrics(
                 actions=[SparkWriteMode.MERGE.value],

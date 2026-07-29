@@ -7,7 +7,7 @@
 | API | Behavior |
 |---|---|
 | `Profile.security_mode` | `development` \| `test` \| `production`; production fail-closed trust uses **mode only** |
-| `Profile.plugin_allowlist` | Required in production; evaluated **before** plugin import |
+| `Profile.plugin_allowlist` | Required in production; authorize **before** `entry_point.load()` (selection, not sandbox; install is the trust boundary) |
 | `Profile.safe_io` / `Profile.outbound` | Safe filesystem writes and outbound HTTP policy (0.20) |
 | `resolve_profile(name, allow_adhoc_profile=False)` | Unknown bare names raise `PMCFG100` unless ad hoc is allowed |
 | `Profile.from_dict(..., accept_legacy_bindings=False)` | Legacy `bindings`-only JSON fails closed with `PMCFG111`; pass `True` / `--accept-legacy-bindings` to allow |

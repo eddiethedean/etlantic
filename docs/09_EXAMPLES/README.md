@@ -9,8 +9,11 @@
 5. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
 6. Runnable scripts below
 
-Aspirational design studies live on GitHub under `docs/09_EXAMPLES/` and are
-excluded from the product docs nav—not installable tutorials.
+Aspirational design studies live on GitHub under `docs/09_EXAMPLES/` (for
+example `CSV_TO_CSV.md`, `END_TO_END.md`) and are **excluded from the product
+docs nav**—not installable tutorials. Prefer the runnable guides below and the
+PyPI paths in [Polars](../06_EXECUTION/POLARS_TUTORIAL.md) /
+[Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md) tutorials.
 
 ## Runnable guides (docs)
 

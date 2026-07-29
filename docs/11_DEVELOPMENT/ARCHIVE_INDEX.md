@@ -6,15 +6,26 @@
 
 ## Current (also linked from Maintainers nav)
 
-- [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
-- [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
-- [Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
+- [Exit gate 0.32](EXIT_GATE_0_32.md)
+- [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
+- [Documentation audit 0.32](DOCUMENTATION_AUDIT_0_32.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap (GitHub)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
-- [Exit gate 0.25](EXIT_GATE_0_25.md)
-- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
 
 ## Recent migrations and exit gates
+
+- [Migration 0.30 → 0.31](MIGRATION_0_30_TO_0_31.md) · [Exit gate 0.31](EXIT_GATE_0_31.md)
+- [Migration 0.29 → 0.30](MIGRATION_0_29_TO_0_30.md) · [Exit gate 0.30](EXIT_GATE_0_30.md)
+- [Migration 0.28 → 0.29](MIGRATION_0_28_TO_0_29.md) · [Exit gate 0.29](EXIT_GATE_0_29.md)
+- [Migration 0.27 → 0.28](MIGRATION_0_27_TO_0_28.md) · [Exit gate 0.28](EXIT_GATE_0_28.md)
+- [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
+- [Migration 0.25 → 0.26](MIGRATION_0_25_TO_0_26.md)
+- [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md) · [Exit gate 0.25](EXIT_GATE_0_25.md)
+- [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
+- [Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
+- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
+
+## Older migrations and exit gates
 
 - [Migration 0.23 → 0.24](MIGRATION_0_23_TO_0_24.md) · [Exit gate 0.24](EXIT_GATE_0_24.md)
 - [Migration 0.22 → 0.23](MIGRATION_0_22_TO_0_23.md) · [Exit gate 0.23](EXIT_GATE_0_23.md)

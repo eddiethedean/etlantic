@@ -40,8 +40,8 @@ Start with the narrowest protocol that owns the behavior:
 | Secret provider | `etlantic.secrets` | Runtime/profile registration | `run_secret_conformance_suite` |
 
 Storage, resource, and observability extension documents describe integration
-patterns that are not all backed by package entry-point discovery in 0.21 (many
-remain Design Proposals). Do
+patterns that are **not** backed by package entry-point discovery in **0.32**
+(many remain Future design / Design Proposals). Do
 not publish against a proposed discovery group. Use the public runtime/profile
 registration surface documented for that category.
 

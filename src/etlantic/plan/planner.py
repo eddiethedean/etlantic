@@ -238,6 +238,7 @@ def _build_plan(
     from etlantic.planning.capabilities import (
         assert_capabilities_supported,
         assert_dataframe_engines_available,
+        assert_profile_storage_delta_capabilities,
         assert_quality_rule_capabilities,
         assert_spark_capabilities,
         assert_spark_engines_available,
@@ -250,6 +251,13 @@ def _build_plan(
     assert_sql_write_capabilities(context, implementations, default_engine)
     assert_spark_engines_available(context, implementations, default_engine)
     assert_spark_capabilities(context, implementations, default_engine)
+    assert_profile_storage_delta_capabilities(
+        context,
+        implementations,
+        default_engine,
+        graph=graph,
+        definition=definition,
+    )
     capability_decisions = _capability_records(context, default_engine)
     assert_capabilities_supported(capability_decisions, context, default_engine)
     quality_plan = _analyze_quality_gates(

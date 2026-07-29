@@ -95,22 +95,25 @@ Expected shape:
 Optional later: `python -m etlantic doctor --profile development`,
 `inspect`, `plan`, and `report list`.
 
-## 4. Required aha — catch a bad change before write
+## 4. Required aha — catch a bad change before write {#required-aha}
 
 Do not skip this step (it is outside the “first success” timing above).
 
-Add a second contract and wire `Load` to it (leave `Extract` / `Row` unchanged):
+Add a second contract and change **only** the Load annotation so the graph
+wiring is inconsistent (keep `input=` and `asset=` complete so the file still
+parses):
 
 ```python
-# In pipeline.py — add beside Row, then change ONLY the Load annotation:
-
 class Other(Data):
     id: int
-    other_name: str
+    name: str
+
 
 class SamplePipeline(Pipeline):
-    # ...
-    out = Load[Other](...)   # was Load[Row]
+    raw: Extract[Row] = Extract(asset="rows")
+    step = Identity.step(rows=raw)
+    # Broken: Load expects Other but upstream step.result is still Row
+    out: Load[Other] = Load(input=step.result, asset="out")
 ```
 
 Re-validate:
@@ -119,13 +122,19 @@ Re-validate:
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 ```
 
-Expect a wiring diagnostic such as **`PMPIPE210`** and **no** new write under
-`data/out.json` until you restore `Load[Row]`. That is the product promise:
-validate before write.
+Expect a wiring diagnostic such as:
 
-Restore `Load[Row]` (or continue with an intentional uppercase transform) in
-[First Pipeline](FIRST_PIPELINE.md). If you already completed that wiring demo,
-you can skip repeating it there.
+```text
+PMPIPE210: The step "out" expects Other on "input", but received Row from "step.result".
+```
+
+and **no** new write under `data/out.json` until you restore `Load[Row]`. That
+is the product promise: validate before write.
+
+Restore `out: Load[Row] = Load(input=step.result, asset="out")` (and remove
+`Other` if unused). Continue with an intentional uppercase transform in
+[First Pipeline](FIRST_PIPELINE.md)—you can skip the wiring demo there if you
+just completed this step.
 
 ## 5. Python SDK path (optional)
 

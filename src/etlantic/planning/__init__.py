@@ -9,6 +9,7 @@ from etlantic.planning.capabilities import (
     assert_spark_engines_available,
     assert_sql_engines_available,
     assert_sql_write_capabilities,
+    assert_storage_delta_capabilities,
     is_dataframe_engine,
 )
 
@@ -21,6 +22,7 @@ __all__ = [
     "assert_spark_engines_available",
     "assert_sql_engines_available",
     "assert_sql_write_capabilities",
+    "assert_storage_delta_capabilities",
     "build_plan",
     "is_dataframe_engine",
 ]

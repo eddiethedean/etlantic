@@ -1,11 +1,11 @@
-# Public Surface Inventory (0.31)
+# Public Surface Inventory (0.32)
 
 > **Status: Available in ETLantic 0.32.0.** Canonical public surface for the
-> **0.31 reference envelope**.
+> **0.32 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Regenerated from that file for the
-**0.31 reference envelope**.
+**0.32 reference envelope**.
 
 Stability classes:
 

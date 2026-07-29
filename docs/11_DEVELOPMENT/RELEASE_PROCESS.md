@@ -17,16 +17,18 @@ Official plugins declare `etlantic>=0.32.0,<0.33`.
 
 ## Package categories
 
-| Category | Examples | Classifier |
-|---|---|---|
-| Core | `etlantic` | Beta |
-| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable |
-| Facade | `medallantic` | Beta (IR/migration adapter; not a full runtime) |
-| Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) |
-| Reference adapter | `etlantic-fastapi` | Beta |
-| Experimental | `etlantic-datafusion` | Alpha |
+| Category | Examples | Classifier | Docs maturity |
+|---|---|---|---|
+| Core | `etlantic` | Beta | Beta / single-tenant pilots |
+| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable | **Same Beta product envelope** as core — classifiers mean the plugin package is the supported execution adapter for that engine, not unrestricted enterprise readiness |
+| Facade | `medallantic` | Beta (IR/migration adapter; not a full runtime) | Beta |
+| Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) | Deprecated redirect |
+| Reference adapter | `etlantic-fastapi` | Beta | Beta |
+| Experimental | `etlantic-datafusion` | Alpha | Experimental |
 
-See [Facade packages](FACADE_PACKAGES.md).
+See [Facade packages](FACADE_PACKAGES.md). Evaluators should treat narrative
+Beta / single-tenant boundaries in [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
+as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
