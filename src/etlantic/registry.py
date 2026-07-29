@@ -344,7 +344,11 @@ class PlanningContext:
         if _needs_planning_discovery():
             from etlantic.plugins.coordinator import discover_planning_plugins
 
-            if registry is not None and last_key is not None and last_key != planning_key:
+            if (
+                registry is not None
+                and last_key is not None
+                and last_key != planning_key
+            ):
                 _clear_non_builtin_plugins()
             trust_records, discovered = discover_planning_plugins(
                 resolved,

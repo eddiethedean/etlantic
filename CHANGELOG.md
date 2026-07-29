@@ -7,15 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- Authorize plugins on package/distribution identity only (engine short names can no longer spoof allowlists); emit `PMPLUG403` for invalid pins in the authorize path; exempt builtins in lifecycle policy
-- Validation/`ensure_plugins` no longer fail closed on sibling `PMPLUG402` denials for non-selected engines; CLI trust exit ignores non-blocking 402s
-- `PlanningContext` rediscovers and clears non-builtin plugins when the profile allowlist key changes; empty production discovery clears the registry
-- Spark cancel treats capability-probe failures as not advertised (fail closed)
-- Preserve `env` builtin registry stubs across profile switches; `etlantic profile validate` maps all `PMPLUG*` errors to trust exit
-- Portable SQL transform compiler enables merge compile for PostgreSQL dialects; Cockroach-via-`postgresql://` URLs classify as Tier B without merge
-- SQL hello PyPI companion reuses the plugin engine (`examples/sql_hello_pypi.py`); production sample banner/links/docs gates hardened
-
 ## [0.33.0] - 2026-07-29
 
 ### Added
@@ -32,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Official package versions align at 0.33.0; plugins require `etlantic>=0.33.0,<0.34`
 - `SqlTransformCompiler` advertises `lazy=True` alongside `eager=True`
 
+### Fixed
+- Authorize plugins on package/distribution identity only (engine short names can no longer spoof allowlists); emit `PMPLUG403` for invalid pins in the authorize path; exempt builtins in lifecycle policy
+- Validation/`ensure_plugins` no longer fail closed on sibling `PMPLUG402` denials for non-selected engines; CLI trust exit ignores non-blocking 402s
+- `PlanningContext` rediscovers and clears non-builtin plugins when the profile allowlist key changes; empty production discovery clears the registry
+- Spark cancel treats capability-probe failures as not advertised (fail closed)
+- Preserve `env` builtin registry stubs across profile switches; `etlantic profile validate` maps all `PMPLUG*` errors to trust exit
+- Portable SQL transform compiler enables merge compile for PostgreSQL dialects; Cockroach-via-`postgresql://` URLs classify as Tier B without merge
+- SQL hello PyPI companion reuses the plugin engine (`examples/sql_hello_pypi.py`); production sample banner/links/docs gates hardened
+- SQL merge capability tests are dialect-aware; dialect-tier suite skips cleanly without SQLAlchemy so non-SQL CI jobs collect
+
 ### Upgrade notes
 - Pin core and official plugins to `==0.33.0` (matching minors while pre-1.0).
 - Read [Migration 0.32 → 0.33](docs/11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md)
@@ -39,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQL merge requires PostgreSQL (`sql_merge`); SQLite remains fail-closed.
 - Prefer `medallantic.migrate.sql.from_sql_pipeline_builder` for live SQL builders.
 - Moltres-only rules fail closed with `MDL132` until an evaluator exists.
+- Out-of-monorepo plugins: bump core pins to `etlantic>=0.33.0,<0.34`
+  (see `etlantic-plugin-echo` 0.33.0).
 
 ## [0.32.0] - 2026-07-28
 

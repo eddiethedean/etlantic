@@ -466,7 +466,9 @@ def main() -> None:
             )
         # Adopter-facing migration link text must say prior → current (not
         # current → current). Ban blanket "does not implement MERGE".
-        expected_migration_label = f"Migration {previous_minor} → {major_minor_for_notes}"
+        expected_migration_label = (
+            f"Migration {previous_minor} → {major_minor_for_notes}"
+        )
         bad_migration_label = (
             f"Migration {major_minor_for_notes} → {major_minor_for_notes}"
         )
@@ -970,9 +972,7 @@ def main() -> None:
         for match in blob_re.finditer(text):
             rel = match.group(1)
             if not (ROOT / rel).exists():
-                raise SystemExit(
-                    f"{path}: dead GitHub docs link to missing {rel}"
-                )
+                raise SystemExit(f"{path}: dead GitHub docs link to missing {rel}")
     if 'banner.dataset.etlanticStatus = "future"' not in banner_js:
         raise SystemExit("status-banner.js missing semantic future-status marker")
     if "Experimental in ETLantic 0.7" not in banner_js:

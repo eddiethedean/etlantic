@@ -58,9 +58,7 @@ def normalize_sql(customers: RelationRef):
 class CustomerSqlPipeline(Pipeline):
     raw: Extract[RawCustomer] = Extract(asset="raw_customers")
     normalized = NormalizeCustomers.step(customers=raw)
-    curated: Load[Customer] = Load(
-        input=normalized.result, asset="curated_customers"
-    )
+    curated: Load[Customer] = Load(input=normalized.result, asset="curated_customers")
 
 
 def main() -> None:
@@ -78,14 +76,9 @@ def main() -> None:
                 "customer_id INTEGER, first_name TEXT, last_name TEXT)"
             )
         )
+        conn.execute(text("INSERT INTO raw_customers VALUES (1, 'Ada', 'Lovelace')"))
         conn.execute(
-            text("INSERT INTO raw_customers VALUES (1, 'Ada', 'Lovelace')")
-        )
-        conn.execute(
-            text(
-                "CREATE TABLE curated_customers ("
-                "customer_id INTEGER, full_name TEXT)"
-            )
+            text("CREATE TABLE curated_customers (customer_id INTEGER, full_name TEXT)")
         )
 
     registry = builtin_stub_registry()
@@ -112,9 +105,7 @@ def main() -> None:
 
     runtime = PipelineRuntime(registry=registry)
     runtime.register_sql_plugin("sql", plugin)
-    report = CustomerSqlPipeline.run(
-        profile=profile, runtime=runtime, context=context
-    )
+    report = CustomerSqlPipeline.run(profile=profile, runtime=runtime, context=context)
     print(report.status.value)
 
 

@@ -157,9 +157,9 @@ def test_sql_to_sql_no_python_fetch(sql_plugin) -> None:
     assert rows == [(1, "Ada Lovelace"), (2, "Grace Hopper")]
 
 
-def test_merge_fails_closed(sql_plugin) -> None:
-    """MERGE is not implemented in 0.6 — requiring it always fails at plan."""
-    assert not sql_plugin.capabilities().supports("sql_merge")
+def test_merge_capability_requirement(sql_plugin) -> None:
+    """Requiring sql_merge fails closed on SQLite; PostgreSQL advertises it."""
+    supports_merge = sql_plugin.capabilities().supports("sql_merge")
     profile = Profile(
         name="sql-merge",
         sql_engine="sql",
@@ -174,5 +174,8 @@ def test_merge_fails_closed(sql_plugin) -> None:
     registry.register_binding(
         BindingDescriptor(binding="out", provider="sql", location="out")
     )
-    with pytest.raises(PipelineValidationError):
+    if supports_merge:
         MergeProbePipeline.plan(profile=profile, context=context)
+    else:
+        with pytest.raises(PipelineValidationError):
+            MergeProbePipeline.plan(profile=profile, context=context)

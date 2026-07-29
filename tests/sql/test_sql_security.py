@@ -75,5 +75,11 @@ def test_compiled_artifacts_are_secret_free(sql_plugin) -> None:
     )
 
 
-def test_sql_merge_not_advertised(sql_plugin) -> None:
-    assert not sql_plugin.capabilities().supports("sql_merge")
+def test_sql_merge_matches_dialect(sql_plugin) -> None:
+    """SQLite stays fail-closed; PostgreSQL advertises sql_merge (0.33)."""
+    supports = sql_plugin.capabilities().supports("sql_merge")
+    url = os.environ.get("ETLANTIC_SQL_URL", "")
+    if url.startswith("postgresql"):
+        assert supports
+    else:
+        assert not supports

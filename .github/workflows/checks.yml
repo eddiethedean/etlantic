@@ -578,7 +578,7 @@ jobs:
           "
 
       - name: Pytest datafusion stub suite
-        run: uv run pytest -q tests/ -k datafusion -m datafusion
+        run: uv run pytest -q tests/datafusion -m datafusion
 
   fastapi:
     name: FastAPI reference adapter
