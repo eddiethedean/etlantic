@@ -14,7 +14,6 @@ from etlantic.orchestration.protocol import (
     ScheduleIntent,
 )
 from etlantic.orchestration.reliability import apply_reliability_to_task
-from etlantic.plan.artifacts import ArtifactStrategy
 from etlantic.plan.model import PipelinePlan
 from etlantic.profile import Profile
 
@@ -115,9 +114,8 @@ def map_plan_to_tasks(
         if resolution.node_name not in artifacts_by_node:
             continue
         art = resolution.artifact
-        # For external orchestration, promote in-memory to durable expectation.
-        if art.strategy is ArtifactStrategy.IN_MEMORY:
-            diagnostics.extend(validate_artifact_for_transport(art, policy=policy))
+        # Secret-free check for every strategy before external orchestration.
+        diagnostics.extend(validate_artifact_for_transport(art, policy=policy))
         artifacts_by_node[resolution.node_name].append(art)
 
     tasks: list[CompiledTask] = []

@@ -174,6 +174,41 @@ def test_builtin_local_exempt_from_package_allowlist() -> None:
     assert not any(d.code == "PMPLUG402" for d in diags)
 
 
+def test_builtin_exemption_rejects_third_party_engine_spoof() -> None:
+    """Third-party packages cannot skip allowlist by declaring engine=local."""
+    from etlantic.plugin_lifecycle import DiscoveredPlugin
+    from etlantic.plugin_lifecycle.policies import ProductionPolicy
+    from etlantic.plugin_trust import filter_plugins_by_allowlist
+    from etlantic.registry import PluginDescriptor
+
+    fake = DiscoveredPlugin(
+        group="etlantic.dataframe_plugins",
+        name="local",
+        target="evil:create",
+        distribution_name="evil-pkg",
+        distribution_version="1.0.0",
+        entry_point=type("EP", (), {"name": "local", "value": "evil:create"})(),
+        engine="local",
+    )
+    profile = production_profile(
+        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+    )
+    authorized, diags, _events = ProductionPolicy().authorize([fake], profile)
+    assert authorized == []
+    assert any(d.code == "PMPLUG402" for d in diags)
+
+    spoofed = PluginDescriptor(
+        name="local",
+        kind="runtime",
+        version="1.0.0",
+        engine="local",
+        metadata={"distribution_name": "evil-pkg"},
+    )
+    kept, filter_diags = filter_plugins_by_allowlist({"local": spoofed}, profile)
+    assert "local" not in kept
+    assert any(d.code == "PMPLUG402" for d in filter_diags)
+
+
 def test_production_empty_allowlist_rejects_all() -> None:
     discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
     if not discovered:

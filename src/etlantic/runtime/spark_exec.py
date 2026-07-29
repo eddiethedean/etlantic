@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import inspect
 from collections.abc import Mapping
 from typing import Any
@@ -255,9 +254,15 @@ async def cancel_spark_jobs(
     run_id: str,
     job_group: str | None = None,
 ) -> None:
-    """Best-effort job-group cancel on plugins that advertise cancellation."""
+    """Best-effort job-group cancel on plugins that advertise cancellation.
+
+    Cancel probe / invoke failures are recorded on the plugin result metadata
+    and re-raised when no cancel succeeded, so callers cannot assume success.
+    """
     from etlantic.spark.protocol import SparkExecutionContext
 
+    errors: list[str] = []
+    any_cancelled = False
     for plugin in (plugins or {}).values():
         cancel = getattr(plugin, "cancel", None)
         caps = getattr(plugin, "capabilities", None)
@@ -267,8 +272,9 @@ async def cancel_spark_jobs(
         if callable(caps):
             try:
                 advertised = bool(caps().supports("cancellation"))
-            except Exception:
+            except Exception as exc:
                 advertised = False
+                errors.append(f"capability probe failed: {exc}")
         if not advertised:
             continue
         context = SparkExecutionContext(
@@ -281,10 +287,23 @@ async def cancel_spark_jobs(
             or "pyspark",
             job_group=job_group,
         )
-        with contextlib.suppress(Exception):
+        try:
             result = cancel(context=context, job_group=job_group)
             if inspect.isawaitable(result):
-                await result
+                result = await result
+            meta = getattr(result, "metadata", None) or {}
+            metrics = getattr(result, "metrics", None)
+            cancelled = bool(
+                getattr(metrics, "cancelled", False) or meta.get("cancelled")
+            )
+            if cancelled:
+                any_cancelled = True
+            elif meta.get("cancel_error"):
+                errors.append(str(meta["cancel_error"]))
+        except Exception as exc:
+            errors.append(str(exc))
+    if errors and not any_cancelled:
+        raise RuntimeError("Spark cancel failed: " + "; ".join(errors[:5]))
 
 
 async def execute_spark_source(

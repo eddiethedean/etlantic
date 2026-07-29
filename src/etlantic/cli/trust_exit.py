@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from etlantic.cli import exit_codes as ec
 from etlantic.diagnostics import Severity, ValidationReport
+from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
 
 _TRUST_PHASES = frozenset(
     {
@@ -19,11 +20,16 @@ _TRUST_PHASES = frozenset(
 
 
 def trust_exit_from_report(report: ValidationReport) -> int | None:
-    """Return TRUST_FAILURE when the report contains trust-phase errors."""
+    """Return TRUST_FAILURE when the report contains blocking trust-phase errors.
+
+    Non-blocking sibling allowlist denials (``PMPLUG402``) are ignored so CLI
+    exit codes stay aligned with ``ensure_plugins`` / discovery fail-closed.
+    """
     if report.valid:
         return None
     if any(
         d.severity is Severity.ERROR
+        and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
         and (
             (d.phase or "") in _TRUST_PHASES
             or (d.phase or "").startswith("plugin_")
@@ -37,7 +43,13 @@ def trust_exit_from_report(report: ValidationReport) -> int | None:
 
 def validation_exit_from_report(report: ValidationReport) -> int:
     """Map a validation report to validate/plan CLI exit codes."""
-    if report.valid:
+    blocking = [
+        d
+        for d in report.diagnostics
+        if d.severity is Severity.ERROR
+        and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+    ]
+    if not blocking:
         return ec.SUCCESS
     trust = trust_exit_from_report(report)
     if trust is not None:

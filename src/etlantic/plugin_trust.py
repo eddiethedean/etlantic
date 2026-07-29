@@ -164,19 +164,24 @@ def filter_plugins_by_allowlist(
 
     kept: dict[str, Any] = {}
     for key, plugin in plugins.items():
-        if is_builtin_allowlist_exempt(str(key)):
-            kept[key] = plugin
-            continue
         info = getattr(plugin, "info", None)
         if callable(info):
             info = info()
         metadata = getattr(plugin, "metadata", None) or {}
         if not isinstance(metadata, dict):
             metadata = {}
+        # Third-party package identity never qualifies for builtin exemption,
+        # even when engine/name spoofs ``local`` / ``env`` / etc.
+        has_package_identity = bool(
+            metadata.get("distribution_name") or metadata.get("package")
+        )
         pname = (
             getattr(info, name_attr, None) or getattr(plugin, name_attr, None) or key
         )
-        if is_builtin_allowlist_exempt(str(pname)):
+        if not has_package_identity and (
+            is_builtin_allowlist_exempt(str(key))
+            or is_builtin_allowlist_exempt(str(pname))
+        ):
             kept[key] = plugin
             continue
         pversion = (

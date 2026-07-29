@@ -14,6 +14,15 @@ def test_parse_uri_descriptor() -> None:
     assert parsed.location == "data/sample.json"
 
 
+def test_reject_url_userinfo_credentials() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="userinfo credentials"):
+        parse_asset_descriptor("postgresql://user:s3cret@host/db")
+    with pytest.raises(ValueError, match="userinfo credentials"):
+        parse_asset_descriptor("postgresql://user@host/db")
+
+
 def test_parse_object_descriptor() -> None:
     parsed = parse_asset_descriptor({"provider": "csv", "location": "data/out.csv"})
     assert parsed.provider == "csv"

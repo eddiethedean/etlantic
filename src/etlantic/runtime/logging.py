@@ -12,7 +12,8 @@ from etlantic.secrets.value import SecretValue
 
 _SECRET_KEY_RE = re.compile(
     r"(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
-    r"aws[_-]?secret[_-]?access[_-]?key|private[_-]?key)",
+    r"aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key([_-]?id)?|"
+    r"access[_-]?key|private[_-]?key)",
     re.IGNORECASE,
 )
 
@@ -38,15 +39,18 @@ class LogRecord:
 
 _SECRET_INLINE_RE = re.compile(
     r"(?i)(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
-    r"aws[_-]?secret[_-]?access[_-]?key|private[_-]?key)"
+    r"aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key([_-]?id)?|"
+    r"access[_-]?key|private[_-]?key)"
     r"""\s*[=:]\s*['\"]?[^\s'\",;]+"""
 )
 _BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*)?bearer\s+[A-Za-z0-9\-._~+/]+=*")
 _JSON_SECRET_RE = re.compile(
     r'(?i)("(?:password|passwd|pwd|secret|token|api[_-]?key|credential|'
-    r'authorization|aws[_-]?secret[_-]?access[_-]?key|private[_-]?key)"\s*:\s*)'
+    r"authorization|aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key(?:[_-]?id)?|"
+    r'access[_-]?key|private[_-]?key)"\s*:\s*)'
     r'"[^"]*"'
 )
+_AUTH_HEADER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*)(?!bearer\b)([^\s,;]+)")
 _DSN_RE = re.compile(
     r"(?i)((?:postgres(?:ql)?|mysql|mariadb|mssql|oracle|sqlite|mongodb|"
     r"redis|rediss|amqp|amqps|couchdb|cassandra|https?)"
@@ -61,6 +65,7 @@ def redact_message(message: str) -> str:
     if not message:
         return message
     redacted = _BEARER_RE.sub("Bearer ***", message)
+    redacted = _AUTH_HEADER_RE.sub(r"\1***", redacted)
     redacted = _JSON_SECRET_RE.sub(r'\1"***"', redacted)
     redacted = _SECRET_INLINE_RE.sub(r"\1=***", redacted)
     redacted = _DSN_RE.sub(r"\1\2:***@", redacted)

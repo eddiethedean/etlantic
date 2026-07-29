@@ -63,10 +63,41 @@ def create_plugin() -> PySparkPlugin:
     return PySparkPlugin()
 
 
+def _delta_spark_available() -> bool:
+    """True when delta-spark (or delta) can be imported for Delta ops."""
+    try:
+        import importlib.util
+
+        return importlib.util.find_spec("delta") is not None
+    except Exception:
+        return False
+
+
 class PySparkPlugin:
     """Reference PySpark region compiler and executor."""
 
     def __init__(self) -> None:
+        delta_ok = _delta_spark_available()
+        extras = {
+            "pyspark",
+            "write.append",
+            "write.overwrite",
+            "write.merge",
+            "write.upsert",
+            "write.partition_replace",
+        }
+        if delta_ok:
+            extras.update(
+                {
+                    "delta_compatible",
+                    "storage.delta.merge",
+                    "storage.delta.optimize",
+                    "storage.delta.vacuum",
+                    "storage.delta.history",
+                    "storage.delta.time_travel",
+                    "storage.delta.schema_evolution",
+                }
+            )
         caps = PluginCapabilities(
             engine="pyspark",
             async_execution=False,
@@ -79,30 +110,14 @@ class PySparkPlugin:
             schema_inspection=True,
             invalid_row_separation=False,
             cancellation=True,
-            spark_delta=True,
+            spark_delta=delta_ok,
             spark_merge=True,
             spark_streaming=True,
             spark_native_exprs=True,
             spark_udf=True,
             spark_cache=True,
             spark_checkpoint=True,
-            extras=frozenset(
-                {
-                    "pyspark",
-                    "delta_compatible",
-                    "write.append",
-                    "write.overwrite",
-                    "write.merge",
-                    "write.upsert",
-                    "write.partition_replace",
-                    "storage.delta.merge",
-                    "storage.delta.optimize",
-                    "storage.delta.vacuum",
-                    "storage.delta.history",
-                    "storage.delta.time_travel",
-                    "storage.delta.schema_evolution",
-                }
-            ),
+            extras=frozenset(extras),
         )
         self._info = SparkPluginInfo(
             name="etlantic-pyspark",
@@ -304,6 +319,7 @@ class PySparkPlugin:
     ) -> SparkExecutionResult:
         group = job_group or context.job_group or self._active_job_group
         cancelled = False
+        cancel_error: str | None = None
         if group and self._session is not None:
             spark_context = getattr(self._session, "sparkContext", None)
             cancel = getattr(spark_context, "cancelJobGroup", None)
@@ -311,10 +327,18 @@ class PySparkPlugin:
                 try:
                     cancel(group)
                     cancelled = True
-                except Exception:
+                except Exception as exc:
                     cancelled = False
+                    cancel_error = str(exc)
+            else:
+                cancel_error = "cancelJobGroup not available on sparkContext"
+        elif group:
+            cancel_error = "no active Spark session for cancel"
         if group and group == self._active_job_group:
             self._active_job_group = None
+        metadata: dict[str, Any] = {"job_group": group, "cancelled": cancelled}
+        if cancel_error:
+            metadata["cancel_error"] = cancel_error
         return SparkExecutionResult(
             metrics=SparkMetrics(
                 actions=[SparkActionKind.CANCEL.value],
@@ -322,7 +346,7 @@ class PySparkPlugin:
                 job_group=group,
                 cancelled=cancelled,
             ),
-            metadata={"job_group": group, "cancelled": cancelled},
+            metadata=metadata,
         )
 
     def execute_storage_op(

@@ -382,23 +382,30 @@ def _materialize_table(
 
     from sqlalchemy import text
 
+    from etlantic_sql.dialect_postgresql import quote_identifier
+
+    safe_table = require_safe_identifier(table)
+    table_sql = quote_identifier(safe_table, dialect=dialect)
     if not rows:
-        conn.execute(text(f'CREATE TEMP TABLE "{table}" (dummy INTEGER)'))
+        conn.execute(text(f"CREATE TEMP TABLE {table_sql} (dummy INTEGER)"))
         return
     columns = list(rows[0].keys())
     for row in rows:
         for key in row:
             if key not in columns:
                 columns.append(key)
+    safe_columns = [require_safe_identifier(str(c)) for c in columns]
     col_defs = ", ".join(
-        f'"{c}" {_sqlite_type([row.get(c) for row in rows])}' for c in columns
+        f"{quote_identifier(c, dialect=dialect)} "
+        f"{_sqlite_type([row.get(c) for row in rows])}"
+        for c in safe_columns
     )
-    conn.execute(text(f'CREATE TEMP TABLE "{table}" ({col_defs})'))
-    placeholders = ", ".join(f":{c}" for c in columns)
-    col_list = ", ".join(f'"{c}"' for c in columns)
-    insert = text(f'INSERT INTO "{table}" ({col_list}) VALUES ({placeholders})')
+    conn.execute(text(f"CREATE TEMP TABLE {table_sql} ({col_defs})"))
+    placeholders = ", ".join(f":{c}" for c in safe_columns)
+    col_list = ", ".join(quote_identifier(c, dialect=dialect) for c in safe_columns)
+    insert = text(f"INSERT INTO {table_sql} ({col_list}) VALUES ({placeholders})")
     for row in rows:
-        payload = {c: row.get(c) for c in columns}
+        payload = {c: row.get(c) for c in safe_columns}
         for key, value in list(payload.items()):
             if isinstance(value, Decimal):
                 payload[key] = float(value)

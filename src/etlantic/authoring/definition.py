@@ -300,11 +300,17 @@ class NodeDefinition:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> NodeDefinition:
         nested_raw = data.get("nested")
-        nested = (
-            PipelineDefinition.from_dict(nested_raw)
-            if isinstance(nested_raw, Mapping)
-            else None
-        )
+        nested = None
+        if isinstance(nested_raw, Mapping):
+            from etlantic.authoring.upgrade import upgrade_pipeline_dict
+
+            upgraded = upgrade_pipeline_dict(dict(nested_raw))
+            nested = PipelineDefinition.from_dict(upgraded)
+            if nested.schema != PIPELINE_SCHEMA:
+                raise ValueError(
+                    f"Nested pipeline schema {nested.schema!r} is not "
+                    f"{PIPELINE_SCHEMA!r}"
+                )
         return cls(
             name=str(data["name"]),
             kind=str(data["kind"]),

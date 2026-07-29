@@ -167,6 +167,7 @@ def register_core_commands(
         )
         paths = cli.workspace()
         from etlantic.authoring.definition import PipelineDefinition
+        from etlantic.exceptions import PipelineValidationError
         from etlantic.runtime.execute import run_pipeline as run_pipeline_fn
 
         try:
@@ -185,6 +186,15 @@ def register_core_commands(
                     runtime=cli.runtime,
                     workspace=str(paths.artifacts),
                 )
+        except PipelineValidationError as exc:
+            typer.echo(str(exc), err=True)
+            report = getattr(exc, "report", None)
+            if report is not None:
+                trust_exit = trust_exit_from_report(report)
+                if trust_exit is not None:
+                    raise typer.Exit(trust_exit) from exc
+                raise typer.Exit(ec.INVALID_MODEL) from exc
+            raise typer.Exit(ec.PLANNING_FAILURE) from exc
         except PipelineExecutionError as exc:
             report = getattr(exc, "report", None)
             if report is not None:
@@ -196,6 +206,12 @@ def register_core_commands(
                     typer.echo(report.to_text())
             else:
                 typer.echo(str(exc), err=True)
+            code = getattr(exc, "code", None) or ""
+            if str(code).startswith("PMPLUG"):
+                from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+
+                if code not in _NON_BLOCKING_TRUST_CODES:
+                    raise typer.Exit(ec.TRUST_FAILURE) from exc
             raise typer.Exit(ec.EXECUTION_FAILURE) from exc
         if fmt == "json":
             typer.echo(report.to_json())

@@ -63,8 +63,14 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             raise typer.Exit(ec.SUCCESS)
         diags = cli.runtime.ensure_plugins_for_profile(resolved)
         from etlantic.diagnostics import Severity
+        from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
 
-        errors = [d for d in diags if d.severity is Severity.ERROR]
+        errors = [
+            d
+            for d in diags
+            if d.severity is Severity.ERROR
+            and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+        ]
         if errors:
             emit_payload(
                 {
@@ -91,6 +97,11 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
                 emit_payload(validation_report_to_sarif(report), fmt="json")
             else:
                 emit_payload(payload, fmt=fmt)
+            from etlantic.cli.trust_exit import trust_exit_from_report
+
+            trust_exit = trust_exit_from_report(report)
+            if trust_exit is not None:
+                raise typer.Exit(trust_exit)
             raise typer.Exit(ec.PLANNING_FAILURE)
         try:
             artifact = compile_plan(

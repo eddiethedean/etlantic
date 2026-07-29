@@ -178,9 +178,25 @@ def test_local_run_and_compile_comparable(planned):
 
 
 @pytest.mark.airflow
-def test_etlantic_step_is_reference_stub():
-    """Characterize the 0.8 reference operator: XCom refs only, no engine run."""
+def test_etlantic_step_fails_closed_without_opt_in():
+    """Reference operator fail-closes unless ETLANTIC_AIRFLOW_REFERENCE_STUB=1."""
     pytest.importorskip("etlantic_airflow")
+    from etlantic_airflow.operator import etlantic_step
+
+    with pytest.raises(RuntimeError, match="not wired for in-worker"):
+        etlantic_step(
+            plan_id="plan-1",
+            pipeline_id="pipe-1",
+            node_name="normalized",
+            node_kind="step",
+        )
+
+
+@pytest.mark.airflow
+def test_etlantic_step_reference_stub_opt_in(monkeypatch):
+    """Opt-in restores placeholder XCom-only behavior for demos."""
+    pytest.importorskip("etlantic_airflow")
+    monkeypatch.setenv("ETLANTIC_AIRFLOW_REFERENCE_STUB", "1")
     from etlantic_airflow.operator import etlantic_step
 
     result = etlantic_step(
@@ -203,7 +219,6 @@ def test_etlantic_step_is_reference_stub():
     payload = json.dumps(result)
     assert "Ada" not in payload
     assert "password" not in payload.lower()
-    # Reference operator always succeeds without inspecting live data.
     empty = etlantic_step(
         plan_id="plan-1",
         pipeline_id="pipe-1",

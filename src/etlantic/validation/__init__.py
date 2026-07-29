@@ -87,11 +87,17 @@ def validate_pipeline(
     diagnostics.extend(_tag_phase(capability, "capability"))
 
     # Phase 6: plugin trust (production allowlist fail-closed)
+    from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
     from etlantic.validation.phases.plugin_trust import phase_plugin_trust
 
     discovery = _dedupe_diagnostics(
         _tag_phase(list(context.plugin_discovery_diagnostics), "plugin_discovery")
     )
+    discovery = [
+        d
+        for d in discovery
+        if getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+    ]
     diagnostics.extend(discovery)
 
     trust = phase_plugin_trust(context)

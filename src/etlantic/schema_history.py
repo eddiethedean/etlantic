@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from etlantic.io_policy import (
     SafeIoPolicy,
@@ -19,6 +22,8 @@ from etlantic.schema_policy import InMemorySchemaHistory
 from etlantic.serialization_policy import assert_safe_load_path
 
 _LOG = logging.getLogger(__name__)
+
+_SAFE_SUBJECT_SEGMENT = re.compile(r"^[A-Za-z0-9._-]{1,120}$")
 
 
 def _observation_to_dict(observation: SchemaObservation) -> dict[str, Any]:
@@ -35,13 +40,15 @@ def _observation_to_dict(observation: SchemaObservation) -> dict[str, Any]:
 def _observation_from_dict(data: dict[str, Any]) -> SchemaObservation:
     from etlantic.schema_drift import NormalizedSchema
 
-    return SchemaObservation(
+    observation = SchemaObservation(
         subject_id=str(data["subject_id"]),
         schema=NormalizedSchema.from_dict(data["schema"]),
         inspector=str(data.get("inspector") or "file"),
         observed_at=data.get("observed_at"),
         metadata=dict(data.get("metadata") or {}),
     )
+    assert_no_row_payload(observation)
+    return observation
 
 
 _FORBIDDEN_ROW_KEYS = frozenset(
@@ -56,8 +63,25 @@ _FORBIDDEN_ROW_KEYS = frozenset(
         "row_data",
         "payload",
         "payload_rows",
+        "examples",
+        "source_data",
+        "row",
+        "table",
+        "records_sample",
+        "row_sample",
+        "row_samples",
+        "items",
+        "values",
     }
 )
+
+
+def _is_list_of_mappings(value: Any) -> bool:
+    return (
+        isinstance(value, list)
+        and bool(value)
+        and all(isinstance(item, dict) for item in value)
+    )
 
 
 def _looks_like_row_payload(metadata: dict[str, Any] | None) -> bool:
@@ -68,21 +92,16 @@ def _looks_like_row_payload(metadata: dict[str, Any] | None) -> bool:
         key_l = str(key).lower()
         if key_l in _FORBIDDEN_ROW_KEYS:
             return True
-        if key_l.endswith("_rows") or key_l in {"row_sample", "row_samples"}:
+        if key_l.endswith("_rows") or "sample" in key_l:
+            return True
+        if _is_list_of_mappings(value):
             return True
         if isinstance(value, dict) and _looks_like_row_payload(value):
             return True
-        if (
-            isinstance(value, list)
-            and value
-            and isinstance(value[0], dict)
-            and (
-                key_l.endswith("rows")
-                or "sample" in key_l
-                or key_l in {"preview", "data", "payload"}
-            )
-        ):
-            return True
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict) and _looks_like_row_payload(item):
+                    return True
     return False
 
 
@@ -93,6 +112,27 @@ def assert_no_row_payload(observation: SchemaObservation) -> None:
         dict(schema_meta)
     ):
         raise ValueError("Schema history must not store source rows; failing closed.")
+    for field_obj in getattr(observation.schema, "fields", ()) or ():
+        field_meta = getattr(field_obj, "metadata", None) or {}
+        if _looks_like_row_payload(dict(field_meta)):
+            raise ValueError(
+                "Schema history must not store source rows; failing closed."
+            )
+
+
+def subject_history_filename(subject_id: str) -> str:
+    """Return a collision-resistant filename for ``subject_id``.
+
+    Safe alphanumeric subjects keep a readable name; all others use a stable
+    hash so ``foo:bar`` and ``foo_bar`` never share a file.
+    """
+    text = str(subject_id)
+    if _SAFE_SUBJECT_SEGMENT.fullmatch(text):
+        return f"{text}.json"
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
+    # Keep a short percent-encoded hint for operators (not used for identity).
+    hint = quote(text, safe="")[:40]
+    return f"s_{digest}_{hint}.json"
 
 
 @dataclass
@@ -115,8 +155,13 @@ class FileSchemaHistoryProvider:
         self._load()
 
     def _subject_path(self, subject_id: str) -> Path:
-        safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in subject_id)
-        return self.root / f"{safe}.json"
+        return self.root / subject_history_filename(subject_id)
+
+    def _ack_path(self, subject_id: str) -> Path:
+        base = subject_history_filename(subject_id)
+        if base.endswith(".json"):
+            return self.root / f"{base[:-5]}.ack.json"
+        return self.root / f"{base}.ack.json"
 
     def _load(self) -> None:
         assert self.policy is not None
@@ -208,8 +253,7 @@ class FileSchemaHistoryProvider:
             "note": note,
             "action": "acknowledge",
         }
-        safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in subject_id)
-        ack_path = self.root / f"{safe}.ack.json"
+        ack_path = self._ack_path(subject_id)
         assert self.policy is not None
         write_json_safe(ack_path, ack, self.policy, run_id="schema-history-ack")
         return ack

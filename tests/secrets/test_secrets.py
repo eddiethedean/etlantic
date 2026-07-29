@@ -43,3 +43,18 @@ def test_file_provider_round_trip(tmp_path: Path) -> None:
     assert value.get_secret_value() == "s3cr3t"
     with pytest.raises(SecretSerializationError):
         value.to_dict()
+
+
+def test_file_provider_rejects_path_traversal(tmp_path: Path) -> None:
+    outside = tmp_path.parent / "outside_secret"
+    outside.write_text("leak", encoding="utf-8")
+    provider = MountedFileSecretProvider(root=tmp_path)
+
+    async def _run() -> None:
+        await provider.resolve(
+            SecretRef(provider="file", name="../outside_secret", key="value"),
+            SecretResolutionContext(run_id="r", pipeline_id="p"),
+        )
+
+    with pytest.raises(PipelineExecutionError, match="escapes mount root"):
+        anyio.run(_run)

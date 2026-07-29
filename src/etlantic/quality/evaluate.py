@@ -68,6 +68,8 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
     if kind == "membership":
         values = list(node.get("values") or [])
         allowed = bool(node.get("allowed", True))
+        if _is_missing(value):
+            return f"{field} is null"
         if allowed:
             return None if value in values else f"{field} not in allowed values"
         return None if value not in values else f"{field} in disallowed values"
@@ -186,16 +188,18 @@ def split_by_quality(
                 soft_reasons.append(reason)
 
         for fields, required in uniqueness_specs:
-            key = tuple(row.get(f) for f in fields)
+            key_vals = tuple(row.get(f) for f in fields)
+            # SQL UNIQUE allows multiple NULLs; skip tracking when any key is missing.
+            if any(_is_missing(v) for v in key_vals):
+                continue
             bucket = seen_keys[fields]
-            if key in bucket:
+            if key_vals in bucket:
                 message = f"duplicate key on {','.join(fields)}"
                 if required:
                     reasons.append(message)
                 else:
                     soft_reasons.append(message)
-            else:
-                bucket.add(key)
+            # Defer recording until the row is accepted (below).
 
         if soft_reasons:
             diagnostics.append(
@@ -221,6 +225,12 @@ def split_by_quality(
                 }
             )
         else:
+            # Only accepted rows consume uniqueness keys.
+            for fields, _required in uniqueness_specs:
+                key_vals = tuple(row.get(f) for f in fields)
+                if any(_is_missing(v) for v in key_vals):
+                    continue
+                seen_keys[fields].add(key_vals)
             valid.append(item)
 
     return valid, invalid, diagnostics

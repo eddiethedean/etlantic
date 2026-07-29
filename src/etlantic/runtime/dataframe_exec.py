@@ -474,6 +474,8 @@ async def _execute_portable(
             compiler = candidate
             break
         if compiler is None:
+            from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+
             trust_errors = [
                 d
                 for d in getattr(
@@ -481,13 +483,14 @@ async def _execute_portable(
                 )
                 or []
                 if getattr(d.severity, "name", None) == "ERROR"
+                and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
             ]
             if trust_errors:
                 raise NodeExecutionError(
                     redact_message(trust_errors[0].message),
                     node_name=node.name,
                     stage=FailureStage.TRANSFORM.value,
-                    code=trust_errors[0].code or "PMPLUG402",
+                    code=trust_errors[0].code or "PMPLUG401",
                 )
             raise NodeExecutionError(
                 redact_message(
@@ -507,6 +510,8 @@ async def _execute_portable(
         compilers = discover_transform_compilers_for_profile(profile)
         compiler = compilers.get(descriptor.engine)
     if compiler is None:
+        from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+
         trust_errors = [
             d
             for d in getattr(
@@ -515,13 +520,14 @@ async def _execute_portable(
             or []
             if getattr(d, "severity", None) is not None
             and getattr(d.severity, "name", None) == "ERROR"
+            and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
         ]
         if trust_errors:
             raise NodeExecutionError(
                 redact_message(trust_errors[0].message),
                 node_name=node.name,
                 stage=FailureStage.TRANSFORM.value,
-                code=trust_errors[0].code or "PMPLUG402",
+                code=trust_errors[0].code or "PMPLUG401",
             )
         raise NodeExecutionError(
             redact_message(

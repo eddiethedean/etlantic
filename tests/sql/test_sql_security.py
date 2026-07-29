@@ -51,6 +51,26 @@ def test_identifier_injection_rejected(sql_plugin) -> None:
         sql_plugin.quote_identifier('customers"; DROP TABLE t;--')
 
 
+def test_materialize_table_rejects_hostile_column_names() -> None:
+    """Temp-table materialization must fail closed on illegal column keys."""
+    pytest.importorskip("sqlalchemy")
+    from sqlalchemy import create_engine
+
+    from etlantic_sql.transform_compiler import _materialize_table
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    with (
+        engine.begin() as conn,
+        pytest.raises(ValueError, match="Illegal SQL identifier"),
+    ):
+        _materialize_table(
+            conn,
+            "t_step",
+            [{'x"); DROP TABLE t;--': 1}],
+            dialect="sqlite",
+        )
+
+
 def test_relation_name_injection_rejected(sql_plugin) -> None:
     with pytest.raises(ValueError):
         sql_plugin.relation_from_binding(binding="x", location='evil"; DROP TABLE t;--')

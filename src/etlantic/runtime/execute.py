@@ -115,7 +115,14 @@ async def arun_pipeline(
     runtime = runtime or PipelineRuntime()
     resolved = resolve_profile(profile)
     trust_diags = runtime.ensure_plugins_for_profile(resolved)
-    errors = [d for d in trust_diags if d.severity is Severity.ERROR]
+    from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+
+    errors = [
+        d
+        for d in trust_diags
+        if d.severity is Severity.ERROR
+        and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+    ]
     if errors:
         raise PipelineExecutionError(
             "; ".join(d.message for d in errors),

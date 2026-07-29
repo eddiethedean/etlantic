@@ -1176,6 +1176,9 @@ class LocalOrchestrator:
                     action is FailureAction.RETRY
                     or (action is FailureAction.FAIL and self._should_retry(exc))
                 )
+                # Step wall-clock timeout is a hard ceiling — do not retry.
+                if timed_out:
+                    can_retry = False
                 if can_retry and (
                     action is FailureAction.RETRY or self._should_retry(exc)
                 ):
@@ -2067,12 +2070,15 @@ class LocalOrchestrator:
             result, emits = self._split_emits(result)
             for emit in emits:
                 self._enforce_outbound_emit(emit, run_id=run_id, step=node.name)
+                raw_payload = (
+                    emit.payload
+                    if not hasattr(emit.payload, "model_dump")
+                    else emit.payload.model_dump(mode="json")
+                )
                 self.outbound_events.append(
                     {
                         "event": emit.event,
-                        "payload": emit.payload
-                        if not hasattr(emit.payload, "model_dump")
-                        else emit.payload.model_dump(mode="json"),
+                        "payload": redact_value(raw_payload),
                         "step": node.name,
                     }
                 )

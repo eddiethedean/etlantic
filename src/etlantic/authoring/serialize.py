@@ -62,8 +62,12 @@ _FORBIDDEN_KEYS = frozenset(
         "client_secret",
         "api_key",
         "passwd",
+        "pwd",
         "credential",
         "credentials",
+        "authorization",
+        "aws_secret_access_key",
+        "aws_access_key_id",
     }
 )
 _SECRET_REF_ALLOWED = frozenset({"provider", "name"})
@@ -83,8 +87,12 @@ _NESTED_SECRET_MATERIAL = frozenset(
         "private_key",
         "client_secret",
         "passwd",
+        "pwd",
         "credential",
         "credentials",
+        "authorization",
+        "aws_secret_access_key",
+        "aws_access_key_id",
     }
 )
 

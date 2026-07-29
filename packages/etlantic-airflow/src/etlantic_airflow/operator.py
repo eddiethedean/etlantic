@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from etlantic.orchestration.artifacts import xcom_safe_payload
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+
+_OPT_IN_ENV = "ETLANTIC_AIRFLOW_REFERENCE_STUB"
 
 
 def etlantic_step(
@@ -21,11 +24,19 @@ def etlantic_step(
 ) -> dict[str, Any]:
     """Execute one logical ETLantic step inside an Airflow worker.
 
-    The 0.8 reference operator returns artifact-ref XCom payloads only. Full
-    in-process engine execution is available via the local orchestrator; Airflow
-    workers should resolve durable bindings and invoke the same engines.
+    The reference operator does **not** run transforms or writes. By default it
+    fail-closes so compiled DAGs cannot report green without real execution.
+    Set ``ETLANTIC_AIRFLOW_REFERENCE_STUB=1`` to restore the historical
+    placeholder XCom-only behavior for local compile demos.
     """
     _ = (plan_id, pipeline_id, node_kind, write_intent, retry_policy)
+    if os.environ.get(_OPT_IN_ENV, "").strip() not in {"1", "true", "TRUE", "yes"}:
+        raise RuntimeError(
+            "etlantic-airflow reference operator is not wired for in-worker "
+            f"execution (node={node_name!r}, plan={plan_id!r}). Set "
+            f"{_OPT_IN_ENV}=1 only for placeholder/XCom demos; production "
+            "workers must invoke the local orchestrator / durable engines."
+        )
     refs: list[dict[str, Any]] = []
     for raw in artifact_outputs or []:
         try:

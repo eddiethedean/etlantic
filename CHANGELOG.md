@@ -32,6 +32,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run history query/list: orphan reports, idempotent `create_run`, UTC filter coercion, sorted report queries
 - Production conformance requires `run_history_provider` when `observability_delivery` is `durable_audit`
 - `etlantic report query` supports `--since` / `--until`; documentation drift for 0.34 M6 surfaces
+- SQL temp-table materialization validates column identifiers (injection fail-closed)
+- Asset URLs with userinfo credentials rejected from plan bindings (secret-free plans)
+- Builtin allowlist exemption no longer trusts third-party `engine`/`name` spoofs
+- Mounted-file secrets confined under mount root (path traversal fail-closed)
+- Schema history scans field metadata, denies list-of-row bags, and uses collision-resistant subject paths
+- Manual `register_*_plugin` overlays gated by production `plugin_allowlist`
+- Non-blocking `PMPLUG402` ignored consistently in trust exit, validation discovery, run/compile/doctor, and transform dispatch
+- Quality membership fails closed on null; uniqueness skips null keys and rejected rows
+- `PipelinePlan.from_dict(verify=True)` requires a non-empty fingerprint; production snapshot mode/name consistency checked
+- Airflow artifact secret scan covers every strategy; plan snapshots keep only referenced secrets
+- Airflow reference operator fails closed unless `ETLANTIC_AIRFLOW_REFERENCE_STUB=1`
+- `etlantic run` maps validation/trust failures to documented exit codes; compile uses trust exit
+- Nested pipeline definitions upgrade/validate to `etlantic.pipeline/1`
+- Contract-diff toolkit exceptions fail closed as BREAKING drift
+- `--quiet` still emits JSON/SARIF on trust gate failures
+- Outbound emit payloads redacted in reports; authoring/redaction vocab includes `pwd` / AWS access keys
+- Step `TimeoutError` is not retried under the default retry policy
+- Spark cancel surfaces failures; PySpark advertises Delta only when `delta` is importable
+- Strict production extension metadata rejects nested secret-like keys
 
 ## [0.33.0] - 2026-07-29
 

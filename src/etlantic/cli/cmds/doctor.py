@@ -83,7 +83,14 @@ def register_doctor_command(app: typer.Typer) -> None:
 
         if resolved is not None:
             diags = cli.runtime.ensure_plugins_for_profile(resolved)
-            errors = [d for d in diags if d.severity is Severity.ERROR]
+            from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+
+            errors = [
+                d
+                for d in diags
+                if d.severity is Severity.ERROR
+                and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+            ]
             checks.append(
                 _check(
                     "plugins",

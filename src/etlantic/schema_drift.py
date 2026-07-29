@@ -320,7 +320,8 @@ def diff_contract_schemas(
         else:
             overall = DriftImpact.INFORMATIONAL
     except Exception:
-        overall = operational.overall_impact
+        # Fail closed: toolkit errors must not under-report breaking changes.
+        overall = DriftImpact.BREAKING
     return SchemaChangeSet(
         baseline_fingerprint=baseline.fingerprint(),
         candidate_fingerprint=candidate.fingerprint(),

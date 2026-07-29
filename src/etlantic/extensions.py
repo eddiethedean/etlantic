@@ -122,6 +122,9 @@ def validate_extension_metadata(
             f"(got {size} bytes)."
         )
 
+    if strict:
+        _reject_nested_secret_material(metadata, path=path)
+
     bare = sorted(str(key) for key in metadata if not _is_namespaced(key))
     if not bare:
         return
@@ -132,3 +135,41 @@ def validate_extension_metadata(
     if strict:
         raise ValueError(message)
     warnings.warn(message, UserWarning, stacklevel=2)
+
+
+_STRICT_SECRET_KEYS = frozenset(
+    {
+        "password",
+        "passwd",
+        "pwd",
+        "secret",
+        "secret_value",
+        "token",
+        "api_key",
+        "api_token",
+        "access_key",
+        "access_token",
+        "authorization",
+        "aws_secret_access_key",
+        "aws_access_key_id",
+        "private_key",
+        "client_secret",
+        "credential",
+        "credentials",
+    }
+)
+
+
+def _reject_nested_secret_material(value: Any, *, path: str) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            key_l = str(key).lower()
+            if key_l in _STRICT_SECRET_KEYS:
+                raise ValueError(
+                    f"{path} contains forbidden secret-like key {key!r}; "
+                    "failing closed under strict production metadata."
+                )
+            _reject_nested_secret_material(child, path=f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _reject_nested_secret_material(item, path=f"{path}[{index}]")

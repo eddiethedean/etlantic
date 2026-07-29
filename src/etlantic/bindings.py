@@ -165,6 +165,12 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
     if "://" in text:
         parsed = urlparse(text)
         provider = parsed.scheme or "memory"
+        # Plans must stay secret-free: never embed URL userinfo (user:password@).
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError(
+                "Asset URL must not include userinfo credentials "
+                "(user:password@host); use SecretRef / secret_refs for auth"
+            )
         if parsed.netloc:
             # file://localhost/tmp/x → treat as absolute /tmp/x
             if provider == "file" and parsed.netloc in {"localhost", "127.0.0.1"}:

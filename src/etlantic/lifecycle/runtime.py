@@ -169,38 +169,98 @@ class PipelineRuntime:
         )
         # Replace discovered maps, then restore explicit manual registrations
         # (tests / app wiring inject configured plugin instances).
+        from etlantic.diagnostics import Severity
+        from etlantic.plugin_trust import (
+            filter_plugins_by_allowlist,
+            is_production_profile,
+        )
+
+        manual_overlays: list[tuple[str, dict[str, Any]]] = [
+            ("dataframe", dict(self._manual_dataframe_plugins)),
+            ("sql", dict(self._manual_sql_plugins)),
+            ("spark", dict(self._manual_spark_plugins)),
+            ("spark_provider", dict(self._manual_spark_providers)),
+            ("orchestrator", dict(self._manual_orchestrator_plugins)),
+            ("scheduler", dict(self._manual_scheduler_plugins)),
+            ("observability", dict(self._manual_observability_providers)),
+            ("run_history", dict(self._manual_run_history_providers)),
+            ("event_consumer", dict(self._manual_event_consumers)),
+        ]
+        allowed_manual: dict[str, dict[str, Any]] = {}
+        manual_diags: list[Diagnostic] = []
+        if is_production_profile(profile):
+            allowlist = dict(profile.plugin_allowlist or {})
+            for kind, plugins in manual_overlays:
+                if not plugins:
+                    allowed_manual[kind] = {}
+                    continue
+                if not allowlist:
+                    # Empty production allowlist already fail-closed in discovery
+                    # (PMPLUG401). Refuse overlays without duplicating that code.
+                    allowed_manual[kind] = {}
+                    continue
+                kept, diags = filter_plugins_by_allowlist(plugins, profile)
+                allowed_manual[kind] = kept
+                # Keep non-401 filter diagnostics; add manual-context 402s for
+                # denials not already reported by the filter helper.
+                manual_diags.extend(d for d in diags if d.code != "PMPLUG401")
+                for name in sorted(set(plugins) - set(kept)):
+                    if not any(
+                        d.code == "PMPLUG402" and d.path == ("plugin", name)
+                        for d in diags
+                    ):
+                        manual_diags.append(
+                            Diagnostic(
+                                code="PMPLUG402",
+                                severity=Severity.ERROR,
+                                message=(
+                                    f"Manual {kind} plugin {name!r} is not "
+                                    f"permitted by profile {profile.name!r} "
+                                    "plugin_allowlist."
+                                ),
+                                path=("plugin", name),
+                                phase="plugin_trust",
+                            )
+                        )
+        else:
+            for kind, plugins in manual_overlays:
+                allowed_manual[kind] = plugins
+
         self.dataframe_plugins = {
             **dict(result.dataframe_plugins),
-            **self._manual_dataframe_plugins,
+            **allowed_manual.get("dataframe", {}),
         }
-        self.sql_plugins = {**dict(result.sql_plugins), **self._manual_sql_plugins}
+        self.sql_plugins = {
+            **dict(result.sql_plugins),
+            **allowed_manual.get("sql", {}),
+        }
         self.spark_plugins = {
             **dict(result.spark_plugins),
-            **self._manual_spark_plugins,
+            **allowed_manual.get("spark", {}),
         }
         self.spark_providers = {
             **dict(result.spark_providers),
-            **self._manual_spark_providers,
+            **allowed_manual.get("spark_provider", {}),
         }
         self.orchestrator_plugins = {
             **dict(result.orchestrator_plugins),
-            **self._manual_orchestrator_plugins,
+            **allowed_manual.get("orchestrator", {}),
         }
         self.scheduler_plugins = {
             **dict(result.scheduler_plugins),
-            **self._manual_scheduler_plugins,
+            **allowed_manual.get("scheduler", {}),
         }
         self.observability_providers = {
             **dict(getattr(result, "observability_providers", {}) or {}),
-            **self._manual_observability_providers,
+            **allowed_manual.get("observability", {}),
         }
         self.run_history_providers = {
             **dict(getattr(result, "run_history_providers", {}) or {}),
-            **self._manual_run_history_providers,
+            **allowed_manual.get("run_history", {}),
         }
         self.event_consumers = {
             **dict(getattr(result, "event_consumers", {}) or {}),
-            **self._manual_event_consumers,
+            **allowed_manual.get("event_consumer", {}),
         }
         if self._observability_bridge is not None:
             self._observability_bridge.observability_providers = dict(
@@ -211,43 +271,43 @@ class PipelineRuntime:
             )
             self._observability_bridge.event_consumers = dict(self.event_consumers)
             self._observability_bridge.configure_for_profile(profile)
-        if self._manual_dataframe_plugins:
+        if allowed_manual.get("dataframe"):
             from etlantic.dataframe.discovery import (
                 register_discovered_plugins as register_df,
             )
 
             register_df(
-                self.registry, plugins=self._manual_dataframe_plugins, profile=profile
+                self.registry,
+                plugins=allowed_manual["dataframe"],
+                profile=profile,
             )
-        if self._manual_sql_plugins:
+        if allowed_manual.get("sql"):
             from etlantic.sql.discovery import (
                 register_discovered_plugins as register_sql,
             )
 
-            register_sql(
-                self.registry, plugins=self._manual_sql_plugins, profile=profile
-            )
-        if self._manual_spark_plugins:
+            register_sql(self.registry, plugins=allowed_manual["sql"], profile=profile)
+        if allowed_manual.get("spark"):
             from etlantic.spark.discovery import (
                 register_discovered_plugins as register_spark,
             )
 
             register_spark(
-                self.registry, plugins=self._manual_spark_plugins, profile=profile
+                self.registry, plugins=allowed_manual["spark"], profile=profile
             )
-        if self._manual_orchestrator_plugins:
+        if allowed_manual.get("orchestrator"):
             from etlantic.orchestration.discovery import (
                 register_discovered_plugins as register_orch,
             )
 
             register_orch(
                 self.registry,
-                plugins=self._manual_orchestrator_plugins,
+                plugins=allowed_manual["orchestrator"],
                 profile=profile,
             )
         self._configured_profile_key = key
-        self._plugin_diagnostics = list(result.diagnostics)
-        return list(result.diagnostics)
+        self._plugin_diagnostics = list(result.diagnostics) + list(manual_diags)
+        return list(self._plugin_diagnostics)
 
     def add_run_middleware(self, middleware: Any, *, name: str | None = None) -> None:
         """Register middleware invoked around entire pipeline runs.

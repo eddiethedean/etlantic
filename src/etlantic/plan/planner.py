@@ -413,7 +413,15 @@ def _build_plan(
     }
 
     # Fingerprint-stable: emit pre-0.15 bindings-only shape (no assets key).
+    # Keep only referenced secret identities in the snapshot (resource_refs already
+    # carries the same secret-free SecretRef metadata).
     profile_snapshot = profile.to_plan_snapshot()
+    snap_secrets = dict(profile_snapshot.get("secrets") or {})
+    profile_snapshot["secrets"] = {
+        key: value
+        for key, value in snap_secrets.items()
+        if key in referenced_secret_keys
+    }
     execution_settings = {
         "orchestrator": profile.orchestrator,
         "concurrency": profile.concurrency,

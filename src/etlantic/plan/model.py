@@ -15,9 +15,22 @@ PLAN_SCHEMA = "etlantic.plan/1"
 
 
 def _plan_metadata_strict(profile_snapshot: dict[str, Any]) -> bool:
-    return (
-        str(profile_snapshot.get("security_mode") or "").strip().lower() == "production"
-    )
+    mode = str(profile_snapshot.get("security_mode") or "").strip().lower()
+    name = str(profile_snapshot.get("name") or "").strip().lower()
+    # Fail closed when the snapshot claims production by mode *or* by an
+    # authoritative production profile name; never trust a development mode
+    # alone if the plan identity says production.
+    return bool(mode == "production" or name == "production")
+
+
+def _assert_plan_snapshot_consistent(profile_snapshot: dict[str, Any]) -> None:
+    mode = str(profile_snapshot.get("security_mode") or "").strip().lower()
+    name = str(profile_snapshot.get("name") or "").strip().lower()
+    if name == "production" and mode and mode != "production":
+        raise ValueError(
+            "Plan profile_snapshot name is 'production' but security_mode "
+            f"is {mode!r}; failing closed."
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,7 +315,12 @@ class PipelinePlan:
         )
         object.__setattr__(plan, "metadata", deep_freeze(plan.metadata))
         validate_plan_interchange(plan)
-        if verify and plan.fingerprint:
+        _assert_plan_snapshot_consistent(dict(plan.profile_snapshot or {}))
+        if verify:
+            if not plan.fingerprint:
+                raise ValueError(
+                    "PipelinePlan.from_dict(verify=True) requires a non-empty fingerprint"
+                )
             from etlantic.plan.serialize import verify_plan_fingerprint
 
             verify_plan_fingerprint(plan)

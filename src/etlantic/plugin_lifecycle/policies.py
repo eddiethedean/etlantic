@@ -137,13 +137,12 @@ class BaseAuthorizationPolicy:
             return authorized, diagnostics, events
 
         for item in discovered:
-            identity_names = [
-                item.distribution_name,
-                item.manifest.package if item.manifest else None,
-                item.name,
-                item.engine,
-            ]
-            if any(is_builtin_allowlist_exempt(str(n)) for n in identity_names if n):
+            # Exempt only true in-tree stubs (no distribution package). Never
+            # treat third-party engine/EP short names as builtin.
+            if item.distribution_name is None and (
+                is_builtin_allowlist_exempt(item.name)
+                or is_builtin_allowlist_exempt(item.engine)
+            ):
                 auth = _with_auth(item, "allowed")
                 authorized.append(auth)
                 events.append(
