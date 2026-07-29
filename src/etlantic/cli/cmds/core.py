@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -474,6 +475,12 @@ def register_core_commands(
         ctx: typer.Context,
         pipeline_id: str | None = typer.Option(None, "--pipeline-id"),
         status: str | None = typer.Option(None, "--status"),
+        since: str | None = typer.Option(
+            None, "--since", help="ISO-8601 lower bound (started_at)"
+        ),
+        until: str | None = typer.Option(
+            None, "--until", help="ISO-8601 upper bound (started_at)"
+        ),
         limit: int | None = typer.Option(20, "--limit"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
@@ -481,11 +488,22 @@ def register_core_commands(
         cli = get_cli_context(ctx)
         from etlantic.reports.query import query_history, query_reports
 
+        since_dt = (
+            datetime.fromisoformat(since.replace("Z", "+00:00")) if since else None
+        )
+        until_dt = (
+            datetime.fromisoformat(until.replace("Z", "+00:00")) if until else None
+        )
         history = cli.run_history()
         if history is not None:
             payload = {
                 "runs": query_history(
-                    history, pipeline_id=pipeline_id, status=status, limit=limit
+                    history,
+                    pipeline_id=pipeline_id,
+                    status=status,
+                    since=since_dt,
+                    until=until_dt,
+                    limit=limit,
                 )
             }
         else:
@@ -500,6 +518,8 @@ def register_core_commands(
                         cli.report_store(),
                         pipeline_id=pipeline_id,
                         status=status,
+                        since=since_dt,
+                        until=until_dt,
                         limit=limit,
                     )
                 ]

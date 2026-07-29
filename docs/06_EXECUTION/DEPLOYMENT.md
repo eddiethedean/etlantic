@@ -6,11 +6,11 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.33 |
+| Topic | 0.34 |
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime |
-| Multi-worker / multi-tenant control plane | Not included in 0.33; planned first-class |
+| Multi-worker / multi-tenant control plane | Not included in 0.34; planned first-class |
 | SLA | None (community support) |
 
 ## Process model
@@ -22,7 +22,7 @@ worker, and use durable backend storage for data or reports that must cross
 process boundaries.
 
 This reference model is suitable for one trusted application or worker per
-runtime. ETLantic 0.33 does not coordinate a multi-worker runtime.
+runtime. ETLantic 0.34 does not coordinate a multi-worker runtime.
 
 ## Reference topologies
 

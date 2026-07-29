@@ -10,7 +10,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from etlantic.io_policy import SafeIoPolicy, read_text_safe, write_text_safe
+from etlantic.io_policy import (
+    SafeIoPolicy,
+    append_line_safe,
+    read_text_safe,
+    write_text_safe,
+)
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.events import (
     LifecycleEvent,
@@ -19,6 +24,16 @@ from etlantic.runtime.events import (
 )
 
 RUN_HISTORY_PROTOCOL = "etlantic.run_history/1"
+
+_TERMINAL_RUN_STATUSES = frozenset(
+    {"succeeded", "failed", "cancelled", "timed_out", "partial"}
+)
+
+
+def coerce_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,6 +162,16 @@ class InMemoryRunHistoryProvider:
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
         with self._lock:
+            existing = self._runs.get(run_id)
+            if existing is not None:
+                status = str(existing.get("status") or "")
+                if status in _TERMINAL_RUN_STATUSES:
+                    merged = dict(existing.get("metadata") or {})
+                    merged.update(dict(metadata or {}))
+                    existing["metadata"] = merged
+                    if plan_id is not None:
+                        existing["plan_id"] = plan_id
+                    return
             self._runs[run_id] = {
                 "run_id": run_id,
                 "pipeline_id": pipeline_id,
@@ -172,11 +197,20 @@ class InMemoryRunHistoryProvider:
         data = report.to_dict()
         with self._lock:
             self._reports[report.run_id] = data
-            if report.run_id in self._runs:
+            if report.run_id not in self._runs:
+                self._runs[report.run_id] = {
+                    "run_id": report.run_id,
+                    "pipeline_id": report.pipeline_id,
+                    "plan_id": report.plan_id,
+                    "status": report.status.value,
+                    "started_at": report.started_at.isoformat(),
+                    "metadata": {},
+                }
+            else:
                 self._runs[report.run_id]["status"] = report.status.value
-                self._runs[report.run_id]["ended_at"] = (
-                    report.ended_at.isoformat() if report.ended_at else None
-                )
+            self._runs[report.run_id]["ended_at"] = (
+                report.ended_at.isoformat() if report.ended_at else None
+            )
 
     def read_run(self, run_id: str) -> dict[str, Any] | None:
         with self._lock:
@@ -188,11 +222,39 @@ class InMemoryRunHistoryProvider:
                 "report": dict(self._reports.get(run_id, {})),
             }
 
+    def _meta_for_run(self, run_id: str) -> dict[str, Any]:
+        meta = dict(self._runs.get(run_id, {}))
+        if meta:
+            return meta
+        report = self._reports.get(run_id)
+        if report:
+            return {
+                "run_id": run_id,
+                "pipeline_id": str(report.get("pipeline_id") or ""),
+                "plan_id": report.get("plan_id"),
+                "status": str(report.get("status") or "unknown"),
+                "started_at": report.get("started_at") or datetime.now(UTC).isoformat(),
+                "ended_at": report.get("ended_at"),
+                "metadata": {},
+            }
+        return {
+            "run_id": run_id,
+            "pipeline_id": "",
+            "plan_id": None,
+            "status": "unknown",
+            "started_at": datetime.now(UTC).isoformat(),
+            "metadata": {},
+        }
+
     def list_runs(self, query: RunHistoryQuery | None = None) -> list[RunHistoryEntry]:
         q = query or RunHistoryQuery()
+        since = coerce_utc(q.since) if q.since is not None else None
+        until = coerce_utc(q.until) if q.until is not None else None
         with self._lock:
+            run_ids = set(self._runs) | set(self._reports) | set(self._events)
             entries: list[RunHistoryEntry] = []
-            for run_id, meta in self._runs.items():
+            for run_id in run_ids:
+                meta = self._meta_for_run(run_id)
                 if q.pipeline_id and meta.get("pipeline_id") != q.pipeline_id:
                     continue
                 status = str(meta.get("status") or "unknown")
@@ -204,9 +266,9 @@ class InMemoryRunHistoryProvider:
                     if isinstance(started_raw, str)
                     else datetime.now(UTC)
                 )
-                if q.since and started < q.since:
+                if since and started < since:
                     continue
-                if q.until and started > q.until:
+                if until and started > until:
                     continue
                 ended_raw = meta.get("ended_at")
                 ended = (
@@ -319,6 +381,22 @@ class FileRunHistoryProvider:
     ) -> None:
         assert self.policy is not None
         with self._lock:
+            existing = self._memory._runs.get(run_id)
+            if existing is not None:
+                status = str(existing.get("status") or "")
+                if status in _TERMINAL_RUN_STATUSES:
+                    merged = dict(existing.get("metadata") or {})
+                    merged.update(dict(metadata or {}))
+                    existing["metadata"] = merged
+                    if plan_id is not None:
+                        existing["plan_id"] = plan_id
+                    write_text_safe(
+                        self._run_dir(run_id) / "meta.json",
+                        json.dumps(existing, sort_keys=True, indent=2),
+                        self.policy,
+                        run_id=run_id,
+                    )
+                    return
             self._memory.create_run(
                 run_id=run_id,
                 pipeline_id=pipeline_id,
@@ -353,15 +431,9 @@ class FileRunHistoryProvider:
             self._memory.append_event(event)
             run_dir = self._run_dir(run_id)
             run_dir.mkdir(parents=True, exist_ok=True)
-            events_path = run_dir / "events.jsonl"
-            existing = ""
-            if events_path.exists():
-                _resolved, existing, _ = read_text_safe(
-                    events_path, self.policy, run_id=run_id
-                )
-            write_text_safe(
-                events_path,
-                existing + json.dumps(payload, sort_keys=True) + "\n",
+            append_line_safe(
+                run_dir / "events.jsonl",
+                json.dumps(payload, sort_keys=True),
                 self.policy,
                 run_id=run_id,
             )
@@ -380,6 +452,14 @@ class FileRunHistoryProvider:
             )
             meta_path = run_dir / "meta.json"
             meta = dict(self._memory._runs.get(report.run_id, {}))
+            if not meta:
+                meta = {
+                    "run_id": report.run_id,
+                    "pipeline_id": report.pipeline_id,
+                    "plan_id": report.plan_id,
+                    "started_at": report.started_at.isoformat(),
+                    "metadata": {},
+                }
             meta["status"] = report.status.value
             meta["ended_at"] = report.ended_at.isoformat() if report.ended_at else None
             write_text_safe(

@@ -38,12 +38,16 @@ Start with the narrowest protocol that owns the behavior:
 | Orchestrator compiler | `etlantic.orchestration` | `etlantic.orchestrator_plugins` | `run_orchestrator_conformance_suite` |
 | Portable transform compiler | `etlantic.transform` | `etlantic.transform_compilers` | `run_portable_transform_conformance_suite` |
 | Secret provider | `etlantic.secrets` | Runtime/profile registration | `run_secret_conformance_suite` |
+| Observability provider | `etlantic.observability` | `etlantic.observability_providers` | `run_observability_conformance_suite` |
+| Run history provider | `etlantic.observability` | `etlantic.run_history_providers` | `run_run_history_conformance_suite` |
+| Event consumer | `etlantic.observability` | `etlantic.event_consumers` | `run_event_consumer_conformance_suite` |
 
-Storage, resource, and observability extension documents describe integration
-patterns that are **not** backed by package entry-point discovery in **0.33**
-(many remain Future design / Design Proposals). Do
-not publish against a proposed discovery group. Use the public runtime/profile
-registration surface documented for that category.
+Storage and resource extension documents describe integration patterns that are
+**not** backed by package entry-point discovery in **0.34** (many remain Future
+design / Design Proposals). Observability, run history, and event consumers
+**are** discoverable entry points as of 0.34. Do not publish against a proposed
+discovery group. Use the public runtime/profile registration surface documented
+for other categories.
 
 Read the relevant protocol page before implementing the package:
 

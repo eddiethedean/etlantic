@@ -5,7 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
-from etlantic.observability.history import RunHistoryProvider, RunHistoryQuery
+from etlantic.observability.history import (
+    RunHistoryProvider,
+    RunHistoryQuery,
+    coerce_utc,
+)
 from etlantic.reports.file_store import compare_reports
 from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.store import ReportStore
@@ -33,16 +37,19 @@ def query_reports(
     limit: int | None = None,
 ) -> list[PipelineRunReport]:
     """Filter in-process or file-backed reports without backend-specific classes."""
+    since_utc = coerce_utc(since) if since is not None else None
+    until_utc = coerce_utc(until) if until is not None else None
     items = store.list(pipeline_id=pipeline_id, limit=None)
     filtered: list[PipelineRunReport] = []
     for report in items:
         if status and report.status.value != status:
             continue
-        if since and report.started_at < since:
+        if since_utc and report.started_at < since_utc:
             continue
-        if until and report.started_at > until:
+        if until_utc and report.started_at > until_utc:
             continue
         filtered.append(report)
+    filtered.sort(key=lambda r: r.started_at, reverse=True)
     if limit is not None:
         filtered = filtered[:limit]
     return filtered

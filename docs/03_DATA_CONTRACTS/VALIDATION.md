@@ -2,12 +2,12 @@
 
 Validation is a core part of the ETLantic data-contract lifecycle.
 
-> **Status: Partially available in 0.33.** Record validation through
+> **Status: Partially available in 0.34.** Record validation through
 > ContractModel/Pydantic, pipeline graph validation, named validation policies,
 > dataframe validation outcomes, portable quality gates, and normalized runtime
 > validation evidence are public. Callback-based invalid-data handling,
 > `ValidationMode`, and a `Pipeline.validate_data()` API are design direction,
-> not public 0.33 APIs.
+> not public 0.34 APIs.
 
 ETLantic coordinates **when** validation happens, ContractModel defines **what valid data means**, and execution plugins determine **how validation is performed efficiently** for a chosen runtime.
 
@@ -308,7 +308,7 @@ Silent omission is not allowed.
 
 ## Validation Modes
 
-The following modes describe the intended enforcement spectrum. ETLantic 0.33
+The following modes describe the intended enforcement spectrum. ETLantic 0.34
 does not export a `ValidationMode` enum.
 
 ### Full
@@ -342,7 +342,7 @@ production = Profile(
     name="production",
     security_mode="production",
     validation_policy="strict",
-    plugin_allowlist={"etlantic-polars": ">=0.33,<0.34"},
+    plugin_allowlist={"etlantic-polars": ">=0.34.0,<0.35"},
 )
 ```
 
@@ -515,7 +515,7 @@ Users should not have to parse raw Pydantic error structures.
 
 ## Sync and Async Validation
 
-ETLantic 0.33 does not expose an `on_invalid_data` decorator. Callback-based
+ETLantic 0.34 does not expose an `on_invalid_data` decorator. Callback-based
 invalid-data handling, if added later, must define synchronous and asynchronous
 behavior without weakening plan-time capability checks.
 

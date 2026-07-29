@@ -58,7 +58,7 @@
 
 ## Documentation audits
 
-- [0.33](DOCUMENTATION_AUDIT_0_33.md) (current remediation)
+- [0.33](DOCUMENTATION_AUDIT_0_33.md) (prior remediation)
 - [0.25 adoption](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
 - [0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [0.24](DOCUMENTATION_AUDIT_0_24.md)

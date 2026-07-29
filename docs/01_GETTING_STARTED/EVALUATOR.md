@@ -34,6 +34,8 @@ manager.
 | Validation and secret-free `PipelinePlan` | Yes |
 | [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange | Yes |
 | Local in-process runtime + run reports | Yes |
+| Observability providers + run history + event consumers | Yes (0.34 M6) |
+| `etlantic report query` over durable history | Yes |
 | Memory / callable / JSON / CSV / no-write storage | Yes |
 | Env + mounted-file secrets | Yes |
 | Polars / Pandas plugins | Yes (separate packages) |

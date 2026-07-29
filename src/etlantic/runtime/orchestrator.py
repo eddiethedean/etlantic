@@ -395,6 +395,14 @@ class LocalOrchestrator:
 
     def _persist_report(self, report: PipelineRunReport) -> None:
         """Persist a terminal report once, with fault-injection and gap detection."""
+        bridge = getattr(self.runtime, "observability_bridge", None)
+        snap = self.plan.profile_snapshot or {}
+        durable_audit = snap.get("observability_delivery") == "durable_audit"
+        history_first = (
+            durable_audit and bridge is not None and bridge._active_history is not None
+        )
+        if history_first and bridge is not None:
+            bridge.persist_report(report)
         try:
             self.runtime.reports.put(report)
         except Exception as exc:
@@ -435,8 +443,7 @@ class LocalOrchestrator:
             ) from exc
         self._persistence.report_persisted = True
         self._persistence.terminal_reports_written += 1
-        bridge = getattr(self.runtime, "observability_bridge", None)
-        if bridge is not None:
+        if bridge is not None and not history_first:
             bridge.persist_report(report)
 
     def _finalize_incomplete_steps(

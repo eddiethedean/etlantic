@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Structured run logs can fan out to observability providers via runtime bridge
+- `durable_audit` fail-closed on run-history event append (not only terminal reports)
+- File run-history JSONL append uses locked O_APPEND (cross-process safe; no full-file read)
+- Run history query/list: orphan reports, idempotent `create_run`, UTC filter coercion, sorted report queries
+- Production conformance requires `run_history_provider` when `observability_delivery` is `durable_audit`
+- `etlantic report query` supports `--since` / `--until`; documentation drift for 0.34 M6 surfaces
 
 ## [0.33.0] - 2026-07-29
 

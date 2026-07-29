@@ -19,3 +19,25 @@ def test_production_profile_with_allowlist_passes() -> None:
     )
     result = run_production_conformance_suite(profile)
     assert result.passed
+
+
+def test_durable_audit_requires_run_history_provider() -> None:
+    profile = production_profile(
+        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        assets={"in": "json", "out": "json"},
+        observability_delivery="durable_audit",
+    )
+    result = run_production_conformance_suite(profile)
+    assert not result.passed
+    assert any("run_history_provider" in msg for msg in result.failures)
+
+
+def test_durable_audit_with_history_provider_passes() -> None:
+    profile = production_profile(
+        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        assets={"in": "json", "out": "json"},
+        observability_delivery="durable_audit",
+        run_history_provider="file",
+    )
+    result = run_production_conformance_suite(profile)
+    assert result.passed

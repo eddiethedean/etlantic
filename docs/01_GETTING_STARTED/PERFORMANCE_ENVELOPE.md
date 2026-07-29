@@ -5,13 +5,13 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.33 |
+| Topic | 0.34 |
 |---|---|
 | Maturity | Beta |
 | Support | Community; **no SLA** |
 | Scale claim | Measured **framework overhead** envelopes only |
 | Engine sizing | Adopter-owned (measure Polars/Pandas/SQL/Spark yourself) |
-| Multi-tenant / HA | Not included in 0.33; multi-tenancy is [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md), HA claims remain separately gated |
+| Multi-tenant / HA | Not included in 0.34; multi-tenancy is [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md), HA claims remain separately gated |
 
 ## What ETLantic claims
 

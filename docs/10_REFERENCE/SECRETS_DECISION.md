@@ -1,4 +1,4 @@
-# Secrets decision tree (0.33)
+# Secrets decision tree (0.34)
 
 > **Status: Available in ETLantic 0.34.0.** Normative rules for `SecretRef`
 > and environment providers. Plans and reports stay secret-free.

@@ -117,6 +117,13 @@ class ObservabilityBridge:
             except Exception as exc:
                 _LOG.warning("Run history append failed: %s", exc)
                 self._provider_errors.append(str(exc))
+                if (
+                    self.profile
+                    and self.profile.observability_delivery == "durable_audit"
+                ):
+                    raise RuntimeError(
+                        "Run history event persistence failed under durable_audit"
+                    ) from exc
 
     def emit_log(self, record: LogRecord) -> None:
         safe = LogRecord(

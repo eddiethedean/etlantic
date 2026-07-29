@@ -22,6 +22,7 @@ from repository `examples/` unless you have cloned the repo.
 | Engines | Local Python; Polars; Pandas; SQL (`etlantic-sql`); PySpark |
 | Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`) |
 | Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist` |
+| Observability and evidence (0.34) | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
 | Facades | `medallantic` medallion; optional `etlantic-keyring`, SQLModel, OTel |
 
 ## Limits (read before production)
@@ -111,6 +112,10 @@ with 0.40–0.43 incubation gates and a 0.44 graduation gate.
 | Capability | Status |
 |---|---|
 | CLI compile / generate / diff / plugin / schema / reliability / viz | Available |
+| Observability providers (`etlantic.observability/1`) | Available |
+| Run history providers (`etlantic.run_history/1`) | Available (file + in-memory reference) |
+| Event consumers + `etlantic report query` | Available |
+| Lifecycle event correlation (`etlantic.lifecycle_event/1`) | Available |
 | Plugin allowlists and version pins | Available |
 | SARIF diagnostics and file schema history | Available |
 | File-backed report store and report compare | Available |
@@ -151,7 +156,8 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 
 **Already shipped (0.28–0.34):** Plugin SDK `/1` freeze; quality; materialization;
-PySpark/Delta parity; SQL builder parity. See
+PySpark/Delta parity; SQL builder parity; M6 observability, run history, and
+production conformance. See
 [What's New in 0.34](WHATS_NEW_0_34.md).
 
 ## CI starter

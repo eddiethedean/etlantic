@@ -324,6 +324,37 @@ def check_zero_x_roadmap_phases() -> None:
                 )
 
 
+def check_residual_table_version_drift(package_version: str) -> None:
+    """Residual evaluation tables must track the current minor, not the prior one."""
+    major_s, minor_s = package_version.split(".")[:2]
+    prior_minor = f"{major_s}.{int(minor_s) - 1}"
+    stale_header = f"| Topic | {prior_minor} |"
+    pages = (
+        ROOT / "docs/06_EXECUTION/DEPLOYMENT.md",
+        ROOT / "docs/01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md",
+    )
+    for path in pages:
+        text = path.read_text(encoding="utf-8")
+        if package_version not in text:
+            continue
+        if stale_header in text:
+            raise SystemExit(
+                f"{path}: residual evaluation table still labels {prior_minor}; "
+                f"expected current minor header for {package_version}"
+            )
+
+
+def check_observability_doc_consistency() -> None:
+    obs_today = (ROOT / "docs/06_EXECUTION/OBSERVABILITY_TODAY.md").read_text(
+        encoding="utf-8"
+    )
+    if "OBSERVABILITY_PROVIDER" in obs_today and "(future)" in obs_today:
+        raise SystemExit(
+            "OBSERVABILITY_TODAY.md must not label shipped OBSERVABILITY_PROVIDER "
+            "as future"
+        )
+
+
 def main() -> None:
     package_version = version_from(
         ROOT / "src/etlantic/_version.py", r'__version__ = "([^"]+)"'
@@ -359,6 +390,8 @@ def main() -> None:
     check_standard_links()
     check_control_plane_plan()
     check_zero_x_roadmap_phases()
+    check_residual_table_version_drift(package_version)
+    check_observability_doc_consistency()
 
     current_markers = [
         ROOT / "README.md",
@@ -977,6 +1010,10 @@ def main() -> None:
         "medallantic",
         "etlantic-keyring",
         "Graphviz",
+        "Observability providers",
+        "Run history providers",
+        "Event consumers",
+        "report query",
     ):
         if required not in capabilities:
             raise SystemExit(f"CAPABILITIES.md missing shipped surface {required!r}")

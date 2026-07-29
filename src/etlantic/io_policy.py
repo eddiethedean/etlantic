@@ -454,6 +454,55 @@ def write_text_safe(
     )
 
 
+def append_line_safe(
+    path: str | Path,
+    line: str,
+    policy: SafeIoPolicy,
+    *,
+    run_id: str = "io",
+    encoding: str = "utf-8",
+) -> SafeIoResult:
+    """Append one line under file lock using O_APPEND (no full-file read)."""
+    resolved, events = resolve_under_policy(path, policy, run_id=run_id)
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    text = line if line.endswith("\n") else f"{line}\n"
+    payload = text.encode(encoding)
+    digest = (
+        "sha256:" + hashlib.sha256(payload).hexdigest()
+        if policy.compute_integrity_digest
+        else None
+    )
+    lock: Path | None = None
+    if policy.enable_locking:
+        lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)
+    try:
+        fd = os.open(str(resolved), os.O_APPEND | os.O_WRONLY | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, payload)
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    finally:
+        if lock is not None:
+            _release_lock(lock)
+    events.append(
+        SecurityEvent(
+            kind="safe_io",
+            run_id=run_id,
+            provider="filesystem",
+            outcome="appended",
+            subject=str(resolved),
+            metadata={"digest": digest, "bytes": len(payload)},
+        )
+    )
+    return SafeIoResult(
+        path=resolved,
+        digest=digest,
+        bytes_written=len(payload),
+        security_events=events,
+    )
+
+
 def write_json_safe(
     path: str | Path,
     data: Any,

@@ -39,7 +39,7 @@ Unsupported values are errors.
 
 ## Current claims
 
-| Area | Status in 0.33 |
+| Area | Status in 0.34 |
 |---|---|
 | Native class/builder authoring | Available |
 | Deterministic ETLantic lowering | Available |
@@ -54,6 +54,8 @@ Unsupported values are errors.
 | Live SQL `SqlPipelineBuilder` bridge | Available |
 | SQLite/PostgreSQL differential parity | Available; Tier A |
 | Delta maintenance operations | Available through `etlantic-pyspark` when its declared capabilities are present |
+| `explain_medallion_plan` + lifecycle views (M6) | Available |
+| Medallion profile templates (`medallion_*_profile`) | Available |
 
 A roadmap item is not a compatibility claim until its conformance and
 differential gates pass.

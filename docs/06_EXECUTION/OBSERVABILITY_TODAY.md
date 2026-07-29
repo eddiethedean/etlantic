@@ -24,4 +24,4 @@
 
 - [Run Reports](RUN_REPORTS.md)
 - [Ops Pilot](OPS_PILOT.md)
-- [Observability Provider (future)](../07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md)
+- [Observability Provider](../07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md)

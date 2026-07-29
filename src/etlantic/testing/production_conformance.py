@@ -26,6 +26,14 @@ def check_production_profile(profile: Profile) -> ProductionConformanceResult:
     result.checks.append("non_empty_allowlist")
     if not dict(profile.plugin_allowlist or {}):
         result.failures.append("Production profile requires non-empty plugin_allowlist")
+    result.checks.append("durable_audit_history_provider")
+    if (
+        profile.observability_delivery == "durable_audit"
+        and not profile.run_history_provider
+    ):
+        result.failures.append(
+            "durable_audit observability_delivery requires run_history_provider"
+        )
     return result
 
 
