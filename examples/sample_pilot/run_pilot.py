@@ -1,4 +1,4 @@
-"""Validate (SARIF), plan, and run the production-shaped pilot."""
+"""Validate, plan, and run the production-shaped pilot."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ import os
 import sys
 from pathlib import Path
 
+from etlantic.profile import load_profile
+
 _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
-
-from etlantic.profile import load_profile
 
 from pipeline import PilotPipeline  # noqa: E402
 

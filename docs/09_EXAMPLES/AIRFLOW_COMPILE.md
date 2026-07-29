@@ -39,7 +39,4 @@ in the environment that will *run* the generated DAG.
 ## See also
 
 - [Airflow execution guide](../06_EXECUTION/AIRFLOW.md)
-- Design study (aspirational):
-  [Airflow Pipeline](https://github.com/eddiethedean/etlantic/blob/main/docs/09_EXAMPLES/AIRFLOW_PIPELINE.md)
-  (GitHub only; not a current API guide)
 - [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)

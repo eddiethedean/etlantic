@@ -43,7 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
     !path.includes("/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS/") &&
     !path.includes("/09_EXAMPLES/CONTRACT_FIRST_TUTORIAL/") &&
     !path.includes("/09_EXAMPLES/PREFECT_RUN/") &&
-    !path.includes("/09_EXAMPLES/SAMPLE_PROJECT/");
+    !path.includes("/09_EXAMPLES/SAMPLE_PROJECT/") &&
+    !path.includes("/09_EXAMPLES/PRODUCTION_SAMPLE/");
   const isFutureVisualization =
     path.includes("/08_VISUALIZATION/") &&
     !path.endsWith("/08_VISUALIZATION/") &&

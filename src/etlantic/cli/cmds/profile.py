@@ -121,7 +121,11 @@ def register_profile_commands(app: typer.Typer) -> None:
             raise typer.Exit(ec.INVALID_MODEL) from exc
         semantics = _validate_profile_semantics(profile, cli.workspace().root)
         trust_error = any(
-            s["severity"] == "error" and s["code"] in {"PMCFG200", "PMPLUG401"}
+            s["severity"] == "error"
+            and (
+                s["code"] in {"PMCFG200", "PMPLUG401"}
+                or str(s.get("code", "")).startswith("PMPLUG")
+            )
             for s in semantics
         )
         valid = not errors and not any(s["severity"] == "error" for s in semantics)

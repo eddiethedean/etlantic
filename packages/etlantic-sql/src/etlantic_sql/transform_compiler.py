@@ -206,7 +206,10 @@ class SqlTransformCompiler:
             raise ValueError("Compiled transform missing native plan")
 
         dialect, engine = _open_engine(context.metadata)
-        compiler = SqlCompiler(dialect=dialect, supports_merge=False)
+        compiler = SqlCompiler(
+            dialect=dialect,
+            supports_merge=str(dialect).startswith("postgresql"),
+        )
         frames: dict[str, SqlRelationFrame] = {}
         for name, value in inputs.items():
             frames[name] = _as_frame(value, name=name)

@@ -292,6 +292,26 @@ class PlanningContext:
         trust_records: list[dict[str, Any]] = []
         plan_diags: tuple[Diagnostic, ...] = ()
 
+        from etlantic.plugins.coordinator import profile_plugin_key
+
+        planning_key = profile_plugin_key(resolved)
+        last_key = getattr(reg, "_etlantic_planning_profile_key", None)
+
+        def _clear_non_builtin_plugins() -> None:
+            builtins = frozenset({"local", "null", "env", "env-secrets"})
+            for name in list(reg.plugins):
+                if name in builtins:
+                    continue
+                descriptor = reg.plugins.pop(name)
+                if descriptor.engine and descriptor.engine in reg.engines:
+                    still = any(
+                        d.engine == descriptor.engine for d in reg.plugins.values()
+                    )
+                    if not still:
+                        reg.engines.pop(descriptor.engine, None)
+                if name in reg.secret_providers:
+                    reg.secret_providers.pop(name, None)
+
         def _needs_planning_discovery() -> bool:
             from etlantic.plugins.coordinator import (
                 should_discover_dataframe_plugins,
@@ -300,6 +320,8 @@ class PlanningContext:
             )
 
             if registry is None:
+                return True
+            if last_key is not None and last_key != planning_key:
                 return True
             if should_discover_dataframe_plugins(engine) and engine not in reg.engines:
                 return True
@@ -322,6 +344,8 @@ class PlanningContext:
         if _needs_planning_discovery():
             from etlantic.plugins.coordinator import discover_planning_plugins
 
+            if registry is not None and last_key is not None and last_key != planning_key:
+                _clear_non_builtin_plugins()
             trust_records, discovered = discover_planning_plugins(
                 resolved,
                 reg,
@@ -330,6 +354,9 @@ class PlanningContext:
                 spark_engine=spark_engine,
             )
             plan_diags = tuple(discovered)
+            reg._etlantic_planning_profile_key = planning_key  # type: ignore[attr-defined]
+        elif last_key is None:
+            reg._etlantic_planning_profile_key = planning_key  # type: ignore[attr-defined]
 
         # Prefer capabilities advertised by the selected engine (e.g. lazy)
         # rather than inventing requirements from first-party engine names.

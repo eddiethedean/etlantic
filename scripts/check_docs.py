@@ -495,9 +495,11 @@ def main() -> None:
                 and expected_migration_label not in text
                 and f"{previous_minor} → {major_minor_for_notes}" not in text
             ):
-                # Allow filename-only links in tables (MIGRATION_0_32_TO_0_33)
-                # when the From→To column already states the span.
-                pass
+                raise SystemExit(
+                    f"{path}: links {current_migration.name} without "
+                    f"{expected_migration_label!r} (or From→To column "
+                    f"{previous_minor} → {major_minor_for_notes})"
+                )
             if ships_in_prior in text.lower():
                 raise SystemExit(
                     f"{path}: still says {ships_in_prior!r}; update to "
@@ -946,6 +948,10 @@ def main() -> None:
         raise SystemExit(
             "status-banner.js must exclude runnable example guides from design banner"
         )
+    if "PRODUCTION_SAMPLE/" not in banner_js:
+        raise SystemExit(
+            "status-banner.js must exclude PRODUCTION_SAMPLE from design-example banner"
+        )
     if "PREFECT_RUN/" not in banner_js:
         raise SystemExit(
             "status-banner.js must exclude PREFECT_RUN from design-example banner"
@@ -954,6 +960,19 @@ def main() -> None:
         raise SystemExit(
             "status-banner.js must exclude CONTRACT_FIRST_TUTORIAL from design banner"
         )
+
+    # GitHub blob links into docs/ must point at files that still exist.
+    blob_re = re.compile(
+        r"https://github\.com/[^/\s]+/[^/\s]+/blob/[^/\s]+/(docs/[^\s)#]+\.md)"
+    )
+    for path in (ROOT / "docs").rglob("*.md"):
+        text = path.read_text(encoding="utf-8")
+        for match in blob_re.finditer(text):
+            rel = match.group(1)
+            if not (ROOT / rel).exists():
+                raise SystemExit(
+                    f"{path}: dead GitHub docs link to missing {rel}"
+                )
     if 'banner.dataset.etlanticStatus = "future"' not in banner_js:
         raise SystemExit("status-banner.js missing semantic future-status marker")
     if "Experimental in ETLantic 0.7" not in banner_js:

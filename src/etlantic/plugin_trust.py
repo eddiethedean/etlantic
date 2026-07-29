@@ -93,6 +93,35 @@ def plugin_allowed(
         return False
 
 
+def allowlist_pin_invalid(pin: str | None) -> bool:
+    """Return True when a non-empty pin is not a valid packaging specifier."""
+    if pin is None or pin == "":
+        return False
+    try:
+        SpecifierSet(_normalize_version_pin(str(pin)))
+    except InvalidSpecifier:
+        return True
+    return False
+
+
+def package_identity_candidates(
+    *,
+    distribution_name: str | None = None,
+    package: str | None = None,
+) -> list[str]:
+    """Return package-identity keys used for allowlist matching.
+
+    Engine / entry short names are intentionally excluded so a plugin cannot
+    spoof authorization by setting ``engine="etlantic-polars"``.
+    """
+    out: list[str] = []
+    for value in (distribution_name, package):
+        text = str(value or "").strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
 def is_builtin_allowlist_exempt(name: str | None) -> bool:
     """Return True for in-tree stub plugin identities exempt from package pins."""
     return str(name or "").strip().lower() in BUILTIN_ALLOWLIST_EXEMPT
@@ -155,12 +184,14 @@ def filter_plugins_by_allowlist(
             or getattr(plugin, version_attr, None)
             or None
         )
-        identity_candidates = [
-            str(pname),
-            str(key),
-            str(metadata.get("package") or "") or None,
-            str(metadata.get("distribution_name") or "") or None,
-        ]
+        identity_candidates = package_identity_candidates(
+            distribution_name=str(metadata.get("distribution_name") or "") or None,
+            package=str(metadata.get("package") or "") or None,
+        )
+        # Prefer package metadata; fall back to plugin.info.name when it looks
+        # like a distribution (etlantic-*), never bare engine keys alone.
+        if str(pname).startswith("etlantic-") and str(pname) not in identity_candidates:
+            identity_candidates.append(str(pname))
         listed_name = next(
             (c for c in identity_candidates if c and c in allowlist),
             None,

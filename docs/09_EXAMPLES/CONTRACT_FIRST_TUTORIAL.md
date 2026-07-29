@@ -4,9 +4,7 @@
 > `write_contracts` / `load_bundle` APIs (no separate companion script).
 
 Generate ODCS/DTCS/DPCS from a code-first pipeline, then reload contracts with
-the shipped interchange helpers. Longer design studies under
-[Contract First](https://github.com/eddiethedean/etlantic/blob/main/docs/09_EXAMPLES/CONTRACT_FIRST.md)
-are **not** current API guides.
+the shipped interchange helpers.
 
 ## Generate contracts
 

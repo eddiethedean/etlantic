@@ -120,7 +120,7 @@ class PipelineRuntime:
         # Drop previously discovered (non-builtin) registry descriptors before
         # re-registering the authorized set for the new profile. Manual plugins
         # are re-registered below after discovery.
-        _BUILTIN_PLUGIN_NAMES = frozenset({"local", "null", "env-secrets"})
+        _BUILTIN_PLUGIN_NAMES = frozenset({"local", "null", "env", "env-secrets"})
         for name in list(self.registry.plugins):
             if name not in _BUILTIN_PLUGIN_NAMES:
                 descriptor = self.registry.plugins.pop(name)

@@ -143,6 +143,19 @@ class PluginDiscoveryCoordinator:
                     phase="plugin_authorize",
                 )
             )
+            if register_to_registry and registry is not None:
+                builtins = frozenset({"local", "null", "env", "env-secrets"})
+                for name in list(registry.plugins):
+                    if name in builtins:
+                        continue
+                    descriptor = registry.plugins.pop(name)
+                    if descriptor.engine and descriptor.engine in registry.engines:
+                        still = any(
+                            d.engine == descriptor.engine
+                            for d in registry.plugins.values()
+                        )
+                        if not still:
+                            registry.engines.pop(descriptor.engine, None)
             return result
 
         groups = list(_RUNTIME_GROUPS) if include_runtime_groups else []

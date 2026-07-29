@@ -12,7 +12,10 @@ if TYPE_CHECKING:
 
 def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
     """Enforce production plugin_allowlist fail-closed (empty list is an error)."""
-    from etlantic.plugin_trust import filter_plugins_by_allowlist
+    from etlantic.plugin_trust import (
+        _NON_BLOCKING_TRUST_CODES,
+        filter_plugins_by_allowlist,
+    )
     from etlantic.transform.discovery import discover_transform_compilers_for_profile
 
     profile = context.profile
@@ -41,4 +44,11 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
             selected[f"transform_compiler:{engine}"] = compiler
 
     _kept, diagnostics = filter_plugins_by_allowlist(selected, profile)
-    return list(diagnostics) + transform_diags
+    # Sibling allowlist denials from transform discovery are expected when other
+    # packages remain installed; do not fail validation for non-selected engines.
+    filtered_transform = [
+        d
+        for d in transform_diags
+        if getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+    ]
+    return list(diagnostics) + filtered_transform

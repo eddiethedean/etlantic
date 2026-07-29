@@ -6,8 +6,11 @@ from typing import Any, Protocol
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.plugin_trust import (
+    allowlist_pin_invalid,
     empty_production_allowlist_message,
+    is_builtin_allowlist_exempt,
     is_production_profile,
+    package_identity_candidates,
     plugin_allowed,
 )
 from etlantic.profile import Profile
@@ -69,7 +72,7 @@ def _plugin_event(
 
 
 class BaseAuthorizationPolicy:
-    """Shared authorization implementation."""
+    """Shared allowlist authorization (package identity only)."""
 
     def authorize(
         self,
@@ -134,19 +137,62 @@ class BaseAuthorizationPolicy:
             return authorized, diagnostics, events
 
         for item in discovered:
-            candidates = [
+            identity_names = [
                 item.distribution_name,
                 item.manifest.package if item.manifest else None,
                 item.name,
                 item.engine,
             ]
+            if any(is_builtin_allowlist_exempt(str(n)) for n in identity_names if n):
+                auth = _with_auth(item, "allowed")
+                authorized.append(auth)
+                events.append(
+                    _plugin_event(
+                        run_id=run_id,
+                        item=auth,
+                        outcome="allowed",
+                        message="Builtin stub exempt from package allowlist.",
+                    )
+                )
+                continue
+
+            candidates = package_identity_candidates(
+                distribution_name=item.distribution_name,
+                package=item.manifest.package if item.manifest else None,
+            )
             version = item.distribution_version or (
                 item.manifest.version if item.manifest else None
             )
+
+            listed_name = next((c for c in candidates if c in allowlist), None)
+            if listed_name is not None:
+                pin = allowlist.get(listed_name)
+                if allowlist_pin_invalid(pin if isinstance(pin, str) else None):
+                    diagnostics.append(
+                        Diagnostic(
+                            code="PMPLUG403",
+                            severity=Severity.ERROR if production else Severity.WARNING,
+                            message=(
+                                f"Invalid plugin_allowlist pin for "
+                                f"{item.distribution_name or item.name!r}: {pin!r}."
+                            ),
+                            path=("plugin", item.distribution_name or item.name),
+                            phase="plugin_authorize",
+                        )
+                    )
+                    events.append(
+                        _plugin_event(
+                            run_id=run_id,
+                            item=_with_auth(item, "denied"),
+                            outcome="denied",
+                            message="Invalid allowlist pin.",
+                        )
+                    )
+                    continue
+
             ok = any(
                 plugin_allowed(name=str(c), version=version, allowlist=allowlist)
                 for c in candidates
-                if c
             )
             if ok:
                 auth = _with_auth(item, "allowed")

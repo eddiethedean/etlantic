@@ -68,8 +68,6 @@ def __getattr__(name: str) -> Any:
 class PandasDataframePlugin:
     """Reference Pandas dataframe execution plugin (eager-only)."""
 
-    """Compatibility Pandas dataframe execution plugin (eager only)."""
-
     def __init__(self) -> None:
         has_arrow = arrow_available()
         mechanisms = {

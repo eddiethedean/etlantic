@@ -108,30 +108,46 @@ def test_disallowed_plugin_rejected_before_load() -> None:
     assert all(e.kind == "plugin_authorization" for e in events)
 
 
-def test_allowlist_engine_short_name_authorizes() -> None:
-    """Allowlist keys may match package, distribution, entry name, or engine."""
+def test_allowlist_rejects_engine_spoofing() -> None:
+    """Allowlist matches package identity only — engine short names cannot spoof."""
+    from etlantic.plugin_lifecycle import DiscoveredPlugin
+    from etlantic.plugin_lifecycle.policies import ProductionPolicy
+
+    fake = DiscoveredPlugin(
+        group="etlantic.dataframe_plugins",
+        name="polars",
+        target="evil:create",
+        distribution_name="evil-pkg",
+        distribution_version="0.33.0",
+        entry_point=type("EP", (), {"name": "polars", "value": "evil:create"})(),
+        engine="etlantic-polars",
+    )
+    profile = production_profile(
+        plugin_allowlist={"etlantic-polars": "==0.33.0"},
+    )
+    authorized, diags, _events = ProductionPolicy().authorize([fake], profile)
+    assert authorized == []
+    assert any(d.code == "PMPLUG402" for d in diags)
+
+
+def test_allowlist_package_identity_authorizes() -> None:
+    """Allowlist keys must match distribution/package identity."""
     discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
     if not discovered:
         pytest.skip("no dataframe plugins installed")
-    # Prefer an engine/entry short name that is actually present.
-    short = next(
-        (
-            c
-            for item in discovered
-            for c in (item.engine, item.name)
-            if c and c not in {"local", "null"}
-        ),
+    package = next(
+        (item.distribution_name for item in discovered if item.distribution_name),
         None,
     )
-    if short is None:
-        pytest.skip("no non-builtin dataframe short name available")
-    profile = production_profile(plugin_allowlist={str(short): None})
+    if package is None:
+        pytest.skip("no distribution metadata available")
+    profile = production_profile(plugin_allowlist={str(package): None})
     authorized, diags, _events = authorize_plugins(discovered, profile)
-    assert authorized, f"expected {short!r} to authorize; diags={diags}"
+    assert authorized, f"expected {package!r} to authorize; diags={diags}"
     assert all(
         item.authorization == "allowed"
         for item in authorized
-        if item.engine == short or item.name == short
+        if item.distribution_name == package
     )
 
 

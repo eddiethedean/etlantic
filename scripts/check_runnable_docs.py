@@ -12,11 +12,13 @@ RUNNABLE_PAGES = {
     "docs/06_EXECUTION/POLARS_TUTORIAL.md": "examples/dataframe_parity.py",
     "docs/06_EXECUTION/PANDAS_TUTORIAL.md": "examples/dataframe_parity.py",
     "docs/06_EXECUTION/SQL_TUTORIAL.md": "examples/sql_to_sql.py",
+    "docs/06_EXECUTION/SQL_HELLO_PYPI.md": "examples/sql_hello_pypi.py",
     "docs/06_EXECUTION/PYSPARK_TUTORIAL.md": "examples/pyspark_local.py",
     "docs/06_EXECUTION/AIRFLOW_TUTORIAL.md": "examples/airflow_compile.py",
     "docs/09_EXAMPLES/PREFECT_RUN.md": "examples/prefect_run.py",
     "docs/09_EXAMPLES/AIRFLOW_COMPILE.md": "examples/airflow_compile.py",
     "docs/09_EXAMPLES/PORTABLE_TRANSFORMS.md": "examples/portable_polars_kernel.py",
+    "docs/09_EXAMPLES/PRODUCTION_SAMPLE.md": "examples/sample_pilot/run_pilot.py",
     "docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md": "examples/pipeline_definition_json.py",
 }
 

@@ -73,7 +73,11 @@ def detect_dialect_info(url: str) -> DialectInfo:
 
     # Strip driver suffixes: postgresql+psycopg2 → postgresql
     base = scheme.split("+", 1)[0]
-    if base in {"postgres", "postgresql"}:
+    lowered = raw.lower()
+    # Cockroach often uses postgresql:// URLs — do not claim PG merge/Tier A.
+    if "cockroach" in lowered or base in {"cockroach", "cockroachdb"}:
+        name = "cockroachdb"
+    elif base in {"postgres", "postgresql"}:
         name = "postgresql"
     elif base in {"sqlite", "sqlite3"}:
         name = "sqlite"

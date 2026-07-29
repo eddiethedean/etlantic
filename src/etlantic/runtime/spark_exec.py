@@ -268,7 +268,7 @@ async def cancel_spark_jobs(
             try:
                 advertised = bool(caps().supports("cancellation"))
             except Exception:
-                advertised = True
+                advertised = False
         if not advertised:
             continue
         context = SparkExecutionContext(

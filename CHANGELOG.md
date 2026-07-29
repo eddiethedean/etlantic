@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Authorize plugins on package/distribution identity only (engine short names can no longer spoof allowlists); emit `PMPLUG403` for invalid pins in the authorize path; exempt builtins in lifecycle policy
+- Validation/`ensure_plugins` no longer fail closed on sibling `PMPLUG402` denials for non-selected engines; CLI trust exit ignores non-blocking 402s
+- `PlanningContext` rediscovers and clears non-builtin plugins when the profile allowlist key changes; empty production discovery clears the registry
+- Spark cancel treats capability-probe failures as not advertised (fail closed)
+- Preserve `env` builtin registry stubs across profile switches; `etlantic profile validate` maps all `PMPLUG*` errors to trust exit
+- Portable SQL transform compiler enables merge compile for PostgreSQL dialects; Cockroach-via-`postgresql://` URLs classify as Tier B without merge
+- SQL hello PyPI companion reuses the plugin engine (`examples/sql_hello_pypi.py`); production sample banner/links/docs gates hardened
+
 ## [0.33.0] - 2026-07-29
 
 ### Added
