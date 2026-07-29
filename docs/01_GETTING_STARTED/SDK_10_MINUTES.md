@@ -1,13 +1,20 @@
 # SDK 10-minute tutorial
 
-> **Status: Available in ETLantic 0.34.0.** PyPI-only. No clone required.
+> **Status: Available in ETLantic 0.34.0.** Secondary path — complete the CLI
+> [Quickstart](QUICKSTART.md) (Ada/Grace in `data/out.json`) first. This page
+> is for SDK muscle memory after that green path. No clone required.
 
 Use the curated root (`import etlantic as etl`) for a tiny in-process pipeline.
 
 ## Install
 
+Same install truth as [Installation](INSTALLATION.md) (from `main` until
+`0.34.0` is on PyPI):
+
 ```bash
-python -m pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: python -m pip install 'etlantic==0.34.0'
 ```
 
 ## Author, validate, plan, run
@@ -54,5 +61,7 @@ print(runtime.memory.get("out"))
 ## Notes
 
 - Curated symbols match `_CURATED` — see [API reference](../10_REFERENCE/API_REFERENCE.md).
-- Prefer CLI `init` for file-backed projects; this page is for SDK muscle memory.
-- Next: [First Pipeline](FIRST_PIPELINE.md), [Engine selection](ENGINE_SELECTION.md).
+- **Primary path remains CLI** `init` → validate → run. Use this page only after
+  first file-backed success.
+- Next: [First Pipeline](FIRST_PIPELINE.md) (if you skipped it),
+  [Engine selection](ENGINE_SELECTION.md).

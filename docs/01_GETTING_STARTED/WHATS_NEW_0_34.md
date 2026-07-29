@@ -4,6 +4,13 @@
 > Readiness (Medallantic **M6**): observability providers, durable run history,
 > event consumers, and production conformance.
 
+!!! note "Milestone name vs enterprise claim"
+    “Production readiness” here means the M6 observability/history *pilot*
+    slice. It does **not** mean unrestricted enterprise production. See
+    [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md) and
+    CHANGELOG `[Unreleased]` for post-cut hardening that may land in later
+    0.34.x patches.
+
 ## Highlights
 
 - **Lifecycle event correlation** — `plan_id`, `region_id`, `backend`, and

@@ -3,9 +3,17 @@
 > **Status: Available in ETLantic 0.34.0.** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
+!!! warning "Maturity vs PyPI classifiers"
+    Official engine packages may still declare PyPI classifiers such as
+    **Production/Stable** while **ETLantic core 0.34 is Beta**. Treat the docs
+    **pilot envelope** (Beta, single-tenant, no SLA) as authoritative—not the
+    classifier string alone. See
+    [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
+
 ## Install pins
 
-Prefer exact pins for a controlled pilot:
+Prefer exact pins for a controlled pilot (from `main` until `0.34.0` is on
+PyPI—see [Installation](../01_GETTING_STARTED/INSTALLATION.md)):
 
 ```bash
 pip install 'etlantic==0.34.0'

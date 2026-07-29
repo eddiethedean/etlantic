@@ -6,21 +6,22 @@
     | **First-time / PyPI** | Sections below through [Quickstart](QUICKSTART.md). Use `python -m pip` and `python -m etlantic`. |
     | **Contributor / monorepo** | Skip to [Repository checkout](#repository-checkout-contributors) and use `uv sync`. Do not mix `uv run` example commands with a pip-only install. |
 
-!!! warning "If `pip install etlantic==0.34.0` fails"
-    Until the `v0.34.0` GitHub Release is published to PyPI, the latest
-    published wheel may still be **0.33.0**. Prefer one of:
+!!! warning "Install truth (0.34 docs train)"
+    These docs describe **ETLantic 0.34.0**. As of this writing the latest
+    **PyPI** wheel may still be **0.33.0**. Day-0 evaluation should install
+    from `main` until `pip install etlantic==0.34.0` succeeds:
 
     ```bash
-    # After the 0.34.0 PyPI release (recommended)
-    python -m pip install 'etlantic==0.34.0'
-
-    # Pre-publish evaluation from this repository
+    # Day-0 evaluation from main (use until 0.34.0 is on PyPI)
     python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+    python -m etlantic --version   # expect 0.34.0
+
+    # After the 0.34.0 PyPI release
+    python -m pip install 'etlantic==0.34.0'
     ```
 
-    Confirm with `python -m etlantic --version` (expect `0.34.0` for this docs
-    train). Wrong-version recovery: uninstall, recreate the venv, then reinstall
-    the pin above.
+    Wrong-version recovery: uninstall, recreate the venv, then reinstall with
+    the command that matches your target (`main` or the PyPI pin).
 
 ## Requirements
 
@@ -29,10 +30,9 @@
 
 ## Install core (Day-0 — 2 minutes)
 
-Pin **0.34.0** for reproducible evaluation once it is on PyPI (see warning
-above if the wheel is not published yet). Use a virtual environment. Prefer
-`python -m pip` and `python -m etlantic` so the interpreter you intend is the
-one that runs.
+Use a virtual environment. Prefer `python -m pip` and `python -m etlantic` so
+the interpreter you intend is the one that runs. Lead with the `main` install
+until PyPI publishes `0.34.0`.
 
 ### pip (recommended)
 
@@ -40,7 +40,9 @@ one that runs.
 python -m venv .venv
 source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: python -m pip install 'etlantic==0.34.0'
 python -m etlantic --version
 ```
 
@@ -49,15 +51,17 @@ python -m etlantic --version
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+uv pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: uv pip install 'etlantic==0.34.0'
 python -m etlantic --version
 ```
 
-If you already have a uv project (`pyproject.toml`), you may use
-`uv add 'etlantic==0.34.0'` instead. Create an **empty subdirectory** for
-`python -m etlantic init --with-toml`, or pass `--force` if the directory is
-not empty. **`--force` can overwrite** existing `pipeline.py` / `pyproject.toml`
-scaffolding — prefer an empty subdirectory when unsure.
+If you already have a uv project (`pyproject.toml`) **and** `0.34.0` is on
+PyPI, you may use `uv add 'etlantic==0.34.0'` instead. Create an **empty
+subdirectory** for `python -m etlantic init --with-toml`, or pass `--force` if
+the directory is not empty. **`--force` can overwrite** existing `pipeline.py`
+/ `pyproject.toml` scaffolding — prefer an empty subdirectory when unsure.
 
 ### Windows (pip)
 
@@ -65,7 +69,9 @@ scaffolding — prefer an empty subdirectory when unsure.
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+py -3.11 -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: py -3.11 -m pip install 'etlantic==0.34.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -92,7 +98,9 @@ Use these only if your org already standardizes on Poetry or Conda. They are
 
 ```bash
 poetry new my-pipeline && cd my-pipeline
-poetry add 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI, prefer pip/git into the Poetry venv, or:
+poetry add 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: poetry add 'etlantic==0.34.0'
 poetry run python -m etlantic --version
 # poetry new leaves a non-empty tree — init needs --force (or an empty subdir):
 poetry run python -m etlantic init --with-toml --force
@@ -103,7 +111,9 @@ poetry run python -m etlantic init --with-toml --force
 ```bash
 conda create -n etlantic python=3.12 pip -y
 conda activate etlantic
-python -m pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: python -m pip install 'etlantic==0.34.0'
 python -m etlantic --version
 ```
 
@@ -182,11 +192,13 @@ only; does not install Apache Airflow). Prefect: direct execution via
 
 ## Upgrade
 
-Prefer the [Upgrade hub](UPGRADE.md). Quick pin:
+Prefer the [Upgrade hub](UPGRADE.md). Quick pin (after PyPI publish):
 
 ```bash
 python -m pip install --upgrade 'etlantic==0.34.0'
 ```
+
+Until then, reinstall from `main` as in the install-truth warning above.
 
 ## Installation problems
 
@@ -203,13 +215,14 @@ optional plugins. See [Dependency Strategy](../11_DEVELOPMENT/DEPENDENCY_STRATEG
 
 ## Install from source (optional)
 
-Use a git checkout when you want mainline or editable monorepo plugins:
+Use a git checkout when you want mainline or editable monorepo plugins.
+Until a `v0.34.0` tag/release is published, prefer `@main`:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.34.0'
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
 python -m etlantic --version
 ```
 
@@ -218,7 +231,7 @@ Optional plugins from the same monorepo (after cloning):
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-git checkout v0.34.0
+# After a release tag exists: git checkout v0.34.0
 uv sync --locked
 uv sync --extra fastapi   # optional reference adapter
 uv run python -m etlantic --version

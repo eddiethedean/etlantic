@@ -51,6 +51,7 @@ fails. `best_effort` logs and continues.
 - Protocols: [Observability](../07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md),
   [Run history](../07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md),
   [Event consumer](../07_PLUGIN_SDK/EVENT_CONSUMER.md)
+- Failures: [Troubleshooting → M6 ops cookbook](../01_GETTING_STARTED/TROUBLESHOOTING.md#m6-ops-failure-cookbook-observability--history--reports)
 
 ## SDK sketch
 

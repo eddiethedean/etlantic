@@ -37,3 +37,4 @@ Profile keys: `run_history_provider`, `observability_providers`,
 - [Run Reports](RUN_REPORTS.md)
 - [Ops Pilot](OPS_PILOT.md)
 - [Observability Provider](../07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md)
+- Failures: [Troubleshooting → M6 ops cookbook](../01_GETTING_STARTED/TROUBLESHOOTING.md#m6-ops-failure-cookbook-observability--history--reports)

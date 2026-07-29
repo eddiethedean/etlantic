@@ -160,3 +160,7 @@ Start with a tutorial, then deepen:
 
 Continue with the [Execution Model](EXECUTION_MODEL.md) to learn how every
 runtime realizes a validated `PipelinePlan`.
+
+When something fails, start with Getting Started
+[Troubleshooting](../01_GETTING_STARTED/TROUBLESHOOTING.md) (including the M6
+ops failure cookbook), then return to the engine tutorial for your backend.

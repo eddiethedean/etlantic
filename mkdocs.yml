@@ -216,23 +216,24 @@ nav:
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
-      - SDK 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
-  - How-to:
-      - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
-      - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
-      - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
-      - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
-      - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
-      - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
-      - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
-      - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
-      - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
-      - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Current 0.34 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
-      - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
-      - Experimental surfaces: 01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md
+      - Compare: 01_GETTING_STARTED/COMPARE.md
+      - After first success:
+          - SDK 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
+          - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
+          - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
+          - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
+          - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
+          - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
+          - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
+          - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
+          - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
+          - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
+          - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
+          - Current 0.34 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+          - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
+          - Experimental surfaces: 01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md
   - Support:
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
@@ -433,6 +434,7 @@ nav:
           - Migration 0.33 → 0.34: 11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md
           - Migration 0.32 → 0.33: 11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md
           - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
+          - Documentation audit 0.34: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_34.md
           - Documentation audit 0.33: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md
           - Documentation audit 0.32: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_32.md
           - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md

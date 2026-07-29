@@ -58,6 +58,9 @@ Read the relevant protocol page before implementing the package:
 - [Orchestrator Plugin](ORCHESTRATOR_PLUGIN.md)
 - [Portable Transformation Compiler](PORTABLE_TRANSFORM_COMPILER.md)
 - [Secret Provider](SECRET_PROVIDER.md)
+- [Observability Provider](OBSERVABILITY_PROVIDER.md) (M6)
+- [Run History Provider](RUN_HISTORY_PROVIDER.md) (M6)
+- [Event Consumer](EVENT_CONSUMER.md) (M6)
 
 ## 2. Create the package
 
@@ -475,5 +478,7 @@ divergence as work to resolve rather than a new convention.
 
 ## Next step
 
-Choose the protocol page for your category, implement the smallest complete
-plugin, and make its conformance test pass before adding optional capabilities.
+Choose the protocol page for your category (including M6 observability / run
+history / event consumer when that is your extension), implement the smallest
+complete plugin, and make its conformance test pass before adding optional
+capabilities.

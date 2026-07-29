@@ -59,11 +59,14 @@ print(adapted.pipeline_cls.__name__, plan.plan_id, request.intent)
   planning-only passthroughs (`MDL111` / `PMSF411`)
 - MERGE write intents are for plan/orchestration via `enrich_plan`; local
   runtime still gates writes with `RunRequest.no_write`
+- **M6:** prefer `explain_medallion_plan` and layer lifecycle views from the
+  Medallantic package when inspecting medallion plans; core observability /
+  history remain the ETLantic pilot surfaces documented under Engines and ops
 
 ## See also
 
 - [Package README](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md)
-- [Medallantic docs index](https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic/docs)
+- [Medallantic docs index](../09_MEDALLANTIC/README.md)
 - [Getting started (package)](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/getting-started.md)
 - [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md)
 - [SparkForge Feature Adoption](../11_DEVELOPMENT/SPARKFORGE_ADOPTION.md)

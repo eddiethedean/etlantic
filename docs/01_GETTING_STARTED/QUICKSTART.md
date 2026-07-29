@@ -12,15 +12,18 @@
 ## 1. Install
 
 ETLantic requires Python 3.11 or newer. Prefer `python -m` so PATH issues do not
-block you.
+block you. Docs describe **0.34.0**; until that wheel is on PyPI, install from
+`main` (see [Installation](INSTALLATION.md)).
 
 **Unix / macOS:**
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.34.0'
-python -m etlantic --version
+# Until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: python -m pip install 'etlantic==0.34.0'
+python -m etlantic --version   # expect 0.34.0
 ```
 
 **Windows (PowerShell):**
@@ -29,7 +32,9 @@ python -m etlantic --version
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.34.0'
+# Until 0.34.0 is on PyPI:
+py -3.11 -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After publish: py -3.11 -m pip install 'etlantic==0.34.0'
 py -3.11 -m etlantic --version
 ```
 

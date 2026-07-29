@@ -8,8 +8,14 @@
 
 ## Start from the init project
 
+If you already finished [Quickstart](QUICKSTART.md), reuse that project
+directory—do not reinstall. Otherwise install with the same truth as
+[Installation](INSTALLATION.md), then scaffold:
+
 ```bash
-python -m pip install 'etlantic==0.34.0'
+# Only if you do not already have a Quickstart project:
+# Until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
@@ -48,6 +54,9 @@ class Row(Data):
 
 
 class NamedRow(Data):
+    """Output contract: same fields as Row, but a distinct type so validate
+    and plan treat input vs published shape as separate contracts."""
+
     id: int
     name: str
 
@@ -68,12 +77,15 @@ class SamplePipeline(Pipeline):
     out: Load[NamedRow] = Load(input=step.result, asset="out")
 ```
 
-Re-run validate → plan → run. `data/out.json` should show `"ADA"` / `"GRACE"`.
+The lesson is **named contracts at each boundary**, not a schema change: `Row`
+is what you extract; `NamedRow` is what you publish (here with upper-cased
+`name`). Re-run validate → plan → run. `data/out.json` should show `"ADA"` /
+`"GRACE"`.
 
 ## Next
 
 - [Engine selection](ENGINE_SELECTION.md) — Local → Polars
-- [SDK 10-minute tutorial](SDK_10_MINUTES.md) — `import etlantic as etl`
+- [SDK 10-minute tutorial](SDK_10_MINUTES.md) — after Ada/Grace (secondary)
 - Contracts / fingerprints: [ODCS](../03_DATA_CONTRACTS/ODCS.md),
   [Plan and runtime API](../10_REFERENCE/API_PLAN_RUNTIME.md)
 - Production profile starter:

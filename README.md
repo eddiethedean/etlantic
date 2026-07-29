@@ -18,14 +18,14 @@
   <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/v/etlantic.svg" alt="PyPI"></a>
   <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/pyversions/etlantic.svg" alt="Python versions"></a>
   <a href="https://github.com/eddiethedean/etlantic/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d6a84b.svg" alt="MIT license"></a>
-  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://astral.sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
 </p>
 
 <p align="center">
   <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
   <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/">Capabilities</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/ROADMAP_SUMMARY/">Roadmap</a>
+  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/">Compare</a> ·
+  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/">Capabilities</a>
 </p>
 
 ---
@@ -44,6 +44,9 @@ framework that coordinates the tools you already choose.
 Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run or compile
 ```
 
+Not sure if ETLantic fits? Start with
+[Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/).
+
 ## Why ETLantic?
 
 - Catch invalid wiring, incompatible contracts, missing capabilities, and
@@ -57,18 +60,21 @@ Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run 
   lineage, schema observations, and run reports.
 - Install a small core and add only the engines you need.
 
-## Quickstart
+## Quickstart (start here)
 
-Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
-`--force`). On Windows PowerShell, activate with
-`.\.venv\Scripts\Activate.ps1` and prefer `py -3.11 -m …` (see
-[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)).
+**Primary path:** CLI `init` → validate → run (file-backed sample). Requires
+Python 3.11+. Use an empty directory for `init` (or pass `--force`).
+
+> **Install note:** Docs describe **0.34.0**. Until that wheel is on PyPI
+> (latest published may still be **0.33.0**), install from `main`:
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.34.0'   # or git+…@main until PyPI has 0.34.0
-python -m etlantic --version
+# Day-0 until 0.34.0 is on PyPI:
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+# After PyPI publish: python -m pip install 'etlantic==0.34.0'
+python -m etlantic --version   # expect 0.34.0
 
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
@@ -77,9 +83,9 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 cat data/out.json
 ```
 
-If `pip` cannot find `0.34.0`, see
-[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)
-(pre-publish / wrong-version recovery).
+On Windows PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and prefer
+`py -3.11 -m …` (see
+[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)).
 
 You should see run status `succeeded` and JSON rows for Ada and Grace (identity
 transform on the sample). That proves plumbing—next, change the transform in
@@ -91,11 +97,10 @@ The CLI defaults to `development` when `--profile` is omitted (or your project's
 Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/).
 
 > **After first success (clone only):** repository demos under `examples/`
-> (for example
-> [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
-> require a git checkout — they are **not** in the PyPI wheel.
+> require a git checkout — they are **not** in the PyPI wheel. Pip-only users:
+> ignore `examples/` until you clone.
 
-> **Status:** ETLantic **0.34.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.34.0** is a **Beta** release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -119,9 +124,75 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.
+Official engine packages share the **0.34 Beta pilot envelope** even when PyPI
+classifiers say Stable—treat the docs narrative as authoritative.
 
 Matching extras such as `etlantic[polars]` are equivalent. Pin matching minors
 while ETLantic follows its 0.x roadmap.
+
+## After Ada/Grace — SDK sketch
+
+Once the CLI Quickstart succeeds, the same model fits in a few lines of Python
+(memory-backed demo; seed data yourself):
+
+```python
+import etlantic as etl
+
+
+class RawCustomer(etl.Data):
+    customer_id: int
+    first_name: str
+    last_name: str
+
+
+class Customer(etl.Data):
+    customer_id: int
+    full_name: str
+
+
+class NormalizeCustomers(etl.Transformation):
+    customers: etl.Input[RawCustomer]
+    result: etl.Output[Customer]
+
+
+@NormalizeCustomers.implementation("local")
+def normalize(customers: list[RawCustomer]) -> list[Customer]:
+    return [
+        Customer(
+            customer_id=row.customer_id,
+            full_name=f"{row.first_name} {row.last_name}",
+        )
+        for row in customers
+    ]
+
+
+class CustomerPipeline(etl.Pipeline):
+    raw: etl.Extract[RawCustomer] = etl.Extract(asset="customers")
+    normalized = NormalizeCustomers.step(customers=raw)
+    output: etl.Load[Customer] = etl.Load(
+        input=normalized.result,
+        asset="normalized_customers",
+    )
+
+
+profile = etl.Profile(
+    name="demo",
+    assets={"customers": "memory", "normalized_customers": "memory"},
+)
+runtime = etl.PipelineRuntime()
+runtime.memory.seed(
+    "customers",
+    [RawCustomer(customer_id=1, first_name="Ada", last_name="Lovelace")],
+)
+
+CustomerPipeline.validate(profile=profile).raise_for_errors()
+plan = CustomerPipeline.plan(profile=profile)
+run = CustomerPipeline.run(profile=profile, runtime=runtime)
+```
+
+Longer SDK walkthrough:
+[SDK 10 minutes](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/)
+(after CLI first success).
 
 ## Architecture
 
@@ -146,12 +217,9 @@ Production profiles require explicit plugin allowlists. Backend optimizations
 may change the physical graph but must preserve contracts, validation
 boundaries, security domains, and logical attribution.
 
-Contract standards ([ODCS](docs/03_DATA_CONTRACTS/ODCS.md) /
-[DTCS](docs/04_TRANSFORMATIONS/DTCS.md) /
-[DPCS](docs/05_PIPELINES/DPCS.md)) and the validation envelope are covered
-in the [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/)
-and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/)
-guides.
+Interchange formats and the validation envelope are covered in
+[Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/)
+and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/).
 
 ## Capability boundary
 
@@ -162,7 +230,7 @@ guides.
 | Local, Polars, Pandas, SQL, and PySpark execution paths | Available |
 | Portable compilers for Polars, Pandas, SQL, and PySpark | Available |
 | Portable quality expressions (`etlantic.quality/1`) | Available (Polars/Pandas/local; SQL/PySpark fail-closed) |
-| ODCS / DTCS / DPCS interchange, schema drift, lineage, reports, SARIF | Available |
+| Contract interchange, schema drift, lineage, reports, SARIF | Available |
 | Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
 | Observability providers, run history, event consumers | Available |
 | Trust, isolation, safe I/O, SBOM/attestations (single-tenant reference) | Available (bounded) |
@@ -173,12 +241,13 @@ Full matrix: [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING
 Roadmap programs live under docs Contribute → Maintainers (for example the
 [multi-tenant control-plane plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md))
 — not day-0 reading.
+
 ## Learn more
 
 [Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)
 · [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
-· [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/)
 · [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/)
+· [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/)
 · [Security](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/)
 · [Roadmap](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/ROADMAP_SUMMARY/)
 · [Contributing](https://github.com/eddiethedean/etlantic/blob/main/CONTRIBUTING.md)

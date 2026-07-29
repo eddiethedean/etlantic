@@ -2,7 +2,8 @@
 
 ## Green path
 
-1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.34.0`
+1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — install **0.34.0**
+   (from `main` until the wheel is on PyPI)
 2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
 3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
 4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
@@ -36,6 +37,7 @@ Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
   `examples/interchange_polars_pandas.py`
 - [Medallantic](MEDALLANTIC.md) — SparkForge IR migration adapter (planning/validate only)
 - Programmatic JSON authoring — `examples/pipeline_definition_json.py` (clone; CI)
+
 ## Runnable scripts (repository `examples/`)
 
 !!! note "Clone required"
@@ -120,25 +122,6 @@ uv run python examples/airflow_compile.py
 uv sync --group prefect
 uv run python examples/prefect_run.py
 ```
-
-## Design studies (aspirational)
-
-The remaining pages in this section explore intended integrations. Each page
-opens with a Future design warning. They may contain APIs, packages, or
-commands that go beyond the shipped surface — prefer the runnable guides and
-`examples/` for installable behavior.
-
-| Topic | Prefer instead |
-|---|---|
-| CSV and JSON through built-in storage | `examples/file_storage.py` |
-| Pandas and Polars pipelines | `examples/dataframe_parity.py` |
-| SQL execution and pushdown | `examples/sql_*.py` |
-| PySpark batch | `examples/pyspark_local.py` |
-| Airflow compilation | [Airflow Compile](AIRFLOW_COMPILE.md) |
-| Graphviz DOT / HTML lineage | `etlantic.viz` / `etlantic viz` |
-| SparkForge migration adapter | [SparkForge Adapter](MEDALLANTIC.md) |
-| Structured Streaming | Experimental foundation only |
-| Portable PySpark-style transformations | [Portable Transformation](PORTABLE_TRANSFORMS.md) |
 
 Prefer the runnable guides above and the
 [capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) /

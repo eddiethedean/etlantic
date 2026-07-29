@@ -92,8 +92,24 @@ them are design sketches only. **OS keyring is available today** via
 | HashiCorp Vault | Planned 0.52 optional provider |
 | 1Password | Unscheduled candidate |
 
-See the [Secret Provider SDK](../07_PLUGIN_SDK/SECRET_PROVIDER.md) (future
-design) for the intended plugin shape and the
+### BYO cloud secrets (adapter stub)
+
+Until official Vault / AWS / GCP / Azure providers ship, enterprise evaluators
+can wrap an existing secret API behind the public secret-provider protocol:
+
+1. Implement a small provider class that resolves by name (never log values).
+2. Register it on the runtime / profile under a logical `provider` id.
+3. Reference secrets only via `SecretRef(provider=…, name=…)` in config.
+4. Keep plans, reports, and diagnostics secret-free (fail closed if a value
+   would leak).
+
+Do not invent a new discovery group. Prefer the
+[Secret Provider SDK](../07_PLUGIN_SDK/SECRET_PROVIDER.md) shape and the
+shipped `env` / file / keyring providers as references. First-party cloud
+packs remain roadmap items above.
+
+See the [Secret Provider SDK](../07_PLUGIN_SDK/SECRET_PROVIDER.md) for the
+intended plugin shape and the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs)
 for the assigned production gates.
 

@@ -72,7 +72,7 @@ from the plan; they do not require unshipped callback helpers.
 
 ## Future design — invalid-data quarantine
 
-!!! warning "Future design—not an ETLantic 0.33 API guide"
+!!! warning "Future design—not an ETLantic 0.34 API guide"
     Dedicated `on_invalid_data` / quarantine action helpers are not shipped.
     Use contract validation boundaries, invalid-output ports, and sinks for
     quarantine-style flows today.

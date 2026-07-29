@@ -12,6 +12,7 @@
 - [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
 - [Exit gate 0.32](EXIT_GATE_0_32.md)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
+- [Documentation audit 0.34](DOCUMENTATION_AUDIT_0_34.md)
 - [Documentation audit 0.33](DOCUMENTATION_AUDIT_0_33.md)
 - [Documentation audit 0.32](DOCUMENTATION_AUDIT_0_32.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
@@ -58,6 +59,7 @@
 
 ## Documentation audits
 
+- [0.34](DOCUMENTATION_AUDIT_0_34.md) (current adoption remediation)
 - [0.33](DOCUMENTATION_AUDIT_0_33.md) (prior remediation)
 - [0.25 adoption](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
 - [0.25](DOCUMENTATION_AUDIT_0_25.md)

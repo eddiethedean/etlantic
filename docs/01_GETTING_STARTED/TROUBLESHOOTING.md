@@ -17,11 +17,18 @@ These docs describe ETLantic **0.34.0**. Confirm what you installed:
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"
 python -m etlantic --version
-# Interpreter-specific (avoids PATH mismatches):
-python -m etlantic --version
 ```
 
-Upgrade from PyPI (pin the published **0.34.0** release for reproducible installs):
+Until `0.34.0` is on PyPI (latest published may still be **0.33.0**), install
+from `main`:
+
+```bash
+python -m pip uninstall -y etlantic
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+python -m etlantic --version   # expect 0.34.0
+```
+
+After the PyPI release, pin the published wheel:
 
 ```bash
 python -m pip install --upgrade 'etlantic==0.34.0'
@@ -29,7 +36,8 @@ python -m pip install --upgrade 'etlantic==0.34.0'
 python -m pip install --upgrade 'etlantic>=0.34.0,<0.35'
 ```
 
-From a checkout, prefer `uv sync` / `git pull`.
+From a checkout, prefer `uv sync` / `git pull`. See
+[Installation](INSTALLATION.md).
 
 ## Wrong interpreter or `etlantic: command not found`
 
@@ -377,6 +385,29 @@ python -m etlantic generate module:MyPipeline --kind definition -o pipeline.json
 ```
 
 Cross-check diagnostic codes in [Diagnostics](../10_REFERENCE/DIAGNOSTICS.md).
+
+## M6 ops failure cookbook (observability / history / reports)
+
+Milestone M6 shipped an observability and run-history *pilot* slice in 0.34—not
+an enterprise control plane. Use this section when pilot ops tickets mention
+`durable_audit`, history paths, `report query`, or optional OTel.
+
+| Symptom | Likely cause | What to do |
+|---|---|---|
+| Durable audit / history write fails closed | Missing or unwritable history path; consumer misconfigured | Confirm history root exists and is writable; see [Durable reports](../06_EXECUTION/DURABLE_REPORTS.md) and [Reports and history](../06_EXECUTION/REPORTS_AND_HISTORY.md) |
+| `etlantic report query` returns empty / errors | No durable reports for the run id; wrong project root | Re-run with durable reports enabled; query from the same project dir; see [Run reports](../06_EXECUTION/RUN_REPORTS.md) |
+| Observability provider not discovered | Package not installed; entry point not allowlisted in production | Install the provider package; set `Profile.plugin_allowlist`; see [Observability today](../06_EXECUTION/OBSERVABILITY_TODAY.md) |
+| OTel export missing | Optional extras not installed | Install `etlantic[otel]` / observability extras per [Optional packages](../10_REFERENCE/OPTIONAL_PACKAGES.md); OTel remains optional |
+| Event consumer / run-history provider rejected | Trust / allowlist fail-closed | Production profiles require an explicit allowlist; see [Plugin trust](../02_FOUNDATIONS/SECURITY.md) and protocol pages under Plugin SDK |
+
+Deep links for authors shipping providers:
+
+- [Observability provider](../07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md)
+- [Run history provider](../07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md)
+- [Event consumer](../07_PLUGIN_SDK/EVENT_CONSUMER.md)
+
+Engine-specific failures: also check the tutorial for your engine under
+[Engines and ops](../06_EXECUTION/README.md), then return here.
 
 ## Where to report a problem
 

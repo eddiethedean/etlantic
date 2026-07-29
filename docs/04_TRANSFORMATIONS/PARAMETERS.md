@@ -162,7 +162,7 @@ contract remains unchanged.
 
 ## Per-run overrides
 
-Profiles do not contain transformation parameter values in 0.33. Declare
+Profiles do not contain transformation parameter values in 0.34. Declare
 stable defaults on the transformation or supply explicit per-run overrides:
 
 ```python

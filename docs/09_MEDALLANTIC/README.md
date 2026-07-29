@@ -33,6 +33,8 @@ Plugins and providers
 - PySpark Column / callable rule path (`MDL130` fail-closed off Spark)
 - SQLAlchemy / `SqlPipelineBuilder` live bridge + dialect tiers (M5)
 - Non-portable Moltres / SQLAlchemy rules (`quality.moltres_expr`)
+- **M6 elevation:** `explain_medallion_plan`, layer lifecycle views, and
+  alignment with core observability / run-history pilot surfaces
 - stable `MDL*` diagnostics and facade conformance
 
 Native PySpark Column and Moltres-only semantics remain subject to their
