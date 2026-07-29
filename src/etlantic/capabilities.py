@@ -356,7 +356,8 @@ def validate_capability_claims(caps: PluginCapabilities) -> list[str]:
     """Return human-readable findings for inconsistent capability claims.
 
     Currently reports missing implied capabilities. Conflict pairs from
-    :func:`capability_conflicts` are also checked when defined.
+    :func:`capability_conflicts` are also checked when defined. Storage
+    ``storage.delta.*`` extras imply ``spark_delta`` and ``spark``.
     """
     findings: list[str] = []
     for claim, required in capability_implications().items():
@@ -372,6 +373,19 @@ def validate_capability_claims(caps: PluginCapabilities) -> list[str]:
             findings.append(
                 f"Capabilities {left!r} and {right!r} conflict and cannot both be claimed."
             )
+    # Storage extras are advertised via ``extras``, not boolean fields.
+    from etlantic.storage.delta_capabilities import (
+        STORAGE_DELTA_CAPABILITY_EXTRAS,
+        STORAGE_DELTA_EXTRA_IMPLIES,
+    )
+
+    for extra in sorted(caps.extras & STORAGE_DELTA_CAPABILITY_EXTRAS):
+        for req in sorted(STORAGE_DELTA_EXTRA_IMPLIES):
+            if not caps.supports(req):
+                findings.append(
+                    f"Capability extra {extra!r} implies {req!r}, "
+                    f"but {req!r} is not claimed."
+                )
     return findings
 
 

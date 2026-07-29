@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
 
@@ -14,6 +15,101 @@ class ParsedAssetDescriptor:
     provider: str
     location: str | None = None
     metadata: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AssetBindingRef:
+    """Plugin-facing asset / JDBC binding without credentials.
+
+    Use ``secret_refs`` for credential lookup at acquire time. Never embed
+    passwords, tokens, or connection URLs with userinfo in plans or reports.
+    """
+
+    name: str
+    provider: str
+    location: str | None = None
+    catalog: str | None = None
+    namespace: str | None = None
+    table: str | None = None
+    format: str | None = None
+    jdbc_driver: str | None = None
+    secret_refs: Mapping[str, str] = field(default_factory=dict)
+    options: Mapping[str, str] = field(default_factory=dict)
+    cross_schema: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "provider": self.provider,
+            "location": self.location,
+            "catalog": self.catalog,
+            "namespace": self.namespace,
+            "table": self.table,
+            "format": self.format,
+            "jdbc_driver": self.jdbc_driver,
+            "secret_refs": dict(self.secret_refs),
+            "options": dict(self.options),
+            "cross_schema": self.cross_schema,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AssetBindingRef:
+        return cls(
+            name=str(data["name"]),
+            provider=str(data.get("provider") or "memory"),
+            location=(str(data["location"]) if data.get("location") is not None else None),
+            catalog=(str(data["catalog"]) if data.get("catalog") is not None else None),
+            namespace=(
+                str(data["namespace"]) if data.get("namespace") is not None else None
+            ),
+            table=(str(data["table"]) if data.get("table") is not None else None),
+            format=(str(data["format"]) if data.get("format") is not None else None),
+            jdbc_driver=(
+                str(data["jdbc_driver"]) if data.get("jdbc_driver") is not None else None
+            ),
+            secret_refs={
+                str(k): str(v) for k, v in dict(data.get("secret_refs") or {}).items()
+            },
+            options={str(k): str(v) for k, v in dict(data.get("options") or {}).items()},
+            cross_schema=bool(data.get("cross_schema", False)),
+        )
+
+    @classmethod
+    def from_descriptor(
+        cls,
+        name: str,
+        descriptor: str | dict[str, Any] | ParsedAssetDescriptor,
+        *,
+        catalog: str | None = None,
+        namespace: str | None = None,
+        table: str | None = None,
+        secret_refs: Mapping[str, str] | None = None,
+        options: Mapping[str, str] | None = None,
+        cross_schema: bool = False,
+    ) -> AssetBindingRef:
+        """Build a binding ref from a profile asset descriptor."""
+        if isinstance(descriptor, ParsedAssetDescriptor):
+            parsed = descriptor
+        else:
+            parsed = parse_asset_descriptor(descriptor)
+        provider = parsed.provider
+        fmt = None
+        jdbc_driver = None
+        if provider in {"jdbc", "spark_jdbc"}:
+            fmt = "jdbc"
+        return cls(
+            name=name,
+            provider=provider,
+            location=parsed.location,
+            catalog=catalog,
+            namespace=namespace,
+            table=table,
+            format=fmt,
+            jdbc_driver=jdbc_driver,
+            secret_refs=dict(secret_refs or {}),
+            options=dict(options or {}),
+            cross_schema=cross_schema,
+        )
 
 
 _METADATA_UNSUPPORTED = (

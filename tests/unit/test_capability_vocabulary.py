@@ -63,6 +63,17 @@ def test_validate_capability_claims_success() -> None:
     assert validate_capability_claims(caps) == []
 
 
+def test_storage_delta_extra_implications() -> None:
+    from etlantic.storage import STORAGE_DELTA_CAPABILITY_EXTRAS
+
+    broken = PluginCapabilities(
+        engine="x",
+        extras=frozenset({"storage.delta.merge"}),
+    )
+    findings = validate_capability_claims(broken)
+    assert any("storage.delta.merge" in f for f in findings)
+    assert STORAGE_DELTA_CAPABILITY_EXTRAS
+
 def test_implications_and_conflicts_shapes() -> None:
     implications = capability_implications()
     assert implications["sql_merge"] == frozenset({"sql"})

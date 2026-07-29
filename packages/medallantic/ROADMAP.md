@@ -293,20 +293,24 @@ Tracking: [EXIT_GATE_0_31.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_31.md).
 
 ### M4 / ETLantic 0.32 — PySpark/SparkForge parity
 
-- [ ] Add a live migration bridge for `PipelineBuilder` definitions.
-- [ ] Support PySpark Column validation expressions and transform callables.
-- [ ] Support real PySpark and Sparkless test modes explicitly.
-- [ ] Cover schema/catalog management, cross-schema access, caches, JDBC I/O,
+**Shipped in 0.32.0**
+
+- [x] Add a live migration bridge for `PipelineBuilder` definitions.
+- [x] Support PySpark Column validation expressions and transform callables.
+- [x] Support real PySpark and Sparkless test modes explicitly.
+- [x] Cover schema/catalog management, cross-schema access, caches, JDBC I/O,
   and Spark-native metrics through plugins.
-- [ ] Add Delta capabilities for merge, optimize, vacuum, history, schema
+- [x] Add Delta capabilities for merge, optimize, vacuum, history, schema
   evolution, and time travel.
-- [ ] Reproduce run-one, run-until, no-write, parameter override, transform
+- [x] Reproduce run-one, run-until, no-write, parameter override, transform
   override, rerun, and downstream invalidation workflows.
-- [ ] Compare logical order, writes, validation outcomes, and normalized
+- [x] Compare logical order, writes, validation outcomes, and normalized
   reports against frozen SparkForge fixtures.
 
 Exit criteria: every supported `pipeline_builder` fixture has a documented
 `equivalent`, `plugin-dependent`, or `intentionally rejected` result.
+
+Tracking: [EXIT_GATE_0_32.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_32.md).
 
 ### M5 / ETLantic 0.33 — SQL pipeline-builder parity
 

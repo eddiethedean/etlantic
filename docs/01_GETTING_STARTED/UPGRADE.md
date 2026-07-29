@@ -5,26 +5,28 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.31.0** — choose your guide:
+**ETLantic 0.32.0** — choose your guide:
 
-| From version | Ordered path to 0.31 |
+| From version | Ordered path to 0.32 |
 |---|---|
-| 0.29.x | [0.29 → 0.31](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
-| 0.28.x | [0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) → [0.29 → 0.31](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
-| 0.27.x | [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) → 0.28→0.29 → 0.29→0.31 |
-| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) → 0.27→0.28 → 0.28→0.29 → 0.29→0.31 |
-| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → then the 0.26 chain |
-| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → then the 0.25 chain |
-| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → then the 0.24 chain |
-| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → then the 0.23 chain |
-| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then the 0.22 chain |
-| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then the 0.21 chain |
-| 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.20 chain |
-| 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.19 chain |
-| 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.18 chain |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.31 |
+| 0.31.x | [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
+| 0.30.x | [0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) → [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
+| 0.29.x | [0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) → 0.30→0.31 → 0.31→0.32 |
+| 0.28.x | [0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) → 0.29→0.30 → 0.30→0.31 → 0.31→0.32 |
+| 0.27.x | [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) → then the 0.28 chain |
+| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) → then the 0.27 chain |
+| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → then the 0.25 chain |
+| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → then the 0.24 chain |
+| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → then the 0.23 chain |
+| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → then the 0.22 chain |
+| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then the 0.21 chain |
+| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then the 0.20 chain |
+| 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.19 chain |
+| 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.18 chain |
+| 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.17 chain |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.32 |
 
-### Breaking highlights on the way to 0.31
+### Breaking highlights on the way to 0.32
 
 | Span | Watch for |
 |---|---|
@@ -40,7 +42,9 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.26 → 0.27 | Triple-minor burn-in; second-wave root removals; freeze re-scoped to 0.28+ |
 | 0.27 → 0.28 | Quadruple-minor burn-in; third-wave root removals; Plugin `/1` **frozen** |
 | 0.28 → 0.29 | Native MedallionPipeline authoring (M1); facade conformance kit |
-| 0.29 → 0.31 | Portable quality AST + Medallantic `rules=` → quality gates (M2) |
+| 0.29 → 0.30 | Portable quality AST + Medallantic `rules=` → quality gates (M2) |
+| 0.30 → 0.31 | Execution / state / materialization (M3) |
+| 0.31 → 0.32 | PySpark / Delta differential parity (M4) |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -49,7 +53,9 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
-| 0.29 → 0.31 | [MIGRATION_0_29_TO_0_30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
+| 0.31 → 0.32 | [MIGRATION_0_31_TO_0_32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
+| 0.30 → 0.31 | [MIGRATION_0_30_TO_0_31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) |
+| 0.29 → 0.30 | [MIGRATION_0_29_TO_0_30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
 | 0.28 → 0.29 | [MIGRATION_0_28_TO_0_29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) |
 | 0.27 → 0.28 | [MIGRATION_0_27_TO_0_28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
 | 0.26 → 0.27 | [MIGRATION_0_26_TO_0_27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) |
@@ -188,7 +194,7 @@ See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 |---|---|
 | Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
 | `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.31.0`) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.32.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
@@ -201,12 +207,12 @@ See [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md).
 | New medallion pipelines | `MedallionPipeline` / `MedallionBuilder` (native M1) |
 | SparkForge IR migrate | `medallantic.migrate.sparkforge` (top-level `adapt_*` still works) |
 | Facade conformance | `etlantic.testing.run_facade_conformance_suite` |
-| Expect portable rule DSL | Deferred to **0.31 / M2** |
+| Expect portable rule DSL | Deferred to **0.30 / M2** |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.29 |
 
 See [Migration 0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md).
 
-## 0.31 configuration cheat sheet
+## 0.30 configuration cheat sheet
 
 | Change | Use instead |
 |---|---|
@@ -214,9 +220,31 @@ See [Migration 0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md).
 | Uneexecuted bronze `rules=` | Expect `{step}__ingest` + gate nodes when rules are present |
 | Engines without `quality.*` caps | Fail closed at plan (`PMPLAN420` / `PMPLAN421`); prefer Polars/Pandas |
 | Quality AST helpers | `etlantic.quality` / `etl.quality` (provisional `etlantic.quality/1`) |
+| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.30 |
+
+See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
+
+## 0.31 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Incremental / state runs | `IncrementalStrategy` + `StateStore` |
+| Skip-if-exists writes | `WriteMode.SKIP_IF_EXISTS` / Medallantic `skip`/`ignore` |
+| Live transform refs | `medallantic.callables` |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.31 |
 
-See [Migration 0.29 → 0.31](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
+See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
+
+## 0.32 configuration cheat sheet
+
+| Change | Use instead |
+|---|---|
+| Coarse `spark_delta` for maintenance | Fine-grained `storage.delta.*` extras |
+| SparkForge live migration | `medallantic.migrate.sparkforge.from_pipeline_builder` |
+| Native Column rules | Plugin-native `quality.pyspark_column` (not portable AST) |
+| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.32 |
+
+See [Migration 0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md).
 
 ## Checklist
 

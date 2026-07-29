@@ -50,6 +50,12 @@ from etlantic.testing.spark import (
     assert_spark_plugin_info,
     run_spark_conformance_suite,
 )
+from etlantic.testing.sparkforge_differential import (
+    SparkForgeDifferentialFixture,
+    SparkForgeDifferentialResult,
+    default_sparkforge_fixtures,
+    run_sparkforge_differential_suite,
+)
 from etlantic.testing.sql import assert_sql_plugin_info, run_sql_conformance_suite
 from etlantic.testing.write_semantics import (
     assert_write_intent_parity,
@@ -63,6 +69,8 @@ __all__ = [
     "FaultBoundary",
     "FaultSpec",
     "FaultTrigger",
+    "SparkForgeDifferentialFixture",
+    "SparkForgeDifferentialResult",
     "assert_capability_claims_consistent",
     "assert_capability_matches_behavior",
     "assert_facade_public_imports",
@@ -76,6 +84,7 @@ __all__ = [
     "assert_sql_plugin_info",
     "assert_write_intent_parity",
     "clear_faults",
+    "default_sparkforge_fixtures",
     "fault_injection_enabled",
     "maybe_inject",
     "normalize_rows",
@@ -91,6 +100,7 @@ __all__ = [
     "run_scheduler_conformance_suite",
     "run_secret_conformance_suite",
     "run_spark_conformance_suite",
+    "run_sparkforge_differential_suite",
     "run_sql_conformance_suite",
     "run_tabular_interchange_conformance_smoke",
     "run_write_semantics_parity_suite",

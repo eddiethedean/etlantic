@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -34,7 +35,7 @@ from etlantic.spark.schema import (
 )
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.31.0"
+__version__ = "0.32.0"
 
 
 def _set_job_group(session: Any, group: str, description: str) -> None:
@@ -70,7 +71,7 @@ class PySparkPlugin:
         caps = PluginCapabilities(
             engine="pyspark",
             async_execution=False,
-            dataframe=False,
+            dataframe=True,
             spark=True,
             eager=False,
             lazy=True,
@@ -86,7 +87,24 @@ class PySparkPlugin:
             spark_udf=True,
             spark_cache=True,
             spark_checkpoint=True,
-            extras=frozenset({"pyspark", "delta_compatible"}),
+            extras=frozenset(
+                {
+                    "pyspark",
+                    "delta_compatible",
+                    "write.append",
+                    "write.overwrite",
+                    "write.merge",
+                    "write.upsert",
+                    "write.partition_replace",
+                    "storage.delta.merge",
+                    "storage.delta.optimize",
+                    "storage.delta.vacuum",
+                    "storage.delta.history",
+                    "storage.delta.time_travel",
+                    "storage.delta.schema_evolution",
+                    "quality.pyspark_column",
+                }
+            ),
         )
         self._info = SparkPluginInfo(
             name="etlantic-pyspark",
@@ -95,11 +113,19 @@ class PySparkPlugin:
             protocol_version=SPARK_PROTOCOL_VERSION,
             capabilities=caps,
             streaming_stability=STREAMING_STABILITY,
-            metadata={"delta_optimize": False, "delta_vacuum": False},
+            metadata={
+                "delta_optimize": True,
+                "delta_vacuum": True,
+                "delta_history": True,
+                "delta_time_travel": True,
+                "delta_schema_evolution": True,
+                "requires_delta_spark": True,
+            },
         )
         self._session: Any = None
         self._frames: dict[str, Any] = {}
         self._delta_enabled = False
+        self._active_job_group: str | None = None
 
     @property
     def info(self) -> SparkPluginInfo:
@@ -140,17 +166,42 @@ class PySparkPlugin:
         *,
         context: SparkCompilationContext,
     ) -> CompiledSparkPlan:
+        from etlantic.spark.protocol import logical_identities_for_region
+
         strategies: list[ExpressionStrategy] = [ExpressionStrategy.NATIVE_DF]
-        if context.udf_policy is SparkUdfPolicy.ALLOW:
-            # Implementations may still declare UDFs; compile records preference.
-            pass
-        actions = [
-            SparkAction(
-                kind=SparkActionKind.MATERIALIZE,
-                node_name=region.node_names[-1],
-                reason="region_sink_or_boundary",
+        actions: list[SparkAction] = []
+        cache_points: list[str] = []
+        checkpoint_points: list[str] = []
+        materialization_points: list[str] = []
+        for name in region.node_names:
+            meta = dict(region.metadata.get(name) or {})
+            if meta.get("cache") or meta.get("spark_cache"):
+                actions.append(
+                    SparkAction(
+                        kind=SparkActionKind.CACHE,
+                        node_name=name,
+                        reason="declared_cache",
+                    )
+                )
+                cache_points.append(name)
+            if meta.get("checkpoint") or meta.get("spark_checkpoint"):
+                actions.append(
+                    SparkAction(
+                        kind=SparkActionKind.CHECKPOINT,
+                        node_name=name,
+                        reason="declared_checkpoint",
+                    )
+                )
+                checkpoint_points.append(name)
+        if region.node_names:
+            actions.append(
+                SparkAction(
+                    kind=SparkActionKind.MATERIALIZE,
+                    node_name=region.node_names[-1],
+                    reason="region_sink_or_boundary",
+                )
             )
-        ]
+            materialization_points.append(region.node_names[-1])
         if region.streaming:
             actions.append(
                 SparkAction(
@@ -159,13 +210,19 @@ class PySparkPlugin:
                     reason="streaming_region",
                 )
             )
+        logical_ids = logical_identities_for_region(
+            region.node_names, region_id=region.identity
+        )
         return CompiledSparkPlan(
             region_id=region.identity,
             node_names=region.node_names,
             actions=tuple(actions),
             expression_strategies=tuple(strategies),
+            cache_points=tuple(cache_points),
+            checkpoint_points=tuple(checkpoint_points),
+            materialization_points=tuple(materialization_points),
             streaming=region.streaming,
-            logical_identities={n: n for n in region.node_names},
+            logical_identities=logical_ids,
             metadata={
                 "udf_policy": context.udf_policy.value,
                 "strategy": "lazy_fusion",
@@ -180,23 +237,125 @@ class PySparkPlugin:
         context: SparkExecutionContext,
         inputs: Mapping[str, Any] | None = None,
     ) -> SparkExecutionResult:
-        _ = inputs
+        frames = dict(inputs or {})
         if context.job_group and self._session is not None:
+            self._active_job_group = context.job_group
             _set_job_group(
                 self._session, context.job_group, f"etlantic:{compiled.region_id}"
             )
+        logical_ids = [
+            compiled.logical_identities.get(n, n) for n in compiled.node_names
+        ]
+        last_handle: SparkDataFrameHandle | None = None
+        for name in compiled.node_names:
+            frame = frames.get(name)
+            if frame is None:
+                continue
+            if name in compiled.cache_points and hasattr(frame, "cache"):
+                with contextlib.suppress(Exception):
+                    frame.cache()
+            if name in compiled.checkpoint_points and hasattr(frame, "checkpoint"):
+                with contextlib.suppress(Exception):
+                    frame.checkpoint()
+            remembered = self._remember(
+                frame,
+                context=SparkExecutionContext(
+                    run_id=context.run_id,
+                    pipeline_id=context.pipeline_id,
+                    plan_id=context.plan_id,
+                    step_name=name,
+                    region_id=compiled.region_id,
+                    engine=context.engine,
+                    attempt=context.attempt,
+                    job_group=context.job_group,
+                    streaming=context.streaming,
+                    session_handle_id=context.session_handle_id,
+                    allow_udfs=context.allow_udfs,
+                    metadata={
+                        **dict(context.metadata),
+                        "logical_step_id": compiled.logical_identities.get(name, name),
+                    },
+                ),
+            )
+            if isinstance(remembered, SparkDataFrameHandle):
+                last_handle = remembered
+                frames[name] = remembered
         metrics = SparkMetrics(
             fused_steps=len(compiled.node_names),
-            stages=1,
+            stages=max(1, len(compiled.node_names)),
             actions=[a.kind.value for a in compiled.actions],
             expression_strategies=[s.value for s in compiled.expression_strategies],
             phases=["compile", "execute"],
+            job_group=context.job_group,
+            logical_step_ids=logical_ids,
             extras={"region_id": compiled.region_id},
         )
         return SparkExecutionResult(
+            handle=last_handle,
             metrics=metrics,
             metadata={"compiled": compiled.to_dict()},
         )
+
+    def cancel(
+        self,
+        *,
+        context: SparkExecutionContext,
+        job_group: str | None = None,
+    ) -> SparkExecutionResult:
+        group = job_group or context.job_group or self._active_job_group
+        cancelled = False
+        if group and self._session is not None:
+            spark_context = getattr(self._session, "sparkContext", None)
+            cancel = getattr(spark_context, "cancelJobGroup", None)
+            if callable(cancel):
+                cancel(group)
+                cancelled = True
+        return SparkExecutionResult(
+            metrics=SparkMetrics(
+                actions=[SparkActionKind.CANCEL.value],
+                phases=["cleanup"],
+                job_group=group,
+                cancelled=cancelled,
+            ),
+            metadata={"job_group": group, "cancelled": cancelled},
+        )
+
+    def execute_storage_op(
+        self,
+        *,
+        operation: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        options: Mapping[str, Any] | None = None,
+    ) -> SparkExecutionResult:
+        op = str(operation).strip().lower()
+        opts = dict(options or {})
+        path = target.path or target.table or target.name
+        if context.job_group and self._session is not None:
+            _set_job_group(
+                self._session, context.job_group, f"etlantic-storage:{op}"
+            )
+        handlers = {
+            "optimize": self._delta_optimize,
+            "vacuum": self._delta_vacuum,
+            "history": self._delta_history,
+            "time_travel": self._delta_time_travel,
+            "schema_evolution": self._delta_schema_evolution,
+            "merge": self._delta_storage_merge,
+        }
+        handler = handlers.get(op)
+        if handler is None:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"], phases=["execute"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA300",
+                        "severity": "error",
+                        "message": f"Unknown Delta storage operation {operation!r}.",
+                    }
+                ],
+            )
+        return handler(path, target, context, opts)
 
     def execute_step(
         self,
@@ -417,6 +576,310 @@ class PySparkPlugin:
         )
         return []
 
+    def _require_delta(self) -> list[dict[str, Any]]:
+        try:
+            import delta.tables  # noqa: F401
+        except ImportError:
+            return [
+                {
+                    "code": "PMSPARK332",
+                    "severity": "error",
+                    "message": (
+                        "delta-spark not installed; Delta storage operation "
+                        "failing closed."
+                    ),
+                }
+            ]
+        if self._session is None:
+            return [
+                {
+                    "code": "PMSPARK330",
+                    "severity": "error",
+                    "message": "No SparkSession bound for Delta storage operation.",
+                }
+            ]
+        return []
+
+    def _delta_storage_merge(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        _ = target, context
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_write"]),
+                diagnostics=missing,
+            )
+        source = opts.get("source")
+        merge_keys = tuple(str(k) for k in (opts.get("merge_keys") or ()))
+        if source is None:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_write"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA307",
+                        "severity": "error",
+                        "message": "Delta merge storage op requires options['source'].",
+                    }
+                ],
+            )
+        df = self._to_dataframe(self._session, source)
+        diagnostics = self._delta_merge(df, path, merge_keys)
+        return SparkExecutionResult(
+            metrics=SparkMetrics(
+                actions=[SparkWriteMode.MERGE.value],
+                phases=["publish"],
+                logical_step_ids=[context.step_name],
+            ),
+            diagnostics=diagnostics,
+        )
+
+    def _delta_optimize(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        _ = target
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]), diagnostics=missing
+            )
+        try:
+            from delta.tables import DeltaTable
+
+            table = DeltaTable.forPath(self._session, path)
+            zorder = opts.get("zorder_by") or opts.get("zorder")
+            if zorder:
+                cols = list(zorder) if isinstance(zorder, (list, tuple)) else [zorder]
+                table.optimize().executeZOrderBy(*cols)
+            else:
+                table.optimize().executeCompaction()
+        except Exception as exc:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA310",
+                        "severity": "error",
+                        "message": f"Delta optimize failed: {exc}",
+                    }
+                ],
+            )
+        return SparkExecutionResult(
+            metrics=SparkMetrics(
+                actions=[SparkActionKind.DELTA_OPTIMIZE.value],
+                phases=["execute"],
+                logical_step_ids=[context.step_name],
+                extras={"path": path},
+            )
+        )
+
+    def _delta_vacuum(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        _ = target
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]), diagnostics=missing
+            )
+        try:
+            from delta.tables import DeltaTable
+
+            table = DeltaTable.forPath(self._session, path)
+            retention = opts.get("retention_hours")
+            if retention is None:
+                table.vacuum()
+            else:
+                table.vacuum(float(retention))
+        except Exception as exc:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA311",
+                        "severity": "error",
+                        "message": f"Delta vacuum failed: {exc}",
+                    }
+                ],
+            )
+        return SparkExecutionResult(
+            metrics=SparkMetrics(
+                actions=[SparkActionKind.DELTA_VACUUM.value],
+                phases=["execute"],
+                logical_step_ids=[context.step_name],
+                extras={"path": path},
+            )
+        )
+
+    def _delta_history(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        _ = target
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]), diagnostics=missing
+            )
+        try:
+            from delta.tables import DeltaTable
+
+            table = DeltaTable.forPath(self._session, path)
+            limit = opts.get("limit")
+            history = table.history(int(limit)) if limit is not None else table.history()
+            rows = history.count()
+            handle = self._remember(history, context=context)
+        except Exception as exc:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA312",
+                        "severity": "error",
+                        "message": f"Delta history failed: {exc}",
+                    }
+                ],
+            )
+        return SparkExecutionResult(
+            handle=handle if isinstance(handle, SparkDataFrameHandle) else None,
+            metrics=SparkMetrics(
+                rows_out=rows,
+                actions=[SparkActionKind.DELTA_HISTORY.value],
+                phases=["execute"],
+                logical_step_ids=[context.step_name],
+                extras={"path": path},
+            ),
+        )
+
+    def _delta_time_travel(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]), diagnostics=missing
+            )
+        session = self._session
+        reader = session.read.format("delta")
+        version = opts.get("version_as_of", opts.get("version"))
+        timestamp = opts.get("timestamp_as_of", opts.get("timestamp"))
+        try:
+            if version is not None:
+                reader = reader.option("versionAsOf", str(version))
+            elif timestamp is not None:
+                reader = reader.option("timestampAsOf", str(timestamp))
+            else:
+                return SparkExecutionResult(
+                    metrics=SparkMetrics(actions=["no_op"]),
+                    diagnostics=[
+                        {
+                            "code": "PMDELTA313",
+                            "severity": "error",
+                            "message": (
+                                "time_travel requires version_as_of or "
+                                "timestamp_as_of."
+                            ),
+                        }
+                    ],
+                )
+            loc = path or target.table
+            df = reader.load(loc) if not target.table else reader.table(target.table)
+            handle = self._remember(df, context=context)
+        except Exception as exc:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA313",
+                        "severity": "error",
+                        "message": f"Delta time travel failed: {exc}",
+                    }
+                ],
+            )
+        return SparkExecutionResult(
+            handle=handle if isinstance(handle, SparkDataFrameHandle) else None,
+            metrics=SparkMetrics(
+                actions=["time_travel"],
+                phases=["execute"],
+                logical_step_ids=[context.step_name],
+                extras={"path": path, "version": version, "timestamp": timestamp},
+            ),
+        )
+
+    def _delta_schema_evolution(
+        self,
+        path: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        opts: dict[str, Any],
+    ) -> SparkExecutionResult:
+        _ = target
+        missing = self._require_delta()
+        if missing:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]), diagnostics=missing
+            )
+        source = opts.get("source")
+        if source is None:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA314",
+                        "severity": "error",
+                        "message": (
+                            "schema_evolution requires options['source'] DataFrame."
+                        ),
+                    }
+                ],
+            )
+        try:
+            df = self._to_dataframe(self._session, source)
+            (
+                df.write.format("delta")
+                .mode("append")
+                .option("mergeSchema", "true")
+                .save(path)
+            )
+        except Exception as exc:
+            return SparkExecutionResult(
+                metrics=SparkMetrics(actions=["no_op"]),
+                diagnostics=[
+                    {
+                        "code": "PMDELTA314",
+                        "severity": "error",
+                        "message": f"Delta schema evolution failed: {exc}",
+                    }
+                ],
+            )
+        return SparkExecutionResult(
+            metrics=SparkMetrics(
+                actions=[SparkActionKind.SCHEMA_EVOLVE.value],
+                phases=["publish"],
+                logical_step_ids=[context.step_name],
+                extras={"path": path},
+            )
+        )
+
     def _to_dataframe(self, session: Any, value: Any) -> Any:
         if isinstance(value, SparkDataFrameHandle):
             frame = self._frames.get(value.identity)
@@ -452,5 +915,10 @@ class PySparkPlugin:
                 region_id=context.region_id,
                 step_name=context.step_name,
                 streaming=context.streaming,
+                metadata={
+                    "logical_step_id": str(
+                        context.metadata.get("logical_step_id") or context.step_name
+                    )
+                },
             )
         return result

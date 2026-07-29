@@ -33,7 +33,7 @@ from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.31.0"
+__version__ = "0.32.0"
 
 __all__ = [
     "PandasDataframePlugin",

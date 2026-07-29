@@ -1,6 +1,6 @@
 # Visualization
 
-> **Available in 0.31:** Mermaid, Graphviz DOT, HTML lineage pages, and JSON
+> **Available in 0.32:** Mermaid, Graphviz DOT, HTML lineage pages, and JSON
 > lineage export via `etlantic.viz` and `python -m etlantic viz …` (first
 > shipped in 0.9).
 

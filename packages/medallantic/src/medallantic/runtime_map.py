@@ -6,6 +6,7 @@ from typing import Any
 
 from etlantic.runtime.execute import DebugSession
 from etlantic.runtime.request import (
+    InvalidationMode,
     MaterializationPolicy,
     RetryPolicy,
     RunIntent,
@@ -27,6 +28,14 @@ _INTENT_MAP: dict[str, RunIntent] = {
     "validate": RunIntent.VALIDATE,
     "backfill": RunIntent.BACKFILL,
     "replay": RunIntent.REPLAY,
+}
+
+_INVALIDATION_MAP: dict[str, InvalidationMode] = {
+    "none": InvalidationMode.NONE,
+    "target": InvalidationMode.TARGET,
+    "downstream": InvalidationMode.DOWNSTREAM,
+    "closure": InvalidationMode.CLOSURE,
+    "rerun": InvalidationMode.DOWNSTREAM,
 }
 
 
@@ -57,6 +66,18 @@ def selection_from_sparkforge(
     return RunSelection.all()
 
 
+def invalidation_from_sparkforge(mode: str | InvalidationMode | None) -> InvalidationMode:
+    """Map SparkForge rerun/invalidation strings to InvalidationMode."""
+    if isinstance(mode, InvalidationMode):
+        return mode
+    if mode is None:
+        return InvalidationMode.NONE
+    key = str(mode).strip().lower()
+    if key not in _INVALIDATION_MAP:
+        raise ValueError(f"Unsupported SparkForge invalidation mode: {mode!r}")
+    return _INVALIDATION_MAP[key]
+
+
 def debug_request_from_sparkforge(
     *,
     mode: str | None = "standard",
@@ -67,6 +88,8 @@ def debug_request_from_sparkforge(
     materialization: MaterializationPolicy | None = None,
     retry: dict[str, Any] | RetryPolicy | None = None,
     parameter_overrides: dict[str, dict[str, Any]] | None = None,
+    implementation_overrides: dict[str, str] | None = None,
+    invalidation: str | InvalidationMode | None = None,
 ) -> RunRequest:
     """Build a RunRequest from SparkForge debug/session options.
 
@@ -92,6 +115,8 @@ def debug_request_from_sparkforge(
         no_write=no_write,
         retry=retry_policy,
         parameter_overrides=dict(parameter_overrides or {}),
+        implementation_overrides=dict(implementation_overrides or {}),
+        invalidation=invalidation_from_sparkforge(invalidation),
     )
 
 

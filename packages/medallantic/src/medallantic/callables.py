@@ -76,7 +76,16 @@ def make_callable_transformation(
     def _pyspark(rows: Any) -> Any:
         if isinstance(rows, list):
             return _local(rows)
-        return rows
+        # Real Spark / sparkless DataFrame path: invoke df → df callables.
+        try:
+            out = callable_fn(rows)
+        except TypeError as exc:
+            raise TypeError(
+                f"PySpark transform_ref {transform_ref!r} failed on DataFrame: {exc}"
+            ) from exc
+        if out is None:
+            return rows
+        return out
 
     try:
         import polars as pl

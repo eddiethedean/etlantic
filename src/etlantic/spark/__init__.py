@@ -44,6 +44,7 @@ from etlantic.spark.protocol import (
     SparkUdfPolicy,
     SparkWrite,
     SparkWriteMode,
+    logical_identities_for_region,
 )
 from etlantic.spark.provider import (
     ResourceContext,
@@ -117,6 +118,7 @@ __all__ = [
     "discover_spark_providers",
     "load_spark_plugin",
     "load_spark_provider",
+    "logical_identities_for_region",
     "map_contract_schema",
     "observation_from_spark_schema",
     "register_discovered_plugins",

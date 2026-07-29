@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-prefect"
-version = "0.31.0"
+version = "0.32.0"
 description = "Prefect ExecutionScheduler plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.31.0,<0.32",
+    "etlantic>=0.32.0,<0.33",
     "prefect>=3,<4",
 ]
 

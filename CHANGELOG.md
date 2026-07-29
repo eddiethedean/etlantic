@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-07-28
+
+### Added
+- `storage.delta.*` capability extras and plan-time fail-closed `PMPLAN440` / `PMPLAN441`
+- Catalog mutation policy (`PMCAT100`) and JDBC/asset binding refs
+- Spark protocol: cancel, storage ops, cache/checkpoint points, logical-step identity
+- `etlantic-pyspark` Delta optimize/vacuum/history/time-travel/schema-evolution paths
+- Medallantic live `from_pipeline_builder` bridge and Column-rule path (`MDL130`)
+- Real PySpark df→df callable transforms; fluent builder `rules=` on silver/gold
+- Runtime map `implementation_overrides` + `invalidation`
+- `etlantic.testing.run_sparkforge_differential_suite` with classified fixtures
+- What's New / Migration / Exit Gate 0.32 documentation
+
+### Changed
+- Official package versions align at 0.32.0; plugins require `etlantic>=0.32.0,<0.33`
+- Medallantic Delta capability map uses fine-grained `storage.delta.*` extras
+- `etlantic-pyspark` claims `dataframe=True` (lazy implication honesty)
+
+### Fixed
+- Spark region compile/execute records cache points and logical identities
+
 ## [0.31.0] - 2026-07-28
 
 ### Added
@@ -1126,6 +1147,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.32.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.32.0
 [0.31.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.31.0
 [0.30.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.30.0
 [0.29.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.29.0

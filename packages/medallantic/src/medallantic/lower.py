@@ -28,6 +28,10 @@ from medallantic.callables import (
     make_callable_transformation,
     resolve_transform_callable,
 )
+from medallantic.column_rules import (
+    NATIVE_QUALITY_CAPABILITY,
+    split_portable_and_native_rules,
+)
 from medallantic.compat import write_mode_from_sparkforge, write_mode_metadata
 from medallantic.diagnostics import (
     MDL100_EMPTY,
@@ -40,6 +44,7 @@ from medallantic.diagnostics import (
     MDL107_UNKNOWN_LAYER,
     MDL110_RULES_INVALID,
     MDL111_TRANSFORM_PASSTHROUGH,
+    MDL130_NATIVE_COLUMN_RULE,
     VALID_LAYERS,
     mdl_diagnostic,
 )
@@ -336,8 +341,27 @@ def lower_document(
             binding = step.asset or step.name
             source = Extract[MedallionRow](asset=binding)
             if step.rules:
+                portable_rules, native_rules = split_portable_and_native_rules(
+                    step.rules
+                )
+                if native_rules:
+                    _record_native_column_rules(
+                        step=step,
+                        native_rules=native_rules,
+                        engine=doc.engine,
+                        diagnostics=diagnostics,
+                        phase=diagnostic_phase,
+                    )
+                if not portable_rules and native_rules:
+                    # Native-only bronze: still extract; gate deferred to plugin.
+                    ns[step.name] = source
+                    annotations[step.name] = Extract[MedallionRow]
+                    members[step.name] = source
+                    step_map[step.name] = f"source:{step.name}"
+                    layer_by_node[step.name] = step.layer
+                    continue
                 try:
-                    ruleset = parse_rules_shorthand(step.rules, name=step.name)
+                    ruleset = parse_rules_shorthand(portable_rules, name=step.name)
                 except RuleDSLError as exc:
                     diagnostics.append(
                         mdl_diagnostic(
@@ -446,42 +470,56 @@ def lower_document(
                     )
 
             if step.rules:
-                try:
-                    ruleset = parse_rules_shorthand(step.rules, name=step.name)
-                except RuleDSLError as exc:
-                    diagnostics.append(
-                        mdl_diagnostic(
-                            MDL110_RULES_INVALID,
-                            f"Invalid rules on {step.name!r}: {exc}",
-                            path=("steps", step.name, "rules"),
-                            phase=diagnostic_phase,
-                        )
-                    )
-                    continue
-                gate_cls = make_quality_gate(
-                    MedallionRow,
-                    ruleset,
-                    name=f"{_safe_ident(step.name)}Gate",
-                    expression_id=step.name,
+                portable_rules, native_rules = split_portable_and_native_rules(
+                    step.rules
                 )
-                if transform_cls is not None:
-                    # Compose: callable transform, then quality gate.
-                    if isinstance(upstream, Extract):
-                        xform_inst = transform_cls.step(rows=upstream)
+                if native_rules:
+                    _record_native_column_rules(
+                        step=step,
+                        native_rules=native_rules,
+                        engine=doc.engine,
+                        diagnostics=diagnostics,
+                        phase=diagnostic_phase,
+                    )
+                if portable_rules:
+                    try:
+                        ruleset = parse_rules_shorthand(
+                            portable_rules, name=step.name
+                        )
+                    except RuleDSLError as exc:
+                        diagnostics.append(
+                            mdl_diagnostic(
+                                MDL110_RULES_INVALID,
+                                f"Invalid rules on {step.name!r}: {exc}",
+                                path=("steps", step.name, "rules"),
+                                phase=diagnostic_phase,
+                            )
+                        )
+                        continue
+                    gate_cls = make_quality_gate(
+                        MedallionRow,
+                        ruleset,
+                        name=f"{_safe_ident(step.name)}Gate",
+                        expression_id=step.name,
+                    )
+                    if transform_cls is not None:
+                        # Compose: callable transform, then quality gate.
+                        if isinstance(upstream, Extract):
+                            xform_inst = transform_cls.step(rows=upstream)
+                        else:
+                            xform_inst = transform_cls.step(rows=upstream.result)
+                        ns[f"{step.name}__xform"] = xform_inst
+                        annotations[f"{step.name}__xform"] = type(xform_inst)
+                        members[f"{step.name}__xform"] = xform_inst
+                        step_map[f"{step.name}__xform"] = f"step:{step.name}__xform"
+                        layer_by_node[f"{step.name}__xform"] = step.layer
+                        step_inst = gate_cls.step(rows=xform_inst.result)
                     else:
-                        xform_inst = transform_cls.step(rows=upstream.result)
-                    ns[f"{step.name}__xform"] = xform_inst
-                    annotations[f"{step.name}__xform"] = type(xform_inst)
-                    members[f"{step.name}__xform"] = xform_inst
-                    step_map[f"{step.name}__xform"] = f"step:{step.name}__xform"
-                    layer_by_node[f"{step.name}__xform"] = step.layer
-                    step_inst = gate_cls.step(rows=xform_inst.result)
-                else:
-                    if isinstance(upstream, Extract):
-                        step_inst = gate_cls.step(rows=upstream)
-                    else:
-                        step_inst = gate_cls.step(rows=upstream.result)
-                quality_gate = True
+                        if isinstance(upstream, Extract):
+                            step_inst = gate_cls.step(rows=upstream)
+                        else:
+                            step_inst = gate_cls.step(rows=upstream.result)
+                    quality_gate = True
             elif transform_cls is not None:
                 if isinstance(upstream, Extract):
                     step_inst = transform_cls.step(rows=upstream)
@@ -830,6 +868,37 @@ def _make_passthrough_transformation(
         return rows
 
     return transform_cls
+
+
+def _record_native_column_rules(
+    *,
+    step: MedallionStep,
+    native_rules: list[Any],
+    engine: str,
+    diagnostics: list[Diagnostic],
+    phase: str,
+) -> None:
+    """Attach native Column rule metadata and fail closed off PySpark engines."""
+    payload = [rule.to_dict() for rule in native_rules]
+    step.metadata.setdefault("native_column_rules", payload)
+    step.metadata.setdefault("required_quality_capabilities", [NATIVE_QUALITY_CAPABILITY])
+    engine_key = (engine or "local").lower()
+    if engine_key not in {"spark", "pyspark", "delta"}:
+        required = [r for r in native_rules if getattr(r, "required", True)]
+        if required:
+            diagnostics.append(
+                mdl_diagnostic(
+                    MDL130_NATIVE_COLUMN_RULE,
+                    (
+                        f"Step {step.name!r} declares PySpark Column / native "
+                        f"rules requiring {NATIVE_QUALITY_CAPABILITY!r}; engine "
+                        f"{engine!r} cannot execute them. Use spark/pyspark or "
+                        "remove native rules."
+                    ),
+                    path=("steps", step.name, "rules"),
+                    phase=phase,
+                )
+            )
 
 
 def _safe_ident(name: str) -> str:

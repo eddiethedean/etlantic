@@ -15,6 +15,7 @@ from etlantic.spark.protocol import (
     SparkPlanRegion,
     SparkPlugin,
 )
+from etlantic.storage.delta_capabilities import STORAGE_DELTA_CAPABILITY_EXTRAS
 from etlantic.testing.capability_truthfulness import (
     assert_capability_claims_consistent,
 )
@@ -46,9 +47,17 @@ def run_spark_conformance_suite(
 
     Compiles a trivial region and asserts the compiled artifact is secret-free
     and structurally consistent. Overstated capabilities fail via
-    :func:`assert_capability_claims_consistent`.
+    :func:`assert_capability_claims_consistent`. Storage extras that are
+    advertised must imply ``spark_delta``.
     """
     assert_spark_plugin_info(plugin, engine=engine)
+    caps = plugin.capabilities()
+    claimed_storage = sorted(caps.extras & STORAGE_DELTA_CAPABILITY_EXTRAS)
+    if claimed_storage:
+        assert caps.supports("spark_delta"), (
+            "storage.delta.* extras require spark_delta; claimed "
+            f"{claimed_storage}"
+        )
 
     dataset = plugin.dataset_from_binding(binding=binding)
     assert dataset is not None
@@ -56,6 +65,7 @@ def run_spark_conformance_suite(
     region = SparkPlanRegion(
         identity="conformance:region",
         node_names=("normalize",),
+        metadata={"normalize": {"cache": True}},
     )
     ctx = SparkCompilationContext(
         run_id="conformance",
@@ -71,3 +81,6 @@ def run_spark_conformance_suite(
     assert payload == redact_message(payload), (
         "Compiled Spark plan contains secret-like text."
     )
+    # Optional protocol methods used by 0.32 storage / cancel surfaces.
+    assert callable(getattr(plugin, "cancel", None))
+    assert callable(getattr(plugin, "execute_storage_op", None))

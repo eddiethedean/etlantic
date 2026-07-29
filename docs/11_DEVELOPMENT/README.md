@@ -20,6 +20,8 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
+- [Exit gate 0.32](EXIT_GATE_0_32.md) (Done — PySpark / Delta differential / M4)
 - [Migration 0.30 → 0.31](MIGRATION_0_30_TO_0_31.md)
 - [Exit gate 0.31](EXIT_GATE_0_31.md) (Done — execution / materialization / M3)
 - [Migration 0.29 → 0.30](MIGRATION_0_29_TO_0_30.md)

@@ -5,17 +5,17 @@
 Medallantic follows Etlantic's pre-1.0 minor line. Pin matching minors:
 
 ```text
-medallantic 0.31.x  <->  etlantic 0.31.x
+medallantic 0.32.x  <->  etlantic 0.32.x
 ```
 
-The package metadata currently requires `etlantic>=0.31.0,<0.32`.
+The package metadata currently requires `etlantic>=0.32.0,<0.33`.
 
 ## Engine mapping
 
 | Legacy engine | Profile mapping |
 |---|---|
 | `spark`, `pyspark` | `Profile.spark_engine="pyspark"` |
-| `delta` | PySpark plus `spark_delta` capability |
+| `delta` | PySpark plus `storage.delta.*` / `spark_delta` |
 | `sql`, `postgres`, `postgresql` | `Profile.sql_engine="sql"` |
 | other/local | `Profile.dataframe_engine="local"` |
 
@@ -45,9 +45,11 @@ The adapter recognizes:
 - `history`
 - `time_travel`
 
-Each currently requires the `spark_delta` capability. Unknown operations are
-errors. Missing capabilities are errors under strict adaptation and warnings
-only in explicit plan-only mode.
+Each currently requires the matching `storage.delta.*` extra (merge also
+accepts legacy `spark_delta` / `spark_merge` / `write.merge`). Unknown
+operations are errors. Missing capabilities are errors under strict adaptation
+and warnings only in explicit plan-only mode. Schema evolution is also
+recognized as `storage.delta.schema_evolution`.
 
 ## Current parity level
 
@@ -60,12 +62,14 @@ only in explicit plan-only mode.
 | Write/retry/run-selection mapping | Available |
 | Plan enrichment | Available |
 | Legacy report normalization/redaction | Available |
-| SparkForge callable execution | Not available (0.31+) |
-| Native PySpark Column / Moltres-only rules | Not available (0.32 / 0.33) |
-| Native Medallantic builder | Available (0.30) |
-| Live PySpark differential parity | Planned (0.32) |
+| SparkForge callable execution | Available (0.32; local/polars/pandas/pyspark) |
+| Native PySpark Column rules | Available (0.32; capability-gated, `MDL130` off Spark) |
+| Moltres-only rules | Planned (0.33) |
+| Native Medallantic builder | Available |
+| Live `PipelineBuilder` bridge | Available (0.32) |
+| Live PySpark differential parity | Available (0.32 Sparkless default; live Delta optional) |
 | Live SQLAlchemy/Moltres differential parity | Planned (0.33) |
-| Delta maintenance execution | Plugin-dependent and planned |
+| Delta maintenance execution | Available via `etlantic-pyspark` when `delta-spark` present |
 
 See the [roadmap](../ROADMAP.md) for phase exit criteria. A roadmap item is not
 a compatibility claim until its conformance and differential tests pass.

@@ -8,6 +8,7 @@ from etlantic.capabilities import PluginCapabilities
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.reliability import WriteMode
 from etlantic.runtime.request import RetryPolicy
+from etlantic.storage.delta_capabilities import DELTA_OP_CAPABILITY
 
 # SparkForge write vocabulary → ETLantic WriteMode
 _WRITE_MODE_MAP: dict[str, WriteMode] = {
@@ -24,14 +25,9 @@ _WRITE_MODE_MAP: dict[str, WriteMode] = {
     "": WriteMode.OVERWRITE,
 }
 
-# Delta operations require spark_delta (and related) capabilities.
-_DELTA_CAPABILITY: dict[str, str] = {
-    "merge": "spark_delta",
-    "optimize": "spark_delta",
-    "vacuum": "spark_delta",
-    "history": "spark_delta",
-    "time_travel": "spark_delta",
-}
+# Delta operations require fine-grained storage.delta.* extras (0.32+).
+# Legacy spark_delta remains a family root for merge fallback.
+DELTA_CAPABILITY_MAP: dict[str, str] = dict(DELTA_OP_CAPABILITY)
 
 
 def write_mode_from_sparkforge(raw: str | None) -> WriteMode:
@@ -96,7 +92,7 @@ def assert_delta_capabilities(
     missing_caps_severity = Severity.ERROR if strict else Severity.WARNING
     for op in operations:
         key = op.strip().lower()
-        required = _DELTA_CAPABILITY.get(key)
+        required = DELTA_CAPABILITY_MAP.get(key)
         if required is None:
             diagnostics.append(
                 Diagnostic(
@@ -123,31 +119,40 @@ def assert_delta_capabilities(
                 )
             )
             continue
-        if not capabilities.supports(required):
-            diagnostics.append(
-                Diagnostic(
-                    code="PMSF323",
-                    severity=missing_caps_severity,
-                    message=(
-                        f"Delta operation {op!r} requires capability {required!r} "
-                        "which the selected Spark plugin does not declare"
-                        + (" (fail closed)." if strict else " (plan-only warning).")
-                    ),
-                    path=("delta_operations", op),
-                    phase="sparkforge_adapter",
-                )
+        if capabilities.supports(required):
+            continue
+        # Legacy family fallback: spark_delta / spark_merge / write.merge cover
+        # keyed merge until plugins advertise storage.delta.merge.
+        if key == "merge" and (
+            capabilities.supports("spark_delta")
+            or capabilities.supports("spark_merge")
+            or capabilities.supports("write.merge")
+        ):
+            continue
+        diagnostics.append(
+            Diagnostic(
+                code="PMSF323",
+                severity=missing_caps_severity,
+                message=(
+                    f"Delta operation {op!r} requires capability {required!r} "
+                    "which the selected Spark plugin does not declare"
+                    + (" (fail closed)." if strict else " (plan-only warning).")
+                ),
+                path=("delta_operations", op),
+                phase="sparkforge_adapter",
             )
+        )
     return diagnostics
 
 
 COMPATIBILITY_MATRIX: dict[str, dict[str, str]] = {
     "write": {k: v.value for k, v in _WRITE_MODE_MAP.items() if k},
-    "delta": dict(_DELTA_CAPABILITY),
+    "delta": dict(DELTA_CAPABILITY_MAP),
     "engines": {
         "spark": "Profile.spark_engine=pyspark",
         "pyspark": "Profile.spark_engine=pyspark",
         "sql": "Profile.sql_engine=sql",
-        "delta": "Profile.spark_engine=pyspark + spark_delta capability",
+        "delta": "Profile.spark_engine=pyspark + storage.delta.* extras",
     },
     "notes": {
         "overwrite_partitions": (

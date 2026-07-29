@@ -14,6 +14,7 @@ from medallantic.adapt import (
 )
 from medallantic.compat import (
     COMPATIBILITY_MATRIX,
+    DELTA_CAPABILITY_MAP,
     assert_delta_capabilities,
     retry_policy_from_sparkforge,
     write_mode_from_sparkforge,
@@ -25,20 +26,28 @@ from medallantic.ir import (
     SparkForgeStepSpec,
     StepKind,
 )
+from medallantic.migrate.sparkforge_live import (
+    LiveBridgeError,
+    from_pipeline_builder,
+    sparkforge_available,
+)
 from medallantic.reports import adapt_run_result, report_to_sparkforge_explain
 from medallantic.runtime_map import (
     bind_debug_session,
     debug_request_from_sparkforge,
     intent_from_sparkforge,
+    invalidation_from_sparkforge,
     selection_from_sparkforge,
 )
 
 __all__ = [
     "COMPATIBILITY_MATRIX",
+    "DELTA_CAPABILITY_MAP",
     "AdaptationResult",
     "AdaptedRow",
     "AdapterError",
     "LayerKind",
+    "LiveBridgeError",
     "SparkForgePipelineSpec",
     "SparkForgeStepSpec",
     "StepKind",
@@ -50,10 +59,13 @@ __all__ = [
     "bind_debug_session",
     "debug_request_from_sparkforge",
     "enrich_plan",
+    "from_pipeline_builder",
     "intent_from_sparkforge",
+    "invalidation_from_sparkforge",
     "report_to_sparkforge_explain",
     "retry_policy_from_sparkforge",
     "selection_from_sparkforge",
+    "sparkforge_available",
     "spec_to_document",
     "write_mode_from_sparkforge",
     "write_mode_metadata",

@@ -276,9 +276,22 @@ def adapt_pipeline(
     )
     profile = lowered.profile
     if delta_ops and not strict_delta:
+        from medallantic.compat import DELTA_CAPABILITY_MAP
+
+        extra_caps = tuple(
+            DELTA_CAPABILITY_MAP[op.strip().lower()]
+            for op in delta_ops
+            if op.strip().lower() in DELTA_CAPABILITY_MAP
+        )
         profile = profile.with_updates(
             required_spark_capabilities=tuple(
-                dict.fromkeys((*profile.required_spark_capabilities, "spark_delta"))
+                dict.fromkeys(
+                    (
+                        *profile.required_spark_capabilities,
+                        "spark_delta",
+                        *extra_caps,
+                    )
+                )
             ),
             metadata={
                 **profile.metadata,

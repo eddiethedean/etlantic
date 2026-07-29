@@ -1,6 +1,6 @@
 # Capability Vocabulary
 
-> **Status: Available in ETLantic 0.31.0** via `etlantic.capabilities`.
+> **Status: Available in ETLantic 0.32.0** via `etlantic.capabilities`.
 
 Plugins declare what they support through `PluginCapabilities`. The vocabulary
 is versioned independently of package and protocol versions as
@@ -46,7 +46,7 @@ on local/memory engines.
 
 Quality rule capabilities are advertised as **extras** (not boolean
 `PluginCapabilities` fields). Engines that implement the portable core should
-advertise the matching keys (Polars/Pandas/`local` do in 0.31):
+advertise the matching keys (Polars/Pandas/`local` do in 0.32):
 
 | Extra | Rule kind |
 |---|---|
@@ -61,6 +61,24 @@ advertise the matching keys (Polars/Pandas/`local` do in 0.31):
 
 Gates also require `invalid_row_separation`. Missing required quality extras
 fail closed at plan time with `PMPLAN420` / `PMPLAN421`.
+
+## Delta storage extras (`storage.delta.*`)
+
+Delta Lake operations that are **not** generic writes are advertised as
+extras. Any `storage.delta.*` extra implies boolean `spark_delta` and `spark`
+(enforced by `validate_capability_claims`):
+
+| Extra | Operation |
+|---|---|
+| `storage.delta.merge` | Keyed Delta merge (also covered by legacy `spark_merge` / `write.merge`) |
+| `storage.delta.optimize` | `OPTIMIZE` maintenance |
+| `storage.delta.vacuum` | `VACUUM` maintenance |
+| `storage.delta.history` | Describe history |
+| `storage.delta.time_travel` | Version / timestamp-as-of reads |
+| `storage.delta.schema_evolution` | Explicit schema evolution |
+
+Missing required storage extras fail closed with `PMPLAN440` / `PMPLAN441`.
+Maintenance commands must not be planned as ordinary `write.*` modes.
 
 Call `capability_implications()` for the authoritative map used by validation.
 

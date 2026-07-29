@@ -1,0 +1,46 @@
+{
+  "name": "delta_maintenance",
+  "schema": "demo",
+  "engine": "spark",
+  "steps": [
+    {
+      "name": "events",
+      "kind": "bronze_rules",
+      "layer": "bronze",
+      "table_name": "bronze_events",
+      "rules": {
+        "id": [
+          "not_null"
+        ]
+      },
+      "metadata": {}
+    },
+    {
+      "name": "silver_events",
+      "kind": "silver_transform",
+      "layer": "silver",
+      "source": "events",
+      "table_name": "silver_events",
+      "write_mode": "overwrite",
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "classification": "plugin_dependent",
+    "delta_operations": [
+      "optimize",
+      "vacuum"
+    ],
+    "plugin_capabilities": [
+      "storage.delta.optimize",
+      "storage.delta.vacuum"
+    ],
+    "expected_node_order": [
+      "events__ingest",
+      "events",
+      "events__rejected",
+      "silver_events",
+      "silver_events_out"
+    ]
+  }
+}

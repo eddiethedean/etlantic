@@ -1,0 +1,60 @@
+{
+  "name": "ecommerce",
+  "schema": "demo",
+  "engine": "local",
+  "min_bronze_rate": 90.0,
+  "min_silver_rate": 95.0,
+  "min_gold_rate": 98.0,
+  "legacy_engine_extensions": [],
+  "steps": [
+    {
+      "name": "orders",
+      "kind": "bronze_rules",
+      "layer": "bronze",
+      "table_name": "bronze_orders",
+      "rules": {
+        "id": [
+          "not_null"
+        ]
+      },
+      "metadata": {}
+    },
+    {
+      "name": "clean_orders",
+      "kind": "silver_transform",
+      "layer": "silver",
+      "source": "orders",
+      "table_name": "silver_orders",
+      "transform_ref": "clean_orders_fn",
+      "write_mode": "overwrite",
+      "metadata": {}
+    },
+    {
+      "name": "order_kpis",
+      "kind": "gold_transform",
+      "layer": "gold",
+      "source": "clean_orders",
+      "table_name": "gold_order_kpis",
+      "transform_ref": "order_kpis_fn",
+      "write_mode": "merge",
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "fixture": "representative_ecommerce",
+    "expected_node_order": [
+      "orders__ingest",
+      "orders",
+      "orders__rejected",
+      "clean_orders",
+      "clean_orders_out",
+      "order_kpis",
+      "order_kpis_out"
+    ],
+    "expected_write_modes": {
+      "silver_orders": "overwrite",
+      "gold_order_kpis": "merge"
+    },
+    "classification": "equivalent"
+  }
+}

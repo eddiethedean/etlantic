@@ -24,9 +24,9 @@ Medallantic **0.30** (M2) builds on native authoring (**0.29 / M1**). It can:
 - enforce portable `rules=` via `etlantic.quality/1` gates (Polars/Pandas/local
   live; SQL/PySpark fail closed at plan time when capabilities are missing)
 
-It does not yet execute SparkForge transformation callables (`transform_ref`
-still emits `MDL111` until **0.31**). Native PySpark Column / Moltres-only
-rules remain **0.32 / 0.33**.
+It executes resolvable SparkForge-style transformation callables via
+`medallantic.callables` (since **0.31**). Native PySpark Column rules ship in
+**0.32** (`quality.pyspark_column` / `MDL130`); Moltres-only rules remain later.
 
 ## Quick start (native)
 

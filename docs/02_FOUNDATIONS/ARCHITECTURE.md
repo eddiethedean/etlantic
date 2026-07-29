@@ -338,7 +338,7 @@ semantics are predictable.
 
 ## Resource Architecture
 
-!!! warning "Future design (not shipped in 0.31)"
+!!! warning "Future design (not shipped in 0.32)"
     Third-party **resource / storage / observability provider protocols** are
     **not** shipped. Built-in storage bindings and profile `resources` metadata
     exist today; see [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and

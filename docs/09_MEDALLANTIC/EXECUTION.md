@@ -39,7 +39,7 @@ pipeline definition.
 
 ## Transform references
 
-Medallantic 0.31 executes resolvable `module:attribute` transformation
+Medallantic 0.32 executes resolvable `module:attribute` transformation
 references through ETLantic's runtime path. Missing or invalid references fail
 with diagnostics instead of becoming a production passthrough.
 

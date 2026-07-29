@@ -220,7 +220,7 @@ nav:
       - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
       - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Current 0.31 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.32 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Support:
       - FAQ: 01_GETTING_STARTED/FAQ.md
@@ -236,6 +236,7 @@ nav:
       - Migration from other tools: 01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.32: 01_GETTING_STARTED/WHATS_NEW_0_32.md
       - What's new in 0.31: 01_GETTING_STARTED/WHATS_NEW_0_31.md
       - What's new in 0.30: 01_GETTING_STARTED/WHATS_NEW_0_30.md
       - What's new in 0.29: 01_GETTING_STARTED/WHATS_NEW_0_29.md
@@ -388,7 +389,7 @@ nav:
       - CLI: 10_REFERENCE/CLI.md
       - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.31.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.32.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
       - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -416,12 +417,14 @@ nav:
   - Maintainers:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+      - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md
       - Exit gate 0.31: 11_DEVELOPMENT/EXIT_GATE_0_31.md
       - Exit gate 0.30: 11_DEVELOPMENT/EXIT_GATE_0_30.md
       - Exit gate 0.29: 11_DEVELOPMENT/EXIT_GATE_0_29.md
       - Exit gate 0.28: 11_DEVELOPMENT/EXIT_GATE_0_28.md
       - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md
       - External plugin feedback: 11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
+      - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
       - Migration 0.30 → 0.31: 11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md
       - Migration 0.29 → 0.30: 11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md
       - Migration 0.28 → 0.29: 11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md

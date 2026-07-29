@@ -402,3 +402,105 @@ def assert_write_mode_capabilities(
         "Unsupported write mode capabilities.",
         report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
     )
+
+
+def assert_storage_delta_capabilities(
+    *,
+    operations: list[str] | tuple[str, ...],
+    available: PluginCapabilities | None,
+    engine: str,
+    node_name: str | None = None,
+) -> None:
+    """Fail closed when required Delta storage ops lack advertised capabilities.
+
+    Emits ``PMPLAN440`` when engine capabilities are missing and ``PMPLAN441``
+    when a required ``storage.delta.*`` extra (or legacy ``spark_delta`` for
+    merge-only fallback) is absent. Maintenance ops are never treated as
+    generic writes.
+    """
+    from etlantic.storage.delta_capabilities import (
+        DELTA_OP_CAPABILITY,
+        storage_capability_for_delta_op,
+    )
+
+    ops = [str(op).strip().lower() for op in operations if str(op).strip()]
+    if not ops:
+        return
+
+    if available is None:
+        diagnostics = [
+            Diagnostic(
+                code="PMPLAN440",
+                severity=Severity.ERROR,
+                message=(
+                    f"Cannot negotiate Delta storage operations for engine "
+                    f"{engine!r}: engine capabilities are not registered."
+                ),
+                path=("capability", "storage", engine),
+                phase="capability",
+            )
+        ]
+        raise PipelineValidationError(
+            "Missing engine capabilities for Delta storage.",
+            report=ValidationReport.from_diagnostics(
+                diagnostics, phases=("capability",)
+            ),
+        )
+
+    missing: list[tuple[str, str]] = []
+    for op in ops:
+        if op not in DELTA_OP_CAPABILITY:
+            missing.append((op, f"unknown:{op}"))
+            continue
+        required = storage_capability_for_delta_op(op)
+        if available.supports(required):
+            continue
+        # Legacy: merge alone may be covered by spark_delta / spark_merge /
+        # write.merge until plugins advertise fine-grained extras.
+        if op == "merge" and (
+            available.supports("spark_delta")
+            or available.supports("spark_merge")
+            or available.supports("write.merge")
+        ):
+            continue
+        missing.append((op, required))
+
+    if not missing:
+        return
+
+    diagnostics = []
+    for op, required in missing:
+        path: tuple[str, ...] = ("capability", "storage", required)
+        if node_name:
+            path = ("nodes", node_name, "storage", required)
+        if required.startswith("unknown:"):
+            diagnostics.append(
+                Diagnostic(
+                    code="PMPLAN441",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"Unknown Delta storage operation {op!r} for engine "
+                        f"{engine!r}; failing before storage mutation."
+                    ),
+                    path=path,
+                    phase="capability",
+                )
+            )
+        else:
+            diagnostics.append(
+                Diagnostic(
+                    code="PMPLAN441",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"Required storage capability {required!r} unsupported "
+                        f"by {engine!r}; failing before Delta operation "
+                        f"{op!r}."
+                    ),
+                    path=path,
+                    phase="capability",
+                )
+            )
+    raise PipelineValidationError(
+        "Unsupported Delta storage capabilities.",
+        report=ValidationReport.from_diagnostics(diagnostics, phases=("capability",)),
+    )

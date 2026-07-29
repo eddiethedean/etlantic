@@ -1,8 +1,8 @@
 # Roadmap
 
-**Current release:** ETLantic **0.31.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.31** (execution/materialization / Medallantic
-M3) are shipped; **0.32–0.35** continue Medallantic parity before joint burn-in
+**Current release:** ETLantic **0.32.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.32** (PySpark/Delta differential / Medallantic
+M4) are shipped; **0.33–0.35** continue Medallantic parity before joint burn-in
 in **0.36**, the **0.37** release candidate, and the **0.38** stable
 foundation. See
 [Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
@@ -3125,6 +3125,8 @@ domain-neutral policies.
 
 **Medallantic phase:** M4 — PySpark/SparkForge parity.
 
+**Status:** Shipped in ETLantic **0.32.0**.
+
 **Objective:** use the legacy Spark builder as a differential corpus to harden
 distributed execution and storage capability boundaries.
 
@@ -3157,6 +3159,8 @@ Every supported SparkForge `pipeline_builder` fixture is classified as
 equivalent, explicitly plugin-dependent, or intentionally rejected; live
 PySpark and Delta suites pass their advertised semantics; no Spark or Delta
 dependency enters ETLantic core.
+
+Tracking: [EXIT_GATE_0_32.md](docs/11_DEVELOPMENT/EXIT_GATE_0_32.md).
 
 ## 0.33 — SQLAlchemy and Relational Differential Parity
 

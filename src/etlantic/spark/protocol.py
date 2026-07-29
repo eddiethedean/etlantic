@@ -47,8 +47,14 @@ class SparkActionKind(StrEnum):
     CHECKPOINT = "checkpoint"
     MATERIALIZE = "materialize"
     CACHE = "cache"
+    UNCACHE = "uncache"
     STREAMING_START = "streaming_start"
     STREAMING_STOP = "streaming_stop"
+    CANCEL = "cancel"
+    DELTA_OPTIMIZE = "delta_optimize"
+    DELTA_VACUUM = "delta_vacuum"
+    DELTA_HISTORY = "delta_history"
+    SCHEMA_EVOLVE = "schema_evolve"
 
 
 class ExpressionStrategy(StrEnum):
@@ -148,6 +154,18 @@ class SparkDataFrameHandle:
             "metadata": dict(self.metadata),
         }
 
+    @property
+    def logical_step_id(self) -> str:
+        """Stable logical-step identity for fused / distributed artifacts."""
+        if self.step_name:
+            return str(self.step_name)
+        meta_step = self.metadata.get("logical_step_id") or self.metadata.get(
+            "step_name"
+        )
+        if meta_step:
+            return str(meta_step)
+        return self.identity
+
 
 @dataclass(frozen=True, slots=True)
 class SparkAction:
@@ -205,9 +223,14 @@ class SparkMetrics:
     rows_affected: int | None = None
     fused_steps: int = 0
     stages: int = 0
+    tasks: int = 0
     actions: list[str] = field(default_factory=list)
     expression_strategies: list[str] = field(default_factory=list)
     phases: list[str] = field(default_factory=list)
+    job_group: str | None = None
+    cancelled: bool = False
+    cache_hits: int = 0
+    logical_step_ids: list[str] = field(default_factory=list)
     extras: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -217,9 +240,14 @@ class SparkMetrics:
             "rows_affected": self.rows_affected,
             "fused_steps": self.fused_steps,
             "stages": self.stages,
+            "tasks": self.tasks,
             "actions": list(self.actions),
             "expression_strategies": list(self.expression_strategies),
             "phases": list(self.phases),
+            "job_group": self.job_group,
+            "cancelled": self.cancelled,
+            "cache_hits": self.cache_hits,
+            "logical_step_ids": list(self.logical_step_ids),
             "extras": dict(self.extras),
         }
 
@@ -466,3 +494,32 @@ class SparkPlugin(Protocol):
     ) -> tuple[Any, Any]:
         """Split a DataFrame into valid and invalid partitions by contract."""
         ...
+
+    def cancel(
+        self,
+        *,
+        context: SparkExecutionContext,
+        job_group: str | None = None,
+    ) -> SparkExecutionResult:
+        """Cancel work for ``job_group`` (or ``context.job_group``) if supported."""
+        ...
+
+    def execute_storage_op(
+        self,
+        *,
+        operation: str,
+        target: DatasetRef,
+        context: SparkExecutionContext,
+        options: Mapping[str, Any] | None = None,
+    ) -> SparkExecutionResult:
+        """Run a capability-gated Delta/storage maintenance or inspect op."""
+        ...
+
+
+def logical_identities_for_region(
+    node_names: tuple[str, ...] | list[str],
+    *,
+    region_id: str,
+) -> dict[str, str]:
+    """Map physical node slots to logical step identities for fusion provenance."""
+    return {str(name): f"{region_id}:{name}" for name in node_names}

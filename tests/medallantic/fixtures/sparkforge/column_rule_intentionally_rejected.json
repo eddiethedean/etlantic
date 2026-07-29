@@ -1,0 +1,28 @@
+{
+  "name": "column_rule_rejected",
+  "schema": "demo",
+  "engine": "local",
+  "steps": [
+    {
+      "name": "orders",
+      "kind": "bronze_rules",
+      "layer": "bronze",
+      "table_name": "bronze_orders",
+      "rules": {
+        "email": [
+          {
+            "kind": "pyspark_column",
+            "expr_ref": "mod:email_ok"
+          }
+        ]
+      },
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "classification": "intentionally_rejected",
+    "expected_diagnostic_codes": [
+      "MDL130"
+    ]
+  }
+}

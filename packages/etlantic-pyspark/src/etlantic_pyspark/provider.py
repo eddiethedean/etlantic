@@ -14,7 +14,7 @@ from etlantic.spark.provider import (
     SparkSessionRequest,
 )
 
-__version__ = "0.31.0"
+__version__ = "0.32.0"
 
 
 class LocalSparkProvider:
@@ -24,17 +24,27 @@ class LocalSparkProvider:
         caps = PluginCapabilities(
             engine="pyspark",
             spark=True,
-            dataframe=False,
+            dataframe=True,
             eager=False,
             lazy=True,
             streaming=True,
             checkpoints=True,
             spark_streaming=True,
-            spark_delta=False,
+            spark_delta=True,
             spark_cache=True,
             spark_checkpoint=True,
             cancellation=True,
-            extras=frozenset({"local_spark"}),
+            extras=frozenset(
+                {
+                    "local_spark",
+                    "storage.delta.merge",
+                    "storage.delta.optimize",
+                    "storage.delta.vacuum",
+                    "storage.delta.history",
+                    "storage.delta.time_travel",
+                    "storage.delta.schema_evolution",
+                }
+            ),
         )
         self._info = SparkProviderInfo(
             name="local",

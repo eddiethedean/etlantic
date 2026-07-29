@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.31.0** ships **Execution, State, and Materialization Semantics (M3)**.
+ETLantic **0.32.0** ships **PySpark and Delta Differential Parity (M4)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -117,30 +117,36 @@ IR under `medallantic.migrate.sparkforge`. See
 [What's New in 0.29](../01_GETTING_STARTED/WHATS_NEW_0_29.md) and
 [Exit gate 0.29](EXIT_GATE_0_29.md).
 
+## Shipped: 0.30
+
+ETLantic **0.30.0** shipped **Portable Quality and Rules Parity (M2)**:
+provisional `etlantic.quality/1`, Medallantic `rules=` → quality gates, and
+quality conformance. See
+[What's New in 0.30](../01_GETTING_STARTED/WHATS_NEW_0_30.md) and
+[Exit gate 0.30](EXIT_GATE_0_30.md).
+
 ## Shipped: 0.31
 
 ETLantic **0.31.0** shipped **Execution, State, and Materialization Semantics
 (M3)**: live `transform_ref`, intent-driven runs, `IncrementalStrategy` /
 `StateStore`, portable write intents including `skip_if_exists`, Medallantic
 layer lifecycle defaults, accept-rate enforcement, and lifecycle conformance.
-See [What's New in 0.31](../01_GETTING_STARTED/WHATS_NEW_0_30.md) and
-[Exit gate 0.31](EXIT_GATE_0_30.md).
+See [What's New in 0.31](../01_GETTING_STARTED/WHATS_NEW_0_31.md) and
+[Exit gate 0.31](EXIT_GATE_0_31.md).
 
-## Shipped: 0.31
+## Shipped: 0.32
 
-ETLantic **0.31.0** shipped **Portable Quality and Rule Semantics (M2)**:
-provisional `etlantic.quality/1`, quality-gate planning with plan-time
-fail-closed capability negotiation, Polars/Pandas live portable core,
-Medallantic rule DSL enforcement, and SQL/PySpark advertise+fail-closed
-classification. See
-[What's New in 0.31](../01_GETTING_STARTED/WHATS_NEW_0_30.md) and
-[Exit gate 0.31](EXIT_GATE_0_30.md).
+ETLantic **0.32.0** shipped **PySpark and Delta Differential Parity (M4)**:
+`storage.delta.*` vocabulary, live SparkForge `PipelineBuilder` bridge, Column
+rules, Sparkless/live modes, and classified differential fixtures. See
+[What's New in 0.32](../01_GETTING_STARTED/WHATS_NEW_0_32.md) and
+[Exit gate 0.32](EXIT_GATE_0_32.md).
 
-## Next: 0.32 — PySpark and Delta differential parity (M4)
+## Next: 0.33 — SQLAlchemy and relational differential parity (M5)
 
-**0.32** covers SparkForge live bridge, PySpark Column rules, Delta
-capabilities, and differential fixtures. See
-[ROADMAP § 0.32](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#032--pyspark-and-delta-differential-parity).
+**0.33** covers live `SqlPipelineBuilder` migration, dialect tiers, and
+relational differential fixtures. See
+[ROADMAP § 0.33](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#033--sqlalchemy-and-relational-differential-parity).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 
@@ -150,7 +156,7 @@ with the domain-neutral ETLantic substrate it exercises:
 | Release | Medallantic outcome | ETLantic evolution |
 |---|---|---|
 | 0.29 | Native medallion authoring | Public facade lowering and conformance |
-| 0.31 | Quality/rules parity | Provisional `etlantic.quality/1` + gate planning |
+| 0.30 | Quality/rules parity | Provisional `etlantic.quality/1` + gate planning |
 | 0.31 | Execution/materialization parity | State, write, retry, and transaction semantics |
 | 0.32 | PySpark/SparkForge parity | Spark, Delta, storage, and debug provenance |
 | 0.33 | SQL builder parity | Relational reuse, dialect, and transaction conformance |

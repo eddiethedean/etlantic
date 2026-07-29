@@ -108,7 +108,7 @@ Rules:
 While ETLantic is pre-1.0:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.31: `etlantic>=0.31.0,<0.32`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.32: `etlantic>=0.32.0,<0.33`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.
@@ -169,7 +169,7 @@ held:
 After freeze, only additive optional methods and vocabulary clarifications may
 land in core minors that still speak `/1`. Incompatible changes require `/2`.
 Historical note: 0.22 marked the Plugin SDK as release-candidate quality; that
-did **not** freeze `/1` — freeze closed in **0.31.0**.
+did **not** freeze `/1` — freeze closed in **0.28.0**.
 
 ## Related commands and docs
 
