@@ -292,12 +292,14 @@ def test_redact_message_in_report() -> None:
     assert '"password": "***"' in json_msg
     mongo = redact_message("mongodb://user:pass@host/db")
     assert "pass@" not in mongo
-    assert "user:***@" in mongo
+    assert "***@" in mongo
+    assert "user:pass@" not in mongo
     redis = redact_message("redis://:s3cret@localhost:6379/0")
     assert "s3cret" not in redis
     https = redact_message("https://user:basicpass@api.example/v1")
     assert "basicpass" not in https
-    assert "user:***@" in https
+    assert "***@" in https
+    assert "user:basicpass@" not in https
     assert redact_value({"error": "password=hunter2", "ok": 1}) == {
         "error": "password=***",
         "ok": 1,

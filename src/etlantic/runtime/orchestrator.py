@@ -300,7 +300,13 @@ class LocalOrchestrator:
         """True for schema/trust/security failures that must not CONTINUE/SKIP."""
         code = str(getattr(exc, "code", None) or "")
         stage = str(getattr(exc, "stage", None) or "")
-        if code in {"PMEXEC340", "PMPLUG401", "PMPLUG402", "PMPLUG404"}:
+        if code in {
+            "PMEXEC340",
+            "PMEXEC353",
+            "PMPLUG401",
+            "PMPLUG402",
+            "PMPLUG404",
+        }:
             return True
         if stage in {
             FailureStage.SCHEMA_DRIFT.value,
@@ -322,7 +328,8 @@ class LocalOrchestrator:
             raise PipelineExecutionError(
                 "Plan allow_trusted_sql=true is looser than the live profile; "
                 "failing closed.",
-                code="PMEXEC350",
+                code="PMEXEC353",
+                stage="security",
             )
         return snap and live_flag
 
@@ -2549,6 +2556,12 @@ class LocalOrchestrator:
             "node": node.name,
             "write_mode": mode.value,
         }
+        profile = getattr(self.runtime, "_active_profile", None)
+        if profile is not None and getattr(profile, "safe_io", None):
+            from etlantic.io_policy import SafeIoPolicy
+
+            with contextlib.suppress(Exception):
+                context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name

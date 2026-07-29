@@ -7,6 +7,33 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
 
+_USERINFO_REJECT = (
+    "Asset URL must not include userinfo credentials "
+    "(user:password@host); use SecretRef / secret_refs for auth"
+)
+
+
+def _reject_location_userinfo(location: str | None) -> None:
+    """Fail closed when a location embeds URL userinfo credentials."""
+    if location is None:
+        return
+    text = str(location).strip()
+    if not text:
+        return
+    # Full URL or scheme-relative / host-with-userinfo forms.
+    candidates = [text]
+    if "://" not in text and "@" in text:
+        candidates.append(f"scheme://{text}")
+    for candidate in candidates:
+        parsed = urlparse(candidate if "://" in candidate else f"scheme://{candidate}")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError(_USERINFO_REJECT)
+        # urlparse may put user:pass@host in path for odd shapes — check raw.
+        if "@" in text and "://" in text:
+            before_at = text.split("@", 1)[0]
+            if "://" in before_at and ":" in before_at.rsplit("://", 1)[-1]:
+                raise ValueError(_USERINFO_REJECT)
+
 
 @dataclass(frozen=True, slots=True)
 class ParsedAssetDescriptor:
@@ -54,12 +81,14 @@ class AssetBindingRef:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AssetBindingRef:
+        location = (
+            str(data["location"]) if data.get("location") is not None else None
+        )
+        _reject_location_userinfo(location)
         return cls(
             name=str(data["name"]),
             provider=str(data.get("provider") or "memory"),
-            location=(
-                str(data["location"]) if data.get("location") is not None else None
-            ),
+            location=location,
             catalog=(str(data["catalog"]) if data.get("catalog") is not None else None),
             namespace=(
                 str(data["namespace"]) if data.get("namespace") is not None else None
@@ -127,7 +156,11 @@ _METADATA_UNSUPPORTED = (
 def asset_descriptor_to_storage_key(value: str | dict[str, Any]) -> str:
     """Normalize an asset descriptor to a string stored in Profile.bindings."""
     if isinstance(value, str):
-        return value
+        # Validate secret-free form, then re-serialize without userinfo.
+        parsed = parse_asset_descriptor(value)
+        if parsed.location is None:
+            return parsed.provider
+        return f"{parsed.provider}://{parsed.location}"
     if not isinstance(value, dict):
         raise ValueError(
             f"Asset descriptor must be str or mapping, got {type(value)!r}"
@@ -141,7 +174,9 @@ def asset_descriptor_to_storage_key(value: str | dict[str, Any]) -> str:
     location = value.get("location")
     if location is None:
         return provider
-    return f"{provider}://{location}"
+    location_text = str(location)
+    _reject_location_userinfo(location_text)
+    return f"{provider}://{location_text}"
 
 
 def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor:
@@ -155,9 +190,11 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
         if not provider:
             raise ValueError("Asset descriptor object requires 'provider'")
         location = value.get("location")
+        location_text = str(location) if location is not None else None
+        _reject_location_userinfo(location_text)
         return ParsedAssetDescriptor(
             provider=provider,
-            location=str(location) if location is not None else None,
+            location=location_text,
             metadata=None,
         )
 
@@ -167,10 +204,7 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
         provider = parsed.scheme or "memory"
         # Plans must stay secret-free: never embed URL userinfo (user:password@).
         if parsed.username is not None or parsed.password is not None:
-            raise ValueError(
-                "Asset URL must not include userinfo credentials "
-                "(user:password@host); use SecretRef / secret_refs for auth"
-            )
+            raise ValueError(_USERINFO_REJECT)
         if parsed.netloc:
             # file://localhost/tmp/x → treat as absolute /tmp/x
             if provider == "file" and parsed.netloc in {"localhost", "127.0.0.1"}:
@@ -185,12 +219,14 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
 
 
 def normalize_assets_map(raw: dict[str, Any]) -> dict[str, str]:
-    """Normalize profile assets from JSON into string storage form."""
+    """Normalize profile assets from JSON into string storage form.
+
+    Every value is validated through :func:`parse_asset_descriptor` so credential
+    URLs cannot enter profiles or plan snapshots.
+    """
     normalized: dict[str, str] = {}
     for key, value in dict(raw or {}).items():
-        if isinstance(value, str):
-            normalized[str(key)] = value
-        elif isinstance(value, dict):
+        if isinstance(value, (str, dict)):
             normalized[str(key)] = asset_descriptor_to_storage_key(value)
         else:
             raise ValueError(

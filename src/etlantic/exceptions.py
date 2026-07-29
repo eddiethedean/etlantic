@@ -38,11 +38,13 @@ class PipelineExecutionError(ETLanticError):
         run_id: str | None = None,
         report: Any = None,
         code: str | None = None,
+        stage: str | None = None,
     ) -> None:
         super().__init__(message)
         self.run_id = run_id
         self.report = report
         self.code = code
+        self.stage = stage
 
 
 class NodeExecutionError(PipelineExecutionError):
@@ -59,9 +61,10 @@ class NodeExecutionError(PipelineExecutionError):
         code: str | None = None,
         cause: BaseException | None = None,
     ) -> None:
-        super().__init__(message, run_id=run_id, report=report, code=code)
+        super().__init__(
+            message, run_id=run_id, report=report, code=code, stage=stage
+        )
         self.node_name = node_name
-        self.stage = stage
         self.cause = cause
 
 

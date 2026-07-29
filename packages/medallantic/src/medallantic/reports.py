@@ -223,11 +223,26 @@ def adapt_run_result(
         invalid = item.get("records_invalid")
         if invalid is None:
             invalid = item.get("invalid")
+        if "status" in item and item.get("status") not in (None, ""):
+            validation_status = str(item.get("status"))
+        else:
+            validation_status = "failed"
+            diagnostics.append(
+                RunDiagnostic(
+                    code="PMSF500",
+                    severity="error",
+                    message=(
+                        f"Missing validation status for "
+                        f"{item.get('node_name') or item.get('step') or 'unknown'!r}; "
+                        "mapped to failed (fail closed)."
+                    ),
+                )
+            )
         validations.append(
             ValidationResult(
                 node_name=str(item.get("node_name") or item.get("step") or "unknown"),
                 boundary=str(item.get("boundary") or "quality_gate"),
-                status=str(item.get("status") or "passed"),
+                status=validation_status,
                 message=_safe_text(item.get("message")),
                 records_checked=_coalesce_int(checked),
                 records_invalid=_coalesce_int(invalid),
@@ -246,12 +261,26 @@ def adapt_run_result(
         count = item.get("record_count")
         if count is None:
             count = item.get("count")
+        if "status" in item and item.get("status") not in (None, ""):
+            artifact_status = str(item.get("status"))
+        else:
+            artifact_status = "unknown"
+            diagnostics.append(
+                RunDiagnostic(
+                    code="PMSF500",
+                    severity="error",
+                    message=(
+                        f"Missing artifact status for {identity!r}; "
+                        "mapped to unknown (fail closed)."
+                    ),
+                )
+            )
         artifacts.append(
             ArtifactResult(
                 identity=identity,
                 logical_output=str(item.get("logical_output") or identity),
                 strategy=str(item.get("strategy") or "external"),
-                status=str(item.get("status") or "available"),
+                status=artifact_status,
                 record_count=_coalesce_int(count),
             )
         )
@@ -287,6 +316,33 @@ def adapt_run_result(
         records_in=_coalesce_int(safe.get("records_in")),
         records_out=_coalesce_int(safe.get("records_out")),
     )
+
+    # Payload status must not stay green when steps failed/cancelled/timed out.
+    bad_steps = [
+        s
+        for s in steps
+        if s.status
+        in {StepStatus.FAILED, StepStatus.CANCELLED, StepStatus.TIMED_OUT}
+    ]
+    if bad_steps and status is RunStatus.SUCCEEDED:
+        if any(s.status is StepStatus.CANCELLED for s in bad_steps):
+            status = RunStatus.CANCELLED
+        elif any(s.status is StepStatus.TIMED_OUT for s in bad_steps):
+            status = RunStatus.TIMED_OUT
+        elif succeeded > 0 or skipped > 0:
+            status = RunStatus.PARTIAL
+        else:
+            status = RunStatus.FAILED
+        diagnostics.append(
+            RunDiagnostic(
+                code="PMSF500",
+                severity="error",
+                message=(
+                    "Run status reconciled from step failures "
+                    f"(payload claimed {status_raw!r})."
+                ),
+            )
+        )
 
     started_at = _parse_dt(safe.get("started_at")) or datetime.now(UTC)
     ended_at = _parse_dt(safe.get("ended_at"))

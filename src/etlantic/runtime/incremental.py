@@ -249,9 +249,15 @@ class FileStateStore:
                 self.path, self._policy, run_id="state-store-load"
             )
             data = json.loads(text)
-            return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError, ValueError):
-            return {}
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            raise RuntimeError(
+                f"Unreadable FileStateStore at {self.path}; failing closed."
+            ) from exc
+        if not isinstance(data, dict):
+            raise RuntimeError(
+                f"Invalid FileStateStore payload at {self.path}; failing closed."
+            )
+        return data
 
     def _save(self, data: dict[str, Any]) -> None:
         def _replace(_current: dict[str, Any]) -> dict[str, Any]:
@@ -293,11 +299,15 @@ class FileStateStore:
         *,
         reason: str | None = None,
     ) -> StateTransitionResult:
-        previous = self.get(subject_id)
         now = datetime.now(UTC)
+        previous_value: str | None = None
 
         def _merge(current: dict[str, Any]) -> dict[str, Any]:
+            nonlocal previous_value
             data = dict(current)
+            raw_previous = data.get(subject_id)
+            if isinstance(raw_previous, dict):
+                previous_value = raw_previous.get("value")
             data[subject_id] = {
                 "value": value,
                 "updated_at": now.isoformat(),
@@ -309,9 +319,7 @@ class FileStateStore:
         self._proposed.pop(subject_id, None)
         return StateTransitionResult(
             subject=subject_id,
-            from_status=previous.value
-            if previous and previous.value is not None
-            else "",
+            from_status=previous_value if previous_value is not None else "",
             to_status=value if value is not None else "",
             at=now,
             reason=reason or "commit",

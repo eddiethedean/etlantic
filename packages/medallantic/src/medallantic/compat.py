@@ -22,7 +22,6 @@ _WRITE_MODE_MAP: dict[str, WriteMode] = {
     "ignore": WriteMode.SKIP_IF_EXISTS,
     "no_write": WriteMode.NO_WRITE,
     "none": WriteMode.NO_WRITE,
-    "": WriteMode.OVERWRITE,
 }
 
 # Delta operations require fine-grained storage.delta.* extras (0.32+).
@@ -32,7 +31,12 @@ DELTA_CAPABILITY_MAP: dict[str, str] = dict(DELTA_OP_CAPABILITY)
 
 def write_mode_from_sparkforge(raw: str | None) -> WriteMode:
     """Map a SparkForge write-mode string to ETLantic WriteMode."""
-    key = (raw or "overwrite").strip().lower()
+    if raw is None or not str(raw).strip():
+        raise ValueError(
+            "SparkForge write mode is required; refuse empty/missing mode "
+            "(no silent OVERWRITE default)"
+        )
+    key = str(raw).strip().lower()
     if key not in _WRITE_MODE_MAP:
         raise ValueError(f"Unsupported SparkForge write mode: {raw!r}")
     return _WRITE_MODE_MAP[key]
@@ -40,7 +44,9 @@ def write_mode_from_sparkforge(raw: str | None) -> WriteMode:
 
 def write_mode_metadata(raw: str | None) -> dict[str, Any]:
     """Extra write-mode metadata preserved when modes collapse (e.g. partitions)."""
-    key = (raw or "overwrite").strip().lower()
+    if raw is None or not str(raw).strip():
+        return {}
+    key = str(raw).strip().lower()
     meta: dict[str, Any] = {}
     if key == "overwrite_partitions":
         meta["partition_overwrite"] = True

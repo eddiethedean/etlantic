@@ -63,11 +63,11 @@ def create_plugin() -> PySparkPlugin:
 
 
 def _delta_spark_available() -> bool:
-    """True when delta-spark (or delta) can be imported for Delta ops."""
+    """True when ``delta.tables.DeltaTable`` can be imported for Delta ops."""
     try:
-        import importlib.util
+        from delta.tables import DeltaTable  # noqa: F401
 
-        return importlib.util.find_spec("delta") is not None
+        return True
     except Exception:
         return False
 
@@ -587,6 +587,21 @@ class PySparkPlugin:
                     "message": "Delta merge requires stable merge_keys; failing closed.",
                 }
             ]
+        from etlantic.sql.helpers import require_safe_identifier
+
+        try:
+            safe_keys = tuple(require_safe_identifier(str(k)) for k in merge_keys)
+        except ValueError as exc:
+            return [
+                {
+                    "code": "PMDELTA308",
+                    "severity": "error",
+                    "message": (
+                        f"Delta merge_keys failed identifier validation: {exc}; "
+                        "failing closed."
+                    ),
+                }
+            ]
         try:
             from delta.tables import DeltaTable
         except ImportError:
@@ -602,10 +617,18 @@ class PySparkPlugin:
             ]
         session = self._session
         if not DeltaTable.isDeltaTable(session, path):
-            df.write.format("delta").mode("overwrite").save(path)
-            return []
+            return [
+                {
+                    "code": "PMDELTA309",
+                    "severity": "error",
+                    "message": (
+                        f"Path {path!r} is not a Delta table; MERGE/UPSERT "
+                        "failing closed (no overwrite fallback)."
+                    ),
+                }
+            ]
         delta_table = DeltaTable.forPath(session, path)
-        condition = " AND ".join(f"t.{k} = s.{k}" for k in merge_keys)
+        condition = " AND ".join(f"t.{k} = s.{k}" for k in safe_keys)
         (
             delta_table.alias("t")
             .merge(df.alias("s"), condition)

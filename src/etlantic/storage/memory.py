@@ -42,6 +42,14 @@ class MemoryStorage:
         key = self._key(binding, location)
         records = as_records(data, contract_type)
         mode = str((context or {}).get("write_mode") or "overwrite").lower()
+        if mode in {"merge", "upsert"}:
+            from etlantic.exceptions import PipelineExecutionError
+
+            raise PipelineExecutionError(
+                f"Memory binding {binding!r} does not support write_mode={mode!r}; "
+                "failing closed.",
+                code="PMEXEC456",
+            )
         existing = self._store.get(key)
         if mode in {"skip_if_exists", "skip"} and existing:
             return {

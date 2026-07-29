@@ -137,11 +137,11 @@ class BaseAuthorizationPolicy:
             return authorized, diagnostics, events
 
         for item in discovered:
-            # Exempt only true in-tree stubs (no distribution package). Never
-            # treat third-party engine/EP short names as builtin.
-            if item.distribution_name is None and (
-                is_builtin_allowlist_exempt(item.name)
-                or is_builtin_allowlist_exempt(item.engine)
+            # Exempt only true in-tree stubs by EP/plugin name with no
+            # distribution package. Never treat third-party engine spoofs
+            # (engine="local") as builtin.
+            if item.distribution_name is None and is_builtin_allowlist_exempt(
+                item.name
             ):
                 auth = _with_auth(item, "allowed")
                 authorized.append(auth)

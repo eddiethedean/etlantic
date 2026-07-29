@@ -300,7 +300,7 @@ class FileRunHistoryProvider:
 
     root: Path
     policy: SafeIoPolicy | None = None
-    fail_closed: bool = False
+    fail_closed: bool = True
     _memory: InMemoryRunHistoryProvider = field(
         default_factory=InMemoryRunHistoryProvider
     )

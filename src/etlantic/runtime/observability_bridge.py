@@ -110,13 +110,23 @@ class ObservabilityBridge:
             try:
                 consumer.consume(safe)
             except Exception as exc:
-                _LOG.warning("Event consumer failed: %s", exc)
+                msg = redact_message(str(exc))
+                _LOG.warning("Event consumer failed: %s", msg)
+                self._provider_errors.append(msg)
+                if (
+                    self.profile
+                    and self.profile.observability_delivery == "durable_audit"
+                ):
+                    raise RuntimeError(
+                        "Event consumer failed under durable_audit"
+                    ) from exc
         if self._active_history is not None:
             try:
                 self._active_history.append_event(safe)
             except Exception as exc:
-                _LOG.warning("Run history append failed: %s", exc)
-                self._provider_errors.append(str(exc))
+                msg = redact_message(str(exc))
+                _LOG.warning("Run history append failed: %s", msg)
+                self._provider_errors.append(msg)
                 if (
                     self.profile
                     and self.profile.observability_delivery == "durable_audit"
@@ -145,8 +155,9 @@ class ObservabilityBridge:
             try:
                 self._active_history.append_report(report)
             except Exception as exc:
-                _LOG.warning("Run history report append failed: %s", exc)
-                self._provider_errors.append(str(exc))
+                msg = redact_message(str(exc))
+                _LOG.warning("Run history report append failed: %s", msg)
+                self._provider_errors.append(msg)
                 if (
                     self.profile
                     and self.profile.observability_delivery == "durable_audit"
@@ -161,12 +172,12 @@ class ObservabilityBridge:
             try:
                 consumer.flush()
             except Exception as exc:
-                errors.append(str(exc))
+                errors.append(redact_message(str(exc)))
         if self.observability_providers:
             try:
                 await self._dispatch_pending()
             except Exception as exc:
-                errors.append(str(exc))
+                errors.append(redact_message(str(exc)))
         if errors:
             self._provider_errors.extend(errors)
             if self.profile and self.profile.observability_delivery == "durable_audit":

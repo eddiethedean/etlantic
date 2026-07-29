@@ -99,7 +99,7 @@ class ScheduleIntent:
 
     type: str = "manual"  # manual | cron | event | dependency
     expression: str | None = None
-    timezone: str = "UTC"
+    timezone: str | None = "UTC"
     catchup: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -115,11 +115,17 @@ class ScheduleIntent:
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any] | None) -> ScheduleIntent:
         if not data:
-            return cls()
+            return cls(timezone=None)
+        if "timezone" in data:
+            raw_tz = data.get("timezone")
+            timezone = str(raw_tz).strip() if raw_tz not in (None, "") else None
+        else:
+            # Missing key must stay unset so compilers can fail closed.
+            timezone = None
         return cls(
             type=str(data.get("type") or "manual"),
             expression=data.get("expression"),
-            timezone=str(data.get("timezone") or "UTC"),
+            timezone=timezone,
             catchup=bool(data.get("catchup", False)),
             metadata=dict(data.get("metadata") or {}),
         )

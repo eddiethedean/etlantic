@@ -19,11 +19,11 @@ __version__ = "0.34.0"
 
 
 def _delta_spark_available() -> bool:
-    """True when delta-spark (or delta) can be imported for Delta ops."""
+    """True when ``delta.tables.DeltaTable`` can be imported for Delta ops."""
     try:
-        import importlib.util
+        from delta.tables import DeltaTable  # noqa: F401
 
-        return importlib.util.find_spec("delta") is not None
+        return True
     except Exception:
         return False
 

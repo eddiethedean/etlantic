@@ -207,11 +207,10 @@ def register_core_commands(
             else:
                 typer.echo(str(exc), err=True)
             code = getattr(exc, "code", None) or ""
+            # Raised PMPLUG* errors are authorize/trust failures (sibling
+            # discovery 402s never raise); always map to TRUST_FAILURE.
             if str(code).startswith("PMPLUG"):
-                from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
-
-                if code not in _NON_BLOCKING_TRUST_CODES:
-                    raise typer.Exit(ec.TRUST_FAILURE) from exc
+                raise typer.Exit(ec.TRUST_FAILURE) from exc
             raise typer.Exit(ec.EXECUTION_FAILURE) from exc
         if fmt == "json":
             typer.echo(report.to_json())

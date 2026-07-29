@@ -9,19 +9,32 @@ from typing import Any
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.storage.protocol import as_records, records_to_dicts
 
+_UNSUPPORTED_WRITE_MODES = frozenset({"merge", "upsert"})
+
 
 class CsvStorage:
     """Read/write CSV files using ContractModel field order when available."""
 
     name = "csv"
 
-    def _path(self, binding: str, location: str | None) -> Path:
+    def _path(
+        self, binding: str, location: str | None, context: dict[str, Any] | None
+    ) -> Path:
         if not location:
             raise PipelineExecutionError(
                 f"CSV binding {binding!r} requires a location path",
                 code="PMEXEC453",
             )
-        return Path(location)
+        raw = Path(location)
+        policy = (context or {}).get("safe_io")
+        if policy is not None:
+            from etlantic.io_policy import resolve_under_policy
+
+            resolved, _events = resolve_under_policy(
+                raw, policy, run_id=str((context or {}).get("run_id") or "csv")
+            )
+            return Path(resolved)
+        return raw
 
     def _fieldnames(
         self, contract_type: type[Any] | None, rows: list[dict[str, Any]]
@@ -40,7 +53,7 @@ class CsvStorage:
         contract_type: type[Any] | None,
         context: dict[str, Any],
     ) -> Any:
-        path = self._path(binding, location)
+        path = self._path(binding, location, context)
         if not path.is_file():
             raise PipelineExecutionError(
                 f"CSV source not found: {path}",
@@ -76,13 +89,38 @@ class CsvStorage:
         contract_type: type[Any] | None,
         context: dict[str, Any],
     ) -> dict[str, Any]:
-        path = self._path(binding, location)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        mode = str((context or {}).get("write_mode") or "overwrite").lower()
+        if mode in _UNSUPPORTED_WRITE_MODES:
+            raise PipelineExecutionError(
+                f"CSV binding {binding!r} does not support write_mode={mode!r}; "
+                "failing closed.",
+                code="PMEXEC455",
+            )
+        path = self._path(binding, location, context)
         rows = records_to_dicts(as_records(data, contract_type))
         fieldnames = self._fieldnames(contract_type, rows)
-        with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
-            writer.writeheader()
-            for row in rows:
-                writer.writerow(row)
-        return {"binding": binding, "location": str(path), "records": len(rows)}
+        if mode in {"skip_if_exists", "skip"} and path.is_file():
+            return {
+                "binding": binding,
+                "location": str(path),
+                "records": 0,
+                "skipped": True,
+            }
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if mode == "append" and path.is_file():
+            with path.open("a", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
+                for row in rows:
+                    writer.writerow(row)
+        else:
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow(row)
+        return {
+            "binding": binding,
+            "location": str(path),
+            "records": len(rows),
+            "skipped": False,
+        }

@@ -13,7 +13,8 @@ from etlantic.secrets.value import SecretValue
 _SECRET_KEY_RE = re.compile(
     r"(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
     r"aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key([_-]?id)?|"
-    r"access[_-]?key|private[_-]?key)",
+    r"access[_-]?key|private[_-]?key|dsn|connection[_-]?string|jdbc[_-]?url|"
+    r"database[_-]?url|db[_-]?url)",
     re.IGNORECASE,
 )
 
@@ -40,14 +41,14 @@ class LogRecord:
 _SECRET_INLINE_RE = re.compile(
     r"(?i)(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
     r"aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key([_-]?id)?|"
-    r"access[_-]?key|private[_-]?key)"
+    r"access[_-]?key|private[_-]?key|dsn|connection[_-]?string|jdbc[_-]?url)"
     r"""\s*[=:]\s*['\"]?[^\s'\",;]+"""
 )
 _BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*)?bearer\s+[A-Za-z0-9\-._~+/]+=*")
 _JSON_SECRET_RE = re.compile(
     r'(?i)("(?:password|passwd|pwd|secret|token|api[_-]?key|credential|'
     r"authorization|aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key(?:[_-]?id)?|"
-    r'access[_-]?key|private[_-]?key)"\s*:\s*)'
+    r'access[_-]?key|private[_-]?key|dsn|connection_string|jdbc_url)"\s*:\s*)'
     r'"[^"]*"'
 )
 _AUTH_HEADER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*)(?!bearer\b)([^\s,;]+)")
@@ -57,7 +58,8 @@ _DSN_RE = re.compile(
     r"(?:\+\w+)?://)([^:@/\s]*):([^@/\s]+)@"
 )
 # Generic userinfo credentials for any scheme (http basic-auth, custom DSNs).
-_URL_USERINFO_RE = re.compile(r"(?i)([a-z][a-z0-9+.-]*://)([^:@/\s]+):([^@/\s]+)@")
+# Redact the entire userinfo (username and password), not just the password.
+_URL_USERINFO_RE = re.compile(r"(?i)([a-z][a-z0-9+.-]*://)([^@/\s]+)@")
 
 
 def redact_message(message: str) -> str:
@@ -68,8 +70,8 @@ def redact_message(message: str) -> str:
     redacted = _AUTH_HEADER_RE.sub(r"\1***", redacted)
     redacted = _JSON_SECRET_RE.sub(r'\1"***"', redacted)
     redacted = _SECRET_INLINE_RE.sub(r"\1=***", redacted)
-    redacted = _DSN_RE.sub(r"\1\2:***@", redacted)
-    redacted = _URL_USERINFO_RE.sub(r"\1\2:***@", redacted)
+    redacted = _DSN_RE.sub(r"\1***@", redacted)
+    redacted = _URL_USERINFO_RE.sub(r"\1***@", redacted)
     return redacted
 
 

@@ -200,7 +200,9 @@ class PipelineRuntime:
                     # (PMPLUG401). Refuse overlays without duplicating that code.
                     allowed_manual[kind] = {}
                     continue
-                kept, diags = filter_plugins_by_allowlist(plugins, profile)
+                kept, diags = filter_plugins_by_allowlist(
+                    plugins, profile, allow_builtin_exempt=False
+                )
                 allowed_manual[kind] = kept
                 # Keep non-401 filter diagnostics; add manual-context 402s for
                 # denials not already reported by the filter helper.
@@ -332,7 +334,9 @@ class PipelineRuntime:
                 f"{profile.name!r} requires a non-empty plugin_allowlist.",
                 code="PMPLUG401",
             )
-        kept, diags = filter_plugins_by_allowlist({key: plugin}, profile)
+        kept, diags = filter_plugins_by_allowlist(
+            {key: plugin}, profile, allow_builtin_exempt=False
+        )
         if key in kept:
             return
         errors = [d for d in diags if d.severity is Severity.ERROR]
@@ -385,7 +389,9 @@ class PipelineRuntime:
             name: Provider id referenced by profile ``secret_providers``.
             provider: Implementation of :class:`~etlantic.secrets.provider.SecretProvider`.
         """
+        self._assert_manual_plugin_allowed(name, provider, kind="secret_provider")
         self.secret_providers[name] = provider
+        self._configured_profile_key = None
 
     def register_storage(self, name: str, binding: StorageBinding) -> None:
         """Register a storage binding under ``name``.
@@ -394,7 +400,9 @@ class PipelineRuntime:
             name: Provider id referenced by profile ``assets`` / bindings.
             binding: Storage implementation (JSON, CSV, SQL-backed, …).
         """
+        self._assert_manual_plugin_allowed(name, binding, kind="storage")
         self.storage[name] = binding
+        self._configured_profile_key = None
 
     def register_dataframe_plugin(self, engine: str, plugin: Any) -> None:
         """Register a live dataframe plugin and its planning descriptor."""
@@ -404,6 +412,7 @@ class PipelineRuntime:
         self.dataframe_plugins[engine] = plugin
         self._manual_dataframe_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
+        self._configured_profile_key = None
 
     def register_sql_plugin(self, engine: str, plugin: Any) -> None:
         """Register a live SQL plugin and its planning descriptor."""
@@ -413,6 +422,7 @@ class PipelineRuntime:
         self.sql_plugins[engine] = plugin
         self._manual_sql_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
+        self._configured_profile_key = None
 
     def register_spark_plugin(self, engine: str, plugin: Any) -> None:
         """Register a live Spark plugin and its planning descriptor."""
@@ -422,12 +432,14 @@ class PipelineRuntime:
         self.spark_plugins[engine] = plugin
         self._manual_spark_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
+        self._configured_profile_key = None
 
     def register_spark_provider(self, name: str, provider: Any) -> None:
         """Register a live Spark session provider."""
         self._assert_manual_plugin_allowed(name, provider, kind="spark_provider")
         self.spark_providers[name] = provider
         self._manual_spark_providers[name] = provider
+        self._configured_profile_key = None
 
     def register_orchestrator_plugin(self, engine: str, plugin: Any) -> None:
         """Register a live orchestrator plugin and its planning descriptor."""
@@ -437,6 +449,7 @@ class PipelineRuntime:
         self.orchestrator_plugins[engine] = plugin
         self._manual_orchestrator_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
+        self._configured_profile_key = None
 
     def register_scheduler_plugin(self, name: str, plugin: Any) -> None:
         """Register a live ExecutionScheduler plugin and its planning descriptor."""
@@ -446,27 +459,34 @@ class PipelineRuntime:
         self.scheduler_plugins[name] = plugin
         self._manual_scheduler_plugins[name] = plugin
         register_discovered_plugins(self.registry, plugins={name: plugin})
+        self._configured_profile_key = None
 
     def register_observability_provider(self, name: str, provider: Any) -> None:
         """Register an observability provider under ``name``."""
+        self._assert_manual_plugin_allowed(name, provider, kind="observability")
         self.observability_providers[name] = provider
         self._manual_observability_providers[name] = provider
         if self._observability_bridge is not None:
             self._observability_bridge.observability_providers[name] = provider
+        self._configured_profile_key = None
 
     def register_run_history_provider(self, name: str, provider: Any) -> None:
         """Register a run-history provider under ``name``."""
+        self._assert_manual_plugin_allowed(name, provider, kind="run_history")
         self.run_history_providers[name] = provider
         self._manual_run_history_providers[name] = provider
         if self._observability_bridge is not None:
             self._observability_bridge.run_history_providers[name] = provider
+        self._configured_profile_key = None
 
     def register_event_consumer(self, name: str, consumer: Any) -> None:
         """Register an event consumer under ``name``."""
+        self._assert_manual_plugin_allowed(name, consumer, kind="event_consumer")
         self.event_consumers[name] = consumer
         self._manual_event_consumers[name] = consumer
         if self._observability_bridge is not None:
             self._observability_bridge.event_consumers[name] = consumer
+        self._configured_profile_key = None
 
     async def flush_observability(self) -> None:
         """Flush observability providers and event consumers."""

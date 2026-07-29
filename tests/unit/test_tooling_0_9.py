@@ -296,7 +296,7 @@ def test_file_schema_history(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="source rows"):
         FileSchemaHistoryProvider(tmp_path)
 
-    # Corrupt JSON is skipped; valid history in other files still loads.
+    # Corrupt JSON fails closed by default; opt out to skip and load siblings.
     clean = tmp_path / "corrupt_case"
     clean.mkdir()
     corrupt = clean / "corrupt.json"
@@ -318,7 +318,9 @@ def test_file_schema_history(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    provider = FileSchemaHistoryProvider(clean)
+    with pytest.raises(RuntimeError, match="failing closed"):
+        FileSchemaHistoryProvider(clean)
+    provider = FileSchemaHistoryProvider(clean, fail_closed=False)
     assert provider.latest("good") is not None
 
 

@@ -519,6 +519,16 @@ class SqlCompiler:
                 bound = {}
             else:
                 raise ValueError("MERGE requires a source query or relation")
+            if not update_cols:
+                insert_ignore = bool(
+                    write.metadata.get("insert_ignore")
+                    or write.metadata.get("on_conflict") == "do_nothing"
+                )
+                if not insert_ignore:
+                    raise ValueError(
+                        "MERGE/upsert requires update_columns (or a source query "
+                        "with non-key projections); refuse silent DO NOTHING"
+                    )
             conflict = ", ".join(self.quote(k) for k in keys)
             if update_cols:
                 sets = ", ".join(

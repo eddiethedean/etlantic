@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from etlantic.cli import exit_codes as ec
-from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
-from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+from etlantic.diagnostics import Severity, ValidationReport
+from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
 _TRUST_PHASES = frozenset(
     {
@@ -18,22 +18,11 @@ _TRUST_PHASES = frozenset(
     }
 )
 
-# Sibling allowlist denials during discovery remain non-blocking for CLI exit.
-# Selected-engine denials from ``plugin_trust`` (and other authorize/load phases)
-# must map to TRUST_FAILURE.
-_DISCOVERY_PHASES = frozenset({"plugin_discovery", "plugin_discover"})
-
-
-def is_non_blocking_trust_diagnostic(diagnostic: Diagnostic) -> bool:
-    """Return True for sibling discovery allowlist denials only.
-
-    ``PMPLUG402`` from ``plugin_trust`` (selected engines) is blocking.
-    """
-    code = getattr(diagnostic, "code", None)
-    if code not in _NON_BLOCKING_TRUST_CODES:
-        return False
-    phase = str(getattr(diagnostic, "phase", None) or "")
-    return phase in _DISCOVERY_PHASES
+__all__ = [
+    "is_non_blocking_trust_diagnostic",
+    "trust_exit_from_report",
+    "validation_exit_from_report",
+]
 
 
 def trust_exit_from_report(report: ValidationReport) -> int | None:

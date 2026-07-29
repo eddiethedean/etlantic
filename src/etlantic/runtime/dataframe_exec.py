@@ -474,7 +474,7 @@ async def _execute_portable(
             compiler = candidate
             break
         if compiler is None:
-            from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+            from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
             trust_errors = [
                 d
@@ -483,7 +483,7 @@ async def _execute_portable(
                 )
                 or []
                 if getattr(d.severity, "name", None) == "ERROR"
-                and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+                and not is_non_blocking_trust_diagnostic(d)
             ]
             if trust_errors:
                 raise NodeExecutionError(
@@ -510,7 +510,7 @@ async def _execute_portable(
         compilers = discover_transform_compilers_for_profile(profile)
         compiler = compilers.get(descriptor.engine)
     if compiler is None:
-        from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+        from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
         trust_errors = [
             d
@@ -520,7 +520,7 @@ async def _execute_portable(
             or []
             if getattr(d, "severity", None) is not None
             and getattr(d.severity, "name", None) == "ERROR"
-            and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+            and not is_non_blocking_trust_diagnostic(d)
         ]
         if trust_errors:
             raise NodeExecutionError(

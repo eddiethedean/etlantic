@@ -83,13 +83,13 @@ def register_doctor_command(app: typer.Typer) -> None:
 
         if resolved is not None:
             diags = cli.runtime.ensure_plugins_for_profile(resolved)
-            from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+            from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
             errors = [
                 d
                 for d in diags
                 if d.severity is Severity.ERROR
-                and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+                and not is_non_blocking_trust_diagnostic(d)
             ]
             checks.append(
                 _check(
@@ -231,6 +231,12 @@ def register_doctor_command(app: typer.Typer) -> None:
                     )
 
         ok = all(c["ok"] or c["severity"] != "error" for c in checks)
+        trust_failed = any(
+            item["name"] == "plugins"
+            and not item["ok"]
+            and item.get("severity") == "error"
+            for item in checks
+        )
         payload = {"ok": ok, "checks": checks}
         if fmt == "json":
             emit_payload(payload, fmt="json", quiet=cli.globals.quiet)
@@ -239,4 +245,6 @@ def register_doctor_command(app: typer.Typer) -> None:
             for item in checks:
                 status = "ok" if item["ok"] else item["severity"]
                 typer.echo(f"  [{status}] {item['name']}: {item['message']}")
+        if trust_failed:
+            raise typer.Exit(ec.TRUST_FAILURE)
         raise typer.Exit(ec.SUCCESS if ok else ec.ENVIRONMENT_FAILURE)

@@ -12,19 +12,22 @@ from etlantic.diagnostics import Diagnostic, ValidationReport
 
 def emit_payload(data: Any, *, fmt: str, quiet: bool = False) -> None:
     """Emit structured or human CLI output."""
+    from etlantic.runtime.logging import redact_value
+
     if quiet and fmt == "human":
         return
-    if fmt == "sarif" and isinstance(data, dict) and "runs" in data:
-        typer.echo(json.dumps(data, indent=2, sort_keys=True))
+    safe = redact_value(data)
+    if fmt == "sarif" and isinstance(safe, dict) and "runs" in safe:
+        typer.echo(json.dumps(safe, indent=2, sort_keys=True))
         return
     if fmt == "json":
-        typer.echo(json.dumps(data, indent=2, sort_keys=True, default=str))
+        typer.echo(json.dumps(safe, indent=2, sort_keys=True, default=str))
         return
-    if isinstance(data, dict):
-        for key, value in data.items():
+    if isinstance(safe, dict):
+        for key, value in safe.items():
             typer.echo(f"{key}: {value}")
     else:
-        typer.echo(str(data))
+        typer.echo(str(safe))
 
 
 def diagnostic_to_dict(d: Diagnostic) -> dict[str, Any]:

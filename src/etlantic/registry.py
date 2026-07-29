@@ -137,12 +137,17 @@ class BindingDescriptor:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BindingDescriptor:
         """Deserialize binding descriptor."""
+        from etlantic.bindings import _reject_location_userinfo
+
+        location = data.get("location")
+        location_text = str(location) if location is not None else None
+        _reject_location_userinfo(location_text)
         secret_raw = data.get("secret_ref")
         return cls(
             binding=str(data["binding"]),
             provider=str(data["provider"]),
             kind=str(data.get("kind") or "resource"),
-            location=data.get("location"),
+            location=location_text,
             secret_ref=(
                 SecretRef.from_dict(secret_raw)
                 if isinstance(secret_raw, dict)

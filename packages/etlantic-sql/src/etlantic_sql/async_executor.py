@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, InterfaceError, OperationalError
 
+from etlantic.runtime.logging import redact_message
 from etlantic.sql.protocol import (
     CompiledSql,
     SqlExecutionContext,
@@ -117,7 +118,7 @@ class AsyncSqlExecutor:
                     {
                         "code": "PMSQL500",
                         "severity": "error",
-                        "message": str(exc),
+                        "message": redact_message(str(exc)),
                     }
                 ],
             )

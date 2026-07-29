@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import DBAPIError, InterfaceError, OperationalError
 
+from etlantic.runtime.logging import redact_message
 from etlantic.sql.helpers import require_safe_identifier
 from etlantic.sql.protocol import (
     CompiledSql,
@@ -124,7 +125,7 @@ class SqlExecutor:
                     {
                         "code": "PMSQL500",
                         "severity": "error",
-                        "message": str(exc),
+                        "message": redact_message(str(exc)),
                     }
                 ],
             )
@@ -246,7 +247,7 @@ class SqlExecutor:
             return SqlExecutionResult(
                 outcome=_classify_failure(exc, started=started),
                 diagnostics=[
-                    {"code": "PMSQL520", "severity": "error", "message": str(exc)}
+                    {"code": "PMSQL520", "severity": "error", "message": redact_message(str(exc))}
                 ],
             )
 
@@ -298,7 +299,7 @@ class SqlExecutor:
             return SqlExecutionResult(
                 outcome=_classify_failure(exc, started=started),
                 diagnostics=[
-                    {"code": "PMSQL510", "severity": "error", "message": str(exc)}
+                    {"code": "PMSQL510", "severity": "error", "message": redact_message(str(exc))}
                 ],
             )
 

@@ -230,6 +230,38 @@ def test_etlantic_step_reference_stub_opt_in(monkeypatch):
 
 
 @pytest.mark.airflow
+def test_compiled_dag_preserves_timezone(planned):
+    plan, profile, plugin, _ = planned
+    artifact = compile_plan(plan, target="airflow", profile=profile, plugin=plugin)
+    assert "_pendulum_timezone" in artifact.source
+    assert '"UTC"' in artifact.source or "'UTC'" in artifact.source
+
+
+@pytest.mark.airflow
+def test_event_schedule_plugin_compile_is_non_schedulable(planned):
+    from etlantic.orchestration.mapping import (
+        execution_from_profile,
+        schedule_from_profile,
+    )
+    from etlantic.orchestration.protocol import CompilationContext
+
+    plan, _profile, plugin, _ = planned
+    bad = Profile(name="event", orchestrator="airflow", schedule={"type": "event"})
+    artifact = plugin.compile(
+        plan,
+        context=CompilationContext(
+            target="airflow",
+            schedule=schedule_from_profile(bad),
+            execution=execution_from_profile(bad),
+        ),
+    )
+    assert any(d.code == "PMORCH320" for d in artifact.diagnostics)
+    assert "raise RuntimeError" in artifact.source
+    assert "schedule=None" not in artifact.source
+    assert "with DAG(" not in artifact.source
+
+
+@pytest.mark.airflow
 def test_optional_airflow_import_of_generated_dag(planned, tmp_path, monkeypatch):
     import os
 

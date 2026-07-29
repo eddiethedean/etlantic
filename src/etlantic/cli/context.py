@@ -115,13 +115,13 @@ class CliContext:
         fmt: str = "human",
     ) -> None:
         diags = self.runtime.ensure_plugins_for_profile(profile)
-        from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
+        from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
         errors = [
             d
             for d in diags
             if d.severity is Severity.ERROR
-            and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+            and not is_non_blocking_trust_diagnostic(d)
         ]
         if errors:
             if fmt == "sarif":

@@ -7,6 +7,7 @@ and report metadata remain evolvable without opening every core schema.
 from __future__ import annotations
 
 import json
+import re
 import warnings
 from typing import Any
 
@@ -122,8 +123,9 @@ def validate_extension_metadata(
             f"(got {size} bytes)."
         )
 
-    if strict:
-        _reject_nested_secret_material(metadata, path=path)
+    # Secret-like keys are always rejected (plans/reports/profiles must stay
+    # secret-free). Namespace strictness remains opt-in via ``strict``.
+    _reject_nested_secret_material(metadata, path=path)
 
     bare = sorted(str(key) for key in metadata if not _is_namespaced(key))
     if not bare:
@@ -156,15 +158,38 @@ _STRICT_SECRET_KEYS = frozenset(
         "client_secret",
         "credential",
         "credentials",
+        "dsn",
+        "connection_string",
+        "jdbc_url",
+        "database_url",
+        "db_url",
     }
 )
+
+_SECRET_KEY_FRAGMENT_RE = re.compile(
+    r"(^|_)(password|passwd|pwd|secret_value|token|api_key|api_token|"
+    r"access_key|access_token|private_key|client_secret|credential|"
+    r"credentials|authorization|dsn|connection_string|jdbc_url|"
+    r"database_url|db_url|secret)$",
+    re.IGNORECASE,
+)
+
+_URL_USERINFO_VALUE_RE = re.compile(
+    r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@"
+)
+
+
+def _is_secret_like_key(key: str) -> bool:
+    key_l = str(key).lower().replace("-", "_")
+    if key_l in _STRICT_SECRET_KEYS:
+        return True
+    return bool(_SECRET_KEY_FRAGMENT_RE.search(key_l))
 
 
 def _reject_nested_secret_material(value: Any, *, path: str) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
-            key_l = str(key).lower()
-            if key_l in _STRICT_SECRET_KEYS:
+            if _is_secret_like_key(str(key)):
                 raise ValueError(
                     f"{path} contains forbidden secret-like key {key!r}; "
                     "failing closed under strict production metadata."
@@ -173,3 +198,8 @@ def _reject_nested_secret_material(value: Any, *, path: str) -> None:
     elif isinstance(value, list):
         for index, item in enumerate(value):
             _reject_nested_secret_material(item, path=f"{path}[{index}]")
+    elif isinstance(value, str) and _URL_USERINFO_VALUE_RE.search(value):
+        raise ValueError(
+            f"{path} contains a URL with userinfo credentials; "
+            "failing closed under strict production metadata."
+        )

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Phase-aware ``PMPLUG402``: authorize/selected-engine denials block
+  ``ensure_plugins`` / run / compile / doctor / execute (discovery siblings stay
+  non-blocking); ``run`` maps all raised ``PMPLUG*`` to ``TRUST_FAILURE``; doctor
+  plugin trust failures exit ``11``
+- Manual overlays cannot spoof builtin ``local``/``env`` allowlist exemption;
+  secret / observability / run-history / event-consumer / storage registers are
+  production-allowlist gated; authorize path no longer exempts engine-name spoofs
+- ``Profile`` constructor rejects plaintext secrets; plan/profile serialization
+  refuses non-``SecretRef`` values
+- Profile assets / binding deserialize reject URL userinfo so credential URLs
+  cannot enter plan snapshots; report nested metadata bags and extension keys
+  (including ``dsn`` / ``connection_string`` / ``jdbc_url`` and URL values) fail
+  closed; CLI ``emit_payload`` redacts before echo
+- Delta ``merge_keys`` validated as safe identifiers; non-Delta MERGE/UPSERT
+  fails closed (no overwrite fallback); Delta capabilities require
+  ``delta.tables.DeltaTable``
+- SQL executor diagnostics redact exception text; PostgreSQL MERGE without
+  update columns fails closed unless explicit insert-ignore intent
+- Airflow compile preserves schedule timezone (``ScheduleIntent.from_mapping``
+  no longer invents UTC), stubs on any ERROR diagnostic (not only schedule),
+  refuses unsupported schedules with a non-schedulable stub, and secret-scans
+  rendered source (including URL userinfo)
+- Trusted-SQL profile mismatch uses ``PMEXEC353`` and is CONTINUE/SKIP hard-fail;
+  ``redact_message`` redacts full URL userinfo
+- CSV/JSON sinks honor ``write_mode`` and optional ``SafeIoPolicy``; memory
+  merge/upsert fails closed; ``FileStateStore.commit`` reads previous inside
+  locked RMW; durable_audit event consumers fail closed
+- Medallantic: missing validation/artifact status fail closed; run status
+  reconciled when steps failed; empty SparkForge write mode rejected
+- ``FileStateStore`` fails closed on corrupt state; schema history verifies
+  stored fingerprints; file schema/run-history providers default
+  ``fail_closed=True``
+
 ## [0.34.0] - 2026-07-29
 
 ### Added

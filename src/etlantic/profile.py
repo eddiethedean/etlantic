@@ -29,6 +29,26 @@ _UNKNOWN_PROFILE = (
 )
 
 
+def _coerce_profile_secrets(raw: Any) -> dict[str, SecretRef]:
+    """Normalize profile secrets to SecretRef only (fail closed on plaintext)."""
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError("Profile secrets must be a mapping of name → SecretRef")
+    secrets: dict[str, SecretRef] = {}
+    for key, value in raw.items():
+        if isinstance(value, SecretRef):
+            secrets[str(key)] = value
+        elif isinstance(value, dict):
+            secrets[str(key)] = SecretRef.from_dict(value)
+        else:
+            raise ValueError(
+                f"Profile secret {key!r} must be a SecretRef mapping, "
+                "not a plaintext value"
+            )
+    return secrets
+
+
 def _normalize_assets(
     *,
     assets: dict[str, Any] | None,
@@ -225,7 +245,7 @@ class Profile:
         )
         object.__setattr__(self, "secret_providers", dict(secret_providers or {}))
         object.__setattr__(self, "resources", dict(resources or {}))
-        object.__setattr__(self, "secrets", dict(secrets or {}))
+        object.__setattr__(self, "secrets", _coerce_profile_secrets(secrets))
         object.__setattr__(self, "security_domain", security_domain)
         object.__setattr__(self, "security_mode", mode)
         domain_key = str(security_domain or "").strip().lower()
@@ -342,10 +362,14 @@ class Profile:
             ``bindings``). Secret values remain :class:`SecretRef` dicts.
         """
         data = asdict(self)
-        data["secrets"] = {
-            key: ref.to_dict() if isinstance(ref, SecretRef) else ref
-            for key, ref in self.secrets.items()
-        }
+        data["secrets"] = {}
+        for key, ref in self.secrets.items():
+            if not isinstance(ref, SecretRef):
+                raise ValueError(
+                    f"Profile secret {key!r} must be a SecretRef; "
+                    "plaintext values cannot be serialized into plans or profiles"
+                )
+            data["secrets"][key] = ref.to_dict()
         data["assets"] = dict(self.bindings)
         data.pop("bindings", None)
         for key in (
@@ -365,10 +389,14 @@ class Profile:
             rather than public ``assets``).
         """
         data = asdict(self)
-        data["secrets"] = {
-            key: ref.to_dict() if isinstance(ref, SecretRef) else ref
-            for key, ref in self.secrets.items()
-        }
+        data["secrets"] = {}
+        for key, ref in self.secrets.items():
+            if not isinstance(ref, SecretRef):
+                raise ValueError(
+                    f"Profile secret {key!r} must be a SecretRef; "
+                    "plaintext values cannot be serialized into plans or profiles"
+                )
+            data["secrets"][key] = ref.to_dict()
         # Intentionally omit ``assets`` so equivalent plans keep fingerprints.
         data["bindings"] = dict(self.bindings)
         return data
@@ -424,19 +452,7 @@ class Profile:
         import warnings
 
         secrets_raw = data.get("secrets") or {}
-        if not isinstance(secrets_raw, dict):
-            raise ValueError("Profile secrets must be a mapping of name → SecretRef")
-        secrets: dict[str, SecretRef] = {}
-        for key, value in secrets_raw.items():
-            if isinstance(value, SecretRef):
-                secrets[str(key)] = value
-            elif isinstance(value, dict):
-                secrets[str(key)] = SecretRef.from_dict(value)
-            else:
-                raise ValueError(
-                    f"Profile secret {key!r} must be a SecretRef mapping, "
-                    "not a plaintext value"
-                )
+        secrets = _coerce_profile_secrets(secrets_raw)
         assets_raw = data.get("assets")
         bindings_raw = data.get("bindings")
         has_assets_key = "assets" in data and assets_raw is not None

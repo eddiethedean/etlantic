@@ -226,6 +226,8 @@ def filter_plugins_by_allowlist(
     *,
     name_attr: str = "name",
     version_attr: str = "version",
+    denial_phase: str = "plugin_trust",
+    allow_builtin_exempt: bool = True,
 ) -> tuple[dict[str, Any], list[Diagnostic]]:
     """Filter discovered plugins using profile allowlist.
 
@@ -235,11 +237,15 @@ def filter_plugins_by_allowlist(
 
     Built-in stub identities (``local``, ``null``, ``env``, ``env-secrets``) are
     exempt from package allowlist matching so production profiles need not list
-    short engine names.
+    short engine names — unless ``allow_builtin_exempt=False`` (manual overlays).
+
+    ``denial_phase`` tags allowlist denials: use ``plugin_discovery`` for broad
+    sibling discovery and ``plugin_trust`` for selected-engine / manual checks.
     """
     allowlist = dict(profile.plugin_allowlist or {})
     production = _is_production_profile(profile)
     diagnostics: list[Diagnostic] = []
+    phase = str(denial_phase or "plugin_trust")
 
     if not allowlist:
         if production:
@@ -249,7 +255,7 @@ def filter_plugins_by_allowlist(
                     severity=Severity.ERROR,
                     message=empty_production_allowlist_message(profile.name),
                     path=("profile", "plugin_allowlist"),
-                    phase="plugin_trust",
+                    phase=phase,
                 )
             )
             return {}, diagnostics
@@ -269,9 +275,13 @@ def filter_plugins_by_allowlist(
         pname = (
             getattr(info, name_attr, None) or getattr(plugin, name_attr, None) or key
         )
-        if not has_package_identity and (
-            is_builtin_allowlist_exempt(str(key))
-            or is_builtin_allowlist_exempt(str(pname))
+        if (
+            allow_builtin_exempt
+            and not has_package_identity
+            and (
+                is_builtin_allowlist_exempt(str(key))
+                or is_builtin_allowlist_exempt(str(pname))
+            )
         ):
             kept[key] = plugin
             continue
@@ -307,7 +317,7 @@ def filter_plugins_by_allowlist(
                                 f"Invalid plugin_allowlist pin for {pname!r}: {pin!r}."
                             ),
                             path=("plugin", str(pname)),
-                            phase="plugin_trust",
+                            phase=phase,
                         )
                     )
                     continue
@@ -327,7 +337,7 @@ def filter_plugins_by_allowlist(
                         f"by profile {profile.name!r} plugin_allowlist."
                     ),
                     path=("plugin", str(pname)),
-                    phase="plugin_trust",
+                    phase=phase,
                 )
             )
     return kept, diagnostics
@@ -351,15 +361,30 @@ def assert_plugin_trust(
 
 
 # Per-plugin allowlist denials are expected when other packages remain allowed.
+# Only discovery-phase ``PMPLUG402`` is non-blocking; authorize/trust 402s fail closed.
 _NON_BLOCKING_TRUST_CODES = frozenset({"PMPLUG402"})
+_DISCOVERY_TRUST_PHASES = frozenset({"plugin_discovery", "plugin_discover"})
+
+
+def is_non_blocking_trust_diagnostic(diagnostic: Any) -> bool:
+    """Return True for sibling discovery allowlist denials only.
+
+    ``PMPLUG402`` from ``plugin_trust`` / ``plugin_authorize`` (selected engines
+    or manual overlays) is blocking. Discovery-phase sibling denials are not.
+    """
+    code = getattr(diagnostic, "code", None)
+    if code not in _NON_BLOCKING_TRUST_CODES:
+        return False
+    phase = str(getattr(diagnostic, "phase", None) or "")
+    return phase in _DISCOVERY_TRUST_PHASES
 
 
 def loaded_plugins_after_trust(result: Any) -> dict[str, Any]:
     """Return authorized loads from a lifecycle result.
 
-    ``PMPLUG402`` denials of non-allowlisted siblings do not invalidate plugins
-    that were authorized and loaded. Other trust ERROR codes still fail closed
-    (raise when loads coexist; otherwise return an empty mapping).
+    Discovery-phase ``PMPLUG402`` denials of non-allowlisted siblings do not
+    invalidate plugins that were authorized and loaded. Authorize/trust-phase
+    ``PMPLUG402`` and other trust ERROR codes still fail closed.
     """
     from etlantic.exceptions import PipelineExecutionError
 
@@ -369,9 +394,7 @@ def loaded_plugins_after_trust(result: Any) -> dict[str, Any]:
         if getattr(d, "severity", None) is Severity.ERROR
     ]
     loaded = dict(getattr(result, "loaded", {}) or {})
-    blocking = [
-        d for d in errors if getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
-    ]
+    blocking = [d for d in errors if not is_non_blocking_trust_diagnostic(d)]
     if blocking and loaded:
         raise PipelineExecutionError(
             "; ".join(d.message for d in blocking),

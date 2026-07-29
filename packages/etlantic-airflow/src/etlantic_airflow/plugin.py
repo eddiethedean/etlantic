@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from textwrap import dedent, indent
 from typing import Any
 
@@ -19,10 +20,76 @@ from etlantic.plan.model import PipelinePlan
 
 __version__ = "0.34.0"
 
+_SECRET_NEEDLES = (
+    "password",
+    "passwd",
+    "pwd",
+    "secret_value",
+    "api_key",
+    "aws_secret_access_key",
+    "private_key",
+    "client_secret",
+    "authorization",
+    "credential",
+    "bearer ",
+)
+
+_URL_USERINFO_RE = re.compile(
+    r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@"
+)
+
 
 def create_plugin() -> AirflowOrchestratorPlugin:
     """Entry-point factory for ``etlantic.orchestrator_plugins``."""
     return AirflowOrchestratorPlugin()
+
+
+def _scan_for_secrets(blob: str, *, subject_id: str) -> list[CompilationDiagnostic]:
+    """Fail closed when rendered DAG surface appears to embed secret material."""
+    if _URL_USERINFO_RE.search(blob):
+        return [
+            CompilationDiagnostic(
+                code="PMORCH342",
+                severity="error",
+                message=(
+                    "Rendered Airflow DAG source or plan meta appears to "
+                    "contain secrets; failing closed."
+                ),
+                subject_id=subject_id,
+            )
+        ]
+    lowered = blob.lower()
+    for needle in _SECRET_NEEDLES:
+        if needle in lowered:
+            return [
+                CompilationDiagnostic(
+                    code="PMORCH342",
+                    severity="error",
+                    message=(
+                        "Rendered Airflow DAG source or plan meta appears to "
+                        "contain secrets; failing closed."
+                    ),
+                    subject_id=subject_id,
+                )
+            ]
+    return []
+
+
+def _fail_closed_source(dag_id: str, reasons: list[str]) -> str:
+    """Emit a non-schedulable module that raises instead of a manual DAG."""
+    joined = "; ".join(reasons) or "compilation diagnostics contained errors"
+    return dedent(
+        f'''\
+        """Auto-generated ETLantic Airflow stub — compile failed closed.
+
+        DAG id: {dag_id}
+        """
+
+        raise RuntimeError(
+            "ETLantic refused to emit a schedulable Airflow DAG: {joined}"
+        )
+        '''
+    )
 
 
 class AirflowOrchestratorPlugin:
@@ -66,55 +133,67 @@ class AirflowOrchestratorPlugin:
         context: CompilationContext,
     ) -> CompiledOrchestrationArtifact:
         diagnostics: list[CompilationDiagnostic] = []
+        schedule_errors: list[str] = []
 
         # Sensors / dependency schedules are not supported in the reference compiler.
         if context.schedule.type == "event":
+            msg = (
+                "Event-driven schedule intent requires sensors; "
+                "etlantic-airflow does not preserve this semantic."
+            )
             diagnostics.append(
                 CompilationDiagnostic(
                     code="PMORCH320",
                     severity="error",
-                    message=(
-                        "Event-driven schedule intent requires sensors; "
-                        "etlantic-airflow does not preserve this semantic."
-                    ),
+                    message=msg,
                     subject_id="schedule",
                 )
             )
+            schedule_errors.append(msg)
         elif context.schedule.type not in {"manual", "cron"}:
+            msg = (
+                f"Schedule type {context.schedule.type!r} is not preserved "
+                "by the Airflow reference compiler; failing closed. "
+                "Supported types: manual, cron."
+            )
             diagnostics.append(
                 CompilationDiagnostic(
                     code="PMORCH322",
                     severity="error",
-                    message=(
-                        f"Schedule type {context.schedule.type!r} is not preserved "
-                        "by the Airflow reference compiler; failing closed. "
-                        "Supported types: manual, cron."
-                    ),
+                    message=msg,
                     subject_id="schedule",
                 )
             )
+            schedule_errors.append(msg)
         elif context.schedule.type == "cron" and not context.schedule.expression:
+            msg = "Cron schedule requires a non-empty expression; failing closed."
             diagnostics.append(
                 CompilationDiagnostic(
                     code="PMORCH322",
                     severity="error",
-                    message=(
-                        "Cron schedule requires a non-empty expression; failing closed."
-                    ),
+                    message=msg,
                     subject_id="schedule",
                 )
             )
+            schedule_errors.append(msg)
+
+        tz = str(context.schedule.timezone or "").strip()
+        if not tz:
+            msg = "Schedule timezone is required; failing closed."
+            diagnostics.append(
+                CompilationDiagnostic(
+                    code="PMORCH323",
+                    severity="error",
+                    message=msg,
+                    subject_id="schedule",
+                )
+            )
+            schedule_errors.append(msg)
 
         tasks, dep_map, map_diags = map_plan_to_tasks(plan, context=context)
         diagnostics.extend(map_diags)
 
         dag_id = dag_id_for_plan(plan)
-        source = render_dag_module(
-            plan=plan,
-            dag_id=dag_id,
-            tasks=tasks,
-            context=context,
-        )
 
         # Capability-loss: dynamic branching not supported.
         if any(
@@ -131,6 +210,27 @@ class AirflowOrchestratorPlugin:
                     subject_id=dag_id,
                 )
             )
+
+        error_reasons = [
+            d.message
+            for d in diagnostics
+            if getattr(d, "severity", None) == "error" and d.message
+        ]
+        if error_reasons:
+            source = _fail_closed_source(dag_id, error_reasons)
+        else:
+            source = render_dag_module(
+                plan=plan,
+                dag_id=dag_id,
+                tasks=tasks,
+                context=context,
+            )
+            diagnostics.extend(_scan_for_secrets(source, subject_id=dag_id))
+            if any(d.severity == "error" and d.code == "PMORCH342" for d in diagnostics):
+                source = _fail_closed_source(
+                    dag_id,
+                    ["rendered DAG source failed secret scan"],
+                )
 
         return CompiledOrchestrationArtifact(
             target="airflow",
@@ -178,6 +278,12 @@ def render_dag_module(
     )
     default_retries = int(execution.retries)
     retry_delay = float(execution.retry_delay_seconds)
+    timezone = str(schedule.timezone or "").strip()
+    if not timezone:
+        raise ValueError(
+            "Schedule timezone is required to render an Airflow DAG module; "
+            "refusing to invent UTC."
+        )
 
     plan_meta = {
         "plan_id": plan.plan_id,
@@ -243,16 +349,18 @@ def render_dag_module(
 
         from airflow import DAG
         from airflow.operators.python import PythonOperator
+        from pendulum import timezone as _pendulum_timezone
 
         from etlantic_airflow.operator import etlantic_step as _etlantic_step
 
         ETLANTIC_PLAN_META = json.loads({plan_meta_json!r})
+        _ETLANTIC_TZ = _pendulum_timezone({timezone!r})
 
         with DAG(
             dag_id={dag_id!r},
             description="ETLantic pipeline {plan.pipeline_name}",
             schedule={schedule_arg},
-            start_date=datetime(2024, 1, 1),
+            start_date=datetime(2024, 1, 1, tzinfo=_ETLANTIC_TZ),
             catchup={catchup},
             max_active_runs={max_active},
             default_args={{

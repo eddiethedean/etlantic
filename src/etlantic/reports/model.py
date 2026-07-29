@@ -16,6 +16,8 @@ def _validated_report_metadata(value: Any, *, path: str) -> dict[str, Any]:
     from etlantic.extensions import validate_extension_metadata
 
     metadata = dict(value or {})
+    # Secret-key rejection is unconditional inside validate_extension_metadata;
+    # keep namespace warnings (not raises) so existing bare report keys load.
     validate_extension_metadata(metadata, path=path, strict=False)
     return metadata
 
@@ -318,7 +320,9 @@ class PipelineRunReport:
                 strategy=str(item.get("strategy") or ""),
                 status=str(item.get("status") or "available"),
                 record_count=item.get("record_count"),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="artifact.metadata"
+                ),
             )
             for item in (data.get("artifacts") or ())
             if isinstance(item, dict)
@@ -331,7 +335,9 @@ class PipelineRunReport:
                 message=item.get("message"),
                 records_checked=item.get("records_checked"),
                 records_invalid=item.get("records_invalid"),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="validation.metadata"
+                ),
             )
             for item in (data.get("validations") or ())
             if isinstance(item, dict)
@@ -353,7 +359,9 @@ class PipelineRunReport:
                 severity=str(item.get("severity") or "info"),
                 message=str(item.get("message") or ""),
                 node_name=item.get("node_name"),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="diagnostic.metadata"
+                ),
             )
             for item in (data.get("diagnostics") or ())
             if isinstance(item, dict)
@@ -363,7 +371,9 @@ class PipelineRunReport:
                 kind=str(item.get("kind") or ""),
                 title=str(item.get("title") or ""),
                 detail=item.get("detail"),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="recommendation.metadata"
+                ),
             )
             for item in (data.get("recommendations") or ())
             if isinstance(item, dict)
@@ -372,7 +382,9 @@ class PipelineRunReport:
             BackendRunReference(
                 backend=str(item.get("backend") or ""),
                 backend_run_id=str(item.get("backend_run_id") or ""),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="backend_run.metadata"
+                ),
             )
             for item in (data.get("backend_runs") or ())
             if isinstance(item, dict)
@@ -383,7 +395,9 @@ class PipelineRunReport:
                 layer=str(item.get("layer") or ""),
                 fingerprint=item.get("fingerprint"),
                 drift_decision=item.get("drift_decision"),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_validated_report_metadata(
+                    item.get("metadata"), path="schema_observation.metadata"
+                ),
             )
             for item in (data.get("schema_observations") or ())
             if isinstance(item, dict)

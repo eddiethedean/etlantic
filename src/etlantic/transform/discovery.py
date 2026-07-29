@@ -140,14 +140,18 @@ def discover_transform_compilers_for_profile(
     from etlantic.diagnostics import Severity
     from etlantic.exceptions import PipelineExecutionError
     from etlantic.plugin_trust import (
-        _NON_BLOCKING_TRUST_CODES,
         filter_plugins_by_allowlist,
+        is_non_blocking_trust_diagnostic,
     )
 
-    kept, diagnostics = filter_plugins_by_allowlist(found, profile)
+    # Broad sibling discovery: tag denials as discovery so non-selected
+    # packages do not fail closed when other compilers remain allowed.
+    kept, diagnostics = filter_plugins_by_allowlist(
+        found, profile, denial_phase="plugin_discovery"
+    )
     discover_transform_compilers_for_profile.last_diagnostics = list(diagnostics)  # type: ignore[attr-defined]
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
-    blocking = [d for d in errors if d.code not in _NON_BLOCKING_TRUST_CODES]
+    blocking = [d for d in errors if not is_non_blocking_trust_diagnostic(d)]
     if blocking and kept:
         raise PipelineExecutionError(
             "; ".join(d.message for d in blocking),

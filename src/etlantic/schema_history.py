@@ -37,12 +37,25 @@ def _observation_to_dict(observation: SchemaObservation) -> dict[str, Any]:
     }
 
 
-def _observation_from_dict(data: dict[str, Any]) -> SchemaObservation:
+def _observation_from_dict(
+    data: dict[str, Any], *, fail_closed: bool = True
+) -> SchemaObservation:
     from etlantic.schema_drift import NormalizedSchema
 
+    schema = NormalizedSchema.from_dict(data["schema"])
+    stored_fp = data.get("fingerprint")
+    live_fp = schema.fingerprint()
+    if stored_fp is not None and str(stored_fp) != live_fp:
+        message = (
+            f"Schema history fingerprint mismatch for subject "
+            f"{data.get('subject_id')!r}: stored={stored_fp!r} live={live_fp!r}"
+        )
+        if fail_closed:
+            raise ValueError(message)
+        _LOG.warning("%s; using recomputed fingerprint", message)
     observation = SchemaObservation(
         subject_id=str(data["subject_id"]),
-        schema=NormalizedSchema.from_dict(data["schema"]),
+        schema=schema,
         inspector=str(data.get("inspector") or "file"),
         observed_at=data.get("observed_at"),
         metadata=dict(data.get("metadata") or {}),
@@ -145,7 +158,7 @@ class FileSchemaHistoryProvider:
 
     root: Path
     policy: SafeIoPolicy | None = None
-    fail_closed: bool = False
+    fail_closed: bool = True
     _memory: InMemorySchemaHistory = field(default_factory=InMemorySchemaHistory)
 
     def __post_init__(self) -> None:
@@ -194,7 +207,9 @@ class FileSchemaHistoryProvider:
                 if not isinstance(item, dict):
                     continue
                 try:
-                    self._memory.record(_observation_from_dict(item))
+                    self._memory.record(
+                        _observation_from_dict(item, fail_closed=self.fail_closed)
+                    )
                 except ValueError as exc:
                     if "must not store source rows" in str(exc):
                         raise

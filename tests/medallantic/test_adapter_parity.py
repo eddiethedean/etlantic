@@ -154,8 +154,9 @@ def test_report_normalization_and_redaction() -> None:
         "supersecret",
     ):
         assert secret not in text
-    assert report.status.value == "succeeded"
+    assert report.status.value == "partial"
     assert len(report.steps) == 2
+    assert any(d.code == "PMSF500" for d in report.diagnostics)
     assert report.intent is RunIntent.INCREMENTAL
     explain = report_to_sparkforge_explain(report)
     assert explain["run_id"] == "sf-1"
