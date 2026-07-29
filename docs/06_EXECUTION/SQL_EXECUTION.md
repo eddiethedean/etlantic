@@ -1,15 +1,16 @@
 # SQL Execution
 
-**Status: shipped in 0.6.0** for the `etlantic-sql` PostgreSQL reference
-plugin. SQLite is usable for local demos; it is not the conformance reference.
+**Status: available in 0.34.0.** `etlantic-sql` treats SQLite and PostgreSQL
+as live Tier A dialects. PostgreSQL alone advertises `sql_merge`; SQLite fails
+closed when merge is required.
 
 The SQL Execution subsystem defines how ETLantic executes validated
 Pipeline Plans directly within SQL databases.
 
 Unlike dataframe execution backends, SQL execution compiles eligible
 transformations into database-native operations. This allows computation to run
-where the data already resides while preserving the semantics defined by ODCS,
-DTCS, and DPCS.
+where the data already resides while preserving the semantics defined by [ODCS](../03_DATA_CONTRACTS/ODCS.md),
+[DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md).
 
 ## Purpose
 
@@ -76,7 +77,7 @@ A SQL implementation is registered independently:
 
 ```python
 @NormalizeCustomers.implementation("sql")
-def normalize_customers(...):
+def normalize_customers(customers):
     ...
 ```
 
@@ -166,7 +167,7 @@ Planning should verify support for features such as:
 
 If mandatory capabilities are unavailable, planning fails closed. There is no
 silent emulation of unsupported merge, transaction, or dialect features.
-The 0.6 reference plugin stages intermediates in durable run-scoped tables
+The current reference plugin stages intermediates in durable run-scoped tables
 (not session TEMP) so handoffs work across connection pools.
 
 ## Performance

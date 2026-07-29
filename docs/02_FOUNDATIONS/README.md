@@ -35,7 +35,7 @@ class, functional, JSON, and visual authoring over one canonical
 
 ## Non-Negotiable Boundaries
 
-- ODCS, DTCS, and DPCS own contract semantics.
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) own contract semantics.
 - ContractModel operationalizes data contracts.
 - ETLantic owns typed authoring, validation, planning, and coordination.
 - Plugins own backend adaptation.

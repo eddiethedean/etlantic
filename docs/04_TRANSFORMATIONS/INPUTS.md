@@ -17,7 +17,7 @@ By declaring inputs with type annotations, ETLantic can infer:
 - Required upstream contracts
 - Pipeline graph edges
 - Validation rules
-- DTCS input definitions
+- [DTCS](DTCS.md) input definitions
 - Documentation
 - Editor tooling
 

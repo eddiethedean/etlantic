@@ -38,8 +38,8 @@ and load boundaries. After publication, ETLantic records the strongest
 evidence the selected provider and declared policy can truthfully supply.
 
 Validation is not a fourth contract authority or an ordinary transformation
-that authors must insert repeatedly. It is an envelope derived from ODCS,
-DTCS, DPCS, the resolved plan, and runtime policy. See
+that authors must insert repeatedly. It is an envelope derived from [ODCS](../03_DATA_CONTRACTS/ODCS.md),
+[DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), the resolved plan, and runtime policy. See
 [Validation Everywhere](VALIDATION_EVERYWHERE.md).
 
 ## Data Contract

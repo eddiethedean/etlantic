@@ -25,7 +25,7 @@
 - [x] Plugin SDK `/1` freeze decision — **re-scoped to 0.27** with owners
   ([PROTOCOL_EVOLUTION.md](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
   — owned by [Exit gate 0.27](EXIT_GATE_0_27.md)
-- [x] First-wave [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md) executed
+- [x] First-wave [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md) executed
 - [x] What's New / Migration 0.25→0.26 / this exit gate pass docs gates
 - [x] No wire-schema reset; control plane and GUI remain out of scope
 
@@ -44,4 +44,4 @@ additional class↔functional or nested-edit gaps blocking burn-in evidence.
 - Protocol `/1` freeze closure (clear blocker or re-scope again with owners) —
   owned by [Exit gate 0.27](EXIT_GATE_0_27.md)
 - Remaining demoted root aliases (`REM-ROOT-DEMOTED` lower-traffic symbols)
-- `REM-RELIABILITY-ROOT` and later 1.0 inventory items
+- `REM-RELIABILITY-ROOT` and later 0.38 inventory items

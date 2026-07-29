@@ -1,6 +1,6 @@
 # Documentation Status and Conventions
 
-Prefer pages marked **Available in 0.33** and the Green path on the docs
+Prefer pages marked **Available in 0.34** and the Green path on the docs
 home. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer adoption audit:
@@ -9,18 +9,18 @@ this legend. Maintainer adoption audit:
 ## How to read a page
 
 1. Read the page status label first (table below).
-2. Treat **Available in 0.33** / **Shipped in 0.x** as current package
-   behavior; treat **Future design** and Design Proposals as intended 1.0
+2. Treat **Available in 0.34** / **Shipped in 0.x** as current package
+   behavior; treat **Future design** and Design Proposals as intended 0.x
    surfaces, not APIs to install against.
 3. Treat **Experimental** as public but changeable without a major bump.
-4. When a guide and a normative spec disagree, the spec wins (ODCS, DTCS,
-   DPCS). Integration chapters explain ETLantic usage; they do not replace
+4. When a guide and a normative spec disagree, the spec wins ([ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md),
+   [DPCS](../05_PIPELINES/DPCS.md)). Integration chapters explain ETLantic usage; they do not replace
    those specs.
 5. Keep design layers distinct: contracts → `PipelinePlan` → plugin /
    compiled artifact → run result.
 6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
    GUI catalogs/edit commands, and the FastAPI reference adapter as
-   **Available in 0.33** (see
+   **Available in 0.34** (see
    [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
    Historical design notes remain under Project → Archive.
 
@@ -28,7 +28,7 @@ this legend. Maintainer adoption audit:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.33 | Tested against the current package |
+| Available in 0.34 | Tested against the current package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

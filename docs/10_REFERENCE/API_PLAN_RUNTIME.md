@@ -106,7 +106,7 @@ See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) and
 
 ## Contract interchange
 
-ODCS / DTCS / DPCS loading, diffs, and bundle helpers:
+[ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) loading, diffs, and bundle helpers:
 
 ::: etlantic.interchange
     options:
@@ -116,7 +116,7 @@ ODCS / DTCS / DPCS loading, diffs, and bundle helpers:
 
 ## Gate A tabular interchange (`etlantic.interchange/1`)
 
-> **Available in ETLantic 0.33.0.** Versioned, capability-driven tabular
+> **Available in ETLantic 0.34.0.** Versioned, capability-driven tabular
 > interchange for **Polars ↔ Pandas** boundaries. PySpark/SQL Gate A pairs are
 > not in scope yet. Legacy Arrow-assisted helpers (when PyArrow is installed)
 > are **not** the Gate A contract.
@@ -131,4 +131,3 @@ evidence types from `etlantic.interchange.tabular`. Adopter guides:
       show_root_heading: true
       members_order: source
       filters: ["!^_"]
-

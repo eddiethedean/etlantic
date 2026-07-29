@@ -3,7 +3,7 @@
     "dataframe",
     "portable"
   ],
-  "digest": "sha256:58a719719bcdc09b85f9328254c2c374f03d0ef4c301d33470a7051544f14a64",
+  "digest": "sha256:baf6c38c9a9e31001c196738445d9331d7541623c8ea6f346850311f92e3d376",
   "entries": [
     {
       "capabilities": [
@@ -34,5 +34,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.33.0"
+  "version": "0.34.0"
 }

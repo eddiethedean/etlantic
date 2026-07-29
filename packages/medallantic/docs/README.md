@@ -7,13 +7,15 @@ reports, and plugin integration.
 
 ## Current status
 
-Medallantic **0.30** (M2) builds on native authoring (**0.29 / M1**). It can:
+Medallantic **0.34** includes the shipped M1–M6 milestones. It can:
 
 - author bronze/silver/gold pipelines with `MedallionPipeline`,
   `MedallionBuilder`, `Bronze`, `Silver`, and `Gold`
 - emit public `PipelineDefinition` / `etlantic.pipeline/1` documents
 - parse secret-free SparkForge pipeline IR via
   `medallantic.migrate.sparkforge` (top-level `adapt_pipeline` remains)
+- adapt live SparkForge `PipelineBuilder` and SQL `SqlPipelineBuilder`
+  definitions through the explicit migration namespaces
 - map medallion steps onto an ordinary ETLantic graph
 - validate dependencies and reject cycles (`MDL1xx` / `PMSF*` diagnostics)
 - map layer thresholds, write modes, retries, run intents, and selections
@@ -21,12 +23,13 @@ Medallantic **0.30** (M2) builds on native authoring (**0.29 / M1**). It can:
 - normalize legacy run results into `PipelineRunReport`
 - verify declared Delta requirements against plugin capabilities
 - pass `etlantic.testing.run_facade_conformance_suite`
-- enforce portable `rules=` via `etlantic.quality/1` gates (Polars/Pandas/local
-  live; SQL/PySpark fail closed at plan time when capabilities are missing)
+- enforce portable `rules=` via `etlantic.quality/1` gates, with unsupported
+  engine/capability combinations failing closed at plan time
 
 It executes resolvable SparkForge-style transformation callables via
-`medallantic.callables` (since **0.31**). Native PySpark Column rules ship in
-**0.32** (`quality.pyspark_column` / `MDL130`); Moltres-only rules remain later.
+`medallantic.callables`. Native PySpark Column rules use
+`quality.pyspark_column` / `MDL130`; Moltres-only rules use
+`quality.moltres_expr` / `MDL132`. Both paths are capability-gated.
 
 ## Quick start (native)
 
@@ -62,6 +65,7 @@ plan = plan_pipeline_like(defn, profile=lowered.profile)
 Use **native authoring** for new medallion pipelines.
 
 Use the **migrate** adapter when you need to inspect or migrate an existing
-SparkForge definition without installing SparkForge or PySpark.
+SparkForge or SQL pipeline-builder definition. Secret-free IR conversion does
+not require the legacy package; live bridges do.
 
 Use ETLantic directly when the pipeline does not need medallion vocabulary.

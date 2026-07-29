@@ -1,0 +1,15 @@
+{
+  "name": "development-example",
+  "security_mode": "development",
+  "orchestrator": "local",
+  "dataframe_engine": "local",
+  "observability_providers": {
+    "console": "json-console"
+  },
+  "run_history_provider": "file",
+  "observability_delivery": "best_effort",
+  "assets": {
+    "sample_source": "json",
+    "sample_sink": "json"
+  }
+}

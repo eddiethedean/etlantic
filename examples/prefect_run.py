@@ -57,7 +57,10 @@ class CustomerPipeline(Pipeline):
 
 
 def run_example() -> tuple[PipelineRuntime, object]:
+    from etlantic_prefect import create_plugin
+
     runtime = PipelineRuntime()
+    runtime.register_scheduler_plugin("prefect", create_plugin())
     runtime.memory.seed(
         "customer_source",
         [

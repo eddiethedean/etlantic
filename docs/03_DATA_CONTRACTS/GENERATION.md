@@ -19,10 +19,10 @@ Generation should:
 
 | Component | Responsibility |
 |-----------|----------------|
-| ContractModel | Generate and load ODCS data contracts |
+| ContractModel | Generate and load [ODCS](ODCS.md) data contracts |
 | ETLantic | Discover models and orchestrate artifact generation |
-| DTCS | Portable transformation contract format |
-| DPCS | Portable pipeline contract format |
+| [DTCS](../04_TRANSFORMATIONS/DTCS.md) | Portable transformation contract format |
+| [DPCS](../05_PIPELINES/DPCS.md) | Portable pipeline contract format |
 | Plugins | Optional generators for runtime-specific outputs |
 
 ## The Generation Pipeline

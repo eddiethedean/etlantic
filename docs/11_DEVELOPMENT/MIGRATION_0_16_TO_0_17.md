@@ -59,7 +59,7 @@ when policy is `require`.
 ## Unchanged
 
 - Kernel + relational `/1` baseline semantics
-- Plan/DPCS wire names
+- Plan/[DPCS](../05_PIPELINES/DPCS.md) wire names
 - Airflow compile and Prefect scheduler plugins
 
 ## Checklist

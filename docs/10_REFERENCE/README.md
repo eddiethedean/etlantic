@@ -1,6 +1,6 @@
 # Reference
 
-This section separates ETLantic **0.33** shipped behavior from proposed 1.0
+This section separates ETLantic **0.34** shipped behavior from proposed 0.x
 interfaces.
 
 ## Shipped
@@ -21,7 +21,7 @@ interfaces.
 - [Known Limitations](KNOWN_ISSUES.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Exceptions](EXCEPTIONS.md)
-- DTCS 3.0 Transformation Plan / Rich Portable Analytics models through
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 Transformation Plan / Rich Portable Analytics models through
   `dtcs>=0.13`; ETLantic `@Transformation.portable` authoring (0.11+) and
   Polars / PySpark graduated Wave 1/2 compilers plus Pandas / SQL baseline
   relational compilers via
@@ -29,9 +29,9 @@ interfaces.
   and
   [Testing Plugins](../07_PLUGIN_SDK/TESTING_PLUGINS.md)
 
-## Future design / proposed 1.0
+## Future design / planned 0.x
 
-- [Configuration](CONFIGURATION.md) (**proposed** 1.0 — do not implement for 0.33)
+- [Configuration](CONFIGURATION.md) (**proposed** 0.38 — do not implement for 0.34)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (**proposed** names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,
   `portable-temporal-iana/1`, `portable-nondeterministic/1`,

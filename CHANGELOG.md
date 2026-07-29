@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-07-29
+
+### Added
+- Lifecycle event correlation (`etlantic.lifecycle_event/1`) with plan/region/backend fields
+- Observability provider protocol (`etlantic.observability/1`) and runtime bridge
+- Run history provider protocol with file and in-memory reference implementations
+- Event consumer protocol with reference trend consumer
+- Profile keys: `observability_providers`, `run_history_provider`, `event_consumers`, `observability_delivery`
+- Conformance suites: observability, run history, event consumer, production profile
+- Medallantic M6: `explain_medallion_plan`, lifecycle views, medallion profile templates
+- CLI `etlantic report query` and workspace file run history (`.etlantic/history/`)
+- What's New / Migration / Exit Gate 0.34 documentation
+
+### Changed
+- Official package versions align at 0.34.0; plugins require `etlantic>=0.34.0,<0.35`
+- Terminal run reports may include `metadata.observability` event/delivery summary
+- `etlantic reliability quality-trends` uses event consumer summary when `--values` omitted
+
+### Fixed
+- Structured run logs can fan out to observability providers via runtime bridge
+
 ## [0.33.0] - 2026-07-29
 
 ### Added
@@ -34,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQL merge capability tests are dialect-aware; dialect-tier suite skips cleanly without SQLAlchemy so non-SQL CI jobs collect
 
 ### Upgrade notes
-- Pin core and official plugins to `==0.33.0` (matching minors while pre-1.0).
+- Pin core and official plugins to `==0.33.0` (matching 0.x minors).
 - Read [Migration 0.32 → 0.33](docs/11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md)
   and [What's new in 0.33](docs/01_GETTING_STARTED/WHATS_NEW_0_33.md).
 - SQL merge requires PostgreSQL (`sql_merge`); SQLite remains fail-closed.
@@ -65,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spark region compile/execute records cache points and logical identities
 
 ### Upgrade notes
-- Pin core and official plugins to `==0.32.0` (matching minors while pre-1.0).
+- Pin core and official plugins to `==0.32.0` (matching 0.x minors).
 - Read [Migration 0.31 → 0.32](docs/11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md)
   and [What's new in 0.32](docs/01_GETTING_STARTED/WHATS_NEW_0_32.md).
 - Local / Polars / Pandas-only adopters can skip most M4 Spark/Delta notes;
@@ -268,7 +289,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-artifact burn-in matrix: plan, run_report, profile, capabilities, interchange
 - Wire schema ranges and unsupported downgrade documentation
 - Plugin SDK `/1` freeze decision record (remaining blockers published; not frozen)
-- Published 1.0 removal candidates inventory (no removals executed)
+- Published 0.38 stable-foundation removal candidates inventory (no removals executed)
 - Docs: What's New 0.25, Migration 0.24→0.25, Exit Gate 0.25
 - Docs adoption hubs: Learning path, Profiles hub, Portable hub, Security howto,
   Documentation audit 0.25
@@ -300,7 +321,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 
-- Pin core and official plugins to `==0.25.0` (matching minors while pre-1.0).
+- Pin core and official plugins to `==0.25.0` (matching 0.x minors).
 - Read [Migration 0.24 → 0.25](docs/11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md)
   and [What's new in 0.25](docs/01_GETTING_STARTED/WHATS_NEW_0_25.md).
 - Production fail-closed trust still requires `security_mode="production"` plus
@@ -397,7 +418,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plugin SDK docs recommend `import etlantic as etl`
 
 ### Deprecated
-- Specialist root imports demoted to pre-1.0 compatibility aliases (prefer owning namespace / lazy attribute)
+- Specialist root imports demoted to 0.x compatibility aliases (prefer owning namespace / lazy attribute)
 
 ## [0.21.0] - 2026-07-20
 
@@ -469,7 +490,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Strict named profile resolution with `--allow-adhoc-profile` / `allow_adhoc_profile`
 - Diagnosed legacy profile JSON `bindings` loads; nested wire schema tightening
 - Extension metadata namespace/budget helpers; public surface inventory
-- Pre-1.0 deprecation schedule for remaining provisional surfaces
+- 0.x deprecation schedule for remaining provisional surfaces
 - Optional experimental `etlantic-datafusion` package (non-blocking Gate B)
 
 ### Changed
@@ -598,7 +619,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 ### Added
 
 - Safe SQL Lowering: `etlantic-sql` portable transform compiler claiming
-  kernel + `portable-relational/1`, lowering DTCS plans into typed
+  kernel + `portable-relational/1`, lowering
+  [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) plans into typed
   `etlantic.sql/1` IR with bound parameters and `PMXFORM*` analyze findings
 - Expanded SQL IR (joins, unions, group/order, CTEs, call/case/unary exprs)
   and dialect compiler coverage for the relational `/1` surface
@@ -1158,7 +1180,9 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 
 ### Added
 
-- Contract interoperability for ODCS (via ContractModel), DTCS, and DPCS
+- Contract interoperability for
+  [ODCS](docs/03_DATA_CONTRACTS/ODCS.md) (via ContractModel), DTCS, and
+  [DPCS](docs/05_PIPELINES/DPCS.md)
 - `Transformation.to_dtcs` / `from_dtcs` and `Pipeline.to_dpcs` / `from_dpcs`
 - Deterministic `ContractBundle` generation via `generate_contracts` /
   `write_contracts` / `load_bundle`

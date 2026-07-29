@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.33.0.** This tutorial extends the project
+> **Status: Available in ETLantic 0.34.0.** This tutorial extends the project
 > created by [Quickstart](QUICKSTART.md) (`python -m etlantic init`). It uses the local
 > Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
 
@@ -10,7 +10,7 @@ If you have not already (`init` needs an **empty directory**, or pass
 `--force`):
 
 ```bash
-python -m pip install 'etlantic==0.33.0'
+python -m pip install 'etlantic==0.34.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
@@ -154,7 +154,7 @@ from pipeline import SamplePipeline
 SamplePipeline.write_contracts("contracts/")
 ```
 
-This writes ODCS, DTCS, and DPCS artifacts derived from the same definitions.
+This writes [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) artifacts derived from the same definitions.
 
 ## Plan from Python
 
@@ -182,7 +182,7 @@ CSV, and no-write storage. Optional plugins are available today:
 - Medallantic migration adapter — `medallantic`
 
 Keep core and optional plugin minors matched—for this guide, pin both to
-`0.33.0`. See [Capabilities](CAPABILITIES.md).
+`0.34.0`. See [Capabilities](CAPABILITIES.md).
 
 Continue with [Engine selection](ENGINE_SELECTION.md). For a production profile
 starter, copy the JSON from

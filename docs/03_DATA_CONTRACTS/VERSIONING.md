@@ -21,7 +21,7 @@ A versioning strategy should:
 |-----------|----------------|
 | Pydantic | Model structure |
 | ContractModel | Contract identity, version metadata, compatibility analysis |
-| ODCS | Portable version representation |
+| [ODCS](ODCS.md) | Portable version representation |
 | ETLantic | Pipeline-wide version validation and planning |
 | Plugins | Runtime execution only |
 

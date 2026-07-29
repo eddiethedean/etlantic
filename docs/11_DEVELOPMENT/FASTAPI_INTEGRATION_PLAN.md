@@ -1,6 +1,9 @@
 # FastAPI Integration Plan
 
-**Status: planned for 1.1.**
+> **Status: first-class planned control-plane integration.** CP1 incubation is
+> sequenced for 0.40; tenant persistence, durable coordination, and policy
+> hardening continue through 0.41–0.43; the integrated production claim is
+> gated for 0.44.
 
 ETLantic's FastAPI integration exposes typed pipeline operations through an
 ordinary FastAPI application without making HTTP part of pipeline semantics.
@@ -10,7 +13,8 @@ canonical `etlantic.pipeline/1` JSON, component catalog, immutable edit
 operations, OpenAPI-compatible service models, and a thin reference adapter.
 See [Programmatic Authoring in 0.24](PROGRAMMATIC_AUTHORING_0_24.md).
 
-This 1.1 plan builds the production control API on that contract. It adds
+This plan builds the control API portion of the
+[Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md). It adds
 durable registry, submission, event, persistence, authorization, and deployment
 integration; it does not redefine the canonical pipeline document.
 
@@ -29,6 +33,10 @@ The integration should let applications:
 - stream run events through Server-Sent Events (SSE) and optionally WebSockets;
 - map FastAPI lifespan, middleware, dependencies, security, callbacks, and
   webhooks onto explicit ETLantic integration boundaries;
+- carry an immutable, server-derived tenant/workspace/environment context
+  through every authorized operation;
+- expose deny-by-default authorization, quota, idempotency, concurrency, and
+  non-enumeration behavior consistently;
 - embed selected ETLantic routers into an existing FastAPI application;
 - deploy a standalone control API when desired.
 
@@ -115,6 +123,11 @@ The default API returns metadata and references, not arbitrary dataset contents.
 Artifact download or preview requires a separate bounded, authorized policy.
 Definition mutations require optimistic concurrency tokens, and submission
 operations require caller-scoped idempotency keys.
+
+Ordinary tenant routes are workspace-scoped. Tenant membership is derived from
+the authenticated principal and trusted server-side configuration; a tenant ID
+in a path, header, or body never grants authority. Cross-tenant administration
+uses separate routes, credentials, policy actions, and audit events.
 
 ## FastAPI Mechanism Mapping
 
@@ -227,6 +240,9 @@ Every stream needs:
 - terminal-event semantics;
 - value and secret redaction.
 
+The stream cursor and every emitted event are tenant-scoped. Authorization is
+revalidated on resume and after relevant membership or policy changes.
+
 ## OpenAPI and Client Generation
 
 ETLantic should produce stable operation identifiers and reusable schemas so
@@ -263,6 +279,10 @@ Authorization decisions should include:
 - artifact access;
 - cancellation and approval actions.
 
+Authorization is performed before resource lookup, pagination, serialization,
+or cursor creation. List and search endpoints must not reveal unauthorized
+counts, identifiers, timing distinctions, or cursor positions.
+
 Never allow a caller to select an arbitrary plugin, secret provider, import
 path, filesystem path, or network destination merely because it appears in a
 request body.
@@ -294,6 +314,8 @@ The integration suite should cover:
 - lifespan startup and failure;
 - OpenAPI schema and stable operation IDs;
 - authentication and tenant isolation;
+- two-tenant and two-workspace matrices for every operation;
+- non-enumerating list, lookup, search, cursor, and event-stream behavior;
 - idempotent submission;
 - cancellation races;
 - SSE resume and disconnect behavior;
@@ -330,4 +352,5 @@ depending on their internals.
 ## Key Principle
 
 > FastAPI exposes ETLantic's typed control plane. It does not become the
-> pipeline runtime, scheduler, or source of pipeline semantics.
+> pipeline runtime, scheduler, tenant-isolation boundary for Python execution,
+> or source of pipeline semantics.

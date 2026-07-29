@@ -1,10 +1,7 @@
 # Observability Provider
 
-!!! warning "Future design—not a shipped 0.18 entry-point protocol"
-    Observability providers are not a discoverable entry-point protocol in
-    ETLantic 0.18. This page describes a proposed extension surface. Optional
-    OpenTelemetry extras may exist for instrumentation, but there is no
-    shipped `ObservabilityProvider` entry-point group in 0.18.
+> **Status: Available in ETLantic 0.34.0.** Async `/1` protocol with entry-point
+> group `etlantic.observability_providers` and in-core reference providers.
 
 An observability provider receives ETLantic lifecycle events, structured
 logs, metrics, traces, and lineage signals and routes them to external systems.
@@ -31,7 +28,7 @@ The provider must not:
 - receive unredacted secrets
 - make storage-specific records the core result model
 
-## Proposed Interface
+## Public protocol
 
 ```python
 class ObservabilityProvider(Protocol):

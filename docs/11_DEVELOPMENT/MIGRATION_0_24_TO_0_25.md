@@ -41,4 +41,4 @@ documented upgrader (no silent field drops) and Migration note updates.
 - [What's New 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md)
 - [Exit gate 0.25](EXIT_GATE_0_25.md)
 - [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md)
-- [Removal candidates](REMOVAL_CANDIDATES_1_0.md)
+- [Removal candidates](REMOVAL_CANDIDATES_0_38.md)

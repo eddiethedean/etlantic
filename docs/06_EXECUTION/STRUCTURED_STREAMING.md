@@ -1,6 +1,6 @@
 # Structured Streaming
 
-**Status: Experimental in ETLantic 0.33.0.** Batch Spark is the production path;
+**Status: Experimental in ETLantic 0.34.0.** Batch Spark is the production path;
 streaming APIs may change without a major version bump.
 
 Structured Streaming is ETLantic's execution model for unbounded data using
@@ -14,7 +14,7 @@ Streaming is an execution strategy—not a different pipeline model.
 
 Structured Streaming should:
 
-- Preserve ODCS, DTCS, and DPCS semantics.
+- Preserve [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) semantics.
 - Support event-time processing.
 - Support stateful and stateless transformations.
 - Preserve contract validation.

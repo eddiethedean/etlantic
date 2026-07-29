@@ -1,6 +1,6 @@
 # Archived DTCS 1.0 Specification Snapshot
 
-!!! danger "Historical snapshot—not the current DTCS specification"
+!!! danger "Historical snapshot—not the current [DTCS](../04_TRANSFORMATIONS/DTCS.md) specification"
     DTCS 3.0.0 and the `dtcs` 0.14.0 toolkit are published. The canonical
     current specification is
     [DTCS `SPEC.md`](https://github.com/eddiethedean/dtcs/blob/main/SPEC.md).

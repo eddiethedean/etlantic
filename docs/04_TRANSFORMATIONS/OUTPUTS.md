@@ -16,7 +16,7 @@ By declaring outputs with type annotations, ETLantic can infer:
 
 - Downstream contract compatibility
 - Pipeline graph edges
-- DTCS output definitions
+- [DTCS](DTCS.md) output definitions
 - Documentation
 - Validation rules
 - Lineage information

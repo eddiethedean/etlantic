@@ -22,7 +22,7 @@ Constructing or importing the removed authoring surfaces fails with a clear
 
 ## Wire names that stay
 
-Plan, DPCS, and plugin protocols keep these names:
+Plan, [DPCS](../05_PIPELINES/DPCS.md), and plugin protocols keep these names:
 
 - `NodeKind` values `"source"` / `"sink"`
 - Plan node field `binding` and plan map `bindings`

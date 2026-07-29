@@ -8,7 +8,7 @@ optimized, executable representation for a specific execution backend.
 Unlike traditional programming language compilers, ETLantic compilation
 does not change the meaning of a pipeline. Instead, it translates a portable
 `PipelinePlan` into a backend-specific artifact while preserving the semantics
-defined by ODCS, DTCS, and DPCS.
+defined by [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md).
 
 Compilation occurs after planning and before execution.
 

@@ -102,7 +102,7 @@ A FastAPI application may expose a transport-neutral ETLantic service facade,
 but authentication, persistence, durable job submission, and deployment remain
 host-application concerns. The `etlantic-fastapi` reference adapter (shipped
 since 0.24) proves schema and client
-generation; the production control API remains planned for 1.1.
+generation; the production control API remains planned across 0.40–0.44.
 
 ### Code-first
 
@@ -110,14 +110,15 @@ generation; the production control API remains planned for 1.1.
 - `Transformation` classes define typed interfaces.
 - Portable definitions optionally describe relational behavior once through a
   PySpark-inspired symbolic API (shipped in 0.11+) that normalizes to
-  the published DTCS 3.0 `dtcs.transform-plan/2` representation (v1 readable).
+  the published [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0
+  `dtcs.transform-plan/2` representation (v1 readable).
 - `Pipeline` classes connect extracts, steps, loads, and subpipelines.
 
 ### Contract-first
 
-- ContractModel loads ODCS data contracts.
+- ContractModel loads [ODCS](../03_DATA_CONTRACTS/ODCS.md) data contracts.
 - ETLantic integrations load DTCS transformations.
-- ETLantic loads DPCS pipelines.
+- ETLantic loads [DPCS](../05_PIPELINES/DPCS.md) pipelines.
 
 Both paths converge on semantically equivalent domain models and one typed
 logical pipeline graph. ETLantic does not flatten ODCS, DTCS, and DPCS
@@ -343,7 +344,7 @@ semantics are predictable.
 
 ## Resource Architecture
 
-!!! warning "Future design (not shipped in 0.33)"
+!!! warning "Future design (not shipped in 0.34)"
     Third-party **resource / storage / observability provider protocols** are
     **not** shipped. Built-in storage bindings and profile `resources` metadata
     exist today; see [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and

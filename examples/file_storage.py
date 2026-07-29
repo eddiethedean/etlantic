@@ -1,4 +1,4 @@
-"""Runnable JSON-to-JSON and CSV-to-CSV storage examples (ETLantic 0.33.0).
+"""Runnable JSON-to-JSON and CSV-to-CSV storage examples (ETLantic 0.34.0).
 
 Requires core only (no optional engine plugins).
 
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parent / "_file_storage_out"
     json_out = json_to_json(root / "json")
     csv_out = csv_to_csv(root / "csv")
-    print("json ->", json_out)
-    print("csv ->", csv_out)
+    checkout = Path(__file__).resolve().parents[1]
+    print("json ->", json_out.relative_to(checkout))
+    print("csv ->", csv_out.relative_to(checkout))
     print(json_out.read_text(encoding="utf-8"))

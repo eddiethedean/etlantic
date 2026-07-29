@@ -42,7 +42,7 @@ from existing class-based authoring.
 | `PipelineDefinition` | Immutable, unresolved, authoring-complete pipeline model |
 | `etlantic.pipeline/1` | Canonical JSON representation of `PipelineDefinition` |
 | `PipelinePlan` / `etlantic.plan/1` | Resolved execution plan; not an authoring round-trip format |
-| ODCS / DTCS / DPCS | Standards-based contract interchange |
+| [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) | Standards-based contract interchange |
 | Authoring catalog | Discoverable components and UI-safe metadata |
 | Edit command | Immutable operation applied to a definition |
 | Diagnostic | Machine-readable problem tied to stable document paths |
@@ -173,7 +173,7 @@ the client request cannot expand that authority.
 
 The 0.24 adapter proves the authoring and service contract. It does not replace
 the production-grade [FastAPI Control API](FASTAPI_INTEGRATION_PLAN.md) planned
-for 1.1.
+across the 0.40–0.44 control-plane program.
 
 ## Security invariants
 

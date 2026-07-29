@@ -12,6 +12,7 @@ from etlantic.secrets import SecretRef
 
 PortableTransformPolicy = Literal["require", "prefer", "native"]
 SecurityMode = Literal["development", "test", "production"]
+ObservabilityDelivery = Literal["best_effort", "durable_audit"]
 
 _BINDINGS_REMOVED = (
     "Profile(bindings=...) was removed in ETLantic 0.16. Use assets= instead. "
@@ -116,6 +117,10 @@ class Profile:
     safe_io: dict[str, Any] = field(default_factory=dict)
     outbound: dict[str, Any] = field(default_factory=dict)
     require_plugin_probe: bool = False
+    observability_providers: dict[str, str] = field(default_factory=dict)
+    run_history_provider: str | None = None
+    event_consumers: dict[str, str] = field(default_factory=dict)
+    observability_delivery: ObservabilityDelivery = "best_effort"
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __init__(
@@ -152,6 +157,10 @@ class Profile:
         safe_io: dict[str, Any] | None = None,
         outbound: dict[str, Any] | None = None,
         require_plugin_probe: bool = False,
+        observability_providers: dict[str, str] | None = None,
+        run_history_provider: str | None = None,
+        event_consumers: dict[str, str] | None = None,
+        observability_delivery: ObservabilityDelivery = "best_effort",
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -252,6 +261,21 @@ class Profile:
         object.__setattr__(self, "safe_io", dict(safe_io or {}))
         object.__setattr__(self, "outbound", dict(outbound or {}))
         object.__setattr__(self, "require_plugin_probe", bool(require_plugin_probe))
+        delivery = str(observability_delivery or "best_effort")
+        if delivery not in {"best_effort", "durable_audit"}:
+            raise ValueError(
+                "observability_delivery must be 'best_effort' or 'durable_audit'"
+            )
+        object.__setattr__(
+            self, "observability_providers", dict(observability_providers or {})
+        )
+        object.__setattr__(
+            self,
+            "run_history_provider",
+            str(run_history_provider) if run_history_provider else None,
+        )
+        object.__setattr__(self, "event_consumers", dict(event_consumers or {}))
+        object.__setattr__(self, "observability_delivery", delivery)  # type: ignore[arg-type]
         object.__setattr__(
             self,
             "metadata",
@@ -493,6 +517,12 @@ class Profile:
             safe_io=dict(data.get("safe_io") or {}),
             outbound=dict(data.get("outbound") or {}),
             require_plugin_probe=bool(data.get("require_plugin_probe", False)),
+            observability_providers=dict(data.get("observability_providers") or {}),
+            run_history_provider=data.get("run_history_provider"),
+            event_consumers=dict(data.get("event_consumers") or {}),
+            observability_delivery=str(
+                data.get("observability_delivery") or "best_effort"
+            ),  # type: ignore[arg-type]
             metadata=_validated_profile_metadata(
                 data.get("metadata") or {},
                 strict=mode == "production",

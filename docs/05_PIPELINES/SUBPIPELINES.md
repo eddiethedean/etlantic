@@ -25,7 +25,7 @@ Subpipelines support:
 - Reuse across projects
 - Independent validation
 - Clear ownership boundaries
-- Nested DPCS composition
+- Nested [DPCS](DPCS.md) composition
 - Separate testing and versioning
 - Simpler lineage and documentation
 

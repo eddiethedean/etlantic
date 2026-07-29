@@ -20,7 +20,7 @@ Airflow-style `compile_plan` target.
 
 Orchestration plugins should:
 
-- Preserve DPCS semantics.
+- Preserve [DPCS](../05_PIPELINES/DPCS.md) semantics.
 - Remain independent of pipeline modeling.
 - Support multiple orchestration platforms.
 - Declare capabilities explicitly.

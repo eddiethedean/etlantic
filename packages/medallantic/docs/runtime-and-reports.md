@@ -43,7 +43,7 @@ materialization policy. Validation intent also forces no-write behavior.
 
 ## Debug session
 
-An adapted pipeline can use Etlantic's debug session:
+An adapted pipeline can use ETLantic's debug session:
 
 ```python
 from medallantic import bind_debug_session
@@ -54,8 +54,10 @@ session = bind_debug_session(
 )
 ```
 
-The present adapter still uses passthrough transformations. Debugging the
-legacy callable itself is planned, not currently supported.
+Importable transformation references execute through the selected ETLantic
+engine and can be debugged through the adapted pipeline. Symbolic legacy names
+remain planning-only passthroughs and emit `MDL111`; replace them with
+importable references before treating the migration as execution-equivalent.
 
 ## Normalize a legacy result
 
@@ -111,4 +113,3 @@ legacy_summary = report_to_sparkforge_explain(report)
 
 Use the normalized `PipelineRunReport` as the durable interface. The
 SparkForge-shaped explanation exists for migration compatibility.
-

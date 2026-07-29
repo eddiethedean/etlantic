@@ -39,7 +39,7 @@ pipeline definition.
 
 ## Transform references
 
-Medallantic 0.32 executes resolvable `module:attribute` transformation
+Since 0.31, Medallantic executes resolvable `module:attribute` transformation
 references through ETLantic's runtime path. Missing or invalid references fail
 with diagnostics instead of becoming a production passthrough.
 
@@ -63,4 +63,3 @@ Use `report_to_sparkforge_explain()` only for migration-facing presentation.
 Unknown legacy statuses fail closed. Report adaptation redacts common secret
 patterns, but callers must never put credentials or source rows in result
 metadata.
-

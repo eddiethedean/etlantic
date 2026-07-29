@@ -1,8 +1,8 @@
 # Known Limitations
 
-- ETLantic **0.33.x** is a **Beta** (PyPI) release suitable for documented single-tenant
+- ETLantic **0.34.x** is a **Beta** (PyPI) release suitable for documented single-tenant
   reference deployments, but 0.x releases may still introduce breaking API
-  changes between minor versions until 1.0.
+  changes between minor versions until the 0.38 stable-foundation freeze.
 - Portable `@Transformation.portable` definitions and
   `etlantic.transform/1` authoring are available since 0.11. **0.13** shipped
   Polars and PySpark compilers for `portable-relational/1`; **0.14** shipped
@@ -19,10 +19,10 @@
 - Distinct `missing` / `invalid` three-state literals fail closed unless a
   compiler advertises `semantic_mode:three_state_distinct` (not claimed in
   0.17). Polars does not claim `dtcs:map` (use `dtcs:object`); PySpark does.
-- The planned PySpark-inspired syntax will intentionally support a closed
+- The shipped PySpark-inspired portable syntax intentionally supports a closed
   subset; actions, arbitrary Python tracing, raw SQL expressions, and silent
   UDF fallback are excluded.
-- Advanced DTCS 3.0 families are independently claimable profiles. Facades may
+- Advanced [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 families are independently claimable profiles. Facades may
   emit IR for unclaimed families; first-party compilers reject them at analyze
   until claimed.
 - Local execution is in-process; ETLantic is not a distributed scheduler.
@@ -38,8 +38,9 @@
 - `MERGE` / upsert is implemented for **PostgreSQL** in the SQL reference plugin
   (`sql_merge=True`). SQLite and other dialects remain fail-closed when
   `sql_merge` is required.
-- SQLite via `ETLANTIC_SQL_URL` is demo-only; it is not the SQL conformance
-  reference (PostgreSQL via `etlantic-sql` is).
+- SQLite and PostgreSQL are Tier A SQL dialects in 0.34. SQLite does not
+  advertise merge; PostgreSQL does. An in-memory SQLite run is useful for
+  local verification but is not evidence of PostgreSQL-specific behavior.
 - Cross-database joins and distributed transactions are not supported.
 - Polars LazyFrames are collected only at plan-declared boundaries; durable
   JSON workspace materialization requires collection to records first.
@@ -52,7 +53,7 @@
   mappings produce structured diagnostics.
 - Cancellation and thread-safety capability flags are not fully enforced by
   the reference plugins.
-- Many design pages still describe intended 1.0 behavior. Check the page
+- Many design pages describe intended later-0.x behavior. Check the page
   status and [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) before
   copying code.
 - Process-local report history is not a durable report database.
@@ -60,7 +61,7 @@
 - Generated plans should be regenerated after incompatible schema changes
   rather than edited by hand.
 - Docs on `main` may briefly lead a published tag; pin
-  `etlantic==0.33.0` (or the version you evaluated) in production installs.
+  `etlantic==0.34.0` (or the version you evaluated) in production installs.
 
 Release-specific fixes and changes are recorded in the
 [changelog](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md).

@@ -29,7 +29,7 @@ Ask:
 1. Does this concern portable modeling, validation, or planning?
 2. Is it execution behavior that belongs in a plugin?
 3. Is it data-contract operational behavior that belongs in ContractModel?
-4. Is it contract meaning that belongs in ODCS, DTCS, or DPCS?
+4. Is it contract meaning that belongs in [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), or [DPCS](../05_PIPELINES/DPCS.md)?
 
 ETLantic owns the logical model. Plugins own execution. Standards own
 semantics.

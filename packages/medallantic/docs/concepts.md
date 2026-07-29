@@ -59,9 +59,9 @@ Medallantic owns useful layer defaults. ContractModel and ETLantic own portable
 contract meaning, validation gates, typed accepted/rejected artifacts, and
 normalized evidence.
 
-The planned rule DSL will cover only semantics that can be defined consistently.
-An engine-native rule remains an explicit implementation detail with declared
-capability requirements.
+The shipped portable rule DSL covers only semantics that can be defined
+consistently. An engine-native rule remains an explicit implementation detail
+with declared capability requirements.
 
 ## Capability promotion
 
@@ -74,4 +74,3 @@ A need discovered through Medallantic belongs in ETLantic when it:
 
 Layer names, layer defaults, medallion naming/storage conventions, and
 SparkForge migration behavior stay in Medallantic.
-

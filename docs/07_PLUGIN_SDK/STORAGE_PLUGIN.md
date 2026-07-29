@@ -1,8 +1,8 @@
 # Storage Plugin
 
-!!! warning "Future design—not a shipped 0.18 entry-point protocol"
+!!! warning "Future design—not a shipped 0.33 entry-point protocol"
     Storage plugins are not a discoverable entry-point protocol in ETLantic
-    0.18. This page describes a proposed extension surface. Prefer the
+    0.33. This page describes a proposed extension surface. Prefer the
     shipped dataframe / SQL / Spark / orchestration plugin categories for
     current work.
 
@@ -11,8 +11,8 @@ persistent storage technology.
 
 Storage plugins translate the logical Extract and Load assets contained in
 a validated **Pipeline Plan** into concrete read and write operations for a
-specific storage backend. They preserve the semantics defined by ODCS, DTCS,
-and DPCS while hiding storage-specific implementation details from pipeline
+specific storage backend. They preserve the semantics defined by [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md),
+and [DPCS](../05_PIPELINES/DPCS.md) while hiding storage-specific implementation details from pipeline
 authors.
 
 ## Purpose

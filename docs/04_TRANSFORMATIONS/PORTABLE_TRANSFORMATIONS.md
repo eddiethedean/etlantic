@@ -1,6 +1,6 @@
 # Portable Transformations
 
-!!! success "Available since ETLantic 0.17 (docs target 0.33.0)"
+!!! success "Available since ETLantic 0.17 (docs target 0.34.0)"
     `@Transformation.portable` and `etlantic.transform` emit validated
     `dtcs.transform-plan/2` IR. Polars, PySpark, and Pandas execute kernel +
     `portable-relational/1` plans in 0.12–0.14; safe SQL lowering for that
@@ -41,7 +41,7 @@ def normalize(customers, minimum_age):
 ```
 
 The decorated function runs only with symbolic inputs while ETLantic builds a
-canonical DTCS Transformation Plan through public `dtcs` package models. It
+canonical [DTCS](DTCS.md) Transformation Plan through public `dtcs` package models. It
 does not receive data, contact a backend, or execute a pipeline.
 
 ## Design goals

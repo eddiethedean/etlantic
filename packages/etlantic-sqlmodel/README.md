@@ -1,14 +1,15 @@
 # etlantic-sqlmodel
 
 Optional bridge between ETLantic `Data` contracts and
-[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.20.
+[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.34.
 
 ```bash
-pip install 'etlantic==0.33.0' 'etlantic-sqlmodel==0.33.0'
+pip install 'etlantic==0.34.0' 'etlantic-sqlmodel==0.34.0'
 # or: pip install 'etlantic[sqlmodel]'
 ```
 
-Sessions, Alembic migrations, and repository helpers are deferred to 1.1+.
+Sessions, Alembic migrations, and repository helpers are planned across
+0.40–0.44.
 This package focuses on schema mapping and metadata comparison only.
 
 ## Usage

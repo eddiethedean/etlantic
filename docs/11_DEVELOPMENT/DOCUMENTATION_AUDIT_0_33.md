@@ -21,6 +21,22 @@
 **Composite:** Good (improving from Fair), with residual optional-package API
 depth and enterprise control→evidence polish still open.
 
+## Repository-wide follow-through (2026-07-29)
+
+A second pass covered all Markdown surfaces in the repository, not only the
+MkDocs navigation:
+
+- synchronized official package README pins and release descriptions to 0.33
+- removed or relabeled Python examples for APIs that are not public
+- aligned SQL documentation with the SQLite/PostgreSQL Tier A matrix
+- updated Medallantic package docs for callable execution, quality rules, live
+  SparkForge/SQL builder bridges, and M5 parity
+- corrected local links outside the MkDocs tree and normalized ETLantic naming
+- extended `check_docs.py` to verify package pins and local Markdown targets
+
+The pass also re-ran strict site, runnable-example, release-readiness, agent
+guidance, and surface-inventory gates.
+
 ## Critical fixes landed in this pass
 
 1. **Migration labels** — adopter pages say **0.32 → 0.33** (not 0.33 → 0.33);

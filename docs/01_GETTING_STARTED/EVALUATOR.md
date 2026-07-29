@@ -4,13 +4,13 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.33 |
+| Topic | 0.34 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
-| LTS | Current published minor only (`0.33.x`) |
-| Not included | Multi-tenant control plane; unrestricted enterprise production |
+| LTS | Current published minor only (`0.34.x`) |
+| Not included in 0.34 | Multi-tenant control plane; unrestricted enterprise production |
 
 ## What ETLantic is
 
@@ -21,7 +21,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.33.0
+## What is ready in bounded 0.34.0
 
 | Area | Ready? |
 |---|---|
@@ -30,9 +30,9 @@ manager.
 | Lossless `etlantic.pipeline/1` JSON TARGET | Yes |
 | Authoring catalog + `EditCommand`s | Yes |
 | Service facade (`etlantic.service`) | Yes |
-| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not 1.1 control plane) |
+| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not the 0.40–0.44 control plane) |
 | Validation and secret-free `PipelinePlan` | Yes |
-| ODCS / DTCS / DPCS interchange | Yes |
+| [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange | Yes |
 | Local in-process runtime + run reports | Yes |
 | Memory / callable / JSON / CSV / no-write storage | Yes |
 | Env + mounted-file secrets | Yes |
@@ -48,9 +48,10 @@ manager.
 | Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14) |
 | Portable SQL compiler (kernel + relational `/1`) | Yes (0.15) |
 | Public portable transform conformance suite | Yes (0.14) |
-| Multi-tenant durable orchestration | No |
+| Multi-tenant durable orchestration | No — planned through CP3 / 0.42 |
 | Formal SLA / support response times | No |
-| Production GUI / multi-tenant control plane | No |
+| Production GUI | No |
+| Multi-tenant control plane | No in 0.34 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.40–0.43 incubation and 0.44 graduation |
 
 ## Security posture
 
@@ -64,7 +65,7 @@ manager.
   manifests, artifact/cache isolation keys, outbound default-deny,
   unsafe-serialization prohibition, versioned `SecurityEvent`, release SBOM
   digests and GitHub attestations
-- Report vulnerabilities privately; security fixes are supported on 0.33.x
+- Report vulnerabilities privately; security fixes are supported on 0.34.x
 
 ### Shipped trust controls vs residual gaps
 
@@ -75,7 +76,7 @@ manager.
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
 | Release SBOM digests + GitHub attestations | **Shipped** — verify with `gh attestation verify` (see [Enterprise evaluation](ENTERPRISE_EVALUATION.md#verify-release-attestations)) |
-| Cross-tenant / multi-tenant isolation guarantees | **Residual / adopter-owned** |
+| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.34; first-class plan published** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
 | HA/DR, SOC2/GDPR certs, identity/RBAC/SSO | **Adopter-owned / out of scope** |
@@ -88,9 +89,13 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.33.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.34.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilot deployments. Shipped trust controls do not make an
 arbitrary multi-tenant topology safe.
+
+The [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)
+defines the identity, isolation, persistence, durability, quota, audit, and
+graduation evidence required before that statement can change.
 
 Residual items that block **unrestricted** enterprise-wide production claims:
 
@@ -117,7 +122,7 @@ How to read status labels in deeper chapters:
 - AWS Secrets Manager / Vault (not shipped); OS keyring **is** available via
   `etlantic-keyring`
 - Process-local / durable file reports as an audit system of record
-- Stable 1.0 compatibility guarantees
+- Stable-foundation compatibility guarantees (planned for 0.38)
 - Managed Databricks/EMR/Connect Spark providers
 - **Undocumented advanced portable profiles** — Polars and PySpark ship the
   documented 0.17 Wave 1 / Wave 2 families; Pandas and SQL remain at kernel +
@@ -128,34 +133,34 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.33 |
+| Concern | Status in 0.34 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current Beta line is 0.33.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current Beta line is 0.34.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
 | SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) and [Upgrade hub](UPGRADE.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.33.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.34.0`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.33.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.34.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) if
+8. [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

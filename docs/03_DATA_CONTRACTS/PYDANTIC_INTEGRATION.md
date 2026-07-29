@@ -2,7 +2,7 @@
 
 ETLantic relies on Pydantic through ContractModel rather than introducing a second data-modeling system.
 
-Pydantic provides the Python-native type system, field metadata, validation behavior, and schema introspection used by `Data`. ContractModel extends that experience with data-contract semantics and ODCS interoperability. ETLantic then consumes those contract classes as typed pipeline interfaces.
+Pydantic provides the Python-native type system, field metadata, validation behavior, and schema introspection used by `Data`. ContractModel extends that experience with data-contract semantics and [ODCS](ODCS.md) interoperability. ETLantic then consumes those contract classes as typed pipeline interfaces.
 
 The relationship is:
 
@@ -72,7 +72,8 @@ ETLantic must not reimplement Pydantic field parsing or validation behavior.
 A ETLantic-ready data contract is an ordinary ContractModel class:
 
 ```python
-from etlantic import Data, load_data_contract
+from etlantic import Data
+from etlantic.contracts import load_data_contract
 
 
 class Customer(Data):
@@ -130,7 +131,8 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from etlantic import Data, load_data_contract
+from etlantic import Data
+from etlantic.contracts import load_data_contract
 
 
 class Order(Data):
@@ -934,10 +936,10 @@ Pydantic ValidationError
 ContractModel Validation Report
         │
         ▼
-ETLantic InvalidDataContext
+ETLantic normalized validation evidence
         │
         ▼
-Callback and InvalidDataAction
+PipelineRunReport
 ```
 
 ETLantic should not expose raw Pydantic exceptions as the only failure interface.

@@ -1,7 +1,7 @@
 # Protocol Evolution Policy
 
 > **Status (0.28.0):** Plugin `/1` families are **frozen in 0.28.0** for the
-> core 1.0 path (`dataframe`, `sql`, `spark`, `orchestration`,
+> 0.38 stable-foundation path (`dataframe`, `sql`, `spark`, `orchestration`,
 > `transform-compiler`). `etlantic.scheduler/1` remains provisional (not on the
 > freeze path). External feedback evidence:
 > [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md).
@@ -16,7 +16,7 @@
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
 | ≥1 documented external feedback cycle from a non-first-party plugin author | **Met** — see [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) | Maintainers + community |
-| No unresolved provisional core protocol on the 1.0 path | Met (`scheduler/1` excluded from freeze path) | Maintainers |
+| No unresolved provisional core protocol on the 0.38 path | Met (`scheduler/1` excluded from freeze path) | Maintainers |
 
 **Decision:** Declare core Plugin SDK `/1` **frozen in 0.28.0**. Only additive
 optional evolution within `/1` is permitted; incompatible changes require a
@@ -105,10 +105,10 @@ Rules:
 
 ## Support windows vs package pins
 
-While ETLantic is pre-1.0:
+While ETLantic remains on its 0.x roadmap:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.33: `etlantic>=0.33.0,<0.34`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.33: `etlantic>=0.34.0,<0.35`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

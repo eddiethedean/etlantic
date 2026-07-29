@@ -61,8 +61,8 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.33.0** /
-0.33.x).
+These codes are emitted by the installed ETLantic package (currently **0.34.0** /
+0.34.x).
 The message, path, metadata, and severity provide the case-specific detail.
 
 **Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
@@ -85,7 +85,7 @@ The curated tables below remain the human-oriented index.
 | `PMPIPE301` | Pipeline graph contains a cycle |
 | `PMPIPE302` | The logical graph could not be built |
 | `PMPLAN201` | An Extract/Load asset has no binding in the selected profile or registry |
-| `PMPLAN202` | A node contract lacks a published ODCS identifier |
+| `PMPLAN202` | A node contract lacks a published [ODCS](../03_DATA_CONTRACTS/ODCS.md) identifier |
 | `PMPLAN301` | A step has no implementation for the selected engine |
 | `PMPLAN401` | No plugin capabilities are registered for the selected engine |
 | `PMPLAN402` | A required capability is unsupported |

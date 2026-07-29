@@ -1,10 +1,12 @@
 # Contract-First Workflow
 
-> **Status: Available in ETLantic 0.33.0.** Uses shipped
+> **Status: Available in ETLantic 0.34.0.** Uses shipped
 > `write_contracts` / `load_bundle` APIs (no separate companion script).
 
-Generate ODCS/DTCS/DPCS from a code-first pipeline, then reload contracts with
-the shipped interchange helpers.
+Generate [ODCS](../03_DATA_CONTRACTS/ODCS.md) /
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) /
+[DPCS](../05_PIPELINES/DPCS.md) from a code-first pipeline, then reload
+contracts with the shipped interchange helpers.
 
 ## Generate contracts
 

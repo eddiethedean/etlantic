@@ -26,6 +26,9 @@ proposals. It is deliberately separate from the ETLantic 0.18 user guide.
 
 ## Portable transformation program (history and remaining work)
 
+Current public behavior is documented in the
+[DTCS integration guide](../04_TRANSFORMATIONS/DTCS.md).
+
 - [Authoring experience (shipped 0.11)](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
 - [Function catalog (shipped 0.11)](../04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md)
 - [Compiler protocol (shipped 0.12; Polars kernel)](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
@@ -38,6 +41,7 @@ proposals. It is deliberately separate from the ETLantic 0.18 user guide.
 
 - [0.18 Versioned Tabular Interchange record (Gate A shipped)](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md)
+- [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md)
 - [Programmatic authoring and lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
 - [Schema drift](SCHEMA_DRIFT_PLAN.md)
 - [Reliability](ETL_RELIABILITY_PLAN.md)

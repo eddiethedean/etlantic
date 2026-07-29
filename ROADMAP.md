@@ -1,11 +1,22 @@
 # Roadmap
 
-**Current release:** ETLantic **0.32.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.32** (PySpark/Delta differential / Medallantic
-M4) are shipped; **0.33–0.35** continue Medallantic parity before joint burn-in
-in **0.36**, the **0.37** release candidate, and the **0.38** stable
-foundation. See
-[Roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
+**Current release:** ETLantic **0.34.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.34** (operations, evidence, and production
+readiness / Medallantic M6) are shipped. **0.35** is the next planned
+milestone, followed by joint burn-in in **0.36**, the **0.37** release
+candidate, and the **0.38** stable foundation.
+
+| Horizon | Release | Outcome | Status |
+|---|---:|---|---|
+| Current | 0.34 | Operations, evidence, and production readiness (M6) | Shipped |
+| Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
+| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
+| Post-foundation | 0.39–0.49 | Modeling incubation → control plane → developer intelligence → federation and governed AI | Planned |
+
+For shipped evidence, see
+[What's New in 0.34](docs/01_GETTING_STARTED/WHATS_NEW_0_34.md) and the
+[0.34 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_34.md). See the
+[roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view.
 
 This roadmap sequences ETLantic from a typed modeling library into a
@@ -14,14 +25,17 @@ stable, secure orchestration model and plugin platform.
 It is a direction and dependency plan, not a release-date commitment. Version
 numbers describe capability milestones. A milestone is complete only when its
 acceptance scenarios, documentation, tests, and security requirements pass.
+All roadmap milestones remain in the 0.x series; no 1.0 or 1.x phase is
+planned.
 
 ## Product Outcome
 
 ETLantic will provide one portable model for:
 
-- ContractModel-compatible, ODCS-aligned data contracts
-- Type-driven, DTCS-aligned transformations
-- Typed, DPCS-aligned pipeline composition
+- ContractModel-compatible, [ODCS](docs/03_DATA_CONTRACTS/ODCS.md)-aligned
+  data contracts
+- Type-driven, [DTCS](docs/04_TRANSFORMATIONS/DTCS.md)-aligned transformations
+- Typed, [DPCS](docs/05_PIPELINES/DPCS.md)-aligned pipeline composition
 - Deterministic validation and planning
 - References to prior step outputs without mandatory table materialization
 - External execution through interchangeable plugins
@@ -2287,8 +2301,9 @@ the other cannot express.
   collaborative editing, durable job scheduling, or hosted execution
 - accepting Python source, arbitrary import paths, resolved secrets, or
   executable objects through API payloads
-- replacing the production FastAPI Control API planned for 1.1; WP8 proves the
-  0.24 authoring/service contract that the later control API will consume
+- replacing the production FastAPI Control API planned for 0.40–0.44; WP8
+  proves the 0.24 authoring/service contract that the later control API will
+  consume
 
 ### Non-goals
 
@@ -2296,7 +2311,8 @@ the other cannot express.
 - treating DPCS YAML as the lossless authoring codec
 - serializing Python callables, closures, import-time expressions, dataframe
   objects, sessions, connections, scheduler handles, or backend-native plans
-- multi-tenant control plane, LSP, or unrestricted enterprise production claims
+- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44
+  graduation), LSP, or unrestricted enterprise production claims
 - a framework-specific UI toolkit or requirement that consumers use a
   particular frontend, transport, or application architecture
 - coupling the canonical application-service contract to HTTP even though
@@ -2465,8 +2481,8 @@ remain post-foundation phases.
 
 ### Non-goals
 
-- production FastAPI control plane / multi-tenant API (1.1)
-- registry, workspaces, durable job store (1.2)
+- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
+- tenant/workspace registry and durable submission/state (0.41–0.42)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2572,12 +2588,12 @@ candidates with migrations — not a control-plane or GUI milestone.
 
 **Out of scope**
 
-- production GUI, LSP, AI authoring, FastAPI 1.1 control plane
+- production GUI, LSP, AI authoring, or the 0.40–0.44 control plane
 
 ### Non-goals
 
-- production FastAPI control plane / multi-tenant API (1.1)
-- registry, workspaces, durable job store (1.2)
+- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
+- tenant/workspace registry and durable submission/state (0.41–0.42)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2615,7 +2631,7 @@ milestone.
 - Plugin SDK `/1` freeze re-scoped to 0.27 with published external feedback
   blocker ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
 - First-wave root alias removals shipped; remaining inventory current
-  ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
+  ([REMOVAL_CANDIDATES_0_38.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md))
 
 ### Work packages
 
@@ -2689,12 +2705,12 @@ milestone.
 
 **Out of scope**
 
-- production FastAPI control plane / GUI / LSP / AI authoring
+- first-class multi-tenant control plane / GUI / LSP / AI authoring
 
 ### Non-goals
 
-- production FastAPI control plane / multi-tenant API (1.1)
-- registry, workspaces, durable job store (1.2)
+- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
+- tenant/workspace registry and durable submission/state (0.41–0.42)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2747,7 +2763,7 @@ control-plane / GUI milestone.
   [EXTERNAL_PLUGIN_FEEDBACK.md](docs/11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md))
 - Second-wave root removals shipped (reliability, schema_drift, registry);
   ~36 demoted root aliases remain after the 0.28 third wave
-  ([REMOVAL_CANDIDATES_1_0.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md))
+  ([REMOVAL_CANDIDATES_0_38.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md))
 
 ### Work packages
 
@@ -2842,8 +2858,9 @@ control-plane / GUI milestone.
 
 - native medallion authoring (**0.29**), portable quality rules (**0.30**),
   execution/materialization parity (**0.31**)
-- production FastAPI control plane / multi-tenant API (**1.1**)
-- registry, workspaces, durable job store (**1.2**)
+- first-class multi-tenant control plane (0.40–0.43 incubation; **0.44**
+  graduation)
+- tenant/workspace registry and durable submission/state (**0.41–0.42**)
 - GUI, LSP, or AI authoring surfaces
 - new engines/orchestrators, DataFusion graduation, expanded streaming
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -3040,7 +3057,7 @@ Column / Moltres-only expressions (**0.32 / 0.33**), or quality-trend analytics
 
 **Out of scope**
 
-- production FastAPI control plane / GUI / LSP / AI authoring
+- first-class multi-tenant control plane / GUI / LSP / AI authoring
 - quality-trend / anomaly analytics providers (**0.34**)
 
 ### Non-goals
@@ -3049,8 +3066,9 @@ Column / Moltres-only expressions (**0.32 / 0.33**), or quality-trend analytics
 - native PySpark Column / Moltres-only expressions as portable
   (**0.32 / 0.33**)
 - trend, quality, and anomaly analytics consumers (**0.34**)
-- production FastAPI control plane / multi-tenant API (**1.1**)
-- registry, workspaces, durable job store (**1.2**)
+- first-class multi-tenant control plane (0.40–0.43 incubation; **0.44**
+  graduation)
+- tenant/workspace registry and durable submission/state (**0.41–0.42**)
 - GUI, LSP, or AI authoring surfaces
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
 - a second schema/rule system outside ContractModel authority
@@ -3118,7 +3136,7 @@ semantics and promote any reusable reliability primitives exposed by that use.
 
 The same Medallantic definition passes normalized lifecycle fixtures on local,
 Polars, Pandas, SQL, and PySpark where capabilities are advertised; unsupported
-write/state semantics fail before mutation; Etlantic core contains only
+write/state semantics fail before mutation; ETLantic core contains only
 domain-neutral policies.
 
 ## 0.32 — PySpark and Delta Differential Parity
@@ -3200,7 +3218,11 @@ The SQL parity matrix passes on SQLite and PostgreSQL, additional dialect
 claims are accurately gated, failures preserve transaction guarantees, and
 one Medallantic authoring model serves SQL and non-SQL engines.
 
+Tracking: [EXIT_GATE_0_33.md](docs/11_DEVELOPMENT/EXIT_GATE_0_33.md).
+
 ## 0.34 — Operations, Evidence, and Production Readiness
+
+**Status:** Shipped in ETLantic 0.34.0.
 
 **Medallantic phase:** M6 — Operations, observability, and production
 readiness.
@@ -3239,6 +3261,8 @@ history and analytics remain optional providers/consumers.
 
 ## 0.35 — Migration Completion and Joint Freeze
 
+**Status:** Planned.
+
 **Medallantic phase:** M7 — Migration completion.
 
 **Objective:** complete both legacy builder migrations and freeze the
@@ -3273,6 +3297,8 @@ by differential/conformance evidence; the facade/core boundary and required
 wire schemas are freeze-ready; no unresolved P0 parity gap remains.
 
 ## 0.36 — Joint Compatibility Burn-In
+
+**Status:** Planned.
 
 **Objective:** accumulate adoption and upgrade evidence for ETLantic and
 Medallantic together after the 0.25–0.27 core slices and the 0.28–0.35
@@ -3318,6 +3344,8 @@ plugin protocol remains on the stable-foundation path.
 
 ## 0.37 — Stable Foundation Release Candidate
 
+**Status:** Planned.
+
 **Objective:** rehearse the final release, upgrade, rollback, security, and
 support process against the exact artifacts intended for the stable foundation.
 
@@ -3349,6 +3377,8 @@ schema, or protocol change returns the affected area to the appropriate
 earlier gate.
 
 ## 0.38 — Stable Foundation
+
+**Status:** Planned.
 
 ### Public stability
 
@@ -3436,7 +3466,12 @@ ETLantic's stable foundation ships only when:
 
 ## Defined Post-Foundation Sequence
 
-Phases 0.39 through 0.48 expand ETLantic around the stable-foundation model
+All planned ETLantic releases remain in the 0.x series. This roadmap has no
+1.0 or 1.x phase: 0.38 is the stable foundation, and later capabilities use
+sequential 0.x minors. Versions belonging to external standards, dependencies,
+or user-authored artifacts do not change this release-numbering policy.
+
+Phases 0.39 through 0.49 expand ETLantic around the stable-foundation model
 without turning the core into a server, catalog, scheduler, IDE, or AI
 platform. Each initiative has one assigned phase and its own acceptance gates;
 none is an open-ended placeholder.
@@ -3511,11 +3546,30 @@ the incubating API until graduation.
 See the
 [TransformationModel Incubation Plan](docs/11_DEVELOPMENT/TRANSFORMATIONMODEL_PLAN.md).
 
-## 0.40 — FastAPI Control API
+### First-class control-plane program
+
+The 0.40–0.43 sequence is one first-class multi-tenant control-plane program:
+API and identity, tenant persistence, durable execution coordination, then
+policy/audit hardening. These are incubation gates for a 0.44 graduation, not
+four unrelated optional experiments. ETLantic core remains a library, and no
+phase claims in-process isolation for mutually untrusted Python.
+
+The authoritative integrated gates are in the
+[Multi-Tenant Control Plane Plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+
+## 0.40 — Multi-Tenant Control Plane: API and Identity Foundation
+
+**Status:** Planned CP1 incubation; not shipped in 0.33.
+
+**Objective:** establish typed, tenant-aware control-plane contracts and a
+deny-by-default HTTP/SDK boundary without treating the API process as a worker
+or security sandbox.
 
 Deliver:
 
 - separate `etlantic-fastapi` distribution;
+- versioned principal, tenant, workspace, environment, security-domain, and
+  immutable request-context models;
 - embeddable router and standalone application factory;
 - typed discovery, validation, planning, run submission, status, cancellation,
   report, artifact-metadata, and lineage endpoints;
@@ -3528,12 +3582,14 @@ Deliver:
   clients;
 - dependency adapters for identity, tenant, policy, idempotency, and request
   context;
+- authorization before lookup/pagination, non-enumerating errors, bounded
+  tenant-scoped cursors, and separate cross-tenant administration;
 - HTTP middleware guidance distinct from ETLantic runtime middleware;
 - OpenAPI 3.1 schema with stable operation IDs and client-generation fixtures;
 - SSE run-event streaming and optional experimental WebSockets;
 - OpenAPI callbacks and webhooks generated from outbound event declarations;
 - OAuth2/OIDC and application-defined authorization dependencies;
-- durable submission contract returning `202 Accepted`.
+- durable submission contract returning `202 Accepted`;
 - optional SQLModel-backed reference stores for registry, runs, reports,
   events, schema observations, reliability evidence, and approvals;
 - separate request, persistence, and response models where fields or security
@@ -3547,15 +3603,23 @@ Acceptance:
 - multiple API workers share durable run state and resumable events;
 - heavy pipeline work never depends on FastAPI `BackgroundTasks`;
 - unauthorized profile, artifact, override, and cancellation access fails
-  closed.
+  closed;
 - live schema inspection and drift acknowledgement require explicit subject,
-  profile, workspace, and policy authority.
+  profile, workspace, and policy authority;
 - SQLModel sessions remain request-scoped integration details and never become
-  pipeline runtime resources.
+  pipeline runtime resources;
+- every action/resource pair passes two-tenant and two-workspace authorization
+  tests, including list, search, cursor, and event-stream non-enumeration;
+- no production multi-tenant claim is made at CP1.
 
 See [FastAPI Integration Plan](docs/11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md).
 
-## 0.41 — Registry, Workspaces, and Discovery
+## 0.41 — Tenant Registry, Workspaces, and Persistence Isolation
+
+**Status:** Planned CP2 incubation.
+
+**Objective:** make tenant/workspace scope part of every registry and
+persistence key, with supported isolation profiles and migration evidence.
 
 Deliver:
 
@@ -3563,6 +3627,10 @@ Deliver:
   generated documentation;
 - immutable revisions, aliases, promotion channels, signatures, and provenance;
 - workspace and tenant model with namespaced identities;
+- compound tenant/workspace keys, mandatory scoped repository APIs, and
+  database-enforced isolation for supported shared-service profiles;
+- isolated-deployment, dedicated-database/schema, and shared-service
+  conformance profiles with explicit residual risks;
 - dependency and impact queries across pipeline revisions;
 - immutable schema observations, operational baselines, acknowledgements, and
   remediation references;
@@ -3572,7 +3640,7 @@ Deliver:
   transformations, outputs, sinks, and downstream pipelines;
 - searchable metadata indexes without storing arbitrary dataset contents;
 - registry events and cache-invalidation protocol;
-- FastAPI registry routes and CLI parity.
+- FastAPI registry routes and CLI parity;
 - optional SQLModel-backed registry, revision, and history reference provider.
 
 Acceptance:
@@ -3582,15 +3650,28 @@ Acceptance:
 - impact analysis explains which pipelines and outputs depend on a changed
   contract;
 - tenant and workspace boundaries are preserved in registry, cache, API, and
-  artifact identities.
+  artifact identities;
 - accepting an operational baseline never mutates or aliases the authoritative
-  contract revision.
+  contract revision;
+- two-tenant/two-workspace matrices pass every repository method and pagination
+  path;
+- backup, restore, mixed-version migration, and rollback preserve tenant scope;
+- shared-service profiles prove a second independent isolation control.
 
-## 0.42 — Incremental State and Reproducibility
+## 0.42 — Durable Submission, State, and Reproducibility
+
+**Status:** Planned CP3 incubation.
+
+**Objective:** coordinate accepted work across API replicas and isolated
+execution hosts using durable transactions, outbox dispatch, leases, fencing,
+and normalized recovery evidence.
 
 Deliver:
 
 - state-provider protocol;
+- transactional submission/outbox, broker/submitter, execution-host, lease,
+  fencing-token, heartbeat, and attempt-history protocols;
+- caller/tenant/workspace-scoped idempotency and per-tenant admission control;
 - versioned, secret-free execution-attempt context that lets hosts correlate
   retries, replay, resume, cancellation, deadlines, checkpoints, and reports
   without making ETLantic a queue or worker supervisor;
@@ -3623,9 +3704,18 @@ Acceptance:
   original run.
 - an unknown external commit outcome fails closed against automatic retry
   unless a provider supplies valid transaction, deduplication, reconciliation,
-  or idempotency evidence.
+  or idempotency evidence;
+- API or worker loss cannot lose an accepted request or permit a stale attempt
+  to publish terminal state, checkpoints, or artifacts;
+- duplicate submissions and broker retries do not duplicate work;
+- multi-worker chaos, disconnect/resume, and recovery tests pass.
 
-## 0.43 — Policy, Governance, and Supply-Chain Assurance
+## 0.43 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
+
+**Status:** Planned CP4 release-candidate gate.
+
+**Objective:** add the governance, noisy-neighbor controls, integrity evidence,
+and operational proof required before the integrated 0.44 graduation decision.
 
 Deliver:
 
@@ -3634,8 +3724,12 @@ Deliver:
 - adapters for external policy engines such as OPA where justified;
 - signed plans, plugin provenance, SBOM attachment, and artifact attestations;
 - approval gates and separation-of-duty workflows;
+- tenant/workspace quotas, fairness, suspension, emergency containment, and
+  fail-closed admission policy;
 - residency, classification, masking, retention, and egress constraints;
 - policy decision evidence in reports and APIs;
+- append-only, integrity-protected tenant audit evidence without source rows or
+  resolved secrets;
 - signed or integrity-protected production schema observations, approval gates,
   retention rules, and acknowledgement evidence;
 - policy gates for stale or incomplete inputs, unsafe retries, destructive
@@ -3650,9 +3744,25 @@ Acceptance:
   plugins, and policy bundle;
 - approval and denial are durable, auditable, and free of secret values.
 - forged, cross-tenant, or cross-environment schema observations cannot satisfy
-  a deployment or execution gate.
+  a deployment or execution gate;
+- identity, policy, quota, broker, and persistence outages fail closed according
+  to documented degraded modes;
+- noisy-neighbor, backup/restore, migration, redaction, and external security
+  review gates pass.
 
-## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis
+## 0.44 — First-Class Multi-Tenant Control-Plane Graduation
+
+The production multi-tenant control-plane claim is a first-class 0.44 feature
+only after CP1–CP4 pass as an integrated system. Graduation requires a frozen
+supported-isolation-profile matrix, public compatibility/migration policy,
+cross-tenant conformance for every public operation, measured capacity
+envelopes, multi-replica failure injection, operator runbooks, backup/restore
+evidence, and no unresolved critical/high isolation finding.
+
+Failure of a mandatory gate keeps the program in release-candidate status. The
+project does not weaken “multi-tenant” to meet a release date.
+
+## 0.45 — Developer Intelligence: LSP, IDE, and Static Analysis
 
 Deliver:
 
@@ -3754,7 +3864,7 @@ Acceptance:
 - quick fixes never import untrusted modules or resolve remote references
   implicitly.
 
-## 0.45 — Planner and Optimization SDK
+## 0.46 — Planner and Optimization SDK
 
 Deliver:
 
@@ -3775,7 +3885,7 @@ Acceptance:
 - users can compare baseline and optimized plans before execution;
 - an optimization that cannot prove boundary preservation is rejected.
 
-## 0.46 — Streaming and Event-Driven Pipelines
+## 0.47 — Streaming and Event-Driven Pipelines
 
 Deliver:
 
@@ -3793,7 +3903,7 @@ Acceptance:
 - restart and replay do not silently duplicate externally visible effects;
 - backpressure and late-data behavior are visible in plans and reports.
 
-## 0.47 — Remote Execution Federation
+## 0.48 — Remote Execution Federation
 
 Deliver:
 
@@ -3821,7 +3931,7 @@ Acceptance:
 - loss of a worker after an external commit cannot be reported as safely
   retryable when the commit outcome is unknown.
 
-## 0.48 — AI-Assisted, Human-Governed Engineering
+## 0.49 — AI-Assisted, Human-Governed Engineering
 
 Deliver:
 

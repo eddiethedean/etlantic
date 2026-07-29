@@ -4,7 +4,7 @@ Transformations are the heart of ETLantic.
 
 A transformation defines **how data logically changes** as it moves through a pipeline. Like FastAPI endpoints, transformations are declared using Python classes and type annotations. The declaration describes the interface; execution implementations remain separate.
 
-ETLantic models transformations using **Transformation Contracts**, represented portably by the **Data Transformation Contract Standard (DTCS)**.
+ETLantic models transformations using **Transformation Contracts**, represented portably by the **Data Transformation Contract Standard ([DTCS](DTCS.md))**.
 
 ## What This Section Covers
 
@@ -107,13 +107,13 @@ ETLantic supports both synchronous and asynchronous implementations.
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
 ```python
 @NormalizeCustomers.implementation("remote")
-async def normalize(...):
+async def normalize(customers, minimum_age=18):
     ...
 ```
 
@@ -121,15 +121,15 @@ The framework normalizes invocation internally so authors focus on business logi
 
 ## Callbacks
 
-Transformations may expose lifecycle callbacks for events such as:
+The runtime exposes lifecycle callbacks for events such as:
 
-- Invalid input data
-- Invalid output data
 - Execution failures
 - Retry decisions
 - Completion notifications
 
 Callbacks may be synchronous or asynchronous.
+Dedicated invalid-data callbacks remain future design; use validation evidence
+and explicit invalid-output ports today.
 
 ## Validation
 
@@ -166,8 +166,8 @@ Read this section in the following order:
 4. `PARAMETERS.md`
 5. `TYPE_ANNOTATIONS.md`
 6. `IMPLEMENTATIONS.md`
-7. `PORTABLE_TRANSFORMATIONS.md` (accepted 0.11+ authoring design)
-8. `PORTABLE_FUNCTIONS.md` (DTCS 2.0/3.0 mapping for the planned facade)
+7. `PORTABLE_TRANSFORMATIONS.md` (shipped portable authoring)
+8. `PORTABLE_FUNCTIONS.md` (current DTCS 2.0/3.0 function mapping)
 9. `CALLBACKS.md`
 10. `ERROR_HANDLING.md`
 11. `ASYNC.md`

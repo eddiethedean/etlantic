@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/lifecycle-event.json",
+  "title": "ETLantic Lifecycle Event",
+  "type": "object",
+  "required": ["schema", "kind", "run_id", "pipeline_id", "at"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "etlantic.lifecycle_event/1"
+    },
+    "kind": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "pipeline_id": { "type": "string", "minLength": 1 },
+    "plan_id": { "type": ["string", "null"] },
+    "region_id": { "type": ["string", "null"] },
+    "physical_unit": { "type": ["string", "null"] },
+    "backend": { "type": ["string", "null"] },
+    "correlation_id": { "type": ["string", "null"] },
+    "at": { "type": "string", "format": "date-time" },
+    "step_name": { "type": ["string", "null"] },
+    "attempt": { "type": ["integer", "null"] },
+    "status": { "type": ["string", "null"] },
+    "message": { "type": ["string", "null"] },
+    "annotations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

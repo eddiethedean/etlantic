@@ -9,14 +9,14 @@ Install the current release:
 
 ```bash
 python -m pip install \
-  'etlantic==0.33.0' \
-  'medallantic==0.33.0'
+  'etlantic==0.34.0' \
+  'medallantic==0.34.0'
 ```
 
-The equivalent Etlantic extra is:
+The equivalent ETLantic extra is:
 
 ```bash
-python -m pip install 'etlantic[medallantic]==0.29.0'
+python -m pip install 'etlantic[medallantic]==0.34.0'
 ```
 
 Execution engines remain optional. Install the engine separately when moving
@@ -53,7 +53,7 @@ spec = SparkForgePipelineSpec(
             layer=LayerKind.SILVER,
             source="raw_orders",
             table_name="analytics.clean_orders",
-            transform_ref="orders.clean_orders",
+            transform_ref="clean_orders_fn",
             write_mode="overwrite",
         ),
         SparkForgeStepSpec(
@@ -62,7 +62,7 @@ spec = SparkForgePipelineSpec(
             layer=LayerKind.GOLD,
             source="clean_orders",
             table_name="analytics.order_metrics",
-            transform_ref="orders.order_metrics",
+            transform_ref="order_metrics_fn",
             write_mode="merge",
             metadata={"merge_keys": ["metric_date"]},
         ),
@@ -109,7 +109,9 @@ print(plan.intents["write_intents"])
 ```
 
 Enrichment records intended writes for orchestration and inspection. It does
-not make the current passthrough adapter execute SparkForge transformations.
+not itself execute the pipeline. Importable `module:attribute`
+`transform_ref` values execute through ETLantic; symbolic names remain
+planning-only passthroughs with `MDL111`.
 
 ## Plan-only Delta inspection
 
@@ -128,4 +130,3 @@ Delta. Validate the actual selected plugin capabilities before mutation.
 - Read [SparkForge migration](sparkforge-migration.md) for JSON IR conversion.
 - Read [Runtime and reports](runtime-and-reports.md) for run-request mappings.
 - Review [Compatibility](compatibility.md) before expecting execution parity.
-

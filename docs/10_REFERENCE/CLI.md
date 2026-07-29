@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.33.0.** This page documents the commands
+> **Status: Available in ETLantic 0.34.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -210,7 +210,7 @@ python -m etlantic compile pipeline.py:SamplePipeline \
 
 ## `generate`
 
-Generate ODCS/DTCS/DPCS contract bundles, or emit a pipeline definition JSON:
+Generate [ODCS](../03_DATA_CONTRACTS/ODCS.md)/[DTCS](../04_TRANSFORMATIONS/DTCS.md)/[DPCS](../05_PIPELINES/DPCS.md) contract bundles, or emit a pipeline definition JSON:
 
 ```bash
 python -m etlantic generate pipeline.py:SamplePipeline -o contracts/

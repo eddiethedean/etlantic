@@ -29,7 +29,7 @@ etlantic plan pipeline.json --profile development
 - JSON deserialization is inert: no imports, plugin loads, or secret resolution.
 - Native implementations are host-registered (`callable_registry`) or harvested
   from classes before run.
-- DPCS remains standards interchange and may still generate classes; it is not
+- [DPCS](../05_PIPELINES/DPCS.md) remains standards interchange and may still generate classes; it is not
   the lossless authoring codec (`etlantic.pipeline/1` is).
 
 ## Optional package

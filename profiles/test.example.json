@@ -1,0 +1,13 @@
+{
+  "name": "test-example",
+  "security_mode": "test",
+  "validation_policy": "strict",
+  "orchestrator": "local",
+  "dataframe_engine": "local",
+  "run_history_provider": "memory",
+  "observability_delivery": "best_effort",
+  "assets": {
+    "sample_source": "json",
+    "sample_sink": "json"
+  }
+}

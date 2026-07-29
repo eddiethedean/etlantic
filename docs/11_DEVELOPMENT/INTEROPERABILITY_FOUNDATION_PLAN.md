@@ -17,7 +17,7 @@ the still-planned Gate B policy.
 | **0.18 conformance pair** | Polars + Pandas only. PySpark/SQL Arrow boundaries are explicit follow-ups |
 | **Engine registry** | Capability/registry generalization is a **Gate A prerequisite (A0)**, not deferred into DataFusion |
 | **Parquet** | Durable **artifact** strategy, not conflated with in-process Arrow C / IPC transport |
-| **Semantic authority** | Pydantic / ContractModel and ODCS / DTCS / DPCS remain the contract layer; Arrow is physical interchange only |
+| **Semantic authority** | Pydantic / ContractModel and [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) remain the contract layer; Arrow is physical interchange only |
 | **Core deps** | Installing `etlantic` alone must not install or import PyArrow or DataFusion |
 | **0.17 continuation** | Gate A may proceed in parallel with unfinished portable continuation families; **0.19.0 exit does not depend on them** |
 
@@ -257,13 +257,13 @@ A working adapter that only duplicates Polars is insufficient.
 
 - Marked **Experimental** in Capabilities and package classifiers
 - Best-effort fixes only; no SLA
-- May change or be removed in a minor without 1.0 compatibility obligation
+- May change or be removed in a minor without a 0.38 stable-foundation compatibility obligation
 - Must not become the default engine merely because installation works
 
 ### Stop rule
 
 Stop or keep experimental when any stop condition below triggers. Failed
-experiments create **no** 1.0 compatibility obligation.
+experiments create **no** 0.38 stable-foundation compatibility obligation.
 
 ---
 

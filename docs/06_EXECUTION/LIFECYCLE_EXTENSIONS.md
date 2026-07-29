@@ -351,8 +351,8 @@ local test capture
 ### Not a fourth contract family
 
 Outbound events are pipeline interface metadata and runtime configuration. They
-do not create another top-level contract standard alongside ODCS, DTCS, and
-DPCS.
+do not create another top-level contract standard alongside [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and
+[DPCS](../05_PIPELINES/DPCS.md).
 
 HTTP-specific webhook descriptions may be generated from outbound event
 declarations through a documentation plugin. The ETLantic core remains

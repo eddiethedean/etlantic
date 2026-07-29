@@ -1,6 +1,6 @@
 # Execute with Polars
 
-> **Status: Available in ETLantic 0.33.0.** Prefer the **PyPI path** after
+> **Status: Available in ETLantic 0.34.0.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 ## PyPI path (add Polars to an `init` project)
@@ -12,7 +12,7 @@ Polars implementation and select the engine.
 ### 1. Install
 
 ```bash
-python -m pip install 'etlantic[polars]==0.33.0'
+python -m pip install 'etlantic[polars]==0.34.0'
 ```
 
 ### 2. Register a Polars implementation
@@ -63,8 +63,8 @@ Repository scripts under `examples/` are **not** in the PyPI wheel. Use them
 from a matching checkout when you want the CI-tested NormalizeCustomers demo.
 
 ```bash
-python -m pip install 'etlantic==0.33.0' 'etlantic-polars==0.33.0'
-git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.34.0' 'etlantic-polars==0.34.0'
+git clone --branch v0.34.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py polars
 ```
@@ -86,6 +86,29 @@ def normalize_polars(customers):
 Select it with `Profile(name="polars", dataframe_engine="polars")`. Complete
 source:
 [`examples/dataframe_parity.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/dataframe_parity.py).
+
+## Expected output
+
+Run identifiers, timestamps, and durations vary. The stable evidence is the
+selected profile, successful three-step summary, and normalized rows:
+
+```text
+profile:  polars-example
+status:   succeeded
+summary:  total=3 ok=3 failed=0 skipped=0 cancelled=0
+{'customer_id': 1, 'full_name': 'Ada Lovelace'}
+{'customer_id': 2, 'full_name': 'Grace Hopper'}
+```
+
+For the earlier `init` project, `cat data/out.json` retains the Quickstart
+records because the added implementation is an identity transform:
+
+```json
+[
+  {"id": 1, "name": "Ada"},
+  {"id": 2, "name": "Grace"}
+]
+```
 
 Lazy frames are preserved until a plan-declared collection boundary.
 

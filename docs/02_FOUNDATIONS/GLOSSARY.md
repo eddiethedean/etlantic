@@ -8,7 +8,7 @@ terms are used in other ETL frameworks.
 ## Artifact
 
 A generated file or runtime data value/reference. Generated artifacts include
-ODCS, DTCS, DPCS, documentation, diagrams, and compiled backend output. Runtime
+[ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), documentation, diagrams, and compiled backend output. Runtime
 artifacts include dataframes, database relations, files, and external
 references passed between physical execution units.
 

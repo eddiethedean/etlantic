@@ -295,7 +295,7 @@ html {
 .md-typeset .highlighttable {
   overflow: hidden;
   border: 1px solid var(--etlantic-border);
-  border-radius: 0.65rem;
+  border-radius: 0.2rem;
   box-shadow: 0 0.5rem 1.4rem var(--etlantic-shadow);
 }
 

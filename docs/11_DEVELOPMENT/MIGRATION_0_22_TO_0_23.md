@@ -47,5 +47,5 @@ CI. Core remains orchestration-compile friendly without a scheduler runtime.
 
 ## No breaking public API removals
 
-0.23 is additive for stable surfaces. Pre-1.0 compatibility aliases from 0.22
+0.23 is additive for stable surfaces. The 0.x compatibility aliases from 0.22
 remain unchanged.

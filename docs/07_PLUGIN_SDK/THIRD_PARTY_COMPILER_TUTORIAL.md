@@ -1,8 +1,10 @@
 # Third-Party Portable Compiler Tutorial
 
-ETLantic 0.29.0 discovers portable transformation compilers through the
+> **Status: Available in ETLantic 0.34.0.**
+
+ETLantic discovers portable transformation compilers through the
 `etlantic.transform_compilers` entry-point group. A compiler analyzes,
-compiles, and executes DTCS transformation plans under
+compiles, and executes [DTCS](../04_TRANSFORMATIONS/DTCS.md) transformation plans under
 `etlantic.transform-compiler/1`.
 
 ## 1. Create the package
@@ -23,7 +25,7 @@ Start with a core range matching the minor release you test:
 name = "etlantic-acme"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["etlantic>=0.33.0,<0.34", "acme-frame>=2,<3"]
+dependencies = ["etlantic>=0.34.0,<0.35", "acme-frame>=2,<3"]
 
 [project.entry-points."etlantic.transform_compilers"]
 acme = "etlantic_acme:create_transform_compiler"
@@ -148,8 +150,8 @@ capabilities = TransformCapabilities(
 
 Do not claim `portable-relational/1` until joins, unions, grouping,
 aggregation, ordering, distinct/deduplication, and limits all satisfy the
-profile. In 0.20.0, a relational claim must reject join collision policies
-other than `fail`. If the backend is eager-only, set `lazy=False`.
+profile. A relational claim must reject join collision policies other than
+`fail`. If the backend is eager-only, set `lazy=False`.
 
 Unsupported requirements must produce deterministic
 `TransformSupportFinding` entries during analysis. Never silently approximate
@@ -186,7 +188,8 @@ oracle.
 
 ## 5. Verify discovery
 
-Install the wheel into an isolated environment with ETLantic 0.29.0, then:
+Install the wheel into an isolated environment with the ETLantic minor you
+declared, then:
 
 ```python
 from etlantic.transform.discovery import discover_transform_compilers
@@ -199,67 +202,3 @@ print(compilers["acme"].info.to_dict())
 See [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md),
 [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md), and
 [Testing Plugins](TESTING_PLUGINS.md).
-# Third-Party Portable Compiler Tutorial
-
-> **Status: Available in ETLantic 0.33.0.**
-
-Build a transform compiler that claims DTCS profiles, registers through entry
-points, and proves its claims with the public conformance suite.
-
-## 1. Implement the protocol
-
-```python
-# my_compiler/plugin.py
-from etlantic.transform.compiler import TransformCompiler
-
-def create_transform_compiler() -> TransformCompiler:
-    return MyCompiler()
-```
-
-Advertise only profiles and operations you actually lower. Fail closed in
-`analyze()` for unclaimed modes (for example join `collisionPolicy` other
-than `fail`).
-
-## 2. Register the entry point
-
-```toml
-# pyproject.toml
-[project.entry-points."etlantic.transform_compilers"]
-myengine = "my_compiler.plugin:create_transform_compiler"
-```
-
-Depend on a matching ETLantic minor (`etlantic>=0.33.0,<0.34` for official
-0.20 plugins).
-
-## 3. Run the public conformance suite
-
-```python
-from etlantic.testing import run_portable_transform_conformance_suite
-from my_compiler.plugin import create_transform_compiler
-
-run_portable_transform_conformance_suite(create_transform_compiler())
-```
-
-Capability-selected fixtures become mandatory for every advertised
-operation/function. Hypothesis property tests in ETLantic CI cover matching
-and fingerprint stability for reference compilers—mirror that discipline.
-
-## 4. Wire a profile
-
-```python
-from etlantic import Profile
-
-Profile(
-    name="pilot",
-    dataframe_engine="myengine",
-    portable_transform_policy="require",
-    plugin_allowlist={"myengine": "==0.1.0"},
-)
-```
-
-## Related
-
-- [Portable Transform Compiler](PORTABLE_TRANSFORM_COMPILER.md)
-- [Testing Plugins](TESTING_PLUGINS.md)
-- [Portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)

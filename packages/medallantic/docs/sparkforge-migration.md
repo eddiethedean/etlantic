@@ -71,7 +71,7 @@ Medallantic never removes an edge to make a cyclic graph executable.
 ## What maps today
 
 - Bronze steps become ETLantic extracts.
-- Silver and gold steps become typed passthrough steps.
+- Silver and gold steps become typed transformations.
 - Non-`no_write` silver/gold steps gain loads.
 - Layer thresholds become named validation-policy metadata.
 - Table names become profile assets.
@@ -79,15 +79,33 @@ Medallantic never removes an edge to make a cyclic graph executable.
 - Merge keys are read from `metadata.merge_keys` or `metadata.keys`.
 - Declared Delta operations are capability-checked.
 
-## What does not execute today
+## Transformation execution
 
-`transform_ref` and `rules` are retained for migration diagnostics, but the
-adapter does not import or execute the referenced SparkForge code. It emits
-`PMSF411` and builds a passthrough transformation.
+An importable `transform_ref` in `module:attribute` or dotted form resolves to
+an ETLantic transformation and executes on the supported local, Polars,
+Pandas, or PySpark path. A symbolic legacy name such as `clean_orders_fn`
+cannot be imported; it emits `MDL111` (or the migration alias `PMSF411`) and
+uses a planning-only passthrough. An import-looking reference that cannot be
+resolved is an error.
 
-Do not use current adapter execution as a production replacement for a legacy
-SparkForge pipeline. Compare graphs and plans now; move execution only when
-the corresponding roadmap phase and differential tests are complete.
+Portable `rules` lower to explicit quality gates. Native PySpark Column and
+Moltres rules require their declared capabilities and fail closed on the wrong
+engine. Production migration still requires differential testing against the
+legacy pipeline.
+
+## Live builder bridge
+
+When SparkForge is installed, adapt an existing builder without first
+serializing IR:
+
+```python
+from medallantic.migrate.sparkforge import from_pipeline_builder
+
+adapted = from_pipeline_builder(pipeline_builder)
+```
+
+The bridge extracts a secret-free definition. It must not serialize sessions,
+resolved credentials, dataframes, or source rows.
 
 ## Recommended migration workflow
 
@@ -95,7 +113,7 @@ the corresponding roadmap phase and differential tests are complete.
 2. Parse and resolve all structural diagnostics.
 3. Adapt and compare dependency order and layer assignments.
 4. Inspect profile assets, quality thresholds, and write intents.
-5. Generate deterministic Etlantic plans.
+5. Generate deterministic ETLantic plans.
 6. Normalize existing run results for report comparison.
 7. Convert transformations only when their target engine path is supported.
 8. Run differential fixtures before changing production execution.
@@ -105,4 +123,3 @@ the corresponding roadmap phase and differential tests are complete.
 Existing `PMSF` codes identify the SparkForge migration boundary and remain
 stable until a documented major-version migration. New native Medallantic APIs
 will use Medallantic-specific diagnostic families.
-

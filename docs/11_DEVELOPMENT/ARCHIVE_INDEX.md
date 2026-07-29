@@ -6,6 +6,10 @@
 
 ## Current (also linked from Maintainers nav)
 
+- [Exit gate 0.34](EXIT_GATE_0_34.md)
+- [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)
+- [Exit gate 0.33](EXIT_GATE_0_33.md)
+- [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
 - [Exit gate 0.32](EXIT_GATE_0_32.md)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
 - [Documentation audit 0.33](DOCUMENTATION_AUDIT_0_33.md)
@@ -24,7 +28,7 @@
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md) · [Exit gate 0.25](EXIT_GATE_0_25.md)
 - [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
-- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
+- [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md)
 
 ## Older migrations and exit gates
 
@@ -54,7 +58,8 @@
 
 ## Documentation audits
 
-- [0.25 adoption](DOCUMENTATION_AUDIT_0_25_ADOPTION.md) (current remediation)
+- [0.33](DOCUMENTATION_AUDIT_0_33.md) (current remediation)
+- [0.25 adoption](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
 - [0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [0.24](DOCUMENTATION_AUDIT_0_24.md)
 - [0.23](DOCUMENTATION_AUDIT_0_23.md)
@@ -73,6 +78,9 @@
 - [ADR-014 SOLID Core Refactor](adr/ADR-014-SOLID-CORE-REFACTOR.md)
 
 ## Portable compilers and plans (history)
+
+Current public behavior is documented in the
+[DTCS integration guide](../04_TRANSFORMATIONS/DTCS.md).
 
 - [Implementation plan](PORTABLE_TRANSFORM_PLAN.md)
 - [Scheduler and Prefect plan](SCHEDULER_AND_PREFECT_PLAN.md)

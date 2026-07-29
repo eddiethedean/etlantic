@@ -96,11 +96,13 @@ class RunLogger:
         run_id: str,
         pipeline_id: str,
         logger: logging.Logger | None = None,
+        on_record: Any | None = None,
     ) -> None:
         self.run_id = run_id
         self.pipeline_id = pipeline_id
         self._logger = logger or logging.getLogger("etlantic.runtime")
         self.records: list[LogRecord] = []
+        self._on_record = on_record
 
     def log(
         self,
@@ -122,6 +124,8 @@ class RunLogger:
             extras=redact_value(extras),
         )
         self.records.append(record)
+        if self._on_record is not None:
+            self._on_record(record)
         getattr(self._logger, level.lower(), self._logger.info)(
             "%s run=%s step=%s %s",
             safe_message,

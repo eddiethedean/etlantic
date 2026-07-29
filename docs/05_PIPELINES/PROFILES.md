@@ -62,7 +62,7 @@ table):
 
 Profiles never redefine pipeline contracts. Logging configuration, durable
 checkpoint stores, and deployment-topology metadata are **not** first-class
-Profile fields in 0.33 — keep those outside ETLantic or in adopter-owned
+Profile fields in 0.34 — keep those outside ETLantic or in adopter-owned
 orchestration.
 
 Profiles also must not:
@@ -83,7 +83,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.33.0",
+        "etlantic-polars": "==0.34.0",
     },
 )
 
@@ -92,7 +92,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.33.0",
+        "etlantic-sql": "==0.34.0",
     },
 )
 ```
@@ -223,7 +223,7 @@ These settings influence planning but never alter pipeline semantics.
 ## Secrets
 
 Profiles reference external secret providers. Secrets must never be embedded in
-pipeline contracts, plans, or generated DPCS artifacts.
+pipeline contracts, plans, or generated [DPCS](DPCS.md) artifacts.
 
 **Shipped in 0.10:**
 
@@ -233,7 +233,7 @@ pipeline contracts, plans, or generated DPCS artifacts.
 
 !!! warning "Future design—not shipped"
     Cloud secret managers (AWS Secrets Manager, HashiCorp Vault, and peers)
-    are **not** available in 0.10. Do not configure them yet. See
+    are **not** available in 0.34. Do not configure them yet. See
     [Secrets Management](../06_EXECUTION/SECRETS_MANAGEMENT.md).
 
 ## Environment Overrides
@@ -324,4 +324,4 @@ without changing their semantics.
 ## Next Step
 
 Continue with [Contract Generation](CONTRACT_GENERATION.md) to learn how
-ETLantic generates portable ODCS, DTCS, and DPCS artifacts.
+ETLantic generates portable [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and DPCS artifacts.

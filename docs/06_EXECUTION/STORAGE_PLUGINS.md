@@ -27,7 +27,7 @@ Pipeline Plan
 ## Candidate backends (not available)
 
 The following are **design targets only** — none of these are first-party
-ETLantic storage plugins in 0.19.0:
+ETLantic storage plugins in 0.34.0:
 
 - Parquet as a portable storage plugin
 - MySQL / SQLite / DuckDB as storage plugins (SQL engine plugin is separate)

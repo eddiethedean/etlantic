@@ -35,10 +35,10 @@ External runtime
 PipelineRunReport, diagnostics, events, and lineage
 ```
 
-For portable steps, the planned implementation includes a portable IR
+For portable steps, the plan-resolved implementation includes a portable IR
 fingerprint and selected compiler. Compilation produces backend-native
 expressions without placing live compiled objects in the serialized plan.
-The IR is the published DTCS 3.0 `dtcs.transform-plan/2` (v1 readable); support decisions use
+The IR is the published [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 `dtcs.transform-plan/2` (v1 readable); support decisions use
 exact DTCS profiles and registered capabilities rather than backend-name
 assumptions.
 

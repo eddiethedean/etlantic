@@ -23,7 +23,7 @@ SQL pushdown should:
 - Minimize data movement.
 - Reduce in-memory processing.
 - Improve performance.
-- Preserve DTCS and DPCS semantics.
+- Preserve [DTCS](../04_TRANSFORMATIONS/DTCS.md) and [DPCS](../05_PIPELINES/DPCS.md) semantics.
 - Remain transparent to pipeline authors.
 - Fall back safely when pushdown is unavailable.
 

@@ -79,9 +79,9 @@ An HTML documentation bundle may include:
 - Steps
 - Sinks
 - Subpipelines
-- ODCS references
-- DTCS references
-- DPCS metadata
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) references
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) references
+- [DPCS](../05_PIPELINES/DPCS.md) metadata
 - Lineage
 - Mermaid or Graphviz diagrams
 - Validation diagnostics
@@ -209,7 +209,7 @@ etlantic viz html path/to/pipeline.py:CustomerPipeline -o customer_pipeline.html
 
 !!! note "Future design"
     Multi-page documentation sites, `project.write_documentation(...)`, and
-    rich interactive explorers are not shipped in 0.10. Use the single-page
+    rich interactive explorers are not shipped in 0.34. Use the single-page
     HTML export above.
 
 ## Profile-Aware Documentation

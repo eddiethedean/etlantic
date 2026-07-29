@@ -38,7 +38,7 @@ after discussion.
 
 ## Conflicts of authority
 
-- ODCS, DTCS, and DPCS specifications own contract meaning.
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) specifications own contract meaning.
 - ETLantic owns logical modeling, validation, and planning behavior.
 - Plugins own backend realization.
 - Code and tests supersede stale narrative documentation for a shipped release.

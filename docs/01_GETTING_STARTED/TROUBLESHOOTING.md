@@ -12,7 +12,7 @@ py -3.11 --version
 
 ## Installed version is older than the docs
 
-These docs describe ETLantic **0.33.0**. Confirm what you installed:
+These docs describe ETLantic **0.34.0**. Confirm what you installed:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"
@@ -21,12 +21,12 @@ python -m etlantic --version
 python -m etlantic --version
 ```
 
-Upgrade from PyPI (pin the published **0.33.0** release for reproducible installs):
+Upgrade from PyPI (pin the published **0.34.0** release for reproducible installs):
 
 ```bash
-python -m pip install --upgrade 'etlantic==0.33.0'
-# or accept compatible 0.33.x patches within the minor:
-python -m pip install --upgrade 'etlantic>=0.33.0,<0.34'
+python -m pip install --upgrade 'etlantic==0.34.0'
+# or accept compatible 0.34.x patches within the minor:
+python -m pip install --upgrade 'etlantic>=0.34.0,<0.35'
 ```
 
 From a checkout, prefer `uv sync` / `git pull`.
@@ -55,20 +55,20 @@ pipeline classes at module scope, but put seed/run side effects under
 
 ## Plugin install fails (`etlantic-polars`, `etlantic-pyspark`, …)
 
-Those packages ship with ETLantic 0.33.0 as separate distributions. Keep every
+Those packages ship with ETLantic 0.34.0 as separate distributions. Keep every
 plugin on the same minor as core.
 
 From PyPI:
 
 ```bash
 python -m pip install --upgrade \
-  'etlantic-polars==0.33.0' 'etlantic-pandas==0.33.0'
+  'etlantic-polars==0.34.0' 'etlantic-pandas==0.34.0'
 python -m pip install --upgrade \
-  'etlantic-sql==0.33.0' 'etlantic-pyspark==0.33.0'
+  'etlantic-sql==0.34.0' 'etlantic-pyspark==0.34.0'
 python -m pip install --upgrade \
-  'etlantic-airflow==0.33.0' 'etlantic-prefect==0.33.0'
+  'etlantic-airflow==0.34.0' 'etlantic-prefect==0.34.0'
 python -m pip install --upgrade \
-  'medallantic==0.33.0'
+  'medallantic==0.34.0'
 ```
 
 From a checkout:
@@ -95,14 +95,14 @@ Compare distributions in the same interpreter:
 python -c "import importlib.metadata as m; print(m.version('etlantic')); print(m.version('etlantic-polars'))"
 ```
 
-Core **0.33.x** requires official plugins from the **same** minor
-(`0.33.x`). Do not mix plugins from a different minor with core (for example
+Core **0.34.x** requires official plugins from the **same** minor
+(`0.34.x`). Do not mix plugins from a different minor with core (for example
 `0.25` plugins with `0.26` core). Remove stale plugin
 versions and install matching pins, for example:
 
 ```bash
 python -m pip install --upgrade --force-reinstall \
-  'etlantic==0.33.0' 'etlantic-polars==0.33.0'
+  'etlantic==0.34.0' 'etlantic-polars==0.34.0'
 ```
 
 Use the plugin distribution relevant to your engine in place of
@@ -133,7 +133,7 @@ python -m pip show etlantic etlantic-polars
 ```
 
 If no transform compiler appears for Polars, install a matching
-`etlantic-polars==0.33.0` into the same environment as core. Entry-point
+`etlantic-polars==0.34.0` into the same environment as core. Entry-point
 discovery uses installed distribution metadata, so reinstall the plugin after
 editable-install or interpreter changes.
 ## `PMXFORM301` unsupported action or function
@@ -155,7 +155,7 @@ native `@implementation(...)`, or use
 | `PMCFG110` / `PMCFG111` | Legacy `bindings`-only profile | Prefer `assets`; `etlantic profile migrate` or `--accept-legacy-bindings` once |
 | `PMPLUG401` | Production `plugin_allowlist` is empty | Set a non-empty allowlist (see `prod.example.json`); do not use bare `--profile production` for CI |
 | `PMPLUG402` | Plugin name/version not permitted by allowlist | Add the package with a matching pin, or install the allowlisted version |
-| `PMPLUG403` | Allowlist pin is not a valid version specifier | Fix the pin syntax (`==0.33.0`, `>=0.33.0,<0.34`, …) |
+| `PMPLUG403` | Allowlist pin is not a valid version specifier | Fix the pin syntax (`==0.34.0`, `>=0.34.0,<0.35`, …) |
 | `PMXFORM301` | Portable action unsupported on selected compiler | Narrow portable IR, switch engine, or add `@implementation` |
 | `PMEXEC410` | Report persistence failed after publication | Inspect terminal status; recover orphaned writes; do not assume success |
 | `PMEXEC416` | Missing callable reader on storage binding | Register a reader or use a supported binding |
@@ -171,7 +171,7 @@ Full catalog: [Diagnostics](../10_REFERENCE/DIAGNOSTICS.md).
 The built-in `production` profile intentionally has an empty plugin allowlist
 and fails closed. Create an explicit production Profile JSON with a non-empty
 `plugin_allowlist` containing exact trusted plugin versions such as
-`"etlantic-polars": "==0.33.0"`. The allowlist permits discovery; it does not
+`"etlantic-polars": "==0.34.0"`. The allowlist permits discovery; it does not
 install plugins or resolve assets. See
 [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).
 
@@ -231,22 +231,22 @@ Do not silently switch profile names within one workflow.
 
 | Need | Install | Docs path |
 |---|---|---|
-| Polars on an `init` project | `pip install 'etlantic[polars]==0.33.0'` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Pandas on an `init` project | `pip install 'etlantic[pandas]==0.33.0'` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
-| SQL hello (SQLite) | `pip install 'etlantic[sql]==0.33.0'` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) |
+| Polars on an `init` project | `pip install 'etlantic[polars]==0.34.0'` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
+| Pandas on an `init` project | `pip install 'etlantic[pandas]==0.34.0'` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
+| SQL hello (SQLite) | `pip install 'etlantic[sql]==0.34.0'` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) |
 | Production trust / allowlist | core only | [Capabilities CI starter](CAPABILITIES.md#ci-starter) |
 
 Clone companions (optional, not in the wheel):
 
 | Need | Install | Example |
 |---|---|---|
-| Polars portable kernel | `pip install 'etlantic-polars==0.33.0'` | `examples/portable_polars_kernel.py` |
-| Polars / Pandas native | `pip install 'etlantic-polars==0.33.0' 'etlantic-pandas==0.33.0'` | `examples/dataframe_parity.py` |
+| Polars portable kernel | `pip install 'etlantic-polars==0.34.0'` | `examples/portable_polars_kernel.py` |
+| Polars / Pandas native | `pip install 'etlantic-polars==0.34.0' 'etlantic-pandas==0.34.0'` | `examples/dataframe_parity.py` |
 | Polars ↔ Pandas Gate A | same as above | `examples/interchange_polars_pandas.py` |
-| SQL fusion demo | `pip install 'etlantic-sql==0.33.0'` | `examples/sql_to_sql.py` |
-| PySpark | `pip install 'etlantic-pyspark==0.33.0'` (+ Java) | `examples/pyspark_local.py` |
-| Airflow compile | `pip install 'etlantic-airflow==0.33.0'` | `examples/airflow_compile.py` |
-| Medallantic | `pip install 'medallantic==0.33.0'` | `tests/medallantic/` |
+| SQL fusion demo | `pip install 'etlantic-sql==0.34.0'` | `examples/sql_to_sql.py` |
+| PySpark | `pip install 'etlantic-pyspark==0.34.0'` (+ Java) | `examples/pyspark_local.py` |
+| Airflow compile | `pip install 'etlantic-airflow==0.34.0'` | `examples/airflow_compile.py` |
+| Medallantic | `pip install 'medallantic==0.34.0'` | `tests/medallantic/` |
 
 Airflow compilation is available via `etlantic-airflow`. The shipped
 `etlantic-prefect` local MVP is a direct-execution scheduler
@@ -260,7 +260,7 @@ Pandas boundaries and remains available in 0.33.
 
 | Symptom | Fix |
 |---|---|
-| Plugin not discovered | Install `etlantic-polars==0.33.0` **and** `etlantic-pandas==0.33.0`; match core minor |
+| Plugin not discovered | Install `etlantic-polars==0.34.0` **and** `etlantic-pandas==0.34.0`; match core minor |
 | Plan fails closed on descriptor / mechanism | Both plugins must advertise compatible `interchange_mechanisms`; see Plugin SDK |
 | Expecting PySpark or SQL Gate A | Out of scope — stay on Polars↔Pandas or keep a single engine |
 | Treating Arrow helpers as Gate A | Best-effort Arrow conversion is **not** the Gate A contract; use planned descriptors / evidence |
@@ -273,7 +273,7 @@ See [Interchange Gate A FAQ](INTERCHANGE_GATE_A_FAQ.md) and
 ## PySpark fails before ETLantic executes a step
 
 PySpark requires a compatible Java runtime as well as
-`etlantic-pyspark==0.33.0`. Check both from the same environment:
+`etlantic-pyspark==0.34.0`. Check both from the same environment:
 
 ```bash
 java -version
@@ -286,7 +286,7 @@ must be fixed before ETLantic can create a local Spark session.
 
 ## SQL reports a missing or invalid connection URL
 
-Install `etlantic-sql==0.33.0`, select `Profile(sql_engine="sql")`, and provide
+Install `etlantic-sql==0.34.0`, select `Profile(sql_engine="sql")`, and provide
 the URL expected by your binding or example. For the reference PostgreSQL
 path:
 
@@ -333,7 +333,7 @@ Only run the removal command from the repository root after confirming
 
 Python puts the current directory early on `sys.path`. Running from an
 ETLantic source checkout can therefore import checkout code instead of the
-0.33.0 wheel in your environment. Check the imported path:
+0.34.0 wheel in your environment. Check the imported path:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__); print(etlantic.__file__)"

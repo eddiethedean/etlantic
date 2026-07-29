@@ -67,7 +67,7 @@ Requires Python 3.11 or newer. Use an empty directory for `init` (or pass
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.33.0'
+python -m pip install 'etlantic==0.34.0'
 python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
@@ -91,7 +91,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > [`memory_customers.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/memory_customers.py))
 > require a git checkout — they are **not** in the PyPI wheel.
 
-> **Status:** ETLantic **0.33.0** is a **Beta** (PyPI) release suitable for
+> **Status:** ETLantic **0.34.0** is a **Beta** (PyPI) release suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -117,7 +117,7 @@ See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/O
 for observability (`otel` / `observability` extras) and Arrow helpers.
 
 Matching extras such as `etlantic[polars]` are equivalent. Pin matching minors
-while ETLantic is pre-1.0.
+while ETLantic follows its 0.x roadmap.
 
 ## Architecture
 
@@ -142,14 +142,16 @@ Production profiles require explicit plugin allowlists. Backend optimizations
 may change the physical graph but must preserve contracts, validation
 boundaries, security domains, and logical attribution.
 
-Contract standards (ODCS / DTCS / DPCS) and the validation envelope are covered
+Contract standards ([ODCS](docs/03_DATA_CONTRACTS/ODCS.md) /
+[DTCS](docs/04_TRANSFORMATIONS/DTCS.md) /
+[DPCS](docs/05_PIPELINES/DPCS.md)) and the validation envelope are covered
 in the [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/)
 and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/)
 guides.
 
 ## Capability boundary
 
-| Capability | 0.33 |
+| Capability | 0.34 |
 |---|---|
 | Cohesive CLI (`init`, `doctor`, durable reports) | Available |
 | Typed contracts, graph validation, deterministic planning | Available |
@@ -163,13 +165,16 @@ guides.
 | Trust, isolation, safe I/O, SBOM/attestations (single-tenant reference) | Available (bounded) |
 | Structured Streaming | Experimental |
 | `etlantic-datafusion` | Experimental |
-| Full multi-tenant control plane / SLA / unrestricted enterprise | Not included |
+| Multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation; not included in 0.34 |
+| Formal SLA / unrestricted enterprise support | Not included |
 
 See the full [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
 guide for precise guarantees and limitations.
+The hardened program gates are in the
+[Multi-Tenant Control Plane Plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 Release notes:
-[What's New in 0.33](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_33/).
+[What's New in 0.34](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_34/).
 
 ## Learn more
 

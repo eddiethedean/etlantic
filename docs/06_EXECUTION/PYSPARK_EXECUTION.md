@@ -26,7 +26,7 @@ PySpark execution is responsible for:
 - Enforcing validation boundaries
 - Supporting batch and Structured Streaming
 - Reporting diagnostics and lineage
-- Preserving DTCS and DPCS semantics
+- Preserving [DTCS](../04_TRANSFORMATIONS/DTCS.md) and [DPCS](../05_PIPELINES/DPCS.md) semantics
 
 It is **not** responsible for:
 
@@ -932,7 +932,7 @@ The PySpark plugin may enrich lineage with:
 - Delta table versions
 - Materialized checkpoint locations
 
-Runtime lineage must not replace ODCS, DTCS, and DPCS relationships.
+Runtime lineage must not replace [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS, and DPCS relationships.
 
 ## Explain Plans
 

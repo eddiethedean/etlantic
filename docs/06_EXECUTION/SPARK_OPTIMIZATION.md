@@ -2,7 +2,7 @@
 
 From 0.13, portable expressions compile to native Spark Column/DataFrame plans
 that remain visible to Catalyst. Optimizers may rewrite physical expressions
-only while preserving DTCS meaning, validation/security boundaries, and
+only while preserving [DTCS](../04_TRANSFORMATIONS/DTCS.md) meaning, validation/security boundaries, and
 logical expression attribution; undeclared UDF fallback is prohibited.
 
 **Status: shipped in 0.7.0** for the local reference path. Deep cluster/AQE
@@ -20,7 +20,7 @@ or pipeline topology.
 
 Spark optimization should:
 
-- Preserve DTCS and DPCS semantics.
+- Preserve DTCS and [DPCS](../05_PIPELINES/DPCS.md) semantics.
 - Minimize unnecessary materialization.
 - Reduce shuffles and data movement.
 - Preserve lazy execution.

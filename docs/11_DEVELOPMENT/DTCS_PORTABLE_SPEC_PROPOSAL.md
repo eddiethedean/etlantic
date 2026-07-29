@@ -1,6 +1,6 @@
 # DTCS 2.0 Portable Relational Publication Record
 
-- Status: Published in DTCS specification 2.0.0 and `dtcs` toolkit 0.12.0
+- Status: Published in [DTCS](../04_TRANSFORMATIONS/DTCS.md) specification 2.0.0 and `dtcs` toolkit 0.12.0
 - Published profile: `dtcs:profile/portable-relational/1`
 - Published plan protocol: `dtcs.transform-plan/1`
 - Related ETLantic milestones: 0.11-0.15

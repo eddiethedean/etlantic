@@ -29,7 +29,7 @@ def normalize(customers, minimum_age):
 ## Portable definitions (0.11 authoring)
 
 ETLantic exposes one closed, PySpark-inspired relational definition that
-normalizes to the published DTCS 3.0 `dtcs.transform-plan/2` protocol
+normalizes to the published [DTCS](DTCS.md) 3.0 `dtcs.transform-plan/2` protocol
 (v1 readable). Engine plugins that **compile** those plans shipped from 0.12
 (0.12 = Polars kernel; **0.13 = relational + PySpark**; **0.14 = Pandas**):
 
@@ -69,15 +69,15 @@ A single transformation may target several runtimes.
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 
 @NormalizeCustomers.implementation("pandas")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 
 @NormalizeCustomers.implementation("sql")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
@@ -112,13 +112,13 @@ Both synchronous and asynchronous implementations are supported.
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
 ```python
 @NormalizeCustomers.implementation("remote")
-async def normalize(...):
+async def normalize(customers, minimum_age=18):
     ...
 ```
 

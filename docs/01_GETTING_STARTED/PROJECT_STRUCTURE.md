@@ -76,7 +76,7 @@ class Customer(Data):
     ...
 ```
 
-These classes define your business data and generate ODCS contracts.
+These classes define your business data and generate [ODCS](../03_DATA_CONTRACTS/ODCS.md) contracts.
 
 ### transformations/
 

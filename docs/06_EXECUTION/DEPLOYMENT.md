@@ -1,7 +1,8 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.33.0.** This guide describes the bounded,
-> single-tenant reference deployment. It is not a managed control plane.
+> **Status: Available in ETLantic 0.34.0.** This guide describes the bounded,
+> single-tenant reference deployment. It is not the
+> [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
@@ -9,7 +10,7 @@
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime |
-| Multi-worker control plane | Not included |
+| Multi-worker / multi-tenant control plane | Not included in 0.33; planned first-class |
 | SLA | None (community support) |
 
 ## Process model
@@ -27,7 +28,7 @@ runtime. ETLantic 0.33 does not coordinate a multi-worker runtime.
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.33.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.34.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -51,7 +52,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.33.0`.
+1. Install `etlantic-prefect==0.34.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.
@@ -105,6 +106,9 @@ The adopter owns:
 - observability retention and operational runbooks.
 
 ETLantic 0.33 does not claim a multi-worker or multi-tenant control plane.
+The 0.40–0.44 program makes that a first-class planned feature, but none
+of its future guarantees may be assumed for the reference topology on this
+page.
 
 ## Operational next steps
 
@@ -112,3 +116,4 @@ ETLantic 0.33 does not claim a multi-worker or multi-tenant control plane.
 - [Production Readiness](PRODUCTION_READINESS.md)
 - [Production Profiles](PRODUCTION_PROFILES.md)
 - [Performance envelope](../01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md)
+- [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)

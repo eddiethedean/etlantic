@@ -15,7 +15,7 @@ Public `Source`, `Sink`, `binding=`, `Profile(bindings=...)`, and
 - `Profile(assets=...)`
 - `RunRequest(asset_overrides=...)`
 
-Plan/DPCS/plugin wire names (`binding`, source/sink kinds) are unchanged.
+Plan/[DPCS](../05_PIPELINES/DPCS.md)/plugin wire names (`binding`, source/sink kinds) are unchanged.
 See [Migration 0.15 → 0.16](../11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md).
 
 ## Prefect scheduler (Gate B)

@@ -136,7 +136,7 @@ Verify:
 
 ## Contract Tests
 
-For ODCS, DTCS, and DPCS:
+For [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md):
 
 - Code-first generation
 - Contract-first loading

@@ -22,7 +22,7 @@
 - [x] Plugin SDK `/1` freeze decision — **frozen in 0.28.0**
   ([PROTOCOL_EVOLUTION.md](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
 - [x] Third-wave demoted root removals executed with migration notes
-  ([REMOVAL_CANDIDATES_1_0.md](REMOVAL_CANDIDATES_1_0.md))
+  ([REMOVAL_CANDIDATES_0_38.md](REMOVAL_CANDIDATES_0_38.md))
 - [x] `medallantic` M0 closeout: `etlantic-sparkforge` redirect wheel ships;
   facade package category documented
 - [x] Wire schema ranges document the quadruple-minor window
@@ -32,7 +32,7 @@
 ## Residual / follow-ons (0.30+)
 
 - Portable quality / rule DSL (**M2 / 0.30**)
-- Remaining demoted root aliases toward 1.0
+- Remaining demoted root aliases toward 0.38
 - `REM-DATACONTRACTMODEL`, experimental surface graduation
 
 ## See also

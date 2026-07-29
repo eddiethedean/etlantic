@@ -6,7 +6,7 @@
 > interchange guarantees remain **Future design**.
 
 
-From 0.11, a DTCS artifact may carry a portable Transformation Plan profile.
+From 0.11, a [DTCS](../04_TRANSFORMATIONS/DTCS.md) artifact may carry a portable Transformation Plan profile.
 Loading reconstructs bounded data-only IR and never imports the original Python
 definition or executes a compiler. Unknown protocol majors and expression
 nodes fail closed.
@@ -15,8 +15,8 @@ Contract loading allows ETLantic to construct in-memory models from
 portable contract artifacts.
 
 While ETLantic recommends a **code-first** workflow using strongly typed
-Python classes, it also supports **contract-first** workflows by loading ODCS,
-DTCS, and DPCS artifacts into the same typed logical pipeline model.
+Python classes, it also supports **contract-first** workflows by loading [ODCS](../03_DATA_CONTRACTS/ODCS.md),
+DTCS, and [DPCS](DPCS.md) artifacts into the same typed logical pipeline model.
 
 This enables interoperability with external tools, registries, and existing
 contract repositories.
@@ -69,8 +69,8 @@ domain object.
 Conceptually:
 
 ```python
-from etlantic import Data, load_data_contract
-from etlantic import Pipeline, Transformation
+from etlantic import Data, Pipeline, Transformation
+from etlantic.contracts import load_data_contract
 
 customer = load_data_contract("customer.odcs.yaml")
 

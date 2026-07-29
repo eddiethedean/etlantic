@@ -20,6 +20,8 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)
+- [Exit gate 0.34](EXIT_GATE_0_34.md) (Done — operations / evidence / M6)
 - [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
 - [Exit gate 0.33](EXIT_GATE_0_33.md) (Done — SQLAlchemy / relational differential / M5)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
@@ -34,7 +36,7 @@ released.
 - [Exit gate 0.28](EXIT_GATE_0_28.md) (Done)
 - [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
 - [Exit gate 0.27](EXIT_GATE_0_27.md)
-- [1.0 removal candidates](REMOVAL_CANDIDATES_1_0.md)
+- [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md)
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
 - [Exit gate 0.25](EXIT_GATE_0_25.md)
 - [Migration 0.23 → 0.24](MIGRATION_0_23_TO_0_24.md)
@@ -73,12 +75,17 @@ These pages sequence future work. They are not product user guides:
 
 - [0.18 Gate A — Versioned Tabular Interchange (shipped record)](INTEROPERABILITY_FOUNDATION_PLAN.md)
 - [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md)
+- [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md)
 - [Programmatic Authoring and Lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md)
 - [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md)
 - [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md)
 - [SQLModel Integration Plan](SQLMODEL_INTEGRATION_PLAN.md)
 - [SparkForge Feature Adoption](SPARKFORGE_ADOPTION.md)
+
+Current public transformation-contract behavior is documented in the
+[DTCS integration guide](../04_TRANSFORMATIONS/DTCS.md).
+
 - [Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md)
 - [Local Scheduler and Prefect Integration Plan](SCHEDULER_AND_PREFECT_PLAN.md)
 - [DTCS and Portable Transformation Evolution](DTCS_PORTABLE_EVOLUTION.md)

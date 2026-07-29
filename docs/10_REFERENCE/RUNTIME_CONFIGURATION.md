@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: Available in ETLantic 0.33.0.** Configure profiles, bindings, and
+> **Status: Available in ETLantic 0.34.0.** Configure profiles, bindings, and
 > engines in Python or JSON. Optional `etlantic.toml` may set `default_profile`
 > and named profile references. Only the environment variables listed here are
 > read by shipped code.
@@ -19,8 +19,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.33.0",
-        "etlantic-sql": "==0.33.0",
+        "etlantic-polars": "==0.34.0",
+        "etlantic-sql": "==0.34.0",
     },
     assets={"customer_source": "customers"},
 )
@@ -40,7 +40,7 @@ resolve from `profiles/{name}.json`, built-ins, or explicit JSON paths.
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `ETLANTIC_SQL_URL` | `etlantic-sql` | SQLAlchemy URL (PostgreSQL reference; SQLite demo-only) |
+| `ETLANTIC_SQL_URL` | `etlantic-sql` | SQLAlchemy URL (SQLite/PostgreSQL Tier A; merge is PostgreSQL-only) |
 | `ETLANTIC_SPARK_BACKEND` | `etlantic-pyspark` tests | Set to `sparkless` for JVM-free Spark tests |
 
 Secrets: follow the [Secrets decision tree](SECRETS_DECISION.md). The default
@@ -52,7 +52,7 @@ Example:
 
 ```bash
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
-# demo only:
+# or local SQLite:
 export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
 ```
 
@@ -76,7 +76,7 @@ Do not configure these as if they exist in 0.33:
 - AWS Secrets Manager / Vault providers (OS keyring is optional via
   `etlantic-keyring`)
 
-Proposed 1.0 names beyond the optional project toml live under Future Design:
+Proposed 0.38 names beyond the optional project toml live under Future Design:
 [Configuration](CONFIGURATION.md) and
 [Environment Variables](ENVIRONMENT_VARIABLES.md). Normative secret mapping:
 [Secrets decision tree](SECRETS_DECISION.md).

@@ -70,9 +70,9 @@ Contracts establish clear expectations between producers and consumers.
 
 ETLantic embraces three complementary standards:
 
--   **ODCS** for data contracts
--   **DTCS** for transformation contracts
--   **DPCS** for pipeline contracts
+-   **[ODCS](../03_DATA_CONTRACTS/ODCS.md)** for data contracts
+-   **[DTCS](../04_TRANSFORMATIONS/DTCS.md)** for transformation contracts
+-   **[DPCS](../05_PIPELINES/DPCS.md)** for pipeline contracts
 
 Developers should author Python classes---not hand-maintain contract
 files. ETLantic generates portable contracts whenever possible.

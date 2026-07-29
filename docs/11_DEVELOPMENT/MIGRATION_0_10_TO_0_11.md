@@ -7,7 +7,7 @@ plugin trust and schema-type aliases. Portable **compilers** remain 0.12–0.15.
 ## What changed
 
 - Package and plugin versions advance to `0.11.0` (`etlantic>=0.11.0,<1.0`)
-- DTCS toolkit floor raised to `dtcs>=0.13`
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) toolkit floor raised to `dtcs>=0.13`
 - `@Transformation.portable` / `etlantic.transform` authoring APIs
 - `Transformation.to_transform_plan()` / `portable_fingerprint()`
 - Production `plugin_allowlist` enforced on validate / run / compile

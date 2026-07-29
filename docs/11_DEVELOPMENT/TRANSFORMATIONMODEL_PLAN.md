@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed post-1.0 incubation plan (deferred from 0.20+). The package and APIs
+Proposed post-foundation 0.39 incubation plan (deferred from 0.20+). The package and APIs
 described here are not shipped behavior.
 
 TransformationModel begins as an independently buildable workspace package at
@@ -11,7 +11,7 @@ dependency only after the graduation gates in this plan pass.
 
 ## Product outcome
 
-TransformationModel should be the Python-native modeling layer for DTCS:
+TransformationModel should be the Python-native modeling layer for [DTCS](../04_TRANSFORMATIONS/DTCS.md):
 
 ```text
 Python annotations and portable expressions
@@ -379,4 +379,4 @@ backend or pipeline concern enters its core; ETLantic uses only public APIs;
 and all conformance, security, packaging, performance, and migration gates pass.
 
 Until then, it remains provisional and cannot be the sole implementation behind
-an ETLantic 1.0 compatibility promise.
+an ETLantic 0.38 stable-foundation compatibility promise.

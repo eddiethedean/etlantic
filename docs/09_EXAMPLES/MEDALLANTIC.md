@@ -55,7 +55,8 @@ print(adapted.pipeline_cls.__name__, plan.plan_id, request.intent)
 ## Boundary
 
 - Layer names stay in adapter metadata (`layer_by_node`), not core enums
-- Transforms may be passthrough for planning parity (`PMSF411` warnings)
+- Importable `transform_ref` values execute; symbolic legacy names remain
+  planning-only passthroughs (`MDL111` / `PMSF411`)
 - MERGE write intents are for plan/orchestration via `enrich_plan`; local
   runtime still gates writes with `RunRequest.no_write`
 

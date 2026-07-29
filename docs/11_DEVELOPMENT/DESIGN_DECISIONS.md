@@ -35,9 +35,9 @@ generation without repeating definitions.
 
 The ecosystem recognizes data, transformation, and pipeline contracts:
 
-- ODCS describes data.
-- DTCS describes transformations.
-- DPCS describes pipelines.
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) describes data.
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) describes transformations.
+- [DPCS](../05_PIPELINES/DPCS.md) describes pipelines.
 
 Execution settings, resources, callbacks, artifacts, and profiles are
 implementation concepts, not additional top-level contracts.
@@ -89,7 +89,7 @@ SQL, PySpark, or other implementations.
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
@@ -135,7 +135,7 @@ remain valid wherever ETLantic accepts `Data`.
 
 Prefer a direct alias over subclassing unless a concrete integration hook
 requires a subclass. Deprecate the ETLantic-facing `DataContractModel` name
-before 1.0.
+before the 0.38 stable foundation.
 
 ## DD-011: SQL and PySpark Are Backends, Not New Models
 
@@ -209,7 +209,7 @@ described as another execution plugin category in user-facing APIs.
 **Status:** Accepted
 
 Until implementation catches up, examples define intended UX, reference
-chapters define proposed 1.0 surfaces, and DTCS/DPCS specifications define
+chapters define proposed 0.x surfaces, and DTCS/DPCS specifications define
 normative semantics. Chapter detail alone does not imply implementation status.
 
 ## DD-020: Lifecycle Extension Mechanisms Remain Distinct

@@ -10,9 +10,9 @@ owns validation, retries, materialization, and `PipelineRunReport`.
 ## Install
 
 ```bash
-pip install "etlantic[prefect]==0.33.0"
+pip install "etlantic[prefect]==0.34.0"
 # or
-pip install 'etlantic==0.33.0' 'etlantic-prefect==0.33.0'
+pip install 'etlantic==0.34.0' 'etlantic-prefect==0.34.0'
 ```
 
 ## Usage

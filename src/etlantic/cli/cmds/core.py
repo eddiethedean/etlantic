@@ -469,6 +469,39 @@ def register_core_commands(
         else:
             typer.echo(report.to_text())
 
+    @report_app.command("query")
+    def report_query_cmd(
+        ctx: typer.Context,
+        pipeline_id: str | None = typer.Option(None, "--pipeline-id"),
+        status: str | None = typer.Option(None, "--status"),
+        limit: int | None = typer.Option(20, "--limit"),
+        fmt: str = typer.Option("json", "--format"),
+    ) -> None:
+        """Query run reports or durable history with filters."""
+        cli = get_cli_context(ctx)
+        from etlantic.reports.query import query_history, query_reports
+
+        history = cli.run_history()
+        if history is not None:
+            payload = {"runs": query_history(history, pipeline_id=pipeline_id, status=status, limit=limit)}
+        else:
+            payload = {
+                "reports": [
+                    {
+                        "run_id": r.run_id,
+                        "pipeline_id": r.pipeline_id,
+                        "status": r.status.value,
+                    }
+                    for r in query_reports(
+                        cli.report_store(),
+                        pipeline_id=pipeline_id,
+                        status=status,
+                        limit=limit,
+                    )
+                ]
+            }
+        emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
+
     @report_app.command("export")
     def report_export_cmd(
         ctx: typer.Context,

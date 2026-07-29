@@ -13,7 +13,7 @@ Parameters answer a single question:
 > How should this transformation behave?
 
 Because parameters are strongly typed, ETLantic can validate them,
-document them, and include them in DTCS artifacts.
+document them, and include them in [DTCS](DTCS.md) artifacts.
 
 ## Basic Example
 
@@ -160,20 +160,23 @@ normalized = NormalizeCustomers.step(
 The override becomes part of the execution plan while the transformation
 contract remains unchanged.
 
-## Profiles
+## Per-run overrides
 
-Execution profiles may supply parameter defaults.
+Profiles do not contain transformation parameter values in 0.33. Declare
+stable defaults on the transformation or supply explicit per-run overrides:
 
 ```python
-development:
-    batch_size = 100
+from etlantic.runtime import RunRequest
 
-production:
-    batch_size = 10000
+request = RunRequest(
+    parameter_overrides={
+        "normalize_customers": {"batch_size": 100},
+    }
+)
 ```
 
-Profiles configure runtime behavior without modifying transformation
-definitions.
+This keeps the profile focused on execution behavior and makes an override
+explicit in the run request.
 
 ## Relationship to DTCS
 

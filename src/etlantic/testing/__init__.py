@@ -11,6 +11,9 @@ from etlantic.testing.dataframe import (
     assert_roundtrip_records,
     run_conformance_suite,
 )
+from etlantic.testing.event_consumer_conformance import (
+    run_event_consumer_conformance_suite,
+)
 from etlantic.testing.facade import (
     assert_facade_public_imports,
     run_facade_conformance_suite,
@@ -28,6 +31,9 @@ from etlantic.testing.faults import (
 )
 from etlantic.testing.interchange import run_tabular_interchange_conformance_smoke
 from etlantic.testing.lifecycle_conformance import run_lifecycle_conformance_suite
+from etlantic.testing.observability_conformance import (
+    run_observability_conformance_suite,
+)
 from etlantic.testing.orchestrator import (
     assert_orchestrator_plugin_info,
     run_orchestrator_conformance_suite,
@@ -36,7 +42,9 @@ from etlantic.testing.portable_transform_conformance import (
     normalize_rows,
     run_portable_transform_conformance_suite,
 )
+from etlantic.testing.production_conformance import run_production_conformance_suite
 from etlantic.testing.quality_conformance import run_quality_conformance_suite
+from etlantic.testing.run_history_conformance import run_run_history_conformance_suite
 from etlantic.testing.scheduler import (
     assert_scheduler_plugin_info,
     run_scheduler_conformance_suite,
@@ -101,11 +109,15 @@ __all__ = [
     "register_faults",
     "reset_fault_counts",
     "run_conformance_suite",
+    "run_event_consumer_conformance_suite",
     "run_facade_conformance_suite",
     "run_lifecycle_conformance_suite",
+    "run_observability_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_portable_transform_conformance_suite",
+    "run_production_conformance_suite",
     "run_quality_conformance_suite",
+    "run_run_history_conformance_suite",
     "run_scheduler_conformance_suite",
     "run_secret_conformance_suite",
     "run_spark_conformance_suite",

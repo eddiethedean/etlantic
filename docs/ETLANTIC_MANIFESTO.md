@@ -44,7 +44,7 @@ Pipeline Contract
 How data and transformations are composed
 ```
 
-ODCS, DTCS, and DPCS own those meanings.
+[ODCS](03_DATA_CONTRACTS/ODCS.md), [DTCS](04_TRANSFORMATIONS/DTCS.md), and [DPCS](05_PIPELINES/DPCS.md) own those meanings.
 
 Profiles, plugins, resources, callbacks, artifacts, deployment settings, and
 execution plans are important, but they are not new public contract standards.

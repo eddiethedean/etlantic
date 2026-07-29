@@ -1,6 +1,6 @@
 # Error Handling
 
-!!! success "Available in ETLantic 0.33.0"
+!!! success "Available in ETLantic 0.34.0"
     Structured diagnostics, validation failures, runtime
     `NodeExecutionError` paths, callback `FailureAction` results, and
     `Profile.retry_max_attempts` retry intent are shipped. Retry execution is
@@ -128,10 +128,10 @@ its retry-safety checks. `FailureAction.FAIL`, `.SKIP`, and `.CONTINUE` are
 also available for step-failure callbacks.
 
 !!! warning "Future design—not a shipped API"
-    `RetryAction` is not part of ETLantic 0.14. The following conceptual
+    `RetryAction` is not part of ETLantic 0.33. The following conceptual
     snippet must not be copied into current code:
 
-    ```python
+    ```text
     from etlantic import RetryAction
 
     return RetryAction.retry(max_attempts=3)

@@ -1,7 +1,7 @@
 # DTCS and Portable Transformation Evolution
 
-Status: Internal standards and release plan  
-Owner: ETLantic/DTCS publisher and maintainers  
+Status: Internal standards and release plan
+Owner: ETLantic/[DTCS](../04_TRANSFORMATIONS/DTCS.md) publisher and maintainers
 Applies to: ETLantic 0.11+
 
 The adopted change records are

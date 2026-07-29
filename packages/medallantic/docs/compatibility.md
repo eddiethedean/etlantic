@@ -2,13 +2,13 @@
 
 ## Versioning
 
-Medallantic follows Etlantic's pre-1.0 minor line. Pin matching minors:
+Medallantic follows ETLantic's 0.x minor line. Pin matching minors:
 
 ```text
-medallantic 0.33.x  <->  etlantic 0.33.x
+medallantic 0.34.x  <->  etlantic 0.34.x
 ```
 
-The package metadata currently requires `etlantic>=0.33.0,<0.34`.
+The package metadata currently requires `etlantic>=0.34.0,<0.35`.
 
 ## Engine mapping
 
@@ -62,7 +62,7 @@ recognized as `storage.delta.schema_evolution`.
 | Write/retry/run-selection mapping | Available |
 | Plan enrichment | Available |
 | Legacy report normalization/redaction | Available |
-| SparkForge callable execution | Available (0.32; local/polars/pandas/pyspark) |
+| SparkForge callable execution | Available (since 0.31; local/polars/pandas/pyspark) |
 | Native PySpark Column rules | Available (0.32; capability-gated, `MDL130` off Spark) |
 | Moltres-only rules | Available (0.33; capability-gated, `MDL132`) |
 | Native Medallantic builder | Available |
@@ -74,4 +74,3 @@ recognized as `storage.delta.schema_evolution`.
 
 See the [roadmap](../ROADMAP.md) for phase exit criteria. A roadmap item is not
 a compatibility claim until its conformance and differential tests pass.
-

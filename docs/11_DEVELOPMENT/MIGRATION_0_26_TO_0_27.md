@@ -35,7 +35,7 @@
 
    Full second-wave list: reliability (12), schema_drift (8), registry (6).
    Remaining demoted aliases still warn once; see
-   [Removal candidates](REMOVAL_CANDIDATES_1_0.md).
+   [Removal candidates](REMOVAL_CANDIDATES_0_38.md).
 
 4. SparkForge adapter users: replace `etlantic-sparkforge` / `etlantic[sparkforge]`
    with `medallantic` / `etlantic[medallantic]` and update imports to
@@ -56,5 +56,5 @@
 - [What's New 0.27](../01_GETTING_STARTED/WHATS_NEW_0_27.md)
 - [Exit gate 0.27](EXIT_GATE_0_27.md)
 - [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md)
-- [Removal candidates](REMOVAL_CANDIDATES_1_0.md)
+- [Removal candidates](REMOVAL_CANDIDATES_0_38.md)
 - [Migration 0.25 → 0.26](MIGRATION_0_25_TO_0_26.md)

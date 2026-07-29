@@ -5,10 +5,10 @@
 Pin matching minor versions:
 
 ```text
-medallantic 0.33.x  ↔  etlantic 0.33.x
+medallantic 0.34.x  ↔  etlantic 0.34.x
 ```
 
-The current package requires `etlantic>=0.33.0,<0.34`. Engine plugins are
+The current package requires `etlantic>=0.34.0,<0.35`. Engine plugins are
 installed and pinned separately.
 
 ## Engine intent
@@ -39,7 +39,7 @@ Unsupported values are errors.
 
 ## Current claims
 
-| Area | Status in 0.32 |
+| Area | Status in 0.33 |
 |---|---|
 | Native class/builder authoring | Available |
 | Deterministic ETLantic lowering | Available |
@@ -48,10 +48,12 @@ Unsupported values are errors.
 | Lifecycle defaults and write intents | Available |
 | SparkForge IR migration | Available |
 | Report normalization and accept-rate enforcement | Available |
-| Native PySpark Column parity | Not yet a general claim |
-| Moltres-only rule parity | Not yet a general claim |
-| Delta maintenance operations | Plugin/capability dependent |
+| Native PySpark Column rules | Available; capability-gated (`MDL130` off Spark) |
+| Moltres-only rules | Available; capability-gated (`MDL132`) |
+| Live SparkForge `PipelineBuilder` bridge | Available |
+| Live SQL `SqlPipelineBuilder` bridge | Available |
+| SQLite/PostgreSQL differential parity | Available; Tier A |
+| Delta maintenance operations | Available through `etlantic-pyspark` when its declared capabilities are present |
 
 A roadmap item is not a compatibility claim until its conformance and
 differential gates pass.
-

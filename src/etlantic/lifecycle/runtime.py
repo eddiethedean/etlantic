@@ -65,6 +65,9 @@ class PipelineRuntime:
     spark_providers: dict[str, Any] = field(default_factory=dict)
     orchestrator_plugins: dict[str, Any] = field(default_factory=dict)
     scheduler_plugins: dict[str, Any] = field(default_factory=dict)
+    observability_providers: dict[str, Any] = field(default_factory=dict)
+    run_history_providers: dict[str, Any] = field(default_factory=dict)
+    event_consumers: dict[str, Any] = field(default_factory=dict)
     memory: MemoryStorage = field(default_factory=MemoryStorage)
     callables: CallableStorage = field(default_factory=CallableStorage)
     _entered: bool = False
@@ -78,6 +81,14 @@ class PipelineRuntime:
         default_factory=dict, repr=False
     )
     _manual_scheduler_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_observability_providers: dict[str, Any] = field(
+        default_factory=dict, repr=False
+    )
+    _manual_run_history_providers: dict[str, Any] = field(
+        default_factory=dict, repr=False
+    )
+    _manual_event_consumers: dict[str, Any] = field(default_factory=dict, repr=False)
+    _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if (
@@ -101,6 +112,19 @@ class PipelineRuntime:
             self.storage.setdefault("memory", self.memory)
             self.storage.setdefault("local", self.memory)
             self.storage.setdefault("python", self.memory)
+        if self._observability_bridge is None:
+            from etlantic.runtime.observability_bridge import ObservabilityBridge
+
+            self._observability_bridge = ObservabilityBridge(
+                events=self.events,
+                observability_providers=dict(self.observability_providers),
+                run_history_providers=dict(self.run_history_providers),
+                event_consumers=dict(self.event_consumers),
+            )
+
+    @property
+    def observability_bridge(self) -> Any:
+        return self._observability_bridge
 
     def ensure_plugins_for_profile(self, profile: Profile) -> list[Diagnostic]:
         """Discover and load plugins authorized for ``profile`` (0.20).
@@ -166,6 +190,27 @@ class PipelineRuntime:
             **dict(result.scheduler_plugins),
             **self._manual_scheduler_plugins,
         }
+        self.observability_providers = {
+            **dict(getattr(result, "observability_providers", {}) or {}),
+            **self._manual_observability_providers,
+        }
+        self.run_history_providers = {
+            **dict(getattr(result, "run_history_providers", {}) or {}),
+            **self._manual_run_history_providers,
+        }
+        self.event_consumers = {
+            **dict(getattr(result, "event_consumers", {}) or {}),
+            **self._manual_event_consumers,
+        }
+        if self._observability_bridge is not None:
+            self._observability_bridge.observability_providers = dict(
+                self.observability_providers
+            )
+            self._observability_bridge.run_history_providers = dict(
+                self.run_history_providers
+            )
+            self._observability_bridge.event_consumers = dict(self.event_consumers)
+            self._observability_bridge.configure_for_profile(profile)
         if self._manual_dataframe_plugins:
             from etlantic.dataframe.discovery import (
                 register_discovered_plugins as register_df,
@@ -296,6 +341,32 @@ class PipelineRuntime:
         self._manual_scheduler_plugins[name] = plugin
         register_discovered_plugins(self.registry, plugins={name: plugin})
 
+    def register_observability_provider(self, name: str, provider: Any) -> None:
+        """Register an observability provider under ``name``."""
+        self.observability_providers[name] = provider
+        self._manual_observability_providers[name] = provider
+        if self._observability_bridge is not None:
+            self._observability_bridge.observability_providers[name] = provider
+
+    def register_run_history_provider(self, name: str, provider: Any) -> None:
+        """Register a run-history provider under ``name``."""
+        self.run_history_providers[name] = provider
+        self._manual_run_history_providers[name] = provider
+        if self._observability_bridge is not None:
+            self._observability_bridge.run_history_providers[name] = provider
+
+    def register_event_consumer(self, name: str, consumer: Any) -> None:
+        """Register an event consumer under ``name``."""
+        self.event_consumers[name] = consumer
+        self._manual_event_consumers[name] = consumer
+        if self._observability_bridge is not None:
+            self._observability_bridge.event_consumers[name] = consumer
+
+    async def flush_observability(self) -> None:
+        """Flush observability providers and event consumers."""
+        if self._observability_bridge is not None:
+            await self._observability_bridge.aflush()
+
     def apply_plugin_allowlist(self, profile: Any) -> list[Any]:
         """Filter discovered plugins using ``profile.plugin_allowlist``.
 
@@ -320,6 +391,7 @@ class PipelineRuntime:
             finally:
                 self._entered = False
                 await self.resources.cleanup_scope("runtime")
+                await self.flush_observability()
             return
 
         async with self.lifespan(self):
@@ -329,3 +401,4 @@ class PipelineRuntime:
             finally:
                 self._entered = False
                 await self.resources.cleanup_scope("runtime")
+                await self.flush_observability()

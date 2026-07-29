@@ -4,11 +4,11 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.33)
+## What works today (0.34)
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
 PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.33.0** is a **Beta**
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.34.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
@@ -26,15 +26,18 @@ from repository `examples/` unless you have cloned the repo.
 
 ## Limits (read before production)
 
-| Topic | 0.33 |
+| Topic | 0.34 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no SLA** |
-| Not included | Multi-tenant control plane; unrestricted enterprise production |
+| Not included in 0.34 | Multi-tenant control plane; unrestricted enterprise production |
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
-topology, compliance, and advanced control planes remain adopter-owned.
+topology, compliance, and advanced control planes remain adopter-owned in
+0.34. The multi-tenant control plane is now a
+[planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
+with 0.40–0.43 incubation gates and a 0.44 graduation gate.
 
 ## Recommended bounded production deployment
 
@@ -48,7 +51,7 @@ topology, compliance, and advanced control planes remain adopter-owned.
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.33
+## Available in 0.34
 
 ### Core authoring and validation
 
@@ -61,7 +64,7 @@ topology, compliance, and advanced control planes remain adopter-owned.
 | Service facade + optional FastAPI reference | Available (`etlantic-fastapi`) |
 | `Extract` / `Load` / `asset=` authoring (`Source` / `Sink` removed) | Available |
 | Structural and semantic validation (class or definition) | Available |
-| ODCS, DTCS, and DPCS generation and loading | Available |
+| [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) generation and loading | Available |
 | Profiles and deterministic, secret-free pipeline plans | Available |
 | `@Transformation.portable` / `etlantic.transform` → `dtcs.transform-plan/2` | Available |
 | `Profile.portable_transform_policy` (`prefer` / `require` / `native`) | Available |
@@ -133,16 +136,16 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
 | Event sensors / Dagster compilers | Future |
-| Full LSP server productization | Continues in 1.5 |
-| Registry-backed schema history | Continues in 1.2 |
-| Production FastAPI control plane | Continues in 1.1 (0.33 ships only the thin reference adapter) |
-| Stable 1.0 compatibility guarantees | Not yet |
+| Full LSP server productization | Continues in 0.45 |
+| Registry-backed schema history | Continues in 0.41 |
+| Production multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation (0.34 ships only the thin reference adapter) |
+| Stable-foundation compatibility guarantees | Planned for 0.38 |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
-| Dedicated multi-worker / multi-tenant ops control plane | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
+| Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 
-**Already shipped (0.28–0.33):** Plugin SDK `/1` freeze; quality; materialization;
+**Already shipped (0.28–0.34):** Plugin SDK `/1` freeze; quality; materialization;
 PySpark/Delta parity; SQL builder parity. See
-[What's New in 0.33](WHATS_NEW_0_33.md).
+[What's New in 0.34](WHATS_NEW_0_34.md).
 
 ## CI starter
 
@@ -154,7 +157,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.33.0` first).
+(the sample uses Polars — install `etlantic-polars==0.34.0` first).
 
 ```json
 {
@@ -167,7 +170,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.33.0"
+    "etlantic-polars": "==0.34.0"
   },
   "assets": {},
   "secrets": {},
@@ -183,16 +186,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.33.0'
-pip install 'etlantic-polars==0.33.0'          # optional
-pip install 'etlantic-pandas==0.33.0'          # optional
-pip install 'etlantic-sql==0.33.0'             # optional
-pip install 'etlantic-pyspark==0.33.0'         # optional
-pip install 'etlantic-airflow==0.33.0'         # optional
-pip install 'etlantic-prefect==0.33.0'         # optional
-pip install 'etlantic-keyring==0.33.0'         # optional
-pip install 'etlantic-sqlmodel==0.33.0'        # optional
-pip install 'medallantic==0.33.0'              # optional
+pip install 'etlantic==0.34.0'
+pip install 'etlantic-polars==0.34.0'          # optional
+pip install 'etlantic-pandas==0.34.0'          # optional
+pip install 'etlantic-sql==0.34.0'             # optional
+pip install 'etlantic-pyspark==0.34.0'         # optional
+pip install 'etlantic-airflow==0.34.0'         # optional
+pip install 'etlantic-prefect==0.34.0'         # optional
+pip install 'etlantic-keyring==0.34.0'         # optional
+pip install 'etlantic-sqlmodel==0.34.0'        # optional
+pip install 'medallantic==0.34.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

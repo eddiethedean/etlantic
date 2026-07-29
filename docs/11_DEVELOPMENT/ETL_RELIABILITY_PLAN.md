@@ -630,13 +630,14 @@ Conformance testing should cover:
 | 0.7 | Spark and Delta writes, partition completeness, backfill semantics |
 | 0.8 | Orchestrator mapping for retries, repair, backfills, and reports |
 | 0.9 | CLI, provider protocols, conformance suites, drift comparisons |
-| 1.1 | FastAPI inspection, planning, approval, and history routes |
-| 1.2 | Registry and workspace history for plans, environments, and quality |
-| 1.3 | Incremental invalidation, repair, state, and reproducibility |
-| 1.4 | Governance, approvals, budgets, destructive-write policy |
-| 1.5 | IDE and notebook previews, diagnostics, and trend displays |
-| 1.6 | Cost-aware repair, materialization, and implementation selection |
-| 1.9 | Human-governed repair and migration proposals |
+| 0.40 | FastAPI inspection, planning, approval, and history routes |
+| 0.41 | Registry and workspace history for plans, environments, and quality |
+| 0.42 | Incremental invalidation, repair, state, and reproducibility |
+| 0.43 | Governance, approvals, budgets, destructive-write policy |
+| 0.44 | Integrated multi-tenant control-plane graduation |
+| 0.45 | IDE and notebook previews, diagnostics, and trend displays |
+| 0.46 | Cost-aware repair, materialization, and implementation selection |
+| 0.49 | Human-governed repair and migration proposals |
 
 ## Success Criteria
 

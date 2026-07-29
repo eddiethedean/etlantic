@@ -1,7 +1,7 @@
 # DPCS
 
 !!! note "Integration guide + design depth"
-    ODCS/DTCS/DPCS interchange is **Available** in 0.10. This chapter mixes
+    [ODCS](../03_DATA_CONTRACTS/ODCS.md)/[DTCS](../04_TRANSFORMATIONS/DTCS.md)/DPCS interchange is **Available** in 0.10. This chapter mixes
     shipped integration guidance with longer normative “should” design prose.
     For the current capability boundary see
     [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md). The normative

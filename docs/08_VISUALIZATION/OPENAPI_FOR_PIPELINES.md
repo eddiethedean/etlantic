@@ -1,6 +1,6 @@
 # OpenAPI for Pipelines
 
-!!! warning "Future design—not an ETLantic 0.33 API guide"
+!!! warning "Future design—not an ETLantic 0.34 API guide"
     This page describes a **derived pipeline-interface** documentation view.
     It is not the shipped authoring HTTP API. For the 0.24 service/OpenAPI
     reference, see [Application integration](APPLICATION_INTEGRATION.md) and
@@ -14,7 +14,7 @@ Just as OpenAPI provides a machine-readable description of HTTP APIs, this
 proposed ETLantic artifact describes *what a pipeline accepts, what it
 produces, and how it behaves* without exposing implementation details.
 
-It is not a fourth contract standard. ODCS, DTCS, and DPCS remain the
+It is not a fourth contract standard. [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) remain the
 authoritative contract family. This document explores a derived, non-normative
 pipeline-interface view.
 
@@ -95,7 +95,7 @@ ETLantic answers analogous questions:
 
 ## Specification Structure
 
-Conceptually (not a shipped 0.23 API):
+Conceptually (not a shipped 0.34 API):
 
 ```yaml
 pipeline:

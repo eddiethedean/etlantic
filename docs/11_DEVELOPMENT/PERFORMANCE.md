@@ -1,6 +1,6 @@
 # Performance Guidance
 
-> **Status: ETLantic 0.33.0.** ETLantic publishes **measured microbenchmark
+> **Status: ETLantic 0.34.0.** ETLantic publishes **measured microbenchmark
 > envelopes** for modeling/planning/discovery coordination and **no** production
 > throughput or warehouse sizing claims.
 

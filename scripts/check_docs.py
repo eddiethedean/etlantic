@@ -2,13 +2,32 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
+from urllib.parse import unquote
 
 ROOT = Path(__file__).parents[1]
+MARKDOWN_LINK_RE = re.compile(
+    r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^)\s]+)"
+    r"(?:\s+[\"'][^)\n]*[\"'])?\s*\)"
+)
+MARKDOWN_REFERENCE_RE = re.compile(
+    r"(?m)^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|[^\s]+)"
+)
+PYTHON_FENCE_RE = re.compile(r"```(?:python|py)\s*\n(.*?)```", re.DOTALL)
+INLINE_MARKDOWN_LINK_RE = re.compile(
+    r"!?\[[^\]\n]*\]\([^)\n]*\)|\[[^\]\n]*\]\[[^\]\n]*\]"
+)
+STANDARD_PAGES = {
+    "ODCS": ROOT / "docs/03_DATA_CONTRACTS/ODCS.md",
+    "DTCS": ROOT / "docs/04_TRANSFORMATIONS/DTCS.md",
+    "DPCS": ROOT / "docs/05_PIPELINES/DPCS.md",
+}
 
 
 def version_from(path: Path, pattern: str) -> str:
@@ -16,6 +35,280 @@ def version_from(path: Path, pattern: str) -> str:
     if match is None:
         raise SystemExit(f"Could not find version in {path}")
     return match.group(1)
+
+
+def markdown_without_code(text: str) -> str:
+    """Remove fenced and inline code before inspecting Markdown links."""
+    visible: list[str] = []
+    fence_char: str | None = None
+    fence_length = 0
+    for line in text.splitlines():
+        match = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if match is not None:
+            marker = match.group(1)
+            if fence_char is None:
+                fence_char = marker[0]
+                fence_length = len(marker)
+            elif marker[0] == fence_char and len(marker) >= fence_length:
+                fence_char = None
+                fence_length = 0
+            visible.append("")
+            continue
+        visible.append(line if fence_char is None else "")
+    return re.sub(r"(?<!`)`[^`\n]+`(?!`)", "", "\n".join(visible))
+
+
+def check_local_markdown_links() -> None:
+    """Fail on relative Markdown links whose repository target is missing."""
+    root_resolved = ROOT.resolve()
+    ignored_parts = {".git", ".venv", "node_modules", "site"}
+    for path in ROOT.rglob("*.md"):
+        if any(part in ignored_parts for part in path.parts):
+            continue
+        visible = markdown_without_code(path.read_text(encoding="utf-8"))
+        matches = list(MARKDOWN_LINK_RE.finditer(visible))
+        matches.extend(MARKDOWN_REFERENCE_RE.finditer(visible))
+        for match in matches:
+            raw_target = match.group(1).strip()
+            if raw_target.startswith("<") and raw_target.endswith(">"):
+                raw_target = raw_target[1:-1]
+            target = unquote(raw_target).split("#", 1)[0].split("?", 1)[0]
+            if (
+                not target
+                or target.startswith(("#", "/", "{{"))
+                or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target)
+            ):
+                continue
+            resolved = (path.parent / target).resolve()
+            try:
+                resolved.relative_to(root_resolved)
+            except ValueError:
+                raise SystemExit(
+                    f"{path}: relative Markdown link leaves repository: {raw_target!r}"
+                )
+            if not resolved.exists():
+                raise SystemExit(
+                    f"{path}: local Markdown link target does not exist: "
+                    f"{raw_target!r}"
+                )
+
+
+def check_python_code_fences() -> None:
+    """Require every Python-labelled Markdown fence to be valid Python syntax."""
+    ignored_parts = {".git", ".venv", "node_modules", "site"}
+    for path in ROOT.rglob("*.md"):
+        if any(part in ignored_parts for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8")
+        for match in PYTHON_FENCE_RE.finditer(text):
+            code = textwrap.dedent(match.group(1))
+            try:
+                ast.parse(code, filename=str(path))
+            except SyntaxError as exc:
+                markdown_line = text.count("\n", 0, match.start()) + (exc.lineno or 1)
+                raise SystemExit(
+                    f"{path}:{markdown_line}: invalid Python documentation "
+                    f"example: {exc.msg}"
+                ) from exc
+
+
+def check_standard_links() -> None:
+    """Keep contract-standard mentions connected to their canonical guides."""
+    docs_root = ROOT / "docs"
+    standard_docs = set(docs_root.rglob("*.md"))
+    standard_docs.update(
+        {
+            ROOT / "README.md",
+            ROOT / "ROADMAP.md",
+            ROOT / "CHANGELOG.md",
+        }
+    )
+    for path in sorted(standard_docs):
+        text = path.read_text(encoding="utf-8")
+        visible = markdown_without_code(text)
+        for acronym, canonical in STANDARD_PAGES.items():
+            if path == canonical or re.search(rf"\b{acronym}\b", visible) is None:
+                continue
+
+            linked_to_canonical = False
+            for match in MARKDOWN_LINK_RE.finditer(visible):
+                raw_target = match.group(1).strip()
+                if raw_target.startswith("<") and raw_target.endswith(">"):
+                    raw_target = raw_target[1:-1]
+                target = unquote(raw_target).split("#", 1)[0].split("?", 1)[0]
+                if not target or re.match(
+                    r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target
+                ):
+                    continue
+                if (path.parent / target).resolve() == canonical.resolve():
+                    linked_to_canonical = True
+                    break
+            if not linked_to_canonical:
+                raise SystemExit(
+                    f"{path}: mentions {acronym} without linking its canonical "
+                    f"guide {canonical.relative_to(ROOT)}"
+                )
+
+            fence_char: str | None = None
+            fence_length = 0
+            first_mention_linked: bool | None = None
+            for line in text.splitlines():
+                fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+                if fence is not None:
+                    marker = fence.group(1)
+                    if fence_char is None:
+                        fence_char = marker[0]
+                        fence_length = len(marker)
+                    elif marker[0] == fence_char and len(marker) >= fence_length:
+                        fence_char = None
+                        fence_length = 0
+                    continue
+                if (
+                    fence_char is not None
+                    or line.lstrip().startswith("#")
+                    or MARKDOWN_REFERENCE_RE.match(line)
+                ):
+                    continue
+
+                code_spans = [
+                    match.span()
+                    for match in re.finditer(r"(?<!`)`[^`\n]+`(?!`)", line)
+                ]
+                link_spans = [
+                    match.span() for match in INLINE_MARKDOWN_LINK_RE.finditer(line)
+                ]
+                for mention in re.finditer(rf"\b{acronym}\b", line):
+                    if any(
+                        start <= mention.start() < end for start, end in code_spans
+                    ):
+                        continue
+                    first_mention_linked = any(
+                        start <= mention.start() < end for start, end in link_spans
+                    )
+                    break
+                if first_mention_linked is not None:
+                    break
+
+            if first_mention_linked is False:
+                raise SystemExit(
+                    f"{path}: first prose mention of {acronym} must be a "
+                    "Markdown link"
+                )
+
+
+def check_control_plane_plan() -> None:
+    """Keep the first-class control-plane program explicit and fail-closed."""
+    plan = ROOT / "docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md"
+    if not plan.exists():
+        raise SystemExit("Missing first-class multi-tenant control-plane plan")
+
+    text = plan.read_text(encoding="utf-8")
+    required_plan_markers = (
+        "Status: planned first-class feature program",
+        "0.40 / CP1",
+        "0.41 / CP2",
+        "0.42 / CP3",
+        "0.43 / CP4",
+        "0.44 / CP-GA",
+        "deny by default",
+        "transactional outbox",
+        "leases and fencing tokens",
+        "free of source rows and resolved secret values",
+        "RPO",
+        "RTO",
+        "Failure of any mandatory gate keeps the feature",
+    )
+    for marker in required_plan_markers:
+        if marker not in text:
+            raise SystemExit(
+                f"{plan}: control-plane hardening marker is missing: {marker!r}"
+            )
+
+    linked_surfaces = (
+        ROOT / "README.md",
+        ROOT / "ROADMAP.md",
+        ROOT / "docs/README.md",
+        ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
+        ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
+        ROOT / "docs/02_FOUNDATIONS/SECURITY.md",
+        ROOT / "docs/06_EXECUTION/DEPLOYMENT.md",
+        ROOT / "docs/06_EXECUTION/PRODUCTION_READINESS.md",
+        ROOT / "docs/11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md",
+        ROOT / "docs/11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md",
+        ROOT / "docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md",
+    )
+    for path in linked_surfaces:
+        if plan.name not in path.read_text(encoding="utf-8"):
+            raise SystemExit(
+                f"{path}: must link the first-class control-plane plan {plan.name}"
+            )
+
+    roadmap = (ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+    for marker in (
+        "## 0.40 — Multi-Tenant Control Plane: API and Identity Foundation",
+        "## 0.41 — Tenant Registry, Workspaces, and Persistence Isolation",
+        "## 0.42 — Durable Submission, State, and Reproducibility",
+        "## 0.43 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance",
+        "## 0.44 — First-Class Multi-Tenant Control-Plane Graduation",
+    ):
+        if marker not in roadmap:
+            raise SystemExit(f"ROADMAP.md missing control-plane gate {marker!r}")
+
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    if plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
+        raise SystemExit("mkdocs.yml must promote the multi-tenant plan in nav")
+
+    capabilities = (
+        ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md"
+    ).read_text(encoding="utf-8")
+    if "Partial — see [Ops Pilot]" in capabilities:
+        raise SystemExit(
+            "Capabilities must not label the unshipped multi-tenant control "
+            "plane as Partial"
+        )
+
+
+def check_zero_x_roadmap_phases() -> None:
+    """Keep planned ETLantic phases on the explicitly chosen 0.x timeline."""
+    roadmap_path = ROOT / "ROADMAP.md"
+    roadmap = roadmap_path.read_text(encoding="utf-8")
+
+    required_markers = (
+        "This roadmap has no\n1.0 or 1.x phase",
+        "## 0.38 — Stable Foundation",
+        "## 0.39 — TransformationModel Incubation",
+        "## 0.44 — First-Class Multi-Tenant Control-Plane Graduation",
+        "## 0.45 — Developer Intelligence: LSP, IDE, and Static Analysis",
+        "## 0.46 — Planner and Optimization SDK",
+        "## 0.47 — Streaming and Event-Driven Pipelines",
+        "## 0.48 — Remote Execution Federation",
+        "## 0.49 — AI-Assisted, Human-Governed Engineering",
+    )
+    for marker in required_markers:
+        if marker not in roadmap:
+            raise SystemExit(f"{roadmap_path}: missing 0.x roadmap marker {marker!r}")
+
+    phase_heading = re.compile(r"(?m)^#{1,4}\s+1\.(?:0|[1-9][0-9]*|x)\b")
+    forward_phase_language = re.compile(
+        r"(?i)\b(?:planned(?:\s+for)?|phase|graduation|gated\s+for|"
+        r"continues?\s+in|toward|post-|proposed|intended|future\s+design)"
+        r"[^\n]{0,80}\b1\.(?:0|[1-9][0-9]*|x)\b"
+    )
+    scan_roots = (ROOT / "ROADMAP.md", ROOT / "docs", ROOT / "packages")
+    for scan_root in scan_roots:
+        paths = [scan_root] if scan_root.is_file() else sorted(scan_root.rglob("*.md"))
+        for path in paths:
+            if "specifications" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8")
+            if phase_heading.search(text):
+                raise SystemExit(f"{path}: roadmap phase headings must remain 0.x")
+            match = forward_phase_language.search(text)
+            if match:
+                raise SystemExit(
+                    f"{path}: forward-looking phase language must use 0.x: "
+                    f"{match.group(0)!r}"
+                )
 
 
 def main() -> None:
@@ -27,6 +320,32 @@ def main() -> None:
         raise SystemExit(
             f"Version mismatch: package={package_version}, project={project_version}"
         )
+
+    # Package-facing install docs are release surfaces too. Keep all current
+    # package pins synchronized with core; the deprecated redirect intentionally
+    # has no version pin.
+    package_pin = re.compile(
+        r"(?:etlantic(?:-[a-z0-9-]+)?|medallantic)"
+        r"(?:\[[^\]]+\])?==(\d+\.\d+\.\d+)"
+    )
+    for readme in sorted((ROOT / "packages").glob("*/README.md")):
+        text = readme.read_text(encoding="utf-8")
+        if readme.parent.name != "etlantic-sparkforge" and package_version not in text:
+            raise SystemExit(
+                f"{readme} must mention current package version {package_version}"
+            )
+        for pin in package_pin.findall(text):
+            if pin != package_version:
+                raise SystemExit(
+                    f"{readme} contains stale package pin {pin}; "
+                    f"expected {package_version}"
+                )
+
+    check_local_markdown_links()
+    check_python_code_fences()
+    check_standard_links()
+    check_control_plane_plan()
+    check_zero_x_roadmap_phases()
 
     current_markers = [
         ROOT / "README.md",
@@ -509,13 +828,26 @@ def main() -> None:
                 )
         merge_ban_pages = (
             ROOT / "docs/01_GETTING_STARTED/INSTALLATION.md",
+            ROOT / "docs/06_EXECUTION/SQL.md",
             ROOT / "docs/06_EXECUTION/SQL_TUTORIAL.md",
             ROOT / "docs/06_EXECUTION/SQL_PUSHDOWN.md",
             ROOT / "docs/06_EXECUTION/SQL_EXECUTION.md",
+            ROOT / "docs/07_PLUGIN_SDK/SQL_DIALECT.md",
+            ROOT / "docs/07_PLUGIN_SDK/SQL_PLUGIN.md",
+            ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md",
+            ROOT / "docs/10_REFERENCE/RUNTIME_CONFIGURATION.md",
+            ROOT / "packages/etlantic-sql/README.md",
         )
         merge_ban = re.compile(
-            r"does not implement\s+`?MERGE`?",
-            re.IGNORECASE,
+            r"(?:(?:reference plugin|etlantic-sql).{0,80}"
+            r"does not (?:implement|advertise)\s+`?MERGE`?"
+            r"|does not (?:implement|advertise)\s+`?MERGE`?\s+on\s+PostgreSQL)",
+            re.IGNORECASE | re.DOTALL,
+        )
+        sqlite_demo_only = re.compile(
+            r"(?:SQLite.{0,80}(?:demo-only|demos only|local demos only)"
+            r"|(?:demo-only|demos only).{0,80}SQLite)",
+            re.IGNORECASE | re.DOTALL,
         )
         for path in merge_ban_pages:
             if not path.exists():
@@ -525,6 +857,11 @@ def main() -> None:
                 raise SystemExit(
                     f"{path}: blanket 'does not implement MERGE' is outdated; "
                     "document PostgreSQL sql_merge=True / SQLite sql_merge=False"
+                )
+            if sqlite_demo_only.search(text):
+                raise SystemExit(
+                    f"{path}: SQLite is Tier A in 0.33, not demo-only; "
+                    "document PostgreSQL-only merge separately"
                 )
     if not (ROOT / "examples/portable_polars_kernel.py").exists():
         raise SystemExit("Missing examples/portable_polars_kernel.py")
@@ -832,7 +1169,6 @@ def main() -> None:
     future_plugin_pages = [
         ROOT / "docs/07_PLUGIN_SDK/STORAGE_PLUGIN.md",
         ROOT / "docs/07_PLUGIN_SDK/RESOURCE_PROVIDER.md",
-        ROOT / "docs/07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md",
     ]
     for path in future_plugin_pages:
         text = path.read_text(encoding="utf-8")
@@ -1034,7 +1370,6 @@ def main() -> None:
     for future_sdk in (
         "STORAGE_PLUGIN",
         "RESOURCE_PROVIDER",
-        "OBSERVABILITY_PROVIDER",
     ):
         if f'"{future_sdk}"' not in future_sdk_block:
             raise SystemExit(f"status-banner.js must mark {future_sdk} as future")

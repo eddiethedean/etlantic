@@ -21,7 +21,7 @@ class NormalizeCustomers(Transformation):
 
 From these annotations, ETLantic can derive:
 
-- DTCS transformation contracts
+- [DTCS](DTCS.md) transformation contracts
 - Pipeline validation rules
 - Documentation
 - Editor tooling

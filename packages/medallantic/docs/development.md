@@ -2,7 +2,7 @@
 
 ## Workspace setup
 
-From the Etlantic repository root:
+From the ETLantic repository root:
 
 ```bash
 uv sync --locked --group medallantic
@@ -41,7 +41,7 @@ Unit tests alone do not establish backend parity.
 ## Contribution rules
 
 - Keep medallion vocabulary out of `src/etlantic`.
-- Prefer public Etlantic SDK imports.
+- Prefer public ETLantic SDK imports.
 - Add a core capability only when it is domain-neutral.
 - Fail closed for unsupported engines, rules, writes, or Delta operations.
 - Never serialize secrets, source rows, live backend objects, or callables.
@@ -52,10 +52,9 @@ Unit tests alone do not establish backend parity.
 ## Useful files
 
 - `src/medallantic/ir.py` — secret-free migration IR
-- `src/medallantic/adapt.py` — Etlantic graph/profile mapping
+- `src/medallantic/adapt.py` — ETLantic graph/profile mapping
 - `src/medallantic/compat.py` — write, retry, and Delta compatibility
 - `src/medallantic/runtime_map.py` — run intent and selection mapping
 - `src/medallantic/reports.py` — normalized report conversion
 - `tests/medallantic/` — current parity fixtures
 - `ROADMAP.md` — full Spark and SQL parity plan
-

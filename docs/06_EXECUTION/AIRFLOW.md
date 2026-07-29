@@ -15,7 +15,7 @@
 
 Future Airflow artifacts may carry tasks whose step logic was compiled from a
 portable definition. The Airflow compiler consumes the resolved Pipeline Plan;
-it does not reinterpret the DTCS Transformation Plan or choose a different
+it does not reinterpret the [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plan or choose a different
 native fallback.
 
 The Airflow plugin enables ETLantic to execute validated **Pipeline Plans**
@@ -24,7 +24,7 @@ using Apache Airflow.
 ETLantic does not generate Airflow DAGs directly from Python pipeline
 definitions. Instead, it first validates and plans the pipeline, producing an
 implementation-independent `PipelinePlan`. The Airflow plugin then translates
-that plan into an Airflow DAG while preserving the semantics defined by DPCS.
+that plan into an Airflow DAG while preserving the semantics defined by [DPCS](../05_PIPELINES/DPCS.md).
 
 ## Goals
 

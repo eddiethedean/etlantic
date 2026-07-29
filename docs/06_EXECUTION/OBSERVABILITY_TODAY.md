@@ -1,25 +1,24 @@
 # Observability Today
 
-> **Status: Available in ETLantic 0.33.0.** What ships now vs future provider
+> **Status: Available in ETLantic 0.34.0.** What ships now vs future provider
 > protocols.
 
-## Shipped
+## Shipped (0.34+)
 
 | Surface | Notes |
 |---|---|
+| Observability provider protocol | `etlantic.observability/1`; entry-point group |
+| Run history providers | File + in-memory reference implementations |
+| Event consumers | Reference trend consumer |
 | Structured run reports | `PipelineRunReport`; CLI `etlantic report` |
-| Process logging | Local runtime structured logs |
+| Lifecycle correlation | `etlantic.lifecycle_event/1` |
 | Optional OpenTelemetry | `pip install 'etlantic[otel]'` |
 | Mermaid / Graphviz / HTML lineage | `etlantic.viz` / `etlantic viz` |
 
-Run reports are **operational evidence for a single process**, not an audit
-system of record. Export or file-backed report stores when you need retention.
-
 ## Not shipped
 
-- Durable multi-tenant observability provider protocol (Design Proposals)
-- Guaranteed cross-run correlation without your own store
-- Compliance-grade audit trails
+- Compliance-grade audit system of record (operational evidence only)
+- Guaranteed cross-run correlation without a configured history provider
 
 ## Related
 

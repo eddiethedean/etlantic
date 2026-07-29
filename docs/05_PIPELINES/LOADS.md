@@ -17,7 +17,7 @@ A load answers one question:
 > Where does the pipeline publish its results?
 
 Because every load is typed, ETLantic can validate publication boundaries,
-generate DPCS artifacts, derive lineage, and plan execution without depending
+generate [DPCS](DPCS.md) artifacts, derive lineage, and plan execution without depending
 on a specific storage technology.
 
 ## Basic Example

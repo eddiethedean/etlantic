@@ -7,7 +7,7 @@ for a workflow orchestration platform.
 
 Orchestrator plugins are responsible for coordinating execution of a validated
 **Pipeline Plan**. They schedule work, honor dependencies, manage execution
-lifecycles, and preserve the semantics defined by DPCS without requiring
+lifecycles, and preserve the semantics defined by [DPCS](../05_PIPELINES/DPCS.md) without requiring
 pipeline authors to write orchestrator-specific code.
 
 ## Purpose

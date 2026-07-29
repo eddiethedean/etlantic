@@ -31,7 +31,7 @@ from etlantic_sql.compiler import SqlCompiler
 from etlantic_sql.dialect_postgresql import dialect_info, quote_identifier
 from etlantic_sql.executor import SqlExecutor
 
-__version__ = "0.33.0"
+__version__ = "0.34.0"
 
 
 def create_plugin() -> PostgresSqlPlugin:

@@ -1,7 +1,7 @@
 # Design Principles
 
 Portable transformation design follows the same boundary: ETLantic owns a
-closed DTCS-aligned semantic IR, while plugins compile it to backend-native
+closed [DTCS](../04_TRANSFORMATIONS/DTCS.md)-aligned semantic IR, while plugins compile it to backend-native
 operations. Familiar PySpark-style syntax does not make Spark the semantic
 authority, and unsupported behavior fails closed instead of being approximated.
 
@@ -60,9 +60,9 @@ generated artifacts should remain faithful to the source model.
 ETLantic builds on open specifications rather than proprietary
 formats.
 
--   ODCS for data contracts
+-   [ODCS](../03_DATA_CONTRACTS/ODCS.md) for data contracts
 -   DTCS for transformation contracts
--   DPCS for pipeline contracts
+-   [DPCS](../05_PIPELINES/DPCS.md) for pipeline contracts
 
 Where an established standard exists, ETLantic should integrate
 with it rather than reinvent it.

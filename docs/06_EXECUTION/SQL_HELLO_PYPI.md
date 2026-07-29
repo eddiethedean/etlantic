@@ -1,6 +1,6 @@
 # SQL hello (PyPI path)
 
-> **Status: Available in ETLantic 0.33.0.** Paste-ready SQLite demo — no
+> **Status: Available in ETLantic 0.34.0.** Paste-ready SQLite demo — no
 > git clone. PostgreSQL is the reference backend for production; MERGE
 > (`sql_merge`) is PostgreSQL-only.
 
@@ -13,7 +13,7 @@ Companion script (clone):
 ## 1. Install
 
 ```bash
-python -m pip install 'etlantic[sql]==0.33.0'
+python -m pip install 'etlantic[sql]==0.34.0'
 ```
 
 SQLite is the default when `ETLANTIC_SQL_URL` is unset. For PostgreSQL later:
@@ -36,7 +36,14 @@ The script creates tables on the SQLAlchemy engine returned by the plugin,
 registers that plugin on the runtime/registry, then validates and runs so
 execution reuses the same engine (empty second engines cause `PMEXEC433`).
 
-Expect `succeeded`.
+## Expected output
+
+```text
+succeeded
+```
+
+Anything else is a failed smoke test; the deeper tutorial shows the plan,
+zero-fetch fusion evidence, and result rows.
 
 ## What this is not
 

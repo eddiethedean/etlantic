@@ -99,9 +99,9 @@ Verifies referenced contracts.
 
 Examples:
 
-- ODCS data contracts exist
-- DTCS transformation contracts exist
-- DPCS subpipelines resolve
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) data contracts exist
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) transformation contracts exist
+- [DPCS](DPCS.md) subpipelines resolve
 - Version requirements
 - Compatibility rules
 

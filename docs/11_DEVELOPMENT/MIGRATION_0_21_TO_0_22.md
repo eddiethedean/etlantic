@@ -19,7 +19,7 @@ import etlantic as etl
 
 `from etlantic import Data, Pipeline` remains supported. Specialist symbols
 previously imported from the root (`col`, `SqlQuery`, `PluginCapabilities`, …)
-are **demoted** to pre-1.0 compatibility aliases: they still import, but emit a
+are **demoted** to 0.x compatibility aliases: they still import, but emit a
 one-time `DeprecationWarning` and should move to their owning namespace
 (`etlantic.sql`, `etlantic.capabilities`, …) or lazy attribute
 (`etl.sql`, …).

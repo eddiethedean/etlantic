@@ -19,7 +19,8 @@ ecosystem.
   ETLantic authoring API has shipped since 0.11, with portable compiler
   capabilities added through 0.14.
 
-ODCS is an external standard and is not copied into this repository. See the
+[ODCS](../03_DATA_CONTRACTS/ODCS.md) is an external standard and is not copied
+into this repository. See the
 [ODCS Integration Guide](../03_DATA_CONTRACTS/ODCS.md) for ETLantic's
 relationship with the upstream specification.
 

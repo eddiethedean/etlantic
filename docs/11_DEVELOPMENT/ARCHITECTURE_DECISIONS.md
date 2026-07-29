@@ -39,7 +39,7 @@ ADRs should be stored in:
 docs/11_DEVELOPMENT/adr/
 ```
 
-Current 0.11+ proposal:
+Accepted portable-authoring decision (implemented since 0.11):
 
 - [ADR-013: Closed Portable Transformation IR](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)
 

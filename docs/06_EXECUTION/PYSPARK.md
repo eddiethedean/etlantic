@@ -9,14 +9,14 @@ transformations on Apache Spark using the same validated Pipeline Plans used by
 every other execution backend.
 
 PySpark execution is an implementation strategy, not a different pipeline
-model. ODCS, DTCS, DPCS, contracts, transformation interfaces, lineage, and
+model. [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), contracts, transformation interfaces, lineage, and
 validation semantics remain portable regardless of whether execution occurs on
 Spark, SQL, Polars, Pandas, or another backend.
 
-ETLantic's proposed portable transformation syntax is deliberately inspired by
+ETLantic's shipped portable transformation syntax is deliberately inspired by
 PySpark's DataFrame and Column APIs. It uses ETLantic symbolic objects and
-semantics rather than importing PySpark into core. The PySpark compiler ships in 0.13; native `@implementation("pyspark")` remains
-available.
+semantics rather than importing PySpark into core. The PySpark compiler shipped
+in 0.13; native `@implementation("pyspark")` remains available.
 
 ## Goals
 
@@ -27,7 +27,8 @@ The PySpark backend should:
 - Preserve contract semantics.
 - Support Catalyst optimization.
 - Support batch and streaming execution.
-- Fall back to other implementations when required.
+- Fail closed when the selected profile cannot satisfy required capabilities;
+  use only explicit, plan-resolved fallback policy.
 
 ## Architecture
 
@@ -71,7 +72,7 @@ A Spark implementation may be registered independently.
 
 ```python
 @NormalizeCustomers.implementation("pyspark")
-def normalize_customers(...):
+def normalize_customers(customers):
     ...
 ```
 

@@ -36,7 +36,7 @@ out = Load[Customer](input=result, asset="curated")
 ```
 
 `Source` / `Sink` / `binding=` emit `DeprecationWarning` and are removed in
-0.16. Plan, DPCS, and plugin wire names (`binding`, `"source"` / `"sink"`
+0.16. Plan, [DPCS](../05_PIPELINES/DPCS.md), and plugin wire names (`binding`, `"source"` / `"sink"`
 kinds, `etlantic:binding`) are unchanged for fingerprint stability.
 
 See [Migration 0.14 → 0.15](../11_DEVELOPMENT/MIGRATION_0_14_TO_0_15.md).

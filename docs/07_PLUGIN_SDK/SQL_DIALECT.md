@@ -1,10 +1,11 @@
 # SQL Dialect
 
-**Status: shipped in 0.6.0** as part of `etlantic.sql/1`. The reference
-dialect path is PostgreSQL via `etlantic-sql`. SQLite may be used for demos;
-it is not a full conformance target.
+**Status: available in ETLantic 0.34.0** as part of `etlantic.sql/1`.
+`etlantic-sql` treats SQLite and PostgreSQL as live Tier A dialects;
+PostgreSQL alone advertises `sql_merge`. Other detected dialects remain
+fail-closed Tier B paths.
 
-A **SQL Dialect** defines the database-specific rules used by a ETLantic
+A **SQL Dialect** defines the database-specific rules used by an ETLantic
 SQL Plugin to compile logical SQL expressions into valid, semantically
 equivalent SQL for a target database.
 
@@ -68,7 +69,7 @@ Differences include:
 - Boolean types
 - String concatenation
 - Date and time functions
-- `MERGE` support (the 0.6 reference plugin advertises `sql_merge=False`)
+- `MERGE` / upsert support
 - `RETURNING` support
 - Temporary / staging table behavior
 - JSON operations
@@ -151,7 +152,8 @@ SqlDialectCapabilities(
 ```
 
 Capabilities should describe support, limitations, and any version-dependent
-behavior. The 0.6 `etlantic-sql` reference advertises `sql_merge=False`.
+behavior. The current `etlantic-sql` reference advertises
+`sql_merge=True` for PostgreSQL and `sql_merge=False` for SQLite.
 
 ## Feature Levels
 
@@ -163,7 +165,7 @@ Conceptually:
 FeatureSupport(
     supported=False,
     level="none",
-    notes="MERGE is not implemented by the 0.6 reference plugin.",
+    notes="SQLite does not advertise MERGE; use a capable PostgreSQL target.",
 )
 ```
 

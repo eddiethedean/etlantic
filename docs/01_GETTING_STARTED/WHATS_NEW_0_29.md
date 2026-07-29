@@ -25,7 +25,7 @@
 
 - Portable quality / rule DSL (**0.30 / M2**)
 - Live callable execution and write lifecycle parity (**0.31 / M3**)
-- Remaining demoted root aliases (still a 1.0 residual)
+- Remaining demoted root aliases (still a 0.38 residual)
 - New burn-in fixture slice (next burn-in band is **0.36+**)
 
 ## Upgrade

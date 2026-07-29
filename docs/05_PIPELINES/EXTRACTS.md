@@ -23,7 +23,7 @@ By declaring an extract with a data contract, ETLantic can:
 
 - Validate incoming data
 - Build the pipeline graph
-- Generate DPCS artifacts
+- Generate [DPCS](DPCS.md) artifacts
 - Produce lineage
 - Generate documentation
 - Plan execution

@@ -1,6 +1,6 @@
 # Run a File-Backed Pipeline
 
-> **Status: Available in ETLantic 0.33.0.** The companion script is exercised
+> **Status: Available in ETLantic 0.34.0.** The companion script is exercised
 > by CI.
 
 Use file storage when a pipeline must survive process boundaries. Unlike
@@ -19,13 +19,41 @@ import-safe pipeline modules.
 
 ## Prerequisites
 
-Clone a matching release checkout (prefer the `v0.33.0` tag) and use `uv`:
+Clone a matching release checkout (prefer the `v0.34.0` tag) and use `uv`:
 
 ```bash
-git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.34.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync
 uv run python examples/file_storage.py
+```
+
+## Expected output
+
+The paths are relative to the checkout, so the console output is stable across
+machines:
+
+```text
+json -> examples/_file_storage_out/json/output.json
+csv -> examples/_file_storage_out/csv/output.csv
+[
+  {
+    "id": 1,
+    "name": "Ada"
+  },
+  {
+    "id": 2,
+    "name": "Grace"
+  }
+]
+```
+
+The CSV sink contains the same normalized records:
+
+```text
+id,name
+1,Ada
+2,Grace
 ```
 
 The example creates `_file_storage_out/json/output.json` and
@@ -39,7 +67,7 @@ File locations are explicit planning bindings:
 ```python
 context.registry.register_binding(
     BindingDescriptor(
-        asset="file_source",
+        binding="file_source",
         provider="json",
         location="input.json",
         kind="source",
@@ -47,7 +75,7 @@ context.registry.register_binding(
 )
 context.registry.register_binding(
     BindingDescriptor(
-        asset="file_sink",
+        binding="file_sink",
         provider="json",
         location="output.json",
         kind="sink",
@@ -55,9 +83,8 @@ context.registry.register_binding(
 )
 ```
 
-The binding names must match the `Extract` / `Load` `asset=` declarations
-(registry descriptors still use the wire field `binding=`). Use
-`provider="csv"` for CSV files. The complete source is
+The `binding=` names must match the `Extract` / `Load` `asset=` declarations.
+Use `provider="csv"` for CSV files. The complete source is
 [`examples/file_storage.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py).
 
 ## Failure checks

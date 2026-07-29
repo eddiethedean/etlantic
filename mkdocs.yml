@@ -93,7 +93,7 @@ not_in_nav: |
   11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md
   11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_23.md
   11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_24.md
-  11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md
+  11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md
   11_DEVELOPMENT/PROGRAMMATIC_AUTHORING_0_24.md
   11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
   11_DEVELOPMENT/DESIGN_PROPOSALS.md
@@ -103,7 +103,6 @@ not_in_nav: |
   10_REFERENCE/ENVIRONMENT_VARIABLES.md
   07_PLUGIN_SDK/STORAGE_PLUGIN.md
   07_PLUGIN_SDK/RESOURCE_PROVIDER.md
-  07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
   06_EXECUTION/PLUGINS.md
   06_EXECUTION/STORAGE_PLUGINS.md
   06_EXECUTION/RESOURCE_PLUGINS.md
@@ -227,7 +226,7 @@ nav:
       - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
       - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
       - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Current 0.33 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.34 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
       - Experimental surfaces: 01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md
   - Support:
@@ -244,6 +243,7 @@ nav:
       - Migration from other tools: 01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
   - Release notes:
       - Changelog: CHANGELOG.md
+      - What's new in 0.34: 01_GETTING_STARTED/WHATS_NEW_0_34.md
       - What's new in 0.33: 01_GETTING_STARTED/WHATS_NEW_0_33.md
       - What's new in 0.32: 01_GETTING_STARTED/WHATS_NEW_0_32.md
       - Earlier releases: 01_GETTING_STARTED/EARLIER_RELEASES.md
@@ -361,6 +361,9 @@ nav:
       - Spark Provider: 07_PLUGIN_SDK/SPARK_PROVIDER.md
       - Orchestrator Plugin Protocol: 07_PLUGIN_SDK/ORCHESTRATOR_PLUGIN.md
       - Secret Provider Protocol: 07_PLUGIN_SDK/SECRET_PROVIDER.md
+      - Observability Provider Protocol: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
+      - Run History Provider Protocol: 07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md
+      - Event Consumer Protocol: 07_PLUGIN_SDK/EVENT_CONSUMER.md
       - Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
       - Third-Party Compiler Tutorial: 07_PLUGIN_SDK/THIRD_PARTY_COMPILER_TUTORIAL.md
       - Testing Plugins: 07_PLUGIN_SDK/TESTING_PLUGINS.md
@@ -395,7 +398,7 @@ nav:
       - CLI: 10_REFERENCE/CLI.md
       - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.33.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+      - Configuration in 0.34.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
       - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
       - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
@@ -420,8 +423,11 @@ nav:
   - Maintainers:
       - Overview: 11_DEVELOPMENT/README.md
       - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+      - Multi-tenant control plane plan: 11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md
+      - Exit gate 0.34: 11_DEVELOPMENT/EXIT_GATE_0_34.md
       - Exit gate 0.33: 11_DEVELOPMENT/EXIT_GATE_0_33.md
       - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md
+      - Migration 0.33 → 0.34: 11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md
       - Migration 0.32 → 0.33: 11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md
       - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
       - Documentation audit 0.33: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md

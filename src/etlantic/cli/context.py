@@ -14,6 +14,7 @@ from etlantic.io_policy import SafeIoPolicy
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.profile import Profile
 from etlantic.project import resolve_project_profile
+from etlantic.observability.history import FileRunHistoryProvider
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.store import ReportStore
 from etlantic.workspace import (
@@ -48,6 +49,7 @@ class CliContext:
     _report_store: FileReportStore | ReportStore | None = field(
         default=None, repr=False
     )
+    _run_history: FileRunHistoryProvider | None = field(default=None, repr=False)
 
     def workspace(self) -> WorkspacePaths:
         if self.workspace_paths is None:
@@ -68,11 +70,26 @@ class CliContext:
             self._report_store = FileReportStore(paths.reports, policy=policy)
         return self._report_store
 
+    def run_history(self) -> FileRunHistoryProvider | None:
+        if self.globals.ephemeral:
+            return None
+        if self._run_history is not None:
+            return self._run_history
+        paths = self.workspace()
+        ensure_workspace_layout(paths)
+        history_root = paths.root / "history"
+        policy = SafeIoPolicy.for_root(history_root)
+        self._run_history = FileRunHistoryProvider(history_root, policy=policy)
+        return self._run_history
+
     @property
     def runtime(self) -> PipelineRuntime:
         if self._runtime is None:
             store = self.report_store()
             self._runtime = PipelineRuntime(reports=store)
+            history = self.run_history()
+            if history is not None:
+                self._runtime.register_run_history_provider("file", history)
         return self._runtime
 
     def resolve_profile(

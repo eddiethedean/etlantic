@@ -18,9 +18,9 @@ Loading should:
 
 | Component | Responsibility |
 |-----------|----------------|
-| ContractModel | Load and validate ODCS data contracts |
+| ContractModel | Load and validate [ODCS](ODCS.md) data contracts |
 | ETLantic | Register loaded contracts and connect them to transformations and pipelines |
-| DTCS/DPCS | Define portable transformation and pipeline artifacts |
+| [DTCS](../04_TRANSFORMATIONS/DTCS.md)/[DPCS](../05_PIPELINES/DPCS.md) | Define portable transformation and pipeline artifacts |
 | Plugins | Load optional runtime-specific metadata |
 
 ## Loading Workflows
@@ -34,7 +34,8 @@ Python classes are authored directly and artifacts are generated.
 Existing artifacts are loaded into Python.
 
 ```python
-from etlantic import Data, load_data_contract
+from etlantic import Data
+from etlantic.contracts import load_data_contract
 
 Customer = load_data_contract(
     "contracts/data/customer.odcs.yaml",

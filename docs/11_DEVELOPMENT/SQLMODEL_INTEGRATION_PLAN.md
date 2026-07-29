@@ -6,6 +6,11 @@ SQLModel combines Pydantic models with SQLAlchemy table models through standard
 Python type annotations. That developer experience aligns strongly with
 ETLantic and its planned FastAPI control plane.
 
+The reference persistence work is governed by the
+[Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+SQLModel can implement isolation contracts, but it does not create an
+authorization or tenant boundary by itself.
+
 ETLantic should support SQLModel as an optional integration in three places:
 
 1. generating or adapting relational table models from `Data` contracts;
@@ -181,6 +186,11 @@ Public code should depend on provider protocols, not SQLModel repositories.
 The optional package may implement those protocols using SQLModel sessions and
 transactions.
 
+Every tenant-owned repository lookup must take immutable tenant/workspace scope
+as part of its key. Reference shared-table stores require compound constraints,
+application-layer scope enforcement, and an independent database control such
+as row-level security. Unscoped `get(id)` repository APIs are non-conforming.
+
 ## FastAPI Integration
 
 `etlantic-fastapi` may offer an optional SQLModel persistence bundle:
@@ -311,11 +321,13 @@ The integration conformance suite should cover:
 | 0.3 | Adapter and mapping protocols, source-generation design |
 | 0.6 | SQLModel relation descriptors accepted by SQL plugins |
 | 0.9 | Optional package scaffold, generator CLI, conformance suite |
-| 1.1 | FastAPI control-plane persistence bundle |
-| 1.2 | SQLModel-backed registry and history reference providers |
-| 1.3 | SQLModel-backed state and idempotency reference providers |
-| 1.5 | IDE generation, navigation, comparison, and migration actions |
-| Later 1.x | Mature Alembic integration and provider templates |
+| 0.40 | Request-scoped control-plane repository foundation |
+| 0.41 | Tenant-aware registry, revision, and history reference providers |
+| 0.42 | State, checkpoint, outbox, lease, and idempotency providers |
+| 0.43 | Policy/audit evidence stores and migration hardening |
+| 0.44 | Graduated multi-tenant reference persistence bundle |
+| 0.45 | IDE generation, navigation, comparison, and migration actions |
+| Later 0.x | Mature Alembic integration and provider templates |
 
 ## Decision
 

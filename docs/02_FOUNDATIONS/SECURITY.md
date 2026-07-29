@@ -4,14 +4,17 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.33** and the broader
-**proposed threat model**. ETLantic 0.33.0 is a **Beta** (PyPI) release
+This chapter covers **controls shipped through 0.34** and the broader
+**proposed threat model**. ETLantic 0.34.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
 attestations, deployment-topology guarantees, or advanced supply-chain
-guarantees; those controls remain adopter-owned.
+guarantees; those controls remain adopter-owned in 0.34. A hardened
+multi-tenant control plane is a
+[planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
+not a current guarantee.
 
-## Implemented through 0.33
+## Implemented through 0.34
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -36,6 +39,10 @@ guarantees; those controls remain adopter-owned.
 - Formal denial-of-service capacity SLAs
 - Immutable audit evidence suitable for compliance programs (beyond operational reports)
 - Broader supply-chain provenance programs beyond allowlists, pins, and release attestations
+
+The control-plane program owns the first item through explicit 0.40–0.43 gates
+and a 0.44 graduation review. An SLA and formal compliance claims remain
+separate decisions.
 
 The sections below describe the full threat model. Where a control is only
 partially implemented, the evaluation table marks **Partial** or **Gap**.
@@ -239,8 +246,8 @@ trust boundaries.
 
 ### Portable transformation definitions
 
-The published DTCS 3.0 Transformation Plan adds an analysis input for
-ETLantic's planned compiler boundary. Portable definitions must normalize to
+The published [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 Transformation Plan adds an analysis input for
+ETLantic's compiler boundary. Portable definitions must normalize to
 closed, bounded, data-only `dtcs.transform-plan/2` expression graphs
 (v1 remains readable).
 
@@ -303,8 +310,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.33.0",
-        "etlantic-airflow": "==0.33.0",
+        "etlantic-polars": "==0.34.0",
+        "etlantic-airflow": "==0.34.0",
     },
 )
 ```
@@ -315,7 +322,7 @@ Fail-closed plugin trust uses **`security_mode`**, not the profile name or
 
 See [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md).
 
-!!! note "Future design (1.0)"
+!!! note "Future design (0.x roadmap)"
     A proposed `etlantic.toml` `[plugins.security]` block may eventually mirror
     the same allowlist semantics. 0.21's optional project toml does not define
     plugin security—use `Profile.plugin_allowlist`.
@@ -704,6 +711,14 @@ Strong isolation requires separate identities, artifact namespaces, cache
 namespaces, secret scopes, quotas, and execution environments. Context
 variables help correctness but are not a security boundary.
 
+The planned first-class control plane adds authenticated tenant/workspace
+scope, deny-by-default authorization, independently enforced persistence
+isolation, durable submission, leases and fencing, quotas, audit evidence, and
+profile-specific conformance. See the
+[Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+Until its CP-GA gate passes, deploy mutually untrusted tenants in separate
+processes or containers and treat all multi-tenant controls as adopter-owned.
+
 ## Configuration
 
 **Shipped today:** configure security-relevant controls on `Profile` in Python
@@ -719,8 +734,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.33.0",
-        "etlantic-sql": "==0.33.0",
+        "etlantic-polars": "==0.34.0",
+        "etlantic-sql": "==0.34.0",
     },
 )
 ```
@@ -728,7 +743,7 @@ production = Profile(
 Canonical JSON starter:
 [prod.example.json](../01_GETTING_STARTED/prod.example.json).
 
-!!! note "Future design (1.0)"
+!!! note "Future design (0.x roadmap)"
     A proposed TOML security policy block may eventually participate in
     planning (document size limits, filesystem roots, network allowlists).
     That configuration surface is **not** loaded in 0.25. Proposed names live
@@ -764,7 +779,7 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.33 Beta support envelope, automated tests
+Before expanding beyond the bounded 0.34 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -798,7 +813,7 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.33 Beta deployment is bounded stable
+The documented single-tenant/reference 0.34 Beta deployment is bounded stable
 for pilots. Broader production claims require:
 
 - the threat model is reviewed

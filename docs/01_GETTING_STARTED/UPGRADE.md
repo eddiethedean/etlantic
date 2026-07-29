@@ -9,29 +9,31 @@ and first-party plugins to the **same minor** after upgrading.
 
 ## Current target
 
-**ETLantic 0.33.0** — choose your guide:
+**ETLantic 0.34.0** — choose your guide:
 
-| From version | Ordered path to 0.33 |
+| From version | Ordered path to 0.34 |
 |---|---|
-| 0.33.x | [0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
-| 0.31.x | [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) → [0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
-| 0.30.x | [0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) → [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
-| 0.29.x | [0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) → 0.30→0.31 → 0.31→0.32 → 0.32→0.33 |
-| 0.28.x | [0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) → 0.29→0.30 → 0.30→0.31 → 0.31→0.32 → 0.32→0.33 |
-| 0.27.x | [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) → then the 0.28 chain |
-| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) → then the 0.27 chain |
-| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → then the 0.25 chain |
-| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → then the 0.24 chain |
-| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → then the 0.23 chain |
-| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → then the 0.22 chain |
-| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then the 0.21 chain |
-| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then the 0.20 chain |
-| 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then the 0.19 chain |
-| 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then the 0.18 chain |
-| 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then the 0.17 chain |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.33 |
+| 0.34.x | Already current |
+| 0.33.x | [0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
+| 0.32.x | [0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) → [0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
+| 0.31.x | [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) → then the 0.32 chain |
+| 0.30.x | [0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) → then follow the newer rows above |
+| 0.29.x | [0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) → then follow the newer rows above |
+| 0.28.x | [0.28 → 0.29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) → then follow the newer rows above |
+| 0.27.x | [0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) → then follow the newer rows above |
+| 0.26.x | [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md) → then follow the newer rows above |
+| 0.25.x | [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md) → then follow the newer rows above |
+| 0.24.x | [0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) → then follow the newer rows above |
+| 0.23.x | [0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md) → then follow the newer rows above |
+| 0.22.x | [0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md) → then follow the newer rows above |
+| 0.21.x | [0.21 → 0.22](../11_DEVELOPMENT/MIGRATION_0_21_TO_0_22.md) → then follow the newer rows above |
+| 0.20.x | [0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) → then follow the newer rows above |
+| 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then follow the newer rows above |
+| 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then follow the newer rows above |
+| 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then follow the newer rows above |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.34 |
 
-### Breaking highlights on the way to 0.33
+### Breaking highlights on the way to 0.34
 
 | Span | Watch for |
 |---|---|
@@ -51,6 +53,7 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.30 → 0.31 | Execution / state / materialization (M3) |
 | 0.31 → 0.32 | PySpark / Delta differential parity (M4) |
 | 0.32 → 0.33 | SQLAlchemy / relational differential parity (M5) |
+| 0.33 → 0.34 | Observability providers, durable run history, event consumers, and production conformance (M6) |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -59,6 +62,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.33 → 0.34 | [MIGRATION_0_33_TO_0_34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
 | 0.32 → 0.33 | [MIGRATION_0_32_TO_0_33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 | 0.31 → 0.32 | [MIGRATION_0_31_TO_0_32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
 | 0.30 → 0.31 | [MIGRATION_0_30_TO_0_31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) |
@@ -157,7 +161,7 @@ See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md).
 | Class-only pipeline lifecycle | `PipelineDefinition` / `etlantic.authoring` functional builders and JSON |
 | Plan JSON as authoring round-trip | Use `etlantic.pipeline/1`; keep `etlantic.plan/1` for resolved execution |
 | GUI/service custom encoders | Public catalog, `EditCommand`, `etlantic.service.AuthoringService` |
-| Optional HTTP reference | `pip install etlantic-fastapi` matching the core minor (not the 1.1 control plane) |
+| Optional HTTP reference | `pip install etlantic-fastapi` matching the core minor (not the 0.40–0.44 control plane) |
 
 See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
 
@@ -167,7 +171,7 @@ See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
 |---|---|
 | Assume Plugin SDK `/1` is frozen | Still freeze-eligible; blockers published — see Protocol evolution |
 | Skip codec upgrade tests | Keep `tests/fixtures/burn_in/` green; run `check_pipeline_codec_burn_in.py` |
-| Add new root demoted aliases | Prefer owning modules; see [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md) |
+| Add new root demoted aliases | Prefer owning modules; see [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md) |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.25 |
 
 See [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) and
@@ -201,7 +205,7 @@ See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 |---|---|
 | Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
 | `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.33.0`) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.34.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
@@ -242,6 +246,17 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
+
+## 0.34 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.34.0` and matching plugins | Mix 0.34 plugins with an older core |
+| Configure observability and run-history providers explicitly | Treat provider delivery as pipeline semantics |
+| Use `durable_audit` only with durable history and successful flush | Silently degrade a required audit delivery failure |
+| Keep wire schemas on their existing `/1` identifiers | Expect a wire-schema reset |
+
+See [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md).
 
 ## 0.33 configuration cheat sheet
 

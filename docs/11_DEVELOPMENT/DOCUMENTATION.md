@@ -6,7 +6,8 @@ Documentation is part of the public API.
 
 Every page describing product behavior must be one of:
 
-- **Available in 0.25** (or the first shipped milestone when still current)
+- **Available in the current minor** (or **Available since X.Y** when the
+  original milestone matters)
 - **Experimental**
 - **Partially available**
 - **Future design**
@@ -40,9 +41,10 @@ plugin, or executable behavior change.
 `NO_MKDOCS_2_WARNING=1` so Material's MkDocs 2.0 advisory does not appear
 (unrelated to this project's content).
 
-The example test imports and runs `examples/memory_customers.py`. Documentation CI
-also checks release-version consistency and rejects future-backend claims in
-the runnable examples index.
+The example test imports and runs `examples/memory_customers.py`.
+Documentation CI also checks release-version consistency, package README pins,
+local Markdown links, Python-labelled fence syntax, and future-backend claims
+in the runnable examples index.
 
 Pages labeled **Status: Available** and presented as runnable must identify a
 companion source file in `examples/`. Register the page/source pair in
@@ -59,5 +61,8 @@ every companion is executed by the syntax gate alone.
 - Use only shipped APIs in beginner documentation.
 - Put proposed APIs in the Future Design section.
 - Link to the compatibility matrix rather than duplicating dependency ranges.
+- Use public imports in runnable Python blocks; label design-only pseudocode as
+  `text`, not `python`.
+- Keep package README install pins aligned with the core release.
 - Update the changelog, status page, and navigation when release boundaries
   change.

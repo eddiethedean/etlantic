@@ -1,11 +1,11 @@
 # Execution
 
-!!! success "Available in ETLantic 0.33.0"
+!!! success "Available in ETLantic 0.34.0"
     Portable Polars + PySpark + Pandas relational compilation (shipped since
     0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
     executes registered native implementations and, when
     `Profile.portable_transform_policy` is `prefer` or `require`, can compile
-    and run Polars/PySpark/Pandas DTCS plans through `etlantic-polars` /
+    and run Polars/PySpark/Pandas [DTCS](../04_TRANSFORMATIONS/DTCS.md) plans through `etlantic-polars` /
     `etlantic-pyspark` / `etlantic-pandas` without a native
     `@implementation(...)` for the advertised kernel +
     `portable-relational/1` claim set. See
@@ -109,9 +109,9 @@ plans, but those plans preserve the same logical pipeline contract.
 
 Execution is informed by all three standards:
 
-- **ODCS** validates data.
+- **[ODCS](../03_DATA_CONTRACTS/ODCS.md)** validates data.
 - **DTCS** defines transformation semantics.
-- **DPCS** defines pipeline semantics.
+- **[DPCS](../05_PIPELINES/DPCS.md)** defines pipeline semantics.
 
 Execution plugins preserve these semantics while mapping them onto runtime
 capabilities.

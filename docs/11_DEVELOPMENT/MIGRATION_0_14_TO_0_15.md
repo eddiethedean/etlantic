@@ -69,7 +69,7 @@ profile = Profile(name="dev", assets={"customer_source": "memory"})
 - Plan fingerprints for equivalent pipelines/profiles (profile snapshots still
   serialize the pre-0.15 `bindings` shape without an `assets` key)
 - Runtime read/write behavior and plugin dispatch
-- DPCS round-trips and interface input/output roles
+- [DPCS](../05_PIPELINES/DPCS.md) round-trips and interface input/output roles
 
 ## Retained protocol / wire names
 

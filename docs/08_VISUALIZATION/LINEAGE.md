@@ -6,8 +6,8 @@
 
 
 
-Data lineage describes how data moves through a ETLantic pipeline, from its
-original sources to its published outputs.
+Data lineage describes how data moves through an ETLantic pipeline, from its
+extracts to its published loads.
 
 Because ETLantic constructs a validated **Pipeline Plan** before execution,
 lineage is derived from the pipeline's logical semantics rather than runtime
@@ -52,17 +52,17 @@ logical lineage established by the Pipeline Plan.
 
 ETLantic derives lineage from:
 
-- Sources
-- Data contracts (ODCS)
-- Transformations (DTCS)
-- Pipeline graph (DPCS)
+- Extracts (logical source nodes)
+- Data contracts ([ODCS](../03_DATA_CONTRACTS/ODCS.md))
+- Transformations ([DTCS](../04_TRANSFORMATIONS/DTCS.md))
+- Pipeline graph ([DPCS](../05_PIPELINES/DPCS.md))
 - Subpipeline interfaces
-- Sinks
+- Loads (logical sink nodes)
 
 Conceptually:
 
 ```text
-Source
+Extract
   │
   ▼
 Transformation A
@@ -73,7 +73,7 @@ Transformation B  Transformation C
   │              │
   └──────┬───────┘
          ▼
-        Sink
+        Load
 ```
 
 ## Types of Lineage

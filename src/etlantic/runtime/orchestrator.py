@@ -253,6 +253,76 @@ class LocalOrchestrator:
         elif self.workspace is not None and self.artifacts.workspace is None:
             self.artifacts.workspace = self.workspace
 
+    def _region_by_node(self) -> dict[str, str]:
+        mapping: dict[str, str] = {}
+        for region in self.plan.regions:
+            for node_name in region.node_names:
+                mapping[node_name] = region.identity
+        return mapping
+
+    def _physical_unit_for_node(self, name: str | None) -> str | None:
+        if not name:
+            return None
+        return self.plan.logical_to_physical.get(name)
+
+    def _backend_for_node(self, name: str | None) -> str | None:
+        if not name:
+            return None
+        unit_id = self.plan.logical_to_physical.get(name)
+        if not unit_id:
+            return None
+        for unit in self.plan.physical_units:
+            if unit.identity == unit_id:
+                return unit.engine
+        return None
+
+    def _annotations_for_node(self, name: str | None) -> dict[str, Any]:
+        if not name:
+            return {}
+        annotations: dict[str, Any] = {}
+        write_intents = dict(self.plan.intents.get("write_intents") or {})
+        wi = write_intents.get(name)
+        if isinstance(wi, dict):
+            meta = wi.get("metadata") or {}
+            for key in ("layer", "lifecycle_policy", "lifecycle_action"):
+                if key in meta:
+                    annotations[key] = meta[key]
+        extensions = dict(self.plan.metadata.get("extensions") or {})
+        layer_map = extensions.get("plugin:medallantic.layers") or extensions.get(
+            "layer_by_node"
+        )
+        if isinstance(layer_map, dict) and name in layer_map:
+            annotations["layer"] = layer_map[name]
+        return annotations
+
+    def _lifecycle_event(
+        self,
+        *,
+        kind: str,
+        run_id: str,
+        step_name: str | None = None,
+        attempt: int | None = None,
+        status: str | None = None,
+        message: str | None = None,
+        correlation_id: str | None = None,
+    ) -> LifecycleEvent:
+        regions = self._region_by_node()
+        return LifecycleEvent(
+            kind=kind,
+            run_id=run_id,
+            pipeline_id=self.plan.pipeline_id,
+            plan_id=self.plan.plan_id,
+            region_id=regions.get(step_name) if step_name else None,
+            physical_unit=self._physical_unit_for_node(step_name),
+            backend=self._backend_for_node(step_name),
+            step_name=step_name,
+            attempt=attempt,
+            status=status,
+            message=message,
+            correlation_id=correlation_id or run_id,
+            annotations=self._annotations_for_node(step_name),
+        )
+
     def _effective_write_mode(
         self, node: Node, binding_name: str | None = None
     ) -> WriteMode:
@@ -313,10 +383,9 @@ class LocalOrchestrator:
 
     def _notify_publication(self, *, run_id: str, node: Node, attempt: int) -> None:
         self.runtime.events.emit(
-            LifecycleEvent(
+            self._lifecycle_event(
                 kind="publication",
                 run_id=run_id,
-                pipeline_id=self.plan.pipeline_id,
                 step_name=node.name,
                 attempt=attempt,
                 status="succeeded",
@@ -366,6 +435,9 @@ class LocalOrchestrator:
             ) from exc
         self._persistence.report_persisted = True
         self._persistence.terminal_reports_written += 1
+        bridge = getattr(self.runtime, "observability_bridge", None)
+        if bridge is not None:
+            bridge.persist_report(report)
 
     def _finalize_incomplete_steps(
         self,
@@ -496,7 +568,15 @@ class LocalOrchestrator:
         self._validate_cancellation_policy()
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
         started = datetime.now(UTC)
-        logger = RunLogger(run_id=run_id, pipeline_id=self.plan.pipeline_id)
+        logger = RunLogger(
+            run_id=run_id,
+            pipeline_id=self.plan.pipeline_id,
+            on_record=getattr(
+                getattr(self.runtime, "observability_bridge", None),
+                "emit_log",
+                None,
+            ),
+        )
         artifacts = self.artifacts or ArtifactStore(workspace=self.workspace)
         graph = self.plan.logical_graph
         nodes = {n.name: _NodeState(node=n) for n in graph.nodes}
@@ -518,13 +598,20 @@ class LocalOrchestrator:
         )
 
         self.runtime.events.emit(
-            LifecycleEvent(
+            self._lifecycle_event(
                 kind="run_started",
                 run_id=run_id,
-                pipeline_id=self.plan.pipeline_id,
                 status=status.value,
             )
         )
+        bridge = getattr(self.runtime, "observability_bridge", None)
+        if bridge is not None:
+            bridge.start_run(
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                plan_id=self.plan.plan_id,
+                correlation_id=run_id,
+            )
 
         async def run_body() -> None:
             nonlocal status
@@ -846,16 +933,35 @@ class LocalOrchestrator:
                 "outbound_events": list(self.outbound_events),
             },
         )
+        bridge = getattr(self.runtime, "observability_bridge", None)
+        if bridge is not None:
+            report = replace(
+                report,
+                metadata={
+                    **dict(report.metadata),
+                    "observability": bridge.observability_metadata(),
+                },
+            )
         self._persist_report(report)
         event_kind = "run_completed" if status is RunStatus.SUCCEEDED else "run_failed"
         self.runtime.events.emit(
-            LifecycleEvent(
+            self._lifecycle_event(
                 kind=event_kind,
                 run_id=run_id,
-                pipeline_id=self.plan.pipeline_id,
                 status=status.value,
             )
         )
+        if bridge is not None:
+            try:
+                await bridge.aflush()
+            except Exception as exc:
+                if status is RunStatus.SUCCEEDED:
+                    raise PipelineExecutionError(
+                        redact_message(str(exc)),
+                        run_id=run_id,
+                        report=report,
+                        code="PMEXEC411",
+                    ) from exc
         await self.runtime.callbacks.emit(event_kind, report)
         return report
 
@@ -975,10 +1081,9 @@ class LocalOrchestrator:
             )
             bound_step_context = step_context
             self.runtime.events.emit(
-                LifecycleEvent(
+                self._lifecycle_event(
                     kind="step_started",
                     run_id=run_id,
-                    pipeline_id=self.plan.pipeline_id,
                     step_name=name,
                     attempt=current_attempt,
                     status=state.status.value,
@@ -1013,10 +1118,9 @@ class LocalOrchestrator:
                 state.status = StepStatus.SUCCEEDED
                 state.ended_at = datetime.now(UTC)
                 self.runtime.events.emit(
-                    LifecycleEvent(
+                    self._lifecycle_event(
                         kind="step_completed",
                         run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
                         step_name=name,
                         attempt=attempt,
                         status=state.status.value,
@@ -1138,14 +1242,13 @@ class LocalOrchestrator:
                     ),
                 )
                 self.runtime.events.emit(
-                    LifecycleEvent(
+                    self._lifecycle_event(
                         kind="step_failed",
                         run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
                         step_name=name,
                         attempt=attempt,
                         status=state.status.value,
-                        message=redact_message(str(exc)),
+                        message=state.error,
                     )
                 )
                 logger.log(
@@ -1485,10 +1588,9 @@ class LocalOrchestrator:
                 state.records_in = result.metrics.rows_affected or 0
                 state.records_out = result.metrics.rows_affected or 0
                 self.runtime.events.emit(
-                    LifecycleEvent(
+                    self._lifecycle_event(
                         kind="publication",
                         run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
                         step_name=node.name,
                         attempt=attempt,
                         status="succeeded",
@@ -1556,10 +1658,9 @@ class LocalOrchestrator:
                 state.records_in = _count(payload)
                 state.records_out = loaded.metrics.rows_affected or _count(payload)
                 self.runtime.events.emit(
-                    LifecycleEvent(
+                    self._lifecycle_event(
                         kind="publication",
                         run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
                         step_name=node.name,
                         attempt=attempt,
                         status="succeeded",
@@ -1589,10 +1690,9 @@ class LocalOrchestrator:
             state.records_in = _count(payload)
             state.records_out = _count(payload)
             self.runtime.events.emit(
-                LifecycleEvent(
+                self._lifecycle_event(
                     kind="publication",
                     run_id=run_id,
-                    pipeline_id=self.plan.pipeline_id,
                     step_name=node.name,
                     attempt=attempt,
                     status="succeeded",
@@ -1970,10 +2070,9 @@ class LocalOrchestrator:
                     }
                 )
                 self.runtime.events.emit(
-                    LifecycleEvent(
+                    self._lifecycle_event(
                         kind="outbound_event",
                         run_id=run_id,
-                        pipeline_id=self.plan.pipeline_id,
                         step_name=node.name,
                         message=emit.event,
                     )

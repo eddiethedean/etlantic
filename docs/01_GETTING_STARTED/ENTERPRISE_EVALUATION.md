@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.33.0.** Deep diligence packet. Start with the
+> **Status: Available in ETLantic 0.34.0.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -25,7 +25,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.33.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.34.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -64,7 +64,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.33.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.34.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -73,17 +73,17 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-For a published GitHub Release asset (example: wheel from the `v0.33.0` release):
+For a published GitHub Release asset (example: wheel from the `v0.34.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
-gh attestation verify path/to/etlantic-0.33.0-*.whl \
+gh attestation verify path/to/etlantic-0.34.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```
 
 SBOM digests are attached as release workflow artifacts / notes on the tagged
-Release. Prefer exact pins (`etlantic==0.33.0` and matching plugins) over
+Release. Prefer exact pins (`etlantic==0.34.0` and matching plugins) over
 floating ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
@@ -105,7 +105,10 @@ remains in Medallantic—not core.
 
 ## Explicit non-goals (do not expect these from docs or product)
 
-- Multi-tenant isolation guarantees or a managed control plane
+- Multi-tenant isolation guarantees or a managed control plane **in 0.33**;
+  these are a
+  [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
+  not a current capability
 - SOC2, GDPR, HIPAA, or other compliance attestations
 - HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs
 - Cloud secret managers (Vault, AWS Secrets Manager)—OS keyring ships via
@@ -123,6 +126,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.33 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.34 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

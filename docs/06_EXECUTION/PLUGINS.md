@@ -11,10 +11,9 @@ Plugins are the extension mechanism that allows ETLantic to execute
 portable pipeline plans on different technologies without changing pipeline
 definitions.
 
-Beginning with the planned 0.11+ work, engine plugins may also implement a
-compiler for the closed, published DTCS 3.0 Transformation Plan. This
-additional capability does not permit plugins to redefine portable operation
-semantics.
+Since 0.11, engine plugins may also implement a compiler for the closed,
+published [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plan. This additional capability does not permit
+plugins to redefine portable operation semantics.
 
 The core ETLantic library is intentionally small. It models, validates,
 plans, generates contracts, and loads contracts. Plugins provide concrete
@@ -199,9 +198,9 @@ Plugins should publish:
 - Plugin name
 - Version
 - Supported ETLantic version
-- Supported ODCS version
+- Supported [ODCS](../03_DATA_CONTRACTS/ODCS.md) version
 - Supported DTCS version
-- Supported DPCS version
+- Supported [DPCS](../05_PIPELINES/DPCS.md) version
 - Capability metadata
 
 Planning should reject incompatible plugins.

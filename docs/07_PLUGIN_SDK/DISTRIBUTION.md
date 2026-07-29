@@ -42,7 +42,7 @@ Plugins should be distributed as standard Python packages.
 
 ### Published packages (0.24)
 
-Install matching minors while ETLantic is pre-1.0:
+Install matching minors throughout ETLantic's 0.x roadmap:
 
 - `etlantic-polars`
 - `etlantic-pandas`
@@ -109,9 +109,9 @@ Every plugin should publish:
 - Plugin version
 - Supported ETLantic version(s)
 - Supported SDK version
-- Supported ODCS version(s)
-- Supported DTCS version(s)
-- Supported DPCS version(s)
+- Supported [ODCS](../03_DATA_CONTRACTS/ODCS.md) version(s)
+- Supported [DTCS](../04_TRANSFORMATIONS/DTCS.md) version(s)
+- Supported [DPCS](../05_PIPELINES/DPCS.md) version(s)
 - Capability declarations
 
 Planning uses this metadata when selecting plugins.

@@ -1,6 +1,6 @@
 # DTCS 3.0 Rich Portable Analytics Publication Record
 
-- Status: Published in DTCS specification 3.0.0 and `dtcs` toolkit 0.14.0
+- Status: Published in [DTCS](../04_TRANSFORMATIONS/DTCS.md) specification 3.0.0 and `dtcs` toolkit 0.14.0
 - Published plan protocol: `dtcs.transform-plan/2` (v1 remains readable)
 - Baseline retained: DTCS 2.0.0 identifiers and `dtcs.transform-plan/1`
 - Related ETLantic milestones: 0.11–0.15

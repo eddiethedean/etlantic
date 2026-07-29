@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-> **Status: Available in ETLantic 0.33.0** for the shipped protocols below.
+> **Status: Available in ETLantic 0.34.0** for the shipped protocols below.
 > Future protocols are listed only in the appendix—do not treat them as APIs.
 
 For the package-from-zero workflow, start with
@@ -23,7 +23,7 @@ concrete runtime behavior.
 | Portable transform compiler | [PORTABLE_TRANSFORM_COMPILER](PORTABLE_TRANSFORM_COMPILER.md) | engine packages above |
 | Testing / conformance | [TESTING_PLUGINS](TESTING_PLUGINS.md) | `etlantic.testing` |
 
-Compiler support is expressed through exact DTCS profiles, actions, functions,
+Compiler support is expressed through exact [DTCS](../04_TRANSFORMATIONS/DTCS.md) profiles, actions, functions,
 operators, types, and modes. Plugin identity alone never implies portable
 coverage.
 
@@ -46,14 +46,14 @@ a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
 
 - **Stable interfaces** within 0.x compatibility rules
 - **Capability driven** — plugins declare what they support
-- **Portable semantics** — preserve ODCS, DTCS, and DPCS meaning
+- **Portable semantics** — preserve [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS, and [DPCS](../05_PIPELINES/DPCS.md) meaning
 - **Honest capabilities** — unsupported semantics fail during planning
 - **Secret safety** — plans contain references, never resolved credentials
 
 ## Appendix — future / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.33.0** (still Future design):
+protocols in **0.34.0** (still Future design):
 
 - General storage plugins (Snowflake, S3, Iceberg, …) — see
   [Storage today](../06_EXECUTION/STORAGE_TODAY.md)

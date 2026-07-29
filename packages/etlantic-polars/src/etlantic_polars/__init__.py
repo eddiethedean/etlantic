@@ -35,7 +35,7 @@ from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
 
-__version__ = "0.33.0"
+__version__ = "0.34.0"
 
 __all__ = [
     "PolarsDataframePlugin",

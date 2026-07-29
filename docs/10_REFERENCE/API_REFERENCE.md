@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.33.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.34.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -139,14 +139,14 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.33.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.34.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
 [compatibility matrix](COMPATIBILITY.md) before upgrading. Narrative CLI docs:
 [CLI](CLI.md).
 
-## Compatibility aliases (pre-1.0)
+## Compatibility aliases (0.x)
 
 ETLantic **0.28** removed the third wave of root facade aliases (`sql`,
 `profile`, `lifecycle` clusters). Import those symbols from owning modules — see
@@ -172,4 +172,4 @@ Removed in 0.26 (raise on root import): `RunRequest`, `RunSelection`,
 `generate_contracts`, and other symbols listed in the migration guide.
 
 See [Surface inventory](SURFACE_INVENTORY.md) and
-[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md).
+[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md).

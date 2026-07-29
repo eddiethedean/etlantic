@@ -9,10 +9,11 @@ the portable contracts, graph, validation, planning, execution lifecycle, and
 plugin coordination underneath it. **ETLantic core never gains medallion
 types.**
 
-**0.29 (M1)** ships `MedallionPipeline`, `MedallionBuilder`, `Bronze` /
-`Silver` / `Gold`, and `medallantic.migrate.sparkforge`. **0.30 (M2)** enforces
-portable `rules=` via `etlantic.quality/1` gates (Polars/Pandas/local live;
-SQL/PySpark fail-closed). Transform callables remain **0.31**.
+The current **0.34 (M6)** line includes native authoring, portable quality
+gates, importable transform execution, lifecycle/write semantics, PySpark and
+Delta differential coverage, SQLAlchemy relational parity, observability
+providers, durable run history, event consumers, and production conformance.
+Native PySpark Column and Moltres rules remain explicitly capability-gated.
 
 Documentation:
 
@@ -25,7 +26,7 @@ Documentation:
 ## Install
 
 ```bash
-pip install 'etlantic==0.33.0' 'medallantic==0.33.0'
+pip install 'etlantic==0.34.0' 'medallantic==0.34.0'
 # or
 pip install 'etlantic[medallantic]'
 ```
@@ -44,11 +45,16 @@ defn = (
 )
 ```
 
-## SparkForge IR migrate
+## Migration bridges
 
 Feed `SparkForgePipelineSpec` (JSON/YAML fixtures or hand-built dataclasses)
-via `adapt_pipeline` or `medallantic.migrate.sparkforge`. There is **no** live
-`pipeline_builder` / SparkForge Python API bridge in this release.
+via `adapt_pipeline` or `medallantic.migrate.sparkforge`. Existing live
+builders can use:
+
+```python
+from medallantic.migrate.sparkforge import from_pipeline_builder
+from medallantic.migrate.sql import from_sql_pipeline_builder
+```
 
 The adapted result supplies an ordinary ETLantic pipeline and profile; select
 execution plugins such as `Profile.spark_engine="pyspark"` separately.

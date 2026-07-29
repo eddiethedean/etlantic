@@ -1,6 +1,6 @@
 # Portable Transformation Compiler Protocol
 
-!!! success "Available since ETLantic 0.17 (docs target 0.33.0)"
+!!! success "Available since ETLantic 0.17 (docs target 0.34.0)"
     `etlantic.transform-compiler/1` is importable. Polars, PySpark, Pandas, and
     SQL claim `portable-relational-kernel/1` and `portable-relational/1`. Third
     parties must pass `run_portable_transform_conformance_suite` for every
@@ -10,7 +10,7 @@
 
 A portable transformation compiler translates a validated
 `dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
-DTCS-defined meaning.
+[DTCS](../04_TRANSFORMATIONS/DTCS.md)-defined meaning.
 
 ## Boundary
 

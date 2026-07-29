@@ -1,7 +1,11 @@
 # Medallantic Roadmap
 
+**Current release:** Medallantic **0.34.0**. M0 through M6 are shipped;
+**M7 / ETLantic 0.35** is the next planned phase. Planned phases describe
+capability order, not release-date commitments.
+
 Medallantic is the engine-agnostic medallion pipeline facade built on
-[ETLantic](https://github.com/eddiethedean/etlantic). It will provide one
+[ETLantic](https://github.com/eddiethedean/etlantic). It provides one
 bronze/silver/gold authoring model across local Python, Polars, Pandas, SQL,
 and PySpark while delegating contracts, graph validation, deterministic
 planning, execution coordination, reports, and plugin trust to ETLantic.
@@ -61,13 +65,15 @@ A capability belongs in ETLantic when it:
 
 Layer names, layer defaults, medallion dependency conventions, and migration
 compatibility remain in Medallantic. Each milestone may therefore include
-prerequisite Etlantic work; those prerequisites should land with their own
+prerequisite ETLantic work; those prerequisites should land with their own
 core tests before Medallantic consumes them.
 
 ## Current baseline
 
-The renamed package starts with the former `etlantic-sparkforge` IR adapter.
-It currently provides:
+The **0.33.0** baseline includes the former `etlantic-sparkforge` IR adapter,
+native Medallantic authoring, portable quality and lifecycle semantics, and
+the shipped PySpark/Delta and SQLAlchemy relational differential bridges. It
+provides:
 
 - SparkForge medallion IR parsing
 - bronze/silver/gold-to-ETLantic graph adaptation
@@ -80,15 +86,15 @@ It currently provides:
 - Delta capability checks
 - IR fixture parity tests without SparkForge or PySpark installed
 
-The baseline in **0.28** started from the former `etlantic-sparkforge` IR
-adapter. **0.29 / M1** added native `MedallionPipeline` authoring (shipped in
-0.29.0). Live
-execution of legacy transformation callables and full Spark/SQL behavioral
-parity remain later milestones.
+The baseline began in **0.28** with the renamed IR adapter. **0.29–0.33**
+shipped M1–M6: native authoring, quality rules, lifecycle/materialization,
+PySpark/Delta differential parity, SQLAlchemy relational differential parity,
+and operations evidence with production-readiness conformance. Migration
+completion remains planned for **0.35 / M7**.
 
-## Joint pre-1.0 sequence
+## Joint 0.x foundation sequence
 
-Medallantic milestones are release-gated with ETLantic's pre-1.0 roadmap:
+Medallantic milestones are release-gated with ETLantic's 0.x roadmap:
 
 | ETLantic release | Medallantic phase | Joint focus |
 |---|---|---|
@@ -101,8 +107,9 @@ Medallantic milestones are release-gated with ETLantic's pre-1.0 roadmap:
 | 0.33 | M5 | SQLAlchemy/relational differential parity |
 | 0.34 | M6 | Operations, evidence, and production readiness |
 | 0.35 | M7 | Migration completion and joint freeze |
-| 0.36–0.98 | — | Joint compatibility burn-in |
-| 0.99 | — | Shared release-candidate rehearsal |
+| 0.36 | — | Joint compatibility burn-in |
+| 0.37 | — | Shared release-candidate rehearsal |
+| 0.38 | — | Stable foundation |
 
 The [ETLantic roadmap](../../ROADMAP.md) is authoritative for the core
 capability promoted at each phase and the joint exit gate. This document is
@@ -314,6 +321,8 @@ Tracking: [EXIT_GATE_0_32.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_32.md).
 
 ### M5 / ETLantic 0.33 — SQL pipeline-builder parity
 
+**Shipped in 0.33.0**
+
 - [x] Add a live migration bridge for `SqlPipelineBuilder` definitions.
 - [x] Accept Moltres DataFrames/expressions and SQLAlchemy ORM, `Select`, and
   compound-select sources during migration.
@@ -334,16 +343,16 @@ Tracking: [EXIT_GATE_0_33.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_33.md).
 
 ### M6 / ETLantic 0.34 — Operations, observability, and production readiness
 
-- [ ] Provide medallion-oriented structured explain output.
-- [ ] Emit normalized lifecycle events with pipeline, layer, step, attempt,
+- [x] Provide medallion-oriented structured explain output.
+- [x] Emit normalized lifecycle events with pipeline, layer, step, attempt,
   plan, run, and backend context.
-- [ ] Add durable run-history provider conformance for create/append/read.
-- [ ] Port trend, quality, performance, and anomaly analytics as optional
+- [x] Add durable run-history provider conformance for create/append/read.
+- [x] Port trend, quality, performance, and anomaly analytics as optional
   event consumers rather than core storage logic.
-- [ ] Add development, testing, and production profile templates.
-- [ ] Complete redaction, plugin allowlist, schema-mutation, concurrency,
+- [x] Add development, testing, and production profile templates.
+- [x] Complete redaction, plugin allowlist, schema-mutation, concurrency,
   cancellation, timeout, and recovery tests.
-- [ ] Publish compatibility, security, performance, and production-readiness
+- [x] Publish compatibility, security, performance, and production-readiness
   documentation with explicit support tiers.
 
 Exit criteria: Medallantic meets ETLantic’s production profile requirements

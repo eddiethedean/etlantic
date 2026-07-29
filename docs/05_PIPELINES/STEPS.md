@@ -1,9 +1,9 @@
 # Steps
 
-A step may eventually be realized either by a native registered implementation
-or by compiling its transformation's portable DTCS Transformation Plan. This
-0.11+ choice does not change step identity, bindings, output
-references, or graph topology.
+A step is realized either by a native registered implementation or, when the
+selected compiler advertises the required capabilities, by compiling its
+portable [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plan. The realization choice does not change step
+identity, bindings, output references, or graph topology.
 
 A `Step` is a concrete instance of a `Transformation` inside a `Pipeline`.
 
@@ -48,7 +48,7 @@ Separating transformations from steps allows:
 - Multiple instances of the same transformation
 - Different parameter values
 - Different pipeline graphs
-- Stable DTCS contracts with many DPCS references
+- Stable DTCS contracts with many [DPCS](DPCS.md) references
 
 ## Inputs
 

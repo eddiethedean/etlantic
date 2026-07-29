@@ -121,9 +121,9 @@ The public subpipeline boundary must remain visible in every view.
 
 Graphviz may also show relationships between:
 
-- ODCS data contracts
-- DTCS transformation contracts
-- DPCS pipeline contracts
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) data contracts
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) transformation contracts
+- [DPCS](../05_PIPELINES/DPCS.md) pipeline contracts
 - Plugin and runtime bindings
 
 These views are useful for architecture and governance reviews.

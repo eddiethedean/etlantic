@@ -2,6 +2,13 @@
 
 Validation is a core part of the ETLantic data-contract lifecycle.
 
+> **Status: Partially available in 0.33.** Record validation through
+> ContractModel/Pydantic, pipeline graph validation, named validation policies,
+> dataframe validation outcomes, portable quality gates, and normalized runtime
+> validation evidence are public. Callback-based invalid-data handling,
+> `ValidationMode`, and a `Pipeline.validate_data()` API are design direction,
+> not public 0.33 APIs.
+
 ETLantic coordinates **when** validation happens, ContractModel defines **what valid data means**, and execution plugins determine **how validation is performed efficiently** for a chosen runtime.
 
 The architectural boundary is:
@@ -44,7 +51,7 @@ ContractModel owns:
 - Field and model validation
 - Pydantic semantics
 - Data-contract constraints
-- ODCS mappings
+- [ODCS](ODCS.md) mappings
 - Contract identity
 - Compatibility analysis
 - Data-contract diagnostics
@@ -57,8 +64,6 @@ ETLantic owns:
 - Validation timing
 - Validation policy
 - Validation boundary selection
-- Callback dispatch
-- Invalid-data actions
 - Execution-plan checks
 - Plugin capability checks
 - Aggregating validation results across a pipeline
@@ -72,8 +77,8 @@ Execution plugins own:
 - Arrow schema checks
 - Sampling or batch validation
 - Materialization where required
-- Rejecting or splitting invalid records
-- Writing quarantined data
+- Rejecting or splitting invalid records when the selected protocol supports it
+- Writing quarantined data when an explicit, capable sink is configured
 - Returning structured validation results
 
 ## Validation Boundaries
@@ -274,9 +279,9 @@ The result should still conform to the same logical contract semantics.
 
 Plugins should declare which validation capabilities they support.
 
-Conceptually:
+The following is design vocabulary, not a public constructor:
 
-```python
+```text
 PluginValidationCapabilities(
     schema=True,
     required_fields=True,
@@ -303,39 +308,24 @@ Silent omission is not allowed.
 
 ## Validation Modes
 
-ETLantic should support several validation modes.
+The following modes describe the intended enforcement spectrum. ETLantic 0.33
+does not export a `ValidationMode` enum.
 
 ### Full
 
 Validate all records and all supported constraints.
 
-```python
-ValidationMode.FULL
-```
-
 ### Schema only
 
 Validate shape and logical types without row-level semantic checks.
-
-```python
-ValidationMode.SCHEMA
-```
 
 ### Sampled
 
 Validate a configured sample.
 
-```python
-ValidationMode.SAMPLED
-```
-
 ### Disabled
 
 Skip runtime data validation.
-
-```python
-ValidationMode.DISABLED
-```
 
 Disabling validation affects enforcement, not the meaning of the contract.
 
@@ -350,15 +340,18 @@ from etlantic import Profile
 
 production = Profile(
     name="production",
-    # validation policy fields may evolve; keep policies declarative
+    security_mode="production",
+    validation_policy="strict",
+    plugin_allowlist={"etlantic-polars": ">=0.33,<0.34"},
 )
 ```
 
-The exact API may differ, but the policy should remain declarative and inspectable.
+The profile selects a registered graph-validation policy. Dataframe execution
+also receives a separate, plan-resolved `DataframeValidationPolicy`.
 
 ## Invalid Input Data
 
-Invalid input data may be handled by policy.
+Invalid input data may be handled by a dataframe validation policy.
 
 Possible actions include:
 
@@ -367,33 +360,29 @@ Possible actions include:
 - Drop invalid records
 - Quarantine invalid records
 - Continue with valid records
-- Invoke callbacks
 - Record diagnostics
 - Emit metrics
 
 Example:
 
 ```python
-from etlantic import (
-    InvalidDataAction,
-    InvalidDataContext,
-    on_invalid_data,
+from etlantic.dataframe import (
+    DataframeValidationOutcome,
+    DataframeValidationPolicy,
 )
 
-
-@on_invalid_data(stage="input_validation")
-def handle_invalid_customers(
-    context: InvalidDataContext[RawCustomer],
-) -> InvalidDataAction:
-    return InvalidDataAction.quarantine(
-        destination="invalid-customers",
-        continue_with_valid=True,
-    )
+policy = DataframeValidationPolicy(
+    input_outcome=DataframeValidationOutcome.QUARANTINE,
+    output_outcome=DataframeValidationOutcome.FAIL,
+)
 ```
 
-ETLantic coordinates the action.
+The runtime supplies this frozen policy to the selected dataframe plugin.
+Quarantine still requires an explicitly configured, capable destination.
 
-Plugins carry out the actual split, write, or quarantine.
+For a portable accepted/rejected split in the pipeline graph, build a quality
+gate with `etlantic.quality.make_quality_gate`. Its `result` and `rejected`
+ports keep valid and invalid records explicit.
 
 ## Invalid Output Data
 
@@ -410,7 +399,7 @@ Invalid transformation output
 Fail the node
         │
         ▼
-Invoke failure and invalid-data hooks
+Record structured diagnostics
         │
         ▼
 Prevent publication
@@ -422,34 +411,42 @@ Profiles may override this behavior, but permissive handling should require expl
 
 Validation should produce structured results rather than only raising exceptions.
 
-Conceptually:
+Use the API that matches the validation boundary:
 
 ```python
-report = CustomerPipeline.validate_data(
-    node="normalized",
-    value=result,
-)
+from etlantic import PipelineRuntime
 
-if not report.valid:
-    for diagnostic in report.diagnostics:
-        print(diagnostic.code, diagnostic.message)
+customer = Customer.model_validate(payload)  # one record
+
+graph_report = CustomerPipeline.validate(    # graph and capabilities
+    profile="development",
+)
+graph_report.raise_for_errors()
+
+runtime = PipelineRuntime()
+run_report = CustomerPipeline.run(
+    profile="development",
+    runtime=runtime,
+)
+for validation in run_report.validations:    # runtime evidence
+    if validation.status == "failed":
+        print(validation.to_dict())
+for diagnostic in run_report.diagnostics:
+    print(diagnostic.code, diagnostic.message)
 ```
 
-A validation report should include:
+Each public `ValidationResult` records:
 
-- Contract identity
-- Contract version
-- Node identity
-- Validation stage
-- Validation mode
-- Number of records checked
-- Number of valid records
-- Number of invalid records
-- Diagnostics
-- Unsupported constraints
-- Plugin used
-- Duration
-- Whether fallback validation occurred
+- `node_name`
+- `boundary`
+- `status`
+- optional `message`
+- optional `records_checked`
+- optional `records_invalid`
+- secret-free `metadata`
+
+Backend-specific metadata may add contract identity, plugin, unsupported-rule,
+or fallback details without placing source rows in the report.
 
 ## Diagnostics
 
@@ -508,31 +505,19 @@ Pydantic ValidationError
 ContractModel Validation Report
         │
         ▼
-ETLantic InvalidDataContext
+ETLantic normalized validation evidence
         │
         ▼
-Callback and InvalidDataAction
+PipelineRunReport
 ```
 
 Users should not have to parse raw Pydantic error structures.
 
 ## Sync and Async Validation
 
-Validation callbacks may be synchronous or asynchronous.
-
-```python
-@on_invalid_data
-def handle_invalid(context):
-    ...
-```
-
-```python
-@on_invalid_data
-async def handle_invalid(context):
-    ...
-```
-
-ETLantic normalizes both through its internal async invocation layer.
+ETLantic 0.33 does not expose an `on_invalid_data` decorator. Callback-based
+invalid-data handling, if added later, must define synchronous and asynchronous
+behavior without weakening plan-time capability checks.
 
 Validation plugins may also expose sync or async implementations.
 
@@ -648,7 +633,6 @@ Quarantine is an execution behavior, not a new contract type.
 
 A quarantine destination may be configured through:
 
-- A node callback
 - A profile
 - A storage binding
 - A plugin setting
@@ -692,7 +676,6 @@ Tests should cover:
 - Custom validators
 - Batch validation
 - Plugin fallback
-- Invalid-data callbacks
 - Quarantine behavior
 - Sensitive-value redaction
 - Output contract violations

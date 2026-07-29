@@ -47,7 +47,7 @@ The base installation should remain intentionally small.
 ### ContractModel
 
 ETLantic should depend on ContractModel's public data-contract interfaces
-rather than duplicating its Pydantic and ODCS operational behavior.
+rather than duplicating its Pydantic and [ODCS](../03_DATA_CONTRACTS/ODCS.md) operational behavior.
 
 This dependency must remain one-directional:
 
@@ -462,7 +462,7 @@ distributions only.
 
 ### FastAPI integration
 
-The post-1.0 control API belongs in a separate `etlantic-fastapi`
+The 0.40–0.44 control API belongs in a separate `etlantic-fastapi`
 distribution.
 
 Recommended dependencies:
@@ -534,7 +534,7 @@ identity rules it owns. The standard library plus small owned algorithms should
 cover the initial DAG requirements.
 
 Use NetworkX as a development oracle in property tests. Re-evaluate it for
-workspace-scale lineage and advanced post-1.0 graph analysis.
+workspace-scale lineage and advanced 0.45–0.48 graph analysis.
 
 ### Msgspec and Orjson
 
@@ -654,7 +654,7 @@ them in the core project's optional-dependency table.
 | hvac | Vault secret-provider plugin | Adopt |
 | onepassword-sdk | Optional secret-provider plugin | Evaluate after provider conformance |
 | Pluggy | Deferred | Re-evaluate if true hook requirements grow |
-| NetworkX | Development/post-1.0 | Use as test oracle; avoid core dependency |
+| NetworkX | Development/0.45–0.48 | Use as test oracle; avoid core dependency |
 | Msgspec/orjson | Deferred | Add only after benchmarks |
 
 ## Review Cadence

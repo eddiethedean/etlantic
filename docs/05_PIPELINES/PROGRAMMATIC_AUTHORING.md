@@ -1,12 +1,12 @@
-# Programmatic Authoring (0.24)
+# Programmatic Authoring
 
-> **Status: Available in ETLantic 0.33.0.**
+> **Status: Available in ETLantic 0.34.0** (introduced in 0.24).
 
 Author pipelines with immutable builders or JSON — no class declarations
 required. Class authoring remains fully supported and normalizes to the same
 `PipelineDefinition` (`etlantic.pipeline/1`).
 
-After `pip install 'etlantic==0.33.0'`, you can build, write JSON, and validate
+After `pip install 'etlantic==0.34.0'`, you can build, write JSON, and validate
 with no repository checkout.
 
 ```text
@@ -66,6 +66,22 @@ python -m etlantic plan pipeline.json --profile development --format json
 ```
 
 Optional from a checkout: `uv run python examples/pipeline_definition_json.py`.
+
+## Expected output
+
+The checkout companion writes a definition, round-trips it, validates it, and
+plans it. The fingerprint is deterministic for a given definition:
+
+```text
+wrote pipeline.definition.json
+fingerprint=<64-character sha256>
+plan_pipeline_id=demo:CustomerPipeline
+ok
+```
+
+For the CLI commands above, `validate` must exit zero before the JSON plan is
+used. Machine-readable plan output includes
+`"pipeline_id": "demo:Sample"` and `"schema": "etlantic.plan/1"`.
 
 ## End-to-end with a transform step
 

@@ -1,11 +1,12 @@
 # SQL Plugin
 
-**Status: shipped in 0.6.0** (`etlantic.sql/1`). The reference plugin is
-`etlantic-sql` (PostgreSQL). Discover plugins via the
+**Status: available in ETLantic 0.34.0** (`etlantic.sql/1`). The
+`etlantic-sql` reference plugin runs SQLite and PostgreSQL as Tier A dialects;
+other detected dialects fail closed as Tier B. Discover plugins through the
 `etlantic.sql_plugins` entry point.
 
-!!! note "Future portable lowering"
-    Lowering DTCS Transformation Plans (kernel + `portable-relational/1`) into
+!!! note "Portable lowering"
+    Lowering [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plans (kernel + `portable-relational/1`) into
     the safe SQL IR shipped in **0.15**. See the
     [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md).
 
@@ -13,8 +14,8 @@ A **SQL Plugin** implements the ETLantic SQL Plugin API for a specific SQL
 execution environment.
 
 SQL plugins compile and execute eligible transformation regions inside relational
-or analytical databases while preserving the semantics defined by ODCS, DTCS,
-DPCS, and the validated Pipeline Plan.
+or analytical databases while preserving the semantics defined by [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS,
+[DPCS](../05_PIPELINES/DPCS.md), and the validated Pipeline Plan.
 
 A SQL plugin is more than a storage adapter. It participates in planning,
 capability evaluation, SQL compilation, pushdown, execution, validation, and
@@ -237,33 +238,47 @@ contract.
 
 ## Capabilities
 
-Every SQL plugin should publish a structured capability model.
-
-Conceptually:
+Every SQL plugin publishes `PluginCapabilities`. Advertise dialect-specific
+differences explicitly:
 
 ```python
-SqlCapabilities(
-    dialect="postgresql",
-    reads=True,
-    writes=True,
+from etlantic.capabilities import PluginCapabilities
+
+postgresql = PluginCapabilities(
+    engine="sql",
+    dataframe=False,
+    eager=False,
+    sql=True,
     transactions=True,
-    savepoints=True,
-    sql_merge=True on PostgreSQL; False on SQLite,  # 0.6 reference: not implemented; fail closed if required
-    create_table_as=True,
-    temporary_tables=True,
-    common_table_expressions=True,
-    recursive_ctes=True,
-    window_functions=True,
-    returning=True,
-    streaming_reads=True,
-    parameter_binding=True,
-    schema_introspection=True,
+    schema_inspection=True,
+    sql_merge=True,
+    sql_cte=True,
+    sql_returning=True,
+    sql_transactional_ddl=True,
+    sql_atomic_rename=True,
+    sql_catalog_inspect=True,
+)
+
+sqlite = PluginCapabilities(
+    engine="sql",
+    dataframe=False,
+    eager=False,
+    sql=True,
+    transactions=True,
+    schema_inspection=True,
+    sql_merge=False,
+    sql_cte=True,
+    sql_returning=False,
+    sql_transactional_ddl=False,
+    sql_atomic_rename=True,
+    sql_catalog_inspect=True,
 )
 ```
 
-Advertise only what the plugin actually implements. The 0.6 `etlantic-sql`
-reference sets `sql_merge=True on PostgreSQL; False on SQLite` and uses durable run-scoped staging tables
-rather than session TEMP for intermediates.
+Advertise only what the plugin actually implements. In 0.33,
+`etlantic-sql` sets `sql_merge=True` for PostgreSQL and `False` for SQLite.
+It uses durable run-scoped staging tables rather than session TEMP tables for
+intermediates.
 
 Capabilities should cover both SQL syntax and runtime behavior.
 

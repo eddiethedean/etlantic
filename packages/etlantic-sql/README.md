@@ -1,13 +1,13 @@
 # etlantic-sql
 
-PostgreSQL reference SQL execution plugin for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.20.
+SQLite and PostgreSQL reference SQL execution plugin for
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.34.
 
 ```bash
-pip install 'etlantic==0.33.0' 'etlantic-sql==0.33.0'
+pip install 'etlantic==0.34.0' 'etlantic-sql==0.34.0'
 # or: pip install 'etlantic[sql]'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
-# SQLite is fine for demos only:
+# Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
 ```
 
@@ -36,7 +36,9 @@ Register `@Transformation.implementation("sql")` handlers that take
 - Insert-select / CTAS-style publication
 - Fail-closed planning when required capabilities are missing
 
-**MERGE / upsert:** advertised for PostgreSQL (`sql_merge=True`, `INSERT … ON CONFLICT`). SQLite remains `sql_merge=False` (fail closed).
+SQLite and PostgreSQL are Tier A in 0.33. **MERGE / upsert** is advertised only
+for PostgreSQL (`sql_merge=True`, `INSERT … ON CONFLICT`); SQLite remains
+`sql_merge=False` and fails closed when merge is required.
 
 ## Examples
 

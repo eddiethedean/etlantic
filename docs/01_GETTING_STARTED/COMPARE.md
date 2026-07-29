@@ -1,6 +1,6 @@
 # Is ETLantic for me?
 
-> **Status: Available in ETLantic 0.33.0.**
+> **Status: Available in ETLantic 0.34.0.**
 
 ETLantic is a typed **modeling, validation, and planning** layer for Python
 data pipelines. It is not a dataframe engine, warehouse transformer, or
@@ -30,7 +30,7 @@ durable orchestrator.
 
 - Typed `Data`, `Transformation`, and `Pipeline` authoring
 - Multi-phase validation and deterministic, secret-free `PipelinePlan`
-- ODCS / DTCS / DPCS interchange
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange
 - Local runtime, reports, schema observations, and plugin trust controls
 
 ## What ETLantic does not own

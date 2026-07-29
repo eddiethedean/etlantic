@@ -1,6 +1,6 @@
 # Migration from other tools
 
-> **Status: Available in ETLantic 0.33.0.** Honest scope for evaluators who
+> **Status: Available in ETLantic 0.34.0.** Honest scope for evaluators who
 > already run Airflow, dbt, or Dagster. There is **no automated migrator**.
 
 ETLantic is a typed pipeline modeling and validation layer. It does not replace
@@ -58,5 +58,5 @@ or keep the existing orchestrator and call ETLantic validate/plan from CI.
 ## Next
 
 - [Compare](COMPARE.md) — positioning vs dbt / Airflow / Pandera
-- [Capabilities](CAPABILITIES.md) — what ships in 0.33
+- [Capabilities](CAPABILITIES.md) — what ships in 0.34
 - [Evaluator brief](EVALUATOR.md) — diligence packet

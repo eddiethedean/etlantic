@@ -541,7 +541,7 @@ Temporary runtime credentials
 Secrets should not be stored in:
 
 - Pipeline definitions
-- DPCS artifacts
+- [DPCS](../05_PIPELINES/DPCS.md) artifacts
 - Compiled Spark Plans
 - Documentation
 - Diagnostics
@@ -1008,18 +1008,18 @@ failure.
 
 ## Provider Registration
 
-Conceptually:
+Applications may register a provider instance explicitly:
 
 ```python
-from etlantic.resources import register_provider
+from etlantic import PipelineRuntime
+from etlantic_pyspark import create_provider
 
-register_provider(
-    "spark",
-    LocalSparkProvider(),
-)
+runtime = PipelineRuntime()
+runtime.register_spark_provider("local", create_provider())
 ```
 
-Normal deployments should use automatic plugin discovery.
+Normal deployments should use the `etlantic.spark_providers` entry point and
+profile-aware automatic discovery.
 
 ## Profile Binding
 
@@ -1027,18 +1027,15 @@ A profile may select a provider:
 
 ```python
 Profile(
-    transformation_engine="pyspark",
-    resources={
-        "spark": {
-            "provider": "databricks",
-            "runtime": "serverless",
-            "session_timezone": "UTC",
-        },
-    },
+    name="spark-local",
+    spark_engine="pyspark",
+    resources={"spark": "local"},
 )
 ```
 
-The profile describes environment intent.
+The profile describes environment intent. Provider-specific configuration
+belongs in the provider or namespaced profile metadata; do not place live
+sessions or credentials in the profile.
 
 Secrets remain external.
 

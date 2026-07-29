@@ -8,7 +8,7 @@
 ## 1. Purpose
 
 This chapter defines the purpose, scope, objectives, and foundational
-principles of the **Data Pipeline Contract Standard (DPCS)**.
+principles of the **Data Pipeline Contract Standard ([DPCS](../05_PIPELINES/DPCS.md))**.
 
 DPCS is an implementation-independent specification for describing
 portable, contract-first data pipelines. A DPCS Pipeline Contract
@@ -56,9 +56,9 @@ This specification SHALL NOT:
 
 ## 5. Relationship to Other Standards
 
-ODCS defines what data is.
+[ODCS](../03_DATA_CONTRACTS/ODCS.md) defines what data is.
 
-DTCS defines how data changes.
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) defines how data changes.
 
 DPCS defines how validated transformations compose into complete data
 pipelines.

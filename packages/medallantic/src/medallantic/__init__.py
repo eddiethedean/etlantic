@@ -46,6 +46,17 @@ from medallantic.lower import (
     MedallionRow,
     lower_document,
 )
+from medallantic.explain import explain_medallion_plan
+from medallantic.lifecycle_views import (
+    enrich_lifecycle_event,
+    group_events_by_layer,
+    layer_run_summary,
+)
+from medallantic.profiles import (
+    medallion_development_profile,
+    medallion_production_profile,
+    medallion_test_profile,
+)
 from medallantic.reports import (
     adapt_run_result,
     enforce_accept_rates,
@@ -61,7 +72,7 @@ from medallantic.runtime_map import (
 )
 from medallantic.schema import MedallionDocument, MedallionStep
 
-__version__ = "0.33.0"
+__version__ = "0.34.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",
@@ -104,11 +115,18 @@ __all__ = [
     "bind_debug_session",
     "debug_request_from_sparkforge",
     "enforce_accept_rates",
+    "enrich_lifecycle_event",
     "enrich_plan",
     "evaluate_accept_rates",
+    "explain_medallion_plan",
     "from_document",
+    "group_events_by_layer",
     "intent_from_sparkforge",
+    "layer_run_summary",
     "lower_document",
+    "medallion_development_profile",
+    "medallion_production_profile",
+    "medallion_test_profile",
     "parse_rules_shorthand",
     "report_to_sparkforge_explain",
     "retry_policy_from_sparkforge",

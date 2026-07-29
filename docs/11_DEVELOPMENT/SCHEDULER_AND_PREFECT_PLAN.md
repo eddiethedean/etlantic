@@ -69,7 +69,7 @@ Orchestrator compiler
 ```
 
 The scheduler boundary coordinates ready work without re-planning. It does
-not compile DTCS expressions, execute dataframe operations itself, resolve
+not compile [DTCS](../04_TRANSFORMATIONS/DTCS.md) expressions, execute dataframe operations itself, resolve
 secrets during planning, or invent retry/materialization semantics. Until
 fusion-driven unit scheduling lands, schedulers map selected logical nodes.
 
@@ -191,7 +191,7 @@ spike demonstrates feasibility without becoming a release dependency.
 0.16 also removes the public `Source` / `Sink` / `binding=` compatibility
 layer. That work is **independent** of Prefect packaging and is owned by the
 [0.16 deletion checklist](MIGRATION_0_14_TO_0_15.md#016-deletion-checklist)
-and Migration 0.15 → 0.16 — not by `etlantic-prefect`. Plan/DPCS/plugin wire
+and Migration 0.15 → 0.16 — not by `etlantic-prefect`. Plan/[DPCS](../05_PIPELINES/DPCS.md)/plugin wire
 names stay unchanged. See
 [ROADMAP §0.16 Gate A](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#gate-a--authoring-vocabulary-cleanup-hard).
 

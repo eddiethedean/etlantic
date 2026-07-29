@@ -6,7 +6,7 @@
 
 !!! note "Portable authoring and compilers"
     `etlantic.transform`, `@Transformation.portable`, symbolic DataFrame and
-    Column objects, and `functions as F` normalize to published DTCS 3.0
+    Column objects, and `functions as F` normalize to published [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0
     `dtcs.transform-plan/2` models. Official compilers ship in optional
     packages. See
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
@@ -146,4 +146,3 @@ optional FastAPI reference adapter.
       show_root_heading: true
       members_order: source
       filters: ["!^_"]
-

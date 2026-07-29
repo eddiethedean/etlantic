@@ -1,6 +1,6 @@
 # Cookbook
 
-> **Status: Available in ETLantic 0.33.0.** Short recipes for shipped workflows.
+> **Status: Available in ETLantic 0.34.0.** Short recipes for shipped workflows.
 > Prefer these over Design Studies.
 
 ## Worked recipes
@@ -11,7 +11,7 @@
 python -m venv .venv && source .venv/bin/activate
 # Windows PowerShell: py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.33.0'
+python -m pip install 'etlantic==0.34.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -27,7 +27,7 @@ flipping `dataframe_engine` is **not** enough—you must also register a Polars
 implementation.
 
 ```bash
-python -m pip install 'etlantic[polars]==0.33.0'
+python -m pip install 'etlantic[polars]==0.34.0'
 ```
 
 Then either follow the [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md),
@@ -56,7 +56,7 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 
 ```bash
 cp path/to/prod.example.json profiles/prod.json
-# edit plugin_allowlist pins to ==0.33.0 and fill assets
+# edit plugin_allowlist pins to ==0.34.0 and fill assets
 python -m etlantic validate pipeline.py:SamplePipeline --profile profiles/prod.json
 ```
 
@@ -95,7 +95,7 @@ Empty allowlists fail with `PMPLUG401`. See
 
 | Recipe | Link |
 |---|---|
-| Generate ODCS / DTCS / DPCS | [Contract generation](../05_PIPELINES/CONTRACT_GENERATION.md) |
+| Generate [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) | [Contract generation](../05_PIPELINES/CONTRACT_GENERATION.md) |
 | Explain a plan | `etlantic plan explain TARGET --format json` — [Planning](../05_PIPELINES/PLANNING.md) |
 | Diff pipelines or contracts | [CLI](../10_REFERENCE/CLI.md) `etlantic diff` |
 

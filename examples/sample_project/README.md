@@ -19,4 +19,4 @@ across modules.
 | `run_local.py` | Bindings + `PipelineRuntime` seed and run |
 
 Docs walkthrough:
-[Sample project](../docs/09_EXAMPLES/SAMPLE_PROJECT.md).
+[Sample project](../../docs/09_EXAMPLES/SAMPLE_PROJECT.md).

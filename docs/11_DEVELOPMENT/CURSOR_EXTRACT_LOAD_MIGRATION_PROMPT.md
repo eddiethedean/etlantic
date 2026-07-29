@@ -15,7 +15,7 @@ Implement a deliberate public vocabulary migration:
 
 This is an authoring-language change, not a new architectural layer. `Extract`
 and `Load` must preserve the existing Source/Sink graph semantics, planning
-behavior, DPCS representation, execution behavior, lineage, and plugin
+behavior, [DPCS](../05_PIPELINES/DPCS.md) representation, execution behavior, lineage, and plugin
 boundaries.
 
 Target release policy:
@@ -423,7 +423,7 @@ Compatibility code should be easy to remove without rewriting the canonical
 ## Architectural constraints
 
 - Do not add separate Extract/Load execution layers.
-- Do not change DTCS transformation semantics.
+- Do not change [DTCS](../04_TRANSFORMATIONS/DTCS.md) transformation semantics.
 - Do not move physical asset configuration into pipeline definitions.
 - Do not embed credentials, resolved secrets, clients, or backend objects in
   plans or contracts.

@@ -56,6 +56,19 @@
       "type": "object",
       "additionalProperties": { "type": "string" }
     },
+    "observability_providers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "run_history_provider": { "type": ["string", "null"] },
+    "event_consumers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "observability_delivery": {
+      "type": "string",
+      "enum": ["best_effort", "durable_audit"]
+    },
     "resources": {
       "type": "object",
       "additionalProperties": { "type": "string" }

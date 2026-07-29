@@ -1,6 +1,6 @@
 # Compile an Airflow DAG
 
-> **Status: Available in ETLantic 0.33.0.** ETLantic compiles a plan; it does
+> **Status: Available in ETLantic 0.34.0.** ETLantic compiles a plan; it does
 > not install or operate an Airflow scheduler.
 
 !!! warning "`etlantic-airflow` is compile-only"
@@ -12,14 +12,14 @@
 
 !!! note "Repository examples"
     Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.33.0` tag) and use
+    wheel. Clone a matching checkout (prefer the `v0.34.0` tag) and use
     `uv sync` / the documented dependency group before running them.
 
 ## Install and compile
 
 ```bash
-python -m pip install 'etlantic==0.33.0' 'etlantic-airflow==0.33.0'
-git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.34.0' 'etlantic-airflow==0.34.0'
+git clone --branch v0.34.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/airflow_compile.py
 ```
@@ -27,6 +27,32 @@ python examples/airflow_compile.py
 The example first proves local execution, then creates an Airflow profile with
 a UTC cron schedule and retry policy. It writes
 `examples/_generated_customer_airflow_dag.py`.
+
+## Expected output
+
+Run and plan identifiers vary. The stable output confirms both local execution
+and the generated DAG contract:
+
+```text
+profile:  local
+status:   succeeded
+summary:  total=3 ok=3 failed=0 skipped=0 cancelled=0
+Wrote examples/_generated_customer_airflow_dag.py dag_id=customerairflowpipeline tasks=['curated', 'normalized', 'raw']
+{'target': 'airflow',
+ 'dag_id': 'customerairflowpipeline',
+ 'task_count': 3,
+ 'task_ids': ['curated', 'normalized', 'raw'],
+ 'dependencies': {'raw': [], 'normalized': ['raw'], 'curated': ['normalized']},
+ 'schedule': {'type': 'cron', 'expression': '0 2 * * *', 'timezone': 'UTC', 'catchup': False, ...},
+ ...}
+```
+
+The generated module ends with the planned dependency chain:
+
+```text
+raw >> normalized
+normalized >> curated
+```
 
 Complete source:
 [`examples/airflow_compile.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/airflow_compile.py).

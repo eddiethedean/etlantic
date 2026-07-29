@@ -42,7 +42,7 @@ Full steps: [Migration 0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.m
 - Diagnosed legacy profile JSON `bindings` loads (`PMCFG110`)
 - Plan and run-report loaders reject missing or unknown wire `schema` values
 - Extension metadata namespace/budget helpers
-- Public surface inventory and pre-1.0 deprecation schedule
+- Public surface inventory and 0.x deprecation schedule
 
 ## Experimental DataFusion (non-blocking)
 

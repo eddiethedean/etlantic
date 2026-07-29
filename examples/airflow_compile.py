@@ -1,4 +1,4 @@
-"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.33.0).
+"""Compile a portable pipeline to an Airflow DAG module (ETLantic 0.34.0).
 
 Requires:
 
@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.33.0 etlantic-airflow==0.33.0
+    pip install etlantic==0.34.0 etlantic-airflow==0.34.0
 
 Run with:
 
@@ -82,7 +82,7 @@ def main() -> None:
 
     local_profile = Profile(name="local", orchestrator="local")
     report = CustomerAirflowPipeline.run(profile=local_profile, runtime=runtime)
-    print(report)
+    print(report.to_text())
     assert report.status.value == "succeeded"
 
     airflow_profile = Profile(

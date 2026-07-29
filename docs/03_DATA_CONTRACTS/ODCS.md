@@ -66,7 +66,8 @@ Each layer has a different purpose.
 ETLantic recommends a code-first workflow.
 
 ```python
-from etlantic import Data, load_data_contract
+from etlantic import Data
+from etlantic.contracts import load_data_contract
 
 class Customer(Data):
     customer_id: int
@@ -76,7 +77,7 @@ class Customer(Data):
 ContractModel generates the ODCS document.
 
 ```python
-from etlantic import write_odcs
+from etlantic.contracts import write_odcs
 
 write_odcs(Customer, "contracts/data/customer.odcs.yaml")
 ```
@@ -267,9 +268,9 @@ ETLantic follows these principles when integrating with ODCS:
 
 ODCS describes **data**.
 
-DTCS describes **transformations**.
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) describes **transformations**.
 
-DPCS describes **pipelines**.
+[DPCS](../05_PIPELINES/DPCS.md) describes **pipelines**.
 
 Together they provide a portable description of an entire ETL system.
 

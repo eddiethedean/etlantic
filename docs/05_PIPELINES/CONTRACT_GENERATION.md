@@ -1,6 +1,6 @@
 # Contract Generation
 
-> **Status split (0.14.0):** `write_contracts` / deterministic ODCS+DTCS+DPCS
+> **Status split (0.14.0):** `write_contracts` / deterministic [ODCS](../03_DATA_CONTRACTS/ODCS.md)+[DTCS](../04_TRANSFORMATIONS/DTCS.md)+[DPCS](DPCS.md)
 > emission from typed Python is **Available**. Broader registry publication,
 > multi-format interchange productization, and some proposed generation
 > workflows remain **Future design**. Prefer runnable helpers over aspirational

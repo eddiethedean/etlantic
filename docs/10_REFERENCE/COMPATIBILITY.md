@@ -1,15 +1,15 @@
 # Compatibility Matrix
 
-This table describes the declared compatibility of ETLantic 0.33.0.
+This table describes the declared compatibility of ETLantic 0.34.0.
 
 | Surface | Supported range or version |
 |---|---|
 | Python | 3.11, 3.12, 3.13 |
 | Pydantic | `>=2.12,<3` |
-| ContractModel | `>=0.2,<0.3` (ODCS `v3.1.0`) |
-| DTCS specification | `3.0.0` (`dtcsVersion: "3.0.0"`; 2.0.0 / 1.0.0 remain readable) |
+| ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0`) |
+| [DTCS](../04_TRANSFORMATIONS/DTCS.md) specification | `3.0.0` (`dtcsVersion: "3.0.0"`; 2.0.0 / 1.0.0 remain readable) |
 | DTCS toolkit | `>=0.13,<1` |
-| DPCS toolkit | `>=0.13,<1` |
+| [DPCS](../05_PIPELINES/DPCS.md) toolkit | `>=0.13,<1` |
 | Pipeline plan schema | `etlantic.plan/1` |
 | Pipeline authoring wire | `etlantic.pipeline/1` |
 | Run report wire | `etlantic.run_report/1` |
@@ -18,30 +18,30 @@ This table describes the declared compatibility of ETLantic 0.33.0.
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
 | Spark protocol | `etlantic.spark/1` |
-| Polars plugin | `etlantic-polars==0.33.0` |
-| Pandas plugin | `etlantic-pandas==0.33.0` |
-| SQL plugin | `etlantic-sql==0.33.0` |
-| PySpark plugin | `etlantic-pyspark==0.33.0` |
-| Airflow plugin | `etlantic-airflow==0.33.0` |
-| Prefect scheduler | `etlantic-prefect==0.33.0` |
-| Keyring provider | `etlantic-keyring==0.33.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.33.0` |
-| FastAPI reference adapter | `etlantic-fastapi==0.33.0` (reference only; not a control plane) |
-| Medallantic (facade) | `medallantic==0.33.0` |
-| SparkForge redirect | `etlantic-sparkforge==0.33.0` (compatibility shim; prefer `medallantic`) |
-| DataFusion plugin | `etlantic-datafusion==0.33.0` (**Experimental** Gate B stub; no graduated claims) |
+| Polars plugin | `etlantic-polars==0.34.0` |
+| Pandas plugin | `etlantic-pandas==0.34.0` |
+| SQL plugin | `etlantic-sql==0.34.0` |
+| PySpark plugin | `etlantic-pyspark==0.34.0` |
+| Airflow plugin | `etlantic-airflow==0.34.0` |
+| Prefect scheduler | `etlantic-prefect==0.34.0` |
+| Keyring provider | `etlantic-keyring==0.34.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.34.0` |
+| FastAPI reference adapter | `etlantic-fastapi==0.34.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
+| Medallantic (facade) | `medallantic==0.34.0` |
+| SparkForge redirect | `etlantic-sparkforge==0.34.0` (compatibility shim; prefer `medallantic`) |
+| DataFusion plugin | `etlantic-datafusion==0.34.0` (**Experimental** Gate B stub; no graduated claims) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.33.0,<0.34` and re-run conformance |
+| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.34.0,<0.35` and re-run conformance |
 
 ## Tested versus declared
 
 The core CI matrix runs linting and the core test suite on Ubuntu, Windows, and
 macOS with Python 3.11, 3.12, and 3.13. This is the broadest tested platform
-surface for 0.33.0. Quadruple-minor wire codec burn-in covers the
+surface for 0.34.0. Quadruple-minor wire codec burn-in covers the
 0.24→0.25→0.26→0.27→0.28 upgrade window; see
 [Wire schema ranges](WIRE_SCHEMA_RANGES.md).
 
@@ -73,11 +73,11 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.33.0` plus every official plugin to `==0.33.0`.
+`etlantic==0.34.0` plus every official plugin to `==0.34.0`.
 
 Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.33.0` depends on `etlantic-polars==0.33.0`. Official
-plugin source metadata accepts core `etlantic>=0.33.0,<0.34`, which is
+`etlantic[polars]==0.34.0` depends on `etlantic-polars==0.34.0`. Official
+plugin source metadata accepts core `etlantic>=0.34.0,<0.35`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

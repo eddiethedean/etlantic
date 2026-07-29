@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Practical questions for ETLantic **0.33.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.34.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -10,16 +10,16 @@ validate before write, then run or compile on local Python, Polars, Pandas,
 SQL, or Spark. It is **not** dbt, **not** a scheduler, and **not** a
 dataframe engine.
 
-## Is ETLantic 0.33 production-supported?
+## Is ETLantic 0.34 production-supported?
 
-ETLantic **0.33.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.34.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots—not unrestricted enterprise production. See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
 ## Available vs Experimental?
 
-**Available** means supported inside the documented 0.33 pilot envelope.
+**Available** means supported inside the documented 0.34 pilot envelope.
 **Experimental** (Structured Streaming, `etlantic-datafusion`) may change.
 See [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
@@ -44,7 +44,7 @@ See [Engine selection](ENGINE_SELECTION.md).
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.33.0' 'etlantic-polars==0.33.0'
+python -m pip install 'etlantic==0.34.0' 'etlantic-polars==0.34.0'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -83,7 +83,7 @@ Many root aliases were removed in 0.26/0.27. Import from owning modules
 
 No — those stay in SparkForge / `medallantic`. See
 [Medallantic](../09_MEDALLANTIC/README.md) and
-[Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md).
+[Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md).
 
 ## Can I build a GUI?
 

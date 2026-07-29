@@ -20,7 +20,7 @@ Plugins and providers
     Medallion semantics remain in `medallantic`. ETLantic core does not acquire
     bronze, silver, gold, or medallion-specific runtime branches.
 
-## What ships in 0.33
+## What ships in 0.34
 
 - native class and fluent-builder authoring
 - deterministic lowering to public `PipelineDefinition`
@@ -54,4 +54,3 @@ documented compatibility and differential gates.
 
 Use Medallantic for an opinionated medallion architecture. Use ETLantic
 directly when a pipeline does not need that vocabulary.
-

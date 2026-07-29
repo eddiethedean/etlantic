@@ -19,7 +19,7 @@ A transformation should:
 - Be strongly typed.
 - Be independent of execution technology.
 - Clearly declare inputs, outputs, and parameters.
-- Generate a DTCS artifact.
+- Generate a [DTCS](DTCS.md) artifact.
 - Support multiple interchangeable implementations.
 - Optionally carry one backend-independent portable definition.
 
@@ -114,13 +114,13 @@ ETLantic supports both:
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
 ```python
 @NormalizeCustomers.implementation("remote")
-async def normalize(...):
+async def normalize(customers, minimum_age=18):
     ...
 ```
 

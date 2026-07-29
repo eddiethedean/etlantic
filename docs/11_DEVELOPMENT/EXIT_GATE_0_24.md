@@ -32,11 +32,11 @@ unless noted otherwise:
 - Compatibility burn-in for `etlantic.pipeline/1` upgrade fixtures (0.25 WP1)
 - Cross-artifact codec matrix for plan/report/profile (0.25 WP2)
 - Plugin SDK `/1` freeze evidence (0.25 WP3)
-- 1.0 removal inventory (0.25 WP4)
+- 0.38 stable-foundation removal inventory (0.25 WP4)
 - Fixture-blocking functional parity / nested subpipeline polish (0.25 WP5)
 
 Follow-ons in **[0.26 — second slice](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#026--compatibility-burn-in-second-slice)**:
 dual-minor upgrade proof, complete fixture matrix, freeze closure, first-wave
 removal execution, remaining authoring parity.
 
-- Production FastAPI Control API (**1.1**, not 0.25/0.26)
+- Production FastAPI Control API (**0.40–0.44**, not 0.25/0.26)

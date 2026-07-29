@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import py_compile
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
@@ -22,6 +23,11 @@ RUNNABLE_PAGES = {
     "docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md": "examples/pipeline_definition_json.py",
 }
 
+EXPECTED_OUTPUT = re.compile(
+    r"(?ms)^## Expected output\s*$\n(?P<body>.*?)(?=^## |\Z)"
+)
+OUTPUT_FENCE = re.compile(r"(?ms)^```(?:console|json|text|yaml)\s*$.*?^```\s*$")
+
 
 def main() -> None:
     for page_name, source_name in RUNNABLE_PAGES.items():
@@ -35,6 +41,15 @@ def main() -> None:
         if source.name not in text:
             raise SystemExit(
                 f"Runnable page does not name companion {source.name}: {page_name}"
+            )
+        output_section = EXPECTED_OUTPUT.search(text)
+        if output_section is None:
+            raise SystemExit(
+                f"Runnable page lacks an 'Expected output' section: {page_name}"
+            )
+        if not OUTPUT_FENCE.search(output_section.group("body")):
+            raise SystemExit(
+                f"Runnable page lacks a fenced output example: {page_name}"
             )
         if not source.exists():
             raise SystemExit(f"Runnable companion is missing: {source_name}")

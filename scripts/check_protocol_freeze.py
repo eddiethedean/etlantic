@@ -11,7 +11,7 @@ INVENTORY = ROOT / "src" / "etlantic" / "schemas" / "surface-inventory.json"
 PROTOCOL_DOC = ROOT / "docs" / "07_PLUGIN_SDK" / "PROTOCOL_EVOLUTION.md"
 FEEDBACK_DOC = ROOT / "docs" / "11_DEVELOPMENT" / "EXTERNAL_PLUGIN_FEEDBACK.md"
 
-# Shipped /1 families on the 1.0 path — must be stable once frozen.
+# Shipped /1 families on the 0.38 stable-foundation path — stable once frozen.
 CORE_FROZEN_PROTOCOLS = (
     "etlantic.dataframe/1",
     "etlantic.sql/1",
@@ -20,7 +20,7 @@ CORE_FROZEN_PROTOCOLS = (
     "etlantic.transform-compiler/1",
 )
 
-# Not on the 1.0 freeze path (may remain provisional post-freeze).
+# Not on the 0.38 freeze path (may remain provisional post-freeze).
 PROVISIONAL_ALLOWED = frozenset({"etlantic.scheduler/1"})
 
 

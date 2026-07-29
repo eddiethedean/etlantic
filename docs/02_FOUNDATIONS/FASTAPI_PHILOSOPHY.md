@@ -55,6 +55,10 @@ Execution Planning
 Visualization
 ```
 
+[ODCS](../03_DATA_CONTRACTS/ODCS.md) defines data contracts,
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) defines transformation contracts, and
+[DPCS](../05_PIPELINES/DPCS.md) defines pipeline contracts.
+
 The goal is not to copy FastAPI's implementation. The goal is to adopt
 its design philosophy.
 
@@ -83,7 +87,7 @@ From these annotations ETLantic can infer:
 -   parameter definitions
 -   validation rules
 -   documentation
--   DTCS contracts
+-   [DTCS](../04_TRANSFORMATIONS/DTCS.md) contracts
 -   editor tooling
 
 ## Declarative Instead of Imperative

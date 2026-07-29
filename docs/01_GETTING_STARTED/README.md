@@ -9,7 +9,7 @@ onboarding here.
 
 After Ada/Grace success: [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md),
 [Upgrade](UPGRADE.md), [Capabilities](CAPABILITIES.md),
-[What's New in 0.33](WHATS_NEW_0_33.md).
+[What's New in 0.34](WHATS_NEW_0_34.md).
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without
@@ -19,5 +19,5 @@ After Ada/Grace success: [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md),
     from a checkout for that path. Prefer the same `--profile` for validate,
     plan, and run (`development` by default when omitted).
 
-ETLantic **0.33.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.34.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots. Prefer `import etlantic as etl` for application code.

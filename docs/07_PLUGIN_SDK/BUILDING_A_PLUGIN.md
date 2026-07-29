@@ -156,7 +156,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.33.0,<0.34",
+    "etlantic>=0.34.0,<0.35",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [
@@ -254,7 +254,7 @@ write mode, ignore cancellation, or emulate a transaction unless the public
 protocol explicitly permits and reports that fallback. Planning must reject a
 mandatory capability the plugin cannot provide.
 
-Portable compilers must advertise exact DTCS profiles, actions, functions,
+Portable compilers must advertise exact [DTCS](../04_TRANSFORMATIONS/DTCS.md) profiles, actions, functions,
 operators, types, and modes. The compiler name alone never implies coverage.
 
 ### First-party portable policy (0.17)
@@ -418,7 +418,7 @@ The package README must state:
 - conformance suite and backend versions tested;
 - support, changelog, and security-reporting links.
 
-If the plugin implements ODCS, DTCS, or DPCS behavior, publish the supported
+If the plugin implements [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS, or [DPCS](../05_PIPELINES/DPCS.md) behavior, publish the supported
 standard and schema versions. Keep release notes explicit about compatibility
 or semantic changes.
 

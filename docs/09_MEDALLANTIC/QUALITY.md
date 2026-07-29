@@ -40,7 +40,7 @@ from medallantic import enforce_accept_rates
 
 checked = enforce_accept_rates(
     report,
-    policy_metadata=lowered.profile.validation.metadata,
+    policy_metadata=lowered.validation_policy.metadata,
 )
 ```
 
@@ -58,4 +58,3 @@ Do not calculate a second, application-specific success status from raw counts.
 Polars, Pandas, and local portable paths support the shipped rule kernel.
 Consult the [compatibility guide](COMPATIBILITY.md) before relying on SQL,
 PySpark, or engine-native extensions.
-

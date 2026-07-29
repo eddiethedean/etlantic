@@ -5,7 +5,7 @@
 
 !!! success "Portable compiler (0.13)"
     `etlantic-pyspark` also registers an `etlantic.transform_compilers` entry
-    point that lowers DTCS portable plans to native Spark expressions. See the
+    point that lowers [DTCS](../04_TRANSFORMATIONS/DTCS.md) portable plans to native Spark expressions. See the
     [portable compiler protocol](PORTABLE_TRANSFORM_COMPILER.md). Portable
     compilation forbids UDF fallback; native `@implementation("pyspark")` UDF
     policy remains separate.
@@ -15,7 +15,7 @@ Spark execution environments.
 
 The plugin converts Spark-capable regions of a validated Pipeline Plan into
 PySpark DataFrame operations, Spark SQL logical plans, batch jobs, or Structured
-Streaming queries while preserving ODCS, DTCS, and DPCS semantics.
+Streaming queries while preserving [ODCS](../03_DATA_CONTRACTS/ODCS.md), DTCS, and [DPCS](../05_PIPELINES/DPCS.md) semantics.
 
 A PySpark plugin is an execution backend, not a modeling layer. Pipeline authors
 continue to define portable contracts, transformations, and pipelines without

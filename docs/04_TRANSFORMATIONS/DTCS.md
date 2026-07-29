@@ -172,13 +172,13 @@ provide backend lowering.
 
 ```python
 @NormalizeCustomers.implementation("polars")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
 ```python
 @NormalizeCustomers.implementation("pandas")
-def normalize(...):
+def normalize(customers, minimum_age=18):
     ...
 ```
 
@@ -188,7 +188,9 @@ Multiple implementations may satisfy the same DTCS contract.
 
 ## Relationship to ODCS and DPCS
 
-The three standards complement one another.
+The [ODCS](../03_DATA_CONTRACTS/ODCS.md) data-contract standard, DTCS, and the
+[DPCS](../05_PIPELINES/DPCS.md) pipeline-contract standard complement one
+another.
 
 ```text
 ODCS

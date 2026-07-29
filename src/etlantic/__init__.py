@@ -20,11 +20,11 @@ Lazy namespaces (import-safe; no optional engines until accessed):
 
 ``from etlantic import Data, Pipeline`` and public submodule imports remain
 supported. Specialist root exports demoted in 0.22 remain available as
-pre-1.0 compatibility aliases (warn once) — prefer the owning namespace.
+0.x compatibility aliases (warn once) — prefer the owning namespace.
 
 Optional plugins live in separate packages (``etlantic-polars``,
 ``etlantic-sql``, ``etlantic-pyspark``, ``etlantic-airflow``, …). Install only
-the engines you need and pin matching minors while ETLantic is pre-1.0.
+the engines you need and pin matching minors throughout ETLantic's 0.x roadmap.
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "service": "etlantic.service",
 }
 
-# Pre-1.0 compatibility aliases for symbols demoted off the curated root.
+# 0.x compatibility aliases for symbols demoted off the curated root.
 # Values are (module, attribute). Access warns once per process.
 _DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
     "ArtifactOwnership": ("etlantic.dataframe", "ArtifactOwnership"),
@@ -514,11 +514,11 @@ def __getattr__(name: str) -> Any:
         if name not in _warned_demoted:
             _warned_demoted.add(name)
             warnings.warn(
-                f"etlantic.{name} is a pre-1.0 compatibility alias; "
+                f"etlantic.{name} is a 0.x compatibility alias; "
                 f"prefer importing from {module_name} "
                 f"(or use the owning lazy namespace). "
                 "See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md and "
-                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_1_0.md.",
+                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md.",
                 DeprecationWarning,
                 stacklevel=2,
             )

@@ -38,7 +38,7 @@ ContractModel
 ETLantic
 ```
 
-ContractModel must never import ETLantic, DTCS, DPCS, pipeline plans,
+ContractModel must never import ETLantic, [DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), pipeline plans,
 orchestrators, or dataframe execution plugins.
 
 ## Current strengths
@@ -46,7 +46,7 @@ orchestrators, or dataframe execution plugins.
 ContractModel 0.1.2 already provides:
 
 - a small `DataContract` facade over a Canonical Contract Model (CCM)
-- ODCS and Pydantic round trips
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) and Pydantic round trips
 - structured record, JSON, CSV, Parquet, Pandas, and Polars validation
 - compatibility modes and structured contract diffs
 - JSON Schema, OpenAPI, Markdown, RDF, SHACL, and OWL exports
@@ -112,7 +112,7 @@ Parquet, dbt, lakehouse, event, and catalog adapters. New formats should follow
 a stable adapter/fidelity protocol, canonical type system, and conformance
 suite rather than define semantics incrementally.
 
-### Release assurance needs a 1.0 path
+### Release assurance needs a stable 0.x path
 
 CI covers Python 3.10–3.12 on Linux. The stable path should add current Python,
 Windows/macOS, isolated wheels, minimal dependencies, optional-extra matrices,
@@ -375,7 +375,7 @@ The CLI is a projection of the public library API, not parallel semantics.
 - adversarial inputs terminate within configured bounds
 - source and wheel behavior match
 
-## 0.9 — 1.0 release candidate
+## 0.9 — Stable-foundation release candidate
 
 - freeze API, CCM, descriptor, validation, compatibility, diagnostic, fidelity,
   adapter, and plugin snapshots
@@ -388,9 +388,9 @@ The CLI is a projection of the public library API, not parallel semantics.
 The exact candidate must pass compatibility, security, upgrade, rollback,
 packaging, performance, and ETLantic integration rehearsals unchanged.
 
-## 1.0 — Stable data-contract foundation
+## 0.10 — Stable data-contract foundation
 
-ContractModel 1.0 ships only when:
+ContractModel 0.10 ships only when:
 
 - canonical and public result schemas are versioned and stable
 - canonical bytes and fingerprints are deterministic and verified
@@ -439,7 +439,7 @@ its lowest and newest versions, and require migration evidence before widening.
 Record the ContractModel version, descriptor schema, compatibility policy, and
 contract fingerprints in ETLantic evidence where relevant.
 
-### 5. Rehearse 1.0 interoperability
+### 5. Rehearse 0.10 interoperability
 
 Jointly prove code-first/ODCS equivalence, identity preservation, validation
 parity, structured compatibility, secret/source-row-free evidence, fail-closed

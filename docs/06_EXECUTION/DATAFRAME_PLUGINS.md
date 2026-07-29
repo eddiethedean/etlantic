@@ -1,7 +1,7 @@
 # Dataframe Plugins
 
 Dataframe plugins implement physical transformation execution using a
-specific dataframe library while preserving logical semantics from DTCS and
+specific dataframe library while preserving logical semantics from [DTCS](../04_TRANSFORMATIONS/DTCS.md) and
 the Pipeline Plan.
 
 **Status: shipped in 0.5.0** for Polars and Pandas dataframe execution.
@@ -16,8 +16,8 @@ ETLantic does **not** depend on a dataframe library. Install plugins
 separately:
 
 ```bash
-pip install 'etlantic-polars==0.33.0'
-pip install 'etlantic-pandas==0.33.0'
+pip install 'etlantic-polars==0.34.0'
+pip install 'etlantic-pandas==0.34.0'
 ```
 
 ## Protocol

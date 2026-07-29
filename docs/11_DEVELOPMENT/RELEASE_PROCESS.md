@@ -5,15 +5,17 @@ artifacts, compatibility policy, and documentation.
 
 ## Versioning
 
-ETLantic follows Semantic Versioning after 1.0:
+ETLantic's roadmap contains only 0.x phases. The 0.38 release is the stable
+foundation, and post-foundation capabilities continue in later 0.x minors.
 
-- Patch: compatible fixes and documentation
-- Minor: backward-compatible capabilities
-- Major: incompatible public API or persistent-format changes
+- Patch: compatible fixes and documentation within a minor line
+- Minor: scheduled capabilities and any explicitly documented migrations
+- Stable-foundation and later breaking changes: require a named 0.x migration
+  phase, deprecation evidence, and persistent-format compatibility handling
 
-During 0.x, breaking changes remain possible but must be documented. Official
-plugin packages currently share the core minor version (for example `0.33.0`).
-Official plugins declare `etlantic>=0.33.0,<0.34`.
+Breaking changes must be documented. Official plugin packages currently share
+the core minor version (for example `0.34.0`).
+Official plugins declare `etlantic>=0.34.0,<0.35`.
 
 ## Package categories
 
@@ -153,9 +155,9 @@ Release notes should state:
 |---|---|
 | Python | Project-defined range (`>=3.11`) |
 | ContractModel | Compatible range |
-| ODCS | Supported specification versions |
-| DTCS | Supported specification versions |
-| DPCS | Supported specification versions |
+| [ODCS](../03_DATA_CONTRACTS/ODCS.md) | Supported specification versions |
+| [DTCS](../04_TRANSFORMATIONS/DTCS.md) | Supported specification versions |
+| [DPCS](../05_PIPELINES/DPCS.md) | Supported specification versions |
 | Plugin SDK | API version |
 | PipelinePlan | Schema version |
 
@@ -164,7 +166,7 @@ Release notes should state:
 Major and high-risk minor releases should publish a release candidate:
 
 ```text
-1.0.0rc1
+0.38.0rc1
 ```
 
 Validate installation, end-to-end examples, external plugin compatibility, and
@@ -196,7 +198,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.25 plugins, `etlantic>=0.33.0,<0.34`). A core
+0.25 plugins, `etlantic>=0.34.0,<0.35`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 
@@ -209,13 +211,14 @@ Official plugin releases should declare:
 
 ## Deprecations
 
-After 1.0:
+After the 0.38 stable foundation:
 
 - Emit a documented warning.
 - Provide a replacement.
 - Include migration guidance.
 - Retain deprecated behavior for at least one documented release window.
-- Remove only in a major release unless security requires faster action.
+- Remove only in an explicitly scheduled 0.x migration phase unless security
+  requires faster action.
 
 ## Plan and Configuration Migrations
 

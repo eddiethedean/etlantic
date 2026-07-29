@@ -24,6 +24,20 @@ adapted = adapt_pipeline(spec)
 The IR must not contain credentials, resolved secrets, data rows, sessions,
 dataframes, or executable objects.
 
+## Adapt an installed builder
+
+When SparkForge is installed and the builder is already available in memory,
+use the explicit live bridge:
+
+```python
+from medallantic.migrate.sparkforge import from_pipeline_builder
+
+adapted = from_pipeline_builder(pipeline_builder)
+```
+
+The bridge extracts the same secret-free migration representation. It does not
+authorize plugins, resolve credentials, or prove backend parity by itself.
+
 ## What maps
 
 - bronze sources to ETLantic extracts
@@ -48,4 +62,3 @@ dataframes, or executable objects.
 
 Medallantic never removes an edge, changes a write mode, or substitutes an
 engine to make migration appear successful.
-

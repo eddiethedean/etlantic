@@ -7,7 +7,7 @@ define *how* data changes, then **Pipelines** define *how those transformations
 are connected*.
 
 ETLantic models pipelines using the **Data Pipeline Contract Standard
-(DPCS)** while remaining independent of any execution engine.
+([DPCS](DPCS.md))** while remaining independent of any execution engine.
 
 ## What This Section Covers
 

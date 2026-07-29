@@ -1,10 +1,14 @@
 # Controlled Pilot Walkthrough
 
-ETLantic 0.33.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
+ETLantic 0.34.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment. Use this walkthrough with pinned dependencies, explicit rollback,
 and reviewed plans. Multi-tenant topology, compliance/SBOM/signing, and
 advanced supply-chain controls remain adopter-owned; this is not an
 unrestricted production-readiness claim.
+
+Multi-tenancy is a
+[planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
+but its future guarantees do not apply to this 0.34 walkthrough.
 
 ## 1. Install a pinned release
 
@@ -12,7 +16,7 @@ Create an isolated Python 3.11–3.13 environment and pin core plus only the
 plugins the pilot needs:
 
 ```bash
-python -m pip install "etlantic==0.33.0" "etlantic-polars==0.33.0"
+python -m pip install "etlantic==0.34.0" "etlantic-polars==0.34.0"
 python -m etlantic --help
 ```
 
@@ -79,7 +83,7 @@ write_profile(
         security_mode="production",  # required for fail-closed trust
         security_domain="production",
         validation_policy="strict",
-        plugin_allowlist={"etlantic-polars": "==0.33.0"},
+        plugin_allowlist={"etlantic-polars": "==0.34.0"},
         assets={
             "customer_source": "reviewed-source",
             "customer_sink": "reviewed-sink",

@@ -28,7 +28,8 @@ between ContractModel and ETLantic.
 1. Replace `from etlantic import DataContractModel` with
    `from etlantic import Data`.
 2. Replace `class X(DataContractModel)` with `class X(Data)`.
-3. Load ODCS with `load_data_contract(...)` and write with `write_odcs(...)`.
+3. Load [ODCS](ODCS.md) with `load_data_contract(...)` and write with
+   `write_odcs(...)`.
 
 See [Data Contracts overview](README.md), [ODCS](ODCS.md), and
 [Loading](LOADING.md).

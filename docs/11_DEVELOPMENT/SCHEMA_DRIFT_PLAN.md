@@ -56,7 +56,7 @@ ETLantic should:
 ETLantic will not:
 
 - create a fourth top-level contract type;
-- redefine ODCS or ContractModel compatibility semantics;
+- redefine [ODCS](../03_DATA_CONTRACTS/ODCS.md) or ContractModel compatibility semantics;
 - modify contracts automatically in production;
 - query live sources during ordinary loading, validation, or planning;
 - infer schema changes by collecting unrestricted source records;
@@ -431,12 +431,13 @@ Spark, Delta, JSON, and nested schemas.
 | 0.4 | Runtime observations, policy decisions, reports, events |
 | 0.5–0.7 | Dataframe, SQL, Spark, streaming, and storage inspectors |
 | 0.9 | CLI, diagnostics, provider protocols, SARIF, notifications |
-| 1.1 | FastAPI inspection, history, impact, and acknowledgement routes |
-| 1.2 | Registry-backed history, search, promotion, and cross-pipeline impact |
-| 1.3 | Baselines, state linkage, replay, concurrency, reproducibility |
-| 1.4 | Approval, governance, signed observations, retention, policy evidence |
-| 1.5 | IDE and notebook history, impact, proposals, and navigation |
-| 1.9 | Human-governed AI remediation proposals |
+| 0.40 | FastAPI inspection, history, impact, and acknowledgement routes |
+| 0.41 | Registry-backed history, search, promotion, and cross-pipeline impact |
+| 0.42 | Baselines, state linkage, replay, concurrency, reproducibility |
+| 0.43 | Approval, governance, signed observations, retention, policy evidence |
+| 0.44 | Integrated multi-tenant control-plane graduation |
+| 0.45 | IDE and notebook history, impact, proposals, and navigation |
+| 0.49 | Human-governed AI remediation proposals |
 
 ## Success Criteria
 

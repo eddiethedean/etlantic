@@ -9,7 +9,7 @@
 !!! note "Portable transformation compilers"
     The
     [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md)
-    defines how plugins compile DTCS Transformation Plans. Polars, PySpark,
+    defines how plugins compile [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plans. Polars, PySpark,
     and Pandas ship relational `/1` compilers; third parties must pass
     `run_portable_transform_conformance_suite` for advertised claims.
 
@@ -47,7 +47,7 @@ stay import-safe until accessed:
   orchestrator, scheduler, secrets, write-semantics, portable transform)
 
 `from etlantic import Data, Pipeline` remains supported. Specialist root
-exports demoted in 0.22 remain as pre-1.0 compatibility aliases (warn once).
+exports demoted in 0.22 remain as 0.x compatibility aliases (warn once).
 
 Also see [Capability Vocabulary](CAPABILITY_VOCABULARY.md),
 [Protocol Evolution](PROTOCOL_EVOLUTION.md), and
@@ -152,9 +152,9 @@ Pipeline Plan without changing its semantics.
 Plugins should declare compatibility with:
 
 - ETLantic
-- ODCS
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md)
 - DTCS
-- DPCS
+- [DPCS](../05_PIPELINES/DPCS.md)
 
 Independent versioning allows plugins to evolve without forcing synchronized
 releases across the ecosystem.

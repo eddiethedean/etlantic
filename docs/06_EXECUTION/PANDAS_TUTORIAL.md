@@ -1,6 +1,6 @@
 # Execute with Pandas
 
-> **Status: Available in ETLantic 0.33.0.** Prefer the **PyPI path** after
+> **Status: Available in ETLantic 0.34.0.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 ## PyPI path (add Pandas to an `init` project)
@@ -12,7 +12,7 @@ Pandas implementation and select the engine.
 ### 1. Install
 
 ```bash
-python -m pip install 'etlantic[pandas]==0.33.0'
+python -m pip install 'etlantic[pandas]==0.34.0'
 ```
 
 ### 2. Register a Pandas implementation
@@ -59,8 +59,8 @@ cat data/out.json
 Repository scripts under `examples/` are **not** in the PyPI wheel.
 
 ```bash
-python -m pip install 'etlantic==0.33.0' 'etlantic-pandas==0.33.0'
-git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.34.0' 'etlantic-pandas==0.34.0'
+git clone --branch v0.34.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas
 ```
@@ -79,5 +79,24 @@ def normalize_pandas(customers):
 Select it with `Profile(name="pandas", dataframe_engine="pandas")`. Complete
 source:
 [`examples/dataframe_parity.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/dataframe_parity.py).
+
+## Expected output
+
+Run identifiers, timestamps, and durations vary. The companion's stable
+evidence is:
+
+```text
+profile:  pandas-example
+status:   succeeded
+summary:  total=3 ok=3 failed=0 skipped=0 cancelled=0
+diagnostics:
+  - [warning] PMDF420: Column 'full_name' uses object dtype; logical type may be ambiguous.
+{'customer_id': 1, 'full_name': 'Ada Lovelace'}
+{'customer_id': 2, 'full_name': 'Grace Hopper'}
+```
+
+`PMDF420` explains Pandas' broad `object` dtype; it does not change the
+successful run status. For the earlier identity example, `data/out.json`
+retains the same Ada and Grace records shown in Quickstart.
 
 See [Pandas execution details](PANDAS.md).

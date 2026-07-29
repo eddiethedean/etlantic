@@ -1,8 +1,8 @@
 # Resource Provider
 
-!!! warning "Future design—not a shipped 0.18 entry-point protocol"
+!!! warning "Future design—not a shipped 0.33 entry-point protocol"
     Resource providers are not a discoverable entry-point protocol in
-    ETLantic 0.18. This page describes a proposed extension surface. Prefer
+    ETLantic 0.33. This page describes a proposed extension surface. Prefer
     the shipped dataframe / SQL / Spark / orchestration / secrets plugin
     categories for current work.
 
@@ -176,7 +176,7 @@ runtime.override_resource(
 )
 ```
 
-Overrides affect runtime binding, not ODCS, DTCS, DPCS, or the logical pipeline
+Overrides affect runtime binding, not [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), or the logical pipeline
 graph.
 
 ## Async Support

@@ -17,7 +17,7 @@ ETLantic uses pipeline definitions to:
 
 - Validate graph structure
 - Verify contract compatibility
-- Generate DPCS artifacts
+- Generate [DPCS](DPCS.md) artifacts
 - Build resolved `PipelinePlan` objects
 - Produce lineage
 - Generate documentation

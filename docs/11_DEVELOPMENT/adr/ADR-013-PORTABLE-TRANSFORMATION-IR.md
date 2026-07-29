@@ -1,7 +1,7 @@
 # ADR-013: Closed Portable Transformation IR
 
 Date: 2026-07-17  
-Status: Proposed
+Status: Accepted (implemented since ETLantic 0.11)
 
 ## Context
 
@@ -17,7 +17,7 @@ would be unsafe, incomplete, and difficult to serialize deterministically.
 
 ## Decision
 
-DTCS will define the closed, versioned portable relational Transformation Plan
+[DTCS](../../04_TRANSFORMATIONS/DTCS.md) will define the closed, versioned portable relational Transformation Plan
 and expose canonical models through the `dtcs` package. ETLantic will define a
 PySpark-inspired DataFrame, Column, functions, grouping, and window authoring
 surface that constructs those DTCS models directly.

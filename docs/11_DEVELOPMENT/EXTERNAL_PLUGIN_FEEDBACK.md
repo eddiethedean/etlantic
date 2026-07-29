@@ -30,7 +30,7 @@
 - First-party plugins (polars, sql, pyspark, …) continue to exercise protocols
   in-repo; echo proves the **out-of-monorepo** author path.
 - Storage / Resource / Observability protocol catalogs remain **future** work
-  (post-freeze or 1.x) and are not part of this feedback cycle.
+  (post-freeze or a later 0.x phase) and are not part of this feedback cycle.
 
 ## See also
 

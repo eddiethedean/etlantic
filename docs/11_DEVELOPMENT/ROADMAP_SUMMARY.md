@@ -1,7 +1,18 @@
 # Roadmap Summary
 
-ETLantic **0.33.0** ships **SQLAlchemy and Relational Differential Parity (M5)**.
-Milestones describe capability order, not release-date commitments.
+ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
+(M6)**. **0.35 / M7** is the next planned milestone. Milestones describe
+capability order, not release-date commitments.
+
+| Horizon | Release | Outcome | Evidence / status |
+|---|---:|---|---|
+| Current | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
+| Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
+| Then | 0.35 | Migration completion and joint freeze (M7) | Planned |
+| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
+
+“Planned” records capability order only. It does not imply a release date or
+that the capability is available in the current package.
 
 ## Shipped: 0.15 through 0.20
 
@@ -22,7 +33,7 @@ ETLantic **0.19.0** shipped the **Contract and Configuration Freeze** (see
 plan nest freeze helpers (`deep_freeze` on mappings/lists/sets — not full
 object-graph immutability), fingerprint trust-boundary verify, `security_mode`,
 strict profile resolution, wire schema gates, surface inventory, and
-pre-1.0 deprecation schedule. See
+0.x deprecation schedule. See
 [What's New in 0.19](../01_GETTING_STARTED/WHATS_NEW_0_19.md).
 
 ETLantic **0.20.0** shipped **Trust, Isolation, and Safe I/O**:
@@ -80,7 +91,7 @@ facade, and `etlantic-fastapi` reference adapter. See
 
 ETLantic **0.25.0** / **0.25.1** shipped **Compatibility Burn-In (first slice)**:
 `etlantic.pipeline/1` and sibling codec upgrade fixtures, Plugin SDK `/1`
-freeze decision (blockers published), and a published 1.0 removal inventory.
+freeze decision (blockers published), and a published 0.38 removal inventory.
 See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and
 [Exit gate 0.25](EXIT_GATE_0_25.md).
 
@@ -136,7 +147,7 @@ See [What's New in 0.31](../01_GETTING_STARTED/WHATS_NEW_0_31.md) and
 
 ## Shipped: 0.32
 
-ETLantic **0.33.0** shipped **PySpark and Delta Differential Parity (M4)**:
+ETLantic **0.32.0** shipped **PySpark and Delta Differential Parity (M4)**:
 see [What's New in 0.32](../01_GETTING_STARTED/WHATS_NEW_0_32.md) and
 [Exit gate 0.32](EXIT_GATE_0_32.md).
 
@@ -148,15 +159,22 @@ SQLite/PostgreSQL differential fixtures. See
 [What's New in 0.33](../01_GETTING_STARTED/WHATS_NEW_0_33.md) and
 [Exit gate 0.33](EXIT_GATE_0_33.md).
 
-## Next: 0.34 — Operations, evidence, and production readiness (M6)
+## Shipped: 0.34
 
-**0.34** covers medallion-oriented explain, durable run history, and production
-profile conformance. See
-[ROADMAP § 0.34](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#034--operations-evidence-and-production-readiness).
+ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
+(M6)**: observability/run-history/event-consumer protocols, runtime bridge,
+production conformance, and Medallantic explain/lifecycle/profile templates.
+See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and
+[Exit gate 0.34](EXIT_GATE_0_34.md).
+
+## Next: 0.35 — Migration completion and joint freeze (M7)
+
+**0.35** covers SparkForge migration inventory and joint freeze prep. See
+[ROADMAP § 0.35](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#035--migration-completion-and-joint-freeze).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 
-The remaining pre-1.0 capability phases pair each Medallantic parity milestone
+The remaining 0.x foundation phases pair each Medallantic parity milestone
 with the domain-neutral ETLantic substrate it exercises:
 
 | Release | Medallantic outcome | ETLantic evolution |
@@ -174,21 +192,47 @@ domain-neutral meaning are promoted into ETLantic. See the
 [full ETLantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) and
 [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md).
 
-## 0.36–0.98
+## Foundation sequence: 0.36–0.38
 
-Joint ETLantic/Medallantic compatibility burn-in, then RC and Stable
-Foundation. Production FastAPI control API remains **1.1**;
-registry/workspaces **1.2**.
+- **0.36:** joint ETLantic/Medallantic compatibility burn-in
+- **0.37:** stable-foundation release-candidate rehearsal
+- **0.38:** stable foundation
 
-## Post-1.0 recovery and federation
+## First-class control-plane program
+
+The multi-tenant control plane is a planned first-class feature program rather
+than an indefinite residual:
+
+- **0.40 / CP1:** typed API, identity context, authorization, and idempotency
+- **0.41 / CP2:** tenant/workspace registry and persistence isolation
+- **0.42 / CP3:** durable submission, leases, fencing, state, and recovery
+- **0.43 / CP4:** policy, quotas, audit evidence, and release-candidate proof
+- **0.44 / CP-GA:** integrated production graduation after every gate passes
+
+The program remains outside the 0.33 single-tenant envelope and never treats
+in-process Python context as a tenant boundary. See the
+[Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+
+## Remaining post-foundation 0.x sequence
+
+- **0.45:** developer intelligence, LSP, IDE, and static analysis
+- **0.46:** planner and optimization SDK
+- **0.47:** streaming and event-driven pipelines
+- **0.48:** remote execution federation
+- **0.49:** AI-assisted, human-governed engineering
+
+These are the only assigned post-control-plane phases. The roadmap does not
+reserve a 1.0 or 1.x phase.
+
+## Post-foundation recovery and federation
 
 Durable execution hosts remain outside ETLantic core, while ETLantic supplies
 the portable evidence needed to recover safely:
 
-- **1.3 Incremental State and Reproducibility** adds a secret-free
+- **0.42 / CP3 Incremental State and Reproducibility** adds a secret-free
   execution-attempt context, checkpoint/resume evidence, and normalized
   known/unknown external-effect outcomes.
-- **1.8 Remote Execution Federation** adds host-neutral recovery negotiation,
+- **0.48 Remote Execution Federation** adds host-neutral recovery negotiation,
   fenced attempt attribution, resumable observation, and conformance semantics
   for retry, replay, repair, reconciliation, and manual review.
 
@@ -196,15 +240,17 @@ The queue, worker claim/lease store, heartbeat service, and scheduler leadership
 remain responsibilities of applications and orchestrator plugins. See
 [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md#durable-host-recovery-integration).
 
-## Toward 1.0
+## Stable foundation at 0.38
 
-The 1.0 goal is a stable foundation with frozen contracts (0.19), completed
+The 0.38 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
 frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 0.24 functional/JSON authoring convergence, followed by core compatibility
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
-parity (**0.29–0.35**), and joint compatibility burn-in (**0.36–0.98**).
-TransformationModel incubation is deferred to post-1.0 phases.
+parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), release
+candidate (**0.37**), and stable foundation (**0.38**).
+TransformationModel incubation is deferred to post-stable-foundation phases
+(0.39+).
 
 > **Production use is supported only within the documented reference
 > envelope.** See the [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md).

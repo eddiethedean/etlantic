@@ -1,6 +1,6 @@
 # Application Integration Contract (0.25)
 
-> **Status: Available in ETLantic 0.33.0.**
+> **Status: Available in ETLantic 0.34.0.**
 
 Framework-agnostic contract for visual builders and host applications.
 
@@ -50,8 +50,8 @@ job = service.submit_run("demo")
 Install the optional package (same minor as core):
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.33.0'
-# or: python -m pip install 'etlantic[fastapi]==0.33.0'
+python -m pip install 'etlantic-fastapi==0.34.0'
+# or: python -m pip install 'etlantic[fastapi]==0.34.0'
 ```
 
 Contributor checkout (editable monorepo):
@@ -68,7 +68,7 @@ app = create_reference_app()
 ```
 
 `etlantic-fastapi` publishes OpenAPI from the public schemas. It is a proof
-adapter, **not** the production 1.1 control API. Runs are **synchronous**:
+adapter, **not** the production 0.40–0.44 control API. Runs are **synchronous**:
 `submit_run` completes before returning; `cancel_run` reports that in-flight
 cancel is unsupported on this reference adapter.
 

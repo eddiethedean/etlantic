@@ -1,6 +1,6 @@
 # Planning
 
-> **Status: Available in ETLantic 0.33.0** for deterministic
+> **Status: Available in ETLantic 0.34.0** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs. Plans are
 > secret-free and do not execute transforms. Some advanced analysis surfaces
 > described later on this page may still be design-forward—prefer CLI JSON
@@ -34,9 +34,9 @@ materializes user data.
 The planner consumes:
 
 - Pipeline identity and logical graph
-- ODCS data-contract references
-- DTCS transformation definitions
-- DPCS pipeline semantics
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md) data-contract references
+- [DTCS](../04_TRANSFORMATIONS/DTCS.md) transformation definitions
+- [DPCS](DPCS.md) pipeline semantics
 - Transformation implementations
 - Portable transformation definitions and fingerprints
 - Profile configuration
@@ -305,7 +305,7 @@ artifact = plan.compile(target="airflow")
 diagram = CustomerPipeline.to_mermaid()
 ```
 
-Exact convenience methods remain a proposed 1.0 API; the architectural rule is
+Exact convenience methods remain a proposed 0.38 API; the architectural rule is
 that each operation consumes the same resolved plan.
 
 ## Caching

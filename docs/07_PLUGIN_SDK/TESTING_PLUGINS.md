@@ -1,6 +1,6 @@
 # Testing Plugins
 
-> **Status: Available in ETLantic 0.33.0** via `etlantic.testing`.
+> **Status: Available in ETLantic 0.34.0** via `etlantic.testing`.
 
 Testing helpers provide conformance suites so third-party plugins can prove
 they implement the public protocols correctly.
@@ -16,7 +16,7 @@ they implement the public protocols correctly.
 | Scheduler conformance | `etlantic.testing.run_scheduler_conformance_suite` | `ExecutionScheduler` |
 | Secret conformance | `etlantic.testing.run_secret_conformance_suite` | `SecretProvider` |
 | Write-semantics parity | `etlantic.testing.run_write_semantics_parity_suite` | Cross-engine write modes |
-| Portable transform compiler | `etlantic.testing.run_portable_transform_conformance_suite` | `TransformCompiler` plugins |
+| Portable transform compiler | `etlantic.testing.run_portable_transform_conformance_suite` | `PortableTransformCompiler` plugins |
 | Tabular interchange smoke (Gate A) | `etlantic.testing.run_tabular_interchange_conformance_smoke` | Producer/consumer `PluginCapabilities` for `etlantic.interchange/1` |
 
 ### Capability truthfulness
@@ -92,7 +92,7 @@ ETLantic planning and runtime.
 ## Compatibility policy
 
 - Claim only capabilities your compiler passes in the public suite.
-- Pin `etlantic` (and this suite) to the minor you certified against (`==0.33.0`).
+- Pin `etlantic` (and this suite) to the minor you certified against (`==0.34.0`).
 - Fail closed at `analyze()` for unsupported modes; do not degrade silently.
 - Keep plans, explain payloads, and diagnostics secret-free.
 

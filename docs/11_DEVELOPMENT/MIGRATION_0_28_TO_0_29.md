@@ -11,7 +11,7 @@
 | Package pin | `etlantic==0.29.0`; plugins `etlantic-*==0.29.0`; `medallantic==0.29.0` |
 | Medallantic | Native `MedallionPipeline` / `MedallionBuilder` + migrate namespace |
 | Facade kit | `etlantic.testing.run_facade_conformance_suite` |
-| Root aliases | No new removals in 0.29 (remaining demotions still 0.29+/1.0) |
+| Root aliases | No new removals in 0.29 (remaining demotions due by 0.38) |
 
 ## Upgrade steps
 

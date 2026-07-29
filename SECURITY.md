@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.33.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.34.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Security reports
 concerning the published package, contract loading, planning, local runtime,
 storage bindings, secret handling, dataframe, SQL, and PySpark plugins,
@@ -10,11 +10,11 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.33.x | Current supported Beta line; security fixes are released on this line |
-| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.33.x |
-| 0.27.x and earlier | Not actively maintained; upgrade to 0.33.x |
+| 0.34.x | Current supported Beta line; security fixes are released on this line |
+| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.34.x |
+| 0.27.x and earlier | Not actively maintained; upgrade to 0.34.x |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.33.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.34.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability

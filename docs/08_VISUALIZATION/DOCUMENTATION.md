@@ -21,7 +21,7 @@ Generated documentation should help users:
 
 - Understand pipeline purpose and ownership
 - Inspect sources, steps, sinks, and subpipelines
-- Review ODCS, DTCS, and DPCS relationships
+- Review [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) relationships
 - Explore lineage
 - Diagnose validation problems
 - Compare contract and pipeline versions

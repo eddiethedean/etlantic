@@ -33,6 +33,9 @@ class PluginDiscoveryResult:
     spark_providers: dict[str, Any] = field(default_factory=dict)
     orchestrator_plugins: dict[str, Any] = field(default_factory=dict)
     scheduler_plugins: dict[str, Any] = field(default_factory=dict)
+    observability_providers: dict[str, Any] = field(default_factory=dict)
+    run_history_providers: dict[str, Any] = field(default_factory=dict)
+    event_consumers: dict[str, Any] = field(default_factory=dict)
     diagnostics: list[Diagnostic] = field(default_factory=list)
     trust_records: list[dict[str, Any]] = field(default_factory=list)
 
@@ -107,6 +110,24 @@ _RUNTIME_GROUPS: tuple[PluginGroupSpec, ...] = (
         runtime_attr="scheduler_plugins",
         key_fn=None,
         register_kind="scheduler",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.observability_providers",
+        runtime_attr="observability_providers",
+        key_fn=_provider_key,
+        register_kind="observability",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.run_history_providers",
+        runtime_attr="run_history_providers",
+        key_fn=_provider_key,
+        register_kind="run_history",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.event_consumers",
+        runtime_attr="event_consumers",
+        key_fn=_provider_key,
+        register_kind="event_consumer",
     ),
 )
 

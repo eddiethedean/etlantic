@@ -1,7 +1,7 @@
 # Portable Transformation Function Reference
 
 !!! success "Available in ETLantic 0.11 (authoring)"
-    Facade methods lower to published DTCS identifiers and emit profile
+    Facade methods lower to published [DTCS](DTCS.md) identifiers and emit profile
     requirements on the portable plan. **Authoring is not the same as
     executable support:** advertise a method as runnable only when a compiler
     claims the matching profile (see the

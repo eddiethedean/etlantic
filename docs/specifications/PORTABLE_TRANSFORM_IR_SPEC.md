@@ -1,6 +1,6 @@
 # ETLantic Profile for DTCS Portable Transformation Plans
 
-Status: ETLantic integration profile draft over published DTCS 3.0 semantics
+Status: ETLantic integration profile draft over published [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 semantics
 DTCS plan identifier: `dtcs.transform-plan/2` (v1 remains readable)  
 ETLantic authoring profile: `etlantic.transform/1`  
 Target milestones: 0.11 kernel through 0.15 advanced lowering

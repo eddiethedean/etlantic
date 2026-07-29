@@ -1,12 +1,12 @@
 # etlantic-polars
 
 Polars dataframe plugin **and** Polars portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.20.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.34.
 
 ```bash
-pip install 'etlantic==0.33.0' 'etlantic-polars==0.33.0'
+pip install 'etlantic==0.34.0' 'etlantic-polars==0.34.0'
 # optional Arrow interchange
-pip install 'etlantic-polars[arrow]==0.32.0'
+pip install 'etlantic-polars[arrow]==0.34.0'
 ```
 
 ## Dataframe plugin
@@ -41,7 +41,8 @@ Entry point: `etlantic.transform_compilers` →
 
 Runnable example: `examples/portable_polars_kernel.py` in the ETLantic repo.
 
-Windows, complex-values, conversion, and Rich Portable Analytics compiler
-claims remain later under **0.17**. See the
+Window V1, complex-type/value, and conversion profiles are available in the
+current compiler; explicit window frames and Window V2 remain capability-gated.
+See the
 [compiler protocol](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
 and [compatibility matrix](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/).

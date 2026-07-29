@@ -2,18 +2,20 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.33 |
+| Topic | 0.34 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
-| Not included | Multi-tenant control plane; capacity SLA; compliance SoR |
+| Not included in 0.34 | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.33.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
+ETLantic 0.34.0 is a **Beta** (PyPI) release suitable for the documented single-tenant pilot
 deployment on this page. Experimental features remain experimental. Broader
 deployment topology, multi-tenancy, compliance attestations beyond shipped
 SBOM digests/GitHub attestations, and advanced supply-chain programs remain
-adopter-owned.
+adopter-owned today. Multi-tenancy has a
+[first-class gated plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
+the other claims remain separate.
 
 ## Supported reference shape
 
@@ -33,7 +35,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.33.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.34.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -71,14 +73,14 @@ reference controls are shipped:
 - Cross-tenant / multi-tenant isolation guarantees (beyond single-tenant keys)
 - Formal denial-of-service capacity SLAs (partial I/O budgets only)
 - Compliance-grade audit system of record (CLI reports are operational evidence)
-- Stable 1.0 compatibility and support windows
+- Stable-foundation compatibility and support windows (planned for 0.38)
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
 - Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
   and GitHub attestations
 
-## Shipped / adopter-owned / residual (0.33)
+## Shipped / adopter-owned / residual (0.34)
 
-| Concern | 0.33 status |
+| Concern | 0.34 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |
@@ -87,8 +89,8 @@ reference controls are shipped:
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
 | Release SBOM digests + GitHub attestations | **Shipped** |
-| Durable multi-worker / multi-tenant control plane | **Residual / gap** |
-| Cross-tenant isolation guarantees | **Residual / adopter-owned** |
+| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.34 |
+| Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |
 
@@ -102,5 +104,6 @@ degraded.
 
 See [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md),
 [Ops Pilot](OPS_PILOT.md),
-[Security](../02_FOUNDATIONS/SECURITY.md), and
-[Support Policy](../11_DEVELOPMENT/SUPPORT.md).
+[Security](../02_FOUNDATIONS/SECURITY.md),
+[Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
+and [Support Policy](../11_DEVELOPMENT/SUPPORT.md).

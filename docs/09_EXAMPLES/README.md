@@ -2,7 +2,7 @@
 
 ## Green path
 
-1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.33.0`
+1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — `pip install etlantic==0.34.0`
 2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
 3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
 4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
@@ -10,7 +10,7 @@
 6. Runnable scripts below
 
 Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
-0.33. Prefer the runnable guides below and the PyPI paths in
+0.34. Prefer the runnable guides below and the PyPI paths in
 [Polars](../06_EXECUTION/POLARS_TUTORIAL.md) /
 [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md) /
 [SQL hello](../06_EXECUTION/SQL_HELLO_PYPI.md).

@@ -611,22 +611,27 @@ def register_commands(
     def quality_trends_cmd(
         subject_id: str = typer.Argument(...),
         values: str = typer.Option(
-            "", "--values", help="Comma-separated metric samples"
+            "", "--values", help="Comma-separated metric samples (legacy fallback)"
         ),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        samples = [float(x) for x in values.split(",") if x.strip()]
-        mean = sum(samples) / len(samples) if samples else None
-        emit_payload(
-            {
+        from etlantic.observability.consumers import InMemoryTrendConsumer
+
+        consumer = InMemoryTrendConsumer(subject_id=subject_id)
+        if values.strip():
+            samples = [float(x) for x in values.split(",") if x.strip()]
+            mean = sum(samples) / len(samples) if samples else None
+            payload = {
                 "subject_id": subject_id,
                 "n": len(samples),
                 "mean": mean,
                 "min": min(samples) if samples else None,
                 "max": max(samples) if samples else None,
-            },
-            fmt=fmt,
-        )
+                "source": "inline",
+            }
+        else:
+            payload = {**consumer.trend_summary(subject_id), "source": "consumer"}
+        emit_payload(payload, fmt=fmt)
 
     @viz_app.command("dot")
     def viz_dot_cmd(

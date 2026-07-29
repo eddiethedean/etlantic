@@ -1,6 +1,6 @@
 # Support Policy
 
-ETLantic **0.33.x** is a **Beta** (PyPI) release suitable for documented single-tenant
+ETLantic **0.34.x** is a **Beta** (PyPI) release suitable for documented single-tenant
 reference deployments. Community support is best-effort and provides **no
 formal SLA** or guaranteed response time.
 
@@ -16,14 +16,16 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Supported versions
 
-The current published minor line (`0.33.x`) receives best-effort correctness
+The current published minor line (`0.34.x`) receives best-effort correctness
 and security fixes. Older 0.x lines (including **0.19.x**) are not actively
 maintained. See `SECURITY.md` for the security-support table.
 
 ## Adopter-owned and unsupported areas
 
 - Production incident response or on-call coverage
-- Multi-tenant isolation and deployment topology
+- Multi-tenant isolation and deployment topology in the current 0.34 envelope
+  (a [first-class program is planned](MULTI_TENANT_CONTROL_PLANE_PLAN.md), but
+  not yet supported)
 - Compliance attestations (SOC2, GDPR certification, and similar)
 - Advanced supply-chain programs beyond shipped SBOM digests, GitHub build
   provenance attestations, OIDC-preferred publish, documented package pins,

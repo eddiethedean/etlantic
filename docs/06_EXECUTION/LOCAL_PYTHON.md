@@ -16,14 +16,14 @@ durable scheduling, cross-process isolation, or fleet-scale coordination.
 - Run reports and the default report store are process-scoped
 - In-memory storage does not survive process restart
 - No multi-tenant artifact isolation between concurrent apps in one process
-- 0.x APIs may change between minor releases until 1.0
+- 0.x APIs may change between minor releases until their documented freeze
 
 ## Goals
 
 The local runtime should:
 
 - Execute Pipeline Plans without external infrastructure
-- Preserve DPCS semantics
+- Preserve [DPCS](../05_PIPELINES/DPCS.md) semantics
 - Support synchronous and asynchronous implementations
 - Provide deterministic execution for a given plan and bindings
 - Serve as the reference execution backend
@@ -89,14 +89,14 @@ The implementation should never change observable pipeline behavior.
 The Local Python plugin supports both:
 
 ```python
-def normalize(...):
+def normalize(rows):
     ...
 ```
 
 and
 
 ```python
-async def normalize(...):
+async def normalize(rows):
     ...
 ```
 

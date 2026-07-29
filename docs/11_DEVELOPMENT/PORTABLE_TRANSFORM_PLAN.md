@@ -1,9 +1,9 @@
 # Portable Transformation Implementation Plan
 
-Status: Internal project plan  
-DTCS plan protocol: `dtcs.transform-plan/2` (v1 readable)  
-ETLantic authoring profile: `etlantic.transform/1`  
-Compiler protocol: `etlantic.transform-compiler/1`  
+Status: Internal project plan
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) plan protocol: `dtcs.transform-plan/2` (v1 readable)
+ETLantic authoring profile: `etlantic.transform/1`
+Compiler protocol: `etlantic.transform-compiler/1`
 Current release boundary: authoring shipped in 0.11.0; planning + Polars kernel
 compiler shipped in 0.12.0
 DTCS baseline: specification 3.0.0 / toolkit content floor `dtcs` 0.14.0 where

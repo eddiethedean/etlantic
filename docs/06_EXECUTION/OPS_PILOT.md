@@ -1,8 +1,10 @@
 # Ops Pilot Guide
 
-> **Status: Available in ETLantic 0.33.0 (Beta) for the documented
+> **Status: Available in ETLantic 0.34.0 (Beta) for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
-> product and is not unrestricted enterprise production.
+> product and is not unrestricted enterprise production. The future boundary
+> is defined by the
+> [first-class control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 Use this page for a **bounded deployment**: one team or tenant, pinned packages,
 process isolation, and fail-closed production profiles. SLA, HA, deployment
@@ -12,9 +14,9 @@ adopter-owned.
 ## Pin matrix
 
 ```bash
-pip install 'etlantic==0.33.0'
+pip install 'etlantic==0.34.0'
 # Only the engines you need:
-pip install 'etlantic-polars==0.33.0'   # or pandas / sql / pyspark / airflow / prefect
+pip install 'etlantic-polars==0.34.0'   # or pandas / sql / pyspark / airflow / prefect
 ```
 
 Record the exact versions in your lockfile. Production profiles should pin
