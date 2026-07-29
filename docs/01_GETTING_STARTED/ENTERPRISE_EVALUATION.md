@@ -4,6 +4,14 @@
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
+!!! warning "PyPI classifiers ≠ enterprise readiness"
+    Official plugin packages may advertise Production/Stable classifiers on
+    PyPI while **core ETLantic 0.34 remains Beta** for documented single-tenant
+    pilots. Do not treat plugin classifiers as an SLA, multi-tenant guarantee,
+    or unrestricted enterprise production claim. See
+    [Capabilities](CAPABILITIES.md) and
+    [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
+
 ## How to use this packet
 
 1. Read [Evaluator Brief](EVALUATOR.md) (one page — residual lead + matrix).

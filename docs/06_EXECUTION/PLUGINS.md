@@ -1,235 +1,50 @@
 # Plugins
 
 !!! warning "Future design overview — not an operator manual"
-    This page sketches a broad plugin catalog (including unshipped backends
-    such as Dagster (planned 0.50), Kafka (planned 0.47), and storage providers
-    (planned 0.39). For **shipped** protocols, use
-    [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) and
-    [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md). For storage that
-    exists today, see [Storage today](STORAGE_TODAY.md).
+    This page is a **design sketch** of a broader plugin catalog (including
+    unshipped backends). Do **not** implement against it. For **shipped**
+    protocols, use [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) and
+    [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md). For storage
+    that exists today, see [Storage today](STORAGE_TODAY.md).
 
-Plugins are the extension mechanism that allows ETLantic to execute
-portable pipeline plans on different technologies without changing pipeline
-definitions.
+## What ships in 0.34 (start here)
 
-Since 0.11, engine plugins may also implement a compiler for the closed,
-published [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plan. This additional capability does not permit
-plugins to redefine portable operation semantics.
+| Category | Reality in 0.34 |
+|---|---|
+| Dataframe / SQL / Spark engines | Shipped as `etlantic-*` packages |
+| Orchestrators | Airflow compile + Prefect local MVP |
+| Secrets | Env / file / keyring providers |
+| Observability / run history / event consumers | Shipped protocols in 0.34 (M6) |
+| Extract / Load I/O | Bind to **assets** and storage providers — **not** SourcePlugin / SinkPlugin APIs |
+| General storage / connector SDK | Planned (0.39+) — not a discoverable protocol today |
+| Resource providers | Not shipped |
+| Dagster / Kafka / managed registries | Planned — not APIs |
 
-The core ETLantic library is intentionally small. It models, validates,
-plans, generates contracts, and loads contracts. Plugins provide concrete
-runtime behavior.
+Authoring uses `Extract` / `Load` with `asset=` (see
+[Extracts](../05_PIPELINES/EXTRACTS.md) and [Loads](../05_PIPELINES/LOADS.md)).
+`Source` / `Sink` types were removed; wire JSON may still say `"source"` /
+`"sink"` as node kinds — that is not a plugin category.
 
-## Goals
+## Goals (design intent)
 
-Plugins should:
+Plugins should preserve pipeline semantics, be independently installable,
+declare capabilities honestly, and stay loosely coupled to core.
 
-- Preserve pipeline semantics.
-- Be independently installable.
-- Support multiple execution technologies.
-- Be discoverable.
-- Be strongly typed.
-- Remain loosely coupled to the core.
+## Planned catalog (not installable)
 
-## Philosophy
+The following categories appear in older design pages and **must not** be
+treated as 0.34 APIs:
 
-ETLantic defines **what** a pipeline means.
+- Source plugins / Sink plugins (use assets + [Storage today](STORAGE_TODAY.md))
+- General storage plugins (Snowflake, S3, Iceberg, …) — see
+  [Storage Plugin](../07_PLUGIN_SDK/STORAGE_PLUGIN.md) (Future design)
+- Managed resource providers — see
+  [Resource Provider](../07_PLUGIN_SDK/RESOURCE_PROVIDER.md) (Future design)
+- Registry plugins / approval workflows
+- Dagster orchestrator compiler (planned 0.50)
 
-Plugins define **how** that meaning is realized.
+## Next step
 
-Portable compilers declare exact DTCS profile, Semantic Action, Function,
-Operator, type, and semantic-mode versions. A broad claim such as
-`portable_transform=True` is insufficient.
-
-```text
-ETLantic Core
-        │
-        ▼
-Plugin Interface
-        │
-        ├── Local Execution
-        ├── Polars
-        ├── Pandas
-        ├── Airflow
-        ├── Dagster
-        ├── Prefect
-        ├── Spark
-        └── Future Plugins
-```
-
-## Plugin Categories
-
-ETLantic may support several plugin types.
-
-### Execution Plugins
-
-Execute Pipeline Plans.
-
-Examples:
-
-- Local Python
-- Airflow
-- Dagster
-- Prefect
-
-### Dataframe Plugins
-
-Implement DTCS transformations using dataframe engines.
-
-Examples:
-
-- Polars
-- Pandas
-- DuckDB
-- Spark
-
-### Source Plugins
-
-Read data from external systems.
-
-Examples:
-
-- CSV
-- Parquet
-- PostgreSQL
-- S3
-- Kafka
-- REST APIs
-
-### Sink Plugins
-
-Publish data to external systems.
-
-Examples:
-
-- SQL
-- Delta Lake
-- Object Storage
-- Message Queues
-- HTTP Services
-
-### Registry Plugins
-
-Resolve and publish contracts.
-
-Examples:
-
-- Local filesystem
-- Git
-- Organization registries
-
-## Plugin Discovery
-
-Plugins are discoverable through Python packaging entry points. Use the
-domain-specific helpers—there is no global `PluginRegistry`:
-
-```python
-from etlantic.dataframe import discover_dataframe_plugins
-from etlantic.orchestration import discover_orchestrator_plugins
-from etlantic.spark import discover_spark_plugins, discover_spark_providers
-from etlantic.sql import discover_sql_plugins
-
-dataframe_plugins = discover_dataframe_plugins()
-sql_plugins = discover_sql_plugins()
-spark_plugins = discover_spark_plugins()
-spark_providers = discover_spark_providers()
-orchestrators = discover_orchestrator_plugins()
-```
-
-CLI: `etlantic plugin list`. Secret providers are registered on the runtime /
-profile rather than discovered through a global registry helper.
-
-## Capabilities
-
-Every plugin should declare its capabilities.
-
-Examples:
-
-- Async support
-- Streaming support
-- Parallel execution
-- Retry support
-- Checkpoints
-- Transactions
-- Batch execution
-
-Planning compares required capabilities against those provided by installed
-plugins.
-
-## Selection
-
-Profiles determine which plugins are used.
-
-```python
-production = Profile(
-    orchestrator="airflow",
-    dataframe_engine="polars",
-)
-```
-
-Changing the profile changes plugin selection—not the pipeline.
-
-## Lifecycle
-
-Typical lifecycle:
-
-```text
-Discover
-    │
-    ▼
-Validate
-    │
-    ▼
-Register
-    │
-    ▼
-Capability Evaluation
-    │
-    ▼
-Planning
-    │
-    ▼
-Execution
-```
-
-## Versioning
-
-Plugins should publish:
-
-- Plugin name
-- Version
-- Supported ETLantic version
-- Supported [ODCS](../03_DATA_CONTRACTS/ODCS.md) version
-- Supported DTCS version
-- Supported [DPCS](../05_PIPELINES/DPCS.md) version
-- Capability metadata
-
-Planning should reject incompatible plugins.
-
-## Best Practices
-
-- Keep plugins focused.
-- Preserve pipeline semantics.
-- Declare capabilities explicitly.
-- Avoid hidden side effects.
-- Fail clearly when requirements cannot be met.
-
-## Anti-Patterns
-
-Avoid:
-
-- Embedding plugin logic into ETLantic core.
-- Changing pipeline semantics.
-- Relying on global mutable state.
-- Silently ignoring unsupported capabilities.
-
-## Key Principle
-
-> ETLantic provides the portable modeling framework. Plugins provide the
-runtime-specific behavior needed to execute, integrate, and extend that model
-without altering its meaning.
-
-## Next Step
-
-Continue with [Resource Providers](RESOURCE_PLUGINS.md) to learn how plugins
-acquire and manage runtime resources during execution.
+1. [Plugin SDK Overview](../07_PLUGIN_SDK/OVERVIEW.md) — shipped protocol table
+2. [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md)
+3. [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)

@@ -20,6 +20,9 @@ concrete runtime behavior.
 | PySpark | [PYSPARK_PLUGIN](PYSPARK_PLUGIN.md) | `etlantic-pyspark` |
 | Orchestrator / scheduler | [ORCHESTRATOR_PLUGIN](ORCHESTRATOR_PLUGIN.md) | `etlantic-airflow`, `etlantic-prefect` |
 | Secret provider | [SECRET_PROVIDER](SECRET_PROVIDER.md) | `etlantic-keyring` |
+| Observability provider | [OBSERVABILITY_PROVIDER](OBSERVABILITY_PROVIDER.md) | core reference + `etlantic[otel]` |
+| Run history provider | [RUN_HISTORY_PROVIDER](RUN_HISTORY_PROVIDER.md) | file / in-memory reference |
+| Event consumer | [EVENT_CONSUMER](EVENT_CONSUMER.md) | trend consumer reference |
 | Portable transform compiler | [PORTABLE_TRANSFORM_COMPILER](PORTABLE_TRANSFORM_COMPILER.md) | engine packages above |
 | Testing / conformance | [TESTING_PLUGINS](TESTING_PLUGINS.md) | `etlantic.testing` |
 
@@ -36,11 +39,13 @@ ETLantic Core
 Validation → Planning → PipelinePlan
         │
         ▼
-Shipped plugins: dataframe / SQL / Spark / orchestrator / secrets / compilers
+Shipped plugins: dataframe / SQL / Spark / orchestrator / secrets /
+observability / run history / event consumers / compilers
 ```
 
-Every plugin consumes or contributes to planning, compilation, or execution of
-a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
+Every plugin consumes or contributes to planning, compilation, execution, or
+evidence of a validated `PipelinePlan`. No plugin changes the meaning of the
+pipeline.
 
 ## Core principles
 
@@ -65,9 +70,9 @@ protocols in **0.34.0**:
 - Registry plugins / approval workflows — planned through 0.41–0.44.
 
 See [Storage Plugin](STORAGE_PLUGIN.md) and
-[Resource Provider](RESOURCE_PROVIDER.md). The
-[Observability Provider](OBSERVABILITY_PROVIDER.md) protocol is available in
-0.34.
+[Resource Provider](RESOURCE_PROVIDER.md) for design stubs only.
+Operator how-to: [Observability today](../06_EXECUTION/OBSERVABILITY_TODAY.md)
+and [Reports and history](../06_EXECUTION/REPORTS_AND_HISTORY.md).
 
 ## Next Step
 

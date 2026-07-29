@@ -64,11 +64,20 @@ These symbols are on the curated root facade (`from etlantic import …` or
 | `PipelineRuntime` | `etlantic.lifecycle` | Process-local plugins, memory, reports |
 | `PipelinePlan` | `etlantic.plan` | Immutable secret-free resolved plan (`schema` required on wire) |
 | `plan_pipeline` / `explain_plan` | `etlantic.plan` | Functional planning helpers |
-| `verify_plan_fingerprint` / `deep_freeze` | `etlantic.plan` | Trust-boundary fingerprint check; freeze nested mappings/lists/sets (not full object graphs). See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms). |
 | `compile_plan` | `etlantic.orchestration` | External orchestrator artifact emission (verifies fingerprint first) |
 | `ValidationReport` | `etlantic.diagnostics` | Structured validate findings |
 | `PipelineRunReport` | `etlantic.reports` | Structured run outcomes |
 | `SecretRef` | `etlantic.secrets` | Runtime-only secret reference |
+
+Owning-module helpers (not curated root — import from the module):
+
+| Symbol | Import | Notes |
+|---|---|---|
+| `verify_plan_fingerprint` / `deep_freeze` | `from etlantic.plan import …` | Trust-boundary fingerprint check; freeze nested mappings/lists/sets (not full object graphs). See [freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms). Not on `import etlantic as etl` curated root. |
+| `resolve_profile` | `from etlantic.profile import resolve_profile` | Removed from root in 0.28 |
+| `load_profile` / `write_profile` | `from etlantic.profile import …` | Removed from root in 0.28 |
+| Gate A tabular types | `from etlantic.interchange.tabular import …` | Descriptors / fidelity (`etlantic.interchange/1`) |
+| `BackfillRequest` | `from etlantic.reliability_runtime import BackfillRequest` | Demoted if accessed via root |
 
 ## Top-10 API cookbook
 
@@ -85,7 +94,7 @@ Full signatures: generated pages below. Diagnostic codes:
 | `Pipeline.inspect` | — | Logical graph summary | Model definition errors |
 | `Transformation.step` | port bindings | Symbolic `Step` | Unknown bindings → `ModelDefinitionError` |
 | `Transformation.implementation` | `engine` name | Decorator | Replaces same class/engine in-process |
-| `Profile` / `load_profile` | JSON path or fields | `Profile` | Legacy `bindings` only → `PMCFG111`; invalid `security_mode` |
+| `Profile` / `load_profile` | JSON path or fields | `Profile` | Legacy `bindings` only → `PMCFG111`; invalid `security_mode` — import `load_profile` from `etlantic.profile` |
 | `plan_pipeline` | pipeline + profile | `PipelinePlan` | Same as `Pipeline.plan` |
 | `compile_plan` | plan + target | Artifacts | Missing orchestrator plugin; fingerprint verify |
 
@@ -93,17 +102,9 @@ Worked production failure: empty allowlist → `PMPLUG401` (CLI exit `11`).
 See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) and
 [Secrets decision tree](SECRETS_DECISION.md).
 
-Owning-module helpers (not curated root — import from the module):
-
-| Symbol | Import | Notes |
-|---|---|---|
-| `resolve_profile` | `from etlantic.profile import resolve_profile` | Removed from root in 0.28 |
-| `load_profile` / `write_profile` | `from etlantic.profile import …` | Removed from root in 0.28 |
-| Gate A tabular types | `from etlantic.interchange.tabular import …` | Descriptors / fidelity (`etlantic.interchange/1`) |
-| `BackfillRequest` | `from etlantic.reliability_runtime import BackfillRequest` | Demoted if accessed via root |
-
 Optional plugins document factories in package READMEs. See
 [Optional Packages](OPTIONAL_PACKAGES.md).
+
 ## Generated API pages
 
 - [Authoring](API_AUTHORING.md) — contracts, transformations, pipelines, ports

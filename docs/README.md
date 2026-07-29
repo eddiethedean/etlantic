@@ -27,29 +27,24 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
     That is the whole first-hour path. Optional later:
     [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md),
-    [Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
     [Compare](01_GETTING_STARTED/COMPARE.md).
+    Ignore Maintainers / Standards nav until you contribute.
     Pages marked **Future design** are not APIs.
 
 ## Project status
 
 **ETLantic 0.34.0** is a **Beta** release for documented single-tenant pilots.
-Install with `pip install 'etlantic==0.34.0'`.
+Install with `pip install 'etlantic==0.34.0'` (see
+[Installation](01_GETTING_STARTED/INSTALLATION.md) if the wheel is not on PyPI
+yet).
 
-- **Use today:** single-tenant pilots and reference deployments (see
-  [Capabilities](01_GETTING_STARTED/CAPABILITIES.md)).
-- **Planned first-class:** multi-tenant control plane through the
-  [0.40–0.43 incubation and 0.44 graduation program](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
-  it is not included in 0.34.
-- **Planned ecosystem:** pipeline testing, connectivity, metadata/GitOps
-  integration, brownfield bridges, an operator console, and managed providers
-  have assigned 0.x gates in the
-  [Adoption, Connectivity, and Operations Plan](11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md);
-  none is included merely because it is planned.
-- **Not included:** managed Spark, SLA, and unrestricted enterprise compliance
-  beyond shipped SBOM/attestations in 0.34.
-- **Experimental:** Structured Streaming; `etlantic-datafusion` (Gate B stub).
-
+- **Available:** typed authoring, validate/plan/run, Polars/Pandas/SQL/PySpark
+  plugins, Airflow compile, Prefect local MVP, observability / run history (M6).
+- **Experimental:** Structured Streaming; `etlantic-datafusion` stub.
+- **Not in 0.34:** multi-tenant control plane, formal SLA, unrestricted
+  enterprise production. Roadmap detail lives under
+  [Evaluate](01_GETTING_STARTED/EVALUATOR.md) / Contribute → Maintainers
+  (e.g. [multi-tenant control-plane plan](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 ## Minimal working example
 
 === "Unix / macOS"

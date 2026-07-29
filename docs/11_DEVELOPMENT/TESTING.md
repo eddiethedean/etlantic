@@ -8,7 +8,7 @@ Prefer the marker-aware core suite (matches CI baseline exclusions):
 uv sync --locked
 ./scripts/test_core.sh
 # equivalent:
-# uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+# uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_docs.py
@@ -26,12 +26,12 @@ and planning plus `tests/dataframe`, `tests/sql`, `tests/spark`,
 `tests/medallantic`.
 
 Current optional markers are `polars`, `pandas`, `sql`, `spark`,
-`real_pyspark`, `airflow`, `prefect`, `keyring`, `sqlmodel`, and `medallantic`;
-`pyproject.toml` is authoritative. The baseline job excludes dependency-backed
-markers:
+`real_pyspark`, `airflow`, `prefect`, `keyring`, `sqlmodel`, `datafusion`, and
+`medallantic`; `pyproject.toml` is authoritative. The baseline job excludes
+dependency-backed markers (same expression as `./scripts/test_core.sh`):
 
 ```bash
-uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel"
+uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 ```
 
 ```bash
@@ -283,7 +283,14 @@ Updates must be reviewed as semantic changes, not accepted mechanically.
 
 ## Property-Based Testing
 
-Use property-based tests for:
+!!! note "Aspirational coverage — not a PR gate"
+    The list below is a **long-term target** for high-risk surfaces. Ordinary
+    PRs do **not** need Hypothesis suites for every bullet. Prefer focused
+    unit/integration tests that cover the change; add property tests when you
+    touch parsers, fingerprints, drift, or other fail-closed invariants.
+
+Use property-based tests when they pay for the surface you are changing, for
+example:
 
 - Graph construction and cycle detection
 - Identifier normalization

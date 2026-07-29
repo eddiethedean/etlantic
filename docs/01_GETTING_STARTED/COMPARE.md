@@ -42,6 +42,21 @@ durable orchestrator.
   ETLantic ships release SBOM digests / attestations for its own packages since
   0.20)
 
+## When NOT to use ETLantic
+
+Prefer another tool (or use ETLantic only as a thin companion) when:
+
+| Situation | Prefer |
+|---|---|
+| Warehouse-only SQL analytics with dbt already owning the project | **dbt** alone |
+| You only need a durable multi-worker scheduler / ops UI | **Airflow / Dagster / Prefect** alone |
+| You only need row-level dataframe checks inside notebooks | **Pandera / Great Expectations** alone |
+| You need a managed multi-tenant control plane or formal SLA today | Wait — **not in 0.34** (Beta single-tenant pilots only) |
+| You need bronze/silver/gold medallion vocabulary as core APIs | **SparkForge / medallantic**, not core ETLantic |
+| You refuse typed Python modeling and only want SQL files on disk | Stick with your SQL toolchain |
+
+If several rows match, ETLantic is usually complementary — not a replacement.
+
 ## Next
 
 1. [Installation](INSTALLATION.md)

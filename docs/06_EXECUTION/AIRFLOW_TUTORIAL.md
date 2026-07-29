@@ -3,6 +3,10 @@
 > **Status: Available in ETLantic 0.34.0.** ETLantic compiles a plan; it does
 > not install or operate an Airflow scheduler.
 
+!!! tip "PyPI vs clone"
+    `pip install etlantic-airflow` is enough to **compile**. Running
+    `examples/airflow_compile.py` below is **clone-assisted**.
+
 !!! warning "`etlantic-airflow` is compile-only"
     Installing `etlantic-airflow` (or `etlantic[airflow]`) provides the
     compile target for `etlantic compile --target airflow`. It does **not**

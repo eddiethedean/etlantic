@@ -6,6 +6,22 @@
     | **First-time / PyPI** | Sections below through [Quickstart](QUICKSTART.md). Use `python -m pip` and `python -m etlantic`. |
     | **Contributor / monorepo** | Skip to [Repository checkout](#repository-checkout-contributors) and use `uv sync`. Do not mix `uv run` example commands with a pip-only install. |
 
+!!! warning "If `pip install etlantic==0.34.0` fails"
+    Until the `v0.34.0` GitHub Release is published to PyPI, the latest
+    published wheel may still be **0.33.0**. Prefer one of:
+
+    ```bash
+    # After the 0.34.0 PyPI release (recommended)
+    python -m pip install 'etlantic==0.34.0'
+
+    # Pre-publish evaluation from this repository
+    python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+    ```
+
+    Confirm with `python -m etlantic --version` (expect `0.34.0` for this docs
+    train). Wrong-version recovery: uninstall, recreate the venv, then reinstall
+    the pin above.
+
 ## Requirements
 
 - Python 3.11, 3.12, or 3.13
@@ -13,9 +29,10 @@
 
 ## Install core (Day-0 — 2 minutes)
 
-Pin the published **0.34.0** release for reproducible evaluation. Use a virtual
-environment. Prefer `python -m pip` and `python -m etlantic` so the interpreter
-you intend is the one that runs.
+Pin **0.34.0** for reproducible evaluation once it is on PyPI (see warning
+above if the wheel is not published yet). Use a virtual environment. Prefer
+`python -m pip` and `python -m etlantic` so the interpreter you intend is the
+one that runs.
 
 ### pip (recommended)
 
@@ -101,7 +118,7 @@ explicitly and **match the core minor** (`0.34.0` with `0.34.0`).
 ```bash
 python -m pip install 'etlantic-polars==0.34.0'     # dataframe + Polars portable compiler
 python -m pip install 'etlantic-pandas==0.34.0'     # dataframe + Pandas portable compiler
-python -m pip install 'etlantic-sql==0.34.0'        # PostgreSQL SQL reference plugin
+python -m pip install 'etlantic-sql==0.34.0'        # SQL plugin (SQLite + PostgreSQL Tier A)
 python -m pip install 'etlantic-pyspark==0.34.0'    # PySpark plugin + portable compiler
 python -m pip install 'etlantic-airflow==0.34.0'    # Airflow DAG compiler
 python -m pip install 'etlantic-prefect==0.34.0'    # Prefect direct-execution (local MVP)

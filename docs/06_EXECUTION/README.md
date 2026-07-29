@@ -119,21 +119,16 @@ capabilities.
 
 ## Documentation Roadmap
 
-Start with the common runtime model, then choose the backend topics relevant to
-your project:
+Start with a tutorial, then deepen:
 
-1. [Execution Model](EXECUTION_MODEL.md)
-2. [Run Reports](RUN_REPORTS.md)
-3. [Logging](LOGGING.md)
-4. [Secrets Management](SECRETS_MANAGEMENT.md)
-5. [Local Python](LOCAL_PYTHON.md)
-6. [Dataframe Plugins](DATAFRAME_PLUGINS.md)
-7. [SQL](SQL.md)
-8. [PySpark](PYSPARK.md)
-9. [Orchestration Plugins](ORCHESTRATION_PLUGINS.md)
-10. [Compilation](COMPILATION.md)
+1. [Reports and history](REPORTS_AND_HISTORY.md)
+2. Pick an engine tutorial (Polars / Pandas / SQL hello / PySpark / Airflow)
+3. [Storage today](STORAGE_TODAY.md)
+4. [Execution Model](EXECUTION_MODEL.md)
+5. [Secrets Management](SECRETS_MANAGEMENT.md)
+6. Plugin reference pages only when you need API detail
 
-!!! note "Future design (not in the 0.32 operator path)"
+!!! note "Future design (not in the 0.34 operator path)"
     [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
     [Plugins overview](PLUGINS.md),
     [Storage Plugins](STORAGE_PLUGINS.md), and
@@ -143,12 +138,12 @@ your project:
 
 ### Operations and deployment
 
-11. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
-12. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
-13. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
-14. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
-15. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
-16. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
+7. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
+8. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
+9. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
+10. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
+11. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
+12. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
 
 ## Key Principles
 

@@ -3,6 +3,10 @@
 > **Status: Available in ETLantic 0.34.0.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
+!!! tip "PyPI vs clone"
+    Steps below work from a Quickstart `init` project with **pip only**.
+    Repository `examples/` need a git checkout.
+
 ## PyPI path (add Pandas to an `init` project)
 
 Start from a working local project ([Quickstart](../01_GETTING_STARTED/QUICKSTART.md)).

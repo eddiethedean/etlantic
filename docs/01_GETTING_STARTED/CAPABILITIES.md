@@ -36,9 +36,9 @@ from repository `examples/` unless you have cloned the repo.
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
 topology, compliance, and advanced control planes remain adopter-owned in
-0.34. The multi-tenant control plane is now a
-[planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
-with 0.40–0.43 incubation gates and a 0.44 graduation gate.
+0.34. Roadmap programs live under Contribute → Maintainers — not day-0 reading
+(see the
+[multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
 ## Recommended bounded production deployment
 

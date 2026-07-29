@@ -1,15 +1,22 @@
 # Getting Started
 
-Continue from the docs home [green path](../README.md) — do not restart
-onboarding here.
+**Start on the docs [Home](../README.md) green path**, then continue here in order:
 
-**Order:** [Installation](INSTALLATION.md) → [Quickstart](QUICKSTART.md) →
-[First Pipeline](FIRST_PIPELINE.md) → [Engine selection](ENGINE_SELECTION.md)
-→ [Learning path](LEARNING_PATH.md).
+1. [Installation](INSTALLATION.md)
+2. [Quickstart](QUICKSTART.md)
+3. [First Pipeline](FIRST_PIPELINE.md)
+4. [Engine selection](ENGINE_SELECTION.md)
+5. [Learning path](LEARNING_PATH.md)
 
 After Ada/Grace success: [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md),
-[Upgrade](UPGRADE.md), [Capabilities](CAPABILITIES.md),
+[Upgrade](UPGRADE.md), [Capabilities](CAPABILITIES.md) (evaluator matrix),
 [What's New in 0.34](WHATS_NEW_0_34.md).
+
+Ignore **Maintainers** and **Standards** nav sections until you contribute.
+
+!!! tip "PyPI vs clone"
+    Quickstart and First Pipeline are **PyPI-only**. Repository `examples/` need
+    a git checkout — see [Installation](INSTALLATION.md).
 
 !!! note "CLI run vs in-memory demos"
     The Quickstart binds assets to JSON files, so `python -m etlantic run` works without

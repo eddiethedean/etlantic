@@ -33,6 +33,9 @@ not_in_nav: |
   01_GETTING_STARTED/WHATS_NEW_0_29.md
   01_GETTING_STARTED/WHATS_NEW_0_30.md
   01_GETTING_STARTED/WHATS_NEW_0_31.md
+  05_PIPELINES/SOURCES.md
+  05_PIPELINES/SINKS.md
+  05_PIPELINES/PROFILE_PRIMER.md
   11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
   11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
@@ -213,6 +216,7 @@ nav:
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
+      - SDK 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
   - How-to:
@@ -295,25 +299,11 @@ nav:
       - Validation: 05_PIPELINES/PIPELINE_VALIDATION.md
       - Planning: 05_PIPELINES/PLANNING.md
       - Profiles: 05_PIPELINES/PROFILES.md
-      - Profile primer: 05_PIPELINES/PROFILE_PRIMER.md
       - Contract Generation: 05_PIPELINES/CONTRACT_GENERATION.md
       - Contract Loading: 05_PIPELINES/CONTRACT_LOADING.md
-      - Deprecated:
-          - Sources: 05_PIPELINES/SOURCES.md
-          - Sinks: 05_PIPELINES/SINKS.md
-  - Medallantic:
-      - Overview: 09_MEDALLANTIC/README.md
-      - Getting started: 09_MEDALLANTIC/GETTING_STARTED.md
-      - Native authoring: 09_MEDALLANTIC/AUTHORING.md
-      - Quality rules: 09_MEDALLANTIC/QUALITY.md
-      - Execution and reports: 09_MEDALLANTIC/EXECUTION.md
-      - SparkForge migration: 09_MEDALLANTIC/SPARKFORGE_MIGRATION.md
-      - Compatibility: 09_MEDALLANTIC/COMPATIBILITY.md
-      - Troubleshooting: 09_MEDALLANTIC/TROUBLESHOOTING.md
-      - Architecture: 09_MEDALLANTIC/ARCHITECTURE.md
-      - API reference: 09_MEDALLANTIC/API_REFERENCE.md
-  - Integrations and Execution:
+  - Engines and ops:
       - Overview: 06_EXECUTION/README.md
+      - Reports and history: 06_EXECUTION/REPORTS_AND_HISTORY.md
       - Storage today: 06_EXECUTION/STORAGE_TODAY.md
       - Tutorials:
           - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
@@ -350,6 +340,17 @@ nav:
           - Orchestration Plugins: 06_EXECUTION/ORCHESTRATION_PLUGINS.md
           - Airflow (plugin reference): 06_EXECUTION/AIRFLOW.md
           - Compilation: 06_EXECUTION/COMPILATION.md
+      - Medallantic (optional facade):
+          - Overview: 09_MEDALLANTIC/README.md
+          - Getting started: 09_MEDALLANTIC/GETTING_STARTED.md
+          - Native authoring: 09_MEDALLANTIC/AUTHORING.md
+          - Quality rules: 09_MEDALLANTIC/QUALITY.md
+          - Execution and reports: 09_MEDALLANTIC/EXECUTION.md
+          - SparkForge migration: 09_MEDALLANTIC/SPARKFORGE_MIGRATION.md
+          - Compatibility: 09_MEDALLANTIC/COMPATIBILITY.md
+          - Troubleshooting: 09_MEDALLANTIC/TROUBLESHOOTING.md
+          - Architecture: 09_MEDALLANTIC/ARCHITECTURE.md
+          - API reference: 09_MEDALLANTIC/API_REFERENCE.md
   - Plugin SDK:
       - Overview: 07_PLUGIN_SDK/README.md
       - Architecture: 07_PLUGIN_SDK/OVERVIEW.md
@@ -402,6 +403,7 @@ nav:
       - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
       - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
       - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
+      - Diagnostics playbook: 10_REFERENCE/DIAGNOSTICS_PLAYBOOK.md
       - Diagnostics catalog: 10_REFERENCE/DIAGNOSTICS_CATALOG.md
       - Exceptions: 10_REFERENCE/EXCEPTIONS.md
       - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -420,30 +422,30 @@ nav:
       - Governance: 11_DEVELOPMENT/GOVERNANCE.md
       - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
       - API stability and deprecation: 11_DEVELOPMENT/DEPRECATION_POLICY.md
-  - Maintainers:
-      - Overview: 11_DEVELOPMENT/README.md
-      - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
-      - Multi-tenant control plane plan: 11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md
-      - Adoption, connectivity, and operations plan: 11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md
-      - Exit gate 0.34: 11_DEVELOPMENT/EXIT_GATE_0_34.md
-      - Exit gate 0.33: 11_DEVELOPMENT/EXIT_GATE_0_33.md
-      - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md
-      - Migration 0.33 → 0.34: 11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md
-      - Migration 0.32 → 0.33: 11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md
-      - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
-      - Documentation audit 0.33: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md
-      - Documentation audit 0.32: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_32.md
-      - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md
-      - External plugin feedback: 11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
-      - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
-      - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
-      - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
-      - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
-      - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
-  - Standards:
-      - Overview: specifications/README.md
-      - DTCS 3.0 (canonical): specifications/DTCS.md
-      - DTCS 1.0 archive: specifications/DTCS_SPEC.md
-      - DPCS: specifications/DPCS_SPEC.md
-      - DTCS Portable Transformation Profile: specifications/PORTABLE_TRANSFORM_IR_SPEC.md
-  - Manifesto: ETLANTIC_MANIFESTO.md
+      - Maintainers (advanced):
+          - Overview: 11_DEVELOPMENT/README.md
+          - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+          - Multi-tenant control plane plan: 11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md
+          - Adoption, connectivity, and operations plan: 11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md
+          - Exit gate 0.34: 11_DEVELOPMENT/EXIT_GATE_0_34.md
+          - Exit gate 0.33: 11_DEVELOPMENT/EXIT_GATE_0_33.md
+          - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md
+          - Migration 0.33 → 0.34: 11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md
+          - Migration 0.32 → 0.33: 11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md
+          - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
+          - Documentation audit 0.33: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md
+          - Documentation audit 0.32: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_32.md
+          - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md
+          - External plugin feedback: 11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
+          - Design Decisions: 11_DEVELOPMENT/DESIGN_DECISIONS.md
+          - Architecture Decisions: 11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
+          - Benchmarks: 11_DEVELOPMENT/BENCHMARKS.md
+          - Performance baselines: 11_DEVELOPMENT/PERFORMANCE_RESULTS.md
+          - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
+      - Standards (reference):
+          - Overview: specifications/README.md
+          - DTCS 3.0 (canonical): specifications/DTCS.md
+          - DTCS 1.0 archive: specifications/DTCS_SPEC.md
+          - DPCS: specifications/DPCS_SPEC.md
+          - DTCS Portable Transformation Profile: specifications/PORTABLE_TRANSFORM_IR_SPEC.md
+      - Manifesto: ETLANTIC_MANIFESTO.md

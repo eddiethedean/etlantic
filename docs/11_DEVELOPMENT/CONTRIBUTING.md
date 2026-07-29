@@ -7,6 +7,17 @@ Preserve the boundaries established in the manifesto and foundations
 documentation: ETLantic owns the logical model; plugins own execution;
 standards own semantics.
 
+## Contributor ladders (pick one)
+
+| Ladder | Time | Checks | Scope |
+|---|---|---|---|
+| **Docs / typo** | ~30 min | ruff + `check_docs` + `check_agent_guidance` | Markdown, nav, examples prose |
+| **Core / plugin** | full CI-equivalent | `./scripts/test_core.sh` + authoring + docs + surface inventory | Runtime, plugins, schemas |
+| **Release-impacting** | full + packaging | Everything in [Full CI-equivalent checks](#full-ci-equivalent-checks-core-plugin-release-impacting) | Version pins, manifests, wheels |
+
+Docs-only PRs do **not** need the full pytest wall. Property-based suites in
+[TESTING.md](TESTING.md) are aspirational — not a mandatory PR checklist.
+
 ## Before You Start
 
 For **docs / typo / small fix PRs:** skim

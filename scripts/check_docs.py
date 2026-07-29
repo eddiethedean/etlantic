@@ -355,6 +355,103 @@ def check_observability_doc_consistency() -> None:
         )
 
 
+def check_quickstart_init_scaffold_sync() -> None:
+    """Keep Quickstart aha imports aligned with etlantic init scaffold."""
+    init_src = (ROOT / "src/etlantic/cli/cmds/init.py").read_text(encoding="utf-8")
+    import_match = re.search(
+        r"from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation",
+        init_src,
+    )
+    if import_match is None:
+        raise SystemExit(
+            "init.py scaffold must import Data, Extract, Input, Load, Output, "
+            "Pipeline, Transformation from etlantic"
+        )
+    scaffold_import = import_match.group(0)
+    quickstart = (ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md").read_text(
+        encoding="utf-8"
+    )
+    if scaffold_import not in quickstart:
+        raise SystemExit(
+            "QUICKSTART.md must include the init scaffold import line:\n"
+            f"  {scaffold_import}"
+        )
+    if re.search(r"from etlantic import[^\n]*\bIdentity\b", quickstart):
+        raise SystemExit(
+            "QUICKSTART.md must not import Identity from etlantic "
+            "(Identity is local in the init scaffold)"
+        )
+
+
+def check_api_reference_curated_root() -> None:
+    """Curated-root table in API_REFERENCE must match _CURATED (no false claims)."""
+    init_src = (ROOT / "src/etlantic/__init__.py").read_text(encoding="utf-8")
+    curated_block = re.search(
+        r"_CURATED: dict\[str, Any\] = \{([^}]+)\}",
+        init_src,
+        re.DOTALL,
+    )
+    if curated_block is None:
+        raise SystemExit("Could not parse _CURATED from src/etlantic/__init__.py")
+    curated = set(re.findall(r'"([^"]+)"\s*:', curated_block.group(1)))
+    curated.discard("__version__")
+
+    api_ref = (ROOT / "docs/10_REFERENCE/API_REFERENCE.md").read_text(encoding="utf-8")
+    match = re.search(
+        r"## Author essentials \(curated root\)\n(.*?)(?:\nOwning-module helpers|\n## )",
+        api_ref,
+        re.DOTALL,
+    )
+    if match is None:
+        raise SystemExit(
+            "API_REFERENCE.md missing Author essentials (curated root) section"
+        )
+    section = match.group(1)
+    claimed: set[str] = set()
+    for cell in re.findall(r"^\| `([^`]+)` \|", section, re.MULTILINE):
+        for part in re.split(r"\s*/\s*", cell):
+            name = part.strip().split("(", 1)[0].strip()
+            if name:
+                claimed.add(name)
+    unknown = sorted(claimed - curated)
+    if unknown:
+        raise SystemExit(
+            "API_REFERENCE curated-root table claims symbols not in _CURATED: "
+            + ", ".join(unknown)
+        )
+    for banned in ("verify_plan_fingerprint", "deep_freeze"):
+        if re.search(rf"`{banned}`", section):
+            raise SystemExit(
+                f"API_REFERENCE curated-root table must not list {banned} "
+                "(owning-module only)"
+            )
+
+
+def check_mkdocs_nav_adoption_guards() -> None:
+    """Keep deprecated Sources/Sinks and residual version stamps out of nav/status."""
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    if "\nnav:" not in mkdocs:
+        raise SystemExit("mkdocs.yml missing nav:")
+    nav_part = mkdocs.split("\nnav:", 1)[1]
+    if re.search(
+        r"^\s+- .*: 05_PIPELINES/(SOURCES|SINKS)\.md\s*$",
+        nav_part,
+        re.MULTILINE,
+    ):
+        raise SystemExit(
+            "mkdocs.yml nav must not include deprecated Sources/Sinks pages"
+        )
+
+    deployment = (ROOT / "docs/06_EXECUTION/DEPLOYMENT.md").read_text(encoding="utf-8")
+    if re.search(r"ETLantic 0\.33 does not claim", deployment):
+        raise SystemExit(
+            "DEPLOYMENT.md still claims ETLantic 0.33; update to current minor"
+        )
+    exec_readme = (ROOT / "docs/06_EXECUTION/README.md").read_text(encoding="utf-8")
+    if "0.32 operator path" in exec_readme:
+        raise SystemExit("docs/06_EXECUTION/README.md still says '0.32 operator path'")
+
+
 def main() -> None:
     package_version = version_from(
         ROOT / "src/etlantic/_version.py", r'__version__ = "([^"]+)"'
@@ -392,6 +489,9 @@ def main() -> None:
     check_zero_x_roadmap_phases()
     check_residual_table_version_drift(package_version)
     check_observability_doc_consistency()
+    check_quickstart_init_scaffold_sync()
+    check_api_reference_curated_root()
+    check_mkdocs_nav_adoption_guards()
 
     current_markers = [
         ROOT / "README.md",

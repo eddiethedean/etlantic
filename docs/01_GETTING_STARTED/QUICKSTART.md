@@ -99,13 +99,73 @@ Optional later: `python -m etlantic doctor --profile development`,
 
 Do not skip this step (it is outside the “first success” timing above).
 
-In the scaffolded `pipeline.py`, apply this **unified diff** (do not replace
-the whole file). Add `Other` and change only the `Load` type annotation:
+The `etlantic init` scaffold defines `Identity` **in** `pipeline.py` (it is not
+imported from `etlantic`). Edit only the `Load` annotation so the load expects
+a different contract than the upstream step produces.
+
+**Before** (generated):
+
+```python
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+
+
+class Row(Data):
+    id: int
+    name: str
+
+
+class Identity(Transformation):
+    rows: Input[Row]
+    result: Output[Row]
+
+
+@Identity.implementation("local")
+def identity_local(rows: list[Row]) -> list[Row]:
+    return list(rows)
+
+
+class SamplePipeline(Pipeline):
+    raw: Extract[Row] = Extract(asset="rows")
+    step = Identity.step(rows=raw)
+    out: Load[Row] = Load(input=step.result, asset="out")
+```
+
+**After** (broken on purpose — add `Other` and change only the `Load` line):
+
+```python
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+
+
+class Row(Data):
+    id: int
+    name: str
+
+
+class Other(Data):
+    id: int
+    name: str
+
+
+class Identity(Transformation):
+    rows: Input[Row]
+    result: Output[Row]
+
+
+@Identity.implementation("local")
+def identity_local(rows: list[Row]) -> list[Row]:
+    return list(rows)
+
+
+class SamplePipeline(Pipeline):
+    raw: Extract[Row] = Extract(asset="rows")
+    step = Identity.step(rows=raw)
+    # Broken: Load expects Other but step.result is still Row
+    out: Load[Other] = Load(input=step.result, asset="out")
+```
+
+Optional equivalent as a unified diff (same scaffold imports):
 
 ```diff
- from etlantic import Data, Extract, Identity, Load, Pipeline
-
-
  class Row(Data):
      id: int
      name: str
@@ -116,16 +176,14 @@ the whole file). Add `Other` and change only the `Load` type annotation:
 +    name: str
 +
 +
- class SamplePipeline(Pipeline):
-     raw: Extract[Row] = Extract(asset="rows")
+ class Identity(Transformation):
+     rows: Input[Row]
+     result: Output[Row]
+@@
      step = Identity.step(rows=raw)
 -    out: Load[Row] = Load(input=step.result, asset="out")
-+    # Broken: Load expects Other but upstream step.result is still Row
 +    out: Load[Other] = Load(input=step.result, asset="out")
 ```
-
-(Exact class names match the `init` scaffold; if your file differs, change
-only the `Load[...]` annotation and keep `input=` / `asset=` intact.)
 
 Re-validate:
 
@@ -133,14 +191,14 @@ Re-validate:
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 ```
 
-Expect a wiring diagnostic such as:
+Expect a **non-zero** exit and a wiring diagnostic such as:
 
 ```text
 PMPIPE210: The step "out" expects Other on "input", but received Row from "step.result".
 ```
 
-and **no** new write under `data/out.json` until you restore `Load[Row]`. That
-is the product promise: validate before write.
+`data/out.json` must not gain a new successful write until you restore
+`Load[Row]`. That is the product promise: validate before write.
 
 Restore `out: Load[Row] = Load(input=step.result, asset="out")` (and remove
 `Other` if unused). Continue with an intentional uppercase transform in

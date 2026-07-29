@@ -3,6 +3,10 @@
 Airflow reference orchestrator compiler for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.34.
 
+> **Note:** PyPI Production/Stable classifiers describe this plugin package’s
+> release channel. Core ETLantic **0.34 remains Beta** for documented
+> single-tenant pilots — classifiers are not an enterprise SLA.
+
 ```bash
 pip install 'etlantic==0.34.0' 'etlantic-airflow==0.34.0'
 # or: pip install 'etlantic[airflow]'

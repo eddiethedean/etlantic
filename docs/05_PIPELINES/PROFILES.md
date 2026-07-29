@@ -1,5 +1,8 @@
 # Profiles
 
+> **Status: Available in ETLantic 0.34.0.** Field reference. Start with the
+> [Profiles hub](PROFILES_HUB.md) for the adopter path.
+
 A **Profile** defines how a validated Pipeline Plan is bound to a specific
 execution environment.
 

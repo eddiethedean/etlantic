@@ -1,13 +1,12 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.34.0.** This tutorial extends the project
-> created by [Quickstart](QUICKSTART.md) (`python -m etlantic init`). It uses the local
-> Python runtime and JSON asset bindings—no dataframe or SQL plugin required.
+> **Status: Available in ETLantic 0.34.0.** Extends the project from
+> [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
+
+!!! tip "PyPI vs clone"
+    This page is **PyPI-only**. No repository checkout required.
 
 ## Start from the init project
-
-If you have not already (`init` needs an **empty directory**, or pass
-`--force`):
 
 ```bash
 python -m pip install 'etlantic==0.34.0'
@@ -15,55 +14,12 @@ mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
 
-Open `pipeline.py`. The scaffold defines a typed `Row` contract, an `Identity`
-transformation, and `SamplePipeline` wired as Extract → step → Load.
+(`init` needs an empty directory, or pass `--force`.)
 
-## Walk the generated pieces
+Open `pipeline.py`: typed `Row`, local `Identity`, and `SamplePipeline`
+(Extract → step → Load). Asset names bind in `profiles/development.json`.
 
-### Data contract
-
-```python
-class Row(Data):
-    id: int
-    name: str
-```
-
-Records must match this shape when read from `json://data/sample.json` and when
-written to `json://data/out.json`.
-
-### Transformation contract and local implementation
-
-```python
-class Identity(Transformation):
-    rows: Input[Row]
-    result: Output[Row]
-
-
-@Identity.implementation("local")
-def identity_local(rows: list[Row]) -> list[Row]:
-    return list(rows)
-```
-
-The class states what the transformation consumes and produces. The
-`@implementation("local")` function is the executable body for the development
-profile.
-
-### Pipeline wiring
-
-```python
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
-    step = Identity.step(rows=raw)
-    out: Load[Row] = Load(input=step.result, asset="out")
-```
-
-Asset names (`rows`, `out`) are logical. `profiles/development.json` binds them
-to JSON paths.
-
-## Validate, plan, and run (CLI)
-
-Targets use `path.py:ClassName` (here `pipeline.py:SamplePipeline`). See
-[CLI — Pipeline targets](../10_REFERENCE/CLI.md).
+## Validate, plan, and run
 
 ```bash
 python -m etlantic inspect pipeline.py:SamplePipeline --format json
@@ -72,57 +28,25 @@ python -m etlantic plan pipeline.py:SamplePipeline --profile development --forma
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-Prefer the same `--profile` for validate, plan, and run. If you omit
-`--profile`, the CLI defaults to `development` (or your project's
-`default_profile`).
+Expected: `succeeded` and `data/out.json` mirroring Ada/Grace (identity).
 
-Expected run status: `succeeded`. `data/out.json` should mirror the sample
-rows (identity transform).
+If you have not yet seen validate-before-write fail, do the
+[Quickstart required aha](QUICKSTART.md#required-aha), then restore
+`Load[Row]` before continuing.
 
-## Try an intentional wiring error
+## Evolve the transform
 
-!!! tip "Already did this in Quickstart?"
-    If you completed the `Other` / `PMPIPE210` aha in
-    [Quickstart §4](QUICKSTART.md#required-aha),
-    skip to [Evolve the transform](#evolve-the-transform). The paste below is
-    the same canonical demo.
-
-Add a second contract and change **only** the Load annotation so the graph
-wiring is inconsistent (keep `input=` and `asset=` complete so the file still
-parses):
+Replace the passthrough with a reshape (upper-case names):
 
 ```python
-class Other(Data):
+from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+
+
+class Row(Data):
     id: int
     name: str
 
 
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
-    step = Identity.step(rows=raw)
-    # Broken: Load expects Other but upstream step.result is still Row
-    out: Load[Other] = Load(input=step.result, asset="out")
-```
-
-Then validate. ETLantic rejects the graph before it reads any data:
-
-```bash
-python -m etlantic validate pipeline.py:SamplePipeline --profile development
-```
-
-```text
-PMPIPE210: The step "out" expects Other on "input", but received Row from "step.result".
-```
-
-Restore `out: Load[Row] = Load(input=step.result, asset="out")` (and remove
-`Other` if unused) before continuing.
-
-## Evolve the transform
-
-Replace `Identity` with a real reshape so the tutorial teaches more than a
-passthrough. Example: upper-case names.
-
-```python
 class NamedRow(Data):
     id: int
     name: str
@@ -146,45 +70,11 @@ class SamplePipeline(Pipeline):
 
 Re-run validate → plan → run. `data/out.json` should show `"ADA"` / `"GRACE"`.
 
-## Generate portable contracts
+## Next
 
-```python
-from pipeline import SamplePipeline
-
-SamplePipeline.write_contracts("contracts/")
-```
-
-This writes [ODCS](../03_DATA_CONTRACTS/ODCS.md), [DTCS](../04_TRANSFORMATIONS/DTCS.md), and [DPCS](../05_PIPELINES/DPCS.md) artifacts derived from the same definitions.
-
-## Plan from Python
-
-```python
-from pipeline import SamplePipeline
-
-plan = SamplePipeline.plan(profile="development")
-print(plan.plan_id, plan.fingerprint)
-print(SamplePipeline.explain_plan(profile="development"))
-```
-
-Planning resolves implementations, bindings, capabilities, and execution
-regions without reading data or resolving secret values.
-
-## Current boundary
-
-This tutorial stays on the local Python runtime with memory, callable, JSON,
-CSV, and no-write storage. Optional plugins are available today:
-
-- Polars / Pandas — `etlantic-polars` / `etlantic-pandas`
-- SQL — `etlantic-sql`
-- PySpark batch — `etlantic-pyspark`
-- Airflow compile — `etlantic-airflow`
-- Prefect direct execution — `etlantic-prefect`
-- Medallantic migration adapter — `medallantic`
-
-Keep core and optional plugin minors matched—for this guide, pin both to
-`0.34.0`. See [Capabilities](CAPABILITIES.md).
-
-Continue with [Engine selection](ENGINE_SELECTION.md). For a production profile
-starter, copy the JSON from
-[Production profile starter](prod.example.json) (or the embedded block in
-[Capabilities](CAPABILITIES.md#ci-starter)) into your own `profiles/prod.json`.
+- [Engine selection](ENGINE_SELECTION.md) — Local → Polars
+- [SDK 10-minute tutorial](SDK_10_MINUTES.md) — `import etlantic as etl`
+- Contracts / fingerprints: [ODCS](../03_DATA_CONTRACTS/ODCS.md),
+  [Plan and runtime API](../10_REFERENCE/API_PLAN_RUNTIME.md)
+- Production profile starter:
+  [Capabilities → CI starter](CAPABILITIES.md#ci-starter)

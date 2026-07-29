@@ -105,7 +105,7 @@ The adopter owns:
   generation;
 - observability retention and operational runbooks.
 
-ETLantic 0.33 does not claim a multi-worker or multi-tenant control plane.
+ETLantic 0.34 does not claim a multi-worker or multi-tenant control plane.
 The 0.40–0.44 program makes that a first-class planned feature, but none
 of its future guarantees may be assumed for the reference topology on this
 page.

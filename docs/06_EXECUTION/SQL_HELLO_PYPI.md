@@ -4,6 +4,10 @@
 > git clone. PostgreSQL is the reference backend for production; MERGE
 > (`sql_merge`) is PostgreSQL-only.
 
+!!! tip "PyPI vs clone"
+    Body below is **PyPI-only**. The companion under `examples/` is optional
+    for contributors with a checkout.
+
 After [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) success on local
 Python, use this page to prove `etlantic-sql` installs and runs.
 

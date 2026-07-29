@@ -2,6 +2,11 @@
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
+!!! note "Plans ≠ product"
+    Maintainer roadmap / multi-tenant plans under Contribute are **not**
+    shipped 0.34 APIs. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
+    and the green path — not from future gate documents.
+
 ## Residual evaluation lead
 
 | Topic | 0.34 |
