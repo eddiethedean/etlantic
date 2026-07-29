@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from etlantic.cli import exit_codes as ec
-from etlantic.diagnostics import Severity, ValidationReport
+from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
 from etlantic.plugin_trust import _NON_BLOCKING_TRUST_CODES
 
 _TRUST_PHASES = frozenset(
@@ -18,18 +18,36 @@ _TRUST_PHASES = frozenset(
     }
 )
 
+# Sibling allowlist denials during discovery remain non-blocking for CLI exit.
+# Selected-engine denials from ``plugin_trust`` (and other authorize/load phases)
+# must map to TRUST_FAILURE.
+_DISCOVERY_PHASES = frozenset({"plugin_discovery", "plugin_discover"})
+
+
+def is_non_blocking_trust_diagnostic(diagnostic: Diagnostic) -> bool:
+    """Return True for sibling discovery allowlist denials only.
+
+    ``PMPLUG402`` from ``plugin_trust`` (selected engines) is blocking.
+    """
+    code = getattr(diagnostic, "code", None)
+    if code not in _NON_BLOCKING_TRUST_CODES:
+        return False
+    phase = str(getattr(diagnostic, "phase", None) or "")
+    return phase in _DISCOVERY_PHASES
+
 
 def trust_exit_from_report(report: ValidationReport) -> int | None:
     """Return TRUST_FAILURE when the report contains blocking trust-phase errors.
 
-    Non-blocking sibling allowlist denials (``PMPLUG402``) are ignored so CLI
-    exit codes stay aligned with ``ensure_plugins`` / discovery fail-closed.
+    Sibling discovery allowlist denials (``PMPLUG402`` with discovery phase) are
+    ignored so CLI exit codes stay aligned with ``ensure_plugins``. Selected-engine
+    ``PMPLUG402`` from ``plugin_trust`` maps to TRUST_FAILURE.
     """
     if report.valid:
         return None
     if any(
         d.severity is Severity.ERROR
-        and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+        and not is_non_blocking_trust_diagnostic(d)
         and (
             (d.phase or "") in _TRUST_PHASES
             or (d.phase or "").startswith("plugin_")
@@ -46,8 +64,7 @@ def validation_exit_from_report(report: ValidationReport) -> int:
     blocking = [
         d
         for d in report.diagnostics
-        if d.severity is Severity.ERROR
-        and getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
+        if d.severity is Severity.ERROR and not is_non_blocking_trust_diagnostic(d)
     ]
     if not blocking:
         return ec.SUCCESS

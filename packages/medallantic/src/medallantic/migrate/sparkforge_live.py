@@ -28,6 +28,11 @@ _SECRET_KEY_FRAGMENTS = (
     "access_key",
     "private_key",
     "auth",
+    "jdbc_url",
+    "connection_string",
+    "connection_uri",
+    "dsn",
+    "jdbc",
 )
 
 
@@ -252,7 +257,26 @@ def _normalize_rules(rules: Any) -> dict[str, Any]:
 
 def _is_secret_key(key: str) -> bool:
     key_l = str(key).lower()
+    if key_l in {
+        "url",
+        "uri",
+        "dsn",
+        "jdbc_url",
+        "connection_string",
+        "connection_uri",
+    }:
+        return True
     return any(fragment in key_l for fragment in _SECRET_KEY_FRAGMENTS)
+
+
+def _scrub_value(value: Any) -> Any:
+    from etlantic.runtime.logging import redact_message
+
+    if isinstance(value, list):
+        return [_scrub_value(v) for v in value]
+    if isinstance(value, str):
+        return redact_message(value)
+    return value
 
 
 def _scrub_mapping(
@@ -269,7 +293,7 @@ def _scrub_mapping(
                 Diagnostic(
                     code="PMSF351",
                     severity=Severity.WARNING,
-                    message=f"Omitting secret-like metadata key {key_s!r} from IR.",
+                    message=f"Omitting secret-like key {key_s!r} from IR.",
                     path=(*path, key_s),
                     phase="sparkforge_live",
                 )
@@ -282,7 +306,7 @@ def _scrub_mapping(
                 path=(*path, key_s),
             )
         else:
-            cleaned[key_s] = value
+            cleaned[key_s] = _scrub_value(value)
     return cleaned
 
 
@@ -292,14 +316,7 @@ def _sanitize_mapping(
     diagnostics: list[Diagnostic],
     path: tuple[str, ...],
 ) -> dict[str, Any]:
-    cleaned = dict(data)
-    meta = cleaned.get("metadata")
-    if isinstance(meta, dict):
-        cleaned["metadata"] = _scrub_mapping(
-            meta,
-            diagnostics=diagnostics,
-            path=(*path, "metadata"),
-        )
+    cleaned = _scrub_mapping(data, diagnostics=diagnostics, path=path)
     steps = cleaned.get("steps")
     if isinstance(steps, list):
         cleaned["steps"] = [
@@ -317,17 +334,10 @@ def _sanitize_step_dict(
     diagnostics: list[Diagnostic],
     index: int = 0,
 ) -> dict[str, Any]:
-    out = dict(step)
-    name = str(out.get("name") or index)
-    if "rules" in out:
-        out["rules"] = _normalize_rules(out.get("rules") or {})
-    meta = out.get("metadata")
-    if isinstance(meta, dict):
-        out["metadata"] = _scrub_mapping(
-            meta,
-            diagnostics=diagnostics,
-            path=("steps", name, "metadata"),
-        )
+    name = str(step.get("name") or index)
+    out = _scrub_mapping(dict(step), diagnostics=diagnostics, path=("steps", name))
+    if "rules" in step:
+        out["rules"] = _normalize_rules(step.get("rules") or {})
     return out
 
 

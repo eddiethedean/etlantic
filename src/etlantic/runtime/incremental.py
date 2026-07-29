@@ -226,23 +226,38 @@ class FileStateStore:
     """JSON file-backed state store for durable local workspaces."""
 
     def __init__(self, path: str | Path) -> None:
+        from etlantic.io_policy import SafeIoPolicy, read_modify_write_json_safe
+
         self.path = Path(path)
         self._proposed: dict[str, StateCursor] = {}
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._policy = SafeIoPolicy.for_root(self.path.parent)
+        self._rmw = read_modify_write_json_safe
         if not self.path.exists():
-            self.path.write_text("{}", encoding="utf-8")
+            self._rmw(
+                self.path,
+                self._policy,
+                lambda _current: {},
+                run_id="state-store-init",
+            )
 
     def _load(self) -> dict[str, Any]:
+        from etlantic.io_policy import read_text_safe
+
         try:
-            return json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            _resolved, text, _events = read_text_safe(
+                self.path, self._policy, run_id="state-store-load"
+            )
+            data = json.loads(text)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError, ValueError):
             return {}
 
     def _save(self, data: dict[str, Any]) -> None:
-        self.path.write_text(
-            json.dumps(data, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        def _replace(_current: dict[str, Any]) -> dict[str, Any]:
+            return dict(data)
+
+        self._rmw(self.path, self._policy, _replace, run_id="state-store-save")
 
     def get(self, subject_id: str) -> StateCursor | None:
         raw = self._load().get(subject_id)
@@ -280,13 +295,17 @@ class FileStateStore:
     ) -> StateTransitionResult:
         previous = self.get(subject_id)
         now = datetime.now(UTC)
-        data = self._load()
-        data[subject_id] = {
-            "value": value,
-            "updated_at": now.isoformat(),
-            "metadata": {},
-        }
-        self._save(data)
+
+        def _merge(current: dict[str, Any]) -> dict[str, Any]:
+            data = dict(current)
+            data[subject_id] = {
+                "value": value,
+                "updated_at": now.isoformat(),
+                "metadata": {},
+            }
+            return data
+
+        self._rmw(self.path, self._policy, _merge, run_id="state-store-commit")
         self._proposed.pop(subject_id, None)
         return StateTransitionResult(
             subject=subject_id,

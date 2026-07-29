@@ -145,6 +145,7 @@ class FileSchemaHistoryProvider:
 
     root: Path
     policy: SafeIoPolicy | None = None
+    fail_closed: bool = False
     _memory: InMemorySchemaHistory = field(default_factory=InMemorySchemaHistory)
 
     def __post_init__(self) -> None:
@@ -179,6 +180,10 @@ class FileSchemaHistoryProvider:
                 )
                 data = json.loads(text)
             except Exception as exc:
+                if self.fail_closed:
+                    raise RuntimeError(
+                        f"Unreadable schema history file {path}; failing closed."
+                    ) from exc
                 _LOG.warning(
                     "Skipping schema history file %s: %s",
                     path,
@@ -193,12 +198,20 @@ class FileSchemaHistoryProvider:
                 except ValueError as exc:
                     if "must not store source rows" in str(exc):
                         raise
+                    if self.fail_closed:
+                        raise RuntimeError(
+                            f"Invalid schema history item in {path}; failing closed."
+                        ) from exc
                     _LOG.warning(
                         "Skipping invalid schema history item in %s: %s",
                         path,
                         exc,
                     )
                 except Exception as exc:
+                    if self.fail_closed:
+                        raise RuntimeError(
+                            f"Invalid schema history item in {path}; failing closed."
+                        ) from exc
                     _LOG.warning(
                         "Skipping invalid schema history item in %s: %s",
                         path,

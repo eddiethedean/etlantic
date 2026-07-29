@@ -50,6 +50,14 @@ def test_graph_metadata_bare_plugin_key_raises_in_production() -> None:
         PipelinePlan.from_dict(data, verify=False)
 
 
+def test_production_name_requires_security_mode_production() -> None:
+    data = _load_burn_in_plan()
+    data["profile_snapshot"]["name"] = "production"
+    data["profile_snapshot"]["security_mode"] = ""
+    with pytest.raises(ValueError, match=r"security_mode"):
+        PipelinePlan.from_dict(data, verify=False)
+
+
 def test_region_metadata_rejects_oversized_payload() -> None:
     data = _load_burn_in_plan()
     if not data.get("regions"):

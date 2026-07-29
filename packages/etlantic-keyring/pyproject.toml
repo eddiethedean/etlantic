@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "etlantic>=0.34.0,<0.35",
-    "keyring",
+    "keyring>=25,<26",
 ]
 
 [project.urls]

@@ -79,7 +79,9 @@ class CliContext:
         ensure_workspace_layout(paths)
         history_root = paths.root / "history"
         policy = SafeIoPolicy.for_root(history_root)
-        self._run_history = FileRunHistoryProvider(history_root, policy=policy)
+        self._run_history = FileRunHistoryProvider(
+            history_root, policy=policy, fail_closed=True
+        )
         return self._run_history
 
     @property

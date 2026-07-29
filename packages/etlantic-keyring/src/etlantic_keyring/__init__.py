@@ -40,8 +40,8 @@ class KeyringSecretProvider:
             version=__version__,
             capabilities=SecretProviderCapabilities(
                 versions=False,
-                in_memory_cache=True,
-                async_native=True,
+                in_memory_cache=False,
+                async_native=False,
             ),
         )
 

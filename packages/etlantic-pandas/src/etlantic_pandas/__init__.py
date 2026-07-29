@@ -33,6 +33,11 @@ from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 
+# Pandas supports append/overwrite sinks; do not advertise merge/upsert.
+_PANDAS_WRITE_EXTRAS = frozenset(
+    e for e in WRITE_CAPABILITY_EXTRAS if e in {"write.append", "write.overwrite"}
+)
+
 __version__ = "0.34.0"
 
 __all__ = [
@@ -98,7 +103,7 @@ class PandasDataframePlugin:
             interchange_mechanisms=frozenset(mechanisms),
             extras=frozenset({"pandas"})
             | PORTABLE_QUALITY_CAPABILITIES
-            | WRITE_CAPABILITY_EXTRAS,
+            | _PANDAS_WRITE_EXTRAS,
         )
         self._info = DataframePluginInfo(
             name="etlantic-pandas",

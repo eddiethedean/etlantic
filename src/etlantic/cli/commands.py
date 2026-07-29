@@ -288,7 +288,9 @@ def register_commands(
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         model = load_target(target)
-        provider = FileSchemaHistoryProvider(_history_root(ctx, history))
+        provider = FileSchemaHistoryProvider(
+            _history_root(ctx, history), fail_closed=True
+        )
         current = observe_model_schema(subject_id, model, layer="current")
         previous = provider.latest(subject_id)
         change_set = None
@@ -329,7 +331,9 @@ def register_commands(
         history: str | None = typer.Option(None, "--history"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        provider = FileSchemaHistoryProvider(_history_root(ctx, history))
+        provider = FileSchemaHistoryProvider(
+            _history_root(ctx, history), fail_closed=True
+        )
         items = [o.to_dict() for o in provider.history(subject_id)]
         emit_payload({"subject_id": subject_id, "history": items}, fmt=fmt)
 
@@ -359,7 +363,9 @@ def register_commands(
         history: str | None = typer.Option(None, "--history"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        provider = FileSchemaHistoryProvider(_history_root(ctx, history))
+        provider = FileSchemaHistoryProvider(
+            _history_root(ctx, history), fail_closed=True
+        )
         emit_payload(provider.acknowledge(subject_id, note=note), fmt=fmt)
 
     @schema_app.command("propose")
@@ -396,7 +402,9 @@ def register_commands(
     ) -> None:
         """Record a schema observation into file history (no source rows)."""
         model = load_target(target)
-        provider = FileSchemaHistoryProvider(_history_root(ctx, history))
+        provider = FileSchemaHistoryProvider(
+            _history_root(ctx, history), fail_closed=True
+        )
         obs = observe_model_schema(subject_id, model, layer="current")
         if obs is None:
             emit_payload({"ok": False, "error": "No schema observed"}, fmt=fmt)

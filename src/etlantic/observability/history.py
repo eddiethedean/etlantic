@@ -300,6 +300,7 @@ class FileRunHistoryProvider:
 
     root: Path
     policy: SafeIoPolicy | None = None
+    fail_closed: bool = False
     _memory: InMemoryRunHistoryProvider = field(
         default_factory=InMemoryRunHistoryProvider
     )
@@ -346,7 +347,12 @@ class FileRunHistoryProvider:
                         metadata=dict(meta.get("metadata") or {}),
                     )
                     self._memory._runs[run_id].update(meta)
-                except Exception:
+                except Exception as exc:
+                    if self.fail_closed:
+                        raise RuntimeError(
+                            f"Unreadable run-history meta for {run_id!r}; "
+                            "failing closed."
+                        ) from exc
                     continue
             events_path = path / "events.jsonl"
             if events_path.exists():
@@ -359,7 +365,12 @@ class FileRunHistoryProvider:
                             continue
                         payload = json.loads(line)
                         self._memory._events.setdefault(run_id, []).append(payload)
-                except Exception:
+                except Exception as exc:
+                    if self.fail_closed:
+                        raise RuntimeError(
+                            f"Unreadable run-history events for {run_id!r}; "
+                            "failing closed."
+                        ) from exc
                     continue
             report_path = path / "report.json"
             if report_path.exists():
@@ -368,7 +379,12 @@ class FileRunHistoryProvider:
                         report_path, self.policy, run_id="history-load"
                     )
                     self._memory._reports[run_id] = json.loads(text)
-                except Exception:
+                except Exception as exc:
+                    if self.fail_closed:
+                        raise RuntimeError(
+                            f"Unreadable run-history report for {run_id!r}; "
+                            "failing closed."
+                        ) from exc
                     continue
 
     def create_run(

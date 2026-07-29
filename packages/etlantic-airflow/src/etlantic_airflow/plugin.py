@@ -67,7 +67,7 @@ class AirflowOrchestratorPlugin:
     ) -> CompiledOrchestrationArtifact:
         diagnostics: list[CompilationDiagnostic] = []
 
-        # Sensors are not supported in the 0.8 reference compiler.
+        # Sensors / dependency schedules are not supported in the reference compiler.
         if context.schedule.type == "event":
             diagnostics.append(
                 CompilationDiagnostic(
@@ -75,7 +75,31 @@ class AirflowOrchestratorPlugin:
                     severity="error",
                     message=(
                         "Event-driven schedule intent requires sensors; "
-                        "etlantic-airflow 0.8 does not preserve this semantic."
+                        "etlantic-airflow does not preserve this semantic."
+                    ),
+                    subject_id="schedule",
+                )
+            )
+        elif context.schedule.type not in {"manual", "cron"}:
+            diagnostics.append(
+                CompilationDiagnostic(
+                    code="PMORCH322",
+                    severity="error",
+                    message=(
+                        f"Schedule type {context.schedule.type!r} is not preserved "
+                        "by the Airflow reference compiler; failing closed. "
+                        "Supported types: manual, cron."
+                    ),
+                    subject_id="schedule",
+                )
+            )
+        elif context.schedule.type == "cron" and not context.schedule.expression:
+            diagnostics.append(
+                CompilationDiagnostic(
+                    code="PMORCH322",
+                    severity="error",
+                    message=(
+                        "Cron schedule requires a non-empty expression; failing closed."
                     ),
                     subject_id="schedule",
                 )

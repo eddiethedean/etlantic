@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from etlantic.diagnostics import Diagnostic
+from etlantic.diagnostics import Diagnostic, Severity
 
 if TYPE_CHECKING:
     from etlantic.registry import PlanningContext
@@ -15,6 +15,7 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
     from etlantic.plugin_trust import (
         _NON_BLOCKING_TRUST_CODES,
         filter_plugins_by_allowlist,
+        is_production_profile,
     )
     from etlantic.transform.discovery import discover_transform_compilers_for_profile
 
@@ -30,10 +31,14 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
         )
         if eng
     }
+    present_engines: set[str] = set()
     for name, descriptor in context.registry.plugins.items():
         engine = getattr(descriptor, "engine", None)
         if name in selected_engines or engine in selected_engines:
             selected[name] = descriptor
+            present_engines.add(str(name))
+            if engine:
+                present_engines.add(str(engine))
 
     compilers = discover_transform_compilers_for_profile(profile)
     transform_diags = list(
@@ -42,6 +47,7 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
     for engine, compiler in compilers.items():
         if engine in selected_engines:
             selected[f"transform_compiler:{engine}"] = compiler
+            present_engines.add(str(engine))
 
     _kept, diagnostics = filter_plugins_by_allowlist(selected, profile)
     # Sibling allowlist denials from transform discovery are expected when other
@@ -51,4 +57,26 @@ def phase_plugin_trust(context: PlanningContext) -> list[Diagnostic]:
         for d in transform_diags
         if getattr(d, "code", None) not in _NON_BLOCKING_TRUST_CODES
     ]
-    return list(diagnostics) + filtered_transform
+    out = list(diagnostics) + filtered_transform
+
+    # Selected engines denied at discovery never enter the registry; surface an
+    # explicit blocking trust diagnostic instead of a bare capability miss.
+    if is_production_profile(profile) and selected_engines:
+        for engine in sorted(selected_engines):
+            if engine in present_engines:
+                continue
+            out.append(
+                Diagnostic(
+                    code="PMPLUG404",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"Selected engine {engine!r} is not available after "
+                        f"production plugin authorization for profile "
+                        f"{profile.name!r}; treat as trust failure "
+                        "(allowlist denial or load failure)."
+                    ),
+                    path=("profile", "engine", str(engine)),
+                    phase="plugin_trust",
+                )
+            )
+    return out

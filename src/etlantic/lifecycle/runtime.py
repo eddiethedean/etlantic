@@ -72,6 +72,7 @@ class PipelineRuntime:
     callables: CallableStorage = field(default_factory=CallableStorage)
     _entered: bool = False
     _configured_profile_key: str | None = field(default=None, repr=False)
+    _active_profile: Profile | None = field(default=None, repr=False)
     _plugin_diagnostics: list[Diagnostic] = field(default_factory=list, repr=False)
     _manual_dataframe_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_sql_plugins: dict[str, Any] = field(default_factory=dict, repr=False)
@@ -306,8 +307,47 @@ class PipelineRuntime:
                 profile=profile,
             )
         self._configured_profile_key = key
+        self._active_profile = profile
         self._plugin_diagnostics = list(result.diagnostics) + list(manual_diags)
         return list(self._plugin_diagnostics)
+
+    def _assert_manual_plugin_allowed(
+        self, key: str, plugin: Any, *, kind: str
+    ) -> None:
+        """Refuse unauthorized manual overlays when a production profile is active."""
+        from etlantic.diagnostics import Severity
+        from etlantic.exceptions import PipelineExecutionError
+        from etlantic.plugin_trust import (
+            filter_plugins_by_allowlist,
+            is_production_profile,
+        )
+
+        profile = self._active_profile
+        if profile is None or not is_production_profile(profile):
+            return
+        allowlist = dict(profile.plugin_allowlist or {})
+        if not allowlist:
+            raise PipelineExecutionError(
+                f"Manual {kind} plugin {key!r} rejected: production profile "
+                f"{profile.name!r} requires a non-empty plugin_allowlist.",
+                code="PMPLUG401",
+            )
+        kept, diags = filter_plugins_by_allowlist({key: plugin}, profile)
+        if key in kept:
+            return
+        errors = [d for d in diags if d.severity is Severity.ERROR]
+        message = (
+            "; ".join(d.message for d in errors)
+            if errors
+            else (
+                f"Manual {kind} plugin {key!r} is not permitted by profile "
+                f"{profile.name!r} plugin_allowlist."
+            )
+        )
+        raise PipelineExecutionError(
+            message,
+            code=(errors[0].code if errors else "PMPLUG402"),
+        )
 
     def add_run_middleware(self, middleware: Any, *, name: str | None = None) -> None:
         """Register middleware invoked around entire pipeline runs.
@@ -360,6 +400,7 @@ class PipelineRuntime:
         """Register a live dataframe plugin and its planning descriptor."""
         from etlantic.dataframe.discovery import register_discovered_plugins
 
+        self._assert_manual_plugin_allowed(engine, plugin, kind="dataframe")
         self.dataframe_plugins[engine] = plugin
         self._manual_dataframe_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
@@ -368,6 +409,7 @@ class PipelineRuntime:
         """Register a live SQL plugin and its planning descriptor."""
         from etlantic.sql.discovery import register_discovered_plugins
 
+        self._assert_manual_plugin_allowed(engine, plugin, kind="sql")
         self.sql_plugins[engine] = plugin
         self._manual_sql_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
@@ -376,12 +418,14 @@ class PipelineRuntime:
         """Register a live Spark plugin and its planning descriptor."""
         from etlantic.spark.discovery import register_discovered_plugins
 
+        self._assert_manual_plugin_allowed(engine, plugin, kind="spark")
         self.spark_plugins[engine] = plugin
         self._manual_spark_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
 
     def register_spark_provider(self, name: str, provider: Any) -> None:
         """Register a live Spark session provider."""
+        self._assert_manual_plugin_allowed(name, provider, kind="spark_provider")
         self.spark_providers[name] = provider
         self._manual_spark_providers[name] = provider
 
@@ -389,6 +433,7 @@ class PipelineRuntime:
         """Register a live orchestrator plugin and its planning descriptor."""
         from etlantic.orchestration.discovery import register_discovered_plugins
 
+        self._assert_manual_plugin_allowed(engine, plugin, kind="orchestrator")
         self.orchestrator_plugins[engine] = plugin
         self._manual_orchestrator_plugins[engine] = plugin
         register_discovered_plugins(self.registry, plugins={engine: plugin})
@@ -397,6 +442,7 @@ class PipelineRuntime:
         """Register a live ExecutionScheduler plugin and its planning descriptor."""
         from etlantic.runtime.scheduler_discovery import register_discovered_plugins
 
+        self._assert_manual_plugin_allowed(name, plugin, kind="scheduler")
         self.scheduler_plugins[name] = plugin
         self._manual_scheduler_plugins[name] = plugin
         register_discovered_plugins(self.registry, plugins={name: plugin})

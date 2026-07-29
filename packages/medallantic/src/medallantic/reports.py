@@ -134,7 +134,11 @@ def adapt_run_result(
     ``PMSF500``.
     """
     safe = _redact(payload)
-    status_raw = str(safe.get("status") or safe.get("pipeline_status") or "succeeded")
+    # Missing status must fail closed (unknown), never default to succeeded.
+    if "status" in safe or "pipeline_status" in safe:
+        status_raw = str(safe.get("status") or safe.get("pipeline_status") or "")
+    else:
+        status_raw = ""
     status, status_known = _map_run_status(status_raw)
     diagnostics: list[RunDiagnostic] = []
     if not status_known:
@@ -154,7 +158,21 @@ def adapt_run_result(
     for item in steps_raw:
         if not isinstance(item, dict):
             continue
-        step_status = _map_step_status(str(item.get("status") or "succeeded"))
+        if "status" in item:
+            step_status = _map_step_status(str(item.get("status") or ""))
+        else:
+            step_status = StepStatus.FAILED
+            diagnostics.append(
+                RunDiagnostic(
+                    code="PMSF500",
+                    severity="error",
+                    message=(
+                        f"Missing step status for "
+                        f"{item.get('name') or item.get('step_name') or 'step'!r}; "
+                        "mapped to failed (fail closed)."
+                    ),
+                )
+            )
         name = str(item.get("name") or item.get("step_name") or "step")
         attempts = item.get("attempts")
         records_in = item.get("records_in")

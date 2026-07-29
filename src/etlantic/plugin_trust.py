@@ -122,6 +122,99 @@ def package_identity_candidates(
     return out
 
 
+# Stamped onto loaded plugin instances so post-load trust/registry keep the
+# same package identity keys used during authorize-before-load.
+PLUGIN_IDENTITY_ATTR = "_etlantic_package_identity"
+
+
+def stamp_plugin_package_identity(
+    plugin: Any,
+    *,
+    distribution_name: str | None = None,
+    package: str | None = None,
+    distribution_version: str | None = None,
+) -> None:
+    """Attach package identity to a loaded plugin for registry/trust reuse."""
+    identity = {
+        "distribution_name": str(distribution_name or "").strip() or None,
+        "package": str(package or "").strip() or None,
+        "distribution_version": str(distribution_version or "").strip() or None,
+    }
+    try:
+        setattr(plugin, PLUGIN_IDENTITY_ATTR, identity)
+    except Exception:
+        # Immutable / slotted hosts: still usable via descriptor metadata at
+        # register time when callers pass identity explicitly.
+        return
+
+
+def resolve_plugin_package_identity(plugin: Any) -> dict[str, str | None]:
+    """Resolve package identity from stamped attrs, descriptor metadata, or info."""
+    stamped = getattr(plugin, PLUGIN_IDENTITY_ATTR, None)
+    if isinstance(stamped, dict):
+        dist = stamped.get("distribution_name")
+        pkg = stamped.get("package")
+        ver = stamped.get("distribution_version")
+        if dist or pkg:
+            return {
+                "distribution_name": str(dist) if dist else None,
+                "package": str(pkg) if pkg else None,
+                "distribution_version": str(ver) if ver else None,
+            }
+    metadata = getattr(plugin, "metadata", None) or {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+    info = getattr(plugin, "info", None)
+    if callable(info):
+        info = info()
+    info_meta = getattr(info, "metadata", None) if info is not None else None
+    if not isinstance(info_meta, dict):
+        info_meta = {}
+    dist = (
+        metadata.get("distribution_name")
+        or info_meta.get("distribution_name")
+        or getattr(info, "distribution_name", None)
+    )
+    pkg = (
+        metadata.get("package")
+        or info_meta.get("package")
+        or getattr(info, "package", None)
+    )
+    ver = (
+        metadata.get("distribution_version")
+        or info_meta.get("distribution_version")
+        or getattr(info, "distribution_version", None)
+    )
+    return {
+        "distribution_name": str(dist).strip() if dist else None,
+        "package": str(pkg).strip() if pkg else None,
+        "distribution_version": str(ver).strip() if ver else None,
+    }
+
+
+def descriptor_metadata_for_plugin(
+    plugin: Any,
+    info: Any = None,
+    *,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build PluginDescriptor.metadata including package identity fields."""
+    if info is None:
+        info = getattr(plugin, "info", None)
+        if callable(info):
+            info = info()
+    metadata: dict[str, Any] = {}
+    if info is not None and getattr(info, "protocol_version", None) is not None:
+        metadata["protocol_version"] = info.protocol_version
+    identity = resolve_plugin_package_identity(plugin)
+    for key, value in identity.items():
+        if value:
+            metadata[key] = value
+    if extra:
+        metadata.update(extra)
+    return metadata
+
+
 def is_builtin_allowlist_exempt(name: str | None) -> bool:
     """Return True for in-tree stub plugin identities exempt from package pins."""
     return str(name or "").strip().lower() in BUILTIN_ALLOWLIST_EXEMPT
@@ -167,13 +260,11 @@ def filter_plugins_by_allowlist(
         info = getattr(plugin, "info", None)
         if callable(info):
             info = info()
-        metadata = getattr(plugin, "metadata", None) or {}
-        if not isinstance(metadata, dict):
-            metadata = {}
+        identity = resolve_plugin_package_identity(plugin)
         # Third-party package identity never qualifies for builtin exemption,
         # even when engine/name spoofs ``local`` / ``env`` / etc.
         has_package_identity = bool(
-            metadata.get("distribution_name") or metadata.get("package")
+            identity.get("distribution_name") or identity.get("package")
         )
         pname = (
             getattr(info, name_attr, None) or getattr(plugin, name_attr, None) or key
@@ -185,13 +276,14 @@ def filter_plugins_by_allowlist(
             kept[key] = plugin
             continue
         pversion = (
-            getattr(info, version_attr, None)
+            identity.get("distribution_version")
+            or getattr(info, version_attr, None)
             or getattr(plugin, version_attr, None)
             or None
         )
         identity_candidates = package_identity_candidates(
-            distribution_name=str(metadata.get("distribution_name") or "") or None,
-            package=str(metadata.get("package") or "") or None,
+            distribution_name=identity.get("distribution_name"),
+            package=identity.get("package"),
         )
         # Prefer package metadata; fall back to plugin.info.name when it looks
         # like a distribution (etlantic-*), never bare engine keys alone.

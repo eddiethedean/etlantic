@@ -18,10 +18,33 @@ from etlantic.spark.provider import (
 __version__ = "0.34.0"
 
 
+def _delta_spark_available() -> bool:
+    """True when delta-spark (or delta) can be imported for Delta ops."""
+    try:
+        import importlib.util
+
+        return importlib.util.find_spec("delta") is not None
+    except Exception:
+        return False
+
+
 class LocalSparkProvider:
     """In-process SparkSession provider for CI and local development."""
 
     def __init__(self) -> None:
+        delta_ok = _delta_spark_available()
+        extras: set[str] = {"local_spark"}
+        if delta_ok:
+            extras.update(
+                {
+                    "storage.delta.merge",
+                    "storage.delta.optimize",
+                    "storage.delta.vacuum",
+                    "storage.delta.history",
+                    "storage.delta.time_travel",
+                    "storage.delta.schema_evolution",
+                }
+            )
         caps = PluginCapabilities(
             engine="pyspark",
             spark=True,
@@ -31,21 +54,11 @@ class LocalSparkProvider:
             streaming=True,
             checkpoints=True,
             spark_streaming=True,
-            spark_delta=True,
+            spark_delta=delta_ok,
             spark_cache=True,
             spark_checkpoint=True,
             cancellation=True,
-            extras=frozenset(
-                {
-                    "local_spark",
-                    "storage.delta.merge",
-                    "storage.delta.optimize",
-                    "storage.delta.vacuum",
-                    "storage.delta.history",
-                    "storage.delta.time_travel",
-                    "storage.delta.schema_evolution",
-                }
-            ),
+            extras=frozenset(extras),
         )
         self._info = SparkProviderInfo(
             name="local",
@@ -86,12 +99,17 @@ class LocalSparkProvider:
                 raise RuntimeError(
                     "EXTERNAL ownership requires metadata['session'] at acquire."
                 )
+            if request.enable_delta and not _delta_spark_available():
+                raise RuntimeError(
+                    "enable_delta requested but delta-spark is not importable; "
+                    "failing closed."
+                )
             return SparkSessionHandle(
                 identity=f"spark-ext-{uuid.uuid4().hex[:10]}",
                 ownership=SessionOwnership.EXTERNAL,
                 app_name=request.app_name,
                 master=request.master,
-                delta_enabled=bool(request.enable_delta),
+                delta_enabled=bool(request.enable_delta) and _delta_spark_available(),
                 metadata={"run_id": context.run_id},
                 _session=external,
             )
@@ -116,6 +134,11 @@ class LocalSparkProvider:
             )
         delta_enabled = False
         if request.enable_delta:
+            if not _delta_spark_available():
+                raise RuntimeError(
+                    "enable_delta requested but delta-spark is not importable; "
+                    "failing closed."
+                )
             try:
                 builder = builder.config(
                     "spark.sql.extensions",

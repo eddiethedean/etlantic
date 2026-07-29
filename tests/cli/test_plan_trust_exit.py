@@ -37,6 +37,21 @@ def test_plan_trust_exit_ignores_non_blocking_pmplug402() -> None:
     assert validation_exit_from_report(report) == ec.SUCCESS
 
 
+def test_plan_trust_exit_blocks_selected_engine_pmplug402() -> None:
+    report = ValidationReport(
+        diagnostics=(
+            Diagnostic(
+                code="PMPLUG402",
+                severity=Severity.ERROR,
+                message="selected engine denied",
+                phase="plugin_trust",
+            ),
+        )
+    )
+    assert trust_exit_from_report(report) == ec.TRUST_FAILURE
+    assert validation_exit_from_report(report) == ec.TRUST_FAILURE
+
+
 def test_plan_trust_exit_none_for_structural_planning_failure() -> None:
     report = ValidationReport(
         diagnostics=(

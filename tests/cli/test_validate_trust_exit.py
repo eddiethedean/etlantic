@@ -38,6 +38,35 @@ def test_validate_exit_trust_failure_for_pmplug() -> None:
     assert _trust_exit(report) == ec.TRUST_FAILURE
 
 
+def test_validate_exit_trust_failure_for_selected_engine_pmplug402() -> None:
+    report = ValidationReport(
+        diagnostics=(
+            Diagnostic(
+                code="PMPLUG402",
+                severity=Severity.ERROR,
+                message="selected engine not on allowlist",
+                phase="plugin_trust",
+            ),
+        )
+    )
+    assert report.valid is False
+    assert _trust_exit(report) == ec.TRUST_FAILURE
+
+
+def test_validate_exit_success_for_sibling_discovery_pmplug402() -> None:
+    report = ValidationReport(
+        diagnostics=(
+            Diagnostic(
+                code="PMPLUG402",
+                severity=Severity.ERROR,
+                message="sibling denied",
+                phase="plugin_discovery",
+            ),
+        )
+    )
+    assert _trust_exit(report) == ec.SUCCESS
+
+
 def test_validate_exit_trust_failure_for_authorize_phase_without_pmplug_prefix() -> (
     None
 ):

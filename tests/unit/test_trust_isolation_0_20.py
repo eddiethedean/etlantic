@@ -488,3 +488,65 @@ def test_capability_probe_disabled_skips_subprocess(
         "etlantic.dataframe_plugins",
         profile=profile,
     )
+
+
+def test_descriptor_metadata_preserves_third_party_package_identity() -> None:
+    from etlantic.dataframe.discovery import register_discovered_plugins
+    from etlantic.plugin_trust import (
+        filter_plugins_by_allowlist,
+        stamp_plugin_package_identity,
+    )
+    from etlantic.registry import builtin_stub_registry
+
+    class _Info:
+        name = "acme-widgets"
+        version = "1.2.3"
+        engine = "widgets"
+        protocol_version = "1"
+        capabilities = None
+
+    class _Plugin:
+        info = _Info()
+
+    plugin = _Plugin()
+    stamp_plugin_package_identity(
+        plugin,
+        distribution_name="acme-widgets",
+        package="acme-widgets",
+        distribution_version="1.2.3",
+    )
+    registry = builtin_stub_registry()
+    register_discovered_plugins(registry, plugins={"widgets": plugin})
+    descriptor = registry.plugins["acme-widgets"]
+    assert descriptor.metadata.get("distribution_name") == "acme-widgets"
+    profile = production_profile(plugin_allowlist={"acme-widgets": "==1.2.3"})
+    kept, diags = filter_plugins_by_allowlist({"widgets": descriptor}, profile)
+    assert "widgets" in kept
+    assert not any(d.code == "PMPLUG402" for d in diags)
+
+
+def test_manual_register_denied_under_active_production_profile() -> None:
+    from etlantic.exceptions import PipelineExecutionError
+    from etlantic.lifecycle.runtime import PipelineRuntime
+    from etlantic.plugin_trust import stamp_plugin_package_identity
+
+    class _Info:
+        name = "evil-pkg"
+        version = "9.9.9"
+        engine = "evil"
+        protocol_version = "1"
+        capabilities = None
+
+    class _Plugin:
+        info = _Info()
+
+    runtime = PipelineRuntime()
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    runtime.ensure_plugins_for_profile(profile)
+    plugin = _Plugin()
+    stamp_plugin_package_identity(
+        plugin, distribution_name="evil-pkg", package="evil-pkg"
+    )
+    with pytest.raises(PipelineExecutionError) as exc:
+        runtime.register_dataframe_plugin("evil", plugin)
+    assert exc.value.code in {"PMPLUG402", "PMPLUG401"}

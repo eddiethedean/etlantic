@@ -309,14 +309,37 @@ def lower_document(
     *,
     required_delta_operations: tuple[str, ...] = (),
     diagnostic_phase: str = "medallion_authoring",
+    allowed_transform_refs: tuple[str, ...] | None = None,
+    transform_refs_fail_closed: bool = False,
+    profile: Profile | None = None,
 ) -> LoweringResult:
     """Map a medallion document to a concrete ETLantic Pipeline subclass.
 
     Bronze/silver/gold remain facade metadata on ``layer_by_node``; ETLantic
     core never sees medallion enums.
+
+    Importable ``transform_ref`` values are deny-by-default when
+    ``transform_refs_fail_closed`` is True or when ``profile.security_mode`` is
+    ``production``. Pass ``allowed_transform_refs`` (or profile metadata
+    ``medallantic.allowed_transform_refs``) to permit specific callables.
     """
     diagnostics: list[Diagnostic] = []
     _validate_document(doc, diagnostics, phase=diagnostic_phase)
+
+    allow_refs = allowed_transform_refs
+    fail_closed_refs = transform_refs_fail_closed
+    if profile is not None:
+        from etlantic.plugin_trust import is_production_profile
+
+        if is_production_profile(profile):
+            fail_closed_refs = True
+        meta = dict(getattr(profile, "metadata", None) or {})
+        med = (
+            meta.get("medallantic") if isinstance(meta.get("medallantic"), dict) else {}
+        )
+        if allow_refs is None and med.get("allowed_transform_refs") is not None:
+            raw = med.get("allowed_transform_refs") or ()
+            allow_refs = tuple(str(x) for x in raw)
 
     if any(d.severity is Severity.ERROR for d in diagnostics):
         raise LoweringError(
@@ -469,11 +492,17 @@ def lower_document(
                 looks_like_import = ("." in ref) or (":" in ref)
                 try:
                     if looks_like_import:
-                        resolve_transform_callable(ref)
+                        resolve_transform_callable(
+                            ref,
+                            allowed_refs=allow_refs,
+                            fail_closed=fail_closed_refs,
+                        )
                         transform_cls = make_callable_transformation(
                             step.name,
                             transform_ref=ref,
                             row_type=MedallionRow,
+                            allowed_refs=allow_refs,
+                            fail_closed=fail_closed_refs,
                         )
                     else:
                         # Symbolic SparkForge-style names stay passthrough until

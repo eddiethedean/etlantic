@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `etlantic reliability quality-trends` uses event consumer summary when `--values` omitted
 
 ### Fixed
+- Selected-engine ``PMPLUG402`` now maps validate/plan CLI exit to ``TRUST_FAILURE`` (sibling discovery 402s remain non-blocking)
+- Plugin registry descriptors retain package identity (``distribution_name`` / ``package``) after authorize-before-load
+- Manual ``register_*_plugin`` refuses unauthorized overlays when a production profile is active
+- Missing selected engines under production emit blocking ``PMPLUG404`` trust diagnostics
+- Plan snapshots with ``name=production`` require ``security_mode=production``
+- PySpark provider/plugin advertise Delta/merge capabilities only when delta-spark is importable; declared cache/checkpoint failures fail closed
+- Medallantic missing run/step statuses fail closed; live IR scrubbing covers non-metadata secret keys; ``transform_ref`` imports support deny-by-default allowlists
+- ``FileStateStore`` uses locked read-modify-write; schema/run history can fail closed on corrupt durable files
+- Schema-drift / trust failures cannot be CONTINUE/SKIP'd; plan ``allow_trusted_sql`` is intersected with the live profile
+- Polars/Pandas advertise only append/overwrite write extras; Airflow fails closed on non-cron/manual schedules; keyring capability ads match sync lookup; mounted-file secret errors omit absolute paths
 - Structured run logs can fan out to observability providers via runtime bridge
 - `durable_audit` fail-closed on run-history event append (not only terminal reports)
 - File run-history JSONL append uses locked O_APPEND (cross-process safe; no full-file read)

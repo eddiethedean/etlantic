@@ -3,17 +3,36 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from typing import Any
 
 from etlantic.transformation import Input, Output, Transformation
 
 
-def resolve_transform_callable(transform_ref: str) -> Callable[..., Any]:
-    """Import ``module:attr`` or ``module.attr`` and return the callable."""
+def resolve_transform_callable(
+    transform_ref: str,
+    *,
+    allowed_refs: Collection[str] | None = None,
+    fail_closed: bool = False,
+) -> Callable[..., Any]:
+    """Import ``module:attr`` or ``module.attr`` and return the callable.
+
+    When ``fail_closed`` is True, imports are denied unless ``allowed_refs``
+    explicitly lists the reference (deny-by-default). When ``allowed_refs`` is
+    provided without ``fail_closed``, only listed refs are permitted.
+    """
     ref = transform_ref.strip()
     if not ref:
         raise ValueError("transform_ref must be a non-empty import path")
+    if fail_closed or allowed_refs is not None:
+        allow = {
+            str(item).strip() for item in (allowed_refs or ()) if str(item).strip()
+        }
+        if ref not in allow:
+            raise PermissionError(
+                f"transform_ref {transform_ref!r} is not permitted by the "
+                "callable allowlist (deny-by-default)."
+            )
     if ":" in ref:
         module_name, attr = ref.split(":", 1)
     else:
@@ -48,9 +67,15 @@ def make_callable_transformation(
     transform_ref: str,
     fn: Callable[..., Any] | None = None,
     row_type: type[Any],
+    allowed_refs: Collection[str] | None = None,
+    fail_closed: bool = False,
 ) -> type[Transformation]:
     """Build a Transformation that executes ``transform_ref`` on local records."""
-    callable_fn = fn or resolve_transform_callable(transform_ref)
+    callable_fn = fn or resolve_transform_callable(
+        transform_ref,
+        allowed_refs=allowed_refs,
+        fail_closed=fail_closed,
+    )
     safe = _safe_ident(name)
     ns: dict[str, Any] = {
         "__annotations__": {

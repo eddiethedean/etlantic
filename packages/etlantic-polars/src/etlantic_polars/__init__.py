@@ -35,6 +35,11 @@ from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
 
+# Polars supports append/overwrite durable sinks; do not advertise merge/upsert.
+_POLARS_WRITE_EXTRAS = frozenset(
+    e for e in WRITE_CAPABILITY_EXTRAS if e in {"write.append", "write.overwrite"}
+)
+
 __version__ = "0.34.0"
 
 __all__ = [
@@ -84,7 +89,7 @@ class PolarsDataframePlugin:
             interchange_mechanisms=frozenset(mechanisms),
             extras=frozenset({"polars"})
             | PORTABLE_QUALITY_CAPABILITIES
-            | WRITE_CAPABILITY_EXTRAS,
+            | _POLARS_WRITE_EXTRAS,
         )
         self._info = DataframePluginInfo(
             name="etlantic-polars",

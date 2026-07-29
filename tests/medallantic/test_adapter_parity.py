@@ -13,7 +13,7 @@ from etlantic.plan import explain_plan, plan_pipeline
 from etlantic.policy import resolve_validation_policy
 from etlantic.reliability import WriteMode
 from etlantic.runtime.request import MaterializationPolicy, RetryPolicy, RunIntent
-from etlantic.runtime.state import RunStatus
+from etlantic.runtime.state import RunStatus, StepStatus
 from medallantic import (
     COMPATIBILITY_MATRIX,
     AdapterError,
@@ -386,6 +386,15 @@ def test_unknown_report_status_fail_closed() -> None:
     report = adapt_run_result({"status": "weird_unknown_status", "steps": []})
     assert report.status is RunStatus.FAILED
     assert any(d.code == "PMSF500" for d in report.diagnostics)
+
+
+def test_missing_report_status_fail_closed() -> None:
+    report = adapt_run_result({})
+    assert report.status is RunStatus.FAILED
+    assert any(d.code == "PMSF500" for d in report.diagnostics)
+    report2 = adapt_run_result({"steps": [{"name": "a"}]})
+    assert report2.status is RunStatus.FAILED
+    assert any(s.status is StepStatus.FAILED for s in report2.steps)
 
 
 def test_report_preserves_zero_counts_and_aliases() -> None:

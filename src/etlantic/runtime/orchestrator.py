@@ -295,6 +295,37 @@ class LocalOrchestrator:
             annotations["layer"] = layer_map[name]
         return annotations
 
+    @staticmethod
+    def _is_security_hard_failure(exc: BaseException) -> bool:
+        """True for schema/trust/security failures that must not CONTINUE/SKIP."""
+        code = str(getattr(exc, "code", None) or "")
+        stage = str(getattr(exc, "stage", None) or "")
+        if code in {"PMEXEC340", "PMPLUG401", "PMPLUG402", "PMPLUG404"}:
+            return True
+        if stage in {
+            FailureStage.SCHEMA_DRIFT.value,
+            "schema_drift",
+            "plugin_trust",
+            "security",
+        }:
+            return True
+        return bool(code.startswith("PMPLUG"))
+
+    def _effective_allow_trusted_sql(self) -> bool:
+        """Intersect plan snapshot with live runtime profile (fail closed)."""
+        snap = bool((self.plan.profile_snapshot or {}).get("allow_trusted_sql"))
+        live = getattr(self.runtime, "_active_profile", None)
+        if live is None:
+            return snap
+        live_flag = bool(getattr(live, "allow_trusted_sql", False))
+        if snap and not live_flag:
+            raise PipelineExecutionError(
+                "Plan allow_trusted_sql=true is looser than the live profile; "
+                "failing closed.",
+                code="PMEXEC350",
+            )
+        return snap and live_flag
+
     def _lifecycle_event(
         self,
         *,
@@ -1210,36 +1241,42 @@ class LocalOrchestrator:
                         await anyio.sleep(backoff)
                     continue
                 if action is FailureAction.CONTINUE:
-                    state.status = StepStatus.SKIPPED
-                    state.metadata["continue_after_failure"] = True
-                    state.ended_at = datetime.now(UTC)
-                    self._append_diagnostic(
-                        diagnostics,
-                        RunDiagnostic(
-                            code="PMEXEC301",
-                            severity="warning",
-                            message=redact_message(
-                                f"Step {name} continued after failure: {exc}"
+                    if self._is_security_hard_failure(exc):
+                        action = FailureAction.FAIL
+                    else:
+                        state.status = StepStatus.SKIPPED
+                        state.metadata["continue_after_failure"] = True
+                        state.ended_at = datetime.now(UTC)
+                        self._append_diagnostic(
+                            diagnostics,
+                            RunDiagnostic(
+                                code="PMEXEC301",
+                                severity="warning",
+                                message=redact_message(
+                                    f"Step {name} continued after failure: {exc}"
+                                ),
+                                node_name=name,
                             ),
-                            node_name=name,
-                        ),
-                    )
-                    return
+                        )
+                        return
                 if action is FailureAction.SKIP:
-                    state.status = StepStatus.SKIPPED
-                    state.ended_at = datetime.now(UTC)
-                    self._append_diagnostic(
-                        diagnostics,
-                        RunDiagnostic(
-                            code="PMEXEC301",
-                            severity="warning",
-                            message=redact_message(
-                                f"Step {name} skipped after failure: {exc}"
+                    if self._is_security_hard_failure(exc):
+                        action = FailureAction.FAIL
+                    else:
+                        state.status = StepStatus.SKIPPED
+                        state.ended_at = datetime.now(UTC)
+                        self._append_diagnostic(
+                            diagnostics,
+                            RunDiagnostic(
+                                code="PMEXEC301",
+                                severity="warning",
+                                message=redact_message(
+                                    f"Step {name} skipped after failure: {exc}"
+                                ),
+                                node_name=name,
                             ),
-                            node_name=name,
-                        ),
-                    )
-                    return
+                        )
+                        return
                 state.status = StepStatus.TIMED_OUT if timed_out else StepStatus.FAILED
                 state.ended_at = datetime.now(UTC)
                 self._append_diagnostic(
@@ -1553,9 +1590,7 @@ class LocalOrchestrator:
                     write_intent = str(
                         descriptor.metadata.get("write_intent") or write_intent
                     )
-                allow_trusted = bool(
-                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
-                )
+                allow_trusted = self._effective_allow_trusted_sql()
                 if write_mode_for_request(self.request).value == "no_write":
                     state.records_in = 0
                     state.records_out = 0
@@ -1629,9 +1664,7 @@ class LocalOrchestrator:
                     plugins=getattr(self.runtime, "sql_plugins", None),
                 )
                 location = descriptor.location if descriptor is not None else None
-                allow_trusted = bool(
-                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
-                )
+                allow_trusted = self._effective_allow_trusted_sql()
                 target = plugin.relation_from_binding(
                     binding=binding_name,
                     location=location,
@@ -1888,9 +1921,7 @@ class LocalOrchestrator:
                     impl.engine,
                     plugins=getattr(self.runtime, "sql_plugins", None),
                 )
-                allow_trusted = bool(
-                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
-                )
+                allow_trusted = self._effective_allow_trusted_sql()
                 # Hybrid: fetch SQL handles into records when feeding local engines
                 # is handled in _gather_inputs; here inputs should already be
                 # RelationRef / SqlQuery for SQL-to-SQL.
@@ -2166,9 +2197,7 @@ class LocalOrchestrator:
                     "sql",
                     plugins=getattr(self.runtime, "sql_plugins", None),
                 )
-                allow_trusted = bool(
-                    (self.plan.profile_snapshot or {}).get("allow_trusted_sql")
-                )
+                allow_trusted = self._effective_allow_trusted_sql()
                 ctx = SqlExecutionContext(
                     run_id="hybrid",
                     pipeline_id=self.plan.pipeline_id,

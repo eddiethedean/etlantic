@@ -947,7 +947,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "etlantic", editable = "." },
-    { name = "keyring" },
+    { name = "keyring", specifier = ">=25,<26" },
 ]
 
 [[package]]

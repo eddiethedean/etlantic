@@ -61,6 +61,8 @@ def register_discovered_plugins(
     profile: Profile | None = None,
 ) -> dict[str, DataframePlugin]:
     """Register discovered dataframe plugins into a planning registry."""
+    from etlantic.plugin_trust import descriptor_metadata_for_plugin
+
     discovered = (
         plugins if plugins is not None else discover_dataframe_plugins(profile=profile)
     )
@@ -74,7 +76,7 @@ def register_discovered_plugins(
                 version=info.version,
                 engine=info.engine or engine,
                 capabilities=caps,
-                metadata={"protocol_version": info.protocol_version},
+                metadata=descriptor_metadata_for_plugin(plugin, info),
             )
         )
     return discovered

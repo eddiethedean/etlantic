@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -82,13 +81,13 @@ class PySparkPlugin:
             "pyspark",
             "write.append",
             "write.overwrite",
-            "write.merge",
-            "write.upsert",
             "write.partition_replace",
         }
         if delta_ok:
             extras.update(
                 {
+                    "write.merge",
+                    "write.upsert",
                     "delta_compatible",
                     "storage.delta.merge",
                     "storage.delta.optimize",
@@ -111,7 +110,7 @@ class PySparkPlugin:
             invalid_row_separation=False,
             cancellation=True,
             spark_delta=delta_ok,
-            spark_merge=True,
+            spark_merge=delta_ok,
             spark_streaming=True,
             spark_native_exprs=True,
             spark_udf=True,
@@ -127,11 +126,11 @@ class PySparkPlugin:
             capabilities=caps,
             streaming_stability=STREAMING_STABILITY,
             metadata={
-                "delta_optimize": True,
-                "delta_vacuum": True,
-                "delta_history": True,
-                "delta_time_travel": True,
-                "delta_schema_evolution": True,
+                "delta_optimize": delta_ok,
+                "delta_vacuum": delta_ok,
+                "delta_history": delta_ok,
+                "delta_time_travel": delta_ok,
+                "delta_schema_evolution": delta_ok,
                 "requires_delta_spark": True,
             },
         )
@@ -265,11 +264,21 @@ class PySparkPlugin:
             if frame is None:
                 continue
             if name in compiled.cache_points and hasattr(frame, "cache"):
-                with contextlib.suppress(Exception):
+                try:
                     frame.cache()
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Declared Spark cache for node {name!r} failed; "
+                        "failing closed."
+                    ) from exc
             if name in compiled.checkpoint_points and hasattr(frame, "checkpoint"):
-                with contextlib.suppress(Exception):
+                try:
                     frame.checkpoint()
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Declared Spark checkpoint for node {name!r} failed; "
+                        "failing closed."
+                    ) from exc
             remembered = self._remember(
                 frame,
                 context=SparkExecutionContext(

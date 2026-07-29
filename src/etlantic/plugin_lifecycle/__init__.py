@@ -295,6 +295,8 @@ def load_authorized_plugins(
     production: bool = False,
 ) -> tuple[dict[str, Any], list[Diagnostic]]:
     """Load entry points only for previously authorized plugins."""
+    from etlantic.plugin_trust import stamp_plugin_package_identity
+
     loaded: dict[str, Any] = {}
     diagnostics: list[Diagnostic] = []
     for item in authorized:
@@ -303,6 +305,15 @@ def load_authorized_plugins(
         try:
             factory = item.entry_point.load()
             plugin = factory() if instantiate and callable(factory) else factory
+            package = None
+            if item.manifest is not None:
+                package = getattr(item.manifest, "package", None)
+            stamp_plugin_package_identity(
+                plugin,
+                distribution_name=item.distribution_name,
+                package=package or item.distribution_name,
+                distribution_version=item.distribution_version,
+            )
             if key_fn is not None:
                 key = key_fn(item, plugin)
             else:

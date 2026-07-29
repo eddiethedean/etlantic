@@ -26,10 +26,12 @@ def _plan_metadata_strict(profile_snapshot: dict[str, Any]) -> bool:
 def _assert_plan_snapshot_consistent(profile_snapshot: dict[str, Any]) -> None:
     mode = str(profile_snapshot.get("security_mode") or "").strip().lower()
     name = str(profile_snapshot.get("name") or "").strip().lower()
-    if name == "production" and mode and mode != "production":
+    if name == "production" and mode != "production":
+        mode_repr = repr(mode) if mode else "'(empty)'"
         raise ValueError(
             "Plan profile_snapshot name is 'production' but security_mode "
-            f"is {mode!r}; failing closed."
+            f"is {mode_repr}; failing closed. Production plans "
+            "require security_mode='production'."
         )
 
 

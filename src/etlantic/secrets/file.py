@@ -79,8 +79,9 @@ class MountedFileSecretProvider:
             raise
         if not path.is_file():
             raise PipelineExecutionError(
-                f"Secret {reference.identity()} file not found at {path} "
-                f"(run={context.run_id}).",
+                f"Secret {reference.identity()} file not found under mount root "
+                f"(relative={path.relative_to(self._root).as_posix()}, "
+                f"run={context.run_id}).",
                 run_id=context.run_id,
                 code="PMEXEC402",
             )
@@ -88,7 +89,8 @@ class MountedFileSecretProvider:
             raw = path.read_bytes()
         except OSError as exc:
             raise PipelineExecutionError(
-                f"Secret {reference.identity()} unreadable at {path}: {exc}",
+                f"Secret {reference.identity()} unreadable under mount root "
+                f"(relative={path.relative_to(self._root).as_posix()}): {exc}",
                 run_id=context.run_id,
                 code="PMEXEC402",
             ) from exc

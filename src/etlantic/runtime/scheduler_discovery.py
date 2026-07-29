@@ -55,6 +55,8 @@ def register_discovered_plugins(
     profile: Profile | None = None,
 ) -> dict[str, ExecutionScheduler]:
     """Register discovered scheduler plugins into a planning registry."""
+    from etlantic.plugin_trust import descriptor_metadata_for_plugin
+
     discovered = (
         plugins if plugins is not None else discover_scheduler_plugins(profile=profile)
     )
@@ -70,7 +72,11 @@ def register_discovered_plugins(
                     "direct_execution": info.direct_execution,
                     "external_compilation": info.external_compilation,
                 },
-                metadata={"protocol_version": info.scheduler_protocol},
+                metadata=descriptor_metadata_for_plugin(
+                    plugin,
+                    info,
+                    extra={"protocol_version": info.scheduler_protocol},
+                ),
             )
         )
     return discovered
