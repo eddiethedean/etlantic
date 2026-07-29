@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-
 NATIVE_RULE_KINDS = frozenset(
     {
         "pyspark_column",
@@ -53,10 +52,10 @@ def is_native_rule_entry(item: Any) -> bool:
     module = type(item).__module__ or ""
     if "Column" in type_name and ("pyspark" in module or "sparkless" in module):
         return True
-    if callable(item) and not isinstance(item, (str, bytes, dict, list, tuple, type)):
-        # Bare callables in rules are treated as native validators (not classes).
-        return True
-    return False
+    # Bare callables in rules are treated as native validators (not classes).
+    return callable(item) and not isinstance(
+        item, (str, bytes, dict, list, tuple, type)
+    )
 
 
 def split_portable_and_native_rules(
@@ -67,8 +66,8 @@ def split_portable_and_native_rules(
         return {}, []
     portable: dict[str, Any] = {}
     native: list[NativeColumnRule] = []
-    for field, entries in rules.items():
-        field_name = str(field)
+    for field_key, entries in rules.items():
+        field_name = str(field_key)
         items = list(entries) if isinstance(entries, (list, tuple)) else [entries]
         portable_items: list[Any] = []
         for item in items:

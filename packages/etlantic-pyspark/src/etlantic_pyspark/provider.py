@@ -196,9 +196,7 @@ class LocalSparkProvider:
         if required and context.resolve_secret is not None:
             return str(context.resolve_secret(text))
         if required and context.resolve_secret is None:
-            raise RuntimeError(
-                f"secret_refs requires resolve_secret for key {text!r}"
-            )
+            raise RuntimeError(f"secret_refs requires resolve_secret for key {text!r}")
         return text
 
 

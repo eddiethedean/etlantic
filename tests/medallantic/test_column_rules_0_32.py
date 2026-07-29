@@ -71,16 +71,16 @@ def test_native_rules_fail_closed_on_local_engine() -> None:
                 layer="bronze",
                 kind="bronze_rules",
                 rules={
-                    "email": [
-                        {"kind": "pyspark_column", "expr_ref": "mod:email_ok"}
-                    ]
+                    "email": [{"kind": "pyspark_column", "expr_ref": "mod:email_ok"}]
                 },
             ),
         ),
     )
     with pytest.raises(LoweringError) as exc:
         lower_document(doc)
-    assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
+    assert any(
+        d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics
+    )
 
 
 def test_native_rules_fail_closed_on_pyspark_engine() -> None:
@@ -95,16 +95,16 @@ def test_native_rules_fail_closed_on_pyspark_engine() -> None:
                 kind="bronze_rules",
                 asset="orders",
                 rules={
-                    "email": [
-                        {"kind": "pyspark_column", "expr_ref": "mod:email_ok"}
-                    ]
+                    "email": [{"kind": "pyspark_column", "expr_ref": "mod:email_ok"}]
                 },
             ),
         ),
     )
     with pytest.raises(LoweringError) as exc:
         lower_document(doc)
-    assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
+    assert any(
+        d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics
+    )
 
 
 def test_native_only_silver_does_not_crash() -> None:
@@ -120,7 +120,9 @@ def test_native_only_silver_does_not_crash() -> None:
     )
     with pytest.raises(LoweringError) as exc:
         lower_document(doc)
-    assert any(d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics)
+    assert any(
+        d.code == MDL130_NATIVE_COLUMN_RULE for d in exc.value.report.diagnostics
+    )
 
 
 def test_callable_none_raises() -> None:

@@ -157,11 +157,17 @@ def test_logical_identities_and_handle() -> None:
 def test_catalog_default_deny_and_production_flag() -> None:
     # Non-production default deny when allow_mutations is False.
     denied = CatalogMutationPolicy(allow_mutations=False)
-    assert denied.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development") is False
+    assert (
+        denied.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development")
+        is False
+    )
 
     # Explicit allow works in non-production.
     allowed = CatalogMutationPolicy(allow_mutations=True)
-    assert allowed.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development") is True
+    assert (
+        allowed.allows(CatalogMutationKind.CREATE_TABLE, profile_name="development")
+        is True
+    )
 
     # production_fail_closed=False falls back to allow_mutations (still deny here).
     openish = CatalogMutationPolicy(
@@ -190,4 +196,3 @@ def test_collect_and_plan_storage_delta_ops() -> None:
     ops = collect_required_delta_operations(profile=profile)
     assert "optimize" in ops
     assert "merge" in ops
-

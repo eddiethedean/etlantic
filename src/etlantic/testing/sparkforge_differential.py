@@ -178,9 +178,8 @@ def run_sparkforge_differential_suite(
             if write_modes.get(subject) != mode:
                 ok = False
                 message = (
-                    (message + "; " if message else "")
-                    + f"missing write mode {subject}={mode} in {write_modes}"
-                )
+                    message + "; " if message else ""
+                ) + f"missing write mode {subject}={mode} in {write_modes}"
         if fixture.classification == "plugin_dependent":
             required = fixture.plugin_capabilities or tuple(
                 fixture.ir.get("metadata", {}).get("plugin_capabilities") or ()
@@ -189,14 +188,11 @@ def run_sparkforge_differential_suite(
             delta_ops = list(
                 fixture.ir.get("metadata", {}).get("delta_operations") or ()
             )
-            if delta_ops and "spark_delta" not in caps and not (
-                set(required) & caps
-            ):
+            if delta_ops and "spark_delta" not in caps and not (set(required) & caps):
                 ok = False
                 message = (
-                    (message + "; " if message else "")
-                    + f"plugin capabilities not reflected on profile: {caps}"
-                )
+                    message + "; " if message else ""
+                ) + f"plugin capabilities not reflected on profile: {caps}"
         results.append(
             SparkForgeDifferentialResult(
                 fixture_id=fixture.fixture_id,
@@ -210,9 +206,7 @@ def run_sparkforge_differential_suite(
 
     failed = [r for r in results if not r.ok]
     if failed:
-        detail = "; ".join(
-            f"{r.fixture_id}: {r.message or 'failed'}" for r in failed
-        )
+        detail = "; ".join(f"{r.fixture_id}: {r.message or 'failed'}" for r in failed)
         raise AssertionError(
             f"SparkForge differential suite failed ({len(failed)}): {detail}"
         )

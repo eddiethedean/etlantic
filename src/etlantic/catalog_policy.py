@@ -56,26 +56,22 @@ class CatalogMutationPolicy:
                 return False
             if self.allowed_kinds and key not in self.allowed_kinds:
                 return False
-            if (
+            return not (
                 namespace is not None
                 and self.allowed_namespaces
                 and namespace not in self.allowed_namespaces
-            ):
-                return False
-            return True
+            )
         # Non-production, or production with production_fail_closed=False:
         # default deny unless explicitly allowed.
         if not self.allow_mutations:
             return False
         if self.allowed_kinds and key not in self.allowed_kinds:
             return False
-        if (
+        return not (
             namespace is not None
             and self.allowed_namespaces
             and namespace not in self.allowed_namespaces
-        ):
-            return False
-        return True
+        )
 
     def authorize(
         self,

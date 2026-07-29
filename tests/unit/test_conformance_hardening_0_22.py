@@ -86,6 +86,12 @@ class _FakeSparkPlugin:
             node_names=region.node_names,
         )
 
+    def cancel(self, *, run_id: str | None = None) -> None:
+        return None
+
+    def execute_storage_op(self, op, *, context=None):
+        raise NotImplementedError("fake plugin does not execute storage ops")
+
 
 def test_spark_conformance_passes_for_honest_plugin() -> None:
     caps = PluginCapabilities(engine="pyspark", spark=True, dataframe=False)

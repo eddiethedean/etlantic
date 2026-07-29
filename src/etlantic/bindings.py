@@ -57,7 +57,9 @@ class AssetBindingRef:
         return cls(
             name=str(data["name"]),
             provider=str(data.get("provider") or "memory"),
-            location=(str(data["location"]) if data.get("location") is not None else None),
+            location=(
+                str(data["location"]) if data.get("location") is not None else None
+            ),
             catalog=(str(data["catalog"]) if data.get("catalog") is not None else None),
             namespace=(
                 str(data["namespace"]) if data.get("namespace") is not None else None
@@ -65,12 +67,16 @@ class AssetBindingRef:
             table=(str(data["table"]) if data.get("table") is not None else None),
             format=(str(data["format"]) if data.get("format") is not None else None),
             jdbc_driver=(
-                str(data["jdbc_driver"]) if data.get("jdbc_driver") is not None else None
+                str(data["jdbc_driver"])
+                if data.get("jdbc_driver") is not None
+                else None
             ),
             secret_refs={
                 str(k): str(v) for k, v in dict(data.get("secret_refs") or {}).items()
             },
-            options={str(k): str(v) for k, v in dict(data.get("options") or {}).items()},
+            options={
+                str(k): str(v) for k, v in dict(data.get("options") or {}).items()
+            },
             cross_schema=bool(data.get("cross_schema", False)),
         )
 

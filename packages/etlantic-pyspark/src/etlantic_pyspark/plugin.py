@@ -24,7 +24,6 @@ from etlantic.spark.protocol import (
     SparkMetrics,
     SparkPlanRegion,
     SparkPluginInfo,
-    SparkUdfPolicy,
     SparkWrite,
     SparkWriteMode,
 )
@@ -338,9 +337,7 @@ class PySparkPlugin:
         opts = dict(options or {})
         path = target.path or target.table or target.name
         if context.job_group and self._session is not None:
-            _set_job_group(
-                self._session, context.job_group, f"etlantic-storage:{op}"
-            )
+            _set_job_group(self._session, context.job_group, f"etlantic-storage:{op}")
         handlers = {
             "optimize": self._delta_optimize,
             "vacuum": self._delta_vacuum,
@@ -760,7 +757,9 @@ class PySparkPlugin:
 
             table = DeltaTable.forPath(self._session, path)
             limit = opts.get("limit")
-            history = table.history(int(limit)) if limit is not None else table.history()
+            history = (
+                table.history(int(limit)) if limit is not None else table.history()
+            )
             rows = history.count()
             handle = self._remember(history, context=context)
         except Exception as exc:
@@ -814,8 +813,7 @@ class PySparkPlugin:
                             "code": "PMDELTA313",
                             "severity": "error",
                             "message": (
-                                "time_travel requires version_as_of or "
-                                "timestamp_as_of."
+                                "time_travel requires version_as_of or timestamp_as_of."
                             ),
                         }
                     ],

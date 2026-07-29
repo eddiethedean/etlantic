@@ -240,7 +240,7 @@ nav:
       - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
       - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Current Version Hub: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.32 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
   - Support:
       - FAQ: 01_GETTING_STARTED/FAQ.md

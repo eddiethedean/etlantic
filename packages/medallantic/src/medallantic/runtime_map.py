@@ -66,7 +66,9 @@ def selection_from_sparkforge(
     return RunSelection.all()
 
 
-def invalidation_from_sparkforge(mode: str | InvalidationMode | None) -> InvalidationMode:
+def invalidation_from_sparkforge(
+    mode: str | InvalidationMode | None,
+) -> InvalidationMode:
     """Map SparkForge rerun/invalidation strings to InvalidationMode."""
     if isinstance(mode, InvalidationMode):
         return mode

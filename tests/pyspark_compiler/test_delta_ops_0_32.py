@@ -8,14 +8,14 @@ import pytest
 
 pytest.importorskip("sparkless")
 
-from etlantic.spark.protocol import (  # noqa: E402
+from etlantic.spark.protocol import (
     DatasetRef,
     SparkCompilationContext,
     SparkExecutionContext,
     SparkPlanRegion,
 )
-from etlantic.testing.spark import run_spark_conformance_suite  # noqa: E402
-from etlantic_pyspark.plugin import PySparkPlugin  # noqa: E402
+from etlantic.testing.spark import run_spark_conformance_suite
+from etlantic_pyspark.plugin import PySparkPlugin
 
 
 def _ctx(step: str = "storage") -> SparkExecutionContext:
@@ -65,9 +65,7 @@ def test_storage_ops_fail_closed_without_delta() -> None:
             options={"version_as_of": 0} if op == "time_travel" else {},
         )
         assert result.diagnostics
-        assert any(
-            str(d.get("severity")) == "error" for d in result.diagnostics
-        ), op
+        assert any(str(d.get("severity")) == "error" for d in result.diagnostics), op
 
 
 @pytest.mark.spark

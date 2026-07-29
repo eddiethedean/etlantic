@@ -55,8 +55,7 @@ def run_spark_conformance_suite(
     claimed_storage = sorted(caps.extras & STORAGE_DELTA_CAPABILITY_EXTRAS)
     if claimed_storage:
         assert caps.supports("spark_delta"), (
-            "storage.delta.* extras require spark_delta; claimed "
-            f"{claimed_storage}"
+            f"storage.delta.* extras require spark_delta; claimed {claimed_storage}"
         )
 
     dataset = plugin.dataset_from_binding(binding=binding)

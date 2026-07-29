@@ -111,7 +111,9 @@ def _builder_to_mapping(
         or type(builder).__name__
     )
     schema = str(
-        getattr(builder, "schema", None) or getattr(builder, "db_schema", None) or "default"
+        getattr(builder, "schema", None)
+        or getattr(builder, "db_schema", None)
+        or "default"
     )
     steps_raw = (
         getattr(builder, "steps", None)
@@ -219,7 +221,7 @@ def _normalize_rules(rules: Any) -> dict[str, Any]:
         items = list(entries) if isinstance(entries, (list, tuple)) else [entries]
         normalized: list[Any] = []
         for item in items:
-            if isinstance(item, str) or isinstance(item, dict):
+            if isinstance(item, (str, dict)):
                 normalized.append(item)
             elif callable(item) and not isinstance(item, type):
                 normalized.append(
@@ -268,7 +270,7 @@ def _scrub_mapping(
                     code="PMSF351",
                     severity=Severity.WARNING,
                     message=f"Omitting secret-like metadata key {key_s!r} from IR.",
-                    path=path + (key_s,),
+                    path=(*path, key_s),
                     phase="sparkforge_live",
                 )
             )
@@ -277,7 +279,7 @@ def _scrub_mapping(
             cleaned[key_s] = _scrub_mapping(
                 value,
                 diagnostics=diagnostics,
-                path=path + (key_s,),
+                path=(*path, key_s),
             )
         else:
             cleaned[key_s] = value
@@ -296,7 +298,7 @@ def _sanitize_mapping(
         cleaned["metadata"] = _scrub_mapping(
             meta,
             diagnostics=diagnostics,
-            path=path + ("metadata",),
+            path=(*path, "metadata"),
         )
     steps = cleaned.get("steps")
     if isinstance(steps, list):

@@ -74,6 +74,7 @@ def test_storage_delta_extra_implications() -> None:
     assert any("storage.delta.merge" in f for f in findings)
     assert STORAGE_DELTA_CAPABILITY_EXTRAS
 
+
 def test_implications_and_conflicts_shapes() -> None:
     implications = capability_implications()
     assert implications["sql_merge"] == frozenset({"sql"})

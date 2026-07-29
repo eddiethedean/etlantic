@@ -490,9 +490,7 @@ def lower_document(
 
             if portable_rules:
                 try:
-                    ruleset = parse_rules_shorthand(
-                        portable_rules, name=step.name
-                    )
+                    ruleset = parse_rules_shorthand(portable_rules, name=step.name)
                 except (RuleDSLError, ValueError) as exc:
                     diagnostics.append(
                         mdl_diagnostic(
@@ -893,7 +891,9 @@ def _record_native_column_rules(
     """
     payload = [rule.to_dict() for rule in native_rules]
     step.metadata.setdefault("native_column_rules", payload)
-    step.metadata.setdefault("required_quality_capabilities", [NATIVE_QUALITY_CAPABILITY])
+    step.metadata.setdefault(
+        "required_quality_capabilities", [NATIVE_QUALITY_CAPABILITY]
+    )
     required = [r for r in native_rules if getattr(r, "required", True)]
     if not required:
         return

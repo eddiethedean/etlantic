@@ -277,7 +277,8 @@ async def cancel_spark_jobs(
             plan_id=plan.plan_id,
             step_name="__cancel__",
             region_id=None,
-            engine=getattr(getattr(plugin, "info", None), "engine", "pyspark") or "pyspark",
+            engine=getattr(getattr(plugin, "info", None), "engine", "pyspark")
+            or "pyspark",
             job_group=job_group,
         )
         with contextlib.suppress(Exception):
