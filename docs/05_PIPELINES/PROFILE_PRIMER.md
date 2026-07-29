@@ -26,7 +26,7 @@ python -m etlantic plan my_pipeline.py:MyPipeline --profile profiles/prod.json
 
 Load and save profiles through the SDK. Prefer shipped file/memory bindings
 (see [Storage today](../06_EXECUTION/STORAGE_TODAY.md)); S3 and warehouse
-storage plugins are **not** shipped in 0.25:
+storage plugins are **not** shipped in 0.33:
 
 ```python
 from etlantic.profile import load_profile, write_profile, production_profile

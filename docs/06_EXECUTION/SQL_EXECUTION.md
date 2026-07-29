@@ -109,8 +109,9 @@ Typical operations include:
 - UPDATE
 - MERGE / UPSERT (only when the plugin advertises `sql_merge`)
 
-Support depends on plugin capabilities. The 0.6 `etlantic-sql` reference
-plugin sets `sql_merge=False`; requiring merge fails closed at planning.
+Support depends on plugin capabilities. PostgreSQL advertises
+`sql_merge=True` (`INSERT … ON CONFLICT`); SQLite remains
+`sql_merge=False` and fails closed at planning when merge is required.
 
 ## Hybrid Execution
 

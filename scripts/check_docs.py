@@ -464,6 +464,64 @@ def main() -> None:
                 "docs/01_GETTING_STARTED/README.md must link current What's New "
                 f"{whats_new_link}"
             )
+        # Adopter-facing migration link text must say prior → current (not
+        # current → current). Ban blanket "does not implement MERGE".
+        expected_migration_label = f"Migration {previous_minor} → {major_minor_for_notes}"
+        bad_migration_label = (
+            f"Migration {major_minor_for_notes} → {major_minor_for_notes}"
+        )
+        ships_in_prior = f"ships in {previous_minor}"
+        adopter_migration_pages = (
+            ROOT / "docs/01_GETTING_STARTED/CURRENT_VERSION.md",
+            ROOT / "docs/01_GETTING_STARTED/UPGRADE.md",
+            ROOT / "docs/01_GETTING_STARTED/WHATS_NEW_"
+            f"{major_minor_for_notes.replace('.', '_')}.md",
+            ROOT / "docs/01_GETTING_STARTED/FAQ.md",
+            ROOT / "docs/01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md",
+            ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
+            ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+        )
+        for path in adopter_migration_pages:
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8")
+            if bad_migration_label in text:
+                raise SystemExit(
+                    f"{path}: mislabeled migration link {bad_migration_label!r}; "
+                    f"use {expected_migration_label!r}"
+                )
+            if (
+                current_migration.name in text
+                and expected_migration_label not in text
+                and f"{previous_minor} → {major_minor_for_notes}" not in text
+            ):
+                # Allow filename-only links in tables (MIGRATION_0_32_TO_0_33)
+                # when the From→To column already states the span.
+                pass
+            if ships_in_prior in text.lower():
+                raise SystemExit(
+                    f"{path}: still says {ships_in_prior!r}; update to "
+                    f"{major_minor_for_notes}"
+                )
+        merge_ban_pages = (
+            ROOT / "docs/01_GETTING_STARTED/INSTALLATION.md",
+            ROOT / "docs/06_EXECUTION/SQL_TUTORIAL.md",
+            ROOT / "docs/06_EXECUTION/SQL_PUSHDOWN.md",
+            ROOT / "docs/06_EXECUTION/SQL_EXECUTION.md",
+        )
+        merge_ban = re.compile(
+            r"does not implement\s+`?MERGE`?",
+            re.IGNORECASE,
+        )
+        for path in merge_ban_pages:
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8")
+            if merge_ban.search(text):
+                raise SystemExit(
+                    f"{path}: blanket 'does not implement MERGE' is outdated; "
+                    "document PostgreSQL sql_merge=True / SQLite sql_merge=False"
+                )
     if not (ROOT / "examples/portable_polars_kernel.py").exists():
         raise SystemExit("Missing examples/portable_polars_kernel.py")
     if not (ROOT / "examples/portable_pandas_kernel.py").exists():
@@ -739,6 +797,7 @@ def main() -> None:
         "CONTRACT_FIRST_TUTORIAL.md",
         "PREFECT_RUN.md",
         "SAMPLE_PROJECT.md",
+        "PRODUCTION_SAMPLE.md",
         "README.md",
     }
     for path in (ROOT / "docs/09_EXAMPLES").glob("*.md"):

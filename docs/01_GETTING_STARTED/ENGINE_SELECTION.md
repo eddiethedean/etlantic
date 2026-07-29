@@ -13,8 +13,8 @@ Start with core local Python. Add one engine at a time.
 | Fast local dataframes | `etlantic[polars]==0.33.0` | `dataframe_engine="polars"` **plus** a `"polars"` implementation | [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md) |
 | Pandas compatibility | `etlantic[pandas]==0.33.0` | `dataframe_engine="pandas"` **plus** a `"pandas"` implementation | [Pandas tutorial (PyPI path)](../06_EXECUTION/PANDAS_TUTORIAL.md) |
 | Cross-engine Polars↔Pandas | `etlantic[dataframes]==0.33.0` | both plugins allowlisted | [Interchange example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) |
-| Keep work in SQL | `etlantic[sql]==0.33.0` | `sql_engine="sql"` | [SQL tutorial](../06_EXECUTION/SQL_TUTORIAL.md) |
-| Local Spark batch | `etlantic[pyspark]==0.33.0` | `spark_engine="pyspark"` | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) |
+| Keep work in SQL | `etlantic[sql]==0.33.0` | `sql_engine="sql"` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) → [SQL tutorial (clone)](../06_EXECUTION/SQL_TUTORIAL.md) |
+| Local Spark batch | `etlantic[pyspark]==0.33.0` | `spark_engine="pyspark"` (needs Java) | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) (clone-assisted) |
 | Emit Airflow DAGs | `etlantic[airflow]==0.33.0` | `orchestrator="airflow"` | [Airflow tutorial](../06_EXECUTION/AIRFLOW_TUTORIAL.md) |
 | Prefect local scheduler | `etlantic[prefect]==0.33.0` | `orchestrator="prefect"` | [Prefect example](../09_EXAMPLES/PREFECT_RUN.md) |
 | Portable transforms (no native impl) | matching engine plugin | `portable_transform_policy="require"` | [Portable transforms](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |

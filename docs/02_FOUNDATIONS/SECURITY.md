@@ -4,14 +4,14 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.32** and the broader
+This chapter covers **controls shipped through 0.33** and the broader
 **proposed threat model**. ETLantic 0.33.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
 attestations, deployment-topology guarantees, or advanced supply-chain
 guarantees; those controls remain adopter-owned.
 
-## Implemented through 0.32
+## Implemented through 0.33
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -29,7 +29,7 @@ guarantees; those controls remain adopter-owned.
 - Versioned `SecurityEvent` audit events
 - Release SBOM digests and GitHub build provenance attestations
 - Plugin SDK `/1` freeze for core protocol families (0.28)
-- Quadruple-minor wire codec burn-in (0.24→…→0.28)
+- Wire codec burn-in across consecutive minors (see [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md))
 ## Required before an unrestricted production claim
 
 - Cross-tenant / multi-tenant isolation guarantees (beyond single-tenant keys)
@@ -764,7 +764,7 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.32 Beta support envelope, automated tests
+Before expanding beyond the bounded 0.33 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -798,7 +798,7 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.32 Beta deployment is bounded stable
+The documented single-tenant/reference 0.33 Beta deployment is bounded stable
 for pilots. Broader production claims require:
 
 - the threat model is reviewed

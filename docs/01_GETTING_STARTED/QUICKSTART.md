@@ -99,22 +99,33 @@ Optional later: `python -m etlantic doctor --profile development`,
 
 Do not skip this step (it is outside the “first success” timing above).
 
-Add a second contract and change **only** the Load annotation so the graph
-wiring is inconsistent (keep `input=` and `asset=` complete so the file still
-parses):
+In the scaffolded `pipeline.py`, apply this **unified diff** (do not replace
+the whole file). Add `Other` and change only the `Load` type annotation:
 
-```python
-class Other(Data):
-    id: int
-    name: str
+```diff
+ from etlantic import Data, Extract, Identity, Load, Pipeline
 
 
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
-    step = Identity.step(rows=raw)
-    # Broken: Load expects Other but upstream step.result is still Row
-    out: Load[Other] = Load(input=step.result, asset="out")
+ class Row(Data):
+     id: int
+     name: str
+
+
++class Other(Data):
++    id: int
++    name: str
++
++
+ class SamplePipeline(Pipeline):
+     raw: Extract[Row] = Extract(asset="rows")
+     step = Identity.step(rows=raw)
+-    out: Load[Row] = Load(input=step.result, asset="out")
++    # Broken: Load expects Other but upstream step.result is still Row
++    out: Load[Other] = Load(input=step.result, asset="out")
 ```
+
+(Exact class names match the `init` scaffold; if your file differs, change
+only the `Load[...]` annotation and keep `input=` / `asset=` intact.)
 
 Re-validate:
 

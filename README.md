@@ -101,17 +101,17 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 
 | Integration | Install | Role |
 |---|---|---|
-| Polars | `etlantic-polars` | Eager/lazy dataframe execution and portable compilation |
-| Pandas | `etlantic-pandas` | Eager dataframe execution and portable compilation |
-| SQL | `etlantic-sql` | Parameterized relational execution and portable SQL compilation |
-| PySpark | `etlantic-pyspark` | Spark execution and portable compilation |
+| Polars | `etlantic-polars` | Eager/lazy dataframe (PyPI tutorial path) |
+| Pandas | `etlantic-pandas` | Eager dataframe (PyPI tutorial path) |
+| SQL | `etlantic-sql` | Relational execution; SQLite demo on PyPI; PostgreSQL for MERGE; deeper tutorials may need a clone |
+| PySpark | `etlantic-pyspark` | Spark execution (needs Java; clone-assisted tutorials) |
 | Airflow | `etlantic-airflow` | Compile plans into DAG artifacts (does not install Airflow) |
 | Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
 | Keyring | `etlantic-keyring` | OS keyring secret provider |
 | SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
-| Medallantic | `medallantic` | SparkForge IR → ETLantic migration adapter (native authoring + quality gates in 0.30; prefer `medallantic` over deprecated `etlantic-sparkforge`) |
-| DataFusion | `etlantic-datafusion` | Experimental query engine stub (Gate B) |
-| FastAPI | `etlantic-fastapi` | Thin 0.30 authoring/service **reference** adapter (not the 1.1 control plane) |
+| Medallantic | `medallantic` | Medallion facade (bronze/silver/gold stay out of core) |
+| DataFusion | `etlantic-datafusion` | **Experimental** stub — not for pilots |
+| FastAPI | `etlantic-fastapi` | Thin authoring/service **reference** adapter |
 
 See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
 for observability (`otel` / `observability` extras) and Arrow helpers.

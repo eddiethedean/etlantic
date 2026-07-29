@@ -14,6 +14,7 @@ interfaces.
   (`PipelineDefinition`, `etlantic.pipeline/1`, builders, service)
 - [Runtime configuration](RUNTIME_CONFIGURATION.md) (Profile, optional `etlantic.toml`, env vars)
 - [Configuration today](CONFIGURATION_TODAY.md) (shipped profile + project toml)
+- [Secrets decision tree](SECRETS_DECISION.md) (SecretRef / env mapping)
 - [Compatibility Matrix](COMPATIBILITY.md)
 - [Portable Compiler Matrix](PORTABLE_COMPILER_MATRIX.md)
 - [Optional Packages](OPTIONAL_PACKAGES.md) (core-first API; plugin READMEs on GitHub)
@@ -30,7 +31,7 @@ interfaces.
 
 ## Future design / proposed 1.0
 
-- [Configuration](CONFIGURATION.md) (**proposed** 1.0 — do not implement for 0.32)
+- [Configuration](CONFIGURATION.md) (**proposed** 1.0 — do not implement for 0.33)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (**proposed** names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,
   `portable-temporal-iana/1`, `portable-nondeterministic/1`,

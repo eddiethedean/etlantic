@@ -1,11 +1,13 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.33.0.** SQLite is used only for this local
-> demonstration; PostgreSQL is the reference backend.
+> **Status: Available in ETLantic 0.33.0.** Prefer the
+> [SQL hello (PyPI path)](SQL_HELLO_PYPI.md) first (SQLite, no clone).
+> This page is the deeper clone companion. PostgreSQL is the reference
+> backend for production; MERGE is PostgreSQL-only.
 
-!!! warning "Clone-assisted path"
-    SQL demos need repository `examples/` (not in the PyPI wheel). After
-    Quickstart success on local/Polars, clone a matching tag to continue here.
+!!! tip "PyPI first"
+    Paste [SQL hello](SQL_HELLO_PYPI.md) after Quickstart. Come here only when
+    you want the repository `examples/sql_to_sql.py` fusion demo.
 
 ## Install and run (clone companion)
 
@@ -43,5 +45,6 @@ no intermediate rows into Python.
 Complete source:
 [`examples/sql_to_sql.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/sql_to_sql.py).
 
-The reference plugin does not implement `MERGE`; requiring it fails closed.
+PostgreSQL advertises `sql_merge=True` (`INSERT … ON CONFLICT`). SQLite
+remains `sql_merge=False` and fails closed if merge is required.
 See [SQL execution](SQL_EXECUTION.md) and [known limitations](../10_REFERENCE/KNOWN_ISSUES.md).

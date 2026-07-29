@@ -9,7 +9,7 @@
 2. [Profiles](PROFILES.md) — fields, resolution, JSON shape
 3. [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) — fail-closed allowlist and pilot checklist
 4. [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md) — CLI / env / `etlantic.toml` today
-5. [Configuration in 0.25](../10_REFERENCE/CONFIGURATION_TODAY.md) — what ships vs future design
+5. [Configuration today](../10_REFERENCE/CONFIGURATION_TODAY.md) — shipped Profile / toml fields vs future design
 
 ## Essentials
 

@@ -4,7 +4,7 @@ Prefer pages marked **Available in 0.33** and the Green path on the docs
 home. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer adoption audit:
-[Documentation audit 0.32](../11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_32.md).
+[Documentation audit 0.33](../11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md).
 
 ## How to read a page
 

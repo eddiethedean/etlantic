@@ -154,8 +154,9 @@ export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
 ```
 
-Select SQL with `Profile(sql_engine="sql")`. The reference plugin does not
-implement `MERGE` (`sql_merge=False`). Select Spark with
+Select SQL with `Profile(sql_engine="sql")`. PostgreSQL advertises
+`sql_merge=True` (`INSERT … ON CONFLICT`). SQLite remains
+`sql_merge=False` and fails closed if merge is required. Select Spark with
 `Profile(spark_engine="pyspark")`.
 
 Airflow: `etlantic compile … --target airflow` via `etlantic-airflow` (compile

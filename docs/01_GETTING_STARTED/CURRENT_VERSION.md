@@ -24,12 +24,12 @@ under `etl.quality` (`etlantic.quality/1`).
 |---|---|
 | Author without classes / JSON round trip | [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
 | Native bronze/silver/gold + portable rules | `pip install medallantic` / [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md) |
-| SQL / SqlPipelineBuilder migration | [What's new in 0.33](WHATS_NEW_0_33.md) / [Migration 0.33 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
+| SQL / SqlPipelineBuilder migration | [What's new in 0.33](WHATS_NEW_0_33.md) / [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 | Visual builder / service integration | [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | FastAPI reference adapter | `pip install etlantic-fastapi` / [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | Read and write JSON or CSV | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Execute with Polars | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Upgrade from 0.33 | [Migration 0.33 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
+| Upgrade from 0.32 | [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 
 ## Status vocabulary
 

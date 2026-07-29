@@ -37,10 +37,15 @@ warehouse_password = SecretRef(
 ```python
 from etlantic.secrets import EnvSecretProvider
 
+# Optional explicit prefix (not ambient):
 provider = EnvSecretProvider(prefix="ETLANTIC_SECRET_")
 # Resolves SecretRef(name="WAREHOUSE_PASSWORD") from
 # ETLANTIC_SECRET_WAREHOUSE_PASSWORD
 ```
+
+Default (no custom prefix): `SecretRef(name="database_password")` resolves from
+`DATABASE_PASSWORD`. See the normative
+[Secrets decision tree](../10_REFERENCE/SECRETS_DECISION.md).
 
 Use environment variables for CI and local smoke tests. Prefer a real secret
 manager in production once provider plugins ship.

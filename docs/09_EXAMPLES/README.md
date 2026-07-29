@@ -9,20 +9,22 @@
 5. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
 6. Runnable scripts below
 
-Aspirational design studies live on GitHub under `docs/09_EXAMPLES/` (for
-example `CSV_TO_CSV.md`, `END_TO_END.md`) and are **excluded from the product
-docs nav**—not installable tutorials. Prefer the runnable guides below and the
-PyPI paths in [Polars](../06_EXECUTION/POLARS_TUTORIAL.md) /
-[Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md) tutorials.
+Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
+0.33. Prefer the runnable guides below and the PyPI paths in
+[Polars](../06_EXECUTION/POLARS_TUTORIAL.md) /
+[Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md) /
+[SQL hello](../06_EXECUTION/SQL_HELLO_PYPI.md).
 
 ## Runnable guides (docs)
 
+- [Production sample](PRODUCTION_SAMPLE.md) — allowlist + SARIF + file I/O
 - [Sample multi-file project](SAMPLE_PROJECT.md) — `examples/sample_project/`
 - [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — JSON and CSV
 - [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) — secrets, schema, SARIF
 - [Polars](../06_EXECUTION/POLARS_TUTORIAL.md)
 - [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md)
-- [SQL](../06_EXECUTION/SQL_TUTORIAL.md)
+- [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md)
+- [SQL](../06_EXECUTION/SQL_TUTORIAL.md) (clone companion)
 - [PySpark](../06_EXECUTION/PYSPARK_TUTORIAL.md)
 - [Airflow](../06_EXECUTION/AIRFLOW_TUTORIAL.md)
 - [Prefect direct execution](PREFECT_RUN.md) — `examples/prefect_run.py`
@@ -138,6 +140,6 @@ commands that go beyond the shipped surface — prefer the runnable guides and
 | Structured Streaming | Experimental foundation only |
 | Portable PySpark-style transformations | [Portable Transformation](PORTABLE_TRANSFORMS.md) |
 
-Do not use a design study as an installation or API reference. The
-[capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) and
-[API reference](../10_REFERENCE/API_REFERENCE.md) define the current boundary.
+Prefer the runnable guides above and the
+[capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) /
+[API reference](../10_REFERENCE/API_REFERENCE.md) for the current boundary.

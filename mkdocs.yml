@@ -11,22 +11,6 @@ exclude_docs: |
   theme/README.md
   11_DEVELOPMENT/CURSOR_EXTRACT_LOAD_MIGRATION_PROMPT.md
   11_DEVELOPMENT/PREFECT_SPIKE_NOTES.md
-  09_EXAMPLES/CSV_TO_CSV.md
-  09_EXAMPLES/CSV_TO_SQL.md
-  09_EXAMPLES/SQL_TO_SQL.md
-  09_EXAMPLES/PANDAS_PIPELINE.md
-  09_EXAMPLES/POLARS_PIPELINE.md
-  09_EXAMPLES/AIRFLOW_PIPELINE.md
-  09_EXAMPLES/MULTI_OUTPUT.md
-  09_EXAMPLES/CALLBACKS.md
-  09_EXAMPLES/ASYNC_PIPELINES.md
-  09_EXAMPLES/CONTRACT_FIRST.md
-  09_EXAMPLES/CODE_FIRST.md
-  09_EXAMPLES/END_TO_END.md
-  09_EXAMPLES/SQL_TO_PYSPARK.md
-  09_EXAMPLES/PYSPARK_TO_SQL.md
-  09_EXAMPLES/PYSPARK_TO_DELTA.md
-  09_EXAMPLES/STREAMING_PYSPARK.md
 
 # Historical archive pages remain buildable (linked from ARCHIVE_INDEX) but
 # intentionally omit from the primary nav to reduce adopter noise.
@@ -239,20 +223,24 @@ nav:
       - Project Structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
       - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
       - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
+      - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
+      - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
+      - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
       - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
       - Current 0.33 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
+      - Experimental surfaces: 01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md
   - Support:
       - FAQ: 01_GETTING_STARTED/FAQ.md
       - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - Upgrade: 01_GETTING_STARTED/UPGRADE.md
   - Evaluate:
       - Evaluator Brief: 01_GETTING_STARTED/EVALUATOR.md
-      - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Capabilities and Limitations: 01_GETTING_STARTED/CAPABILITIES.md
       - Compare: 01_GETTING_STARTED/COMPARE.md
       - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
       - Security: 02_FOUNDATIONS/SECURITY.md
+      - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Migration from other tools: 01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
   - Release notes:
       - Changelog: CHANGELOG.md
@@ -291,9 +279,6 @@ nav:
       - DTCS: 04_TRANSFORMATIONS/DTCS.md
       - Portable Transformations: 04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md
       - Portable Functions: 04_TRANSFORMATIONS/PORTABLE_FUNCTIONS.md
-      - Portable vs Native: 01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
-      - Portable failure cookbook: 01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
-      - Interchange Gate A FAQ: 01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
       - Implementations: 04_TRANSFORMATIONS/IMPLEMENTATIONS.md
       - Callbacks: 04_TRANSFORMATIONS/CALLBACKS.md
       - Error Handling: 04_TRANSFORMATIONS/ERROR_HANDLING.md
@@ -334,6 +319,7 @@ nav:
           - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
           - Polars (tutorial): 06_EXECUTION/POLARS_TUTORIAL.md
           - Pandas (tutorial): 06_EXECUTION/PANDAS_TUTORIAL.md
+          - SQL hello (PyPI): 06_EXECUTION/SQL_HELLO_PYPI.md
           - SQL (tutorial): 06_EXECUTION/SQL_TUTORIAL.md
           - PySpark (tutorial): 06_EXECUTION/PYSPARK_TUTORIAL.md
           - Airflow (tutorial): 06_EXECUTION/AIRFLOW_TUTORIAL.md
@@ -391,6 +377,7 @@ nav:
   - Examples:
       - Runnable Guides:
           - Overview: 09_EXAMPLES/README.md
+          - Production sample: 09_EXAMPLES/PRODUCTION_SAMPLE.md
           - Sample multi-file project: 09_EXAMPLES/SAMPLE_PROJECT.md
           - Prefect Direct Execution: 09_EXAMPLES/PREFECT_RUN.md
           - Airflow Compile: 09_EXAMPLES/AIRFLOW_COMPILE.md
@@ -410,6 +397,7 @@ nav:
       - Compatibility: 10_REFERENCE/COMPATIBILITY.md
       - Configuration in 0.33.0: 10_REFERENCE/CONFIGURATION_TODAY.md
       - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
+      - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
       - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
       - Diagnostics catalog: 10_REFERENCE/DIAGNOSTICS_CATALOG.md
       - Exceptions: 10_REFERENCE/EXCEPTIONS.md
@@ -436,6 +424,7 @@ nav:
       - Exit gate 0.32: 11_DEVELOPMENT/EXIT_GATE_0_32.md
       - Migration 0.32 → 0.33: 11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md
       - Migration 0.31 → 0.32: 11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md
+      - Documentation audit 0.33: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md
       - Documentation audit 0.32: 11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_32.md
       - Facade packages: 11_DEVELOPMENT/FACADE_PACKAGES.md
       - External plugin feedback: 11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md

@@ -227,18 +227,26 @@ Do not silently switch profile names within one workflow.
 
 ## A Pandas, Polars, SQL, Spark, or Airflow example fails
 
-Install the matching plugin and set the corresponding profile engine
-(`dataframe_engine`, `sql_engine`, `spark_engine`, or `orchestrator`).
+**Prefer PyPI docs paths first** (no clone):
+
+| Need | Install | Docs path |
+|---|---|---|
+| Polars on an `init` project | `pip install 'etlantic[polars]==0.33.0'` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
+| Pandas on an `init` project | `pip install 'etlantic[pandas]==0.33.0'` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
+| SQL hello (SQLite) | `pip install 'etlantic[sql]==0.33.0'` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) |
+| Production trust / allowlist | core only | [Capabilities CI starter](CAPABILITIES.md#ci-starter) |
+
+Clone companions (optional, not in the wheel):
 
 | Need | Install | Example |
 |---|---|---|
-| Polars portable kernel | `pip install 'etlantic-polars==0.33.0'` or `uv sync --group dataframes` | checkout `examples/portable_polars_kernel.py` |
-| Polars / Pandas native | `pip install 'etlantic-polars==0.33.0' 'etlantic-pandas==0.33.0'` or `uv sync --group dataframes` | checkout `examples/dataframe_parity.py` |
-| Polars ↔ Pandas Gate A | same as above | checkout `examples/interchange_polars_pandas.py` |
-| SQL | `pip install 'etlantic-sql==0.33.0'` or `uv sync --group sql` | checkout `examples/sql_to_sql.py` |
-| PySpark | `pip install 'etlantic-pyspark==0.33.0'` or `uv sync --group pyspark` | checkout `examples/pyspark_local.py` |
-| Airflow compile | `pip install 'etlantic-airflow==0.33.0'` or `uv sync --group airflow` | checkout `examples/airflow_compile.py` |
-| Medallantic | `pip install 'medallantic==0.33.0'` or `uv sync --group medallantic` | `tests/medallantic/` |
+| Polars portable kernel | `pip install 'etlantic-polars==0.33.0'` | `examples/portable_polars_kernel.py` |
+| Polars / Pandas native | `pip install 'etlantic-polars==0.33.0' 'etlantic-pandas==0.33.0'` | `examples/dataframe_parity.py` |
+| Polars ↔ Pandas Gate A | same as above | `examples/interchange_polars_pandas.py` |
+| SQL fusion demo | `pip install 'etlantic-sql==0.33.0'` | `examples/sql_to_sql.py` |
+| PySpark | `pip install 'etlantic-pyspark==0.33.0'` (+ Java) | `examples/pyspark_local.py` |
+| Airflow compile | `pip install 'etlantic-airflow==0.33.0'` | `examples/airflow_compile.py` |
+| Medallantic | `pip install 'medallantic==0.33.0'` | `tests/medallantic/` |
 
 Airflow compilation is available via `etlantic-airflow`. The shipped
 `etlantic-prefect` local MVP is a direct-execution scheduler
@@ -256,7 +264,8 @@ Pandas boundaries and remains available in 0.33.
 | Plan fails closed on descriptor / mechanism | Both plugins must advertise compatible `interchange_mechanisms`; see Plugin SDK |
 | Expecting PySpark or SQL Gate A | Out of scope — stay on Polars↔Pandas or keep a single engine |
 | Treating Arrow helpers as Gate A | Best-effort Arrow conversion is **not** the Gate A contract; use planned descriptors / evidence |
-| `examples/interchange_polars_pandas.py` missing | Script is checkout-only; paste from docs or clone the repo |
+| `examples/interchange_polars_pandas.py` missing | Script is checkout-only; use [Interchange docs](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) or clone |
+| SQL path unclear without clone | Use [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) first |
 
 See [Interchange Gate A FAQ](INTERCHANGE_GATE_A_FAQ.md) and
 [Polars ↔ Pandas Interchange](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md).

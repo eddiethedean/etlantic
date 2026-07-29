@@ -65,8 +65,8 @@ Typical pushdown candidates include:
 - CREATE TABLE AS SELECT
 - MERGE / UPSERT (only when the plugin advertises `sql_merge`)
 
-Support depends on the selected SQL dialect and plugin capabilities. The 0.6
-reference plugin does not implement MERGE.
+Support depends on the selected SQL dialect and plugin capabilities.
+PostgreSQL advertises `sql_merge=True`; SQLite remains `sql_merge=False`.
 
 ## Predicate Pushdown
 

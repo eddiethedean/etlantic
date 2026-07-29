@@ -108,11 +108,12 @@ string is loaded as a file only when that file exists.
 | `SPARKLESS_TEST_MODE` | PySpark test/shim paths | Non-`pyspark` values select sparkless behavior; primarily a test switch |
 
 The built-in `EnvSecretProvider` also reads environment variables, but there
-is no automatic ETLantic-wide prefix. A `SecretRef` named `database_password`
-is read from `DATABASE_PASSWORD`; a non-default key such as `token` is read
-from `DATABASE_PASSWORD_TOKEN`. Applications may instantiate
-`EnvSecretProvider(prefix="ETLANTIC_SECRET_")` themselves and register it on a
-runtime, but `ETLANTIC_SECRET_*` is not an ambient core convention.
+is no automatic ETLantic-wide prefix. See the normative
+[Secrets decision tree](SECRETS_DECISION.md):
+
+- Default provider: `SecretRef(name="database_password")` → `DATABASE_PASSWORD`
+- Optional explicit prefix: register `EnvSecretProvider(prefix="ETLANTIC_SECRET_")`
+  yourself; `ETLANTIC_SECRET_*` is **not** an ambient core convention.
 
 ETLantic 0.33.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
 `ETLANTIC_PROJECT`, logging overrides, or output-format overrides. Names on

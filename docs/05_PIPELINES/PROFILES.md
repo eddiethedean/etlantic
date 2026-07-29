@@ -39,28 +39,31 @@ logical behavior.
 
 ## What a Profile Defines
 
-A profile may define:
+A profile may define these **shipped** fields (see
+[Configuration today](../10_REFERENCE/CONFIGURATION_TODAY.md) for the full
+table):
 
-- Execution engine
-- Orchestrator
-- Dataframe backend
-- Resource / logical asset maps (`assets`; legacy `bindings` is diagnosed on load)
+- Execution engines (`dataframe_engine`, `sql_engine`, `spark_engine`)
+- Orchestrator (`orchestrator`)
+- Logical asset maps (`assets`; legacy `bindings` fails closed with `PMCFG111`)
 - Explicit `security_mode` (`development` | `test` | `production`) for trust policy
-- Extract asset resolution
-- Load asset resolution
-- Secret providers
-- Validation mode
-- Logging configuration
-- Retry policies
-- Concurrency limits
-- Timeouts
-- Deployment metadata
-- SQL dialect or Spark provider
-- Artifact and checkpoint locations
-- Plugin-specific compiler options
+- `security_domain`, `tenant`, and `environment` for artifact/cache isolation
+- Secret references and secret-provider bindings (`secrets`, `secret_providers`)
+- Resource bindings (`resources`)
+- Validation policy name (`validation_policy`)
+- Concurrency, timeout, and retry limits (`concurrency`, `timeout_seconds`,
+  `retry_max_attempts`)
+- Portable schedule / execution intent (`schedule`, `execution`)
+- Required engine/orchestrator capability sets
+- Plugin allowlist (`plugin_allowlist`) and optional capability probe
 - Portable transformation policy (`require`, `prefer`, or `native`)
+- Safe I/O and outbound policy overrides (`safe_io`, `outbound`)
+- User metadata (`metadata`)
 
-Profiles never redefine pipeline contracts.
+Profiles never redefine pipeline contracts. Logging configuration, durable
+checkpoint stores, and deployment-topology metadata are **not** first-class
+Profile fields in 0.33 — keep those outside ETLantic or in adopter-owned
+orchestration.
 
 Profiles also must not:
 

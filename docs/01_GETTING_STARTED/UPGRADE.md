@@ -1,5 +1,9 @@
 # Upgrade Hub
 
+!!! warning "Upgraders only"
+    New users: start at the [docs home green path](../README.md) or
+    [Quickstart](QUICKSTART.md). This page is for migrating between minors.
+
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
@@ -45,8 +49,8 @@ and first-party plugins to the **same minor** after upgrading.
 | 0.28 → 0.29 | Native MedallionPipeline authoring (M1); facade conformance kit |
 | 0.29 → 0.30 | Portable quality AST + Medallantic `rules=` → quality gates (M2) |
 | 0.30 → 0.31 | Execution / state / materialization (M3) |
-| 0.33 → 0.33 | SQLAlchemy / relational differential parity (M5) |
-| 0.31 → 0.33 | PySpark / Delta differential parity (M4) |
+| 0.31 → 0.32 | PySpark / Delta differential parity (M4) |
+| 0.32 → 0.33 | SQLAlchemy / relational differential parity (M5) |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -55,8 +59,8 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
-| 0.33 → 0.33 | [MIGRATION_0_32_TO_0_33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
-| 0.31 → 0.33 | [MIGRATION_0_31_TO_0_32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
+| 0.32 → 0.33 | [MIGRATION_0_32_TO_0_33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
+| 0.31 → 0.32 | [MIGRATION_0_31_TO_0_32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
 | 0.30 → 0.31 | [MIGRATION_0_30_TO_0_31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) |
 | 0.29 → 0.30 | [MIGRATION_0_29_TO_0_30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md) |
 | 0.28 → 0.29 | [MIGRATION_0_28_TO_0_29](../11_DEVELOPMENT/MIGRATION_0_28_TO_0_29.md) |
@@ -243,21 +247,21 @@ See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.33.0` and matching plugins | Mix 0.33 plugins with 0.33 core |
+| Pin `etlantic==0.33.0` and matching plugins | Mix 0.33 plugins with 0.32 (or other) core |
 | Use PostgreSQL when requiring `sql_merge` | Expect SQLite to advertise merge |
 | Prefer `medallantic.migrate.sql.from_sql_pipeline_builder` | Embed secrets in builder metadata |
 | Expect wire-schema stay on `/1` ids | Expect `pipeline/2` in 0.33 |
 
-See [Migration 0.33 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md).
+See [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md).
 
-## 0.33 configuration cheat sheet
+## 0.32 configuration cheat sheet
 
 | Change | Use instead |
 |---|---|
 | Coarse `spark_delta` for maintenance | Fine-grained `storage.delta.*` extras |
 | SparkForge live migration | `medallantic.migrate.sparkforge.from_pipeline_builder` |
 | Native Column rules | Plugin-native `quality.pyspark_column` (not portable AST) |
-| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.33 |
+| Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.32 |
 
 See [Migration 0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md).
 

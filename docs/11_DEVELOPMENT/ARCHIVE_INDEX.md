@@ -8,6 +8,7 @@
 
 - [Exit gate 0.32](EXIT_GATE_0_32.md)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
+- [Documentation audit 0.33](DOCUMENTATION_AUDIT_0_33.md)
 - [Documentation audit 0.32](DOCUMENTATION_AUDIT_0_32.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap (GitHub)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)

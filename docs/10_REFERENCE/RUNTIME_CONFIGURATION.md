@@ -42,7 +42,11 @@ resolve from `profiles/{name}.json`, built-ins, or explicit JSON paths.
 |---|---|---|
 | `ETLANTIC_SQL_URL` | `etlantic-sql` | SQLAlchemy URL (PostgreSQL reference; SQLite demo-only) |
 | `ETLANTIC_SPARK_BACKEND` | `etlantic-pyspark` tests | Set to `sparkless` for JVM-free Spark tests |
-| `ETLANTIC_SECRET_*` | `EnvSecretProvider` | Secret values when using the env provider with that prefix |
+
+Secrets: follow the [Secrets decision tree](SECRETS_DECISION.md). The default
+`EnvSecretProvider` maps `SecretRef(name="database_password")` to
+`DATABASE_PASSWORD`. `ETLANTIC_SECRET_*` applies **only** when you register
+`EnvSecretProvider(prefix="ETLANTIC_SECRET_")` yourself — it is not ambient.
 
 Example:
 
@@ -66,7 +70,7 @@ protocol. JSON console logging is available without OTel. See
 
 ## Not shipped
 
-Do not configure these as if they exist in 0.21:
+Do not configure these as if they exist in 0.33:
 
 - `ETLANTIC_CONFIG` / `ETLANTIC_PROFILE` / `ETLANTIC_PROJECT` auto-loading
 - AWS Secrets Manager / Vault providers (OS keyring is optional via
@@ -74,10 +78,12 @@ Do not configure these as if they exist in 0.21:
 
 Proposed 1.0 names beyond the optional project toml live under Future Design:
 [Configuration](CONFIGURATION.md) and
-[Environment Variables](ENVIRONMENT_VARIABLES.md).
+[Environment Variables](ENVIRONMENT_VARIABLES.md). Normative secret mapping:
+[Secrets decision tree](SECRETS_DECISION.md).
 
 ## See also
 
 - [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
 - [Secrets Management](../06_EXECUTION/SECRETS_MANAGEMENT.md)
+- [Secrets decision tree](SECRETS_DECISION.md)
 - [Compatibility](COMPATIBILITY.md)

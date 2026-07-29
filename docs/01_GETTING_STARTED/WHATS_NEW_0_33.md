@@ -28,7 +28,7 @@
   (`medallantic.migrate.sql.from_sql_pipeline_builder`)
 - Non-portable **Moltres / SQLAlchemy rules** (`quality.moltres_expr`, `MDL132`)
 - Differential suite: `etlantic.testing.run_sql_builder_differential_suite`
-- [Migration 0.33 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) and
+- [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) and
   [Exit gate 0.33](../11_DEVELOPMENT/EXIT_GATE_0_33.md)
 
 ## Not in 0.33

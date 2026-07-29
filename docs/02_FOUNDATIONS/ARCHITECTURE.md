@@ -272,7 +272,7 @@ Region formation depends on:
 
 The core depends on public protocols rather than backend packages.
 
-**Shipped** extension families (0.21):
+**Shipped** extension families (0.33):
 
 | Extension | Responsibility |
 |---|---|
@@ -343,7 +343,7 @@ semantics are predictable.
 
 ## Resource Architecture
 
-!!! warning "Future design (not shipped in 0.32)"
+!!! warning "Future design (not shipped in 0.33)"
     Third-party **resource / storage / observability provider protocols** are
     **not** shipped. Built-in storage bindings and profile `resources` metadata
     exist today; see [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and

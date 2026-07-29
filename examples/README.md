@@ -47,6 +47,17 @@ uv run python -m examples.sample_project.run_local
 Same story split across `contracts.py`, `transforms.py`, `pipeline.py`, and
 `run_local.py`. See [Sample project](../docs/09_EXAMPLES/SAMPLE_PROJECT.md).
 
+## Production-shaped pilot (docs / local)
+
+```bash
+# requires etlantic-polars
+uv sync --group polars
+uv run python examples/sample_pilot/run_pilot.py
+```
+
+Production `security_mode` + allowlist + JSON file I/O. See
+[Production sample](../docs/09_EXAMPLES/PRODUCTION_SAMPLE.md).
+
 ## Portable Polars / Pandas (docs / local)
 
 ```bash

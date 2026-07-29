@@ -66,7 +66,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 |---|---|
 | Version pins | Pin `etlantic==0.33.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 | SBOM / attestations | Release CI digests + GitHub attestations — see [Verify release attestations](#verify-release-attestations) below |

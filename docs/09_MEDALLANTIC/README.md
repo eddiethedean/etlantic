@@ -20,7 +20,7 @@ Plugins and providers
     Medallion semantics remain in `medallantic`. ETLantic core does not acquire
     bronze, silver, gold, or medallion-specific runtime branches.
 
-## What ships in 0.32
+## What ships in 0.33
 
 - native class and fluent-builder authoring
 - deterministic lowering to public `PipelineDefinition`
@@ -31,6 +31,8 @@ Plugins and providers
 - secret-free SparkForge IR migration **and** live `from_pipeline_builder`
 - fine-grained `storage.delta.*` capability map + classified differential suite
 - PySpark Column / callable rule path (`MDL130` fail-closed off Spark)
+- SQLAlchemy / `SqlPipelineBuilder` live bridge + dialect tiers (M5)
+- Non-portable Moltres / SQLAlchemy rules (`quality.moltres_expr`)
 - stable `MDL*` diagnostics and facade conformance
 
 Native PySpark Column and Moltres-only semantics remain subject to their

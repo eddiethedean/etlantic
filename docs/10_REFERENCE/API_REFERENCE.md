@@ -70,6 +70,29 @@ These symbols are on the curated root facade (`from etlantic import …` or
 | `PipelineRunReport` | `etlantic.reports` | Structured run outcomes |
 | `SecretRef` | `etlantic.secrets` | Runtime-only secret reference |
 
+## Top-10 API cookbook
+
+Parameters, returns, and common failures for the APIs most adopters call.
+Full signatures: generated pages below. Diagnostic codes:
+[Diagnostics catalog](DIAGNOSTICS_CATALOG.md).
+
+| API | Key parameters | Returns | Common failures |
+|---|---|---|---|
+| `Pipeline.validate` | `profile`, `runtime` | `ValidationReport` | Empty production allowlist (`PMPLUG401`); wiring (`PMPIPE*`); trust (`PMPLUG*`) |
+| `Pipeline.plan` | `profile`, `runtime` | `PipelinePlan` | Missing plugins/assets/capabilities; fingerprint/schema on wire |
+| `Pipeline.run` / `arun` | `profile`, `runtime`, `plan` | `PipelineRunReport` | Fingerprint mismatch; storage/IO policy; cancelled/timeout |
+| `Pipeline.explain_plan` | `profile` | Explain payload | Same planning failures as `plan` |
+| `Pipeline.inspect` | — | Logical graph summary | Model definition errors |
+| `Transformation.step` | port bindings | Symbolic `Step` | Unknown bindings → `ModelDefinitionError` |
+| `Transformation.implementation` | `engine` name | Decorator | Replaces same class/engine in-process |
+| `Profile` / `load_profile` | JSON path or fields | `Profile` | Legacy `bindings` only → `PMCFG111`; invalid `security_mode` |
+| `plan_pipeline` | pipeline + profile | `PipelinePlan` | Same as `Pipeline.plan` |
+| `compile_plan` | plan + target | Artifacts | Missing orchestrator plugin; fingerprint verify |
+
+Worked production failure: empty allowlist → `PMPLUG401` (CLI exit `11`).
+See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) and
+[Secrets decision tree](SECRETS_DECISION.md).
+
 Owning-module helpers (not curated root — import from the module):
 
 | Symbol | Import | Notes |

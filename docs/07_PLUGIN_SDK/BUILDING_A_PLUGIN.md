@@ -40,7 +40,7 @@ Start with the narrowest protocol that owns the behavior:
 | Secret provider | `etlantic.secrets` | Runtime/profile registration | `run_secret_conformance_suite` |
 
 Storage, resource, and observability extension documents describe integration
-patterns that are **not** backed by package entry-point discovery in **0.32**
+patterns that are **not** backed by package entry-point discovery in **0.33**
 (many remain Future design / Design Proposals). Do
 not publish against a proposed discovery group. Use the public runtime/profile
 registration surface documented for that category.
@@ -72,6 +72,7 @@ etlantic-acme/
 │   └── etlantic_acme/
 │       ├── __init__.py
 │       ├── plugin.py
+│       ├── etlantic-plugin-manifest.json
 │       └── py.typed
 └── tests/
     ├── test_conformance.py
@@ -81,6 +82,68 @@ etlantic-acme/
 
 The `py.typed` marker is required for a typed distribution. Keep backend
 dependencies in this package rather than adding them to ETLantic core.
+
+### Manifest + digest (required for production)
+
+Production discovery authorizes plugins from a static
+`etlantic-plugin-manifest.json` **before** importing entry points. A package
+without a valid manifest/digest fails closed with `PMPLUG411` under
+`security_mode="production"`.
+
+Ship the file inside the import package (same directory as `__init__.py`) so
+it is on the wheel. Schema id: `etlantic.plugin_manifest/1`.
+
+Minimal shape:
+
+```json
+{
+  "schema": "etlantic.plugin_manifest/1",
+  "package": "etlantic-acme",
+  "version": "0.1.0",
+  "protocol_range": "etlantic.dataframe/1",
+  "capabilities": ["dataframe"],
+  "privileges": [],
+  "provenance": {"publisher": "acme"},
+  "entries": [
+    {
+      "group": "etlantic.dataframe_plugins",
+      "name": "acme",
+      "engine": "acme",
+      "protocol": "etlantic.dataframe/1",
+      "target": "etlantic_acme:create_plugin",
+      "capabilities": ["dataframe", "eager"]
+    }
+  ],
+  "digest": "sha256:REPLACE_AFTER_COMPUTE"
+}
+```
+
+Rules:
+
+1. `package` must match the distribution / allowlist identity (not a short
+   engine nickname alone).
+2. `entries[].target` must match the entry-point factory.
+3. `digest` is SHA-256 over the canonical JSON **excluding** the `digest`
+   field (`sha256:…`). Tampered or missing digests fail with `PMPLUG411`.
+4. Production profiles list the **package** name in `plugin_allowlist`
+   (for example `"etlantic-acme": "==0.1.0"`).
+
+Regenerate digests after editing the manifest:
+
+```bash
+uv run python scripts/check_plugin_manifests.py --write-digests
+```
+
+Third-party packages outside this monorepo can compute the digest with
+`etlantic.plugin_manifest.compute_manifest_digest` after building the payload
+dict without a `digest` key. Verify with:
+
+```bash
+python -m etlantic plugin compatibility etlantic-acme --format json
+```
+
+See [Protocol evolution — Manifests](PROTOCOL_EVOLUTION.md#manifests-and-discovery)
+and [Distribution](DISTRIBUTION.md).
 
 A minimal `pyproject.toml` is:
 

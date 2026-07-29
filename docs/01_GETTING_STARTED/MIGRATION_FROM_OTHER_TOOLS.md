@@ -58,5 +58,5 @@ or keep the existing orchestrator and call ETLantic validate/plan from CI.
 ## Next
 
 - [Compare](COMPARE.md) — positioning vs dbt / Airflow / Pandera
-- [Capabilities](CAPABILITIES.md) — what ships in 0.32
+- [Capabilities](CAPABILITIES.md) — what ships in 0.33
 - [Evaluator brief](EVALUATOR.md) — diligence packet
