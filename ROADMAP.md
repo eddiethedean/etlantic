@@ -3164,6 +3164,8 @@ Tracking: [EXIT_GATE_0_32.md](docs/11_DEVELOPMENT/EXIT_GATE_0_32.md).
 
 ## 0.33 — SQLAlchemy and Relational Differential Parity
 
+**Status: shipped in 0.33.0.**
+
 **Medallantic phase:** M5 — SQL pipeline-builder parity.
 
 **Objective:** use the legacy SQL builder to harden ETLantic's relational,

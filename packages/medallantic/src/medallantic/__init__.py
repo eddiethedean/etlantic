@@ -61,7 +61,7 @@ from medallantic.runtime_map import (
 )
 from medallantic.schema import MedallionDocument, MedallionStep
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",

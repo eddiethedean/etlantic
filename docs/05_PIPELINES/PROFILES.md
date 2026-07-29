@@ -80,7 +80,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.32.0",
+        "etlantic-polars": "==0.33.0",
     },
 )
 
@@ -89,7 +89,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.32.0",
+        "etlantic-sql": "==0.33.0",
     },
 )
 ```

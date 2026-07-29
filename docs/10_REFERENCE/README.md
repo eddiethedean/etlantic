@@ -1,6 +1,6 @@
 # Reference
 
-This section separates ETLantic **0.32** shipped behavior from proposed 1.0
+This section separates ETLantic **0.33** shipped behavior from proposed 1.0
 interfaces.
 
 ## Shipped

@@ -488,8 +488,72 @@ class SqlCompiler:
                 },
             )
         if write.intent is WriteIntentKind.MERGE:
-            raise ValueError(
-                "MERGE is not implemented by the 0.6 reference plugin; "
-                "fail closed before mutation"
+            if not self.supports_merge or self.dialect != "postgresql":
+                raise ValueError(
+                    "MERGE / upsert requires PostgreSQL with sql_merge "
+                    "advertised; fail closed before mutation"
+                )
+            if not write.merge_keys:
+                raise ValueError(
+                    "MERGE requires non-empty merge_keys; fail closed before mutation"
+                )
+            keys = [require_safe_identifier(k) for k in write.merge_keys]
+            key_set = set(keys)
+            update_cols: list[str] = [
+                require_safe_identifier(str(c))
+                for c in (
+                    write.metadata.get("update_columns")
+                    or write.metadata.get("columns")
+                    or ()
+                )
+                if str(c) not in key_set
+            ]
+            if isinstance(write.source, SqlQuery):
+                compiled = self.compile_query(write.source, context=context)
+                source_sql = compiled.text
+                bound = dict(compiled.metadata.get("_bound_params") or {})
+                if not update_cols:
+                    update_cols = sorted(_projection_names(write.source) - key_set)
+            elif isinstance(write.source, RelationRef):
+                source_sql = f"SELECT * FROM {self.qid(write.source)}"
+                bound = {}
+            else:
+                raise ValueError("MERGE requires a source query or relation")
+            conflict = ", ".join(self.quote(k) for k in keys)
+            if update_cols:
+                sets = ", ".join(
+                    f"{self.quote(c)}=EXCLUDED.{self.quote(c)}" for c in update_cols
+                )
+                conflict_action = f"DO UPDATE SET {sets}"
+            else:
+                conflict_action = "DO NOTHING"
+            sql = (
+                f"INSERT INTO {target} {source_sql} "
+                f"ON CONFLICT ({conflict}) {conflict_action}"
+            )
+            return CompiledSql(
+                statement_id=f"merge:{context.step_name}:{uuid4().hex[:8]}",
+                text=sql,
+                param_names=tuple(bound.keys()),
+                redacted_params={k: "<redacted>" for k in bound},
+                dialect=self.dialect,
+                logical_nodes=(context.step_name,),
+                metadata={
+                    "_bound_params": bound,
+                    "intent": write.intent.value,
+                    "merge_keys": list(keys),
+                    "update_columns": list(update_cols),
+                },
             )
         raise ValueError(f"Unsupported write intent: {write.intent}")
+
+
+def _projection_names(query: SqlQuery) -> set[str]:
+    """Extract safe column names from a query projection when available."""
+    names: set[str] = set()
+    for col in query.columns or ():
+        if isinstance(col, AliasedExpr):
+            names.add(require_safe_identifier(col.alias))
+        elif isinstance(col, ColumnRef):
+            names.add(require_safe_identifier(col.column))
+    return names

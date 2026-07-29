@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-> **Status: Available in ETLantic 0.32.0** for the shipped protocols below.
+> **Status: Available in ETLantic 0.33.0** for the shipped protocols below.
 > Future protocols are listed only in the appendix—do not treat them as APIs.
 
 For the package-from-zero workflow, start with
@@ -53,7 +53,7 @@ a validated `PipelinePlan`. No plugin changes the meaning of the pipeline.
 ## Appendix — future / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.32.0** (still Future design):
+protocols in **0.33.0** (still Future design):
 
 - General storage plugins (Snowflake, S3, Iceberg, …) — see
   [Storage today](../06_EXECUTION/STORAGE_TODAY.md)

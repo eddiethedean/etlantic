@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.32.0.** This page documents the commands
+> **Status: Available in ETLantic 0.33.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash

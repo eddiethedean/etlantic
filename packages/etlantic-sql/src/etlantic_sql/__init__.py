@@ -1,8 +1,8 @@
-"""etlantic-sql — PostgreSQL reference SQL execution plugin."""
+"""etlantic-sql — PostgreSQL / SQLite Tier A reference SQL execution plugin."""
 
 from __future__ import annotations
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 from etlantic_sql.plugin import PostgresSqlPlugin, create_plugin
 from etlantic_sql.transform_compiler import (

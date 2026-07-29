@@ -1,0 +1,27 @@
+{
+  "name": "missing_src",
+  "schema": "demo",
+  "engine": "sql",
+  "min_bronze_rate": 90.0,
+  "min_silver_rate": 95.0,
+  "min_gold_rate": 98.0,
+  "legacy_engine_extensions": [],
+  "steps": [
+    {
+      "name": "clean",
+      "kind": "silver_transform",
+      "layer": "silver",
+      "source": "orders_missing",
+      "table_name": "silver_clean",
+      "transform_ref": "clean_fn",
+      "write_mode": "overwrite",
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "classification": "intentionally_rejected",
+    "expected_diagnostic_codes": [
+      "PMSF312"
+    ]
+  }
+}

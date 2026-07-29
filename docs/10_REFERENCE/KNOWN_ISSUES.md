@@ -1,6 +1,6 @@
 # Known Limitations
 
-- ETLantic **0.32.x** is a **Beta** (PyPI) release suitable for documented single-tenant
+- ETLantic **0.33.x** is a **Beta** (PyPI) release suitable for documented single-tenant
   reference deployments, but 0.x releases may still introduce breaking API
   changes between minor versions until 1.0.
 - Portable `@Transformation.portable` definitions and
@@ -35,9 +35,9 @@
 - Structured Streaming APIs are experimental in 0.7+.
 - SQL plugins do not treat untrusted raw SQL as safe; use the typed expression
   model and dialect identifier/parameter APIs.
-- `MERGE` / upsert is not implemented in the SQL reference plugin; requiring
-  `sql_merge` fails closed at planning. Do not rely on SQL merge until a later
-  release advertises and implements it.
+- `MERGE` / upsert is implemented for **PostgreSQL** in the SQL reference plugin
+  (`sql_merge=True`). SQLite and other dialects remain fail-closed when
+  `sql_merge` is required.
 - SQLite via `ETLANTIC_SQL_URL` is demo-only; it is not the SQL conformance
   reference (PostgreSQL via `etlantic-sql` is).
 - Cross-database joins and distributed transactions are not supported.
@@ -60,7 +60,7 @@
 - Generated plans should be regenerated after incompatible schema changes
   rather than edited by hand.
 - Docs on `main` may briefly lead a published tag; pin
-  `etlantic==0.32.0` (or the version you evaluated) in production installs.
+  `etlantic==0.33.0` (or the version you evaluated) in production installs.
 
 Release-specific fixes and changes are recorded in the
 [changelog](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md).

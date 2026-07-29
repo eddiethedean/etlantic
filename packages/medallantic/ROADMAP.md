@@ -314,21 +314,23 @@ Tracking: [EXIT_GATE_0_32.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_32.md).
 
 ### M5 / ETLantic 0.33 — SQL pipeline-builder parity
 
-- [ ] Add a live migration bridge for `SqlPipelineBuilder` definitions.
-- [ ] Accept Moltres DataFrames/expressions and SQLAlchemy ORM, `Select`, and
+- [x] Add a live migration bridge for `SqlPipelineBuilder` definitions.
+- [x] Accept Moltres DataFrames/expressions and SQLAlchemy ORM, `Select`, and
   compound-select sources during migration.
-- [ ] Preserve lazy relational execution and avoid unnecessary table
+- [x] Preserve lazy relational execution and avoid unnecessary table
   round-trips between steps.
-- [ ] Support model-driven table creation and primary-key validation.
-- [ ] Match initial/incremental silver behavior and gold replacement defaults.
-- [ ] Support sync and async SQLAlchemy execution with transaction rollback.
-- [ ] Validate missing sources, ambiguous/duplicate columns, invalid transform
+- [x] Support model-driven table creation and primary-key validation.
+- [x] Match initial/incremental silver behavior and gold replacement defaults.
+- [x] Support sync and async SQLAlchemy execution with transaction rollback.
+- [x] Validate missing sources, ambiguous/duplicate columns, invalid transform
   results, conversion failures, and write failures consistently.
-- [ ] Establish dialect tiers and live CI for SQLite and PostgreSQL, followed
+- [x] Establish dialect tiers and live CI for SQLite and PostgreSQL, followed
   by additional SQLAlchemy dialects.
 
 Exit criteria: the SQL parity matrix passes on SQLite and PostgreSQL, with
 other dialect support accurately capability-gated.
+
+Tracking: [EXIT_GATE_0_33.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_33.md).
 
 ### M6 / ETLantic 0.34 — Operations, observability, and production readiness
 

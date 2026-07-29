@@ -1,6 +1,6 @@
 # Run a Local PySpark Batch
 
-> **Status: Available in ETLantic 0.32.0.** Structured Streaming remains
+> **Status: Available in ETLantic 0.33.0.** Structured Streaming remains
 > experimental.
 
 !!! warning "Clone-assisted path"
@@ -11,13 +11,13 @@
 
 - Python 3.11+
 - A Java runtime supported by your PySpark installation
-- `etlantic-pyspark==0.32.0`
+- `etlantic-pyspark==0.33.0`
 
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.32.0' 'etlantic-pyspark==0.32.0'
-git clone --branch v0.32.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.33.0' 'etlantic-pyspark==0.33.0'
+git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py
 ```

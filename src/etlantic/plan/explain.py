@@ -129,6 +129,8 @@ def explain_plan(plan: PipelinePlan) -> dict[str, Any]:
         "dataframe_protocol": plan.metadata.get("dataframe_protocol"),
         "sql_protocol": plan.metadata.get("sql_protocol"),
         "sql_fusion": plan.metadata.get("sql_fusion"),
+        "sql_transaction_scopes": plan.metadata.get("sql_transaction_scopes"),
+        "sql_schema_mutations": plan.metadata.get("sql_schema_mutations"),
         "spark_protocol": plan.metadata.get("spark_protocol"),
         "spark_fusion": plan.metadata.get("spark_fusion"),
         "spark_streaming_stability": plan.metadata.get("spark_streaming_stability"),

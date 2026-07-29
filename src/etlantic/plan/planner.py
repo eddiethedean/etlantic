@@ -456,9 +456,50 @@ def _build_plan(
                     )
                     else None
                 ),
+                "barriers": [
+                    b.reason
+                    for b in boundaries
+                    if b.producer_node in set(r.node_names)
+                    and b.reason
+                    in {
+                        "collection_point",
+                        "sink_publication",
+                        "cross_engine",
+                        "validation_boundary",
+                        "schema_mutation",
+                        "transaction_scope",
+                    }
+                ],
+                "transaction_scope": (
+                    "region"
+                    if _engine_registry.is_sql_engine(
+                        r.engine, context.registry.engines
+                    )
+                    else None
+                ),
+                "reuse": "cte_or_temp_relation",
             }
             for r in regions
             if _engine_registry.is_sql_engine(r.engine, context.registry.engines)
+        ],
+        "sql_transaction_scopes": [
+            {
+                "region": r.identity,
+                "engine": r.engine,
+                "nodes": list(r.node_names),
+                "scope": "region",
+            }
+            for r in regions
+            if _engine_registry.is_sql_engine(r.engine, context.registry.engines)
+        ],
+        "sql_schema_mutations": [
+            {
+                "identity": b.identity,
+                "producer_node": b.producer_node,
+                "reason": b.reason,
+            }
+            for b in boundaries
+            if b.reason in {"schema_mutation", "sink_publication"}
         ],
         "spark_fusion": [
             {

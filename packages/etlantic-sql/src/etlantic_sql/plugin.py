@@ -1,4 +1,4 @@
-"""SQLAlchemy-backed PostgreSQL (reference) SQL plugin."""
+"""SQLAlchemy-backed SQL plugin (PostgreSQL + SQLite Tier A reference)."""
 
 from __future__ import annotations
 
@@ -24,12 +24,14 @@ from etlantic.sql.protocol import (
     TransactionOutcome,
     WriteIntentKind,
 )
+from etlantic_sql.catalog import create_table_from_model as catalog_create_table
 from etlantic_sql.catalog import inspect_relation as catalog_inspect
+from etlantic_sql.catalog import validate_primary_keys as catalog_validate_pk
 from etlantic_sql.compiler import SqlCompiler
-from etlantic_sql.dialect_postgresql import detect_dialect, quote_identifier
+from etlantic_sql.dialect_postgresql import dialect_info, quote_identifier
 from etlantic_sql.executor import SqlExecutor
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 
 def create_plugin() -> PostgresSqlPlugin:
@@ -38,39 +40,51 @@ def create_plugin() -> PostgresSqlPlugin:
 
 
 class PostgresSqlPlugin:
-    """Reference SQL plugin (PostgreSQL-shaped; SQLAlchemy Core)."""
+    """Reference SQL plugin (Tier A: PostgreSQL + SQLite via SQLAlchemy Core)."""
 
     def __init__(self, *, url: str | None = None) -> None:
         self._url = url or os.environ.get(
             "ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:"
         )
         self._engine: Engine | None = None
+        self._async_engine: Any | None = None
         self._rows_fetched = [0]
         self._bound_params: dict[str, dict[str, Any]] = {}
         self._staging_tables: list[str] = []
-        dialect = detect_dialect(self._url)
-        extras = (
-            frozenset({"postgresql", "sqlalchemy"})
-            if dialect == "postgresql"
-            else frozenset({"sqlite", "sqlalchemy"})
-        )
-        # MERGE is not implemented in 0.6 — never advertise it.
+        info = dialect_info(self._url)
+        self._dialect_info = info
+        dialect = info.name
+        supports_merge = info.supports_merge
+        async_ok = _async_driver_available(self._url)
+        if dialect == "postgresql":
+            extras = frozenset(
+                {"postgresql", "sqlalchemy", f"dialect_tier_{info.tier}"}
+            )
+        elif dialect == "sqlite":
+            extras = frozenset({"sqlite", "sqlalchemy", f"dialect_tier_{info.tier}"})
+        else:
+            extras = frozenset(
+                {dialect, "sqlalchemy", f"dialect_tier_{info.tier}", "gated"}
+            )
+        # Tier B / unknown: advertise core sql but not advanced features.
+        tier_a = info.is_tier_a
         caps = PluginCapabilities(
             engine="sql",
-            async_execution=False,
+            async_execution=async_ok and tier_a,
             dataframe=False,
             sql=True,
-            transactions=True,
+            transactions=tier_a,
             cancellation=False,
-            schema_inspection=True,
-            sql_merge=False,
-            sql_cte=True,
-            sql_returning=dialect == "postgresql",
-            sql_transactional_ddl=dialect == "postgresql",
-            sql_atomic_rename=True,
-            sql_catalog_inspect=True,
+            schema_inspection=tier_a,
+            sql_merge=supports_merge,
+            sql_cte=info.supports_cte,
+            sql_returning=info.supports_returning,
+            sql_transactional_ddl=info.supports_transactional_ddl,
+            sql_atomic_rename=tier_a,
+            sql_catalog_inspect=tier_a,
             sql_trusted_fragments=False,
             eager=False,
+            # Relational reuse is CTE/temp-relation fusion, not dataframe lazy.
             lazy=False,
             extras=extras,
         )
@@ -82,7 +96,7 @@ class PostgresSqlPlugin:
             protocol_version=SQL_PROTOCOL_VERSION,
             capabilities=caps,
         )
-        self._compiler = SqlCompiler(dialect=dialect, supports_merge=False)
+        self._compiler = SqlCompiler(dialect=dialect, supports_merge=supports_merge)
 
     @property
     def info(self) -> SqlPluginInfo:
@@ -101,6 +115,12 @@ class PostgresSqlPlugin:
 
     def _get_engine(self) -> Engine:
         if self._engine is None:
+            if not self._dialect_info.is_tier_a:
+                raise ValueError(
+                    f"Dialect {self._dialect_info.name!r} is Tier "
+                    f"{self._dialect_info.tier}; the reference plugin only "
+                    "executes Tier A dialects (sqlite|postgresql)."
+                )
             self._engine = create_engine(self._url, future=True)
         return self._engine
 
@@ -192,6 +212,39 @@ class PostgresSqlPlugin:
             return swap
         return result
 
+    async def execute_async(
+        self,
+        compiled: Sequence[CompiledSql],
+        *,
+        params: Mapping[str, Any],
+        context: SqlExecutionContext,
+        fetch: bool = False,
+    ) -> SqlExecutionResult:
+        """AsyncEngine execution path (requires async driver URL + extras)."""
+        from etlantic_sql.async_executor import AsyncSqlExecutor
+
+        if not self.capabilities().supports("async_execution"):
+            raise ValueError(
+                "async_execution is not advertised for this dialect/URL; fail closed"
+            )
+        executor = AsyncSqlExecutor(
+            engine=await self._get_async_engine(),
+            dialect=self.info.dialect,
+            rows_fetched_counter=self._rows_fetched,
+            bound_params=self._bound_params,
+            staging_tables=self._staging_tables,
+        )
+        return await executor.execute(
+            compiled, params=params, context=context, fetch=fetch
+        )
+
+    async def _get_async_engine(self) -> Any:
+        if self._async_engine is None:
+            from sqlalchemy.ext.asyncio import create_async_engine
+
+            self._async_engine = create_async_engine(self._url, future=True)
+        return self._async_engine
+
     def materialize_temp(
         self,
         query: SqlQuery,
@@ -246,6 +299,49 @@ class PostgresSqlPlugin:
         _ = context
         return catalog_inspect(self._get_engine(), relation, dialect=self.info.dialect)
 
+    def create_table_from_model(
+        self,
+        model: Any,
+        *,
+        checkfirst: bool = True,
+    ) -> dict[str, Any]:
+        """Create a table from a SQLModel / SQLAlchemy Table metadata object."""
+        return catalog_create_table(
+            self._get_engine(),
+            model,
+            dialect=self.info.dialect,
+            checkfirst=checkfirst,
+        )
+
+    def validate_primary_keys(
+        self,
+        relation: RelationRef,
+        *,
+        expected_keys: Sequence[str],
+        context: SqlExecutionContext | None = None,
+    ) -> dict[str, Any]:
+        """Validate that ``relation`` declares the expected primary-key columns."""
+        _ = context
+        return catalog_validate_pk(
+            self._get_engine(),
+            relation,
+            expected_keys=expected_keys,
+            dialect=self.info.dialect,
+        )
+
     def cleanup_staging(self) -> None:
         """Drop run-scoped durable staging tables."""
         self._executor().cleanup_staging()
+
+
+def _async_driver_available(url: str) -> bool:
+    """Return True when the URL looks like an async SQLAlchemy driver."""
+    scheme = url.split("://", 1)[0].lower()
+    async_markers = (
+        "+asyncpg",
+        "+aiosqlite",
+        "+aiomysql",
+        "+asyncmy",
+        "+psycopg_async",
+    )
+    return any(marker in scheme for marker in async_markers)

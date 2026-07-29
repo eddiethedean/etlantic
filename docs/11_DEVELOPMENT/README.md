@@ -20,6 +20,8 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
+- [Exit gate 0.33](EXIT_GATE_0_33.md) (Done — SQLAlchemy / relational differential / M5)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)
 - [Exit gate 0.32](EXIT_GATE_0_32.md) (Done — PySpark / Delta differential / M4)
 - [Migration 0.30 → 0.31](MIGRATION_0_30_TO_0_31.md)

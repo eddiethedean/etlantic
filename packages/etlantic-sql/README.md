@@ -4,7 +4,7 @@ PostgreSQL reference SQL execution plugin for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.20.
 
 ```bash
-pip install 'etlantic==0.32.0' 'etlantic-sql==0.32.0'
+pip install 'etlantic==0.33.0' 'etlantic-sql==0.33.0'
 # or: pip install 'etlantic[sql]'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # SQLite is fine for demos only:
@@ -36,8 +36,7 @@ Register `@Transformation.implementation("sql")` handlers that take
 - Insert-select / CTAS-style publication
 - Fail-closed planning when required capabilities are missing
 
-**Not included:** `MERGE` / upsert (`sql_merge=False`). Requiring merge fails
-at planning.
+**MERGE / upsert:** advertised for PostgreSQL (`sql_merge=True`, `INSERT … ON CONFLICT`). SQLite remains `sql_merge=False` (fail closed).
 
 ## Examples
 

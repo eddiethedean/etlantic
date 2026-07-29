@@ -1,6 +1,6 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.32.0.** SQLite is used only for this local
+> **Status: Available in ETLantic 0.33.0.** SQLite is used only for this local
 > demonstration; PostgreSQL is the reference backend.
 
 !!! warning "Clone-assisted path"
@@ -10,8 +10,8 @@
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.32.0' 'etlantic-sql==0.32.0'
-git clone --branch v0.32.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.33.0' 'etlantic-sql==0.33.0'
+git clone --branch v0.33.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/sql_to_sql.py
 ```

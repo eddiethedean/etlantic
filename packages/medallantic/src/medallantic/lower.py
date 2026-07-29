@@ -45,6 +45,7 @@ from medallantic.diagnostics import (
     MDL110_RULES_INVALID,
     MDL111_TRANSFORM_PASSTHROUGH,
     MDL130_NATIVE_COLUMN_RULE,
+    MDL132_NATIVE_MOLTRES_RULE,
     VALID_LAYERS,
     mdl_diagnostic,
 )
@@ -52,6 +53,10 @@ from medallantic.lifecycle import (
     default_write_mode_for_layer,
     incremental_strategy_for_step,
     lifecycle_policy_for_layer,
+)
+from medallantic.moltres_rules import (
+    MOLTRES_QUALITY_CAPABILITY,
+    split_portable_and_moltres_rules,
 )
 from medallantic.rules import RuleDSLError, parse_rules_shorthand
 from medallantic.schema import MedallionDocument, MedallionStep
@@ -341,8 +346,19 @@ def lower_document(
             binding = step.asset or step.name
             source = Extract[MedallionRow](asset=binding)
             if step.rules:
-                portable_rules, native_rules = split_portable_and_native_rules(
+                after_moltres, moltres_rules = split_portable_and_moltres_rules(
                     step.rules
+                )
+                if moltres_rules:
+                    _record_native_moltres_rules(
+                        step=step,
+                        native_rules=moltres_rules,
+                        engine=doc.engine,
+                        diagnostics=diagnostics,
+                        phase=diagnostic_phase,
+                    )
+                portable_rules, native_rules = split_portable_and_native_rules(
+                    after_moltres
                 )
                 if native_rules:
                     _record_native_column_rules(
@@ -355,7 +371,7 @@ def lower_document(
                 if not portable_rules:
                     # Native-only bronze: extract only when no required native
                     # errors were recorded (callables may be deferred); otherwise
-                    # keep building so MDL130 raises at the end.
+                    # keep building so MDL130/MDL132 raise at the end.
                     ns[step.name] = source
                     annotations[step.name] = Extract[MedallionRow]
                     members[step.name] = source
@@ -421,12 +437,23 @@ def lower_document(
             quality_gate = False
 
             # Process rules before transform_ref failure continues so native
-            # Column diagnostics (MDL130) are never skipped.
+            # Column / Moltres diagnostics (MDL130 / MDL132) are never skipped.
             portable_rules: dict[str, Any] = {}
             native_rules: list[Any] = []
             if step.rules:
-                portable_rules, native_rules = split_portable_and_native_rules(
+                after_moltres, moltres_rules = split_portable_and_moltres_rules(
                     step.rules
+                )
+                if moltres_rules:
+                    _record_native_moltres_rules(
+                        step=step,
+                        native_rules=moltres_rules,
+                        engine=doc.engine,
+                        diagnostics=diagnostics,
+                        phase=diagnostic_phase,
+                    )
+                portable_rules, native_rules = split_portable_and_native_rules(
+                    after_moltres
                 )
                 if native_rules:
                     _record_native_column_rules(
@@ -910,6 +937,45 @@ def _record_native_column_rules(
                 f"native rules are not executable yet on engine {engine_key!r} "
                 "(failing closed). Use portable etlantic.quality rules, or "
                 "remove native Column rules."
+            ),
+            path=("steps", step.name, "rules"),
+            phase=phase,
+        )
+    )
+
+
+def _record_native_moltres_rules(
+    *,
+    step: MedallionStep,
+    native_rules: list[Any],
+    engine: str,
+    diagnostics: list[Diagnostic],
+    phase: str,
+) -> None:
+    """Attach Moltres rule metadata and fail closed when not executable.
+
+    Required Moltres / SQLAlchemy expression rules always emit ``MDL132`` until
+    a concrete SQL-engine evaluator exists.
+    """
+    payload = [rule.to_dict() for rule in native_rules]
+    step.metadata.setdefault("native_moltres_rules", payload)
+    caps = list(step.metadata.get("required_quality_capabilities") or [])
+    if MOLTRES_QUALITY_CAPABILITY not in caps:
+        caps.append(MOLTRES_QUALITY_CAPABILITY)
+    step.metadata["required_quality_capabilities"] = caps
+    required = [r for r in native_rules if getattr(r, "required", True)]
+    if not required:
+        return
+    engine_key = (engine or "local").lower()
+    diagnostics.append(
+        mdl_diagnostic(
+            MDL132_NATIVE_MOLTRES_RULE,
+            (
+                f"Step {step.name!r} declares Moltres / SQLAlchemy-native "
+                f"rules requiring {MOLTRES_QUALITY_CAPABILITY!r}; required "
+                f"native rules are not executable yet on engine {engine_key!r} "
+                "(failing closed). Use portable etlantic.quality rules, or "
+                "remove Moltres-only rules."
             ),
             path=("steps", step.name, "rules"),
             phase=phase,

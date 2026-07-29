@@ -92,7 +92,7 @@ so intermediate rows are not materialized in Python.
 
 Plugins publish capabilities such as transactions, catalog inspection, and
 atomic rename/swap. The 0.6 `etlantic-sql` reference plugin does **not**
-advertise `MERGE` (`sql_merge=False`); requiring merge fails closed at planning.
+advertise `MERGE` on PostgreSQL (`sql_merge=True`); SQLite stays `sql_merge=False`; requiring merge fails closed at planning.
 Unsupported requirements fail at validation or planning (fail closed).
 
 ## Further reading

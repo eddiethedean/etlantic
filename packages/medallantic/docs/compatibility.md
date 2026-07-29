@@ -5,10 +5,10 @@
 Medallantic follows Etlantic's pre-1.0 minor line. Pin matching minors:
 
 ```text
-medallantic 0.32.x  <->  etlantic 0.32.x
+medallantic 0.33.x  <->  etlantic 0.33.x
 ```
 
-The package metadata currently requires `etlantic>=0.32.0,<0.33`.
+The package metadata currently requires `etlantic>=0.33.0,<0.34`.
 
 ## Engine mapping
 
@@ -64,11 +64,12 @@ recognized as `storage.delta.schema_evolution`.
 | Legacy report normalization/redaction | Available |
 | SparkForge callable execution | Available (0.32; local/polars/pandas/pyspark) |
 | Native PySpark Column rules | Available (0.32; capability-gated, `MDL130` off Spark) |
-| Moltres-only rules | Planned (0.33) |
+| Moltres-only rules | Available (0.33; capability-gated, `MDL132`) |
 | Native Medallantic builder | Available |
 | Live `PipelineBuilder` bridge | Available (0.32) |
+| Live `SqlPipelineBuilder` bridge | Available (0.33) |
 | Live PySpark differential parity | Available (0.32 Sparkless default; live Delta optional) |
-| Live SQLAlchemy/Moltres differential parity | Planned (0.33) |
+| Live SQLAlchemy/Moltres differential parity | Available (0.33; SQLite + PostgreSQL Tier A) |
 | Delta maintenance execution | Available via `etlantic-pyspark` when `delta-spark` present |
 
 See the [roadmap](../ROADMAP.md) for phase exit criteria. A roadmap item is not

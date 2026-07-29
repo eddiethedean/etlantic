@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.32.0** ships **PySpark and Delta Differential Parity (M4)**.
+ETLantic **0.33.0** ships **SQLAlchemy and Relational Differential Parity (M5)**.
 Milestones describe capability order, not release-date commitments.
 
 ## Shipped: 0.15 through 0.20
@@ -136,17 +136,23 @@ See [What's New in 0.31](../01_GETTING_STARTED/WHATS_NEW_0_31.md) and
 
 ## Shipped: 0.32
 
-ETLantic **0.32.0** shipped **PySpark and Delta Differential Parity (M4)**:
-`storage.delta.*` vocabulary, live SparkForge `PipelineBuilder` bridge, Column
-rules, Sparkless/live modes, and classified differential fixtures. See
-[What's New in 0.32](../01_GETTING_STARTED/WHATS_NEW_0_32.md) and
+ETLantic **0.33.0** shipped **PySpark and Delta Differential Parity (M4)**:
+see [What's New in 0.32](../01_GETTING_STARTED/WHATS_NEW_0_32.md) and
 [Exit gate 0.32](EXIT_GATE_0_32.md).
 
-## Next: 0.33 — SQLAlchemy and relational differential parity (M5)
+## Shipped: 0.33
 
-**0.33** covers live `SqlPipelineBuilder` migration, dialect tiers, and
-relational differential fixtures. See
-[ROADMAP § 0.33](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#033--sqlalchemy-and-relational-differential-parity).
+ETLantic **0.33.0** shipped **SQLAlchemy and Relational Differential Parity
+(M5)**: dialect tiers, live `SqlPipelineBuilder` bridge, Moltres rules, and
+SQLite/PostgreSQL differential fixtures. See
+[What's New in 0.33](../01_GETTING_STARTED/WHATS_NEW_0_33.md) and
+[Exit gate 0.33](EXIT_GATE_0_33.md).
+
+## Next: 0.34 — Operations, evidence, and production readiness (M6)
+
+**0.34** covers medallion-oriented explain, durable run history, and production
+profile conformance. See
+[ROADMAP § 0.34](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#034--operations-evidence-and-production-readiness).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 

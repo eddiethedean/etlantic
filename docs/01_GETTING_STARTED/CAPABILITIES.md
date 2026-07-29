@@ -5,11 +5,11 @@
     Gate history, residual Medallantic tables, and CI JSON live further down
     for evaluators—skip them on day one.
 
-## What you can do in 0.32
+## What you can do in 0.33
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
 PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.32.0** is a **Beta**
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.33.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** follow the
@@ -18,7 +18,7 @@ start from repository `examples/` unless you have cloned the repo.
 
 ## Limits (read before production)
 
-| Topic | 0.32 |
+| Topic | 0.33 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
@@ -48,7 +48,7 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
     below). Repository checkout demos such as `memory_customers.py` and
     `file_storage.py` require a clone and are optional after first success.
 
-## Available in 0.32
+## Available in 0.33
 
 ### Core authoring and validation
 
@@ -127,31 +127,31 @@ Use the documented reference envelope (see [Evaluator](EVALUATOR.md) and
 |---|---|
 | Structured Streaming foundation | **Experimental** |
 
-## Not included in 0.32
+## Not included in 0.33
 
 Residual gaps for **unrestricted** production (not the Beta pilot envelope):
 
 | Capability | Status |
 |---|---|
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| `etlantic-datafusion` experimental engine | **Experimental in 0.32.0** (Gate B; not graduated) |
-| `MERGE` / upsert in the reference SQL plugin | Not implemented (`sql_merge=False`; fail closed) |
+| `etlantic-datafusion` experimental engine | **Experimental in 0.33.0** (Gate B; not graduated) |
+| `MERGE` / upsert in the reference SQL plugin | PostgreSQL only (`sql_merge=True`); SQLite fail-closed |
 | Managed Spark providers (Databricks/EMR/Connect) | Future / optional adapters |
 | Event sensors / Dagster compilers | Future |
 | Full LSP server productization | Continues in 1.5 |
 | Registry-backed schema history | Continues in 1.2 |
-| Production FastAPI control plane | Continues in 1.1 (0.32 ships only the thin reference adapter) |
-| Medallantic transform execution | Native authoring + portable quality gates ship in 0.30+; engine-native Column/Moltres escape hatch in 0.32 |
+| Production FastAPI control plane | Continues in 1.1 (0.33 ships only the thin reference adapter) |
+| Medallantic transform execution | Native authoring + portable quality gates ship in 0.30+; engine-native Column (0.32) / Moltres (0.33) escape hatches |
 | Full SparkForge engine retirement inside SparkForge | Progressive path (see migration guide) |
 | Stable 1.0 compatibility guarantees | Not yet |
 | Portable continuation families (`relational-extended`, `temporal-iana`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Partial — see [Ops Pilot](../06_EXECUTION/OPS_PILOT.md) |
 
-**Shipped in 0.28–0.32** (not residual): quadruple-minor burn-in proof and Plugin SDK
-`/1` freeze for core families; quality (0.30), materialization (0.31), and PySpark/Delta
-parity (0.32). See
-[What's New in 0.32](WHATS_NEW_0_32.md) and
-[Exit gate 0.32](../11_DEVELOPMENT/EXIT_GATE_0_32.md).
+**Shipped in 0.28–0.33** (not residual): quadruple-minor burn-in proof and Plugin SDK
+`/1` freeze for core families; quality (0.30), materialization (0.31), PySpark/Delta
+parity (0.32), and SQL builder parity (0.33). See
+[What's New in 0.33](WHATS_NEW_0_33.md) and
+[Exit gate 0.33](../11_DEVELOPMENT/EXIT_GATE_0_33.md).
 
 ## CI starter
 
@@ -187,7 +187,7 @@ Starter profile (trim allowlist to one engine for first success):
   "allow_trusted_sql": false,
   "plugin_allowlist": {
     "local": null,
-    "etlantic-polars": "==0.32.0"
+    "etlantic-polars": "==0.33.0"
   },
   "assets": {},
   "secrets": {},
@@ -211,16 +211,16 @@ See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md),
 [Evaluator brief](EVALUATOR.md).
 
 ```bash
-pip install 'etlantic==0.32.0'                 # core only — no engines
-pip install 'etlantic-polars==0.32.0'          # Polars reference plugin
-pip install 'etlantic-pandas==0.32.0'          # Pandas compatibility plugin
-pip install 'etlantic-sql==0.32.0'             # PostgreSQL SQL reference plugin
-pip install 'etlantic-pyspark==0.32.0'         # PySpark reference plugin
-pip install 'etlantic-airflow==0.32.0'         # Airflow DAG compiler
-pip install 'etlantic-prefect==0.32.0'         # Prefect direct-execution scheduler
-pip install 'etlantic-keyring==0.32.0'         # OS keyring secret provider
-pip install 'etlantic-sqlmodel==0.32.0'        # SQLModel contract bridge
-pip install 'medallantic==0.32.0'              # medallion facade (native + IR migrate)
+pip install 'etlantic==0.33.0'                 # core only — no engines
+pip install 'etlantic-polars==0.33.0'          # Polars reference plugin
+pip install 'etlantic-pandas==0.33.0'          # Pandas compatibility plugin
+pip install 'etlantic-sql==0.33.0'             # PostgreSQL SQL reference plugin
+pip install 'etlantic-pyspark==0.33.0'         # PySpark reference plugin
+pip install 'etlantic-airflow==0.33.0'         # Airflow DAG compiler
+pip install 'etlantic-prefect==0.33.0'         # Prefect direct-execution scheduler
+pip install 'etlantic-keyring==0.33.0'         # OS keyring secret provider
+pip install 'etlantic-sqlmodel==0.33.0'        # SQLModel contract bridge
+pip install 'medallantic==0.33.0'              # medallion facade (native + IR migrate)
 ```
 
 See [Installation](INSTALLATION.md) for verification and from-source contributor setup.

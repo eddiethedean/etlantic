@@ -248,7 +248,7 @@ SqlCapabilities(
     writes=True,
     transactions=True,
     savepoints=True,
-    sql_merge=False,  # 0.6 reference: not implemented; fail closed if required
+    sql_merge=True on PostgreSQL; False on SQLite,  # 0.6 reference: not implemented; fail closed if required
     create_table_as=True,
     temporary_tables=True,
     common_table_expressions=True,
@@ -262,7 +262,7 @@ SqlCapabilities(
 ```
 
 Advertise only what the plugin actually implements. The 0.6 `etlantic-sql`
-reference sets `sql_merge=False` and uses durable run-scoped staging tables
+reference sets `sql_merge=True on PostgreSQL; False on SQLite` and uses durable run-scoped staging tables
 rather than session TEMP for intermediates.
 
 Capabilities should cover both SQL syntax and runtime behavior.

@@ -35,9 +35,8 @@
 - [x] `run_sparkforge_differential_suite` green
 - [x] What's New / Migration / this exit gate pass docs gates
 
-## Residual / follow-ons (0.33+)
+## Residual / follow-ons (0.34+)
 
-- SQL / `SqlPipelineBuilder` differential parity (**M5 / 0.33**)
 - Trend / quality analytics providers (**M6 / 0.34**)
 - Automated migration inventory (**M7 / 0.35**)
 

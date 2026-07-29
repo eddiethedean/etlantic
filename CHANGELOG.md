@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-07-29
+
+### Added
+- SQL dialect Tier A/B matrix in `etlantic-sql` (SQLite + PostgreSQL live; others gated)
+- PostgreSQL `sql_merge` via `INSERT … ON CONFLICT`; model DDL + primary-key validation
+- Lazy SQL transform claim + planner `sql_fusion` / transaction-scope evidence
+- Async SQLAlchemy execution path when the URL uses an async driver
+- Medallantic live `from_sql_pipeline_builder` bridge (`PMSQ350+`)
+- Moltres / SQLAlchemy-native rules (`quality.moltres_expr`, `MDL132`)
+- `etlantic.testing.run_sql_builder_differential_suite` with classified fixtures
+- What's New / Migration / Exit Gate 0.33 documentation
+
+### Changed
+- Official package versions align at 0.33.0; plugins require `etlantic>=0.33.0,<0.34`
+- `SqlTransformCompiler` advertises `lazy=True` alongside `eager=True`
+
+### Upgrade notes
+- Pin core and official plugins to `==0.33.0` (matching minors while pre-1.0).
+- Read [Migration 0.32 → 0.33](docs/11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md)
+  and [What's new in 0.33](docs/01_GETTING_STARTED/WHATS_NEW_0_33.md).
+- SQL merge requires PostgreSQL (`sql_merge`); SQLite remains fail-closed.
+- Prefer `medallantic.migrate.sql.from_sql_pipeline_builder` for live SQL builders.
+- Moltres-only rules fail closed with `MDL132` until an evaluator exists.
+
 ## [0.32.0] - 2026-07-28
 
 ### Added
@@ -1161,6 +1185,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.33.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.33.0
 [0.32.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.32.0
 [0.31.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.31.0
 [0.30.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.30.0

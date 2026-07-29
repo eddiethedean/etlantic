@@ -1,6 +1,6 @@
 # CLI and SDK cheatsheet
 
-> **Status: Available in ETLantic 0.32.0.** Day-0 reminders only—see
+> **Status: Available in ETLantic 0.33.0.** Day-0 reminders only—see
 > [CLI](CLI.md) and [API Reference](API_REFERENCE.md) for full detail.
 
 Prefer `python -m etlantic` and `import etlantic as etl`.

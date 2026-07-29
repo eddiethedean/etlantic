@@ -32,10 +32,10 @@
 
 ## Not in 0.32
 
-- SQL / `SqlPipelineBuilder` differential (**0.33 / M5**)
+- SQL / `SqlPipelineBuilder` differential (**shipped in 0.33 / M5**)
 - Trend / quality analytics providers (**0.34**)
 - Automated SparkForge project inventory (**0.35**)
-- Moltres-only rules
+- Moltres-only rules (**shipped in 0.33**)
 
 ## Upgrade
 

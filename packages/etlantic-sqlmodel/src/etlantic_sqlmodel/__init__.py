@@ -20,7 +20,7 @@ from etlantic.schema_drift import (
 )
 from sqlmodel import Field, SQLModel
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 __all__ = [
     "SqlModelIntegrationPlugin",
@@ -29,8 +29,10 @@ __all__ = [
     "contract_to_sqlmodel",
     "contract_to_sqlmodel_source",
     "create_plugin",
+    "primary_key_fields",
     "run_conformance_checks",
     "sqlmodel_to_contract",
+    "validate_model_primary_keys",
 ]
 
 _PYTHON_FROM_LOGICAL: dict[str, type[Any]] = {
@@ -205,9 +207,66 @@ def sqlmodel_to_contract(model_cls: type[Any]) -> dict[str, Any]:
         "table_name": getattr(model_cls, "__tablename__", None),
         "schema": getattr(table, "schema", None) if table is not None else None,
         "fields": fields,
+        "primary_key": primary_key_fields(model_cls),
         "source": "sqlmodel",
         "review_required": _review_flags(fields),
     }
+
+
+def primary_key_fields(model_cls: type[Any]) -> list[str]:
+    """Return ordered primary-key column names from a SQLModel table class."""
+    if not _is_sqlmodel_table(model_cls):
+        raise TypeError("Expected a SQLModel table class")
+    table = getattr(model_cls, "__table__", None)
+    if table is None:
+        return []
+    return [str(c.name) for c in table.primary_key.columns]
+
+
+def validate_model_primary_keys(
+    model_cls: type[Any],
+    *,
+    expected_keys: tuple[str, ...] | list[str] | None = None,
+) -> ValidationReport:
+    """Fail closed when a SQLModel table lacks the expected primary key."""
+    diagnostics: list[Diagnostic] = []
+    actual = primary_key_fields(model_cls)
+    expected = list(expected_keys) if expected_keys is not None else None
+    if not actual:
+        diagnostics.append(
+            Diagnostic(
+                code="PSQL420",
+                severity=Severity.ERROR,
+                message=(
+                    f"SQLModel {getattr(model_cls, '__name__', model_cls)!r} "
+                    "declares no primary key; merge/publication requires one."
+                ),
+                phase="sqlmodel",
+            )
+        )
+    elif expected is not None and list(actual) != list(expected):
+        diagnostics.append(
+            Diagnostic(
+                code="PSQL421",
+                severity=Severity.ERROR,
+                message=(
+                    f"Primary key mismatch for "
+                    f"{getattr(model_cls, '__name__', model_cls)!r}: "
+                    f"expected {list(expected)!r}, model has {actual!r}"
+                ),
+                phase="sqlmodel",
+            )
+        )
+    else:
+        diagnostics.append(
+            Diagnostic(
+                code="PSQL422",
+                severity=Severity.INFO,
+                message=f"Primary key ok: {actual!r}",
+                phase="sqlmodel",
+            )
+        )
+    return ValidationReport.from_diagnostics(diagnostics, phases=("sqlmodel",))
 
 
 def compare_metadata(

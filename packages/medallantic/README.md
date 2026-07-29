@@ -25,7 +25,7 @@ Documentation:
 ## Install
 
 ```bash
-pip install 'etlantic==0.32.0' 'medallantic==0.32.0'
+pip install 'etlantic==0.33.0' 'medallantic==0.33.0'
 # or
 pip install 'etlantic[medallantic]'
 ```

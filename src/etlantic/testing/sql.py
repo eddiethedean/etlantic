@@ -8,6 +8,7 @@ from etlantic.sql.protocol import (
     RelationRef,
     SqlExecutionContext,
     SqlPlugin,
+    TransactionOutcome,
 )
 from etlantic.testing.capability_truthfulness import (
     assert_capability_claims_consistent,
@@ -71,3 +72,23 @@ def run_sql_conformance_suite(plugin: SqlPlugin) -> None:
 
     assert plugin.rows_fetched_total() == 0
     _ = select(col("customer_id"), source="customers")
+
+    # Dialect-tier / merge truthfulness
+    caps = plugin.capabilities()
+    dialect = str(getattr(plugin.info, "dialect", "") or "")
+    if dialect == "postgresql":
+        assert caps.supports("sql_merge"), "PostgreSQL must advertise sql_merge"
+    elif dialect == "sqlite":
+        assert not caps.supports("sql_merge"), (
+            "SQLite reference path must not advertise sql_merge"
+        )
+
+    # Lazy relational claim lives on the transform compiler (SqlQuery handles),
+    # not PluginCapabilities.lazy (which implies dataframe).
+    if caps.supports("sql_cte"):
+        assert caps.supports("sql"), "sql_cte requires sql"
+
+    # Rollback / unknown-outcome classification surface
+    assert TransactionOutcome.ROLLED_BACK.value == "rolled_back"
+    assert TransactionOutcome.UNKNOWN.value == "unknown"
+    assert hasattr(plugin, "execute")

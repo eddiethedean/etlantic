@@ -32,7 +32,7 @@ from etlantic_sql.lowering.actions import (
     apply_action_to_query,
 )
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 KERNEL_FUNCTIONS = frozenset(
     {
@@ -96,7 +96,9 @@ class SqlTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=CLAIMED_ACTIONS,
             functions=CLAIMED_FUNCTIONS,
-            lazy=False,
+            # Relational kernels stay as SqlQuery / relation handles (lazy).
+            # Callable / row materialization remains available (eager).
+            lazy=True,
             eager=True,
         )
         self._info = TransformCompilerInfo(
