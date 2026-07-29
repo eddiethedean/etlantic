@@ -11,6 +11,7 @@ documentation, or repository automation are welcome.
 | Version | Support |
 |---|---|
 | 0.32.x | Current supported Beta line; security fixes are released on this line |
+| 0.28.x–0.31.x | Not actively maintained; upgrade to 0.32.x |
 | 0.27.x and earlier | Not actively maintained; upgrade to 0.32.x |
 
 Backports to older minor lines are not provided. Upgrade to the latest 0.32.x

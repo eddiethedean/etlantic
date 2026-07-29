@@ -28,7 +28,9 @@ Plugins and providers
 - importable `transform_ref` execution
 - bronze preserve, silver refresh, and gold publish lifecycle defaults
 - write-intent, run-intent, selection, retry, and report mapping
-- secret-free SparkForge IR migration
+- secret-free SparkForge IR migration **and** live `from_pipeline_builder`
+- fine-grained `storage.delta.*` capability map + classified differential suite
+- PySpark Column / callable rule path (`MDL130` fail-closed off Spark)
 - stable `MDL*` diagnostics and facade conformance
 
 Native PySpark Column and Moltres-only semantics remain subject to their

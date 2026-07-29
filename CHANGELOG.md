@@ -28,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Spark region compile/execute records cache points and logical identities
 
+### Upgrade notes
+- Pin core and official plugins to `==0.32.0` (matching minors while pre-1.0).
+- Read [Migration 0.31 → 0.32](docs/11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md)
+  and [What's new in 0.32](docs/01_GETTING_STARTED/WHATS_NEW_0_32.md).
+- Local / Polars / Pandas-only adopters can skip most M4 Spark/Delta notes;
+  re-pin plugins and continue.
+- SparkForge / Delta users: prefer
+  `medallantic.migrate.sparkforge.from_pipeline_builder` for live builders;
+  expect `storage.delta.*` capability negotiation (`PMPLAN440` / `PMPLAN441`).
+- Non-portable Column rules need `quality.pyspark_column` or fail closed
+  (`MDL130`).
+- Out-of-monorepo plugins: bump core pins to `etlantic>=0.32.0,<0.33`
+  (see `etlantic-plugin-echo` 0.32.0).
+
 ## [0.31.0] - 2026-07-28
 
 ### Added
