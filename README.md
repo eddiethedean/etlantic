@@ -67,6 +67,7 @@ Python 3.11+. Use an empty directory for `init` (or pass `--force`).
 
 ```bash
 pip install etlantic
+python -m etlantic --version
 
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
@@ -181,6 +182,31 @@ run = CustomerPipeline.run(profile=profile, runtime=runtime)
 Longer SDK walkthrough:
 [SDK 10 minutes](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/)
 (after CLI first success).
+
+## Contract artifacts
+
+Your Python types are also portable, reviewable contract artifacts. Generate
+the complete bundle from a valid pipeline:
+
+```bash
+python -m etlantic generate pipeline.py:SamplePipeline -o contracts/
+```
+
+```text
+contracts/
+├── data/              # ODCS data contracts
+├── transformations/   # DTCS transformation contracts
+└── pipelines/         # DPCS pipeline contract
+```
+
+| Artifact | Captures |
+|---|---|
+| [ODCS](docs/03_DATA_CONTRACTS/ODCS.md) | Data shape, constraints, identity, and version |
+| [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) | Typed inputs, outputs, parameters, and transformation semantics |
+| [DPCS](docs/05_PIPELINES/DPCS.md) | Pipeline graph, bindings, assets, and contract references |
+
+Generation is deterministic and refuses invalid pipelines, so contract changes
+can be reviewed and versioned alongside the code that defines them.
 
 ## Architecture
 
