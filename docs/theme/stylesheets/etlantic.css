@@ -511,10 +511,11 @@ html {
   background: var(--etlantic-mint);
   color: var(--etlantic-abyss);
   font-weight: 800;
+  line-height: 1;
 }
 
 .etlantic-success strong,
-.etlantic-success span {
+.etlantic-success > span:last-child {
   display: block;
 }
 
