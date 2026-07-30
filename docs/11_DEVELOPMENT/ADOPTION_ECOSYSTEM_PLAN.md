@@ -4,6 +4,15 @@
 > 0.34.0.** This plan assigns the adoption capabilities that were previously
 > scattered across Future design pages to explicit 0.x phases and graduation
 > gates.
+>
+> **Authority:** The
+> [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+> owns release order; this plan owns the shared ecosystem graduation gates.
+> Use [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for shipped
+> behavior and the [Planning Hub](PLAN_INDEX.md) for portfolio status.
+>
+> **Review trigger:** Update this boundary whenever a program gate passes or
+> the main roadmap changes its sequence.
 
 ## Decision
 

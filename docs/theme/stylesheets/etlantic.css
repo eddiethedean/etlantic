@@ -73,7 +73,7 @@ html {
 }
 
 .md-content__inner {
-  max-width: 54rem;
+  max-width: 62rem;
   margin-right: auto;
   margin-left: auto;
   padding-bottom: 4rem;
@@ -183,13 +183,18 @@ html {
 .etlantic-hero {
   position: relative;
   isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(13rem, 0.75fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
   overflow: hidden;
   margin: 0 0 2.4rem;
   border: 1px solid rgba(39, 211, 226, 0.28);
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   background:
-    radial-gradient(circle at 86% 18%, rgba(39, 211, 226, 0.17), transparent 28%),
+    radial-gradient(circle at 84% 12%, rgba(39, 211, 226, 0.2), transparent 30%),
     linear-gradient(135deg, #071a2b 0%, #0a304b 58%, #0d3b5e 100%);
+  padding: clamp(2rem, 5vw, 4rem);
   box-shadow: 0 1.2rem 3rem rgba(3, 13, 22, 0.24);
 }
 
@@ -202,36 +207,21 @@ html {
     linear-gradient(90deg, rgba(99, 230, 190, 0.055) 1px, transparent 1px);
   background-size: 2rem 2rem;
   content: "";
-  mask-image: linear-gradient(90deg, transparent 25%, black);
-}
-
-.etlantic-hero::after {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  right: clamp(1rem, 4vw, 2rem);
-  width: clamp(7.5rem, 19vw, 10rem);
-  aspect-ratio: 1;
-  transform: translateY(-50%) rotate(5deg);
-  background: url("../assets/etlantic-logo.svg") center / contain no-repeat;
-  content: "";
-  opacity: 0.42;
-  filter: drop-shadow(0 1rem 2rem rgba(3, 13, 22, 0.35));
+  mask-image: linear-gradient(90deg, transparent 12%, black);
 }
 
 .etlantic-hero__content {
   position: relative;
-  max-width: 28rem;
-  padding: clamp(2.25rem, 5vw, 3.6rem);
+  max-width: 35rem;
   color: var(--etlantic-sailcloth);
 }
 
 .etlantic-hero__content h1 {
-  margin: 0.55rem 0 0.9rem;
+  margin: 0.55rem 0 1rem;
   color: white;
-  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-size: clamp(2.35rem, 4.8vw, 3.65rem);
   font-weight: 750;
-  line-height: 0.98;
+  line-height: 1;
   letter-spacing: -0.045em;
 }
 
@@ -243,15 +233,11 @@ html {
   text-transform: uppercase;
 }
 
-.etlantic-hero__nowrap {
-  white-space: nowrap;
-}
-
 .etlantic-hero__content p {
-  max-width: 27rem;
+  max-width: 33rem;
   margin: 0;
   color: #d1e1e1;
-  font-size: 0.98rem;
+  font-size: 1rem;
   line-height: 1.6;
 }
 
@@ -277,6 +263,283 @@ html {
 .etlantic-hero__actions .md-button:not(.md-button--primary):focus {
   border-color: white;
   background-color: rgba(234, 241, 237, 0.1);
+}
+
+.etlantic-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.35rem;
+}
+
+.etlantic-hero__meta span {
+  border: 1px solid rgba(234, 241, 237, 0.22);
+  border-radius: 999px;
+  background: rgba(7, 26, 43, 0.28);
+  padding: 0.22rem 0.55rem;
+  color: rgba(234, 241, 237, 0.82);
+  font-size: 0.67rem;
+  font-weight: 650;
+  letter-spacing: 0.035em;
+}
+
+.etlantic-flow {
+  position: relative;
+  border: 1px solid rgba(99, 230, 190, 0.2);
+  border-radius: 0.9rem;
+  background: rgba(3, 13, 22, 0.42);
+  padding: 1rem;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(0.4rem);
+}
+
+.etlantic-flow__header {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  color: var(--etlantic-mint);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.etlantic-flow__header img {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.etlantic-flow__step {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  border: 1px solid rgba(234, 241, 237, 0.12);
+  border-radius: 0.55rem;
+  background: rgba(13, 59, 94, 0.46);
+  padding: 0.65rem 0.7rem;
+}
+
+.etlantic-flow__step--accent {
+  border-color: rgba(99, 230, 190, 0.44);
+  background: rgba(99, 230, 190, 0.1);
+}
+
+.etlantic-flow__number {
+  color: var(--etlantic-cyan);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.etlantic-flow__step strong,
+.etlantic-flow__step small {
+  display: block;
+}
+
+.etlantic-flow__step strong {
+  color: white;
+  font-size: 0.78rem;
+}
+
+.etlantic-flow__step small {
+  margin-top: 0.08rem;
+  color: rgba(234, 241, 237, 0.65);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.etlantic-flow__connector {
+  width: 1px;
+  height: 0.55rem;
+  margin-left: 1.55rem;
+  background: rgba(99, 230, 190, 0.42);
+}
+
+.etlantic-definition {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.85fr) minmax(0, 1.4fr);
+  gap: 1.25rem;
+  align-items: start;
+  border-left: 0.2rem solid var(--etlantic-cyan);
+  border-radius: 0 0.65rem 0.65rem 0;
+  background: var(--etlantic-surface-raised);
+  padding: 1.1rem 1.25rem;
+}
+
+.etlantic-definition strong {
+  color: var(--md-default-fg-color);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.etlantic-definition span {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.etlantic-path-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.md-typeset a.etlantic-path-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 10.5rem;
+  border: 1px solid var(--etlantic-border);
+  border-radius: 0.75rem;
+  background: var(--etlantic-surface);
+  padding: 1.15rem;
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+  box-shadow: 0 0.5rem 1.4rem var(--etlantic-shadow);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.md-typeset a.etlantic-path-card:hover,
+.md-typeset a.etlantic-path-card:focus-visible {
+  border-color: var(--md-accent-fg-color);
+  transform: translateY(-0.12rem);
+  box-shadow: 0 0.8rem 1.8rem var(--etlantic-shadow);
+}
+
+.etlantic-path-card__kicker {
+  margin-bottom: 0.45rem;
+  color: var(--md-accent-fg-color);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.etlantic-path-card strong {
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.etlantic-path-card > span:not(.etlantic-path-card__kicker):not(.etlantic-path-card__action) {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.73rem;
+  line-height: 1.55;
+}
+
+.etlantic-path-card__action {
+  margin-top: auto;
+  padding-top: 0.9rem;
+  color: var(--md-typeset-a-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.etlantic-success {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 1rem 0;
+  border: 1px solid rgba(99, 230, 190, 0.3);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--etlantic-mint) 8%, var(--etlantic-surface));
+  padding: 0.85rem 1rem;
+}
+
+.etlantic-success__mark {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--etlantic-mint);
+  color: var(--etlantic-abyss);
+  font-weight: 800;
+}
+
+.etlantic-success strong,
+.etlantic-success span {
+  display: block;
+}
+
+.etlantic-success strong {
+  margin-bottom: 0.12rem;
+  color: var(--md-default-fg-color);
+}
+
+.etlantic-success > span:last-child {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.75rem;
+}
+
+.etlantic-benefits,
+.etlantic-release-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.etlantic-benefit,
+.etlantic-release-card {
+  border: 1px solid var(--etlantic-border);
+  border-radius: 0.7rem;
+  background: var(--etlantic-surface);
+  padding: 1rem;
+}
+
+.etlantic-benefit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.etlantic-benefit__number {
+  color: var(--etlantic-brass);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.etlantic-benefit strong,
+.etlantic-release-card strong {
+  color: var(--md-default-fg-color);
+  font-size: 0.82rem;
+}
+
+.etlantic-benefit > span:last-child,
+.etlantic-release-card span {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.etlantic-release-card {
+  border-top-width: 0.2rem;
+}
+
+.etlantic-release-card strong,
+.etlantic-release-card span {
+  display: block;
+}
+
+.etlantic-release-card strong {
+  margin-bottom: 0.4rem;
+}
+
+.etlantic-release-card--available {
+  border-top-color: var(--etlantic-mint);
+}
+
+.etlantic-release-card--experimental {
+  border-top-color: var(--etlantic-brass);
+}
+
+.etlantic-release-card--unavailable {
+  border-top-color: var(--etlantic-coral);
 }
 
 .md-typeset code {
@@ -397,19 +660,51 @@ html {
     font-size: 2.05rem;
   }
 
-  .etlantic-hero::after {
-    top: 1.25rem;
-    right: 1rem;
-    width: 6.5rem;
-    transform: none;
-    opacity: 0.3;
-  }
-
-  .etlantic-hero__content {
-    padding: 2rem 1.5rem;
+  .etlantic-hero {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.7rem 1.05rem;
   }
 
   .etlantic-hero__content h1 {
-    font-size: clamp(2.2rem, 11vw, 3.25rem);
+    font-size: clamp(2.1rem, 11vw, 3.1rem);
+  }
+
+  .etlantic-hero__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .etlantic-hero__actions .md-button {
+    margin: 0;
+    text-align: center;
+  }
+
+  .etlantic-definition,
+  .etlantic-path-grid,
+  .etlantic-benefits,
+  .etlantic-release-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .etlantic-definition {
+    gap: 0.5rem;
+  }
+
+  .md-typeset a.etlantic-path-card {
+    min-height: 9rem;
+  }
+}
+
+@media screen and (min-width: 45em) and (max-width: 69.984375em) {
+  .etlantic-hero {
+    grid-template-columns: minmax(0, 1.25fr) minmax(12rem, 0.75fr);
+    gap: 1.5rem;
+    padding: 2.25rem;
+  }
+
+  .etlantic-benefits,
+  .etlantic-release-grid {
+    grid-template-columns: 1fr;
   }
 }

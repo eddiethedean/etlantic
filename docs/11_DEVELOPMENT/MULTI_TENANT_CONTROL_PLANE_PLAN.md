@@ -4,6 +4,19 @@
 > 0.34.0.** Incubation is sequenced across 0.40–0.43. A production,
 > multi-tenant compatibility claim is gated for 0.44 only after every isolation,
 > durability, policy, and operations gate on this page passes.
+>
+> **Current boundary:** Process-local registries, runtimes, caches, report
+> stores, and reference adapters in 0.34 are not multi-tenant merely because
+> they carry identity fields.
+>
+> **Authority:** The
+> [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+> owns release order; this plan owns control-plane scope and graduation. Use
+> [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for shipped behavior
+> and the [Planning Hub](PLAN_INDEX.md) for portfolio status.
+>
+> **Review trigger:** Update when any CP1–CP-GA gate changes state, scope, or
+> evidence requirements.
 
 ## Decision
 

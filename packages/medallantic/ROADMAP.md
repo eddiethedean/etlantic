@@ -1,5 +1,11 @@
 # Medallantic Roadmap
 
+> **Document role:** This roadmap owns Medallantic parity and migration scope.
+> The [ETLantic roadmap](../../ROADMAP.md) owns shared release order, the
+> [Planning Hub](../../docs/11_DEVELOPMENT/PLAN_INDEX.md) summarizes portfolio
+> status, and the [current package guide](README.md) owns shipped behavior.
+> Review this header for every release or parity-sequence change.
+
 **Current release:** Medallantic **0.34.0**. M0 through M6 are shipped;
 **M7 / ETLantic 0.35** is the next planned phase. Planned phases describe
 capability order, not release-date commitments.
@@ -70,10 +76,10 @@ core tests before Medallantic consumes them.
 
 ## Current baseline
 
-The **0.33.0** baseline includes the former `etlantic-sparkforge` IR adapter,
+The **0.34.0** baseline includes the former `etlantic-sparkforge` IR adapter,
 native Medallantic authoring, portable quality and lifecycle semantics, and
-the shipped PySpark/Delta and SQLAlchemy relational differential bridges. It
-provides:
+the shipped PySpark/Delta and SQLAlchemy relational differential bridges,
+plus M6 operations and production-readiness evidence. It provides:
 
 - SparkForge medallion IR parsing
 - bronze/silver/gold-to-ETLantic graph adaptation
@@ -86,7 +92,7 @@ provides:
 - Delta capability checks
 - IR fixture parity tests without SparkForge or PySpark installed
 
-The baseline began in **0.28** with the renamed IR adapter. **0.29–0.33**
+The baseline began in **0.28** with the renamed IR adapter. **0.29–0.34**
 shipped M1–M6: native authoring, quality rules, lifecycle/materialization,
 PySpark/Delta differential parity, SQLAlchemy relational differential parity,
 and operations evidence with production-readiness conformance. Migration

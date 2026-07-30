@@ -1,12 +1,11 @@
 # Design Proposals
 
-This section contains **unshipped** APIs, historical plans, and normative
-proposals. It is deliberately separate from the current ETLantic **0.34** user
-guide (Beta).
+This section contains a mixture of **unshipped** APIs, partially shipped
+programs, historical implementation records, and normative proposals. It is
+deliberately separate from the current ETLantic **0.34** user guide (Beta).
 
 !!! danger "Do not start here"
-    This section is **not** the user guide. Pages here are unshipped APIs,
-    historical plans, or aspirational design studies. Start with
+    This section is **not** the user guide. Start with
     [Installation](../01_GETTING_STARTED/INSTALLATION.md) →
     [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) instead.
 
@@ -16,7 +15,7 @@ guide (Beta).
     [current-version guide](../01_GETTING_STARTED/CURRENT_VERSION.md)
     and [capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
 
-    **Exceptions (shipped):**
+    Some plans also preserve shipped work:
     - portable **authoring** (`@Transformation.portable`, `etlantic.transform`)
       — see [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
     - portable **compiler protocol** and first-party compilers — see
@@ -41,14 +40,10 @@ Current public behavior is documented in the
 
 ## Maintainer plans
 
-- [0.18 Versioned Tabular Interchange record (Gate A shipped)](INTEROPERABILITY_FOUNDATION_PLAN.md)
-- [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md)
-- [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md)
-- [Programmatic authoring and lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
-- [Schema drift](SCHEMA_DRIFT_PLAN.md)
-- [Reliability](ETL_RELIABILITY_PLAN.md)
-- [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md)
-- [SparkForge adoption](SPARKFORGE_ADOPTION.md)
+Use the [Planning Hub](PLAN_INDEX.md) for the complete portfolio, current
+status, document ownership, and the boundary between shipped behavior and
+future work. Historical implementation records remain in the
+[archive index](ARCHIVE_INDEX.md).
 
 ## Design-study examples
 

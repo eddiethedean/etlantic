@@ -1,5 +1,21 @@
 # SQLModel Integration Plan
 
+> **Plan status: partially shipped; reference persistence remains planned.**
+>
+> **Current 0.34 boundary:** The optional `etlantic-sqlmodel` package provides
+> the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
+> repository helpers, and durable multi-tenant control-plane providers remain
+> future work.
+>
+> **Authority:** The
+> [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines
+> the shipped bridge. This plan owns future persistence goals subject to the
+> [control-plane gates](MULTI_TENANT_CONTROL_PLANE_PLAN.md). See the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when the optional package adds persistence or
+> migration scope, or its supported SQLModel dependency range changes.
+
 ## Purpose
 
 SQLModel combines Pydantic models with SQLAlchemy table models through standard
@@ -316,6 +332,12 @@ The integration conformance suite should cover:
 
 ## Roadmap Placement
 
+Rows before 0.40 preserve the plan's original implementation decomposition;
+they do not independently claim that every item in a row is shipped. Use the
+current boundary at the top of this page and the
+[optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) for
+availability. Rows from 0.40 onward are future sequence.
+
 | Release | SQLModel capability |
 |---|---|
 | 0.3 | Adapter and mapping protocols, source-generation design |
@@ -328,6 +350,28 @@ The integration conformance suite should cover:
 | 0.44 | Graduated multi-tenant reference persistence bundle |
 | 0.45 | IDE generation, navigation, comparison, and migration actions |
 | Later 0.x | Mature Alembic integration and provider templates |
+
+## Graduation Gates
+
+The existing bridge can remain useful without claiming reference persistence.
+A future SQLModel-backed control-plane bundle graduates only when:
+
+- ETLantic's provider protocols remain usable without SQLModel installed;
+- every repository operation applies immutable tenant and workspace scope;
+- sync and async transaction, rollback, concurrency, and pagination suites
+  pass against supported databases;
+- schema changes use reviewed, reversible migrations and production startup
+  never calls `create_all()` automatically;
+- idempotency, outbox, lease, checkpoint, and state-transition behavior passes
+  failure-injection tests;
+- backup, restore, retention, and upgrade rehearsals preserve identity and
+  audit evidence;
+- request, persistence, and response models prevent protected-field exposure;
+- dependency, migration, deployment, and incident runbooks are published with
+  an explicit compatibility matrix.
+
+Passing model-generation tests alone is not sufficient for a persistence or
+multi-tenant production claim.
 
 ## Decision
 

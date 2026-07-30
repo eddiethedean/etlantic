@@ -1,8 +1,10 @@
 # Documentation archive index
 
 > **Not product docs.** Historical migrations, design studies, future-protocol
-> stubs, and maintainer plans. Prefer [Upgrade](../01_GETTING_STARTED/UPGRADE.md)
-> and the current [Development hub](README.md) for day-to-day work.
+> stubs, and maintainer records. Prefer
+> [Upgrade](../01_GETTING_STARTED/UPGRADE.md), the current
+> [Development hub](README.md), and the [Planning Hub](PLAN_INDEX.md) for
+> day-to-day work.
 
 ## Current (also linked from Project → Archive index)
 
@@ -15,6 +17,7 @@
 - [Documentation audit 0.34](DOCUMENTATION_AUDIT_0_34.md)
 - [Documentation audit 0.33](DOCUMENTATION_AUDIT_0_33.md)
 - [Documentation audit 0.32](DOCUMENTATION_AUDIT_0_32.md)
+- [Planning Hub](PLAN_INDEX.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap (GitHub)](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
@@ -75,7 +78,6 @@
 - [Design Proposals index](DESIGN_PROPOSALS.md)
 - [Design studies on GitHub](https://github.com/eddiethedean/etlantic/tree/main/docs/09_EXAMPLES)
 - [Programmatic Authoring plan (historical)](PROGRAMMATIC_AUTHORING_0_24.md)
-- [FastAPI Integration Plan (historical)](FASTAPI_INTEGRATION_PLAN.md)
 - [ADR-013 Portable Transform IR](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)
 - [ADR-014 SOLID Core Refactor](adr/ADR-014-SOLID-CORE-REFACTOR.md)
 
@@ -114,12 +116,13 @@ Proposed configuration:
 - [Configuration](../10_REFERENCE/CONFIGURATION.md)
 - [Environment Variables](../10_REFERENCE/ENVIRONMENT_VARIABLES.md)
 
-## Maintainer plans
+## Planning portfolio
 
-- [ContractModel upgrade plan](CONTRACTMODEL_UPGRADE_PLAN.md)
-- [TransformationModel incubation plan](TRANSFORMATIONMODEL_PLAN.md)
-- [0.18 Gate A interchange record](INTEROPERABILITY_FOUNDATION_PLAN.md)
-- [Schema Drift Plan](SCHEMA_DRIFT_PLAN.md)
-- [ETL Reliability Plan](ETL_RELIABILITY_PLAN.md)
-- [SQLModel Integration Plan](SQLMODEL_INTEGRATION_PLAN.md)
-- [SparkForge Adoption](SPARKFORGE_ADOPTION.md)
+The [Planning Hub](PLAN_INDEX.md) is the single index for active plans,
+partially shipped programs, shipped implementation records, and historical
+review baselines. This archive does not duplicate plan status.
+
+Related historical adoption material:
+
+- [Programmatic authoring and lossless JSON — 0.24](PROGRAMMATIC_AUTHORING_0_24.md)
+- [SparkForge adoption record](SPARKFORGE_ADOPTION.md)

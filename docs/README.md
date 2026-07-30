@@ -1,88 +1,110 @@
+---
+hide:
+  - toc
+---
+
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">Typed Python data pipelines</span>
-    <h1>Validate before write.<br><span class="etlantic-hero__nowrap">Run where your engines are.</span></h1>
-    <p>Define pipelines as typed classes, catch bad wiring before any write, then
-    run or compile on Polars, Pandas, SQL, Spark, or Airflow.</p>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.34 · Beta</span>
+    <h1>One typed pipeline model. Many execution backends.</h1>
+    <p>Define contracts and topology in Python, validate them before execution,
+    then produce deterministic plans for local engines, backend plugins, or
+    external orchestrators.</p>
     <div class="etlantic-hero__actions">
-      <a class="md-button md-button--primary" href="01_GETTING_STARTED/QUICKSTART.md">Quickstart</a>
-      <a class="md-button" href="01_GETTING_STARTED/COMPARE.md">Is this for me?</a>
-      <a class="md-button" href="01_GETTING_STARTED/INSTALLATION.md">Installation</a>
+      <a class="md-button md-button--primary" href="01_GETTING_STARTED/QUICKSTART/">Run the quickstart</a>
+      <a class="md-button" href="01_GETTING_STARTED/COMPARE/">Evaluate ETLantic</a>
+      <a class="md-button" href="10_REFERENCE/API_REFERENCE/">Browse the API</a>
+    </div>
+    <div class="etlantic-hero__meta" aria-label="Project metadata">
+      <span>Python 3.11+</span>
+      <span>MIT licensed</span>
+      <span>Typed</span>
+    </div>
+  </div>
+  <div class="etlantic-flow" aria-label="ETLantic validation workflow">
+    <div class="etlantic-flow__header">
+      <img src="theme/assets/etlantic-logo.svg" alt="">
+      <span>Pipeline gate</span>
+    </div>
+    <div class="etlantic-flow__step">
+      <span class="etlantic-flow__number">01</span>
+      <span><strong>Model</strong><small>Types + topology</small></span>
+    </div>
+    <div class="etlantic-flow__connector" aria-hidden="true"></div>
+    <div class="etlantic-flow__step">
+      <span class="etlantic-flow__number">02</span>
+      <span><strong>Validate</strong><small>Contracts + trust</small></span>
+    </div>
+    <div class="etlantic-flow__connector" aria-hidden="true"></div>
+    <div class="etlantic-flow__step etlantic-flow__step--accent">
+      <span class="etlantic-flow__number">03</span>
+      <span><strong>Resolve</strong><small>Run · compile · generate</small></span>
     </div>
   </div>
 </div>
 
-ETLantic is a typed control layer for Python data pipelines. Define datasets,
-transformations, and wiring once; validate contracts and plugin capabilities
-before writing data; then resolve the logical pipeline for local Python,
-Polars, Pandas, SQL, PySpark, or an external orchestrator. Cross-engine
-execution requires either a backend implementation or a portable
-transformation supported by the selected plugin.
+<div class="etlantic-definition">
+  <strong>ETLantic gives Python data pipelines one portable, typed logical model.</strong>
+  <span>Validate-before-write is the safety gate; deterministic planning and
+  pluggable execution carry that model into dataframe engines and orchestrators.
+  Cross-engine execution remains explicit.</span>
+</div>
 
-It is **not** a warehouse tool, scheduler, or dataframe engine.
+## Choose your path
 
-!!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — `pip install 'etlantic==0.34.0'`
-       (or `pip install etlantic` for the latest compatible wheel)
-    2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
-    3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
-    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then a
-       **PyPI** Polars/Pandas tutorial or the
-       [SQL hello](06_EXECUTION/SQL_HELLO_PYPI.md); deeper SQL and PySpark
-       tutorials are clone-assisted
-    5. [Learning path](01_GETTING_STARTED/LEARNING_PATH.md) — week-by-week after first success
+<div class="etlantic-path-grid">
+  <a class="etlantic-path-card" href="01_GETTING_STARTED/QUICKSTART/">
+    <span class="etlantic-path-card__kicker">Build</span>
+    <strong>Get a first success</strong>
+    <span>Install, scaffold, validate, and run the file-backed sample.</span>
+    <span class="etlantic-path-card__action">Start the quickstart →</span>
+  </a>
+  <a class="etlantic-path-card" href="01_GETTING_STARTED/EVALUATOR/">
+    <span class="etlantic-path-card__kicker">Evaluate</span>
+    <strong>Decide whether it fits</strong>
+    <span>Review capabilities, limitations, alternatives, and pilot criteria.</span>
+    <span class="etlantic-path-card__action">Open the evaluator brief →</span>
+  </a>
+  <a class="etlantic-path-card" href="06_EXECUTION/PRODUCTION_READINESS/">
+    <span class="etlantic-path-card__kicker">Operate</span>
+    <strong>Prepare a controlled pilot</strong>
+    <span>Define trust, secrets, deployment, reports, and recovery boundaries.</span>
+    <span class="etlantic-path-card__action">Review production readiness →</span>
+  </a>
+  <a class="etlantic-path-card" href="07_PLUGIN_SDK/">
+    <span class="etlantic-path-card__kicker">Extend</span>
+    <strong>Build a plugin</strong>
+    <span>Implement public protocols and verify behavior with conformance suites.</span>
+    <span class="etlantic-path-card__action">Explore the Plugin SDK →</span>
+  </a>
+</div>
 
-    That is the whole first-hour path. Optional later:
-    [End-to-end pilot](01_GETTING_STARTED/END_TO_END_PILOT.md),
-    [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md),
-    [SDK 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) (after Ada/Grace).
-    Ignore Project → Archive index until you contribute.
-    Pages marked **Future design** are not APIs.
+## Green path: first success
 
-### What you get today (short)
+Install from PyPI first: `pip install etlantic`. The commands below pin
+`etlantic==0.34.0` so this version of the documentation and the installed API
+stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
+continues with an intentional validation failure after the first successful
+run.
 
-- Typed contracts + validate-before-write + deterministic plans
-- Local / Polars / Pandas / SQL / PySpark execution; Airflow compile; Prefect local MVP
-- Observability providers, run history, and event consumers (pilot slice)
-- Fail-closed production trust via `plugin_allowlist` (not the profile name alone)
-
-Full matrix: [Capabilities](01_GETTING_STARTED/CAPABILITIES.md).
-Fit check: [Compare](01_GETTING_STARTED/COMPARE.md).
-
-## Project status
-
-ETLantic is currently a **Beta** release for documented single-tenant pilots.
-
-- **Available:** typed authoring, validate/plan/run, Polars/Pandas/SQL/PySpark
-  plugins, Airflow compile, Prefect local MVP, observability / run history.
-- **Experimental:** Structured Streaming; `etlantic-datafusion` stub.
-- **Not in this release:** multi-tenant control plane, formal SLA, unrestricted
-  enterprise production. Roadmap detail lives under
-  [Evaluate](01_GETTING_STARTED/EVALUATOR.md) / [Archive index](11_DEVELOPMENT/ARCHIVE_INDEX.md)
-  (e.g. [multi-tenant control-plane plan](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
-
-“Production readiness” naming for the observability/history pilot slice does
-**not** mean unrestricted enterprise production. See
-[Production readiness](06_EXECUTION/PRODUCTION_READINESS.md) and
-[Release artifact verification](01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
-
-## Minimal working example
-
-=== "Unix / macOS"
+=== "macOS / Linux"
 
     ```bash
-    python -m venv .venv && source .venv/bin/activate
+    python -m venv .venv
+    source .venv/bin/activate
     python -m pip install --upgrade pip
     python -m pip install 'etlantic==0.34.0'
     python -m etlantic --version
-    mkdir my-pipeline && cd my-pipeline
+
+    mkdir my-pipeline
+    cd my-pipeline
     python -m etlantic init --with-toml
     python -m etlantic validate pipeline.py:SamplePipeline --profile development
     python -m etlantic run pipeline.py:SamplePipeline --profile development
     cat data/out.json
     ```
 
-=== "Windows (PowerShell)"
+=== "Windows PowerShell"
 
     ```powershell
     py -3.11 -m venv .venv
@@ -90,32 +112,112 @@ ETLantic is currently a **Beta** release for documented single-tenant pilots.
     python -m pip install --upgrade pip
     python -m pip install 'etlantic==0.34.0'
     python -m etlantic --version
-    mkdir my-pipeline; cd my-pipeline
+
+    mkdir my-pipeline
+    cd my-pipeline
     python -m etlantic init --with-toml
     python -m etlantic validate pipeline.py:SamplePipeline --profile development
     python -m etlantic run pipeline.py:SamplePipeline --profile development
     Get-Content data\out.json
     ```
 
-You should see `succeeded` and Ada/Grace sample rows (identity transform).
-`init` requires an **empty directory** (or pass `--force` — it can overwrite
-scaffolded files). Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
+<div class="etlantic-success">
+  <span class="etlantic-success__mark" aria-hidden="true">✓</span>
+  <span><strong>Expected result</strong>You should see a <code>succeeded</code>
+  run and two JSON rows for Ada and Grace.</span>
+</div>
 
-!!! note "PyPI vs clone"
-    **PyPI / pip users:** Installation → Quickstart → First Pipeline → Polars/Pandas
-    tutorials (PyPI path). The wheel does **not** include `examples/`.
-    **Contributors / clone users:** after `uv sync`, optional demos live under
+`init` should run in a fresh directory. `--force` can overwrite scaffolded
+files, so use it only when you have reviewed the target directory.
+
+!!! note "PyPI users and repository examples"
+    The wheel does not include `examples/`. Pip users should continue to
+    [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md), then choose a
+    PyPI-ready engine tutorial. Contributors can use the repository
     [`examples/`](https://github.com/eddiethedean/etlantic/tree/main/examples)
-    (see [examples/README](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md)).
-    The SQL hello is PyPI-ready; deeper SQL and PySpark tutorials are
-    clone-assisted.
+    after `uv sync --locked`.
 
-## After first success
+## Why validation-first
 
-| Goal | Start here |
+<div class="etlantic-benefits">
+  <div class="etlantic-benefit">
+    <span class="etlantic-benefit__number">01</span>
+    <strong>Fail before side effects</strong>
+    <span>Catch invalid wiring, incompatible contracts, unavailable
+    capabilities, and plugin-trust failures before publication.</span>
+  </div>
+  <div class="etlantic-benefit">
+    <span class="etlantic-benefit__number">02</span>
+    <strong>Review what will run</strong>
+    <span>Inspect, fingerprint, diff, and retain deterministic, secret-free
+    plans as build evidence.</span>
+  </div>
+  <div class="etlantic-benefit">
+    <span class="etlantic-benefit__number">03</span>
+    <strong>Keep execution explicit</strong>
+    <span>Use one logical model while plugins own Polars, Pandas, SQL,
+    PySpark, and orchestration behavior.</span>
+  </div>
+</div>
+
+## Choose an execution path
+
+Core installs without dataframe engines, database drivers, Spark, Airflow, or
+Prefect. Add only what the pipeline uses.
+
+| Path | Install | Current scope |
+|---|---|---|
+| Local Python + JSON/CSV | `pip install etlantic` | Built-in first-success and test path |
+| Polars | `pip install 'etlantic[polars]'` | Eager/lazy execution and portable compilation |
+| Pandas | `pip install 'etlantic[pandas]'` | Eager execution and portable compilation |
+| SQL | `pip install 'etlantic[sql]'` | SQLite evaluation and PostgreSQL reference execution |
+| PySpark | `pip install 'etlantic[pyspark]'` | Batch Spark execution; compatible JVM required |
+| Airflow | `pip install 'etlantic[airflow]'` | DAG compilation; Apache Airflow installs separately |
+| Prefect | `pip install 'etlantic[prefect]'` | Bounded local direct-execution integration |
+
+See [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) for prerequisites
+and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
+
+## Know the release boundary
+
+ETLantic 0.34 is a **Beta** release for documented, controlled, single-tenant
+pilots—not unrestricted enterprise production.
+
+<div class="etlantic-release-grid">
+  <div class="etlantic-release-card etlantic-release-card--available">
+    <strong>Available</strong>
+    <span>Typed authoring, validation, deterministic planning, local and plugin
+    execution, Airflow compilation, reports, and observability providers.</span>
+  </div>
+  <div class="etlantic-release-card etlantic-release-card--experimental">
+    <strong>Experimental</strong>
+    <span>Structured Streaming and the <code>etlantic-datafusion</code>
+    package remain outside the pilot path.</span>
+  </div>
+  <div class="etlantic-release-card etlantic-release-card--unavailable">
+    <strong>Not included</strong>
+    <span>Managed runtime, multi-tenant control plane, formal SLA, or
+    compliance certification.</span>
+  </div>
+</div>
+
+Production profiles require a non-empty `plugin_allowlist`; allowlisting
+controls selection, not process isolation. Plans and reports carry secret
+references, never resolved values. Review
+[Capabilities](01_GETTING_STARTED/CAPABILITIES.md),
+[Security](02_FOUNDATIONS/SECURITY.md),
+[Production readiness](06_EXECUTION/PRODUCTION_READINESS.md), and the
+[planned multi-tenant control-plane program](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)
+before a pilot.
+
+## Continue by goal
+
+| Goal | Next document |
 |---|---|
-| Understand the model | [Architecture](02_FOUNDATIONS/ARCHITECTURE.md), [Manifesto](ETLANTIC_MANIFESTO.md) |
-| Author without classes | [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
-| SDK sketch | [SDK 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
-| Evaluate for a pilot | [Evaluator brief](01_GETTING_STARTED/EVALUATOR.md) |
-| Contribute | [Contributing](11_DEVELOPMENT/CONTRIBUTING.md) |
+| Understand the logical model | [Core concepts](02_FOUNDATIONS/CORE_CONCEPTS.md) |
+| Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
+| Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
+| Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
+| Review the current release | [What's new in 0.34](01_GETTING_STARTED/WHATS_NEW_0_34.md) |
+| Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
+| Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

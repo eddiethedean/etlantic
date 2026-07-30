@@ -1,9 +1,19 @@
 # Local Scheduler and Prefect Integration Plan
 
-Status: **Shipped local MVP in 0.16+** (`etlantic-prefect`); remaining deploy/serve scope is open.  
-Applies to: ETLantic core, `etlantic.orchestration`, and optional orchestrator packages  
-Reference external compiler: `etlantic-airflow`  
-Shipped Python-native scheduler plugin: `etlantic-prefect` (local MVP)
+> **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); remaining
+> deploy and serve scope is open.
+>
+> **Current 0.34 boundary:** ETLantic core provides local scheduling, the
+> optional Prefect package provides the Python-native local MVP, and
+> `etlantic-airflow` provides external artifact compilation. Production
+> profiles must explicitly select and allowlist their orchestrator.
+>
+> **Scope:** ETLantic core, `etlantic.orchestration`, and optional orchestrator
+> packages. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when Prefect deploy/serve work enters scope, the
+> scheduler protocol changes, or conformance claims expand.
 
 ## Decision
 

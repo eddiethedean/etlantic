@@ -9,261 +9,305 @@
 <h1 align="center">ETLantic</h1>
 
 <p align="center">
-  <strong>Typed Python data pipelines with validate-before-write.</strong><br>
-  Design once. Validate everywhere.
+  <strong>One typed pipeline model. Many execution backends.</strong><br>
+  Typed contracts. Deterministic plans. Pluggable execution.
 </p>
 
 <p align="center">
-  <a href="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml"><img src="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/v/etlantic.svg" alt="PyPI"></a>
-  <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/pyversions/etlantic.svg" alt="Python versions"></a>
-  <a href="https://github.com/eddiethedean/etlantic/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d6a84b.svg" alt="MIT license"></a>
-  <a href="https://astral.sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml"><img src="https://github.com/eddiethedean/etlantic/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/v/etlantic.svg" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/etlantic/"><img src="https://img.shields.io/pypi/pyversions/etlantic.svg" alt="Supported Python versions"></a>
+  <img src="https://img.shields.io/badge/status-beta-d6a84b.svg" alt="Project status: beta">
+  <a href="https://github.com/eddiethedean/etlantic/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-0f766e.svg" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
   <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/">Compare</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/">Capabilities</a>
+  <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
+  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
+  <a href="https://etlantic.readthedocs.io/en/latest/10_REFERENCE/API_REFERENCE/">Python API</a> ·
+  <a href="https://etlantic.readthedocs.io/en/latest/10_REFERENCE/CLI/">CLI</a>
 </p>
 
 ---
 
-ETLantic is a typed control layer for Python data pipelines. Define datasets,
-transformations, and wiring once; validate contracts and plugin capabilities
-**before any write**; then resolve the logical pipeline for local Python,
-Polars, Pandas, SQL, PySpark, or an external orchestrator. Cross-engine
-execution requires either a backend implementation or a portable
-transformation supported by the selected plugin.
+ETLantic gives Python data pipelines one portable, typed logical model. It
+coordinates contracts, transformations, and topology without replacing the
+tools that execute them. Before execution reaches a write, ETLantic checks
+wiring, contract compatibility, backend capabilities, and plugin trust, then
+produces a deterministic plan for local engines, backend plugins, or external
+orchestrators.
 
-It is **not** a warehouse tool (use dbt), **not** a scheduler (use Airflow,
-Dagster, or Prefect), and **not** a dataframe engine.
+It is not a dataframe engine, warehouse transformation system, or scheduler.
+ETLantic coordinates those tools through one typed logical model.
 
 ```text
-Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run or compile
+Python types + pipeline topology
+              │
+              ▼
+      validate before write
+              │
+              ▼
+   deterministic, secret-free plan
+              │
+       ┌──────┼────────┐
+       ▼      ▼        ▼
+      run   compile  generate
 ```
 
-Not sure if ETLantic fits? Start with
-[Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/).
+## Five-minute quickstart
 
-## Why ETLantic?
+ETLantic requires Python 3.11 or newer. Create and activate a virtual
+environment outside the project that ETLantic will generate.
 
-- Catch invalid wiring, incompatible contracts, missing capabilities, and
-  untrusted plugins before a write.
-- Validate extracted inputs, transformation outputs, engine transitions, and
-  publication boundaries against the same contracts.
-- Keep one logical pipeline across local Python, Polars, Pandas, SQL, and
-  PySpark; compile to Airflow DAGs; run under Prefect where the local MVP
-  applies.
-- Review deterministic, secret-free plans and preserve structured diagnostics,
-  lineage, schema observations, and run reports.
-- Install a small core and add only the engines you need.
-
-## Quickstart (start here)
-
-**Primary path:** CLI `init` → validate → run (file-backed sample). Requires
-Python 3.11+. Use an empty directory for `init` (or pass `--force`).
+macOS or Linux:
 
 ```bash
-pip install etlantic
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Then install ETLantic and initialize a fresh project directory:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install etlantic
 python -m etlantic --version
 
-mkdir my-pipeline && cd my-pipeline
+mkdir my-pipeline
+cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
+```
+
+Inspect the result:
+
+```bash
 cat data/out.json
 ```
 
-You should see run status `succeeded` and JSON rows for Ada and Grace (identity
-transform on the sample). That proves plumbing—next, change the transform in
-[First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/).
+Or, in PowerShell:
 
-The CLI defaults to `development` when `--profile` is omitted (or your project's
-`default_profile`). Prefer an explicit profile in scripts and CI.
+```powershell
+Get-Content data\out.json
+```
 
-Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/).
+You should see a `succeeded` run and two JSON rows for Ada and Grace.
 
-> **After first success (clone only):** repository demos under `examples/`
-> require a git checkout — they are **not** in the PyPI wheel. Pip-only users:
-> ignore `examples/` until you clone.
+| Command | What it proves |
+|---|---|
+| `init` | Creates an import-safe pipeline, profile, sample data, and workspace |
+| `validate` | Checks topology, contracts, capabilities, configuration, and trust without running transforms |
+| `run` | Validates, plans, executes, and records a structured run report |
 
-> **Status:** ETLantic is currently **Beta** and suitable for
-> documented single-tenant pilots—not unrestricted enterprise production.
-> Structured Streaming remains experimental. See
-> [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
-> and [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/).
+Continue with the full
+[Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
+to see ETLantic reject an incompatible contract before a write, then build
+[your first transformation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/).
 
-## Engines and integrations
+## Why teams use ETLantic
 
-| Integration | Install | Role |
+- **Fail before side effects.** Catch invalid graph wiring, incompatible
+  contracts, missing engine capabilities, and plugin-trust failures before
+  publication.
+- **Review what will run.** Produce deterministic plans that can be inspected,
+  fingerprinted, diffed, and retained as build evidence.
+- **Keep contracts at every boundary.** Apply the same typed expectations to
+  extracted inputs, transformation outputs, engine transitions, and loads.
+- **Separate intent from execution.** Keep one logical pipeline while plugins
+  own Polars, Pandas, SQL, and PySpark execution or Airflow compilation.
+- **Adopt incrementally.** Start with local Python and JSON files, then install
+  only the engines and integrations you need.
+- **Automate enforcement.** Emit human, JSON, or SARIF diagnostics for local
+  development and CI.
+
+Cross-engine execution is explicit rather than magical: each transformation
+needs either an implementation for the selected backend or a portable
+transformation supported by that backend's compiler.
+
+## Where ETLantic fits
+
+| If your primary need is… | Start with… | Add ETLantic when you need… |
 |---|---|---|
-| Polars | `etlantic-polars` | Eager/lazy dataframe (PyPI tutorial path) |
-| Pandas | `etlantic-pandas` | Eager dataframe (PyPI tutorial path) |
-| SQL | `etlantic-sql` | Relational execution; SQLite demo on PyPI; PostgreSQL for MERGE; deeper tutorials may need a clone |
-| PySpark | `etlantic-pyspark` | Spark execution (needs Java; clone-assisted tutorials) |
-| Airflow | `etlantic-airflow` | Compile plans into DAG artifacts (does not install Airflow) |
-| Prefect | `etlantic-prefect` | Direct-execution local MVP (deployment/serve remain future) |
-| Keyring | `etlantic-keyring` | OS keyring secret provider |
-| SQLModel | `etlantic-sqlmodel` | SQLModel bridge helpers |
-| Medallantic | `medallantic` | Medallion facade (bronze/silver/gold stay out of core) |
-| DataFusion | `etlantic-datafusion` | **Experimental** stub — not for pilots |
-| FastAPI | `etlantic-fastapi` | Thin authoring/service **reference** adapter |
+| Warehouse-only SQL transformation | dbt | Typed Python pipelines across additional engines |
+| Durable scheduling and operations | Airflow, Dagster, or Prefect | Contract validation and deterministic plans before orchestration |
+| Dataframe or table validation | Pandera or Great Expectations | Pipeline topology, capability, and publication-boundary validation |
+| Typed multi-engine pipeline coordination | ETLantic | A validation-first logical model with pluggable execution |
 
-See [Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/)
-for observability (`otel` / `observability` extras) and Arrow helpers.
-Official engine packages share the **0.34 Beta pilot envelope** even when PyPI
-classifiers say Stable—treat the docs narrative as authoritative.
+Read the full
+[comparison guide](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/)
+before adopting ETLantic as a replacement for an existing tool. It is usually
+a complementary control layer.
 
-Matching extras such as `etlantic[polars]` are equivalent. Pin matching minors
-while ETLantic follows its 0.x roadmap.
+## Choose an execution path
 
-## After Ada/Grace — SDK sketch
+Core installs without dataframe engines, database drivers, Spark, Airflow, or
+Prefect. Add only what the pipeline uses. The middle column describes the
+capability shipped in 0.34, not future roadmap intent.
 
-Once the CLI Quickstart succeeds, the same model fits in a few lines of Python
-(memory-backed demo; seed data yourself):
+| Capability | 0.34 | Install |
+|---|---|---|
+| Local Python + JSON/CSV | Built-in first-success and test path | `pip install etlantic` |
+| Polars | Eager/lazy dataframe execution and portable compilation | `pip install 'etlantic[polars]'` |
+| Pandas | Eager dataframe execution and portable compilation | `pip install 'etlantic[pandas]'` |
+| SQL | SQLite evaluation path and PostgreSQL reference execution | `pip install 'etlantic[sql]'` |
+| PySpark | Batch Spark execution; requires a compatible JVM | `pip install 'etlantic[pyspark]'` |
+| Airflow | Compile plans to DAG modules; Apache Airflow is installed separately | `pip install 'etlantic[airflow]'` |
+| Prefect | Local direct-execution scheduler integration | `pip install 'etlantic[prefect]'` |
+| OS keyring | Runtime secret-provider integration | `pip install 'etlantic[keyring]'` |
+| SQLModel | SQLModel-to-contract bridge helpers | `pip install 'etlantic[sqlmodel]'` |
+| OpenTelemetry | Observability API integration | `pip install 'etlantic[observability]'` |
+| Medallion pipelines | Bronze/silver/gold facade outside ETLantic core | `pip install medallantic` |
+
+For controlled deployments, pin core and every official plugin to the same
+tested release. See
+[engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/),
+[compatibility](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/),
+and
+[optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/).
+
+Structured Streaming and `etlantic-datafusion` are experimental. The FastAPI
+package is a thin reference adapter, not a production control plane.
+
+## The authoring model
+
+ETLantic pipelines have four public building blocks:
+
+| Building block | Responsibility |
+|---|---|
+| `Data` | Typed dataset contract |
+| `Transformation` | Typed inputs, outputs, parameters, and implementations |
+| `Extract` / `Load` | External read and publication boundaries |
+| `Pipeline` | Declarative topology with `validate`, `plan`, and `run` |
+
+Application code should prefer the curated facade:
 
 ```python
 import etlantic as etl
-
-
-class RawCustomer(etl.Data):
-    customer_id: int
-    first_name: str
-    last_name: str
-
-
-class Customer(etl.Data):
-    customer_id: int
-    full_name: str
-
-
-class NormalizeCustomers(etl.Transformation):
-    customers: etl.Input[RawCustomer]
-    result: etl.Output[Customer]
-
-
-@NormalizeCustomers.implementation("local")
-def normalize(customers: list[RawCustomer]) -> list[Customer]:
-    return [
-        Customer(
-            customer_id=row.customer_id,
-            full_name=f"{row.first_name} {row.last_name}",
-        )
-        for row in customers
-    ]
-
-
-class CustomerPipeline(etl.Pipeline):
-    raw: etl.Extract[RawCustomer] = etl.Extract(asset="customers")
-    normalized = NormalizeCustomers.step(customers=raw)
-    output: etl.Load[Customer] = etl.Load(
-        input=normalized.result,
-        asset="normalized_customers",
-    )
-
-
-profile = etl.Profile(
-    name="demo",
-    assets={"customers": "memory", "normalized_customers": "memory"},
-)
-runtime = etl.PipelineRuntime()
-runtime.memory.seed(
-    "customers",
-    [RawCustomer(customer_id=1, first_name="Ada", last_name="Lovelace")],
-)
-
-CustomerPipeline.validate(profile=profile).raise_for_errors()
-plan = CustomerPipeline.plan(profile=profile)
-run = CustomerPipeline.run(profile=profile, runtime=runtime)
 ```
 
-Longer SDK walkthrough:
-[SDK 10 minutes](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/)
-(after CLI first success).
+Pipelines can be authored as typed classes or with functional builders and
+versioned `PipelineDefinition` JSON. Start with the generated project above;
+then use the
+[SDK tutorial](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/)
+or
+[programmatic authoring guide](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/).
 
-## Contract artifacts
+## Contracts as build artifacts
 
-Your Python types are also portable, reviewable contract artifacts. Generate
-the complete bundle from a valid pipeline:
+Generate a reviewable contract bundle only after the pipeline validates:
 
 ```bash
+python -m etlantic validate pipeline.py:SamplePipeline --format json
 python -m etlantic generate pipeline.py:SamplePipeline -o contracts/
 ```
 
 ```text
 contracts/
-├── data/              # ODCS data contracts
-├── transformations/   # DTCS transformation contracts
-└── pipelines/         # DPCS pipeline contract
+├── data/              # data contracts
+├── transformations/   # transformation contracts
+└── pipelines/         # pipeline topology contract
 ```
 
-| Artifact | Captures |
+ETLantic integrates with the
+[Open Data Contract Standard (ODCS)](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/),
+[Data Transformation Contract Standard (DTCS)](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/),
+and
+[Data Pipeline Contract Standard (DPCS)](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/).
+Generation is deterministic and refuses invalid pipelines.
+
+## Security and production posture
+
+ETLantic is currently **Beta**. It is suitable for documented, controlled,
+single-tenant pilots—not unrestricted enterprise production.
+
+| Boundary | Current posture |
 |---|---|
-| [ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/) | Data shape, constraints, identity, and version |
-| [DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/) | Typed inputs, outputs, parameters, and transformation semantics |
-| [DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/) | Pipeline graph, bindings, assets, and contract references |
+| Plans and reports | Carry secret references, never resolved secret values |
+| Production plugin trust | `security_mode="production"` requires an explicit non-empty `plugin_allowlist` |
+| Plugin isolation | Allowlists control selection; they are not a sandbox |
+| Schema history | Stores fingerprints and metadata, never source rows |
+| Deployment | Application-owned process, storage, network, recovery, and isolation controls |
+| Not included | Managed runtime, multi-tenant control plane, formal SLA, or compliance certification |
 
-Generation is deterministic and refuses invalid pipelines, so contract changes
-can be reviewed and versioned alongside the code that defines them.
+Use separate processes or stronger infrastructure boundaries for distinct
+tenants and trust domains. Before a pilot, review:
 
-## Architecture
+- [Capabilities and limitations](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
+- [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/)
+- [Security model](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/)
+- [Enterprise evaluation guide](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENTERPRISE_EVALUATION/)
+- [Planned multi-tenant control-plane program](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
+- [Security reporting policy](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md)
 
-ETLantic keeps logical meaning separate from physical execution:
+## Common workflows
 
-```text
-Data + Transformation + Pipeline contracts
-                              │
-                       validate and plan
-                              ▼
-                    secret-free PipelinePlan
-                              │
-                  ┌───────────┼───────────┐
-                  ▼           ▼           ▼
-               execute      compile     generate
-                  │           │           │
-                  └──── plugins and external systems
+```bash
+# Inspect the logical graph
+python -m etlantic inspect pipeline.py:SamplePipeline --format json
+
+# Resolve a deterministic plan
+python -m etlantic plan pipeline.py:SamplePipeline \
+  --profile development --format json
+
+# Emit SARIF for CI
+python -m etlantic validate pipeline.py:SamplePipeline \
+  --profile development --format sarif
+
+# Compile through the optional Airflow package
+python -m etlantic compile pipeline.py:SamplePipeline \
+  --profile development --target airflow -o dags/
+
+# Inspect durable run reports
+python -m etlantic report list
 ```
 
-Plans and reports contain secret references, never resolved secret values.
-Production profiles require explicit plugin allowlists. Backend optimizations
-may change the physical graph but must preserve contracts, validation
-boundaries, security domains, and logical attribution.
+The public CLI also includes `doctor`, `profile`, `diff`, `plugin`, `schema`,
+`reliability`, and `viz`. See the
+[CLI reference](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/CLI/)
+for exit codes and mutation behavior.
 
-Interchange formats and the validation envelope are covered in
-[Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/)
-and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/VALIDATION_EVERYWHERE/).
+## Documentation
 
-## Capability boundary
-
-| Capability | 0.34 |
+| Goal | Start here |
 |---|---|
-| Cohesive CLI (`init`, `doctor`, durable reports) | Available |
-| Typed contracts, graph validation, deterministic planning | Available |
-| Local, Polars, Pandas, SQL, and PySpark execution paths | Available |
-| Portable compilers for Polars, Pandas, SQL, and PySpark | Available |
-| Portable quality expressions (`etlantic.quality/1`) | Available (Polars/Pandas/local; SQL/PySpark fail-closed) |
-| Contract interchange, schema drift, lineage, reports, SARIF | Available |
-| Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
-| Observability providers, run history, event consumers | Available |
-| Trust, isolation, safe I/O, digests/attestations (single-tenant reference) | Available (bounded) |
-| Structured Streaming / `etlantic-datafusion` | Experimental |
-| Multi-tenant control plane, formal SLA | Not included |
+| Get a first success | [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) |
+| Decide whether ETLantic fits | [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/) |
+| Choose an engine | [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/) |
+| Learn the architecture | [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/) |
+| Use the Python SDK | [API reference](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/API_REFERENCE/) |
+| Operate a controlled pilot | [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/) |
+| Review future direction | [Planning Hub](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/PLAN_INDEX/) |
+| Build a plugin | [Plugin SDK](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/) |
+| Troubleshoot a failure | [Troubleshooting](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/TROUBLESHOOTING/) |
+| Upgrade safely | [Upgrade hub](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/UPGRADE/) |
 
-Full matrix: [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/).
-Roadmap programs live under docs Contribute → Maintainers (for example the
-[multi-tenant control-plane plan](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/))
-— not day-0 reading.
+Repository examples require a clone and are not included in the wheel. Pip
+users should begin with `etlantic init`; contributors can use
+[`examples/`](https://github.com/eddiethedean/etlantic/tree/main/examples)
+after `uv sync --locked`.
 
-## Learn more
+## Contributing and support
 
-[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)
-· [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
-· [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/)
-· [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/)
-· [Security](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/)
-· [Roadmap](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/ROADMAP_SUMMARY/)
-· [Contributing](https://github.com/eddiethedean/etlantic/blob/main/CONTRIBUTING.md)
+Contributions are welcome. Start with
+[CONTRIBUTING.md](https://github.com/eddiethedean/etlantic/blob/main/CONTRIBUTING.md)
+for setup, test scopes, documentation checks, and pull-request expectations.
 
-MIT licensed.
+- Usage questions and bug reports:
+  [GitHub Issues](https://github.com/eddiethedean/etlantic/issues)
+- Vulnerabilities:
+  [private reporting instructions](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md)
+- Release history:
+  [CHANGELOG.md](https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md)
+- Project governance:
+  [GOVERNANCE.md](https://github.com/eddiethedean/etlantic/blob/main/GOVERNANCE.md)
+
+ETLantic is available under the [MIT License](https://github.com/eddiethedean/etlantic/blob/main/LICENSE).

@@ -1,5 +1,20 @@
 # ETL Reliability and Recovery Plan
 
+> **Plan status: partially shipped, living cross-release plan.**
+>
+> **Current 0.34 boundary:** Public reliability models, provider protocols,
+> and local CLI inspection and preview workflows are available. Durable
+> managed history, control-plane coordination, federation, cost-aware
+> selection, and human-governed automation remain planned.
+>
+> **Authority:** [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+> [CLI reference](../10_REFERENCE/CLI.md) define current behavior. This plan
+> owns the remaining reliability outcomes and graduation criteria. See the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when reliability CLI/provider scope changes or a
+> roadmap reliability gate passes.
+
 ## Purpose
 
 An ETL pipeline can be structurally valid and still produce an untrustworthy
@@ -620,6 +635,12 @@ Conformance testing should cover:
 - statistical-drift privacy budgets and bounded execution.
 
 ## Roadmap Placement
+
+Rows before 0.40 preserve the plan's original implementation decomposition;
+they do not independently claim that every item in a row is shipped. Use the
+current boundary at the top of this page and
+[Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for availability.
+Rows from 0.40 onward are future sequence.
 
 | Release | Reliability capabilities |
 |---|---|

@@ -4,6 +4,10 @@ ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
 (M6)**. **0.35 / M7** is the next planned milestone. Milestones describe
 capability order, not release-date commitments.
 
+For the status, current boundary, and owner of every domain plan, use the
+[Planning Hub](PLAN_INDEX.md). For shipped behavior, use
+[Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
 | Current | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |

@@ -2,8 +2,16 @@
 
 > **Status: Gate A shipped in 0.18.0.** Versioned tabular interchange is
 > available for the Polars↔Pandas conformance pair. Gate B (DataFusion) remains
-> experimental in 0.20. The older Arrow helper remains a legacy **best-effort
+> experimental in 0.34. The older Arrow helper remains a legacy **best-effort
 > conversion** path.
+>
+> **Plan role:** This is a shipped implementation record plus the remaining
+> Gate B policy. [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) defines
+> current availability; this document preserves scope and graduation evidence.
+> See the [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when Gate B maturity or the supported interchange
+> matrix changes.
 
 This plan records the shipped 0.18 Gate A scope, contracts, milestones, and
 the still-planned Gate B policy.

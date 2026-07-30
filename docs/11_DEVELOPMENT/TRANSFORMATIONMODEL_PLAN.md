@@ -1,11 +1,19 @@
 # TransformationModel Incubation Plan
 
-## Status
-
-Proposed post-foundation **0.53** incubation plan (deferred from 0.20+ and the
-former 0.39 slot). Higher-adoption connectivity, control-plane,
-interoperability, operations, and provider work now precedes this package. The
-package and APIs described here are not shipped behavior.
+> **Plan status: proposed post-foundation 0.53 incubation; not shipped.**
+>
+> The work is deferred from 0.20+ and the former 0.39 slot. Connectivity,
+> control-plane, interoperability, operations, and provider work now precede
+> this package. Every interface on this page is illustrative until a future
+> release documents it as public API.
+>
+> **Authority:** The
+> [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+> owns sequencing; this plan owns incubation and graduation criteria. See
+> [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update if the incubation horizon changes or TM-0 begins.
 
 TransformationModel begins as an independently buildable workspace package at
 `packages/transformationmodel`. It may become a separately released ETLantic

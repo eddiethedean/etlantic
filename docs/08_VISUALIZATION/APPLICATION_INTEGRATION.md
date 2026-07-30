@@ -76,4 +76,5 @@ cancel is unsupported on this reference adapter.
 
 - [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 - [API — Authoring](../10_REFERENCE/API_AUTHORING.md) (`etlantic.authoring`, `etlantic.service`)
-- Historical design notes: [FastAPI Integration Plan](../11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md)
+- Control-plane design and remaining work:
+  [FastAPI Integration Plan](../11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md)

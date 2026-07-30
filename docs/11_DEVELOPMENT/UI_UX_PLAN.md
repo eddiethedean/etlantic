@@ -1,9 +1,19 @@
 # User Interface and Experience Plan
 
-**Status:** planned, cross-cutting. This plan sequences improvements to the
-local CLI, generated HTML artifacts, authoring loop, operator experience, and
-eventual hosted control plane. It does not change ETLantic's logical model or
-make a user interface an independent source of truth.
+> **Plan status: partially shipped, cross-cutting plan.**
+>
+> **Current 0.34 boundary:** The local CLI and generated read-only HTML and
+> diagram artifacts are available. Interactive workspace, dashboard, IDE, and
+> hosted operator phases remain planned and must pass their own accessibility,
+> security, and operational gates.
+>
+> **Authority:** Current CLI and visualization guides define shipped behavior.
+> This plan sequences interface outcomes; it never makes a UI an independent
+> source of truth. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
+> and the [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when an interface phase ships or its control-plane
+> dependency changes.
 
 ## Outcome
 

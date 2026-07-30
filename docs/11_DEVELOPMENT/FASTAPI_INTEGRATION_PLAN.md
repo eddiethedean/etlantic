@@ -4,6 +4,19 @@
 > sequenced for 0.40; tenant persistence, durable coordination, and policy
 > hardening continue through 0.41–0.43; the integrated production claim is
 > gated for 0.44.
+>
+> **Current 0.34 boundary:** The optional `etlantic-fastapi` thin reference
+> adapter is available. It is not a durable scheduler, persistence layer,
+> authorization boundary, or production multi-tenant control plane.
+>
+> **Authority:** The
+> [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines
+> the shipped adapter. This plan and the
+> [control-plane plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) own future
+> graduation gates. See the [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when the shipped adapter gains durable service
+> scope or any CP1–CP-GA gate changes state.
 
 ETLantic's FastAPI integration exposes typed pipeline operations through an
 ordinary FastAPI application without making HTTP part of pipeline semantics.
@@ -323,6 +336,25 @@ The integration suite should cover:
 - request size, rate, and timeout limits;
 - absence of secrets from errors and schemas;
 - compatibility between API and `PipelineRunReport` schema versions.
+
+## Graduation Boundary
+
+The shipped thin adapter remains a reference integration. A production
+control-API claim is allowed only when the integrated CP-GA gate in the
+[Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) passes,
+including:
+
+- SDK, CLI, and HTTP semantic parity for every supported operation;
+- deny-by-default authorization and non-enumerating tenant isolation;
+- durable submission, idempotency, event resume, cancellation, and recovery
+  across process and worker failure;
+- bounded requests, streams, queries, diagnostics, plans, reports, and
+  artifacts with no resolved secrets or source rows;
+- compatible OpenAPI and wire-schema evolution with generated-client tests;
+- deployment, migration, backup, restore, rollback, and incident runbooks.
+
+An application factory, generated OpenAPI document, or passing single-process
+test suite is not sufficient for graduation.
 
 ## Dependency Strategy
 

@@ -1,5 +1,5 @@
 site_name: ETLantic
-site_description: Typed Python data pipelines with validate-before-write.
+site_description: One typed model for Python data pipelines, with deterministic plans and pluggable execution.
 site_url: https://etlantic.readthedocs.io/
 repo_url: https://github.com/eddiethedean/etlantic
 repo_name: eddiethedean/etlantic
@@ -273,6 +273,8 @@ theme:
     - navigation.footer
     - navigation.indexes
     - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
     - search.highlight
@@ -348,112 +350,148 @@ plugins:
               - "!^_"
             separate_signature: true
             merge_init_into_class: true
+
+copyright: ETLantic is available under the MIT License.
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/eddiethedean/etlantic
+      name: ETLantic on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/etlantic/
+      name: ETLantic on PyPI
 nav:
   - Start Here:
       - Home: README.md
       - Installation: 01_GETTING_STARTED/INSTALLATION.md
       - Quickstart: 01_GETTING_STARTED/QUICKSTART.md
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
+      - Python SDK in 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
-      - Compare: 01_GETTING_STARTED/COMPARE.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
       - Current 0.34 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
-      - Release artifact verification: 01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md
-  - Tutorials:
-      - End-to-end pilot: 01_GETTING_STARTED/END_TO_END_PILOT.md
-      - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
-      - Polars: 06_EXECUTION/POLARS_TUTORIAL.md
-      - Pandas: 06_EXECUTION/PANDAS_TUTORIAL.md
-      - SQL hello (PyPI): 06_EXECUTION/SQL_HELLO_PYPI.md
-      - SQL: 06_EXECUTION/SQL_TUTORIAL.md
-      - PySpark: 06_EXECUTION/PYSPARK_TUTORIAL.md
-      - Airflow: 06_EXECUTION/AIRFLOW_TUTORIAL.md
-      - Prefect: 09_EXAMPLES/PREFECT_RUN.md
-  - How-to:
-      - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
-      - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
-      - Ops examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
-      - Profiles hub: 05_PIPELINES/PROFILES_HUB.md
-      - Portable transforms hub: 04_TRANSFORMATIONS/PORTABLE_HUB.md
-      - Security howto: 01_GETTING_STARTED/SECURITY_HOWTO.md
-      - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
-      - FAQ: 01_GETTING_STARTED/FAQ.md
-      - Upgrade: 01_GETTING_STARTED/UPGRADE.md
-      - Deployment: 06_EXECUTION/DEPLOYMENT.md
-      - CI integration: 06_EXECUTION/CI_INTEGRATION.md
-      - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md
-      - Rollback and recovery: 06_EXECUTION/ROLLBACK_RECOVERY.md
-      - Secrets management: 06_EXECUTION/SECRETS_MANAGEMENT.md
-      - Reports and history: 06_EXECUTION/REPORTS_AND_HISTORY.md
-  - Concepts:
-      - Overview: 02_FOUNDATIONS/README.md
-      - Core Concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
-      - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
-      - Validation Everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
-      - Security: 02_FOUNDATIONS/SECURITY.md
-      - Glossary: 02_FOUNDATIONS/GLOSSARY.md
-      - Execution Model: 06_EXECUTION/EXECUTION_MODEL.md
-      - Manifesto: ETLANTIC_MANIFESTO.md
-  - Reference:
-      - Overview: 10_REFERENCE/README.md
-      - API Reference: 10_REFERENCE/API_REFERENCE.md
-      - API — Authoring: 10_REFERENCE/API_AUTHORING.md
-      - API — Plan and runtime: 10_REFERENCE/API_PLAN_RUNTIME.md
-      - API — Quality: 10_REFERENCE/API_QUALITY.md
-      - API — Protocols: 10_REFERENCE/API_PROTOCOLS.md
-      - API — Optional packages: 10_REFERENCE/API_OPTIONAL_PACKAGES.md
-      - CLI: 10_REFERENCE/CLI.md
-      - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-      - Compatibility: 10_REFERENCE/COMPATIBILITY.md
-      - Configuration in 0.34.0: 10_REFERENCE/CONFIGURATION_TODAY.md
-      - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
-      - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
-      - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
-      - Diagnostics playbook: 10_REFERENCE/DIAGNOSTICS_PLAYBOOK.md
-      - Diagnostics catalog: 10_REFERENCE/DIAGNOSTICS_CATALOG.md
-      - Exceptions: 10_REFERENCE/EXCEPTIONS.md
-      - Optional Packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
-      - Known Limitations: 10_REFERENCE/KNOWN_ISSUES.md
-      - Surface inventory: 10_REFERENCE/SURFACE_INVENTORY.md
-      - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
-      - Portable Compiler Matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
-  - Extend:
-      - Overview: 07_PLUGIN_SDK/README.md
-      - Architecture: 07_PLUGIN_SDK/OVERVIEW.md
-      - Building a Plugin: 07_PLUGIN_SDK/BUILDING_A_PLUGIN.md
-      - Dataframe Plugin Protocol: 07_PLUGIN_SDK/DATAFRAME_PLUGIN.md
-      - SQL Plugin Protocol: 07_PLUGIN_SDK/SQL_PLUGIN.md
-      - SQL Dialect: 07_PLUGIN_SDK/SQL_DIALECT.md
-      - PySpark Plugin Protocol: 07_PLUGIN_SDK/PYSPARK_PLUGIN.md
-      - Spark Provider: 07_PLUGIN_SDK/SPARK_PROVIDER.md
-      - Orchestrator Plugin Protocol: 07_PLUGIN_SDK/ORCHESTRATOR_PLUGIN.md
-      - Secret Provider Protocol: 07_PLUGIN_SDK/SECRET_PROVIDER.md
-      - Observability Provider Protocol: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
-      - Run History Provider Protocol: 07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md
-      - Event Consumer Protocol: 07_PLUGIN_SDK/EVENT_CONSUMER.md
-      - Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
-      - Third-Party Compiler Tutorial: 07_PLUGIN_SDK/THIRD_PARTY_COMPILER_TUTORIAL.md
-      - Testing Plugins: 07_PLUGIN_SDK/TESTING_PLUGINS.md
-      - Capability Vocabulary: 07_PLUGIN_SDK/CAPABILITY_VOCABULARY.md
-      - Protocol Evolution: 07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md
-      - Distribution: 07_PLUGIN_SDK/DISTRIBUTION.md
   - Evaluate:
+      - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
-      - Evaluator: 01_GETTING_STARTED/EVALUATOR.md
+      - Evaluator brief: 01_GETTING_STARTED/EVALUATOR.md
       - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
       - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
-  - Project:
-      - Changelog: CHANGELOG.md
-      - What's new in 0.34: 01_GETTING_STARTED/WHATS_NEW_0_34.md
-      - Upgrade: 01_GETTING_STARTED/UPGRADE.md
-      - Contributing: 11_DEVELOPMENT/CONTRIBUTING.md
-      - Testing: 11_DEVELOPMENT/TESTING.md
-      - Governance: 11_DEVELOPMENT/GOVERNANCE.md
-      - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
+      - Release artifact verification: 01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md
+      - Known limitations: 10_REFERENCE/KNOWN_ISSUES.md
+  - Tutorials:
+      - End-to-end pilot: 01_GETTING_STARTED/END_TO_END_PILOT.md
+      - Core data paths:
+          - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
+          - Contract-first workflow: 09_EXAMPLES/CONTRACT_FIRST_TUTORIAL.md
+      - Execution engines:
+          - Polars: 06_EXECUTION/POLARS_TUTORIAL.md
+          - Pandas: 06_EXECUTION/PANDAS_TUTORIAL.md
+          - SQL hello (PyPI): 06_EXECUTION/SQL_HELLO_PYPI.md
+          - SQL (repository): 06_EXECUTION/SQL_TUTORIAL.md
+          - PySpark (repository): 06_EXECUTION/PYSPARK_TUTORIAL.md
+      - Orchestration:
+          - Airflow compilation: 06_EXECUTION/AIRFLOW_TUTORIAL.md
+          - Prefect local execution: 09_EXAMPLES/PREFECT_RUN.md
+  - How-to:
+      - Author pipelines:
+          - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
+          - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
+          - Profiles: 05_PIPELINES/PROFILES_HUB.md
+          - Portable transformations: 04_TRANSFORMATIONS/PORTABLE_HUB.md
+      - Operate safely:
+          - Deployment: 06_EXECUTION/DEPLOYMENT.md
+          - CI integration: 06_EXECUTION/CI_INTEGRATION.md
+          - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md
+          - Secrets management: 06_EXECUTION/SECRETS_MANAGEMENT.md
+          - Reports and history: 06_EXECUTION/REPORTS_AND_HISTORY.md
+          - Rollback and recovery: 06_EXECUTION/ROLLBACK_RECOVERY.md
+          - Operations examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
+          - Security checklist: 01_GETTING_STARTED/SECURITY_HOWTO.md
+      - Get help:
+          - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
+          - FAQ: 01_GETTING_STARTED/FAQ.md
+          - Upgrade: 01_GETTING_STARTED/UPGRADE.md
+  - Concepts:
+      - Overview: 02_FOUNDATIONS/README.md
+      - Core concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
+      - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
+      - Validation everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
+      - Execution model: 06_EXECUTION/EXECUTION_MODEL.md
       - Security: 02_FOUNDATIONS/SECURITY.md
-      - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
-      - Support policy: 11_DEVELOPMENT/SUPPORT.md
-      - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
-      - Documentation versioning: 01_GETTING_STARTED/DOCUMENTATION_VERSIONING.md
-      - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
+      - Glossary: 02_FOUNDATIONS/GLOSSARY.md
+      - Manifesto: ETLANTIC_MANIFESTO.md
+  - Reference:
+      - Overview: 10_REFERENCE/README.md
+      - Python API:
+          - API overview: 10_REFERENCE/API_REFERENCE.md
+          - Authoring: 10_REFERENCE/API_AUTHORING.md
+          - Plan and runtime: 10_REFERENCE/API_PLAN_RUNTIME.md
+          - Quality: 10_REFERENCE/API_QUALITY.md
+          - Protocols: 10_REFERENCE/API_PROTOCOLS.md
+          - Optional packages: 10_REFERENCE/API_OPTIONAL_PACKAGES.md
+      - CLI and configuration:
+          - CLI: 10_REFERENCE/CLI.md
+          - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
+          - Configuration in 0.34.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
+          - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
+          - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
+      - Errors and diagnostics:
+          - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
+          - Diagnostics playbook: 10_REFERENCE/DIAGNOSTICS_PLAYBOOK.md
+          - Diagnostics catalog: 10_REFERENCE/DIAGNOSTICS_CATALOG.md
+          - Exceptions: 10_REFERENCE/EXCEPTIONS.md
+      - Compatibility and limits:
+          - Compatibility: 10_REFERENCE/COMPATIBILITY.md
+          - Known limitations: 10_REFERENCE/KNOWN_ISSUES.md
+          - Surface inventory: 10_REFERENCE/SURFACE_INVENTORY.md
+          - Wire schema ranges: 10_REFERENCE/WIRE_SCHEMA_RANGES.md
+          - Portable compiler matrix: 10_REFERENCE/PORTABLE_COMPILER_MATRIX.md
+  - Extend:
+      - Overview: 07_PLUGIN_SDK/README.md
+      - Plugin foundations:
+          - Architecture: 07_PLUGIN_SDK/OVERVIEW.md
+          - Build a plugin: 07_PLUGIN_SDK/BUILDING_A_PLUGIN.md
+          - Test a plugin: 07_PLUGIN_SDK/TESTING_PLUGINS.md
+          - Capability vocabulary: 07_PLUGIN_SDK/CAPABILITY_VOCABULARY.md
+      - Execution protocols:
+          - Dataframe: 07_PLUGIN_SDK/DATAFRAME_PLUGIN.md
+          - SQL: 07_PLUGIN_SDK/SQL_PLUGIN.md
+          - SQL dialects: 07_PLUGIN_SDK/SQL_DIALECT.md
+          - PySpark: 07_PLUGIN_SDK/PYSPARK_PLUGIN.md
+          - Spark provider: 07_PLUGIN_SDK/SPARK_PROVIDER.md
+          - Orchestrator: 07_PLUGIN_SDK/ORCHESTRATOR_PLUGIN.md
+      - Provider protocols:
+          - Secrets: 07_PLUGIN_SDK/SECRET_PROVIDER.md
+          - Observability: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
+          - Run history: 07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md
+          - Event consumers: 07_PLUGIN_SDK/EVENT_CONSUMER.md
+      - Portable compilers:
+          - Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
+          - Third-party compiler tutorial: 07_PLUGIN_SDK/THIRD_PARTY_COMPILER_TUTORIAL.md
+      - Ship and maintain:
+          - Protocol evolution: 07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md
+          - Distribution: 07_PLUGIN_SDK/DISTRIBUTION.md
+  - Project:
+      - Releases:
+          - Changelog: CHANGELOG.md
+          - What's new in 0.34: 01_GETTING_STARTED/WHATS_NEW_0_34.md
+          - Upgrade: 01_GETTING_STARTED/UPGRADE.md
+      - Planning:
+          - Planning hub: 11_DEVELOPMENT/PLAN_INDEX.md
+          - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+      - Contribute:
+          - Contributor guide: 11_DEVELOPMENT/CONTRIBUTING.md
+          - Testing: 11_DEVELOPMENT/TESTING.md
+          - Documentation: 11_DEVELOPMENT/DOCUMENTATION.md
+      - Policies:
+          - Governance: 11_DEVELOPMENT/GOVERNANCE.md
+          - Code of Conduct: 11_DEVELOPMENT/CODE_OF_CONDUCT.md
+          - Security: 02_FOUNDATIONS/SECURITY.md
+          - Support: 11_DEVELOPMENT/SUPPORT.md
+      - Documentation history:
+          - Versioning: 01_GETTING_STARTED/DOCUMENTATION_VERSIONING.md
+          - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md

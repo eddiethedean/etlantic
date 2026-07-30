@@ -15,6 +15,7 @@ released.
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [API stability and deprecation](DEPRECATION_POLICY.md)
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md)
+- [Planning Hub](PLAN_INDEX.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
@@ -72,32 +73,19 @@ Historical migrations, design studies, and maintainer plans are indexed in
 - [Performance guidance](PERFORMANCE.md)
 - [Performance baselines](PERFORMANCE_RESULTS.md)
 
-## Maintainer plans and records (internal)
+## Plans and implementation records
 
-These pages sequence future work. They are not product user guides:
+Start with the [Planning Hub](PLAN_INDEX.md). It distinguishes planned
+programs, partially shipped work, shipped implementation records, and
+historical review baselines, then routes to the authoritative current
+documentation.
 
-- [0.18 Gate A — Versioned Tabular Interchange (shipped record)](INTEROPERABILITY_FOUNDATION_PLAN.md)
-- [FastAPI Integration Plan](FASTAPI_INTEGRATION_PLAN.md)
-- [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md)
-- [Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md)
-- [Programmatic Authoring and Lossless JSON (0.24)](PROGRAMMATIC_AUTHORING_0_24.md)
-- [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md)
-- [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md)
-- [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md)
-- [SQLModel Integration Plan](SQLMODEL_INTEGRATION_PLAN.md)
-- [SparkForge Feature Adoption](SPARKFORGE_ADOPTION.md)
-
-Current public transformation-contract behavior is documented in the
-[DTCS integration guide](../04_TRANSFORMATIONS/DTCS.md).
-
-- [Portable Transformation Implementation Plan](PORTABLE_TRANSFORM_PLAN.md)
-- [Local Scheduler and Prefect Integration Plan](SCHEDULER_AND_PREFECT_PLAN.md)
-- [DTCS and Portable Transformation Evolution](DTCS_PORTABLE_EVOLUTION.md)
-- [DTCS 2.0 Portable Relational Publication Record](DTCS_PORTABLE_SPEC_PROPOSAL.md)
-- [DTCS 3.0 Rich Portable Analytics Publication Record](DTCS_3_0_SPEC_PROPOSAL.md)
-
-Start with the roadmap for sequencing and the decision records for architectural
-boundaries.
+Use the
+[main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+for release order, [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for
+current availability, and [architecture decisions](ARCHITECTURE_DECISIONS.md)
+for locked boundaries. Historical material remains available through the
+[archive index](ARCHIVE_INDEX.md).
 
 The [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) chapter
 defines how design examples, proposals, and normative requirements should be

@@ -1,13 +1,25 @@
 # Portable Transformation Implementation Plan
 
-Status: Internal project plan
-[DTCS](../04_TRANSFORMATIONS/DTCS.md) plan protocol: `dtcs.transform-plan/2` (v1 readable)
-ETLantic authoring profile: `etlantic.transform/1`
-Compiler protocol: `etlantic.transform-compiler/1`
-Current release boundary: authoring shipped in 0.11.0; planning + Polars kernel
-compiler shipped in 0.12.0
-DTCS baseline: specification 3.0.0 / toolkit content floor `dtcs` 0.14.0 where
-specs say so; ETLantic install pin remains `dtcs>=0.13,<1`
+> **Plan status: shipped implementation record with living compatibility
+> follow-up.**
+>
+> **Current 0.34 boundary:** Portable authoring, deterministic planning,
+> public compiler conformance, and first-party Polars, Pandas, SQL, and PySpark
+> compilers are available. Support remains specific to each operation and
+> backend; the
+> [portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) is
+> authoritative and unsupported operations must fail explicitly.
+>
+> **Protocols:** [DTCS](../04_TRANSFORMATIONS/DTCS.md) plan
+> `dtcs.transform-plan/2` (v1 readable); authoring `etlantic.transform/1`;
+> compiler `etlantic.transform-compiler/1`.
+>
+> **Baseline:** Specification 3.0.0; the toolkit content floor is `dtcs`
+> 0.14.0 where the specifications require it, while ETLantic's install range
+> remains `dtcs>=0.13,<1`. See the [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when a protocol version or the public compiler
+> support matrix changes.
 
 ## Outcome
 

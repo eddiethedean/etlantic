@@ -1,5 +1,21 @@
 # Schema Drift and Evolution Plan
 
+> **Plan status: partially shipped, living cross-release plan.**
+>
+> **Current 0.34 boundary:** Schema inspection, comparison, impact analysis,
+> acknowledgement, SARIF diagnostics, and fingerprint-only file-backed history
+> are available. Registry-backed, multi-tenant history and future IDE workflows
+> remain planned. Schema history stores fingerprints and metadata, never
+> source rows.
+>
+> **Authority:** [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+> [CLI reference](../10_REFERENCE/CLI.md) define current behavior. This plan
+> owns future schema-evolution outcomes and gates. See the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Update when history-provider scope, schema CLI behavior,
+> or a schema-evolution roadmap gate changes.
+
 ## Purpose
 
 Source schemas change independently of pipeline code. Some changes violate a
@@ -424,6 +440,12 @@ Golden fixtures should include representative Polars, Pandas, Arrow, SQL,
 Spark, Delta, JSON, and nested schemas.
 
 ## Roadmap Placement
+
+Rows before 0.40 preserve the plan's original implementation decomposition;
+they do not independently claim that every item in a row is shipped. Use the
+current boundary at the top of this page and
+[Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for availability.
+Rows from 0.40 onward are future sequence.
 
 | Release | Schema-drift capability |
 |---|---|

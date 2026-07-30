@@ -1,5 +1,11 @@
 # Roadmap
 
+> **Document role:** This roadmap is authoritative for capability order and
+> cross-program dependencies. It is not current API documentation. Use the
+> [Planning Hub](docs/11_DEVELOPMENT/PLAN_INDEX.md) for plan status and
+> [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
+> Review this header for every release or sequence change.
+
 **Current release:** ETLantic **0.34.0** (Beta / PyPI). Milestones **0.25**
 (burn-in first slice) through **0.34** (operations, evidence, and production
 readiness / Medallantic M6) are shipped. **0.35** is the next planned
@@ -17,7 +23,9 @@ For shipped evidence, see
 [What's New in 0.34](docs/01_GETTING_STARTED/WHATS_NEW_0_34.md) and the
 [0.34 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_34.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
-adopter-facing view and the
+adopter-facing view, the
+[Planning Hub](docs/11_DEVELOPMENT/PLAN_INDEX.md) for the status and ownership
+of each domain plan, and the
 [Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md)
 for the cross-phase ecosystem gates, and the
 [User Interface and Experience Plan](docs/11_DEVELOPMENT/UI_UX_PLAN.md) for

@@ -1,13 +1,27 @@
 # ContractModel Upgrade Plan
 
-## Status
+> **Plan status: historical review baseline with active follow-up work.**
+>
+> **Current 0.34 boundary:** ETLantic requires ContractModel `>=0.2,<0.3`.
+> This document's detailed review targeted ContractModel 0.1.2, so it does not
+> define the current upstream API. Proposed interfaces remain illustrative
+> unless the current ContractModel or ETLantic reference documents them.
+>
+> **Authority:** ContractModel owns its shipped API and contract semantics.
+> This plan owns ETLantic integration goals that still require validation.
+> See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
+> [Planning Hub](PLAN_INDEX.md).
+>
+> **Review trigger:** Re-audit when ETLantic's supported ContractModel range
+> changes or an open recommendation becomes shipped upstream behavior.
 
-Proposed plan for ContractModel 0.2+ and its stable integration with ETLantic.
+## Review baseline
 
-This document follows a review of
+This document follows a historical review of
 [`eddiethedean/contractmodel`](https://github.com/eddiethedean/contractmodel)
-at commit `12e8505` (`0.1.2`) and ETLantic's current integration. Proposed APIs
-are illustrative; they are not shipped behavior.
+at commit `12e8505` (`0.1.2`) and the ETLantic integration that existed at that
+time. Revalidate every open recommendation against ContractModel 0.2.x before
+implementation.
 
 ## Product outcome
 
@@ -41,9 +55,9 @@ ETLantic
 ContractModel must never import ETLantic, [DTCS](../04_TRANSFORMATIONS/DTCS.md), [DPCS](../05_PIPELINES/DPCS.md), pipeline plans,
 orchestrators, or dataframe execution plugins.
 
-## Current strengths
+## Review-baseline strengths
 
-ContractModel 0.1.2 already provides:
+At the reviewed 0.1.2 baseline, ContractModel provided:
 
 - a small `DataContract` facade over a Canonical Contract Model (CCM)
 - [ODCS](../03_DATA_CONTRACTS/ODCS.md) and Pydantic round trips
