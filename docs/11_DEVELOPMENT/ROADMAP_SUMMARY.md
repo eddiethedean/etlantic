@@ -14,6 +14,23 @@ capability order, not release-date commitments.
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
 
+## Cross-cutting UI/UX sequence
+
+The [User Interface and Experience Plan](UI_UX_PLAN.md) adds five phased
+outcomes without creating conflicting release numbers:
+
+1. CLI clarity, actionable diagnostics, target discovery, and guided recovery.
+2. A React architecture spike followed by an interactive, accessible,
+   self-contained pipeline HTML workspace; the dependency-free static renderer
+   remains the portable fallback.
+3. A local run dashboard and visual plan/report comparison.
+4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.45.
+5. A hosted, governed experience after the 0.40–0.44 control-plane gates,
+   culminating in the read-only-first 0.51 Operator Console.
+
+All views remain projections of the same public artifacts and must preserve
+redaction, safe-I/O, authorization, accessibility, and bounded rendering.
+
 ## Shipped: 0.15 through 0.20
 
 ETLantic **0.15.0** closed Safe SQL Lowering and the LocalScheduler companion.

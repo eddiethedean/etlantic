@@ -292,6 +292,11 @@ path.
 Operators can understand and safely act on the graduated control plane without
 assembling raw API calls.
 
+This is Phase 5 of the cross-cutting
+[User Interface and Experience Plan](UI_UX_PLAN.md). Its local, read-only
+precursor is Phase 3: a generated dashboard and visual comparisons over
+durable reports and history.
+
 ### Deliver
 
 - a separately deployable web application using a generated, version-pinned

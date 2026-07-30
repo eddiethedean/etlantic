@@ -19,7 +19,9 @@ For shipped evidence, see
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view and the
 [Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md)
-for the cross-phase ecosystem gates.
+for the cross-phase ecosystem gates, and the
+[User Interface and Experience Plan](docs/11_DEVELOPMENT/UI_UX_PLAN.md) for
+the phased CLI, visualization, authoring, operator, and hosted experience.
 
 This roadmap sequences ETLantic from a typed modeling library into a
 stable, secure orchestration model and plugin platform.
@@ -163,6 +165,26 @@ The releases below combine eight continuing workstreams:
 | Tooling | CLI, generated artifacts, visualization, docs, and plugin SDK |
 | Assurance | Security, testing, benchmarks, release policy, and migration |
 | Developer experience | IDE protocols, source maps, LSP, previews, refactoring, and debugging |
+
+## Cross-Cutting User Interface and Experience Sequence
+
+User experience is a cross-cutting delivery program, not a parallel semantic
+layer. Every interface consumes the same public definitions, plans,
+diagnostics, reports, lineage, authorization decisions, and audit evidence.
+
+| Phase | Focus | Roadmap alignment |
+|---|---|---|
+| 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.45 |
+| 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.45 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.51 |
+| 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.45 Developer Intelligence |
+| 5 | Hosted, governed product experience | 0.40–0.44 control-plane substrate; 0.51 Operator Console |
+
+Phases may land incrementally, but later phases cannot bypass earlier
+consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
+The hosted experience cannot precede the applicable multi-tenant isolation,
+authorization, idempotency, policy, audit, and recovery gates. See the
+[detailed UI/UX plan](docs/11_DEVELOPMENT/UI_UX_PLAN.md).
 
 ## 0.1 — Typed Modeling Kernel
 

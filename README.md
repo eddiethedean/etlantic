@@ -65,16 +65,8 @@ Not sure if ETLantic fits? Start with
 **Primary path:** CLI `init` → validate → run (file-backed sample). Requires
 Python 3.11+. Use an empty directory for `init` (or pass `--force`).
 
-> **Install note:** Docs describe **0.34.0**. Until that wheel is on PyPI
-> (latest published may still be **0.33.0**), install from `main`:
-
 ```bash
-python -m venv .venv && source .venv/bin/activate
-python -m pip install --upgrade pip
-# Day-0 until 0.34.0 is on PyPI:
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-# After PyPI publish: python -m pip install 'etlantic==0.34.0'
-python -m etlantic --version   # expect 0.34.0
+pip install etlantic
 
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
@@ -82,10 +74,6 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 cat data/out.json
 ```
-
-On Windows PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and prefer
-`py -3.11 -m …` (see
-[Installation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/)).
 
 You should see run status `succeeded` and JSON rows for Ada and Grace (identity
 transform on the sample). That proves plumbing—next, change the transform in
