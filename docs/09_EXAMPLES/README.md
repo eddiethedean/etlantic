@@ -2,40 +2,39 @@
 
 ## Green path
 
-1. [Installation](../01_GETTING_STARTED/INSTALLATION.md) — install **0.34.0**
-   (from `main` until the wheel is on PyPI)
-2. [Quickstart](../01_GETTING_STARTED/QUICKSTART.md)
-3. [First Pipeline](../01_GETTING_STARTED/FIRST_PIPELINE.md)
-4. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
-5. [Engine selection](../01_GETTING_STARTED/ENGINE_SELECTION.md)
+1. Install with `pip install etlantic`
+2. [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
+3. [First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/)
+4. Optional: [Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/)
+5. [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/)
 6. Runnable scripts below
 
 Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
 0.34. Prefer the runnable guides below and the PyPI paths in
-[Polars](../06_EXECUTION/POLARS_TUTORIAL.md) /
-[Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md) /
-[SQL hello](../06_EXECUTION/SQL_HELLO_PYPI.md).
+[Polars](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/POLARS_TUTORIAL/) /
+[Pandas](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PANDAS_TUTORIAL/) /
+[SQL hello](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_HELLO_PYPI/).
 
 ## Runnable guides (docs)
 
-- [Production sample](PRODUCTION_SAMPLE.md) — allowlist + SARIF + file I/O
-- [Sample multi-file project](SAMPLE_PROJECT.md) — `examples/sample_project/`
-- [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — JSON and CSV
-- [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) — secrets, schema, SARIF
-- [Polars](../06_EXECUTION/POLARS_TUTORIAL.md)
-- [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md)
-- [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md)
-- [SQL](../06_EXECUTION/SQL_TUTORIAL.md) (clone companion)
-- [PySpark](../06_EXECUTION/PYSPARK_TUTORIAL.md)
-- [Airflow](../06_EXECUTION/AIRFLOW_TUTORIAL.md)
-- [Prefect direct execution](PREFECT_RUN.md) — `examples/prefect_run.py`
-- [Airflow Compile](AIRFLOW_COMPILE.md) — `examples/airflow_compile.py`
-- [Portable transforms](PORTABLE_TRANSFORMS.md) —
+- [Production sample](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/PRODUCTION_SAMPLE/) — allowlist + SARIF + file I/O
+- [Sample multi-file project](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/SAMPLE_PROJECT/) — `examples/sample_project/`
+- [File-backed pipeline](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/FILE_STORAGE_TUTORIAL/) — JSON and CSV
+- [Ops examples](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/OPS_EXAMPLES/) — secrets, schema, SARIF
+- [Polars](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/POLARS_TUTORIAL/)
+- [Pandas](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PANDAS_TUTORIAL/)
+- [SQL hello (PyPI)](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_HELLO_PYPI/)
+- [SQL](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_TUTORIAL/) (clone companion)
+- [PySpark](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PYSPARK_TUTORIAL/)
+- [Airflow](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/AIRFLOW_TUTORIAL/)
+- [Prefect direct execution](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/PREFECT_RUN/) — `examples/prefect_run.py`
+- [Airflow Compile](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/AIRFLOW_COMPILE/) — `examples/airflow_compile.py`
+- [Portable transforms](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/PORTABLE_TRANSFORMS/) —
   `examples/portable_polars_kernel.py`, `portable_pandas_kernel.py`, and
   `portable_wave17.py`
-- [Polars ↔ Pandas interchange](INTERCHANGE_POLARS_PANDAS.md) —
+- [Polars ↔ Pandas interchange](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS/) —
   `examples/interchange_polars_pandas.py`
-- [Medallantic](MEDALLANTIC.md) — SparkForge IR migration adapter (planning/validate only)
+- [Medallantic](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/MEDALLANTIC/) — SparkForge IR migration adapter (planning/validate only)
 - Programmatic JSON authoring — `examples/pipeline_definition_json.py` (clone; CI)
 
 ## Runnable scripts (repository `examples/`)
@@ -43,7 +42,7 @@ Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
 !!! note "Clone required"
     `examples/` is **not** installed with the PyPI wheel. Commands below need a
     git checkout (`uv run …`). Pip-only users: paste the
-    [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) or open scripts on GitHub.
+    [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) or open scripts on GitHub.
 
 Scripts marked **(CI)** run in `.github/workflows/checks.yml`. Others are
 documented and copy-paste runnable locally. Repository index:
@@ -73,7 +72,7 @@ uv sync --group dataframes
 uv run python examples/interchange_polars_pandas.py
 ```
 
-See [Polars ↔ Pandas Interchange](INTERCHANGE_POLARS_PANDAS.md).
+See [Polars ↔ Pandas Interchange](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS/).
 
 ### JSON and CSV storage (docs / local)
 
@@ -124,5 +123,5 @@ uv run python examples/prefect_run.py
 ```
 
 Prefer the runnable guides above and the
-[capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) /
-[API reference](../10_REFERENCE/API_REFERENCE.md) for the current boundary.
+[capabilities page](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/) /
+[API reference](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/API_REFERENCE/) for the current boundary.

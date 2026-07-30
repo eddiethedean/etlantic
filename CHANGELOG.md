@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [0.34.0] - 2026-07-30
+
+### Security and reliability hardening
 - Phase-aware ``PMPLUG402``: authorize/selected-engine denials block
   ``ensure_plugins`` / run / compile / doctor / execute (discovery siblings stay
   non-blocking); ``run`` maps all raised ``PMPLUG*`` to ``TRUST_FAILURE``; doctor
@@ -40,8 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ``FileStateStore`` fails closed on corrupt state; schema history verifies
   stored fingerprints; file schema/run-history providers default
   ``fail_closed=True``
-
-## [0.34.0] - 2026-07-29
 
 ### Added
 - Lifecycle event correlation (`etlantic.lifecycle_event/1`) with plan/region/backend fields

@@ -89,7 +89,7 @@ Full walkthrough: [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETT
 > require a git checkout — they are **not** in the PyPI wheel. Pip-only users:
 > ignore `examples/` until you clone.
 
-> **Status:** ETLantic **0.34.0** is a **Beta** release suitable for
+> **Status:** ETLantic is currently **Beta** and suitable for
 > documented single-tenant pilots—not unrestricted enterprise production.
 > Structured Streaming remains experimental. See
 > [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
@@ -201,9 +201,9 @@ contracts/
 
 | Artifact | Captures |
 |---|---|
-| [ODCS](docs/03_DATA_CONTRACTS/ODCS.md) | Data shape, constraints, identity, and version |
-| [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) | Typed inputs, outputs, parameters, and transformation semantics |
-| [DPCS](docs/05_PIPELINES/DPCS.md) | Pipeline graph, bindings, assets, and contract references |
+| [ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/) | Data shape, constraints, identity, and version |
+| [DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/) | Typed inputs, outputs, parameters, and transformation semantics |
+| [DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/) | Pipeline graph, bindings, assets, and contract references |
 
 Generation is deterministic and refuses invalid pipelines, so contract changes
 can be reviewed and versioned alongside the code that defines them.
@@ -253,7 +253,7 @@ and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDAT
 
 Full matrix: [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/).
 Roadmap programs live under docs Contribute → Maintainers (for example the
-[multi-tenant control-plane plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md))
+[multi-tenant control-plane plan](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/))
 — not day-0 reading.
 
 ## Learn more

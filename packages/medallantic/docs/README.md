@@ -51,14 +51,14 @@ plan = plan_pipeline_like(defn, profile=lowered.profile)
 
 ## Documentation map
 
-- [Getting started](getting-started.md) — install, adapt, validate, and plan
-- [Core concepts](concepts.md) — ownership and medallion-to-ETLantic mapping
-- [SparkForge migration](sparkforge-migration.md) — IR conversion workflow
-- [Runtime and reports](runtime-and-reports.md) — selections, retries, and results
-- [Compatibility](compatibility.md) — supported mappings and current limits
-- [Architecture](architecture.md) — package boundaries and extension rules
-- [Development](development.md) — local tests and contribution constraints
-- [Roadmap](../ROADMAP.md) — parity milestones (M2+)
+- [Getting started](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/getting-started.md) — install, adapt, validate, and plan
+- [Core concepts](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/concepts.md) — ownership and medallion-to-ETLantic mapping
+- [SparkForge migration](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/sparkforge-migration.md) — IR conversion workflow
+- [Runtime and reports](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/runtime-and-reports.md) — selections, retries, and results
+- [Compatibility](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/compatibility.md) — supported mappings and current limits
+- [Architecture](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/architecture.md) — package boundaries and extension rules
+- [Development](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/development.md) — local tests and contribution constraints
+- [Roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) — parity milestones (M2+)
 
 ## Choose the right starting point
 

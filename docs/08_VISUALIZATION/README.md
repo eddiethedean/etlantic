@@ -10,16 +10,16 @@ charts.
 
 ## Shipped
 
-- [Mermaid](MERMAID.md) — `Pipeline.to_mermaid()`
-- [Graphviz](GRAPHVIZ.md) — DOT export (`etlantic.viz.graph_to_dot`)
-- [HTML](HTML.md) — lineage HTML pages (`etlantic.viz.graph_to_html`)
-- [Lineage](LINEAGE.md) — JSON lineage export (`etlantic.viz.lineage_export`)
+- [Mermaid](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/MERMAID/) — `Pipeline.to_mermaid()`
+- [Graphviz](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/GRAPHVIZ/) — DOT export (`etlantic.viz.graph_to_dot`)
+- [HTML](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/HTML/) — lineage HTML pages (`etlantic.viz.graph_to_html`)
+- [Lineage](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/LINEAGE/) — JSON lineage export (`etlantic.viz.lineage_export`)
 
 ## Future design
 
 These pages describe intended richer surfaces beyond the 0.9 exporters:
 
-- [Documentation](DOCUMENTATION.md)
-- [Pipeline Interface](OPENAPI_FOR_PIPELINES.md)
+- [Documentation](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/DOCUMENTATION/)
+- [Pipeline Interface](https://etlantic.readthedocs.io/en/latest/08_VISUALIZATION/OPENAPI_FOR_PIPELINES/)
 
-See [Current Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+See [Current Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/).

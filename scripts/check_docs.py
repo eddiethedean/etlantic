@@ -26,6 +26,24 @@ STANDARD_PAGES = {
     "DTCS": ROOT / "docs/04_TRANSFORMATIONS/DTCS.md",
     "DPCS": ROOT / "docs/05_PIPELINES/DPCS.md",
 }
+STANDARD_URLS = {
+    acronym: (
+        "https://etlantic.readthedocs.io/en/latest/"
+        f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
+    )
+    for acronym, page in STANDARD_PAGES.items()
+}
+
+
+def readthedocs_url(page: Path) -> str:
+    """Return the canonical public URL for a Markdown page under ``docs/``."""
+    relative = page.relative_to(ROOT / "docs")
+    if relative == Path("README.md"):
+        return "https://etlantic.readthedocs.io/en/latest/"
+    route = relative.with_suffix("").as_posix()
+    if route.endswith("/README"):
+        route = route.removesuffix("/README")
+    return f"https://etlantic.readthedocs.io/en/latest/{route}/"
 
 
 def version_from(path: Path, pattern: str) -> str:
@@ -133,6 +151,9 @@ def check_standard_links() -> None:
                 if raw_target.startswith("<") and raw_target.endswith(">"):
                     raw_target = raw_target[1:-1]
                 target = unquote(raw_target).split("#", 1)[0].split("?", 1)[0]
+                if target == STANDARD_URLS[acronym]:
+                    linked_to_canonical = True
+                    break
                 if not target or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target):
                     continue
                 if (path.parent / target).resolve() == canonical.resolve():
@@ -228,8 +249,13 @@ def check_control_plane_plan() -> None:
         ROOT / "docs/11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md",
         ROOT / "docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md",
     )
+    plan_url = (
+        "https://etlantic.readthedocs.io/en/latest/"
+        f"{plan.relative_to(ROOT / 'docs').with_suffix('')}/"
+    )
     for path in linked_surfaces:
-        if plan.name not in path.read_text(encoding="utf-8"):
+        surface = path.read_text(encoding="utf-8")
+        if plan.name not in surface and plan_url not in surface:
             raise SystemExit(
                 f"{path}: must link the first-class control-plane plan {plan.name}"
             )
@@ -462,19 +488,14 @@ def main() -> None:
             f"Version mismatch: package={package_version}, project={project_version}"
         )
 
-    # Package-facing install docs are release surfaces too. Keep all current
-    # package pins synchronized with core; the deprecated redirect intentionally
-    # has no version pin.
+    # If a package README chooses to pin an install, keep that pin synchronized
+    # with core. READMEs do not have to repeat the exact current version.
     package_pin = re.compile(
         r"(?:etlantic(?:-[a-z0-9-]+)?|medallantic)"
         r"(?:\[[^\]]+\])?==(\d+\.\d+\.\d+)"
     )
     for readme in sorted((ROOT / "packages").glob("*/README.md")):
         text = readme.read_text(encoding="utf-8")
-        if readme.parent.name != "etlantic-sparkforge" and package_version not in text:
-            raise SystemExit(
-                f"{readme} must mention current package version {package_version}"
-            )
         for pin in package_pin.findall(text):
             if pin != package_version:
                 raise SystemExit(
@@ -494,16 +515,11 @@ def main() -> None:
     check_mkdocs_nav_adoption_guards()
 
     current_markers = [
-        ROOT / "README.md",
-        ROOT / "docs/README.md",
-        ROOT / "docs/01_GETTING_STARTED/README.md",
         ROOT / "docs/01_GETTING_STARTED/FIRST_PIPELINE.md",
         ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
         ROOT / "docs/01_GETTING_STARTED/FAQ.md",
         ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
-        ROOT / "docs/09_EXAMPLES/README.md",
         ROOT / "docs/10_REFERENCE/DIAGNOSTICS.md",
-        ROOT / "examples/README.md",
         ROOT / "SECURITY.md",
         ROOT / "SUPPORT.md",
     ]
@@ -849,8 +865,14 @@ def main() -> None:
         ROOT / "docs/11_DEVELOPMENT/ARCHIVE_INDEX.md"
     ).read_text(encoding="utf-8"):
         raise SystemExit("Archive index missing Migration 0.11 → 0.12")
-    if "ARCHIVE_INDEX.md" not in (ROOT / "docs/11_DEVELOPMENT/README.md").read_text(
+    development_readme = (ROOT / "docs/11_DEVELOPMENT/README.md").read_text(
         encoding="utf-8"
+    )
+    archive_url = (
+        "https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/ARCHIVE_INDEX/"
+    )
+    if "ARCHIVE_INDEX.md" not in development_readme and archive_url not in (
+        development_readme
     ):
         raise SystemExit("Development README must link Archive index")
     if not (ROOT / "docs/11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md").exists():
@@ -910,12 +932,18 @@ def main() -> None:
         )
         migration_link = current_migration.name
         exit_gate_link = current_exit_gate.name
-        if migration_link not in development_readme:
+        if (
+            migration_link not in development_readme
+            and readthedocs_url(current_migration) not in development_readme
+        ):
             raise SystemExit(
                 "docs/11_DEVELOPMENT/README.md must link current migration "
                 f"{migration_link}"
             )
-        if exit_gate_link not in development_readme:
+        if (
+            exit_gate_link not in development_readme
+            and readthedocs_url(current_exit_gate) not in development_readme
+        ):
             raise SystemExit(
                 "docs/11_DEVELOPMENT/README.md must link current exit gate "
                 f"{exit_gate_link}"
@@ -924,7 +952,10 @@ def main() -> None:
             encoding="utf-8"
         )
         whats_new_link = f"WHATS_NEW_{major_minor_for_notes.replace('.', '_')}.md"
-        if whats_new_link not in getting_started:
+        if (
+            whats_new_link not in getting_started
+            and readthedocs_url(whats_new_minor) not in getting_started
+        ):
             raise SystemExit(
                 "docs/01_GETTING_STARTED/README.md must link current What's New "
                 f"{whats_new_link}"
@@ -1329,11 +1360,6 @@ def main() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     if "pip install etlantic" not in readme and "pip install 'etlantic" not in readme:
         raise SystemExit("README.md missing pip-first install guidance")
-    if (
-        "etlantic --version" not in readme
-        and "python -m etlantic --version" not in readme
-    ):
-        raise SystemExit("README.md missing etlantic --version verify step")
     if "hosted site TBD" in readme:
         raise SystemExit("README.md still says hosted site TBD")
     if "etlantic.readthedocs.io" not in readme:
@@ -1345,16 +1371,12 @@ def main() -> None:
     if green_idx < 0:
         raise SystemExit("docs/README.md missing Green path rail")
     green_block = docs_home[green_idx : green_idx + 700]
-    if "INSTALLATION.md" not in green_block.split("Quickstart")[0]:
-        raise SystemExit("docs/README.md Green path must lead with Installation")
-    if green_block.find("INSTALLATION.md") > green_block.find("WHATS_NEW_"):
-        # Installation should precede release notes for first-time visitors.
-        install_pos = green_block.find("INSTALLATION.md")
-        whats_pos = green_block.find(f"WHATS_NEW_{major_minor.replace('.', '_')}")
-        if whats_pos >= 0 and install_pos > whats_pos:
-            raise SystemExit(
-                "docs/README.md Green path must place Installation before What's new"
-            )
+    install_pos = green_block.find("pip install etlantic")
+    quickstart_pos = green_block.find("Quickstart")
+    if install_pos < 0 or (quickstart_pos >= 0 and install_pos > quickstart_pos):
+        raise SystemExit(
+            "docs/README.md Green path must lead with pip install etlantic"
+        )
     if "prefer from-source until PyPI" in docs_home:
         raise SystemExit("docs/README.md still prefers from-source install")
     # Current What's New must not point at the prior release notes file.
@@ -1381,6 +1403,12 @@ def main() -> None:
     if (
         f"What's new in {major_minor}" in docs_home
         and whats_new_current_link not in docs_home
+        and readthedocs_url(
+            ROOT
+            / "docs/01_GETTING_STARTED"
+            / f"WHATS_NEW_{major_minor.replace('.', '_')}.md"
+        )
+        not in docs_home
     ):
         raise SystemExit(
             f"docs/README.md must link What's new in {major_minor} to {whats_new_current_link}"

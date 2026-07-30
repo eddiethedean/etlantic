@@ -4,9 +4,10 @@ Local workstation secret provider for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.34 using the Python
 [`keyring`](https://keyring.readthedocs.io/) library and OS credential stores.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-keyring==0.34.0'
-# or: pip install 'etlantic[keyring]'
+pip install etlantic-keyring
 ```
 
 ## Wiring
@@ -36,3 +37,9 @@ service = "etlantic.customer-platform"
 ```
 
 Fail-closed: missing credentials raise `PipelineExecutionError` at runtime.
+
+## Links
+
+[Secrets documentation](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SECRETS_MANAGEMENT/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-keyring) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

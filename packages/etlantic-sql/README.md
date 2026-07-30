@@ -7,9 +7,10 @@ SQLite and PostgreSQL reference SQL execution plugin for
 > release channel. Core ETLantic **0.34 remains Beta** for documented
 > single-tenant pilots — classifiers are not an enterprise SLA.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-sql==0.34.0'
-# or: pip install 'etlantic[sql]'
+pip install etlantic-sql
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
@@ -52,3 +53,10 @@ python examples/sql_boundary_hybrid.py
 python examples/sql_transactional_write.py
 python examples/sql_failure_recovery.py
 ```
+
+## Links
+
+[SQL tutorial](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

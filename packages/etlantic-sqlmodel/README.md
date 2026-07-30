@@ -3,9 +3,10 @@
 Optional bridge between ETLantic `Data` contracts and
 [SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.34.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-sqlmodel==0.34.0'
-# or: pip install 'etlantic[sqlmodel]'
+pip install etlantic-sqlmodel
 ```
 
 Sessions, Alembic migrations, and repository helpers are planned across
@@ -48,3 +49,9 @@ tooling that consumes the schema-mapping plugin object.
 
 Generated SQLModel classes are reviewable starting points — relational choices
 such as primary keys and table names must be supplied explicitly.
+
+## Links
+
+[Optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sqlmodel) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

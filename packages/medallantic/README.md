@@ -17,18 +17,16 @@ Native PySpark Column and Moltres rules remain explicitly capability-gated.
 
 Documentation:
 
-- [Documentation index](docs/README.md)
-- [Getting started](docs/getting-started.md)
-- [SparkForge migration](docs/sparkforge-migration.md)
-- [Compatibility](docs/compatibility.md)
-- [Architecture](docs/architecture.md)
+- [Documentation index](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/README.md)
+- [Getting started](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/getting-started.md)
+- [SparkForge migration](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/sparkforge-migration.md)
+- [Compatibility](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/compatibility.md)
+- [Architecture](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/architecture.md)
 
 ## Install
 
 ```bash
-pip install 'etlantic==0.34.0' 'medallantic==0.34.0'
-# or
-pip install 'etlantic[medallantic]'
+pip install medallantic
 ```
 
 ## Native authoring
@@ -59,3 +57,9 @@ from medallantic.migrate.sql import from_sql_pipeline_builder
 The adapted result supplies an ordinary ETLantic pipeline and profile; select
 execution plugins such as `Profile.spark_engine="pyspark"` separately.
 Production profiles must allowlist every trusted execution plugin.
+
+## Links
+
+[Documentation](https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic/docs) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/medallantic) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -1,17 +1,18 @@
 # Runnable Examples
 
-These examples use APIs and dependencies shipped in ETLantic **0.34.0**.
+These examples use APIs and dependencies shipped in the current ETLantic
+release.
 
 **Which path am I on?**
 
 | Audience | Start here |
 |---|---|
-| **PyPI / first-time user** | [Quickstart](../docs/01_GETTING_STARTED/QUICKSTART.md) — `pip install` → `python -m etlantic init` → validate → run. Do **not** copy commands from this page yet. |
+| **PyPI / first-time user** | [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) — `pip install` → `python -m etlantic init` → validate → run. Do **not** copy commands from this page yet. |
 | **Contributor / evaluator with a clone** | `uv sync --locked`, then the scripts below. |
 
 **Clone required.** The PyPI wheel does **not** include `examples/`. Commands
 below assume a **repository checkout** with `uv sync` / `uv run`, after
-installing matching `==0.34.0` optional packages as needed.
+installing any optional engine packages used by an example.
 
 **CI vs local:** `.github/workflows/checks.yml` runs the scripts marked
 **(CI)** below. Scripts marked **(docs / local)** are copy-paste runnable and
@@ -36,7 +37,7 @@ uv run python -m etlantic validate pipeline.definition.json --profile developmen
 
 Builds a definition with functional constructors, writes
 `etlantic.pipeline/1` JSON, validates, and plans. See
-[Programmatic authoring](../docs/05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
+[Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/).
 
 ## Sample multi-file project (docs / local)
 
@@ -45,7 +46,7 @@ uv run python -m examples.sample_project.run_local
 ```
 
 Same story split across `contracts.py`, `transforms.py`, `pipeline.py`, and
-`run_local.py`. See [Sample project](../docs/09_EXAMPLES/SAMPLE_PROJECT.md).
+`run_local.py`. See [Sample project](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/SAMPLE_PROJECT/).
 
 ## Production-shaped pilot (docs / local)
 
@@ -56,7 +57,7 @@ uv run python examples/sample_pilot/run_pilot.py
 ```
 
 Production `security_mode` + allowlist + JSON file I/O. See
-[Production sample](../docs/09_EXAMPLES/PRODUCTION_SAMPLE.md).
+[Production sample](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/PRODUCTION_SAMPLE/).
 
 ## Portable Polars / Pandas (docs / local)
 
@@ -83,7 +84,7 @@ uv run python examples/interchange_polars_pandas.py
 
 Gate A demo: a Polars step feeds a Pandas step across a plan-declared
 `etlantic.interchange/1` boundary. See
-[docs/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md](../docs/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md).
+[docs/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md](https://etlantic.readthedocs.io/en/latest/09_EXAMPLES/INTERCHANGE_POLARS_PANDAS/).
 
 ## JSON and CSV storage (docs / local)
 

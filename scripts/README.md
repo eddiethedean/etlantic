@@ -1,8 +1,8 @@
 # Scripts
 
 Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
-[Contributing](../docs/11_DEVELOPMENT/CONTRIBUTING.md) and
-[Release process](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md).
+[Contributing](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/CONTRIBUTING/) and
+[Release process](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/RELEASE_PROCESS/).
 
 | Script | Purpose | CI |
 |---|---|---|

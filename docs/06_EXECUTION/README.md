@@ -1,15 +1,15 @@
 # Execution
 
-!!! success "Available in ETLantic 0.34.0"
+!!! success "Available"
     Portable Polars + PySpark + Pandas relational compilation (shipped since
     0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
     executes registered native implementations and, when
     `Profile.portable_transform_policy` is `prefer` or `require`, can compile
-    and run Polars/PySpark/Pandas [DTCS](../04_TRANSFORMATIONS/DTCS.md) plans through `etlantic-polars` /
+    and run Polars/PySpark/Pandas [DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/) plans through `etlantic-polars` /
     `etlantic-pyspark` / `etlantic-pandas` without a native
     `@implementation(...)` for the advertised kernel +
     `portable-relational/1` claim set. See
-    [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
+    [Portable Transformations](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS/)
     and
     [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).
 
@@ -110,9 +110,9 @@ plans, but those plans preserve the same logical pipeline contract.
 
 Execution is informed by all three standards:
 
-- **[ODCS](../03_DATA_CONTRACTS/ODCS.md)** validates data.
+- **[ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/)** validates data.
 - **DTCS** defines transformation semantics.
-- **[DPCS](../05_PIPELINES/DPCS.md)** defines pipeline semantics.
+- **[DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/)** defines pipeline semantics.
 
 Execution plugins preserve these semantics while mapping them onto runtime
 capabilities.
@@ -121,29 +121,29 @@ capabilities.
 
 Start with a tutorial, then deepen:
 
-1. [Reports and history](REPORTS_AND_HISTORY.md)
+1. [Reports and history](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/REPORTS_AND_HISTORY/)
 2. Pick an engine tutorial (Polars / Pandas / SQL hello / PySpark / Airflow)
-3. [Storage today](STORAGE_TODAY.md)
-4. [Execution Model](EXECUTION_MODEL.md)
-5. [Secrets Management](SECRETS_MANAGEMENT.md)
+3. [Storage today](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/STORAGE_TODAY/)
+4. [Execution Model](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/EXECUTION_MODEL/)
+5. [Secrets Management](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SECRETS_MANAGEMENT/)
 6. Plugin reference pages only when you need API detail
 
 !!! note "Future design (not in the 0.34 operator path)"
-    [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
-    [Plugins overview](PLUGINS.md),
-    [Storage Plugins](STORAGE_PLUGINS.md), and
-    [Resource Providers](RESOURCE_PLUGINS.md) describe unshipped provider
-    protocols. Prefer [Storage today](STORAGE_TODAY.md) and
-    [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+    [Lifecycle Extensions](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/LIFECYCLE_EXTENSIONS/),
+    [Plugins overview](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PLUGINS/),
+    [Storage Plugins](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/STORAGE_PLUGINS/), and
+    [Resource Providers](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/RESOURCE_PLUGINS/) describe unshipped provider
+    protocols. Prefer [Storage today](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/STORAGE_TODAY/) and
+    [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/).
 
 ### Operations and deployment
 
-7. [Deployment](DEPLOYMENT.md) — process model and adopter ownership
-8. [Production readiness](PRODUCTION_READINESS.md) — what ETLantic claims vs what you own
-9. [Production profiles](PRODUCTION_PROFILES.md) — fail-closed production template
-10. [CI integration](CI_INTEGRATION.md) — SARIF gates and pin matrix
-11. [Pilot walkthrough](PILOT_WALKTHROUGH.md) — controlled evaluation path
-12. [Ops pilot](OPS_PILOT.md) — pin matrix, failure ownership, Airflow handoff
+7. [Deployment](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/DEPLOYMENT/) — process model and adopter ownership
+8. [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/) — what ETLantic claims vs what you own
+9. [Production profiles](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_PROFILES/) — fail-closed production template
+10. [CI integration](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/CI_INTEGRATION/) — SARIF gates and pin matrix
+11. [Pilot walkthrough](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PILOT_WALKTHROUGH/) — controlled evaluation path
+12. [Ops pilot](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/OPS_PILOT/) — pin matrix, failure ownership, Airflow handoff
 
 ## Key Principles
 
@@ -158,9 +158,9 @@ Start with a tutorial, then deepen:
 
 ## Next Step
 
-Continue with the [Execution Model](EXECUTION_MODEL.md) to learn how every
+Continue with the [Execution Model](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/EXECUTION_MODEL/) to learn how every
 runtime realizes a validated `PipelinePlan`.
 
 When something fails, start with Getting Started
-[Troubleshooting](../01_GETTING_STARTED/TROUBLESHOOTING.md) (including the M6
+[Troubleshooting](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/TROUBLESHOOTING/) (including the M6
 ops failure cookbook), then return to the engine tutorial for your backend.

@@ -7,10 +7,12 @@ Polars dataframe plugin **and** Polars portable transform compiler for
 > release channel. Core ETLantic **0.34 remains Beta** for documented
 > single-tenant pilots — classifiers are not an enterprise SLA.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-polars==0.34.0'
-# optional Arrow interchange
-pip install 'etlantic-polars[arrow]==0.34.0'
+pip install etlantic-polars
+# Optional Arrow interchange:
+pip install "etlantic-polars[arrow]"
 ```
 
 ## Dataframe plugin
@@ -50,3 +52,9 @@ current compiler; explicit window frames and Window V2 remain capability-gated.
 See the
 [compiler protocol](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
 and [compatibility matrix](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/).
+
+## Links
+
+[Polars tutorial](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/POLARS_TUTORIAL/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-polars) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -11,4 +11,10 @@ pip install medallantic
 # or: pip install 'etlantic[medallantic]'
 ```
 
-See [SparkForge migration](../medallantic/docs/sparkforge-migration.md).
+See [SparkForge migration](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/sparkforge-migration.md).
+
+## Links
+
+[Medallantic on PyPI](https://pypi.org/project/medallantic/) ·
+[Migration guide](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/docs/sparkforge-migration.md) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -5,7 +5,7 @@ Data contracts are the foundation of every ETLantic pipeline.
 They describe the structure, constraints, and meaning of the data that flows
 through extracts, transformations, and loads. In ETLantic, data contracts are
 authored as **ContractModel-compatible Pydantic classes** and represented
-portably through the **Open Data Contract Standard ([ODCS](ODCS.md))**.
+portably through the **Open Data Contract Standard ([ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/))**.
 
 ## What This Section Covers
 
@@ -222,7 +222,7 @@ The default behavior should be to fail the node unless the pipeline explicitly d
 
 ## Generated Contract Bundles
 
-A pipeline can collect every referenced data contract and write them alongside its [DTCS](../04_TRANSFORMATIONS/DTCS.md) and [DPCS](../05_PIPELINES/DPCS.md) artifacts:
+A pipeline can collect every referenced data contract and write them alongside its [DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/) and [DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/) artifacts:
 
 ```python
 CustomerPipeline.write_contracts("contracts/")
@@ -268,6 +268,6 @@ Read this section in the following order:
 
 ## Next Step
 
-Continue with [Pydantic Integration](PYDANTIC_INTEGRATION.md) to define
-ETLantic-ready data contracts with `Data`, then [ODCS](ODCS.md) for portable
+Continue with [Pydantic Integration](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/PYDANTIC_INTEGRATION/) to define
+ETLantic-ready data contracts with `Data`, then [ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/) for portable
 interchange.

@@ -7,6 +7,18 @@ dataframe engine. Advertises no graduated dataframe/Arrow/lazy capabilities
 until conformance, differentials, Gate A Arrow boundaries, and a measured
 advantage are complete.
 
+## Install
+
 ```bash
-pip install 'etlantic[datafusion]==0.34.0'
+pip install etlantic-datafusion
 ```
+
+The package currently exposes a capability-gated plugin stub. Use
+[`etlantic-polars`](https://pypi.org/project/etlantic-polars/) for supported
+dataframe execution.
+
+## Links
+
+[Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

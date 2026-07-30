@@ -7,9 +7,10 @@ Airflow reference orchestrator compiler for
 > release channel. Core ETLantic **0.34 remains Beta** for documented
 > single-tenant pilots — classifiers are not an enterprise SLA.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-airflow==0.34.0'
-# or: pip install 'etlantic[airflow]'
+pip install etlantic-airflow
 # To import generated DAGs into an Airflow process, install apache-airflow
 # separately in the Airflow environment (not required for compile).
 ```
@@ -46,3 +47,9 @@ validate and plan first, then compile the valid plan with
 **Not included:** managed Airflow deployments, Dagster compile plugins, or
 Prefect (shipped separately as an `ExecutionScheduler` local MVP, not as an
 Airflow-style compiler).
+
+## Links
+
+[Documentation](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/AIRFLOW/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-airflow) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -7,11 +7,12 @@ PySpark reference execution plugin **and** portable transform compiler for
 > release channel. Core ETLantic **0.34 remains Beta** for documented
 > single-tenant pilots — classifiers are not an enterprise SLA.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-pyspark==0.34.0'
-# or: pip install 'etlantic[pyspark]'
-# optional Delta Lake support:
-pip install 'etlantic-pyspark[delta]==0.34.0'
+pip install etlantic-pyspark
+# Optional Delta Lake support:
+pip install "etlantic-pyspark[delta]"
 ```
 
 ## Native Spark plugin
@@ -47,3 +48,10 @@ stays separate). Default CI uses sparkless; set
 `SPARKLESS_TEST_MODE=pyspark` for real JVM Catalyst checks.
 
 **Not included:** managed cloud providers (Databricks/EMR/Connect).
+
+## Links
+
+[PySpark tutorial](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PYSPARK_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pyspark) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)

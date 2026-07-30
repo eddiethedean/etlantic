@@ -44,15 +44,15 @@ documented compatibility and differential gates.
 
 | Goal | Guide |
 |---|---|
-| Install and build a first pipeline | [Getting started](GETTING_STARTED.md) |
-| Choose class or builder authoring | [Native authoring](AUTHORING.md) |
-| Add portable layer rules | [Quality rules](QUALITY.md) |
-| Plan and run a lowered pipeline | [Execution and reports](EXECUTION.md) |
-| Move an existing SparkForge definition | [SparkForge migration](SPARKFORGE_MIGRATION.md) |
-| Check engines, versions, and write modes | [Compatibility](COMPATIBILITY.md) |
-| Diagnose a failure | [Troubleshooting](TROUBLESHOOTING.md) |
-| Understand ownership boundaries | [Architecture](ARCHITECTURE.md) |
-| Browse public symbols | [API reference](API_REFERENCE.md) |
+| Install and build a first pipeline | [Getting started](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/GETTING_STARTED/) |
+| Choose class or builder authoring | [Native authoring](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/AUTHORING/) |
+| Add portable layer rules | [Quality rules](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/QUALITY/) |
+| Plan and run a lowered pipeline | [Execution and reports](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/EXECUTION/) |
+| Move an existing SparkForge definition | [SparkForge migration](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/SPARKFORGE_MIGRATION/) |
+| Check engines, versions, and write modes | [Compatibility](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/COMPATIBILITY/) |
+| Diagnose a failure | [Troubleshooting](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/TROUBLESHOOTING/) |
+| Understand ownership boundaries | [Architecture](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/ARCHITECTURE/) |
+| Browse public symbols | [API reference](https://etlantic.readthedocs.io/en/latest/09_MEDALLANTIC/API_REFERENCE/) |
 
 Use Medallantic for an opinionated medallion architecture. Use ETLantic
 directly when a pipeline does not need that vocabulary.

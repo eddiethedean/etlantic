@@ -5,9 +5,9 @@
     <p>Define pipelines as typed classes, catch bad wiring before any write, then
     run or compile on Polars, Pandas, SQL, Spark, or Airflow.</p>
     <div class="etlantic-hero__actions">
-      <a class="md-button md-button--primary" href="01_GETTING_STARTED/QUICKSTART/">Quickstart</a>
-      <a class="md-button" href="01_GETTING_STARTED/COMPARE/">Is this for me?</a>
-      <a class="md-button" href="01_GETTING_STARTED/INSTALLATION/">Installation</a>
+      <a class="md-button md-button--primary" href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/">Quickstart</a>
+      <a class="md-button" href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/">Is this for me?</a>
+      <a class="md-button" href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/INSTALLATION/">Installation</a>
     </div>
   </div>
 </div>
@@ -17,19 +17,18 @@ pipelines and coordinating their execution through the tools you already
 choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 
 !!! tip "Green path (start here only)"
-    1. [Installation](01_GETTING_STARTED/INSTALLATION.md) — install **0.34.0**
-       (from `main` until the wheel is on PyPI; see that page)
-    2. [Quickstart](01_GETTING_STARTED/QUICKSTART.md) — `python -m etlantic init` → validate → run
-    3. [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md) — evolve the generated project
-    4. [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) — then a
+    1. Install with `pip install etlantic`
+    2. [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) — `python -m etlantic init` → validate → run
+    3. [First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/) — evolve the generated project
+    4. [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/) — then a
        **PyPI** Polars/Pandas tutorial or the
-       [SQL hello](06_EXECUTION/SQL_HELLO_PYPI.md); deeper SQL and PySpark
+       [SQL hello](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/SQL_HELLO_PYPI/); deeper SQL and PySpark
        tutorials are clone-assisted
-    5. [Learning path](01_GETTING_STARTED/LEARNING_PATH.md) — week-by-week after first success
+    5. [Learning path](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/LEARNING_PATH/) — week-by-week after first success
 
     That is the whole first-hour path. Optional later:
-    [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md),
-    [SDK 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) (after Ada/Grace).
+    [Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/),
+    [SDK 10 minutes](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/) (after Ada/Grace).
     Ignore Maintainers / Standards nav until you contribute.
     Pages marked **Future design** are not APIs.
 
@@ -40,27 +39,24 @@ choose. It is **not** a warehouse tool, scheduler, or dataframe engine.
 - Observability providers, run history, and event consumers (M6 pilot slice)
 - Fail-closed production trust via `plugin_allowlist` (not the profile name alone)
 
-Full matrix: [Capabilities](01_GETTING_STARTED/CAPABILITIES.md).
-Fit check: [Compare](01_GETTING_STARTED/COMPARE.md).
+Full matrix: [Capabilities](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/).
+Fit check: [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/).
 
 ## Project status
 
-**ETLantic 0.34.0** is a **Beta** release for documented single-tenant pilots.
-Until the `0.34.0` wheel is on PyPI (latest published may still be **0.33.0**),
-install from `main` as shown in
-[Installation](01_GETTING_STARTED/INSTALLATION.md).
+ETLantic is currently a **Beta** release for documented single-tenant pilots.
 
 - **Available:** typed authoring, validate/plan/run, Polars/Pandas/SQL/PySpark
   plugins, Airflow compile, Prefect local MVP, observability / run history (M6).
 - **Experimental:** Structured Streaming; `etlantic-datafusion` stub.
 - **Not in 0.34:** multi-tenant control plane, formal SLA, unrestricted
   enterprise production. Roadmap detail lives under
-  [Evaluate](01_GETTING_STARTED/EVALUATOR.md) / Contribute → Maintainers
-  (e.g. [multi-tenant control-plane plan](11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
+  [Evaluate](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/EVALUATOR/) / Contribute → Maintainers
+  (e.g. [multi-tenant control-plane plan](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)).
 
 The milestone name “production readiness” for M6 means the observability/history
 *pilot* slice shipped—not unrestricted enterprise production. See
-[Production readiness](06_EXECUTION/PRODUCTION_READINESS.md) and CHANGELOG
+[Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/) and CHANGELOG
 `[Unreleased]` for post-cut hardening.
 
 ## Minimal working example
@@ -68,12 +64,7 @@ The milestone name “production readiness” for M6 means the observability/his
 === "Unix / macOS"
 
     ```bash
-    python -m venv .venv && source .venv/bin/activate
-    python -m pip install --upgrade pip
-    # Until 0.34.0 is on PyPI:
-    python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-    # After publish: python -m pip install 'etlantic==0.34.0'
-    python -m etlantic --version
+    pip install etlantic
     mkdir my-pipeline && cd my-pipeline
     python -m etlantic init --with-toml
     python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -84,13 +75,7 @@ The milestone name “production readiness” for M6 means the observability/his
 === "Windows (PowerShell)"
 
     ```powershell
-    py -3.11 -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-    python -m pip install --upgrade pip
-    # Until 0.34.0 is on PyPI:
-    python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-    # After publish: python -m pip install 'etlantic==0.34.0'
-    python -m etlantic --version
+    pip install etlantic
     mkdir my-pipeline; cd my-pipeline
     python -m etlantic init --with-toml
     python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -100,7 +85,7 @@ The milestone name “production readiness” for M6 means the observability/his
 
 You should see `succeeded` and Ada/Grace sample rows (identity transform).
 `init` requires an **empty directory** (or pass `--force` — it can overwrite
-scaffolded files). Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
+scaffolded files). Next: [First Pipeline](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/).
 
 !!! note "PyPI vs clone"
     **PyPI / pip users:** Installation → Quickstart → First Pipeline → Polars/Pandas
@@ -115,8 +100,8 @@ scaffolded files). Next: [First Pipeline](01_GETTING_STARTED/FIRST_PIPELINE.md).
 
 | Goal | Start here |
 |---|---|
-| Understand the model | [Architecture](02_FOUNDATIONS/ARCHITECTURE.md), [Manifesto](ETLANTIC_MANIFESTO.md) |
-| Author without classes | [Programmatic authoring](05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
-| SDK sketch | [SDK 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
-| Evaluate for a pilot | [Evaluator brief](01_GETTING_STARTED/EVALUATOR.md) |
-| Contribute | [Contributing](11_DEVELOPMENT/CONTRIBUTING.md) |
+| Understand the model | [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/), [Manifesto](https://etlantic.readthedocs.io/en/latest/ETLANTIC_MANIFESTO/) |
+| Author without classes | [Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/) |
+| SDK sketch | [SDK 10 minutes](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/) |
+| Evaluate for a pilot | [Evaluator brief](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/EVALUATOR/) |
+| Contribute | [Contributing](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/CONTRIBUTING/) |

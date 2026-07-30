@@ -7,9 +7,12 @@ Pandas dataframe plugin **and** portable transform compiler for
 > release channel. Core ETLantic **0.34 remains Beta** for documented
 > single-tenant pilots — classifiers are not an enterprise SLA.
 
+## Install
+
 ```bash
-pip install 'etlantic==0.34.0' 'etlantic-pandas==0.34.0'
-pip install 'etlantic-pandas[arrow]==0.34.0'  # optional Arrow interchange
+pip install etlantic-pandas
+# Optional Arrow interchange:
+pip install "etlantic-pandas[arrow]"
 ```
 
 ## Dataframe plugin
@@ -50,3 +53,10 @@ from etlantic_pandas import create_transform_compiler
 
 run_portable_transform_conformance_suite(create_transform_compiler())
 ```
+
+## Links
+
+[Pandas tutorial](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/) ·
+[Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
+[Issues](https://github.com/eddiethedean/etlantic/issues)
