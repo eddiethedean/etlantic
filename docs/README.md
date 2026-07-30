@@ -26,20 +26,26 @@ hide:
       <img src="theme/assets/etlantic-logo.svg" alt="">
       <span>Pipeline gate</span>
     </div>
-    <div class="etlantic-flow__step">
+    <a class="etlantic-flow__step"
+       href="05_PIPELINES/PIPELINE/"
+       aria-label="Model: learn about pipeline types and topology">
       <span class="etlantic-flow__number">01</span>
       <span><strong>Model</strong><small>Types + topology</small></span>
-    </div>
+    </a>
     <div class="etlantic-flow__connector" aria-hidden="true"></div>
-    <div class="etlantic-flow__step">
+    <a class="etlantic-flow__step"
+       href="02_FOUNDATIONS/VALIDATION_EVERYWHERE/"
+       aria-label="Validate: learn about contracts and trust checks">
       <span class="etlantic-flow__number">02</span>
       <span><strong>Validate</strong><small>Contracts + trust</small></span>
-    </div>
+    </a>
     <div class="etlantic-flow__connector" aria-hidden="true"></div>
-    <div class="etlantic-flow__step etlantic-flow__step--accent">
+    <a class="etlantic-flow__step etlantic-flow__step--accent"
+       href="05_PIPELINES/PLANNING/"
+       aria-label="Resolve: learn how ETLantic plans runs, compilation, and generation">
       <span class="etlantic-flow__number">03</span>
       <span><strong>Resolve</strong><small>Run · compile · generate</small></span>
-    </div>
+    </a>
   </div>
 </div>
 

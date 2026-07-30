@@ -312,6 +312,7 @@ html {
 
 .etlantic-flow__step {
   display: grid;
+  position: relative;
   grid-template-columns: 1.75rem minmax(0, 1fr);
   gap: 0.65rem;
   align-items: center;
@@ -321,9 +322,60 @@ html {
   padding: 0.65rem 0.7rem;
 }
 
+.md-typeset a.etlantic-flow__step {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.md-typeset a.etlantic-flow__step::after {
+  position: absolute;
+  right: 0.7rem;
+  color: var(--etlantic-mint);
+  content: "→";
+  font-size: 0.8rem;
+  opacity: 0;
+  transform: translateX(-0.25rem);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.md-typeset a.etlantic-flow__step:hover,
+.md-typeset a.etlantic-flow__step:focus-visible {
+  border-color: rgba(99, 230, 190, 0.58);
+  background: rgba(20, 79, 116, 0.62);
+  box-shadow: 0 0.45rem 1rem rgba(3, 13, 22, 0.22);
+  color: inherit;
+  text-decoration: none;
+  transform: translateX(0.18rem);
+}
+
+.md-typeset a.etlantic-flow__step:hover::after,
+.md-typeset a.etlantic-flow__step:focus-visible::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.md-typeset a.etlantic-flow__step:active {
+  box-shadow: none;
+  transform: translateX(0.08rem);
+}
+
 .etlantic-flow__step--accent {
   border-color: rgba(99, 230, 190, 0.44);
   background: rgba(99, 230, 190, 0.1);
+}
+
+.md-typeset a.etlantic-flow__step--accent:hover,
+.md-typeset a.etlantic-flow__step--accent:focus-visible {
+  border-color: rgba(99, 230, 190, 0.72);
+  background: rgba(99, 230, 190, 0.16);
 }
 
 .etlantic-flow__number {
@@ -639,6 +691,19 @@ html {
 :focus-visible {
   outline: 0.15rem solid var(--etlantic-cyan);
   outline-offset: 0.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset a.etlantic-flow__step,
+  .md-typeset a.etlantic-flow__step::after {
+    transition: none;
+  }
+
+  .md-typeset a.etlantic-flow__step:hover,
+  .md-typeset a.etlantic-flow__step:focus-visible,
+  .md-typeset a.etlantic-flow__step:active {
+    transform: none;
+  }
 }
 
 @media screen and (max-width: 44.984375em) {
