@@ -9,13 +9,11 @@
 ## Start from the init project
 
 If you already finished [Quickstart](QUICKSTART.md), reuse that project
-directory—do not reinstall. Otherwise install with the same truth as
-[Installation](INSTALLATION.md), then scaffold:
+directory—do not reinstall. Otherwise install from PyPI, then scaffold:
 
 ```bash
 # Only if you do not already have a Quickstart project:
-# Until 0.34.0 is on PyPI:
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+python -m pip install 'etlantic==0.34.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```

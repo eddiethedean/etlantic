@@ -39,8 +39,8 @@ durable orchestrator.
 - Multi-worker / multi-tenant control planes
 - Managed Spark clusters
 - Broader compliance programs and multi-tenant attestation (adopters own these;
-  ETLantic ships release SBOM digests / attestations for its own packages since
-  0.20)
+  ETLantic ships release SHA-256 digests / attestations for its own packages
+  since 0.20; CycloneDX SBOM is optional and failed for v0.34.0)
 
 ## When NOT to use ETLantic
 

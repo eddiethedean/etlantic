@@ -81,7 +81,9 @@ artifacts if necessary, and publish a replacement after rotating credentials.
 
 The stable support boundary does not provide in-process multi-tenant isolation
 or guarantees for adopter deployment topology, compliance attestations, or
-advanced supply-chain controls beyond shipped release **SBOM digests** and
-GitHub build provenance **attestations**. Adopters must supply remaining
+advanced supply-chain controls beyond shipped release **SHA-256 digests** and
+GitHub build provenance **attestations** (CycloneDX SBOM generation is optional
+and failed for v0.34.0—see
+[Release artifact verification](docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md)). Adopters must supply remaining
 controls and isolate separate tenants or trust domains in separate execution
 environments. Experimental features do not receive stable API guarantees.

@@ -56,7 +56,7 @@ strict profile resolution, wire schema gates, surface inventory, and
 ETLantic **0.20.0** shipped **Trust, Isolation, and Safe I/O**:
 pre-import plugin manifests, `SafeIoPolicy`, artifact/cache isolation,
 outbound SSRF policy, serialization bans, versioned security events, and
-release SBOM digests / attestations / OIDC-preferred publish. See
+release SHA-256 digests / attestations / OIDC-preferred publish. See
 [What's New in 0.20](../01_GETTING_STARTED/WHATS_NEW_0_20.md) and
 [Exit gate 0.20](EXIT_GATE_0_20.md).
 

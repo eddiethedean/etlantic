@@ -5,10 +5,9 @@
 > matrix; use this page to assemble review links and artifacts.
 
 !!! warning "PyPI classifiers ≠ enterprise readiness"
-    Official plugin packages may advertise Production/Stable classifiers on
-    PyPI while **core ETLantic 0.34 remains Beta** for documented single-tenant
-    pilots. Do not treat plugin classifiers as an SLA, multi-tenant guarantee,
-    or unrestricted enterprise production claim. See
+    Official engine packages declare **Beta** classifiers that match the
+    **ETLantic 0.34 Beta** pilot envelope. Do not treat classifiers as an SLA,
+    multi-tenant guarantee, or unrestricted enterprise production claim. See
     [Capabilities](CAPABILITIES.md) and
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
@@ -53,7 +52,9 @@ Key facts for evaluators:
 - Plans and compiled artifacts are **secret-free** by design.
 - Production profiles require a non-empty `plugin_allowlist` and fail closed.
 - Plugin allowlists are **selection**, not sandboxing—use process isolation.
-- Release CI emits SPDX SBOM digests and GitHub build provenance attestations.
+- Release CI publishes a per-artifact SHA-256 manifest and GitHub build
+  provenance attestations. CycloneDX SBOM generation is optional and **failed
+  for v0.34.0**—see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
 
 ### 4. Operations and deployment review
 
@@ -90,9 +91,15 @@ gh attestation verify path/to/etlantic-0.34.0-*.whl \
   --repo etlantic
 ```
 
-SBOM digests are attached as release workflow artifacts / notes on the tagged
-Release. Prefer exact pins (`etlantic==0.34.0` and matching plugins) over
-floating ranges when recording diligence evidence.
+The v0.34.0 release includes a per-artifact SHA-256 manifest
+(`release-artifacts.json`) and GitHub build provenance attestations.
+CycloneDX SBOM generation failed for this release, so v0.34.0 does **not**
+include an SBOM—review
+[`sbom-warning.txt`](https://github.com/eddiethedean/etlantic/releases/download/v0.34.0/sbom-warning.txt)
+before recording supply-chain evidence. Full checklist:
+[Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
+Prefer exact pins (`etlantic==0.34.0` and matching plugins) over floating
+ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
 `etlantic-datafusion` (Experimental Alpha), and

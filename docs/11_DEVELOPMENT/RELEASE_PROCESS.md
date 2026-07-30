@@ -22,7 +22,7 @@ Official plugins declare `etlantic>=0.34.0,<0.35`.
 | Category | Examples | Classifier | Docs maturity |
 |---|---|---|---|
 | Core | `etlantic` | Beta | Beta / single-tenant pilots |
-| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable | **Same Beta product envelope** as core — classifiers mean the plugin package is the supported execution adapter for that engine, not unrestricted enterprise readiness |
+| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Beta | **Same Beta product envelope** as core — supported execution adapters for pilots, not unrestricted enterprise readiness |
 | Facade | `medallantic` | Beta (IR/migration adapter; not a full runtime) | Beta |
 | Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) | Deprecated redirect |
 | Reference adapter | `etlantic-fastapi` | Beta | Beta |
@@ -267,8 +267,22 @@ After publishing:
 Release CI:
 
 - writes per-artifact SHA-256 digests and `dist/sbom/release-artifacts.json`
-- optionally emits CycloneDX environment SBOM when `cyclonedx-py` is available
+- optionally emits CycloneDX environment SBOM when `cyclonedx-py` is available;
+  on failure uploads `sbom-warning.txt` instead (as with **v0.34.0**)
 - attests build provenance via GitHub Actions (`actions/attest-build-provenance`)
 - prefers PyPI Trusted Publishing (OIDC); falls back to `UV_PUBLISH_TOKEN` only as bootstrap
 
+Public docs must describe the **actual** release assets. Do not claim SPDX or
+CycloneDX SBOM when only digests / `sbom-warning.txt` shipped. Adopter-facing
+checklist: [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
+
 Residual risk: long-lived tokens may remain until every distribution is configured for OIDC.
+
+## Documentation cutover (before announce)
+
+1. Confirm PyPI serves the tagged version for core and official plugins.
+2. Confirm GitHub Release assets: digests, attestations, and SBOM **or**
+   `sbom-warning.txt`.
+3. Confirm Installation / Quickstart pin that version (no day-0 `git+…@main`).
+4. Confirm enterprise / security pages match assets.
+5. Announce only after steps 1–4 pass (`check_docs` / `check_release`).

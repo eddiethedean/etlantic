@@ -1,7 +1,8 @@
 # Design Proposals
 
 This section contains **unshipped** APIs, historical plans, and normative
-proposals. It is deliberately separate from the ETLantic 0.18 user guide.
+proposals. It is deliberately separate from the current ETLantic **0.34** user
+guide (Beta).
 
 !!! danger "Do not start here"
     This section is **not** the user guide. Pages here are unshipped APIs,
@@ -20,9 +21,10 @@ proposals. It is deliberately separate from the ETLantic 0.18 user guide.
       — see [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
     - portable **compiler protocol** and first-party compilers — see
       [Portable Transform Compiler](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md)
-      under Plugin SDK / Integrations
-    - Gate A versioned tabular interchange — see the
-      [0.18 user guide](../01_GETTING_STARTED/WHATS_NEW_0_18.md)
+      under Extend
+    - Gate A versioned tabular interchange — see
+      [What's New in 0.18](../01_GETTING_STARTED/WHATS_NEW_0_18.md)
+      (historical release notes; still accurate for Gate A)
 
 ## Portable transformation program (history and remaining work)
 

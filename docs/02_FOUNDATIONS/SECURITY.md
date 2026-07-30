@@ -30,7 +30,9 @@ not a current guarantee.
 - SafeIoPolicy; outbound default-deny; unsafe-serialization prohibition
 - Artifact/cache isolation keys for the single-tenant reference envelope
 - Versioned `SecurityEvent` audit events
-- Release SBOM digests and GitHub build provenance attestations
+- Release SHA-256 artifact digests and GitHub build provenance attestations
+  (CycloneDX SBOM optional; failed for v0.34.0 — see
+  [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md))
 - Plugin SDK `/1` freeze for core protocol families (0.28)
 - Wire codec burn-in across consecutive minors (see [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md))
 ## Required before an unrestricted production claim

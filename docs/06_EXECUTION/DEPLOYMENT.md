@@ -113,6 +113,7 @@ page.
 ## Operational next steps
 
 - [Ops Pilot](OPS_PILOT.md)
+- [Rollback and recovery](ROLLBACK_RECOVERY.md)
 - [Production Readiness](PRODUCTION_READINESS.md)
 - [Production Profiles](PRODUCTION_PROFILES.md)
 - [Performance envelope](../01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md)

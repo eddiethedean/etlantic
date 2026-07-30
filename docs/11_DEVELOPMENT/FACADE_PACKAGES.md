@@ -54,7 +54,7 @@ provenance = facade_provenance(identity="medallantic", version="0.34.0")
 
 | Tier | Examples | Classifier | Core pin |
 |---|---|---|---|
-| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Production/Stable | `etlantic>=X.Y,<X.(Y+1)` |
+| Execution plugins | `etlantic-polars`, `etlantic-sql`, … | Beta | `etlantic>=X.Y,<X.(Y+1)` |
 | **Facade** | `medallantic` | Beta (native authoring + IR migrate) | same |
 | Reference adapter | `etlantic-fastapi` | Beta | same |
 | Compatibility redirect | `etlantic-sparkforge` | Inactive | depends on facade |

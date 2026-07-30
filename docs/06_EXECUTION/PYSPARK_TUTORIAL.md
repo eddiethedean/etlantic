@@ -9,9 +9,34 @@
 
 ## Prerequisites
 
-- Python 3.11+
-- A Java runtime supported by your PySpark installation
+- Python 3.11–3.13
+- A JDK supported by your PySpark build (CI uses **Java 17** for
+  `real-pyspark`)
+- `JAVA_HOME` pointing at that JDK (not only `java` on `PATH`)
 - `etlantic-pyspark==0.34.0`
+
+## JDK / JAVA_HOME / platform notes
+
+PySpark starts a local JVM. Gateway failures usually mean Java is missing,
+wrong major, or `JAVA_HOME` is unset.
+
+| Platform | Typical setup |
+|---|---|
+| Ubuntu / Debian | `sudo apt install openjdk-17-jdk`; export `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` |
+| macOS (Homebrew) | `brew install openjdk@17`; follow brew's `JAVA_HOME` hint |
+| Windows | Install a Temurin/OpenJDK 17 MSI; set User `JAVA_HOME` to the JDK root |
+
+Verify before running demos:
+
+```bash
+java -version
+echo "$JAVA_HOME"   # PowerShell: echo $env:JAVA_HOME
+python -c "import pyspark; print(pyspark.__version__)"
+```
+
+Apple Silicon and Windows both work when the JDK and PySpark wheels match the
+architecture; prefer the same Java major your cluster uses. Managed
+Databricks / EMR / Spark Connect providers are **not** included in 0.34.
 
 ## Install and run (clone companion)
 
@@ -47,6 +72,23 @@ steps:
 Run identifiers and durations vary. A Java gateway error means the local Spark
 runtime did not start; it is not an expected successful result.
 
-Managed Databricks, EMR, and Spark Connect providers are not included. See
-[PySpark execution](PYSPARK_EXECUTION.md) and
+## Delta constraints
+
+Delta Lake is **optional**. Without `delta-spark`, the plugin does not advertise
+merge / Delta storage capabilities and Delta-required plans fail closed.
+
+```bash
+python -m pip install 'etlantic-pyspark[delta]==0.34.0'
+# or: python -m pip install 'delta-spark>=3.0,<4'
+```
+
+Constraints in 0.34:
+
+- Capabilities require an importable `delta.tables.DeltaTable`.
+- Non-Delta MERGE / UPSERT fails closed (no silent overwrite fallback).
+- `merge_keys` must be safe identifiers.
+- Portable quality compilers on PySpark remain fail-closed (use native Column
+  rules where documented).
+
+See [PySpark execution](PYSPARK_EXECUTION.md) and
 [compatibility](../10_REFERENCE/COMPATIBILITY.md).

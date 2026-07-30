@@ -70,7 +70,8 @@ manager.
   `Profile.plugin_allowlist` (production profiles fail closed when empty)
 - **0.20–0.21 trust controls shipped:** SafeIoPolicy, pre-import allowlist +
   manifests, artifact/cache isolation keys, outbound default-deny,
-  unsafe-serialization prohibition, versioned `SecurityEvent`, release SBOM
+  unsafe-serialization prohibition, versioned `SecurityEvent`, release digests /
+  attestations (see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md))
   digests and GitHub attestations
 - Report vulnerabilities privately; security fixes are supported on 0.34.x
 
@@ -82,7 +83,7 @@ manager.
 | Production plugin allowlist (selection, not sandbox) | **Shipped** |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
-| Release SBOM digests + GitHub attestations | **Shipped** — verify with `gh attestation verify` (see [Enterprise evaluation](ENTERPRISE_EVALUATION.md#verify-release-attestations)) |
+| Release SHA-256 manifest + GitHub attestations | **Shipped** — verify with `gh attestation verify`; see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md). CycloneDX SBOM failed for v0.34.0. |
 | Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.34; first-class plan published** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
@@ -148,7 +149,7 @@ How to read status labels in deeper chapters:
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
-| SBOM / signed provenance | Release CI emits SPDX SBOM digests and GitHub build provenance attestations |
+| Release digests / provenance | SHA-256 manifest + GitHub attestations shipped; CycloneDX SBOM failed for v0.34.0 — see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md) |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
 | Upgrade / rollback | Pin exact versions; see [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) and [Upgrade hub](UPGRADE.md) |

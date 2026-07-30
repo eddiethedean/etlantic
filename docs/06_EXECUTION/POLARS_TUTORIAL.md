@@ -16,13 +16,8 @@ Polars implementation and select the engine.
 ### 1. Install
 
 ```bash
-# Until 0.34.0 is on PyPI, install core from main first (see Installation), then:
 python -m pip install 'etlantic[polars]==0.34.0'
 ```
-
-If the extras pin fails because core is not on PyPI yet, install
-`etlantic-polars` from the monorepo extras documented in
-[Installation](../01_GETTING_STARTED/INSTALLATION.md) / contributor sync.
 
 ### 2. Register a Polars implementation
 

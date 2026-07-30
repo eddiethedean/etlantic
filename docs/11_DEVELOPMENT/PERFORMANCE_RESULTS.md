@@ -1,8 +1,9 @@
 # Performance Baselines
 
-> **Historical note:** The published smoke numbers below were recorded on
-> ETLantic **0.10.0**. They remain a reproducibility check for the harness, not
-> 0.18 capacity claims. Re-run the harness on your environment before using any
+> **Historical note:** The published smoke numbers in the harness appendix were
+> first recorded on ETLantic **0.10.0** and restamped for the **0.34** Beta
+> docs train. They remain a reproducibility check for the harness, not current
+> capacity claims. Re-run the harness on your environment before using any
 > timing in diligence.
 
 ETLantic does not publish production-grade performance claims. This page

@@ -1,5 +1,22 @@
 # Testing
 
+## Test-cost matrix (order of magnitude)
+
+Use the cheapest green suite that covers your change. Durations are rough
+wall-clock on a developer laptop / CI runner — not SLOs.
+
+| Suite | Typical command | Duration | Needs Java? |
+|---|---|---|---|
+| Core pytest | `./scripts/test_core.sh` | ~1–3 min | No |
+| Dataframes (Polars / Pandas) | `uv sync --group dataframes` then `pytest -m polars` / `-m pandas` | ~2–5 min each | No |
+| SQL | `uv sync --group sql` then `pytest -m sql` | ~2–5 min | No |
+| PySpark (sparkless) | `uv sync --group pyspark` then `pytest -m spark` | ~3–8 min | No (compat backend) |
+| PySpark (real JVM) | `SPARKLESS_TEST_MODE=pyspark pytest -m real_pyspark` | ~5–15 min | **Yes (JDK 17)** |
+| Docs consistency + strict build | `uv run python scripts/check_docs.py` then `build_docs.py` | ~1–3 min | No |
+
+Docs-only PRs normally need only the docs row. Engine or plugin changes add the
+matching marker suite before opening a PR.
+
 ## Run the current test suite
 
 Prefer the marker-aware core suite (matches CI baseline exclusions):

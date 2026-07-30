@@ -17,8 +17,10 @@ and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
 0.34.x patch without changing the documented pilot claims.
 
 Experimental features remain experimental. Broader deployment topology,
-multi-tenancy, compliance attestations beyond shipped SBOM digests/GitHub
-attestations, and advanced supply-chain programs remain adopter-owned today.
+multi-tenancy, and compliance attestations remain adopter-owned today. Supply
+chain for v0.34.0 ships a SHA-256 artifact manifest and GitHub provenance
+attestations; CycloneDX SBOM generation failed—see
+[Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
 Multi-tenancy has a
 [first-class gated plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
 the other claims remain separate.
@@ -41,9 +43,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.34.0` (or install from `main` until that wheel is on PyPI —
-   see [Installation](../01_GETTING_STARTED/INSTALLATION.md)) and matching
-   plugins in a lockfile.
+1. Pin `etlantic==0.34.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -52,7 +52,8 @@ control-plane state, or an SLA.
 7. Health-check the process with your supervisor (ETLantic has no built-in HTTP
    health endpoint).
 8. On upgrade: pin forward, re-validate, re-plan, smoke-run one pipeline, keep
-   the previous lockfile for rollback.
+   the previous lockfile for rollback. Operator checklist:
+   [Rollback and recovery](ROLLBACK_RECOVERY.md).
 
 Airflow workers that execute compiled DAGs must install the same core/plugin
 versions used at compile time, plus Airflow itself. Compilation does not ship
@@ -83,8 +84,9 @@ reference controls are shipped:
 - Compliance-grade audit system of record (CLI reports are operational evidence)
 - Stable-foundation compatibility and support windows (planned for 0.38)
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
-- Broader supply-chain programs beyond package allowlists, pins, SBOM digests,
-  and GitHub attestations
+- Broader supply-chain programs beyond package allowlists, pins, SHA-256
+  release digests, and GitHub attestations (CycloneDX SBOM is optional and
+  failed for v0.34.0)
 
 ## Shipped / adopter-owned / residual (0.34)
 
@@ -96,7 +98,7 @@ reference controls are shipped:
 | Plugin allowlists | **Shipped** (selection, not sandbox) |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
-| Release SBOM digests + GitHub attestations | **Shipped** |
+| Release SHA-256 digests + GitHub attestations | **Shipped** (CycloneDX SBOM failed for v0.34.0) |
 | Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.34 |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
@@ -112,6 +114,7 @@ degraded.
 
 See [Evaluator Brief](../01_GETTING_STARTED/EVALUATOR.md),
 [Ops Pilot](OPS_PILOT.md),
+[Rollback and recovery](ROLLBACK_RECOVERY.md),
 [Security](../02_FOUNDATIONS/SECURITY.md),
 [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
 and [Support Policy](../11_DEVELOPMENT/SUPPORT.md).

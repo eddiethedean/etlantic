@@ -27,9 +27,9 @@ maintained. See `SECURITY.md` for the security-support table.
   (a [first-class program is planned](MULTI_TENANT_CONTROL_PLANE_PLAN.md), but
   not yet supported)
 - Compliance attestations (SOC2, GDPR certification, and similar)
-- Advanced supply-chain programs beyond shipped SBOM digests, GitHub build
+- Advanced supply-chain programs beyond shipped SHA-256 digests, GitHub build
   provenance attestations, OIDC-preferred publish, documented package pins,
-  and plugin allowlists
+  and plugin allowlists (CycloneDX SBOM optional; failed for v0.34.0)
 - Guarantees for Experimental APIs (including `etlantic-datafusion`)
 - Guarantees for Future design / Design Proposal pages
 

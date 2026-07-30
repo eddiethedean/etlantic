@@ -1,15 +1,15 @@
 # Plugin SDK
 
 !!! tip "Start here when creating a plugin"
-    Follow [Building an ETLantic Plugin](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/BUILDING_A_PLUGIN/) for the canonical
+    Follow [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md) for the canonical
     package-from-zero workflow and release checklist. All reference and
     third-party plugins should follow that guide; the category pages below
     define the detailed protocols.
 
 !!! note "Portable transformation compilers"
     The
-    [Portable Transformation Compiler Protocol](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
-    defines how plugins compile [DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/) Transformation Plans. Polars, PySpark,
+    [Portable Transformation Compiler Protocol](PORTABLE_TRANSFORM_COMPILER.md)
+    defines how plugins compile [DTCS](../04_TRANSFORMATIONS/DTCS.md) Transformation Plans. Polars, PySpark,
     and Pandas ship relational `/1` compilers; third parties must pass
     `run_portable_transform_conformance_suite` for advertised claims.
 
@@ -49,9 +49,9 @@ stay import-safe until accessed:
 `from etlantic import Data, Pipeline` remains supported. Specialist root
 exports demoted in 0.22 remain as 0.x compatibility aliases (warn once).
 
-Also see [Capability Vocabulary](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/CAPABILITY_VOCABULARY/),
-[Protocol Evolution](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PROTOCOL_EVOLUTION/), and
-[`etlantic plugin compatibility`](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/CLI/).
+Also see [Capability Vocabulary](CAPABILITY_VOCABULARY.md),
+[Protocol Evolution](PROTOCOL_EVOLUTION.md), and
+[`etlantic plugin compatibility`](../10_REFERENCE/CLI.md).
 
 Production profiles should set `Profile.plugin_allowlist` (names + optional
 version pins). Discovery fails closed when the allowlist rejects a plugin.
@@ -152,9 +152,9 @@ Pipeline Plan without changing its semantics.
 Plugins should declare compatibility with:
 
 - ETLantic
-- [ODCS](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/)
+- [ODCS](../03_DATA_CONTRACTS/ODCS.md)
 - DTCS
-- [DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/)
+- [DPCS](../05_PIPELINES/DPCS.md)
 
 Independent versioning allows plugins to evolve without forcing synchronized
 releases across the ecosystem.
@@ -163,13 +163,13 @@ releases across the ecosystem.
 
 Read this section in the following order:
 
-1. [Building an ETLantic Plugin](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/BUILDING_A_PLUGIN/)
-2. [Overview](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/OVERVIEW/)
+1. [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md)
+2. [Overview](OVERVIEW.md)
 3. The protocol page for your plugin category
-4. [Testing Plugins](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/TESTING_PLUGINS/)
-5. [Capability Vocabulary](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/CAPABILITY_VOCABULARY/)
-6. [Protocol Evolution](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/PROTOCOL_EVOLUTION/)
-7. [Distribution](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/DISTRIBUTION/)
+4. [Testing Plugins](TESTING_PLUGINS.md)
+5. [Capability Vocabulary](CAPABILITY_VOCABULARY.md)
+6. [Protocol Evolution](PROTOCOL_EVOLUTION.md)
+7. [Distribution](DISTRIBUTION.md)
 
 ## Key Principles
 
@@ -182,9 +182,9 @@ Read this section in the following order:
 - Production profiles should support allowlists and pinned plugin versions.
 
 Plugin authors should read the
-[Security Model](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/).
+[Security Model](../02_FOUNDATIONS/SECURITY.md).
 
 ## Next Step
 
-Continue with the [Plugin SDK Overview](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/OVERVIEW/) to learn the foundational
+Continue with the [Plugin SDK Overview](OVERVIEW.md) to learn the foundational
 design of the ETLantic Plugin SDK.

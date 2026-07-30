@@ -2,8 +2,8 @@
 
 > **Status: Available in ETLantic 0.34.0.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
-> Budget ~15–20 minutes if you include the required aha step below; first
-> validate → run alone is usually under 10 minutes.
+> Budget ~5–10 minutes for first success; optional validation aha below adds a
+> few minutes.
 
 !!! tip "PyPI vs clone"
     This page is for **PyPI installs**. Repository `examples/` scripts need a
@@ -12,17 +12,14 @@
 ## 1. Install
 
 ETLantic requires Python 3.11 or newer. Prefer `python -m` so PATH issues do not
-block you. Docs describe **0.34.0**; until that wheel is on PyPI, install from
-`main` (see [Installation](INSTALLATION.md)).
+block you. See [Installation](INSTALLATION.md) for full options.
 
 **Unix / macOS:**
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-# Until 0.34.0 is on PyPI:
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-# After publish: python -m pip install 'etlantic==0.34.0'
+python -m pip install 'etlantic==0.34.0'
 python -m etlantic --version   # expect 0.34.0
 ```
 
@@ -32,9 +29,7 @@ python -m etlantic --version   # expect 0.34.0
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-# Until 0.34.0 is on PyPI:
-py -3.11 -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-# After publish: py -3.11 -m pip install 'etlantic==0.34.0'
+py -3.11 -m pip install 'etlantic==0.34.0'
 py -3.11 -m etlantic --version
 ```
 
@@ -100,9 +95,10 @@ Expected shape:
 Optional later: `python -m etlantic doctor --profile development`,
 `inspect`, `plan`, and `report list`.
 
-## 4. Required aha — catch a bad change before write {#required-aha}
+## 4. Optional — see validation catch a bug {#required-aha}
 
-Do not skip this step (it is outside the “first success” timing above).
+Skip if you only want the five-minute green path; return here when you want
+to feel validate-before-write.
 
 The `etlantic init` scaffold defines `Identity` **in** `pipeline.py` (it is not
 imported from `etlantic`). Edit only the `Load` annotation so the load expects

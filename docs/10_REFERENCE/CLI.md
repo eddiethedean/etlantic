@@ -294,22 +294,55 @@ python -m etlantic reliability env-diff LEFT.json RIGHT.json
 
 ## `viz`
 
+Subcommands: `dot`, `html`, `lineage`.
+
 ```bash
 python -m etlantic viz dot examples/memory_customers.py:CustomerPipeline -o pipeline.dot
 python -m etlantic viz html examples/memory_customers.py:CustomerPipeline -o lineage.html
 python -m etlantic viz lineage examples/memory_customers.py:CustomerPipeline --format json
 ```
 
+`viz lineage` is read-only (stdout). `viz dot` writes a file only when
+`-o` / `--output` is set; otherwise it prints DOT to stdout. `viz html`
+always writes a file and defaults to `lineage.html` when `-o` is omitted.
+
 ## `report`
+
+Subcommands: `list`, `show`, `query`, `export`, `compare`.
 
 ```bash
 python -m etlantic report list
 python -m etlantic report show RUN_ID --format text
+python -m etlantic report query --pipeline-id my-pipeline --status succeeded --limit 20
 python -m etlantic report export RUN_ID --format json --output report.json
 python -m etlantic report compare LEFT RIGHT --store .etlantic/reports
 ```
 
-By default `list` / `show` / `export` read the durable store at
+### `report query`
+
+Query durable run reports (or run history when configured) with filters.
+Read-only — prints matching runs to stdout.
+
+```bash
+python -m etlantic report query \
+  --pipeline-id my-pipeline \
+  --status succeeded \
+  --since 2024-01-01T00:00:00+00:00 \
+  --until 2024-12-31T23:59:59+00:00 \
+  --limit 20 \
+  --format json
+```
+
+| Option | Purpose |
+|---|---|
+| `--pipeline-id` | Filter by pipeline id |
+| `--status` | Filter by run status (for example `succeeded`, `failed`) |
+| `--since` | ISO-8601 lower bound on `started_at` |
+| `--until` | ISO-8601 upper bound on `started_at` |
+| `--limit` | Max rows (default `20`) |
+| `--format` | Output format (default `json`) |
+
+By default `list` / `show` / `query` / `export` read the durable store at
 `.etlantic/reports/` (or under `--workspace`). Separate shell invocations see
 the same runs. Pass `--ephemeral` on `run` (and later `report` commands) only
 when you intentionally want process-local storage. `report compare --store`
@@ -339,7 +372,11 @@ in addition to exit codes.
 
 | Command | Mutates workspace? |
 |---|---|
-| `validate`, `inspect`, `plan`, `diff`, `plugin`, `viz`, `doctor` | No (read-only analysis) |
+| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor` | No (read-only analysis) |
+| `viz lineage` | No (read-only; prints to stdout) |
+| `viz dot` | Writes only when `-o` / `--output` is set; otherwise stdout |
+| `viz html` | Writes `lineage.html` by default (`-o` overrides the path) |
+| `report list` / `show` / `query` / `compare` | No (read-only) |
 | `init` | Writes scaffold files and `.etlantic/` layout |
 | `generate` | Writes contract files to `-o` / output directory |
 | `compile` | Writes orchestrator artifacts to `-o` (unless `--preview`) |

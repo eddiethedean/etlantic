@@ -62,6 +62,69 @@ loaded via `load_profile`.
 Treat the plan as build metadata: it is secret-free, but may reveal pipeline
 structure and resource names.
 
+## GitHub Actions (copy-paste)
+
+Validate as SARIF and emit a plan on every pull request. Adjust the pipeline
+target, profile path, and package pins for your repository.
+
+```yaml
+name: ETLantic CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write  # required to upload SARIF
+
+jobs:
+  validate-and-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ETLantic
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'etlantic==0.34.0'
+          # Add matching plugins when the pipeline needs them, e.g.:
+          # python -m pip install 'etlantic-polars==0.34.0'
+
+      - name: Validate (SARIF)
+        run: |
+          python -m etlantic validate pipeline.py:SamplePipeline \
+            --profile development \
+            --format sarif > etlantic.sarif
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: etlantic.sarif
+        # Skip upload forks without security-events permission:
+        # if: github.event.pull_request.head.repo.full_name == github.repository
+
+      - name: Plan
+        run: |
+          python -m etlantic plan pipeline.py:SamplePipeline \
+            --profile development \
+            --format json > pipeline-plan.json
+
+      - name: Retain plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-plan
+          path: pipeline-plan.json
+```
+
+For production profiles in CI, pass a checked-in allowlisted JSON path (see
+above) instead of bare `production`. Never resolve runtime secrets during
+validate or plan.
+
 Recommended gates:
 
 1. Pin ETLantic and official plugins to one tested release (`==0.34.0`).

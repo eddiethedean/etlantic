@@ -19,20 +19,17 @@ python -c "import etlantic; print(etlantic.__version__)"
 python -m etlantic --version
 ```
 
-Until `0.34.0` is on PyPI (latest published may still be **0.33.0**), install
-from `main`:
+Until you have the docs train version, upgrade from PyPI:
 
 ```bash
 python -m pip uninstall -y etlantic
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
+python -m pip install 'etlantic==0.34.0'
 python -m etlantic --version   # expect 0.34.0
 ```
 
-After the PyPI release, pin the published wheel:
+Or accept compatible 0.34.x patches within the minor:
 
 ```bash
-python -m pip install --upgrade 'etlantic==0.34.0'
-# or accept compatible 0.34.x patches within the minor:
 python -m pip install --upgrade 'etlantic>=0.34.0,<0.35'
 ```
 

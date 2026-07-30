@@ -4,7 +4,7 @@ Transformations are the heart of ETLantic.
 
 A transformation defines **how data logically changes** as it moves through a pipeline. Like FastAPI endpoints, transformations are declared using Python classes and type annotations. The declaration describes the interface; execution implementations remain separate.
 
-ETLantic models transformations using **Transformation Contracts**, represented portably by the **Data Transformation Contract Standard ([DTCS](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/))**.
+ETLantic models transformations using **Transformation Contracts**, represented portably by the **Data Transformation Contract Standard ([DTCS](DTCS.md))**.
 
 ## What This Section Covers
 
@@ -45,8 +45,8 @@ An Available surface adds a PySpark-inspired, implementation-agnostic
 definition that serializes as a DTCS 3.0 Transformation Plan. Official plugins
 compile those plans for Polars, PySpark, Pandas, and SQL (kernel + relational
 baseline; advanced families where documented). See
-[Portable Transformations](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS/) and the
-[portable compiler matrix](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/PORTABLE_COMPILER_MATRIX/).
+[Portable Transformations](PORTABLE_TRANSFORMATIONS.md) and the
+[portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md).
 Author with `@Transformation.portable` or keep `@implementation(...)` for
 native backends.
 
@@ -185,5 +185,5 @@ Read this section in the following order:
 
 ## Next Step
 
-Continue with [Transformation](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/TRANSFORMATION/) to learn how to define
+Continue with [Transformation](TRANSFORMATION.md) to learn how to define
 transformation contracts using typed Python classes.

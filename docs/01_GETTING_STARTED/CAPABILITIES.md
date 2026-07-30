@@ -12,7 +12,7 @@ or lossless `etlantic.pipeline/1` JSON. ETLantic **0.34.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install 0.34.0 from `main` or PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.34.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 

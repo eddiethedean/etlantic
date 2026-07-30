@@ -4,7 +4,7 @@
 > stubs, and maintainer plans. Prefer [Upgrade](../01_GETTING_STARTED/UPGRADE.md)
 > and the current [Development hub](README.md) for day-to-day work.
 
-## Current (also linked from Maintainers nav)
+## Current (also linked from Project → Archive index)
 
 - [Exit gate 0.34](EXIT_GATE_0_34.md)
 - [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)

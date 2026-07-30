@@ -7,7 +7,7 @@ define *how* data changes, then **Pipelines** define *how those transformations
 are connected*.
 
 ETLantic models pipelines using the **Data Pipeline Contract Standard
-([DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/))** while remaining independent of any execution engine.
+([DPCS](DPCS.md))** while remaining independent of any execution engine.
 
 ## What This Section Covers
 
@@ -26,13 +26,13 @@ This section explains how to:
 
 A pipeline is declared using ordinary Python — or, since 0.24, with functional
 builders / `PipelineDefinition` JSON that normalize to the same immutable
-definition. See [Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/).
+definition. See [Programmatic authoring](PROGRAMMATIC_AUTHORING.md).
 
 !!! success "Functional and JSON authoring are Available in 0.24"
     Class, functional, and JSON paths share `PipelineDefinition` and
     `etlantic.pipeline/1`. GUI hosts use the authoring catalog, edit commands,
     and optional `etlantic-fastapi` reference adapter. See
-    [What's New in 0.24](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/WHATS_NEW_0_24/).
+    [What's New in 0.24](../01_GETTING_STARTED/WHATS_NEW_0_24.md).
 
 ```python
 from etlantic import Extract, Load, Pipeline
@@ -114,8 +114,8 @@ Load
 Every connection is validated through data contracts.
 
 > **Migration note:** Public `Source` / `Sink` aliases were removed in 0.16.
-> See [SOURCES.md](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/SOURCES/) and [SINKS.md](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/SINKS/) only for the rename
-> pointers; author against [Extracts](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/EXTRACTS/) and [Loads](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/LOADS/).
+> See [SOURCES.md](SOURCES.md) and [SINKS.md](SINKS.md) only for the rename
+> pointers; author against [Extracts](EXTRACTS.md) and [Loads](LOADS.md).
 
 ## Validation
 
@@ -147,18 +147,18 @@ Generated artifacts are deterministic and suitable for version control.
 
 Read this section in the following order:
 
-1. [Pipeline](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PIPELINE/)
-2. [Programmatic authoring](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/) — builders + JSON (0.24)
-3. [Extracts](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/EXTRACTS/)
-4. [Steps](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/STEPS/)
-5. [Loads](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/LOADS/)
-6. [Subpipelines](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/SUBPIPELINES/)
-7. [DPCS](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/)
-8. [Pipeline Validation](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PIPELINE_VALIDATION/)
-9. [Planning](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PLANNING/)
-10. [Profiles](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROFILES/)
-11. [Contract Generation](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/CONTRACT_GENERATION/)
-12. [Contract Loading](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/CONTRACT_LOADING/)
+1. [Pipeline](PIPELINE.md)
+2. [Programmatic authoring](PROGRAMMATIC_AUTHORING.md) — builders + JSON (0.24)
+3. [Extracts](EXTRACTS.md)
+4. [Steps](STEPS.md)
+5. [Loads](LOADS.md)
+6. [Subpipelines](SUBPIPELINES.md)
+7. [DPCS](DPCS.md)
+8. [Pipeline Validation](PIPELINE_VALIDATION.md)
+9. [Planning](PLANNING.md)
+10. [Profiles](PROFILES.md)
+11. [Contract Generation](CONTRACT_GENERATION.md)
+12. [Contract Loading](CONTRACT_LOADING.md)
 
 ## Key Principles
 
@@ -173,5 +173,5 @@ Read this section in the following order:
 
 ## Next Step
 
-Continue with [Pipeline](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PIPELINE/) to learn how to define typed pipeline
+Continue with [Pipeline](PIPELINE.md) to learn how to define typed pipeline
 classes and compose transformations into complete workflows.

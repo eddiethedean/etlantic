@@ -30,15 +30,15 @@
 
 ---
 
-ETLantic lets you define Python data pipelines as typed classes **or**
-functional builders / JSON (`PipelineDefinition`), catch bad wiring and
-contract mismatches **before any write**, then run or compile the same
-pipeline on local Python, Polars, Pandas, SQL, or Spark—and emit Airflow
-DAGs when you need them.
+ETLantic is a typed control layer for Python data pipelines. Define datasets,
+transformations, and wiring once; validate contracts and plugin capabilities
+**before any write**; then resolve the logical pipeline for local Python,
+Polars, Pandas, SQL, PySpark, or an external orchestrator. Cross-engine
+execution requires either a backend implementation or a portable
+transformation supported by the selected plugin.
 
 It is **not** a warehouse tool (use dbt), **not** a scheduler (use Airflow,
-Dagster, or Prefect), and **not** a dataframe engine. It is a typed pipeline
-framework that coordinates the tools you already choose.
+Dagster, or Prefect), and **not** a dataframe engine.
 
 ```text
 Typed contracts ──▶ Validation ──▶ Deterministic plan ──▶ Run or compile
@@ -247,7 +247,7 @@ and [Validation Everywhere](https://etlantic.readthedocs.io/en/latest/02_FOUNDAT
 | Contract interchange, schema drift, lineage, reports, SARIF | Available |
 | Airflow compilation (compile-only) and Prefect local MVP | Available (bounded) |
 | Observability providers, run history, event consumers | Available |
-| Trust, isolation, safe I/O, SBOM/attestations (single-tenant reference) | Available (bounded) |
+| Trust, isolation, safe I/O, digests/attestations (single-tenant reference) | Available (bounded) |
 | Structured Streaming / `etlantic-datafusion` | Experimental |
 | Multi-tenant control plane, formal SLA | Not included |
 

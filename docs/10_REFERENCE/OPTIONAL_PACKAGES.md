@@ -4,16 +4,14 @@
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 !!! warning "Maturity vs PyPI classifiers"
-    Official engine packages may still declare PyPI classifiers such as
-    **Production/Stable** while **ETLantic core 0.34 is Beta**. Treat the docs
-    **pilot envelope** (Beta, single-tenant, no SLA) as authoritative—not the
-    classifier string alone. See
+    Official engine packages declare **Beta** PyPI classifiers that match the
+    **ETLantic 0.34 Beta** pilot envelope (single-tenant, no SLA). Treat that
+    envelope as authoritative for readiness claims. See
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
 ## Install pins
 
-Prefer exact pins for a controlled pilot (from `main` until `0.34.0` is on
-PyPI—see [Installation](../01_GETTING_STARTED/INSTALLATION.md)):
+Prefer exact pins for a controlled pilot:
 
 ```bash
 pip install 'etlantic==0.34.0'
@@ -59,14 +57,15 @@ Optional reference adapter: `pip install 'etlantic-fastapi==0.34.0'` or
 | [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.34.0`) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
-MkDocs API generation scans core `src/` (plus Medallantic where linked). The
-docs site **API Reference** is therefore **core-first**, not a complete catalog
-of every optional-package constructor. For plugin factories, registration,
-protocol versions, and failure modes, use the linked package README and the
-corresponding engine tutorial.
+MkDocs API generation includes core `src/` and first-party plugin package
+paths. Shallow module-level stubs for optional packages live in
+[API — Optional packages](API_OPTIONAL_PACKAGES.md). For plugin factories,
+registration, protocol versions, and failure modes, also use the linked package
+README and the corresponding engine tutorial.
 
 ## Related
 
+- [API — Optional packages](API_OPTIONAL_PACKAGES.md)
 - [Compatibility](COMPATIBILITY.md)
 - [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md)
 - [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)

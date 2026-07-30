@@ -74,6 +74,21 @@ def markdown_without_code(text: str) -> str:
     return re.sub(r"(?<!`)`[^`\n]+`(?!`)", "", "\n".join(visible))
 
 
+def check_docs_ban_absolute_rtd_latest() -> None:
+    """Prefer relative Markdown links inside docs/; ban absolute RTD /en/latest/."""
+    banned = "https://etlantic.readthedocs.io/en/latest/"
+    docs_root = ROOT / "docs"
+    for path in sorted(docs_root.rglob("*.md")):
+        if "theme" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if banned in text:
+            raise SystemExit(
+                f"{path.relative_to(ROOT)}: ban absolute Read the Docs "
+                f"{banned!r} — use relative .md links under docs/"
+            )
+
+
 def check_local_markdown_links() -> None:
     """Fail on relative Markdown links whose repository target is missing."""
     root_resolved = ROOT.resolve()
@@ -272,8 +287,11 @@ def check_control_plane_plan() -> None:
             raise SystemExit(f"ROADMAP.md missing control-plane gate {marker!r}")
 
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    # Buildable via not_in_nav + ARCHIVE_INDEX; must still be listed in mkdocs.yml.
     if plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
-        raise SystemExit("mkdocs.yml must promote the multi-tenant plan in nav")
+        raise SystemExit(
+            "mkdocs.yml must list the multi-tenant plan (nav or not_in_nav)"
+        )
 
     capabilities = (ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md").read_text(
         encoding="utf-8"
@@ -325,7 +343,9 @@ def check_zero_x_roadmap_phases() -> None:
 
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     if adoption_plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
-        raise SystemExit("mkdocs.yml must promote the adoption/ecosystem plan in nav")
+        raise SystemExit(
+            "mkdocs.yml must list the adoption/ecosystem plan (nav or not_in_nav)"
+        )
 
     phase_heading = re.compile(r"(?m)^#{1,4}\s+1\.(?:0|[1-9][0-9]*|x)\b")
     forward_phase_language = re.compile(
@@ -504,6 +524,7 @@ def main() -> None:
                 )
 
     check_local_markdown_links()
+    check_docs_ban_absolute_rtd_latest()
     check_python_code_fences()
     check_standard_links()
     check_control_plane_plan()
@@ -809,11 +830,23 @@ def main() -> None:
     if "Current 0.10 Guide:" in mkdocs or (
         major_minor != "0.10" and "Current 0.10 Guide:" in mkdocs
     ):
-        raise SystemExit("mkdocs.yml still labels Learn nav as Current 0.10 Guide")
+        raise SystemExit("mkdocs.yml still labels Start Here as Current 0.10 Guide")
     if f"Current {major_minor} Guide:" not in mkdocs:
         raise SystemExit(
-            f"mkdocs.yml must label Learn nav as Current {major_minor} Guide"
+            f"mkdocs.yml must label Start Here as Current {major_minor} Guide"
         )
+    for section in (
+        "  - Start Here:",
+        "  - Tutorials:",
+        "  - How-to:",
+        "  - Concepts:",
+        "  - Reference:",
+        "  - Extend:",
+        "  - Evaluate:",
+        "  - Project:",
+    ):
+        if section not in mkdocs:
+            raise SystemExit(f"mkdocs.yml missing public nav section {section!r}")
 
     evaluator = (ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md").read_text(
         encoding="utf-8"
@@ -1089,34 +1122,30 @@ def main() -> None:
         "11_DEVELOPMENT/PERFORMANCE.md",
         "11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_20.md",
         "09_EXAMPLES/PREFECT_RUN.md",
-        "  - Plugin SDK:",
-        "  - Release notes:",
+        "  - Extend:",
+        "  - Project:",
+        "11_DEVELOPMENT/ARCHIVE_INDEX.md",
     ):
         if required_nav not in mkdocs_text:
-            raise SystemExit(f"mkdocs.yml missing required nav entry {required_nav!r}")
+            raise SystemExit(f"mkdocs.yml missing required entry {required_nav!r}")
     if "05_PIPELINES/EXTRACTS.md" not in mkdocs_text:
-        raise SystemExit("mkdocs.yml missing EXTRACTS.md nav entry")
+        raise SystemExit("mkdocs.yml missing EXTRACTS.md (nav or not_in_nav)")
     if "05_PIPELINES/LOADS.md" not in mkdocs_text:
-        raise SystemExit("mkdocs.yml missing LOADS.md nav entry")
-    if "Design Proposals:" in mkdocs_text and mkdocs_text.find(
-        "Design Proposals:"
-    ) < mkdocs_text.find("  - Reference:"):
+        raise SystemExit("mkdocs.yml missing LOADS.md (nav or not_in_nav)")
+    # Design proposals stay archive-only (not_in_nav), never ahead of Reference.
+    if "Design Proposals:" in mkdocs_text.split("\nnav:", 1)[-1]:
         raise SystemExit(
-            "mkdocs.yml must place Design Proposals after current Reference/Project sections"
+            "mkdocs.yml must not put Design Proposals in primary nav "
+            "(use not_in_nav + ARCHIVE_INDEX)"
         )
     mkdocs_text = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
-    plugin_sdk_idx = mkdocs_text.find("  - Plugin SDK:")
-    design_idx = mkdocs_text.find("  - Design Proposals:")
+    extend_idx = mkdocs_text.find("  - Extend:")
     compiler_idx = mkdocs_text.find(
         "Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md"
     )
-    if (
-        plugin_sdk_idx < 0
-        or compiler_idx < plugin_sdk_idx
-        or (design_idx >= 0 and compiler_idx > design_idx)
-    ):
+    if extend_idx < 0 or compiler_idx < extend_idx:
         raise SystemExit(
-            "mkdocs.yml must promote Portable Transform Compiler under Plugin SDK"
+            "mkdocs.yml must promote Portable Transform Compiler under Extend"
         )
     design_proposals = (ROOT / "docs/11_DEVELOPMENT/DESIGN_PROPOSALS.md").read_text(
         encoding="utf-8"
@@ -1360,10 +1389,81 @@ def main() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     if "pip install etlantic" not in readme and "pip install 'etlantic" not in readme:
         raise SystemExit("README.md missing pip-first install guidance")
+    if (
+        "etlantic --version" not in readme
+        and "python -m etlantic --version" not in readme
+    ):
+        raise SystemExit("README.md missing etlantic --version verify step")
     if "hosted site TBD" in readme:
         raise SystemExit("README.md still says hosted site TBD")
     if "etlantic.readthedocs.io" not in readme:
         raise SystemExit("README.md missing hosted docs URL")
+
+    # Day-0 install must not send adopters to mutable main when the current
+    # version is already on PyPI (or when docs claim the pin).
+    day0_paths = [
+        ROOT / "docs/01_GETTING_STARTED/INSTALLATION.md",
+        ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md",
+        ROOT / "docs/01_GETTING_STARTED/FIRST_PIPELINE.md",
+        ROOT / "docs/01_GETTING_STARTED/SDK_10_MINUTES.md",
+        ROOT / "docs/01_GETTING_STARTED/TROUBLESHOOTING.md",
+        ROOT / "docs/06_EXECUTION/POLARS_TUTORIAL.md",
+        ROOT / "docs/README.md",
+    ]
+    main_install = "git+https://github.com/eddiethedean/etlantic.git@main"
+    for path in day0_paths:
+        text = path.read_text(encoding="utf-8")
+        if main_install in text and "contributor" not in text.lower()[:800]:
+            # Allow @main only in clearly labeled contributor/source sections
+            # after the day-0 install block. Fail if it appears in the first
+            # install instructions (top of file before "Install from source").
+            head = text.split("## Install from source", 1)[0]
+            head = head.split("## Repository checkout", 1)[0]
+            if main_install in head or "Until 0.34.0 is on PyPI" in head:
+                raise SystemExit(
+                    f"{path}: day-0 install must use PyPI pin, not git+…@main "
+                    f"(see RELEASE_ARTIFACT_VERIFICATION / INSTALLATION)"
+                )
+        if "SPDX SBOM" in text:
+            raise SystemExit(f"{path}: do not claim SPDX SBOM digests")
+
+    supply_chain_paths = [
+        ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+        ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
+        ROOT / "docs/06_EXECUTION/PRODUCTION_READINESS.md",
+        ROOT / "SECURITY.md",
+        ROOT / "docs/02_FOUNDATIONS/SECURITY.md",
+        ROOT / "docs/01_GETTING_STARTED/COMPARE.md",
+    ]
+    for path in supply_chain_paths:
+        text = path.read_text(encoding="utf-8")
+        if "SPDX SBOM" in text:
+            raise SystemExit(
+                f"{path}: replace SPDX SBOM claims with SHA-256 digests / "
+                "attestations / optional CycloneDX (see RELEASE_ARTIFACT_VERIFICATION)"
+            )
+        if re.search(r"\bships?\s+.*\bSBOM digests\b", text, flags=re.I):
+            raise SystemExit(
+                f"{path}: avoid unqualified 'SBOM digests' — use SHA-256 "
+                "manifest language (v0.34.0 has no CycloneDX SBOM)"
+            )
+    verification = ROOT / "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md"
+    if not verification.is_file():
+        raise SystemExit(
+            "missing docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md"
+        )
+    verification_text = verification.read_text(encoding="utf-8")
+    for needle in (
+        "release-artifacts.json",
+        "sbom-warning.txt",
+        "attestation",
+        "SHA-256",
+    ):
+        if needle not in verification_text:
+            raise SystemExit(
+                f"RELEASE_ARTIFACT_VERIFICATION.md must mention {needle!r}"
+            )
+
     if "Green path" not in (ROOT / "docs/README.md").read_text(encoding="utf-8"):
         raise SystemExit("docs/README.md missing Green path rail")
     docs_home = (ROOT / "docs/README.md").read_text(encoding="utf-8")
@@ -1421,22 +1521,27 @@ def main() -> None:
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     if "site_url: https://etlantic.readthedocs.io/" not in mkdocs:
         raise SystemExit("mkdocs.yml site_url must be https://etlantic.readthedocs.io/")
-    viz_idx = mkdocs.find("  - Visualization:")
     future_viz = mkdocs.find("Visualization (beyond Mermaid)")
     if future_viz >= 0:
         raise SystemExit(
             "mkdocs.yml still nests shipped viz under Visualization (beyond Mermaid)"
         )
-    if viz_idx < 0:
-        raise SystemExit("mkdocs.yml missing Visualization section")
-    viz_block = mkdocs[viz_idx : viz_idx + 500]
-    for shipped_viz in ("GRAPHVIZ.md", "HTML.md", "LINEAGE.md"):
-        if shipped_viz not in viz_block:
-            raise SystemExit(f"mkdocs.yml Visualization section missing {shipped_viz}")
+    for shipped_viz in (
+        "08_VISUALIZATION/GRAPHVIZ.md",
+        "08_VISUALIZATION/HTML.md",
+        "08_VISUALIZATION/LINEAGE.md",
+    ):
+        if shipped_viz not in mkdocs:
+            raise SystemExit(
+                f"mkdocs.yml must list shipped viz page {shipped_viz} "
+                "(nav or not_in_nav)"
+            )
     if "AIRFLOW_COMPILE.md" not in mkdocs or "MEDALLANTIC.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing runnable example guide pages")
     if "RUNTIME_CONFIGURATION.md" not in mkdocs:
         raise SystemExit("mkdocs.yml missing RUNTIME_CONFIGURATION.md")
+    if "hooks:" not in mkdocs or "docs/hooks.py" not in mkdocs:
+        raise SystemExit("mkdocs.yml must register docs/hooks.py for search exclusions")
     api_ref = (ROOT / "docs/10_REFERENCE/API_REFERENCE.md").read_text(encoding="utf-8")
     api_corpus = "\n".join(
         [
@@ -1873,7 +1978,7 @@ def main() -> None:
                 raise SystemExit(
                     f"{path} still shows Extract/Load binding= constructor usage"
                 )
-    # Classifiers and plugin dependency ranges must match the stable posture.
+    # Classifiers and plugin dependency ranges must match the Beta pilot envelope.
     plugin_stable_classifier = "Development Status :: 5 - Production/Stable"
     root_beta_classifier = "Development Status :: 4 - Beta"
     alpha_classifier = "Development Status :: 3 - Alpha"
@@ -1936,8 +2041,12 @@ def main() -> None:
             continue
         if alpha_classifier in text:
             raise SystemExit(f"{path} still uses Alpha classifier")
-        if plugin_stable_classifier not in text:
-            raise SystemExit(f"{path} missing Production/Stable classifier")
+        if plugin_stable_classifier in text:
+            raise SystemExit(
+                f"{path} should use Beta, not Production/Stable (Beta pilot envelope)"
+            )
+        if root_beta_classifier not in text:
+            raise SystemExit(f"{path} missing Beta classifier")
         if path.parent.name.startswith("etlantic-") and next_minor is not None:
             expected = f"etlantic>={package_version},<{next_minor}"
             # Also accept major.minor.0 style already used.
@@ -2031,6 +2140,12 @@ def main() -> None:
         if heading not in cli_md:
             raise SystemExit(f"CLI.md missing section for public command: {heading}")
 
+    # Typer surface vs CLI.md (top-level + key subcommands like report query / viz *).
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_cli_docs.py")],
+        check=True,
+    )
+
     # Current-patch install pins must match package_version on green-path pages.
     pin = f"=={package_version}"
     parts = package_version.split(".")
@@ -2109,6 +2224,10 @@ def main() -> None:
 
     subprocess.run(
         [sys.executable, str(ROOT / "scripts/check_runnable_docs.py")],
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_api_docs_coverage.py")],
         check=True,
     )
 

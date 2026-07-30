@@ -24,7 +24,7 @@ PACKAGES = (
 )
 FACADE_PACKAGES = ("medallantic",)
 REDIRECT_PACKAGES = ("etlantic-sparkforge",)
-# Thin reference adapters align with core Beta maturity (not Production/Stable plugins).
+# Thin reference adapters align with core Beta maturity.
 REFERENCE_PACKAGES = ("etlantic-fastapi",)
 # Experimental packages may use Alpha classifiers and are optional in release CI.
 EXPERIMENTAL_PACKAGES = ("etlantic-datafusion",)
@@ -92,8 +92,13 @@ def main() -> int:
             errors.append(f"{pkg} missing classifiers")
         if "Development Status :: 3 - Alpha" in text:
             errors.append(f"{pkg} still uses Alpha classifier")
-        if "Development Status :: 5 - Production/Stable" not in text:
-            errors.append(f"{pkg} missing Production/Stable classifier")
+        if "Development Status :: 5 - Production/Stable" in text:
+            errors.append(
+                f"{pkg} should use Beta, not Production/Stable "
+                "(Beta pilot envelope)"
+            )
+        if "Development Status :: 4 - Beta" not in text:
+            errors.append(f"{pkg} missing Beta classifier")
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
         expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"

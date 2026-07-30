@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.34.0] - 2026-07-30
 
+### Adopter summary
+
+| | |
+|---|---|
+| **Who must act** | Anyone on 0.33.x upgrading to M6 observability / run-history surfaces; production profiles that will use `durable_audit` or new provider keys; plugin authors pinning `etlantic>=0.34.0,<0.35` |
+| **Breaking** | No wire-schema reset (`pipeline/1`, `plan/1` unchanged). Behavior hardenings: production allowlist / trust denials fail closed more consistently; secret-like values rejected from plans/reports/assets; Delta/SQL merge fail-closed without Delta; Airflow compile stubs on ERROR diagnostics |
+| **Upgrade** | `python -m pip install --upgrade 'etlantic==0.34.0'` and matching plugins / `medallantic==0.34.0`. See [Migration 0.33 → 0.34](docs/11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
+| **Rollback** | Reinstall prior pins (core + plugins same minor), restore allowlist pins, re-validate / re-plan. Keep a `.etlantic/` workspace backup. [Rollback and recovery](docs/06_EXECUTION/ROLLBACK_RECOVERY.md) |
+| **Security impact** | Stronger fail-closed trust, secret redaction, and merge/identifier safety. Review production profiles after upgrade. CycloneDX SBOM generation failed for the v0.34.0 GitHub Release; SHA-256 digests + attestations shipped |
+
 ### Security and reliability hardening
 - Phase-aware ``PMPLUG402``: authorize/selected-engine denials block
   ``ensure_plugins`` / run / compile / doctor / execute (discovery siblings stay

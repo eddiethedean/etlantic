@@ -8,13 +8,10 @@ Use the curated root (`import etlantic as etl`) for a tiny in-process pipeline.
 
 ## Install
 
-Same install truth as [Installation](INSTALLATION.md) (from `main` until
-`0.34.0` is on PyPI):
+Same install as [Installation](INSTALLATION.md):
 
 ```bash
-# Until 0.34.0 is on PyPI:
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@main'
-# After publish: python -m pip install 'etlantic==0.34.0'
+python -m pip install 'etlantic==0.34.0'
 ```
 
 ## Author, validate, plan, run
