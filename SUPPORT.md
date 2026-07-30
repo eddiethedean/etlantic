@@ -15,9 +15,9 @@ deployments (not unrestricted enterprise production). Community support has
 - Production incident response or on-call coverage
 - Multi-tenant isolation and deployment topology
 - Compliance attestations (SOC2, GDPR certification, etc.)
-- advanced supply-chain controls beyond shipped SHA-256 digests, attestations, OIDC publish, and documented package
-  pins (CycloneDX SBOM optional; failed for v0.35.0)
-  pins and plugin allowlists
+- Advanced supply-chain programs beyond shipped SHA-256 digests, attestations,
+  OIDC publish, documented package pins, and plugin allowlists (CycloneDX SBOM
+  optional; failed for v0.35.0)
 - Guarantees for Experimental APIs (for example Structured Streaming)
 - Guarantees for Future design / Design Proposal pages
 

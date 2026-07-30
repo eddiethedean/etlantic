@@ -1,5 +1,7 @@
 # Core Concepts
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic is easiest to understand as a sequence of distinct models rather
 than as one large framework object.
 

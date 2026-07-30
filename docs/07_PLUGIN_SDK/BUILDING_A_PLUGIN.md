@@ -1,5 +1,7 @@
 # Building an ETLantic Plugin
 
+> **Status: Available in ETLantic 0.35.0.**
+
 This is the canonical guide for creating and maintaining an independently
 distributed ETLantic plugin. Reference plugins in the ETLantic repository and
 third-party plugins should follow the same package, discovery, capability,

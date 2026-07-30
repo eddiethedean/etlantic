@@ -21,6 +21,10 @@
   --etlantic-surface-raised: #f5f9f8;
   --etlantic-border: rgba(13, 59, 94, 0.16);
   --etlantic-shadow: rgba(7, 26, 43, 0.08);
+  /* Body-sized accent text on white needs ≥4.5:1 contrast. */
+  --etlantic-brass: #8a5a12;
+  --etlantic-mint: #0d8a6a;
+  --etlantic-cyan: #0e8f9c;
 }
 
 [data-md-color-scheme="slate"] {
@@ -219,9 +223,9 @@ html {
 .etlantic-hero__content h1 {
   margin: 0.55rem 0 1rem;
   color: white;
-  font-size: clamp(2.35rem, 4.8vw, 3.65rem);
+  font-size: clamp(2.15rem, 3.8vw, 3.2rem);
   font-weight: 750;
-  line-height: 1;
+  line-height: 1.04;
   letter-spacing: -0.045em;
 }
 
@@ -696,14 +700,18 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   .md-typeset a.etlantic-flow__step,
-  .md-typeset a.etlantic-flow__step::after {
-    transition: none;
+  .md-typeset a.etlantic-flow__step::after,
+  .md-typeset a.etlantic-path-card,
+  .md-tabs__link {
+    transition: none !important;
   }
 
   .md-typeset a.etlantic-flow__step:hover,
   .md-typeset a.etlantic-flow__step:focus-visible,
-  .md-typeset a.etlantic-flow__step:active {
-    transform: none;
+  .md-typeset a.etlantic-flow__step:active,
+  .md-typeset a.etlantic-path-card:hover,
+  .md-typeset a.etlantic-path-card:focus-visible {
+    transform: none !important;
   }
 }
 

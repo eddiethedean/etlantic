@@ -1,5 +1,7 @@
 # Troubleshooting
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ## `pip install etlantic` rejects my Python version
 
 ETLantic requires Python 3.11 or newer. Check with:

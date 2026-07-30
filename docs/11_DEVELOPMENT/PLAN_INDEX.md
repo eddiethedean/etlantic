@@ -1,5 +1,7 @@
 # Planning Hub
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 

@@ -56,7 +56,7 @@ run_portable_transform_conformance_suite(create_transform_compiler())
 
 ## Links
 
-[Pandas tutorial](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PANDAS_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/) ·
+[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

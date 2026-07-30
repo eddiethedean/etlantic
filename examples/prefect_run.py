@@ -76,6 +76,6 @@ def run_example() -> tuple[PipelineRuntime, object]:
 if __name__ == "__main__":
     runtime, report = run_example()
     print(report.to_text())
-    print("scheduler:", report.metadata.get("scheduler"))
+    print("scheduler:", report.metadata.get("etlantic.scheduler"))
     for customer in runtime.memory.get("customer_sink"):
         print(customer.model_dump())

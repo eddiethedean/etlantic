@@ -1,15 +1,18 @@
 # Current Capabilities and Limitations
 
+> **Status: Available in ETLantic 0.35.0.** What ships now for controlled
+> single-tenant pilots.
+
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.34)
+## What works today (0.35)
 
-Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
-PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.35.0** is a **Beta**
-(PyPI) release for documented single-tenant pilots.
+ETLantic 0.35.0 is a Beta release for documented, controlled,
+single-tenant pilots. It validates and plans typed pipelines, runs them
+locally or through supported engine plugins, and compiles valid plans to
+supported orchestration targets.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
 (install `etlantic==0.35.0` from PyPI → `python -m etlantic init` → validate →
@@ -18,26 +21,27 @@ Fit check: [Compare](COMPARE.md).
 
 | Area | You can |
 |---|---|
-| Authoring | Typed `Data` / `Transformation` / `Pipeline`; builders; `PipelineDefinition` JSON |
+| Authoring | Typed `Data` / `Transformation` / `Pipeline`; builders; `PipelineDefinition` JSON; inspect/rewrite/provenance helpers |
 | Validation | Wiring, contracts, capabilities, trust — before any write |
 | Engines | Local Python; Polars; Pandas; SQL (`etlantic-sql`); PySpark |
 | Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`) |
 | Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist` |
-| Observability and evidence (0.34) | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
-| Facades | `medallantic` medallion; optional `etlantic-keyring`, SQLModel, OTel |
+| Observability and evidence | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
+| Testing (preview) | Application-pipeline cases via `etlantic.testing` |
+| Facades | `medallantic` medallion + SparkForge inventory/generate; optional `etlantic-keyring`, SQLModel, OTel |
 
-## Limits (read before production)
+## Limits
 
-| Topic | 0.35 |
+| Topic | ETLantic 0.35 |
 |---|---|
-| Maturity | **Beta** (PyPI) |
-| Suitable for | Documented single-tenant pilots |
-| Support | Community; **no SLA** |
-| Not included in 0.34 | Multi-tenant control plane; unrestricted enterprise production |
+| Maturity | Beta |
+| Suitable for | Controlled single-tenant pilots |
+| Support | Community; no SLA |
+| Not included | Managed multi-tenant control plane; unrestricted enterprise production |
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
 topology, compliance, and advanced control planes remain adopter-owned in
-0.34. Roadmap programs live under Contribute → Maintainers — not day-0 reading
+0.35. Roadmap programs live under Contribute → Maintainers — not day-0 reading
 (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 

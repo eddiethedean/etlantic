@@ -111,8 +111,8 @@ def run_scheduler_conformance_suite(
     )
     report = anyio.run(_execute, scheduler, runtime)
     assert report.status is RunStatus.SUCCEEDED
-    assert report.metadata.get("scheduler") == scheduler.info.name
-    assert report.metadata.get("scheduler_protocol") == SCHEDULER_PROTOCOL
+    assert report.metadata.get("etlantic.scheduler") == scheduler.info.name
+    assert report.metadata.get("etlantic.scheduler_protocol") == SCHEDULER_PROTOCOL
     meta = str(report.metadata or {})
     assert meta == redact_message(meta)
     assert runtime.memory.get("out")

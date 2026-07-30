@@ -1,6 +1,10 @@
 ---
 hide:
   - toc
+status: available
+since: "0.35.0"
+current_minor: "0.35"
+audience: adopter
 ---
 
 <div class="etlantic-hero">
@@ -57,6 +61,9 @@ hide:
 </div>
 
 ## Choose your path
+
+> **Status: Available in ETLantic 0.35.0.**
+
 
 <div class="etlantic-path-grid">
   <a class="etlantic-path-card" href="01_GETTING_STARTED/QUICKSTART/">
@@ -224,6 +231,6 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release | [What's new in 0.34](01_GETTING_STARTED/WHATS_NEW_0_34.md) |
+| Review the current release | [What's new in 0.35](01_GETTING_STARTED/WHATS_NEW_0_35.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

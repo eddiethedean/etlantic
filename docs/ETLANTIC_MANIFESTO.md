@@ -1,5 +1,8 @@
 # ETLantic Manifesto
 
+> **Status: Available in ETLantic 0.35.0.**
+
+
 ## Data Engineering Deserves a Typed Interface
 
 Modern data systems are assembled from capable tools, yet their meaning is

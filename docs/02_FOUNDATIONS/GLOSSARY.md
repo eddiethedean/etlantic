@@ -1,5 +1,7 @@
 # Glossary
 
+> **Status: Available in ETLantic 0.35.0.**
+
 This glossary defines the core terminology used throughout the
 ETLantic documentation. Unless otherwise noted, these definitions
 reflect ETLantic's architecture and may differ from how similar

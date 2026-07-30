@@ -108,8 +108,8 @@ def test_pipeline_run_with_prefect_profile() -> None:
         runtime=runtime,
     )
     assert report.status is RunStatus.SUCCEEDED
-    assert report.metadata.get("scheduler") == "prefect"
-    assert report.metadata.get("scheduler_protocol") == SCHEDULER_PROTOCOL
+    assert report.metadata.get("etlantic.scheduler") == "prefect"
+    assert report.metadata.get("etlantic.scheduler_protocol") == SCHEDULER_PROTOCOL
     assert report.metadata.get("prefect_run_id")
     assert report.run_id == report.metadata["prefect_run_id"]
     correlation = report.metadata.get("prefect_task_correlation") or {}

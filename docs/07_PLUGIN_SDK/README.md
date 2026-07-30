@@ -1,5 +1,7 @@
 # Plugin SDK
 
+> **Status: Available in ETLantic 0.35.0.**
+
 !!! tip "Start here when creating a plugin"
     Follow [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md) for the canonical
     package-from-zero workflow and release checklist. All reference and

@@ -61,8 +61,8 @@ def test_local_scheduler_execute_preserves_run_semantics() -> None:
     )
     report = TinyPipeline.run(profile="development", runtime=runtime)
     assert report.status is RunStatus.SUCCEEDED
-    assert report.metadata.get("scheduler") == "local"
-    assert report.metadata.get("scheduler_protocol") == SCHEDULER_PROTOCOL
+    assert report.metadata.get("etlantic.scheduler") == "local"
+    assert report.metadata.get("etlantic.scheduler_protocol") == SCHEDULER_PROTOCOL
     assert runtime.memory.get("out")
 
 

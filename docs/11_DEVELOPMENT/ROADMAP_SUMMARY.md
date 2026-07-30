@@ -184,7 +184,7 @@ SQLite/PostgreSQL differential fixtures. See
 
 ## Shipped: 0.34
 
-ETLantic **0.35.0** shipped **Operations, Evidence, and Production Readiness
+ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
 (M6)**: observability/run-history/event-consumer protocols, runtime bridge,
 production conformance, and Medallantic explain/lifecycle/profile templates.
 See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and

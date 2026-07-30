@@ -6,8 +6,8 @@
 > status, and the [current package guide](README.md) owns shipped behavior.
 > Review this header for every release or parity-sequence change.
 
-**Current release:** Medallantic **0.34.0**. M0 through M6 are shipped;
-**M7 / ETLantic 0.35** is shipped (exit gate closed in-tree). Planned phases describe
+**Current release:** Medallantic **0.35.0**. M0 through M7 are shipped
+(exit gate closed; published with ETLantic 0.35). Planned phases describe
 capability order, not release-date commitments.
 
 Medallantic is the engine-agnostic medallion pipeline facade built on

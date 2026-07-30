@@ -22,11 +22,11 @@
 </p>
 
 <p align="center">
-  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
   <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/10_REFERENCE/API_REFERENCE/">Python API</a> ·
-  <a href="https://etlantic.readthedocs.io/en/latest/10_REFERENCE/CLI/">CLI</a>
+  <a href="https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/API_REFERENCE/">Python API</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/CLI/">CLI</a>
 </p>
 
 ---
@@ -109,9 +109,9 @@ You should see a `succeeded` run and two JSON rows for Ada and Grace.
 | `run` | Validates, plans, executes, and records a structured run report |
 
 Continue with the full
-[Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/)
+[Quickstart](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/QUICKSTART/)
 to see ETLantic reject an incompatible contract before a write, then build
-[your first transformation](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/FIRST_PIPELINE/).
+[your first transformation](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/FIRST_PIPELINE/).
 
 ## Why teams use ETLantic
 
@@ -143,7 +143,7 @@ transformation supported by that backend's compiler.
 | Typed multi-engine pipeline coordination | ETLantic | A validation-first logical model with pluggable execution |
 
 Read the full
-[comparison guide](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/)
+[comparison guide](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/COMPARE/)
 before adopting ETLantic as a replacement for an existing tool. It is usually
 a complementary control layer.
 
@@ -169,10 +169,10 @@ capability shipped in 0.35, not future roadmap intent.
 
 For controlled deployments, pin core and every official plugin to the same
 tested release. See
-[engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/),
-[compatibility](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/COMPATIBILITY/),
+[engine selection](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/ENGINE_SELECTION/),
+[compatibility](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/COMPATIBILITY/),
 and
-[optional packages](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/OPTIONAL_PACKAGES/).
+[optional packages](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/OPTIONAL_PACKAGES/).
 
 Structured Streaming and `etlantic-datafusion` are experimental. The FastAPI
 package is a thin reference adapter, not a production control plane.
@@ -197,9 +197,9 @@ import etlantic as etl
 Pipelines can be authored as typed classes or with functional builders and
 versioned `PipelineDefinition` JSON. Start with the generated project above;
 then use the
-[SDK tutorial](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/SDK_10_MINUTES/)
+[SDK tutorial](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/SDK_10_MINUTES/)
 or
-[programmatic authoring guide](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/PROGRAMMATIC_AUTHORING/).
+[programmatic authoring guide](https://etlantic.readthedocs.io/en/v0.35.0/05_PIPELINES/PROGRAMMATIC_AUTHORING/).
 
 ## Contracts as build artifacts
 
@@ -218,10 +218,10 @@ contracts/
 ```
 
 ETLantic integrates with the
-[Open Data Contract Standard (ODCS)](https://etlantic.readthedocs.io/en/latest/03_DATA_CONTRACTS/ODCS/),
-[Data Transformation Contract Standard (DTCS)](https://etlantic.readthedocs.io/en/latest/04_TRANSFORMATIONS/DTCS/),
+[Open Data Contract Standard (ODCS)](https://etlantic.readthedocs.io/en/v0.35.0/03_DATA_CONTRACTS/ODCS/),
+[Data Transformation Contract Standard (DTCS)](https://etlantic.readthedocs.io/en/v0.35.0/04_TRANSFORMATIONS/DTCS/),
 and
-[Data Pipeline Contract Standard (DPCS)](https://etlantic.readthedocs.io/en/latest/05_PIPELINES/DPCS/).
+[Data Pipeline Contract Standard (DPCS)](https://etlantic.readthedocs.io/en/v0.35.0/05_PIPELINES/DPCS/).
 Generation is deterministic and refuses invalid pipelines.
 
 ## Security and production posture
@@ -241,11 +241,11 @@ single-tenant pilots—not unrestricted enterprise production.
 Use separate processes or stronger infrastructure boundaries for distinct
 tenants and trust domains. Before a pilot, review:
 
-- [Capabilities and limitations](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/CAPABILITIES/)
-- [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/)
-- [Security model](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/SECURITY/)
-- [Enterprise evaluation guide](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENTERPRISE_EVALUATION/)
-- [Planned multi-tenant control-plane program](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
+- [Capabilities and limitations](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/CAPABILITIES/)
+- [Production readiness](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/PRODUCTION_READINESS/)
+- [Security model](https://etlantic.readthedocs.io/en/v0.35.0/02_FOUNDATIONS/SECURITY/)
+- [Enterprise evaluation guide](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/ENTERPRISE_EVALUATION/)
+- [Planned multi-tenant control-plane program](https://etlantic.readthedocs.io/en/v0.35.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
 - [Security reporting policy](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md)
 
 ## Common workflows
@@ -272,23 +272,23 @@ python -m etlantic report list
 
 The public CLI also includes `doctor`, `profile`, `diff`, `plugin`, `schema`,
 `reliability`, and `viz`. See the
-[CLI reference](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/CLI/)
+[CLI reference](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/CLI/)
 for exit codes and mutation behavior.
 
 ## Documentation
 
 | Goal | Start here |
 |---|---|
-| Get a first success | [Quickstart](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/QUICKSTART/) |
-| Decide whether ETLantic fits | [Compare](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/COMPARE/) |
-| Choose an engine | [Engine selection](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/ENGINE_SELECTION/) |
-| Learn the architecture | [Architecture](https://etlantic.readthedocs.io/en/latest/02_FOUNDATIONS/ARCHITECTURE/) |
-| Use the Python SDK | [API reference](https://etlantic.readthedocs.io/en/latest/10_REFERENCE/API_REFERENCE/) |
-| Operate a controlled pilot | [Production readiness](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/PRODUCTION_READINESS/) |
-| Review future direction | [Planning Hub](https://etlantic.readthedocs.io/en/latest/11_DEVELOPMENT/PLAN_INDEX/) |
-| Build a plugin | [Plugin SDK](https://etlantic.readthedocs.io/en/latest/07_PLUGIN_SDK/) |
-| Troubleshoot a failure | [Troubleshooting](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/TROUBLESHOOTING/) |
-| Upgrade safely | [Upgrade hub](https://etlantic.readthedocs.io/en/latest/01_GETTING_STARTED/UPGRADE/) |
+| Get a first success | [Quickstart](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/QUICKSTART/) |
+| Decide whether ETLantic fits | [Compare](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/COMPARE/) |
+| Choose an engine | [Engine selection](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/ENGINE_SELECTION/) |
+| Learn the architecture | [Architecture](https://etlantic.readthedocs.io/en/v0.35.0/02_FOUNDATIONS/ARCHITECTURE/) |
+| Use the Python SDK | [API reference](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/API_REFERENCE/) |
+| Operate a controlled pilot | [Production readiness](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/PRODUCTION_READINESS/) |
+| Review future direction | [Planning Hub](https://etlantic.readthedocs.io/en/v0.35.0/11_DEVELOPMENT/PLAN_INDEX/) |
+| Build a plugin | [Plugin SDK](https://etlantic.readthedocs.io/en/v0.35.0/07_PLUGIN_SDK/) |
+| Troubleshoot a failure | [Troubleshooting](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/TROUBLESHOOTING/) |
+| Upgrade safely | [Upgrade hub](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/UPGRADE/) |
 
 Repository examples require a clone and are not included in the wheel. Pip
 users should begin with `etlantic init`; contributors can use

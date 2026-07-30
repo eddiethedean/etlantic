@@ -1,5 +1,7 @@
 # Validation Everywhere
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic models ETL with validation at every meaningful boundary.
 
 ```text

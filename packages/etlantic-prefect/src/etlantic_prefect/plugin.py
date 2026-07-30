@@ -187,8 +187,8 @@ class PrefectScheduler:
         result = pipeline_flow()
         if hasattr(result, "__await__"):
             result = await result  # type: ignore[misc]
-        result.metadata.setdefault("scheduler", self.info.name)
-        result.metadata.setdefault("scheduler_protocol", SCHEDULER_PROTOCOL)
+        result.metadata.setdefault("etlantic.scheduler", self.info.name)
+        result.metadata.setdefault("etlantic.scheduler_protocol", SCHEDULER_PROTOCOL)
         result.metadata.setdefault(
             "prefect_task_correlation", dict(self._task_correlation)
         )

@@ -1,11 +1,15 @@
 # Upgrade Hub
 
+> **Status: Available in ETLantic 0.35.0.**
+
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
     [Quickstart](QUICKSTART.md). This page is for migrating between minors.
 
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
+
+Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 

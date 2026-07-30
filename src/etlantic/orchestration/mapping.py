@@ -67,7 +67,10 @@ def context_from_profile(
         execution=execution_from_profile(profile),
         required_capabilities=required,
         max_inline_bytes=max_inline_bytes,
-        metadata={"profile": profile.name, "orchestrator": profile.orchestrator},
+        metadata={
+            "etlantic.profile": profile.name,
+            "etlantic.orchestrator": profile.orchestrator,
+        },
     )
 
 

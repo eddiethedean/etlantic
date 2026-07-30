@@ -1,5 +1,7 @@
 # Portable Compiler Matrix
 
+> **Status: Available in ETLantic 0.35.0.**
+
 This matrix records the portable transformation claims shipped in ETLantic
 0.35.0. It is narrower than each backend's native capabilities.
 

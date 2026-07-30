@@ -1,5 +1,7 @@
 # Installing ETLantic 0.35.0
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic **0.35.0** supports Python 3.11–3.13 and is published on
 [PyPI](https://pypi.org/project/etlantic/0.35.0/).
 

@@ -257,6 +257,11 @@ After publishing:
 
 - Verify package installation.
 - Verify documentation links and the Read the Docs build for the tag.
+- Activate the git tag under Read the Docs → **Versions** so
+  `https://etlantic.readthedocs.io/en/vX.Y.Z/` is immutable and returns 200.
+  Keep **latest** = `main` and **stable** = newest published tag. Update root
+  and package README absolute docs links to `/en/vX.Y.Z/` (see
+  `docs/release-facts.json`).
 - Monitor issue reports.
 - Open follow-up issues for deferred work.
 - Record lessons from release incidents.

@@ -1,0 +1,21 @@
+{
+  "schema": "etlantic.release_facts/1",
+  "current_version": "0.35.0",
+  "current_minor": "0.35",
+  "previous_minor": "0.34",
+  "next_minor": "0.36",
+  "maturity": "Beta",
+  "support_line": "0.35.x",
+  "suitable_for": "Documented single-tenant pilots",
+  "support_policy": "Community; no SLA",
+  "whats_new": "01_GETTING_STARTED/WHATS_NEW_0_35.md",
+  "migration": "11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md",
+  "exit_gate": "11_DEVELOPMENT/EXIT_GATE_0_35.md",
+  "docs_version_slug": "v0.35.0",
+  "docs_base_url": "https://etlantic.readthedocs.io/en/v0.35.0/",
+  "docs_stable_url": "https://etlantic.readthedocs.io/en/stable/",
+  "docs_latest_url": "https://etlantic.readthedocs.io/en/latest/",
+  "pypi_url": "https://pypi.org/project/etlantic/0.35.0/",
+  "github_release_url": "https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0",
+  "released_on": "2026-07-30"
+}

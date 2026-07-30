@@ -1,5 +1,7 @@
 # Compatibility Matrix
 
+> **Status: Available in ETLantic 0.35.0.**
+
 This table describes the declared compatibility of ETLantic 0.35.0.
 
 | Surface | Supported range or version |

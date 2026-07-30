@@ -1,5 +1,7 @@
 # Configuration in 0.35.0
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic 0.35.0 configures execution with a `Profile` object, a JSON profile
 document, and an optional project `etlantic.toml`. Prefer **`assets`** for
 logical-to-physical maps; legacy `bindings` fail closed (`PMCFG111`) unless

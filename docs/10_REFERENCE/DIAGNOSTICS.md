@@ -1,5 +1,7 @@
 # Diagnostics Reference
 
+> **Status: Available in ETLantic 0.35.0.**
+
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
 

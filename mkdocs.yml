@@ -21,7 +21,6 @@ not_in_nav: |
   01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
   01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md
   01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
-  01_GETTING_STARTED/PROJECT_STRUCTURE.md
   01_GETTING_STARTED/README.md
   01_GETTING_STARTED/SDK_10_MINUTES.md
   01_GETTING_STARTED/WHATS_NEW_0_14.md
@@ -95,12 +94,10 @@ not_in_nav: |
   06_EXECUTION/LOGGING.md
   06_EXECUTION/OBSERVABILITY_TODAY.md
   06_EXECUTION/OPS_PILOT.md
-  06_EXECUTION/ORCHESTRATION_PLUGINS.md
   06_EXECUTION/PANDAS.md
   06_EXECUTION/PILOT_WALKTHROUGH.md
   06_EXECUTION/PLUGINS.md
   06_EXECUTION/POLARS.md
-  06_EXECUTION/PYSPARK.md
   06_EXECUTION/PYSPARK_EXECUTION.md
   06_EXECUTION/README.md
   06_EXECUTION/RESOURCE_PLUGINS.md
@@ -118,6 +115,8 @@ not_in_nav: |
   08_VISUALIZATION/DOCUMENTATION.md
   08_VISUALIZATION/GRAPHVIZ.md
   08_VISUALIZATION/HTML.md
+  11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_35.md
+  11_DEVELOPMENT/DOCUMENTATION_OWNERSHIP.md
   08_VISUALIZATION/LINEAGE.md
   08_VISUALIZATION/MERMAID.md
   08_VISUALIZATION/OPENAPI_FOR_PIPELINES.md
@@ -384,6 +383,7 @@ nav:
       - Release artifact verification: 01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md
       - Known limitations: 10_REFERENCE/KNOWN_ISSUES.md
   - Tutorials:
+      - Overview: 01_GETTING_STARTED/TUTORIALS.md
       - End-to-end pilot: 01_GETTING_STARTED/END_TO_END_PILOT.md
       - Core data paths:
           - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
@@ -398,9 +398,13 @@ nav:
           - Airflow compilation: 06_EXECUTION/AIRFLOW_TUTORIAL.md
           - Prefect local execution: 09_EXAMPLES/PREFECT_RUN.md
   - How-to:
+      - Overview: 01_GETTING_STARTED/HOW_TO.md
+      - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
+      - Pilot evidence packet: 01_GETTING_STARTED/PILOT_EVIDENCE_PACKET.md
       - Author pipelines:
           - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
           - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
+          - Project structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
           - Profiles: 05_PIPELINES/PROFILES_HUB.md
           - Portable transformations: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Operate safely:
@@ -412,6 +416,9 @@ nav:
           - Rollback and recovery: 06_EXECUTION/ROLLBACK_RECOVERY.md
           - Operations examples: 01_GETTING_STARTED/OPS_EXAMPLES.md
           - Security checklist: 01_GETTING_STARTED/SECURITY_HOWTO.md
+      - Engines and orchestration:
+          - PySpark overview: 06_EXECUTION/PYSPARK.md
+          - Orchestration plugins: 06_EXECUTION/ORCHESTRATION_PLUGINS.md
       - Get help:
           - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
           - FAQ: 01_GETTING_STARTED/FAQ.md
@@ -434,6 +441,17 @@ nav:
           - Quality: 10_REFERENCE/API_QUALITY.md
           - Protocols: 10_REFERENCE/API_PROTOCOLS.md
           - Optional packages: 10_REFERENCE/API_OPTIONAL_PACKAGES.md
+          - etlantic-polars: 10_REFERENCE/api_optional/etlantic_polars.md
+          - etlantic-pandas: 10_REFERENCE/api_optional/etlantic_pandas.md
+          - etlantic-sql: 10_REFERENCE/api_optional/etlantic_sql.md
+          - etlantic-pyspark: 10_REFERENCE/api_optional/etlantic_pyspark.md
+          - etlantic-airflow: 10_REFERENCE/api_optional/etlantic_airflow.md
+          - etlantic-prefect: 10_REFERENCE/api_optional/etlantic_prefect.md
+          - etlantic-keyring: 10_REFERENCE/api_optional/etlantic_keyring.md
+          - etlantic-sqlmodel: 10_REFERENCE/api_optional/etlantic_sqlmodel.md
+          - etlantic-datafusion: 10_REFERENCE/api_optional/etlantic_datafusion.md
+          - etlantic-fastapi: 10_REFERENCE/api_optional/etlantic_fastapi.md
+          - medallantic: 10_REFERENCE/api_optional/medallantic.md
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md

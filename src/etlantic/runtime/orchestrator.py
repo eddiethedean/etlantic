@@ -974,8 +974,8 @@ class LocalOrchestrator:
             ),
             backend_runs=(),
             metadata={
-                "orchestrator": "local",
-                "outbound_events": list(self.outbound_events),
+                "etlantic.orchestrator": "local",
+                "etlantic.outbound_events": list(self.outbound_events),
             },
         )
         bridge = getattr(self.runtime, "observability_bridge", None)
@@ -984,7 +984,7 @@ class LocalOrchestrator:
                 report,
                 metadata={
                     **dict(report.metadata),
-                    "observability": bridge.observability_metadata(),
+                    "etlantic.observability": bridge.observability_metadata(),
                 },
             )
         self._persist_report(report)
@@ -1058,8 +1058,8 @@ class LocalOrchestrator:
                 if e.producer_node in selected and e.consumer_node in selected
             ),
             metadata={
-                "orchestrator": "local",
-                "outbound_events": list(self.outbound_events),
+                "etlantic.orchestrator": "local",
+                "etlantic.outbound_events": list(self.outbound_events),
             },
         )
 

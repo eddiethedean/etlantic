@@ -17,12 +17,19 @@ REQUIRED_MODULES = (
     "etlantic_prefect",
     "etlantic_keyring",
     "etlantic_sqlmodel",
+    "etlantic_datafusion",
+    "etlantic_fastapi",
     "medallantic",
+)
+
+REQUIRED_PACKAGE_PAGES = tuple(
+    ROOT / "docs/10_REFERENCE/api_optional" / f"{mod}.md" for mod in REQUIRED_MODULES
 )
 
 CANDIDATE_DOCS = (
     ROOT / "docs/10_REFERENCE/API_OPTIONAL_PACKAGES.md",
     ROOT / "docs/10_REFERENCE/OPTIONAL_PACKAGES.md",
+    *REQUIRED_PACKAGE_PAGES,
 )
 
 
@@ -37,6 +44,15 @@ def _directive_present(text: str, module: str) -> bool:
 
 
 def main() -> int:
+    missing_pages = [p for p in REQUIRED_PACKAGE_PAGES if not p.exists()]
+    if missing_pages:
+        print(
+            "check_api_docs_coverage: missing per-package API pages: "
+            + ", ".join(str(p.relative_to(ROOT)) for p in missing_pages),
+            file=sys.stderr,
+        )
+        return 1
+
     existing = [path for path in CANDIDATE_DOCS if path.exists()]
     if not existing:
         print(

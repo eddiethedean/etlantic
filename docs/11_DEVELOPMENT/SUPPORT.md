@@ -1,8 +1,13 @@
-# Support Policy
+# Support Policy (maintainers)
 
-ETLantic **0.35.x** is a **Beta** (PyPI) release suitable for documented single-tenant
-reference deployments. Community support is best-effort and provides **no
-formal SLA** or guaranteed response time.
+> **Status: Available in ETLantic 0.35.0.**
+
+> **Canonical adopter policy:** root
+> [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).
+> Keep this page as maintainer extras only; do not duplicate pin/envelope text.
+
+ETLantic **0.35.x** is a **Beta** (PyPI) release. Community support is
+best-effort with **no formal SLA**.
 
 ## Where to ask
 
@@ -14,24 +19,14 @@ Include the ETLantic version, Python version, operating system, installed
 plugin versions, exact command, diagnostic code, and a minimal reproduction.
 Remove credentials, customer data, internal hostnames, and production plans.
 
-## Supported versions
+## Maintainer notes
 
-The current published minor line (`0.35.x`) receives best-effort correctness
-and security fixes. Older 0.x lines (including **0.19.x**) are not actively
-maintained. See `SECURITY.md` for the security-support table.
-
-## Adopter-owned and unsupported areas
-
-- Production incident response or on-call coverage
-- Multi-tenant isolation and deployment topology in the current 0.34 envelope
-  (a [first-class program is planned](MULTI_TENANT_CONTROL_PLANE_PLAN.md), but
-  not yet supported)
-- Compliance attestations (SOC2, GDPR certification, and similar)
-- Advanced supply-chain programs beyond shipped SHA-256 digests, GitHub build
-  provenance attestations, OIDC-preferred publish, documented package pins,
-  and plugin allowlists (CycloneDX SBOM optional; failed for v0.35.0)
-- Guarantees for Experimental APIs (including `etlantic-datafusion`)
-- Guarantees for Future design / Design Proposal pages
+- The current published minor line (`0.35.x`) receives best-effort correctness
+  and security fixes. Older 0.x lines are not actively maintained.
+- Multi-tenant isolation remains outside the current **0.35** single-tenant
+  envelope (see [MULTI_TENANT_CONTROL_PLANE_PLAN](MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
+- Experimental APIs (including `etlantic-datafusion`) and Future design pages
+  carry no support guarantees.
 
 ## What maintainers may close
 

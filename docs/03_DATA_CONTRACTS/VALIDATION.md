@@ -2,12 +2,12 @@
 
 Validation is a core part of the ETLantic data-contract lifecycle.
 
-> **Status: Partially available in 0.34.** Record validation through
+> **Status: Partially available in 0.35.** Record validation through
 > ContractModel/Pydantic, pipeline graph validation, named validation policies,
 > dataframe validation outcomes, portable quality gates, and normalized runtime
 > validation evidence are public. Callback-based invalid-data handling,
 > `ValidationMode`, and a `Pipeline.validate_data()` API are design direction,
-> not public 0.34 APIs.
+> not public 0.35 APIs.
 
 ETLantic coordinates **when** validation happens, ContractModel defines **what valid data means**, and execution plugins determine **how validation is performed efficiently** for a chosen runtime.
 

@@ -1,5 +1,7 @@
 # Testing
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ## Test-cost matrix (order of magnitude)
 
 Use the cheapest green suite that covers your change. Durations are rough

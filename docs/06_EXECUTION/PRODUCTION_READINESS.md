@@ -1,5 +1,7 @@
 # Production Readiness and Deployment Boundaries
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ## Residual evaluation lead
 
 | Topic | 0.35 |

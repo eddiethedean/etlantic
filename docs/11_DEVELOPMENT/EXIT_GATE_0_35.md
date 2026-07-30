@@ -1,8 +1,8 @@
 # Exit Gate 0.35 — Migration Completion and Joint Freeze (M7)
 
-> **Status: Closed for ETLantic 0.35.0.** Medallantic M7 migration completion
-> and joint facade freeze evidence are in-tree. **Do not treat this as a
-> published PyPI tag** until release CI is green and maintainers cut `v0.35.0`.
+> **Status: Released.** ETLantic 0.35.0 was published to PyPI and GitHub
+> on 2026-07-30 after the release checks below completed. This page records
+> exit evidence; it is not the current capability reference.
 
 | Deliverable | Status |
 |---|---|

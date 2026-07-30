@@ -1,13 +1,38 @@
+---
+status: available
+since: "0.35.0"
+current_minor: "0.35"
+audience: developer
+---
+
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.35.0.** Shallow module-level stubs for
-> first-party optional packages. Hub: [Optional Packages](OPTIONAL_PACKAGES.md).
-> Core authoring/runtime symbols remain in
+> **Status: Available in ETLantic 0.35.0.** Per-package API pages for first-party
+> optional packages. Install/overview hub:
+> [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).
 
-These pages document the installed package root only (no recursive submodule
-expansion). Prefer package READMEs for factories, registration, and failure
-modes.
+Each package page includes a minimal setup example, a failure-mode table, and
+mkdocstrings coverage of the public module tree. Package READMEs remain the
+install and narrative home.
+
+## Packages
+
+- [etlantic-polars](api_optional/etlantic_polars.md) — Polars dataframe plugin + portable compiler
+- [etlantic-pandas](api_optional/etlantic_pandas.md) — Pandas dataframe plugin + portable compiler
+- [etlantic-sql](api_optional/etlantic_sql.md) — SQL plugin (SQLite + PostgreSQL)
+- [etlantic-pyspark](api_optional/etlantic_pyspark.md) — PySpark plugin + portable compiler
+- [etlantic-airflow](api_optional/etlantic_airflow.md) — Airflow DAG compiler
+- [etlantic-prefect](api_optional/etlantic_prefect.md) — Prefect local scheduler MVP
+- [etlantic-keyring](api_optional/etlantic_keyring.md) — OS keyring secret provider
+- [etlantic-sqlmodel](api_optional/etlantic_sqlmodel.md) — SQLModel bridge helpers
+- [etlantic-datafusion](api_optional/etlantic_datafusion.md) — Experimental DataFusion stub
+- [etlantic-fastapi](api_optional/etlantic_fastapi.md) — FastAPI reference adapter
+- [medallantic](api_optional/medallantic.md) — Medallion facade + SparkForge migrate
+
+## Quick module stubs (roots)
+
+The directives below keep root-level coverage discoverable from this hub:
 
 ## etlantic-polars
 

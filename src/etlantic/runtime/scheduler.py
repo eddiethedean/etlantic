@@ -228,6 +228,6 @@ class LocalScheduler:
         )
         result = await host.execute()
         # Annotate scheduler identity without breaking report schema consumers.
-        result.metadata.setdefault("scheduler", self.info.name)
-        result.metadata.setdefault("scheduler_protocol", SCHEDULER_PROTOCOL)
+        result.metadata.setdefault("etlantic.scheduler", self.info.name)
+        result.metadata.setdefault("etlantic.scheduler_protocol", SCHEDULER_PROTOCOL)
         return result

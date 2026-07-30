@@ -4,7 +4,19 @@ Documentation is part of the public API.
 
 ## Required Page Status
 
-Every page describing product behavior must be one of:
+Every page describing product behavior must declare status via YAML
+frontmatter (preferred) and/or a visible status banner:
+
+```yaml
+---
+status: available   # available | experimental | partial | future | normative | plan
+since: "0.35.0"
+current_minor: "0.35"
+audience: adopter   # adopter | developer | maintainer | evaluator
+---
+```
+
+Allowed status vocabulary (banner or frontmatter):
 
 - **Available in the current minor** (or **Available since X.Y** when the
   original milestone matters)
@@ -15,6 +27,12 @@ Every page describing product behavior must be one of:
 - **Internal project plan**
 
 Future design must not be described as a complete or runnable current example.
+`scripts/check_docs.py` requires nav product pages (outside `11_DEVELOPMENT`
+plans/archives) to include frontmatter `status` **or** a `Status:` marker in
+the first 40 lines.
+
+Fact ownership: [DOCUMENTATION_OWNERSHIP](DOCUMENTATION_OWNERSHIP.md).
+Release facts: [`docs/release-facts.json`](../release-facts.json).
 
 ## Local Checks
 
@@ -23,8 +41,14 @@ documentation consistency and strict site-build gates:
 
 ```bash
 uv run python scripts/check_docs.py
+uv run python scripts/check_runnable_docs.py
+uv run python scripts/check_external_links.py
 uv run python scripts/build_docs.py
 ```
+
+Runnable companions declare `syntax_checked`, `executed_in_ci`, and
+`external_dependency` in `scripts/check_runnable_docs.py`. Syntax-checked is
+not the same as executed.
 
 ### Preview docs locally
 

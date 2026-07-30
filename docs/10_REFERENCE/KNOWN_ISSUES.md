@@ -1,5 +1,7 @@
 # Known Limitations
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic **0.35.x** is a **Beta** (PyPI) release suitable for documented
 single-tenant reference deployments. 0.x releases may still introduce breaking
 API changes between minor versions until the 0.38 stable-foundation freeze.

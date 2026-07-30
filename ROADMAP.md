@@ -6,22 +6,23 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.34.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.34** (operations, evidence, and production
-readiness / Medallantic M6) are shipped. **0.35** is the next planned
-milestone, followed by joint burn-in in **0.36**, the **0.37** release
-candidate, and the **0.38** stable foundation.
+**Current release:** ETLantic **0.35.0** (Beta / PyPI). Milestones **0.25**
+(burn-in first slice) through **0.35** (migration completion and joint freeze /
+Medallantic M7) are shipped. **0.36** is the next planned milestone (joint
+burn-in), followed by the **0.37** release candidate and the **0.38** stable
+foundation.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.34 | Operations, evidence, and production readiness (M6) | Shipped |
-| Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
+| Current | 0.35 | Migration completion and joint freeze (M7) | Shipped |
+| Previous | 0.34 | Operations, evidence, and production readiness (M6) | Shipped |
+| Next | 0.36 | Joint compatibility burn-in | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
 | Post-foundation | 0.39–0.53 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
 
 For shipped evidence, see
-[What's New in 0.34](docs/01_GETTING_STARTED/WHATS_NEW_0_34.md) and the
-[0.34 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_34.md). See the
+[What's New in 0.35](docs/01_GETTING_STARTED/WHATS_NEW_0_35.md) and the
+[0.35 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_35.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view, the
 [Planning Hub](docs/11_DEVELOPMENT/PLAN_INDEX.md) for the status and ownership

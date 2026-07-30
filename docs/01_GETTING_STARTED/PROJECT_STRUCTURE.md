@@ -1,5 +1,8 @@
 # Project Structure
 
+> **Status: Available in ETLantic 0.35.0.** Recommended layout after the flat
+> `etlantic init` scaffold.
+
 An ETLantic project separates **modeling** from **execution**. Your Python
 classes define contracts and pipelines, while runtime configuration and
 generated artifacts remain outside your source code.

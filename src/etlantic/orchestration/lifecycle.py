@@ -175,9 +175,9 @@ def correlate_poll_to_report(
                 status=mapped,
                 metadata={
                     **dict(step.metadata),
-                    "orchestrator_task_state": state,
-                    "orchestrator": poll.correlation.backend,
-                    "dag_id": poll.correlation.dag_id,
+                    "etlantic.orchestrator_task_state": state,
+                    "etlantic.orchestrator": poll.correlation.backend,
+                    "etlantic.dag_id": poll.correlation.dag_id,
                 },
             )
         )

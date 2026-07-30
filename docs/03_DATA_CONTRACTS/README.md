@@ -247,14 +247,14 @@ Generated data contracts should be deterministic so changes are easy to review i
 
 Read this section in the following order:
 
-1. `PYDANTIC_INTEGRATION.md` — author contracts with `Data`
-2. `ODCS.md`
-3. `VALIDATION.md`
-4. `VERSIONING.md`
-5. `GENERATION.md`
-6. `LOADING.md`
+1. [PYDANTIC_INTEGRATION](PYDANTIC_INTEGRATION.md) — author contracts with `Data`
+2. [ODCS](ODCS.md)
+3. [VALIDATION](VALIDATION.md)
+4. [VERSIONING](VERSIONING.md)
+5. [GENERATION](GENERATION.md)
+6. [LOADING](LOADING.md)
 
-(`DATACONTRACTMODEL.md` is a **deprecated** alias page — skip for newcomers.)
+([DATACONTRACTMODEL](DATACONTRACTMODEL.md) is a **deprecated** alias page — skip for newcomers.)
 
 ## Key Principles
 

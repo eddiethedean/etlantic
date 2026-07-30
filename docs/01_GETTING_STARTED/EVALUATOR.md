@@ -1,5 +1,7 @@
 # Evaluator Brief
 
+> **Status: Available in ETLantic 0.35.0.**
+
 A one-page answer for enterprise evaluators and technical decision-makers.
 
 !!! note "Plans ≠ product"

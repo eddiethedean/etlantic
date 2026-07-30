@@ -1,5 +1,7 @@
 # Security Model
 
+> **Status: Available in ETLantic 0.35.0.**
+
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.

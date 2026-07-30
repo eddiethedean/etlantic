@@ -48,7 +48,9 @@ released.
 
 ## Documentation audits
 
-- [Documentation audit 0.34](DOCUMENTATION_AUDIT_0_34.md) (current)
+- [Documentation audit 0.35](DOCUMENTATION_AUDIT_0_35.md) (current)
+- [Documentation ownership map](DOCUMENTATION_OWNERSHIP.md)
+- [Documentation audit 0.34](DOCUMENTATION_AUDIT_0_34.md)
 - [Documentation audit 0.33](DOCUMENTATION_AUDIT_0_33.md)
 - [Documentation audit 0.32](DOCUMENTATION_AUDIT_0_32.md)
 - [Maintained 0.25 Documentation Audit](DOCUMENTATION_AUDIT_0_25.md)

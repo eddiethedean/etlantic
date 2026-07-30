@@ -28,11 +28,61 @@ STANDARD_PAGES = {
 }
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/latest/"
+        "https://etlantic.readthedocs.io/en/v0.35.0/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
 }
+STANDARD_URLS_ALIASES = {
+    acronym: {
+        STANDARD_URLS[acronym],
+        (
+            "https://etlantic.readthedocs.io/en/latest/"
+            f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
+        ),
+        (
+            "https://etlantic.readthedocs.io/en/stable/"
+            f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
+        ),
+    }
+    for acronym, page in STANDARD_PAGES.items()
+}
+
+
+def load_release_facts() -> dict:
+    """Load machine-readable release facts (single source of truth)."""
+    path = ROOT / "docs" / "release-facts.json"
+    if not path.is_file():
+        raise SystemExit(f"Missing {path.relative_to(ROOT)}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    required = (
+        "current_version",
+        "current_minor",
+        "previous_minor",
+        "next_minor",
+        "whats_new",
+        "migration",
+        "exit_gate",
+        "docs_version_slug",
+        "docs_base_url",
+        "maturity",
+    )
+    missing = [k for k in required if k not in data]
+    if missing:
+        raise SystemExit(f"release-facts.json missing keys: {missing}")
+    return data
+
+
+def versioned_readthedocs_url(page: Path, *, docs_base_url: str) -> str:
+    """Return immutable RTD URL for a docs page under the release slug."""
+    base = docs_base_url.rstrip("/") + "/"
+    relative = page.relative_to(ROOT / "docs")
+    if relative == Path("README.md"):
+        return base
+    route = relative.with_suffix("").as_posix()
+    if route.endswith("/README"):
+        route = route.removesuffix("/README")
+    return f"{base}{route}/"
 
 
 def readthedocs_url(page: Path) -> str:
@@ -72,6 +122,98 @@ def markdown_without_code(text: str) -> str:
             continue
         visible.append(line if fence_char is None else "")
     return re.sub(r"(?<!`)`[^`\n]+`(?!`)", "", "\n".join(visible))
+
+
+def check_nav_page_status_markers() -> None:
+    """Require status frontmatter or banner on primary-nav product pages."""
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    nav_paths: list[str] = []
+    for match in re.finditer(r"(?m)^\s+-\s+[^:]+:\s+(\S+\.md)\s*$", mkdocs):
+        nav_paths.append(match.group(1))
+    missing: list[str] = []
+    for rel in sorted(set(nav_paths)):
+        if rel.startswith("11_DEVELOPMENT/") and any(
+            token in rel
+            for token in (
+                "_PLAN",
+                "EXIT_GATE_",
+                "MIGRATION_",
+                "ROADMAP",
+                "DOCUMENTATION_AUDIT",
+                "ARCHITECTURE_DECISIONS",
+            )
+        ):
+            continue
+        path = ROOT / "docs" / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        head = "\n".join(text.splitlines()[:40])
+        has_frontmatter_status = bool(re.search(r"(?ms)^---\n.*?^status:\s*\S+", text))
+        has_banner = (
+            "Status:" in head or "**Status:" in head or "status:" in head.lower()
+        )
+        if not has_frontmatter_status and not has_banner:
+            missing.append(rel)
+    if missing:
+        raise SystemExit(
+            "Nav product pages missing status frontmatter or Status banner "
+            "(first 40 lines):\n- " + "\n- ".join(missing[:40])
+        )
+
+
+def check_not_in_nav_orphans() -> None:
+    """Every not_in_nav page outside archives must have an inbound docs link."""
+    mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    nin_match = re.search(r"(?ms)^not_in_nav:\s*\|\s*\n(.*?)(?=^\S|\Z)", mkdocs)
+    if nin_match is None:
+        return
+    not_in_nav = {
+        line.strip()
+        for line in nin_match.group(1).splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    }
+    archive_prefixes = (
+        "01_GETTING_STARTED/WHATS_NEW_0_",
+        "11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_",
+        "11_DEVELOPMENT/EXIT_GATE_0_",
+        "11_DEVELOPMENT/MIGRATION_0_",
+        "01_GETTING_STARTED/EARLIER_RELEASES.md",
+        "03_DATA_CONTRACTS/DATACONTRACTMODEL.md",
+    )
+    # Build inbound link set from docs markdown.
+    inbound: set[str] = set()
+    for path in (ROOT / "docs").rglob("*.md"):
+        if "theme" in path.parts:
+            continue
+        visible = markdown_without_code(path.read_text(encoding="utf-8"))
+        for match in MARKDOWN_LINK_RE.finditer(visible):
+            target = match.group(1).strip()
+            if target.startswith("<") and target.endswith(">"):
+                target = target[1:-1]
+            if target.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            href = target.split("#", 1)[0].split("?", 1)[0]
+            if not href.endswith(".md"):
+                continue
+            dest = (path.parent / href).resolve()
+            try:
+                rel = dest.relative_to((ROOT / "docs").resolve()).as_posix()
+            except ValueError:
+                continue
+            inbound.add(rel)
+    orphans: list[str] = []
+    for rel in sorted(not_in_nav):
+        if any(rel.startswith(prefix) or rel == prefix for prefix in archive_prefixes):
+            continue
+        if rel in inbound:
+            continue
+        orphans.append(rel)
+    if orphans:
+        raise SystemExit(
+            "not_in_nav pages lack inbound docs links (add hub link or archive):\n- "
+            + "\n- ".join(orphans[:40])
+        )
 
 
 def check_docs_ban_absolute_rtd_latest() -> None:
@@ -166,7 +308,7 @@ def check_standard_links() -> None:
                 if raw_target.startswith("<") and raw_target.endswith(">"):
                     raw_target = raw_target[1:-1]
                 target = unquote(raw_target).split("#", 1)[0].split("?", 1)[0]
-                if target == STANDARD_URLS[acronym]:
+                if target in STANDARD_URLS_ALIASES[acronym]:
                     linked_to_canonical = True
                     break
                 if not target or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target):
@@ -264,13 +406,15 @@ def check_control_plane_plan() -> None:
         ROOT / "docs/11_DEVELOPMENT/SQLMODEL_INTEGRATION_PLAN.md",
         ROOT / "docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md",
     )
-    plan_url = (
-        "https://etlantic.readthedocs.io/en/latest/"
-        f"{plan.relative_to(ROOT / 'docs').with_suffix('')}/"
-    )
+    plan_rel = plan.relative_to(ROOT / "docs").with_suffix("").as_posix()
+    plan_urls = {
+        f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/v0.35.0/{plan_rel}/",
+    }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")
-        if plan.name not in surface and plan_url not in surface:
+        if plan.name not in surface and not any(url in surface for url in plan_urls):
             raise SystemExit(
                 f"{path}: must link the first-class control-plane plan {plan.name}"
             )
@@ -506,6 +650,30 @@ def main() -> None:
     if package_version != project_version:
         raise SystemExit(
             f"Version mismatch: package={package_version}, project={project_version}"
+        )
+
+    facts = load_release_facts()
+    if facts["current_version"] != package_version:
+        raise SystemExit(
+            "docs/release-facts.json current_version "
+            f"{facts['current_version']!r} != package {package_version!r}"
+        )
+    major_minor = ".".join(package_version.split(".")[:2])
+    if facts["current_minor"] != major_minor:
+        raise SystemExit(
+            "docs/release-facts.json current_minor "
+            f"{facts['current_minor']!r} != {major_minor!r}"
+        )
+    previous_minor = str(facts["previous_minor"])
+    docs_base_url = str(facts["docs_base_url"])
+    expected_slug = f"v{package_version}"
+    if facts.get("docs_version_slug") != expected_slug:
+        raise SystemExit(
+            f"docs/release-facts.json docs_version_slug must be {expected_slug!r}"
+        )
+    if f"/en/{expected_slug}/" not in docs_base_url:
+        raise SystemExit(
+            f"docs/release-facts.json docs_base_url must include /en/{expected_slug}/"
         )
 
     # If a package README chooses to pin an install, keep that pin synchronized
@@ -1419,7 +1587,7 @@ def main() -> None:
             # install instructions (top of file before "Install from source").
             head = text.split("## Install from source", 1)[0]
             head = head.split("## Repository checkout", 1)[0]
-            if main_install in head or "Until 0.34.0 is on PyPI" in head:
+            if main_install in head or f"Until {previous_minor}.0 is on PyPI" in head:
                 raise SystemExit(
                     f"{path}: day-0 install must use PyPI pin, not git+…@main "
                     f"(see RELEASE_ARTIFACT_VERIFICATION / INSTALLATION)"
@@ -1445,7 +1613,7 @@ def main() -> None:
         if re.search(r"\bships?\s+.*\bSBOM digests\b", text, flags=re.I):
             raise SystemExit(
                 f"{path}: avoid unqualified 'SBOM digests' — use SHA-256 "
-                "manifest language (v0.34.0 has no CycloneDX SBOM)"
+                f"manifest language (v{package_version} CycloneDX optional)"
             )
     verification = ROOT / "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md"
     if not verification.is_file():
@@ -1480,14 +1648,39 @@ def main() -> None:
     if "prefer from-source until PyPI" in docs_home:
         raise SystemExit("docs/README.md still prefers from-source install")
     # Current What's New must not point at the prior release notes file.
-    whats_new_current_link = f"WHATS_NEW_{major_minor.replace('.', '_')}.md"
-    prior_whats_new = None
-    try:
-        maj_s, min_s = major_minor.split(".")
-        if int(min_s) > 0:
-            prior_whats_new = f"WHATS_NEW_{maj_s}_{int(min_s) - 1}.md"
-    except ValueError:
-        prior_whats_new = None
+    whats_new_current_link = Path(str(facts["whats_new"])).name
+    prior_whats_new = f"WHATS_NEW_{previous_minor.replace('.', '_')}.md"
+    # Homepage "current release" row must target current What's New.
+    if "Review the current release" in docs_home:
+        idx = docs_home.find("Review the current release")
+        snippet = docs_home[idx : idx + 160]
+        if prior_whats_new in snippet and whats_new_current_link not in snippet:
+            raise SystemExit(
+                "docs/README.md 'Review the current release' still links prior "
+                f"What's New ({prior_whats_new})"
+            )
+        if whats_new_current_link not in snippet:
+            raise SystemExit(
+                "docs/README.md 'Review the current release' must link "
+                f"{whats_new_current_link}"
+            )
+    # CAPABILITIES / ROADMAP must not claim the prior minor as "current".
+    for path, banned in (
+        (
+            ROOT / "docs/01_GETTING_STARTED/CAPABILITIES.md",
+            f"## What works today ({previous_minor})",
+        ),
+        (
+            ROOT / "ROADMAP.md",
+            f"**Current release:** ETLantic **{previous_minor}.0**",
+        ),
+    ):
+        text = path.read_text(encoding="utf-8")
+        if banned in text:
+            raise SystemExit(
+                f"{path.relative_to(ROOT)} still claims prior minor as current: "
+                f"{banned!r}"
+            )
     for label in (
         f"What's new in {major_minor}",
         f"What's new in {package_version}",
@@ -1503,16 +1696,30 @@ def main() -> None:
     if (
         f"What's new in {major_minor}" in docs_home
         and whats_new_current_link not in docs_home
-        and readthedocs_url(
-            ROOT
-            / "docs/01_GETTING_STARTED"
-            / f"WHATS_NEW_{major_minor.replace('.', '_')}.md"
+        and versioned_readthedocs_url(
+            ROOT / "docs" / str(facts["whats_new"]),
+            docs_base_url=docs_base_url,
         )
         not in docs_home
+        and readthedocs_url(ROOT / "docs" / str(facts["whats_new"])) not in docs_home
     ):
         raise SystemExit(
             f"docs/README.md must link What's new in {major_minor} to {whats_new_current_link}"
         )
+    # Release-facing READMEs must prefer immutable versioned docs URLs.
+    release_facing = [
+        ROOT / "README.md",
+        *sorted((ROOT / "packages").glob("*/README.md")),
+    ]
+    latest_prefix = "https://etlantic.readthedocs.io/en/latest/"
+    versioned_prefix = docs_base_url.rstrip("/") + "/"
+    for path in release_facing:
+        text = path.read_text(encoding="utf-8")
+        if latest_prefix in text:
+            raise SystemExit(
+                f"{path.relative_to(ROOT)}: release-facing README must use "
+                f"{versioned_prefix} (not /en/latest/)"
+            )
     known = (ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md").read_text(encoding="utf-8")
     if "etlantic-airflow" not in known:
         raise SystemExit(
@@ -2464,6 +2671,21 @@ def main() -> None:
         raise SystemExit(
             "Stable-surface docstring gate failed:\n- " + "\n- ".join(failures)
         )
+
+    check_nav_page_status_markers()
+    check_not_in_nav_orphans()
+    external = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts/check_external_links.py"),
+            "--external-report",
+            str(ROOT / "site" / "external-urls.txt"),
+        ],
+        cwd=ROOT,
+        check=False,
+    )
+    if external.returncode != 0:
+        raise SystemExit("check_external_links.py failed")
 
     print(f"Documentation consistency checks passed for {package_version}.")
 

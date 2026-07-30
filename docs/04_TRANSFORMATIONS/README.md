@@ -160,18 +160,18 @@ These artifacts are deterministic and suitable for version control.
 
 Read this section in the following order:
 
-1. `TRANSFORMATION.md`
-2. `INPUTS.md`
-3. `OUTPUTS.md`
-4. `PARAMETERS.md`
-5. `TYPE_ANNOTATIONS.md`
-6. `IMPLEMENTATIONS.md`
-7. `PORTABLE_TRANSFORMATIONS.md` (shipped portable authoring)
-8. `PORTABLE_FUNCTIONS.md` (current DTCS 2.0/3.0 function mapping)
-9. `CALLBACKS.md`
-10. `ERROR_HANDLING.md`
-11. `ASYNC.md`
-12. `DTCS.md`
+1. [TRANSFORMATION](TRANSFORMATION.md)
+2. [INPUTS](INPUTS.md)
+3. [OUTPUTS](OUTPUTS.md)
+4. [PARAMETERS](PARAMETERS.md)
+5. [TYPE_ANNOTATIONS](TYPE_ANNOTATIONS.md)
+6. [IMPLEMENTATIONS](IMPLEMENTATIONS.md)
+7. [PORTABLE_TRANSFORMATIONS](PORTABLE_TRANSFORMATIONS.md) (shipped portable authoring)
+8. [PORTABLE_FUNCTIONS](PORTABLE_FUNCTIONS.md) (current DTCS 2.0/3.0 function mapping)
+9. [CALLBACKS](CALLBACKS.md)
+10. [ERROR_HANDLING](ERROR_HANDLING.md)
+11. [ASYNC](ASYNC.md)
+12. [DTCS](DTCS.md)
 
 ## Key Principles
 

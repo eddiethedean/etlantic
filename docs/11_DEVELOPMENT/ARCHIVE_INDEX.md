@@ -1,5 +1,7 @@
 # Documentation archive index
 
+> **Status: Available in ETLantic 0.35.0.**
+
 > **Not product docs.** Historical migrations, design studies, future-protocol
 > stubs, and maintainer records. Prefer
 > [Upgrade](../01_GETTING_STARTED/UPGRADE.md), the current

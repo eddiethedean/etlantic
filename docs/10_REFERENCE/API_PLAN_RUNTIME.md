@@ -1,5 +1,7 @@
 # API — Plan and Runtime
 
+> **Status: Available in ETLantic 0.35.0.**
+
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 
 ## 0.21 trust and plan essentials

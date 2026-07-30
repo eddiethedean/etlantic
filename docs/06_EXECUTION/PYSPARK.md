@@ -225,3 +225,8 @@ contracts, validation, lineage, diagnostics, and execution semantics.
 
 Continue with **PYSPARK_EXECUTION.md** for the detailed execution lifecycle,
 planning, optimization, and runtime behavior of the PySpark backend.
+
+## Related
+
+- [Spark optimization](SPARK_OPTIMIZATION.md)
+- [PySpark tutorial](PYSPARK_TUTORIAL.md)

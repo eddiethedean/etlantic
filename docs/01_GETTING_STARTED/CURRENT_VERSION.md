@@ -1,5 +1,7 @@
 # ETLantic 0.35 User Guide
 
+> **Status: Available in ETLantic 0.35.0.**
+
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 

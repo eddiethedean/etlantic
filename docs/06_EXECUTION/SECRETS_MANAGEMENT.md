@@ -1,5 +1,7 @@
 # Secrets Management
 
+> **Status: Available in ETLantic 0.35.0.**
+
 > **Available:** `env` and mounted-file secret providers (0.5+).
 > Optional OS keyring provider via `etlantic-keyring` (0.9+).
 > AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, and Vault
