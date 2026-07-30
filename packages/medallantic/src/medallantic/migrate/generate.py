@@ -213,6 +213,20 @@ def generate_from_ir(
     )
 
 
+def _stable_source_label(file_path: Path) -> str:
+    """Return a cross-machine path label for provenance / fingerprints.
+
+    Absolute paths make ``pipeline_fingerprint`` host-dependent (CI vs local).
+    Prefer a path relative to the process cwd when the file lives under it;
+    otherwise use the basename.
+    """
+    resolved = file_path.resolve()
+    try:
+        return str(resolved.relative_to(Path.cwd().resolve())).replace("\\", "/")
+    except ValueError:
+        return file_path.name
+
+
 def generate_from_path(
     path: str | Path,
     *,
@@ -220,6 +234,7 @@ def generate_from_path(
 ) -> GenerationResult:
     """Load JSON IR from disk and generate a native definition."""
     file_path = Path(path)
+    label = _stable_source_label(file_path)
     try:
         payload = json.loads(file_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -229,9 +244,9 @@ def generate_from_path(
             diagnostics=(
                 mdl_diagnostic(
                     MDL220_UNSUPPORTED,
-                    f"Cannot read IR JSON {file_path}: {exc}",
+                    f"Cannot read IR JSON {label}: {exc}",
                     severity=Severity.ERROR,
-                    path=(str(file_path),),
+                    path=(label,),
                     phase="migration_generate",
                 ),
             ),
@@ -244,16 +259,14 @@ def generate_from_path(
             diagnostics=(
                 mdl_diagnostic(
                     MDL220_UNSUPPORTED,
-                    f"IR root must be an object: {file_path}",
+                    f"IR root must be an object: {label}",
                     severity=Severity.ERROR,
-                    path=(str(file_path),),
+                    path=(label,),
                     phase="migration_generate",
                 ),
             ),
         )
-    return generate_from_ir(
-        payload, source_path=str(file_path), require_auto=require_auto
-    )
+    return generate_from_ir(payload, source_path=label, require_auto=require_auto)
 
 
 def generate_from_artifact(

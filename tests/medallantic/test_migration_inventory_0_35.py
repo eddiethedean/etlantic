@@ -59,9 +59,23 @@ def test_generate_native_definition_auto_safe() -> None:
     assert prov.facade_protocol_version == FACADE_PROTOCOL_VERSION
     assert result.source_fingerprint
     assert prov.source_fingerprint == result.source_fingerprint
+    # Provenance path labels must be relative (fingerprint-stable across hosts).
+    assert prov.extras.get("source_path")
+    assert not Path(str(prov.extras["source_path"])).is_absolute()
     summary = inspect_definition(result.definition)
     assert summary.pipeline_id
     assert "orders" in summary.node_names or summary.node_names
+
+
+def test_generate_fingerprint_stable_for_absolute_vs_relative_path() -> None:
+    from etlantic.authoring import pipeline_fingerprint
+
+    rel = SPARKFORGE / "bronze_only_auto.json"
+    abs_path = rel.resolve()
+    a = generate_from_path(rel, require_auto=True)
+    b = generate_from_path(abs_path, require_auto=True)
+    assert a.definition is not None and b.definition is not None
+    assert pipeline_fingerprint(a.definition) == pipeline_fingerprint(b.definition)
 
 
 def test_generate_refuses_manual_when_require_auto() -> None:
