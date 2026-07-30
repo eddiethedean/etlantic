@@ -1,0 +1,187 @@
+{
+  "schema": "etlantic.compatibility_evidence/1",
+  "release": "0.36.0",
+  "matrix": "old-new-readers-writers",
+  "passed": 22,
+  "failed": 0,
+  "skipped": 0,
+  "findings": [
+    {
+      "family": "pipeline",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "pipeline",
+      "writer": "0.35",
+      "reader": "0.34",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "pipeline",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "pipeline",
+      "writer": "0.36",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "pipeline",
+      "writer": "current",
+      "reader": "current",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "plan",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "plan",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "plan",
+      "writer": "current",
+      "reader": "current",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "run_report",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "run_report",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "run_report",
+      "writer": "0.35.0-bare",
+      "reader": "0.36",
+      "expected": "migrated",
+      "outcome": "migrated",
+      "status": "passed"
+    },
+    {
+      "family": "run_report",
+      "writer": "current",
+      "reader": "current",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "profile",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "profile",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "capabilities",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "capabilities",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "interchange",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "interchange",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "quality",
+      "writer": "0.34",
+      "reader": "0.35",
+      "expected": "unsupported",
+      "outcome": "unsupported",
+      "status": "passed",
+      "note": "declared unsupported for 0.34 package set"
+    },
+    {
+      "family": "quality",
+      "writer": "0.35",
+      "reader": "0.36",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "quality",
+      "writer": "current",
+      "reader": "current",
+      "expected": "compatible",
+      "outcome": "compatible",
+      "status": "passed"
+    },
+    {
+      "family": "pipeline",
+      "writer": "unsupported-/99",
+      "reader": "current",
+      "expected": "upgrade-required",
+      "outcome": "upgrade-required",
+      "status": "passed"
+    }
+  ]
+}

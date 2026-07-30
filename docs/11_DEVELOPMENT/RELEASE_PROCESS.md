@@ -14,8 +14,8 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
   phase, deprecation evidence, and persistent-format compatibility handling
 
 Breaking changes must be documented. Official plugin packages currently share
-the core minor version (for example `0.35.0`).
-Official plugins declare `etlantic>=0.35.0,<0.36`.
+the core minor version (for example `0.36.0`).
+Official plugins declare `etlantic>=0.36.0,<0.37`.
 
 ## Package categories
 
@@ -198,7 +198,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.25 plugins, `etlantic>=0.35.0,<0.36`). A core
+0.25 plugins, `etlantic>=0.36.0,<0.37`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 
@@ -273,7 +273,7 @@ Release CI:
 
 - writes per-artifact SHA-256 digests and `dist/sbom/release-artifacts.json`
 - optionally emits CycloneDX environment SBOM when `cyclonedx-py` is available;
-  on failure uploads `sbom-warning.txt` instead (as with **v0.35.0**)
+  on failure uploads `sbom-warning.txt` instead (as with **v0.36.0**)
 - attests build provenance via GitHub Actions (`actions/attest-build-provenance`)
 - prefers PyPI Trusted Publishing (OIDC); falls back to `UV_PUBLISH_TOKEN` only as bootstrap
 

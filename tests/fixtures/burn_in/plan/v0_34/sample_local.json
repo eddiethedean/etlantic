@@ -1,0 +1,283 @@
+{
+  "bindings": {
+    "out": {
+      "binding": "out",
+      "kind": "sink",
+      "location": null,
+      "metadata": {},
+      "provider": "memory",
+      "secret_ref": null
+    },
+    "raw": {
+      "binding": "rows",
+      "kind": "source",
+      "location": null,
+      "metadata": {},
+      "provider": "memory",
+      "secret_ref": null
+    }
+  },
+  "capability_decisions": [],
+  "contract_versions": {
+    "__main__:Row": "1.0.0"
+  },
+  "execution_settings": {
+    "allow_trusted_sql": false,
+    "concurrency": null,
+    "dataframe_engine": "local",
+    "orchestrator": "local",
+    "retry_max_attempts": null,
+    "spark_engine": null,
+    "spark_streaming": false,
+    "spark_udf_policy": "warn",
+    "sql_engine": null,
+    "timeout_seconds": null
+  },
+  "fingerprint": "6ef5207b0c6f4b9479a140708ffa4ac58b38c7bfb4d02ade448e443ac7289c6b",
+  "implementations": {},
+  "intents": {},
+  "logical_graph": {
+    "edges": [
+      {
+        "consumer_contract_id": "__main__:Row",
+        "consumer_node": "out",
+        "consumer_port": "input",
+        "producer_contract_id": "__main__:Row",
+        "producer_node": "raw",
+        "producer_port": "result"
+      }
+    ],
+    "metadata": {},
+    "nodes": [
+      {
+        "binding": "rows",
+        "contract_id": "__main__:Row",
+        "identity": "__main__:Sample/raw",
+        "inputs": [],
+        "kind": "source",
+        "metadata": {},
+        "name": "raw",
+        "nested_pipeline_id": null,
+        "outputs": [
+          {
+            "contract_id": "__main__:Row",
+            "direction": "output",
+            "name": "result",
+            "required": true,
+            "role": "valid"
+          }
+        ],
+        "parameters": [],
+        "transformation_id": null,
+        "transformation_name": null
+      },
+      {
+        "binding": "out",
+        "contract_id": "__main__:Row",
+        "identity": "__main__:Sample/out",
+        "inputs": [
+          {
+            "contract_id": "__main__:Row",
+            "direction": "input",
+            "name": "input",
+            "required": true,
+            "role": "valid"
+          }
+        ],
+        "kind": "sink",
+        "metadata": {},
+        "name": "out",
+        "nested_pipeline_id": null,
+        "outputs": [],
+        "parameters": [],
+        "transformation_id": null,
+        "transformation_name": null
+      }
+    ],
+    "pipeline_id": "__main__:Sample",
+    "pipeline_name": "Sample"
+  },
+  "logical_to_physical": {
+    "out": "unit:region:dev:local",
+    "raw": "unit:region:dev:local"
+  },
+  "materialization_boundaries": [
+    {
+      "identity": "boundary:sink:out",
+      "metadata": {},
+      "producer_node": "raw",
+      "producer_port": "result",
+      "reason": "sink_publication",
+      "security_domain": "dev"
+    }
+  ],
+  "metadata": {
+    "collection_points": [
+      {
+        "identity": "boundary:sink:out",
+        "interchange": null,
+        "producer_node": "raw",
+        "producer_port": "result",
+        "reason": "sink_publication"
+      }
+    ],
+    "conversion_boundaries": [],
+    "dataframe_protocol": "etlantic.dataframe/1",
+    "planner": "etlantic.plan.planner",
+    "planner_version": "0.24.0",
+    "plugin_trust_records": [],
+    "spark_fusion": [],
+    "spark_protocol": "etlantic.spark/1",
+    "spark_streaming_stability": "experimental",
+    "sql_fusion": [],
+    "sql_protocol": "etlantic.sql/1",
+    "validation_policy": {
+      "input_outcome": "fail",
+      "output_outcome": "fail"
+    }
+  },
+  "output_resolutions": [
+    {
+      "artifact": {
+        "cache_key": "cache:dev/default/default/local/__main___Sample/raw.result@6ef5207b0c6f4b9479a140708ffa4ac58b38c7bfb4d02ade448e443ac7289c6b",
+        "identity": "artifact:dev/default/default/local/cv-1.0.0/__main___Sample/raw.result",
+        "logical_output": "raw.result",
+        "metadata": {},
+        "security_domain": "dev",
+        "strategy": "durable"
+      },
+      "node_name": "raw",
+      "port_name": "result"
+    }
+  ],
+  "physical_units": [
+    {
+      "engine": "local",
+      "identity": "unit:region:dev:local",
+      "logical_nodes": [
+        "raw",
+        "out"
+      ],
+      "metadata": {
+        "capabilities": {
+          "arrow_export": false,
+          "arrow_import": false,
+          "async_execution": true,
+          "cancellation": true,
+          "checkpoints": false,
+          "dataframe": false,
+          "eager": true,
+          "engine": "local",
+          "extras": [
+            "python",
+            "records"
+          ],
+          "interchange_mechanisms": [],
+          "invalid_row_separation": false,
+          "lazy": false,
+          "orch_artifacts_only_xcom": false,
+          "orch_parallel": false,
+          "orch_retries": false,
+          "orch_scheduling": false,
+          "orch_sensors": false,
+          "orch_timeouts": false,
+          "orchestration": false,
+          "schema_inspection": true,
+          "secret_provider": false,
+          "spark": false,
+          "spark_cache": false,
+          "spark_checkpoint": false,
+          "spark_delta": false,
+          "spark_merge": false,
+          "spark_native_exprs": false,
+          "spark_streaming": false,
+          "spark_udf": false,
+          "sql": false,
+          "sql_atomic_rename": false,
+          "sql_catalog_inspect": false,
+          "sql_cte": false,
+          "sql_merge": false,
+          "sql_returning": false,
+          "sql_transactional_ddl": false,
+          "sql_trusted_fragments": false,
+          "streaming": false,
+          "thread_safe": false,
+          "transactions": false,
+          "vocabulary_version": "etlantic.capabilities/1",
+          "zero_copy": false
+        },
+        "ownership": "copied",
+        "plugin_version": "0.24.0"
+      },
+      "region_id": "region:dev:local"
+    }
+  ],
+  "pipeline_id": "__main__:Sample",
+  "pipeline_name": "Sample",
+  "plan_id": "plan:6ef5207b0c6f4b94",
+  "plugin_versions": {
+    "env-secrets": "0.24.0",
+    "local": "0.24.0",
+    "null": "0.24.0"
+  },
+  "profile_name": "local",
+  "profile_snapshot": {
+    "allow_trusted_sql": false,
+    "bindings": {},
+    "concurrency": null,
+    "dataframe_engine": "local",
+    "environment": "default",
+    "execution": {},
+    "implementation_overrides": {},
+    "metadata": {},
+    "name": "local",
+    "orchestrator": "local",
+    "outbound": {},
+    "plugin_allowlist": {},
+    "portable_transform_policy": "prefer",
+    "require_plugin_probe": false,
+    "required_orchestrator_capabilities": [],
+    "required_spark_capabilities": [],
+    "required_sql_capabilities": [],
+    "resources": {},
+    "retry_max_attempts": null,
+    "safe_io": {},
+    "schedule": {},
+    "secret_providers": {},
+    "secrets": {},
+    "security_domain": "dev",
+    "security_mode": "development",
+    "spark_engine": null,
+    "spark_streaming": false,
+    "spark_udf_policy": "warn",
+    "sql_engine": null,
+    "tenant": "default",
+    "timeout_seconds": null,
+    "validation_policy": "default"
+  },
+  "regions": [
+    {
+      "engine": "local",
+      "identity": "region:dev:local",
+      "metadata": {},
+      "node_names": [
+        "raw",
+        "out"
+      ],
+      "security_domain": "dev"
+    }
+  ],
+  "resource_refs": {
+    "out": {
+      "binding": "out",
+      "provider": "memory"
+    },
+    "raw": {
+      "binding": "rows",
+      "provider": "memory"
+    }
+  },
+  "schema": "etlantic.plan/1",
+  "security_domain": "dev",
+  "selected_nodes": null
+}

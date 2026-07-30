@@ -1,11 +1,11 @@
 # Performance envelope
 
-> **Status: Available in ETLantic 0.35.0.** Coordination microbenchmarks only—
+> **Status: Available in ETLantic 0.36.0.** Coordination microbenchmarks only—
 > not warehouse throughput or SLA claims.
 
 ## Residual evaluation lead
 
-| Topic | 0.35 |
+| Topic | 0.36 |
 |---|---|
 | Maturity | Beta |
 | Support | Community; **no SLA** |

@@ -110,9 +110,7 @@ def check_internal_anchors() -> list[str]:
             headings = _headings(dest)
             # Also accept raw heading text compacted.
             if frag not in headings and frag.lower() not in headings:
-                warnings.append(
-                    f"{path.relative_to(ROOT)}: unresolved anchor {target}"
-                )
+                warnings.append(f"{path.relative_to(ROOT)}: unresolved anchor {target}")
     return warnings
 
 

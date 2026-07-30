@@ -19,6 +19,6 @@ dataframe execution.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.35.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.36.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

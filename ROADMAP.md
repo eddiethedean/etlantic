@@ -6,23 +6,23 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.35.0** (Beta / PyPI). Milestones **0.25**
-(burn-in first slice) through **0.35** (migration completion and joint freeze /
-Medallantic M7) are shipped. **0.36** is the next planned milestone (joint
-burn-in), followed by the **0.37** release candidate and the **0.38** stable
-foundation.
+**Current release:** ETLantic **0.36.0** (Beta / compatibility burn-in).
+Milestones **0.25** (burn-in first slice) through **0.35** (migration
+completion and joint freeze / Medallantic M7) are shipped. **0.36** is the
+joint compatibility burn-in milestone (in progress toward publish), followed
+by the **0.37** release candidate and the **0.38** stable foundation.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.35 | Migration completion and joint freeze (M7) | Shipped |
-| Previous | 0.34 | Operations, evidence, and production readiness (M6) | Shipped |
-| Next | 0.36 | Joint compatibility burn-in | Planned |
-| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
+| Current | 0.36 | Joint compatibility burn-in | Shipped / In progress burn-in |
+| Previous | 0.35 | Migration completion and joint freeze (M7) | Shipped |
+| Next | 0.37 | Release candidate | Planned |
+| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | In progress |
 | Post-foundation | 0.39–0.53 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
 
-For shipped evidence, see
-[What's New in 0.35](docs/01_GETTING_STARTED/WHATS_NEW_0_35.md) and the
-[0.35 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_35.md). See the
+For burn-in evidence, see
+[What's New in 0.36](docs/01_GETTING_STARTED/WHATS_NEW_0_36.md) and the
+[0.36 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_36.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view, the
 [Planning Hub](docs/11_DEVELOPMENT/PLAN_INDEX.md) for the status and ownership
@@ -3345,6 +3345,10 @@ rows.
 **Objective:** accumulate adoption and upgrade evidence for ETLantic and
 Medallantic together after the 0.25–0.27 core slices and the 0.28–0.35
 co-evolution phases, then close burn-in as one bounded release.
+
+The execution sequence, workstream ownership, quantified scorecard, and
+required evidence are defined in the
+[0.36 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_36.md).
 
 ### Deliver
 

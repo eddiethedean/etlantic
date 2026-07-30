@@ -48,6 +48,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_codec_burn_in_matrix.py
 
+      - name: Isolated codec burn-in
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_isolated_codec_burn_in.py
+
       - name: Documentation consistency
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_docs.py
@@ -524,9 +528,71 @@ jobs:
               break
             fi
           done
-          echo "Smoke testing: $SPARKFORGE_WHEEL with $CORE + $MEDALLANTIC_WHEEL"
+          echo "Smoke testing redirect: $SPARKFORGE_WHEEL"
           uv run --isolated --no-project --with "$CORE" --with "$MEDALLANTIC_WHEEL" --with "$SPARKFORGE_WHEEL" \
-            python -c "import warnings; warnings.simplefilter('ignore', DeprecationWarning); import etlantic_sparkforge as s; import medallantic; assert s.__version__ == medallantic.__version__; print(s.__version__)"
+            python -c "import etlantic_sparkforge as s; print(s.__version__)"
+
+      - name: Plugin wheel conformance smokes
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          CORE=""
+          for w in dist/etlantic-*.whl; do
+            base="$(basename "$w")"
+            if [[ "$base" =~ ^etlantic-[0-9] ]]; then
+              CORE="$w"
+              break
+            fi
+          done
+          # Import each first-party distribution from the built wheel set.
+          for pair in \
+            "etlantic_polars:etlantic_polars" \
+            "etlantic_pandas:etlantic_pandas" \
+            "etlantic_sql:etlantic_sql" \
+            "etlantic_pyspark:etlantic_pyspark" \
+            "etlantic_airflow:etlantic_airflow" \
+            "etlantic_prefect:etlantic_prefect" \
+            "etlantic_keyring:etlantic_keyring" \
+            "etlantic_sqlmodel:etlantic_sqlmodel" \
+            "etlantic_fastapi:etlantic_fastapi" \
+            "etlantic_datafusion:etlantic_datafusion"; do
+            wheel_glob="${pair%%:*}"
+            mod="${pair##*:}"
+            wheel=$(ls dist/${wheel_glob}-*.whl 2>/dev/null | head -1 || true)
+            if [ -z "$wheel" ]; then
+              # uv may emit etlantic_polars or etlantic-polars normalized names
+              wheel=$(ls dist/${mod//_/-}-*.whl 2>/dev/null | head -1 || true)
+            fi
+            if [ -z "$wheel" ]; then
+              echo "Missing wheel for $mod"
+              ls dist/
+              exit 1
+            fi
+            echo "Conformance import: $mod from $wheel"
+            uv run --isolated --no-project --with "$CORE" --with "$wheel" \
+              python -c "import $mod as m; import etlantic; assert m.__version__ == etlantic.__version__; print(m.__version__)"
+          done
+
+      - name: Record candidate wheel hashes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          dist = Path("dist")
+          files = []
+          for path in sorted(dist.glob("*.whl")) + sorted(dist.glob("*.tar.gz")):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              files.append({"filename": path.name, "sha256": digest, "packagetype": "bdist_wheel" if path.suffix == ".whl" else "sdist"})
+          out = Path("tests/fixtures/releases/v0_36/manifest.json")
+          payload = json.loads(out.read_text())
+          payload["packages"] = [{"package": "candidate-set", "version": "0.36.0", "files": files}]
+          payload["status"] = "candidate-local"
+          payload["notes"] = "Locally built candidate wheel hashes from CI package job."
+          out.write_text(json.dumps(payload, indent=2) + "\n")
+          print(f"recorded {len(files)} artifacts")
+          PY
 
   benchmarks:
     name: Microbenchmark regression gate

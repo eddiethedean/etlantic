@@ -33,7 +33,7 @@ from etlantic.spark.schema import (
 )
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.35.0"
+__version__ = "0.36.0"
 
 
 def _set_job_group(session: Any, group: str, description: str) -> None:

@@ -51,7 +51,7 @@ stays separate). Default CI uses sparkless; set
 
 ## Links
 
-[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/COMPATIBILITY/) ·
+[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.36.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.36.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pyspark) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

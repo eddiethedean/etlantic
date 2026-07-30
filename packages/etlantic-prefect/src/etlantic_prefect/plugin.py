@@ -17,7 +17,7 @@ from etlantic.runtime.scheduler import (
     SchedulingContext,
 )
 
-__version__ = "0.35.0"
+__version__ = "0.36.0"
 
 
 def _prefect_future_id(fut: Any, *, run_id: str, name: str) -> str:
@@ -190,9 +190,9 @@ class PrefectScheduler:
         result.metadata.setdefault("etlantic.scheduler", self.info.name)
         result.metadata.setdefault("etlantic.scheduler_protocol", SCHEDULER_PROTOCOL)
         result.metadata.setdefault(
-            "prefect_task_correlation", dict(self._task_correlation)
+            "etlantic.prefect.task_correlation", dict(self._task_correlation)
         )
-        result.metadata.setdefault("prefect_run_id", str(run_key))
+        result.metadata.setdefault("etlantic.prefect.run_id", str(run_key))
         return result
 
 

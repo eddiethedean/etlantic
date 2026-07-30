@@ -18,10 +18,13 @@ CORE_FROZEN_PROTOCOLS = (
     "etlantic.spark/1",
     "etlantic.orchestration/1",
     "etlantic.transform-compiler/1",
+    # 0.36: Prefect direct-execution MVP promoted to stable on the foundation path.
+    "etlantic.scheduler/1",
 )
 
-# Not on the 0.38 freeze path (may remain provisional post-freeze).
-PROVISIONAL_ALLOWED = frozenset({"etlantic.scheduler/1"})
+# Wire schemas may remain provisional outside protocol freeze (e.g. quality/1).
+# No provisional *protocols* remain on the foundation path after 0.36.
+PROVISIONAL_ALLOWED: frozenset[str] = frozenset()
 
 
 def main() -> int:

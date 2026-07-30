@@ -1,7 +1,7 @@
 # Multi-Tenant Control Plane Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.35.0.** Incubation is sequenced across 0.40–0.43. A production,
+> 0.36.0.** Incubation is sequenced across 0.40–0.43. A production,
 > multi-tenant compatibility claim is gated for 0.44 only after every isolation,
 > durability, policy, and operations gate on this page passes.
 >

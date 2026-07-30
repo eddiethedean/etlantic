@@ -2,7 +2,7 @@
 
 Validation is a core part of the ETLantic data-contract lifecycle.
 
-> **Status: Partially available in 0.35.** Record validation through
+> **Status: Partially available in 0.36.** Record validation through
 > ContractModel/Pydantic, pipeline graph validation, named validation policies,
 > dataframe validation outcomes, portable quality gates, and normalized runtime
 > validation evidence are public. Callback-based invalid-data handling,
@@ -342,7 +342,7 @@ production = Profile(
     name="production",
     security_mode="production",
     validation_policy="strict",
-    plugin_allowlist={"etlantic-polars": ">=0.35.0,<0.36"},
+    plugin_allowlist={"etlantic-polars": ">=0.36.0,<0.37"},
 )
 ```
 

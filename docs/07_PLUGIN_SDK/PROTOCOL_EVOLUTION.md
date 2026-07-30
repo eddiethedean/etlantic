@@ -1,12 +1,30 @@
 # Protocol Evolution Policy
 
-> **Status (0.28.0):** Plugin `/1` families are **frozen in 0.28.0** for the
-> 0.38 stable-foundation path (`dataframe`, `sql`, `spark`, `orchestration`,
-> `transform-compiler`). `etlantic.scheduler/1` remains provisional (not on the
-> freeze path). External feedback evidence:
+> **Status (0.36.0):** Plugin `/1` families remain **frozen since 0.28.0** for
+> the 0.38 stable-foundation path (`dataframe`, `sql`, `spark`,
+> `orchestration`, `transform-compiler`). In 0.36, `etlantic.scheduler/1` is
+> promoted to a **stable MVP** on the foundation path (Prefect bounds);
+> `etlantic.quality/1` remains provisional wire outside the full
+> stable-foundation claim. External feedback evidence:
 > [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md).
 > Prior freeze-eligible status:
 > [EXIT_GATE_0_27](../11_DEVELOPMENT/EXIT_GATE_0_27.md).
+
+## Protocol decisions (0.36)
+
+Joint compatibility burn-in locks these protocol/public-surface outcomes:
+
+| Surface | Decision | Evidence / notes |
+|---|---|---|
+| `etlantic.scheduler/1` | **Promoted to stable MVP** on the foundation path | Prefect-bounded direct-execution cases; Airflow remains compile-only via `etlantic-airflow` |
+| `etlantic.quality/1` | **Remains provisional** | Wire schema outside the full stable-foundation claim; ContractModel remains semantic authority |
+| `etlantic.testing` preview | **Minimum case/result/snapshot contract frozen** for burn-in | Foundation graduation remains **0.38**; do not treat preview helpers as final |
+| Core Plugin SDK `/1` families | Unchanged (frozen since 0.28) | Additive optional evolution only; incompatible changes require a new major |
+| Facade protocol + provenance | Supported joint range across ETLantic / Medallantic | No medallion vocabulary in core |
+
+See [FINDINGS_0_36](../11_DEVELOPMENT/FINDINGS_0_36.md),
+[EXIT_GATE_0_36](../11_DEVELOPMENT/EXIT_GATE_0_36.md), and
+[Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md).
 
 ## Freeze decision (0.28)
 
@@ -16,7 +34,7 @@
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
 | ≥1 documented external feedback cycle from a non-first-party plugin author | **Met** — see [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) | Maintainers + community |
-| No unresolved provisional core protocol on the 0.38 path | Met (`scheduler/1` excluded from freeze path) | Maintainers |
+| No unresolved provisional core protocol on the 0.38 path | Met in 0.28 with `scheduler/1` deferred; **0.36** promotes `scheduler/1` to stable MVP and keeps `quality/1` provisional | Maintainers |
 
 **Decision:** Declare core Plugin SDK `/1` **frozen in 0.28.0**. Only additive
 optional evolution within `/1` is permitted; incompatible changes require a
@@ -108,7 +126,7 @@ Rules:
 While ETLantic remains on its 0.x roadmap:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.35: `etlantic>=0.35.0,<0.36`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.36: `etlantic>=0.36.0,<0.37`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

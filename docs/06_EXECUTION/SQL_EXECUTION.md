@@ -1,6 +1,6 @@
 # SQL Execution
 
-**Status: available in 0.35.0.** `etlantic-sql` treats SQLite and PostgreSQL
+**Status: available in 0.36.0.** `etlantic-sql` treats SQLite and PostgreSQL
 as live Tier A dialects. PostgreSQL alone advertises `sql_merge`; SQLite fails
 closed when merge is required.
 

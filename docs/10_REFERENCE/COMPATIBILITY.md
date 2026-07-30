@@ -1,8 +1,8 @@
 # Compatibility Matrix
 
-> **Status: Available in ETLantic 0.35.0.**
+> **Status: Available in ETLantic 0.36.0.**
 
-This table describes the declared compatibility of ETLantic 0.35.0.
+This table describes the declared compatibility of ETLantic 0.36.0.
 
 | Surface | Supported range or version |
 |---|---|
@@ -20,31 +20,48 @@ This table describes the declared compatibility of ETLantic 0.35.0.
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
 | Spark protocol | `etlantic.spark/1` |
-| Polars plugin | `etlantic-polars==0.35.0` |
-| Pandas plugin | `etlantic-pandas==0.35.0` |
-| SQL plugin | `etlantic-sql==0.35.0` |
-| PySpark plugin | `etlantic-pyspark==0.35.0` |
-| Airflow plugin | `etlantic-airflow==0.35.0` |
-| Prefect scheduler | `etlantic-prefect==0.35.0` |
-| Keyring provider | `etlantic-keyring==0.35.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.35.0` |
-| FastAPI reference adapter | `etlantic-fastapi==0.35.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
-| Medallantic (facade) | `medallantic==0.35.0` |
-| SparkForge redirect | `etlantic-sparkforge==0.35.0` (compatibility shim; prefer `medallantic`) |
-| DataFusion plugin | `etlantic-datafusion==0.35.0` (**Experimental** Gate B stub; no graduated claims) |
+| Polars plugin | `etlantic-polars==0.36.0` |
+| Pandas plugin | `etlantic-pandas==0.36.0` |
+| SQL plugin | `etlantic-sql==0.36.0` |
+| PySpark plugin | `etlantic-pyspark==0.36.0` |
+| Airflow plugin | `etlantic-airflow==0.36.0` |
+| Prefect scheduler | `etlantic-prefect==0.36.0` |
+| Keyring provider | `etlantic-keyring==0.36.0` |
+| SQLModel bridge | `etlantic-sqlmodel==0.36.0` |
+| FastAPI reference adapter | `etlantic-fastapi==0.36.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
+| Medallantic (facade) | `medallantic==0.36.0` |
+| SparkForge redirect | `etlantic-sparkforge==0.36.0` (compatibility shim; prefer `medallantic`) |
+| DataFusion plugin | `etlantic-datafusion==0.36.0` (**Experimental** Gate B stub; no graduated claims) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.35.0,<0.36` and re-run conformance |
+| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.36.0,<0.37` and re-run conformance |
+
+## Joint burn-in (0.36)
+
+0.36 is a compatibility evidence release. Upgrade paths under test:
+
+| Path | Expectation |
+|---|---|
+| `0.34 → 0.35` and `0.35 → 0.36` | Declared outcomes for supported artifact families |
+| Core + official plugins + Medallantic | Joint pins on the same minor (`==0.36.0`) |
+| Isolated wheels | Old writer / new reader (and reverse) without monorepo imports |
+| Compatibility vocabulary | `compatible` / `migrated` / `regenerate` / `upgrade-required` / `unsupported` |
+
+Protocol notes for this minor: `etlantic.scheduler/1` is a **stable MVP**
+(Prefect bounds); `etlantic.quality/1` remains **provisional**. See
+[Wire schema ranges](WIRE_SCHEMA_RANGES.md),
+[Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md), and
+[Exit gate 0.36](../11_DEVELOPMENT/EXIT_GATE_0_36.md).
 
 ## Tested versus declared
 
 The core CI matrix runs linting and the core test suite on Ubuntu, Windows, and
 macOS with Python 3.11, 3.12, and 3.13. This is the broadest tested platform
-surface for 0.35.0. Quadruple-minor wire codec burn-in covers the
-0.24→0.25→0.26→0.27→0.28 upgrade window; see
+surface for 0.36.0. Wire codec burn-in covers the historical
+0.24→0.25→0.26→0.27→0.28 window **and** the joint 0.34→0.35→0.36 window; see
 [Wire schema ranges](WIRE_SCHEMA_RANGES.md).
 
 Optional plugin jobs run primarily on Ubuntu with Python 3.11. Polars and
@@ -75,11 +92,11 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.35.0` plus every official plugin to `==0.35.0`.
+`etlantic==0.36.0` plus every official plugin to `==0.36.0`.
 
 Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.35.0` depends on `etlantic-polars==0.35.0`. Official
-plugin source metadata accepts core `etlantic>=0.35.0,<0.36`, which is
+`etlantic[polars]==0.36.0` depends on `etlantic-polars==0.36.0`. Official
+plugin source metadata accepts core `etlantic>=0.36.0,<0.37`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

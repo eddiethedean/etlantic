@@ -4,7 +4,8 @@
 Fails when golden fixtures drift (fingerprint mismatch) or cannot be verified
 by the current codec — without an updated fixture or migration helper.
 
-Checks ``v0_24``, ``v0_25``, ``v0_26``, and ``v0_27`` (0.24→…→0.28 proof).
+Checks ``v0_24``-``v0_27`` (0.24→…→0.28 proof) and ``v0_34``-``v0_36``
+(joint compatibility burn-in).
 """
 
 from __future__ import annotations
@@ -15,7 +16,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BURN_IN = ROOT / "tests" / "fixtures" / "burn_in" / "pipeline"
-VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
+VERSIONS = (
+    "v0_24",
+    "v0_25",
+    "v0_26",
+    "v0_27",
+    "v0_34",
+    "v0_35",
+    "v0_36",
+)
 
 
 def _check_version(version: str) -> dict[str, str]:

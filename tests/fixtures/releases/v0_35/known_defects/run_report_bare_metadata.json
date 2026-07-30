@@ -1,0 +1,38 @@
+{
+  "artifacts": [],
+  "backend_runs": [],
+  "diagnostics": [],
+  "duration_seconds": 3.0,
+  "ended_at": "2026-01-02T03:04:08+00:00",
+  "intent": "standard",
+  "lineage": [],
+  "metadata": {
+    "prefect_run_id": "legacy-run-id-0350",
+    "prefect_task_correlation": "legacy-task-corr",
+    "engine": "local"
+  },
+  "pipeline_id": "burnin:Sample",
+  "pipeline_version": null,
+  "plan_fingerprint": "6ef5207b0c6f4b9479a140708ffa4ac58b38c7bfb4d02ade448e443ac7289c6b",
+  "plan_id": "burnin-plan",
+  "profile": "local",
+  "recommendations": [],
+  "run_id": "burnin-run",
+  "schema": "etlantic.run_report/1",
+  "schema_observations": [],
+  "started_at": "2026-01-02T03:04:05+00:00",
+  "state_transitions": [],
+  "status": "succeeded",
+  "steps": [],
+  "summary": {
+    "cancelled": 0,
+    "failed": 0,
+    "records_in": null,
+    "records_out": null,
+    "retried": 0,
+    "skipped": 0,
+    "succeeded": 2,
+    "total_steps": 2
+  },
+  "validations": []
+}

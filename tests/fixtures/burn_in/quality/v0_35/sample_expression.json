@@ -1,0 +1,24 @@
+{
+  "schema": "etlantic.quality/1",
+  "expression_id": "quality",
+  "ruleset": {
+    "rules": [
+      {
+        "kind": "not_null",
+        "field": "id",
+        "node": {},
+        "required": true
+      },
+      {
+        "kind": "compare",
+        "field": "id",
+        "node": {
+          "op": "gt",
+          "value": 0
+        },
+        "required": true
+      }
+    ]
+  },
+  "metadata": {}
+}

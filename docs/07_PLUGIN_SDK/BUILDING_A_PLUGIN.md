@@ -1,6 +1,6 @@
 # Building an ETLantic Plugin
 
-> **Status: Available in ETLantic 0.35.0.**
+> **Status: Available in ETLantic 0.36.0.**
 
 This is the canonical guide for creating and maintaining an independently
 distributed ETLantic plugin. Reference plugins in the ETLantic repository and
@@ -47,7 +47,7 @@ Start with the narrowest protocol that owns the behavior:
 Storage and resource extension documents describe integration patterns that are
 **not** backed by package entry-point discovery in **0.34** (many remain Future
 design / Design Proposals). Observability, run history, and event consumers
-**are** discoverable entry points as of 0.35. Do not publish against a proposed
+**are** discoverable entry points as of 0.36. Do not publish against a proposed
 discovery group. Use the public runtime/profile registration surface documented
 for other categories.
 
@@ -165,7 +165,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.35.0,<0.36",
+    "etlantic>=0.36.0,<0.37",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [

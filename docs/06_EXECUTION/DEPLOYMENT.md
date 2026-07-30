@@ -1,12 +1,12 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.35.0.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.36.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
-| Topic | 0.35 |
+| Topic | 0.36 |
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime |
@@ -22,13 +22,13 @@ worker, and use durable backend storage for data or reports that must cross
 process boundaries.
 
 This reference model is suitable for one trusted application or worker per
-runtime. ETLantic 0.35 does not coordinate a multi-worker runtime.
+runtime. ETLantic 0.36 does not coordinate a multi-worker runtime.
 
 ## Reference topologies
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.35.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.36.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -52,7 +52,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.35.0`.
+1. Install `etlantic-prefect==0.36.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.
@@ -105,7 +105,7 @@ The adopter owns:
   generation;
 - observability retention and operational runbooks.
 
-ETLantic 0.35 does not claim a multi-worker or multi-tenant control plane.
+ETLantic 0.36 does not claim a multi-worker or multi-tenant control plane.
 The 0.40–0.44 program makes that a first-class planned feature, but none
 of its future guarantees may be assumed for the reference topology on this
 page.

@@ -1,6 +1,6 @@
 # Roadmap Summary
 
-ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
+ETLantic **0.36.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36** is the next planned milestone (joint compatibility burn-in). Milestones
 describe
 capability order, not release-date commitments.
@@ -11,7 +11,7 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.35 | Migration completion and joint freeze (M7) | [Closed](EXIT_GATE_0_35.md) |
+| Current | 0.36 | Joint compatibility burn-in | [Gate](EXIT_GATE_0_36.md) |
 | Previous | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
 | Next | 0.36 | Joint compatibility burn-in | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
@@ -192,10 +192,10 @@ See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and
 
 ## Shipped: 0.35 — Migration completion and joint freeze (M7)
 
-ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**:
+ETLantic **0.36.0** closed **Migration Completion and Joint Freeze (M7)**:
 SparkForge inventory/generation, authoring inspect/rewrite/provenance,
 application-pipeline testing preview, and facade protocol freeze prep.
-See [What's New in 0.35](../01_GETTING_STARTED/WHATS_NEW_0_35.md) and
+See [What's New in 0.36](../01_GETTING_STARTED/WHATS_NEW_0_36.md) and
 [Exit gate 0.35](EXIT_GATE_0_35.md).
 
 ## Next: 0.36 — Joint compatibility burn-in

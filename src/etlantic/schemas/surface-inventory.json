@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "classes": [
     "stable",
     "provisional",
@@ -98,7 +98,7 @@
     "etlantic.sql/1": "stable",
     "etlantic.spark/1": "stable",
     "etlantic.orchestration/1": "stable",
-    "etlantic.scheduler/1": "provisional",
+    "etlantic.scheduler/1": "stable",
     "etlantic.transform-compiler/1": "stable"
   }
 }

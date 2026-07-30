@@ -1,6 +1,6 @@
 # Secrets decision tree (0.34)
 
-> **Status: Available in ETLantic 0.35.0.** Normative rules for `SecretRef`
+> **Status: Available in ETLantic 0.36.0.** Normative rules for `SecretRef`
 > and environment providers. Plans and reports stay secret-free.
 
 ## Rules
@@ -36,7 +36,7 @@ Need a secret at runtime?
 
 AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, Vault, and
 cloud identity providers are planned as optional 0.52 provider packs. They are
-not shipped in 0.35; do not configure them yet.
+not shipped in 0.36; do not configure them yet.
 
 ## Related
 

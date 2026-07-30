@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sql"
-version = "0.35.0"
+version = "0.36.0"
 description = "PostgreSQL reference SQL execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.35.0,<0.36",
+    "etlantic>=0.36.0,<0.37",
     "sqlalchemy>=2.0,<3",
     "psycopg[binary]>=3.1,<4",
 ]

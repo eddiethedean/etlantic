@@ -13,11 +13,16 @@ REPORT_SCHEMA = "etlantic.run_report/1"
 
 
 def _validated_report_metadata(value: Any, *, path: str) -> dict[str, Any]:
-    from etlantic.extensions import validate_extension_metadata
+    from etlantic.extensions import (
+        migrate_report_metadata_keys,
+        validate_extension_metadata,
+    )
 
-    metadata = dict(value or {})
+    # Rewrite known 0.35 bare keys before validation so loads are warning-clean
+    # and rewrites are deterministic (036-C04).
+    metadata = migrate_report_metadata_keys(dict(value or {}))
     # Secret-key rejection is unconditional inside validate_extension_metadata;
-    # keep namespace warnings (not raises) so existing bare report keys load.
+    # keep namespace warnings (not raises) for remaining unknown bare keys.
     validate_extension_metadata(metadata, path=path, strict=False)
     return metadata
 

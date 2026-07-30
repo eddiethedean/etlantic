@@ -5,10 +5,10 @@
 Pin matching minor versions:
 
 ```text
-medallantic 0.35.x  ↔  etlantic 0.35.x
+medallantic 0.36.x  ↔  etlantic 0.36.x
 ```
 
-The current package requires `etlantic>=0.35.0,<0.36`. Engine plugins are
+The current package requires `etlantic>=0.36.0,<0.37`. Engine plugins are
 installed and pinned separately.
 
 ## Engine intent

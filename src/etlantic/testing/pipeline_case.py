@@ -175,7 +175,7 @@ class FakeSecretProvider:
         self.descriptor = SecretProviderDescriptor(
             name="fake",
             engine="fake",
-            version="0.35.0",
+            version="0.36.0",
             capabilities=SecretProviderCapabilities(in_memory_cache=True),
         )
 

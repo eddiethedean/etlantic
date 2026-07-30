@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-07-30
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.35.x` or plugins with `<0.36` |
+| Breaking | Dependency floor becomes `etlantic>=0.36.0,<0.37` (no wire-schema reset). Bare run-report metadata keys migrate to namespaced keys |
+| Upgrade | `pip install 'etlantic==0.36.0'` and matching plugins / `medallantic==0.36.0`. See [Migration 0.35 → 0.36](docs/11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
+| Rollback | Re-pin 0.35.0 minors together; re-validate |
+| Security | Compatibility fixtures and reports remain secret-free; production allowlist fail-closed unchanged; digests/attestations as shipped |
+
+### Added
+- Joint compatibility burn-in evidence for `0.34 → 0.35` and `0.35 → 0.36`
+  (current-reader and isolated-wheel reader/writer paths)
+- Release baseline manifests and known-defect fixtures under
+  `tests/fixtures/releases/`
+- Burn-in goldens for `v0_34`–`v0_36` alongside historical `v0_24`–`v0_27`
+- Application-pipeline testing burn-in against the frozen preview minimum
+  contract (`etlantic.testing`; foundation graduation remains 0.38)
+- What's New / Migration / Exit Gate / Findings documentation for 0.36
+
+### Changed
+- Official package versions align at 0.36.0; plugins require
+  `etlantic>=0.36.0,<0.37`
+- `etlantic.scheduler/1` promoted to stable MVP (Prefect bounds) on the
+  foundation path
+- `etlantic.quality/1` remains provisional (outside the full stable-foundation
+  claim)
+- Run-report bare metadata keys migrate to namespaced keys without silent
+  field loss
+
+### Fixed
+- Forward compatibility for 0.35.0 bare-key run-report metadata via documented
+  migration and known-defect fixture
+  (`tests/fixtures/releases/v0_35/known_defects/run_report_bare_metadata.json`)
+
 ## [0.35.0] - 2026-07-30
 
 ### Adopter summary
@@ -15,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 |---|---|
 | Who must act | Anyone pinning `etlantic==0.34.x` or plugins with `<0.35` |
 | Breaking | Dependency floor becomes `etlantic>=0.35.0,<0.36` (no wire-schema reset) |
-| Upgrade | `pip install 'etlantic==0.35.0'` and matching plugins / `medallantic==0.35.0` |
+| Upgrade | `pip install 'etlantic==0.35.0'` and matching plugins / `medallantic==0.35.0`. See [Migration 0.34 → 0.35](docs/11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) |
 | Rollback | Re-pin 0.34.0 minors together; re-validate |
 | Security | Migration analysis remains secret-free; digests/attestations as shipped |
 
@@ -24,9 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `definition_provenance`
 - Application-pipeline testing preview in `etlantic.testing`
 - Medallantic M7 SparkForge project inventory and safe native generation
+- What's New / Migration / Exit Gate 0.35 documentation
 
 ### Changed
-- Package versions and plugin pins advance to the 0.35.x line
+- Package versions and plugin pins advance to the 0.35.x line; plugins require
+  `etlantic>=0.35.0,<0.36`
 
 ## [0.34.0] - 2026-07-30
 
@@ -1320,6 +1359,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.36.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.36.0
 [0.35.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0
 [0.34.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.34.0
 [0.33.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.33.0

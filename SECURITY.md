@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.35.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.36.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Security reports
 concerning the published package, contract loading, planning, local runtime,
 storage bindings, secret handling, dataframe, SQL, and PySpark plugins,
@@ -10,13 +10,14 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.35.x | Current supported Beta line; security fixes are released on this line |
-| 0.34.x | Not actively maintained; upgrade to 0.35.x |
-| 0.33.x | Not actively maintained; upgrade to 0.35.x |
-| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.35.x |
-| 0.27.x and earlier | Not actively maintained; upgrade to 0.35.x |
+| 0.36.x | Current supported Beta line; security fixes are released on this line |
+| 0.35.x | Not actively maintained; upgrade to 0.36.x |
+| 0.34.x | Not actively maintained; upgrade to 0.36.x |
+| 0.33.x | Not actively maintained; upgrade to 0.36.x |
+| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.36.x |
+| 0.27.x and earlier | Not actively maintained; upgrade to 0.36.x |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.35.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.36.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability
@@ -84,7 +85,7 @@ The stable support boundary does not provide in-process multi-tenant isolation
 or guarantees for adopter deployment topology, compliance attestations, or
 advanced supply-chain controls beyond shipped release **SHA-256 digests** and
 GitHub build provenance **attestations** (CycloneDX SBOM generation is optional
-and failed for v0.35.0—see
+and failed for v0.36.0—see
 [Release artifact verification](docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md)). Adopters must supply remaining
 controls and isolate separate tenants or trust domains in separate execution
 environments. Experimental features do not receive stable API guarantees.

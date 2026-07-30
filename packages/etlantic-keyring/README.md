@@ -40,6 +40,6 @@ Fail-closed: missing credentials raise `PipelineExecutionError` at runtime.
 
 ## Links
 
-[Secrets documentation](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/SECRETS_MANAGEMENT/) ·
+[Secrets documentation](https://etlantic.readthedocs.io/en/v0.36.0/06_EXECUTION/SECRETS_MANAGEMENT/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-keyring) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

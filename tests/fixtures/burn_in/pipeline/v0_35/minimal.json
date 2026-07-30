@@ -1,0 +1,105 @@
+{
+  "contracts": [
+    {
+      "authoring_id": "burnin:Row",
+      "fields": [
+        {
+          "name": "id",
+          "nullable": false,
+          "required": true,
+          "type": "int"
+        },
+        {
+          "name": "name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "identity": "burnin:Row",
+      "metadata": {},
+      "name": "Row",
+      "version": null
+    }
+  ],
+  "edges": [
+    {
+      "consumer_contract_id": "burnin:Row",
+      "consumer_node": "sink",
+      "consumer_port": "input",
+      "producer_contract_id": "burnin:Row",
+      "producer_node": "src",
+      "producer_port": "result"
+    }
+  ],
+  "extensions": {},
+  "fingerprint": "7ee31406d37a1fddf7f8c3ea4fd3a253af23e34378707a38eaf81bd806a6d563",
+  "metadata": {},
+  "nodes": [
+    {
+      "asset": "in",
+      "bindings": {},
+      "contract_id": "burnin:Row",
+      "identity": "burnin:Minimal/src",
+      "inputs": [],
+      "kind": "source",
+      "metadata": {},
+      "name": "src",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [
+        {
+          "contract_id": "burnin:Row",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    },
+    {
+      "asset": "out",
+      "bindings": {},
+      "contract_id": "burnin:Row",
+      "identity": "burnin:Minimal/sink",
+      "inputs": [
+        {
+          "contract_id": "burnin:Row",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "input",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "kind": "sink",
+      "metadata": {},
+      "name": "sink",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    }
+  ],
+  "pipeline_id": "burnin:Minimal",
+  "pipeline_name": "MinimalPipeline",
+  "policy_refs": {},
+  "profile_ref": null,
+  "provenance": {
+    "kind": "functional"
+  },
+  "reliability": {},
+  "schema": "etlantic.pipeline/1",
+  "transformations": [],
+  "version": null
+}

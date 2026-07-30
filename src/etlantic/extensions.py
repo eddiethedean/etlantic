@@ -89,6 +89,35 @@ def namespaced_extension_items(
     return {str(k): v for k, v in mapping.items() if _is_namespaced(k)}
 
 
+# Known legacy bare keys written by first-party packages before 0.36.
+# Migration rewrites these to namespaced keys without semantic loss.
+REPORT_METADATA_ALIASES: dict[str, str] = {
+    "prefect_run_id": "etlantic.prefect.run_id",
+    "prefect_task_correlation": "etlantic.prefect.task_correlation",
+}
+
+
+def migrate_report_metadata_keys(
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Rewrite known bare report metadata keys to namespaced equivalents.
+
+    Deterministic and idempotent: repeated application yields the same mapping.
+    Existing namespaced values win when both bare and namespaced keys are
+    present. Unknown bare keys are left for :func:`validate_extension_metadata`.
+    """
+    if not metadata:
+        return {}
+    out = dict(metadata)
+    for bare, namespaced in REPORT_METADATA_ALIASES.items():
+        if bare not in out:
+            continue
+        if namespaced not in out:
+            out[namespaced] = out[bare]
+        del out[bare]
+    return out
+
+
 def validate_extension_metadata(
     metadata: dict[str, Any],
     *,

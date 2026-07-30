@@ -50,11 +50,11 @@ Runnable example: `examples/portable_polars_kernel.py` in the ETLantic repo.
 Window V1, complex-type/value, and conversion profiles are available in the
 current compiler; explicit window frames and Window V2 remain capability-gated.
 See the
-[compiler protocol](https://etlantic.readthedocs.io/en/v0.35.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
-and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.35.0/10_REFERENCE/COMPATIBILITY/).
+[compiler protocol](https://etlantic.readthedocs.io/en/v0.36.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
+and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.36.0/10_REFERENCE/COMPATIBILITY/).
 
 ## Links
 
-[Polars tutorial](https://etlantic.readthedocs.io/en/v0.35.0/06_EXECUTION/POLARS_TUTORIAL/) ·
+[Polars tutorial](https://etlantic.readthedocs.io/en/v0.36.0/06_EXECUTION/POLARS_TUTORIAL/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-polars) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

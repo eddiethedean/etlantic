@@ -1,0 +1,256 @@
+{
+  "schema": "etlantic.release_baseline/1",
+  "release": "0.34.0",
+  "source_tag": "v0.34.0",
+  "python_range": ">=3.11,<3.14",
+  "packages": [
+    {
+      "package": "etlantic",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "263b9dbca736bd3690a45844df10745f59af4e5f545acc84ce3fab5692b69147",
+          "url": "https://files.pythonhosted.org/packages/be/a8/cee2066cde2af5d0aeedaee150931f8a72fb88cc1f63d97a0e21dda5e175/etlantic-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "29c73a2b0c2cdd51fc73e93fdb15d02a15d79387b744ed102778f792254d12b2",
+          "url": "https://files.pythonhosted.org/packages/96/c2/1ff1d86018e71b1fca7fafd8d266c6fb768558f0e749ce36a86d9aabbe37/etlantic-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-polars",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_polars-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "aec963c1f6a53a335f0af0f9cd441abe367e433182e78062db512204502ffe08",
+          "url": "https://files.pythonhosted.org/packages/c7/b4/2e1c514abbf6b827f9fe0210dac3fc09563ac1743f8e0bf28ce605a4ff1b/etlantic_polars-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_polars-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "eb7edb4f31e9e860ebd5ea99f6db39e7728b9210399c69bdf851a44c0cc05717",
+          "url": "https://files.pythonhosted.org/packages/38/89/e74a87a13acad7189e23e81b290ff38351ee98cd75b0f18bf2a4946ff8d7/etlantic_polars-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-pandas",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_pandas-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "4affb0ce3fabcda9225388b9d7a8a6d083a0202a38929c8ca973275f4db91c32",
+          "url": "https://files.pythonhosted.org/packages/25/ed/30280b56870876c4d9d8df32af68d7657e44e997d3fef2a4ed4152e33f7a/etlantic_pandas-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_pandas-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "2f1c81ad3debb8c8fe5bba27ffa53085a2195a44aae72513bda9aaaaa893120b",
+          "url": "https://files.pythonhosted.org/packages/a0/c5/1eb1f62bdc1f10872054fd68f477255932e1a5a51c04f75c87fe910e19fd/etlantic_pandas-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-sql",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_sql-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "c97713dcbc14c498ce874313de780692403ae21959e539caf44972c6a36e0584",
+          "url": "https://files.pythonhosted.org/packages/6c/c9/711cfa72ec00f42c4718194d61c405f8935d8399a7297c35761058267939/etlantic_sql-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_sql-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "e0d2a859ab14df71f049a46dc76dd97fed1fd508970ba0a337ec455c74fb67b4",
+          "url": "https://files.pythonhosted.org/packages/9c/0a/ab2851f5d5db267422838146980e75a01805455250eb488bee4b54978214/etlantic_sql-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-pyspark",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_pyspark-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "2f36b34808b56e6718c8f48e4e2fc716ba273bafed64711a55dc11b02e29bca7",
+          "url": "https://files.pythonhosted.org/packages/bf/95/3eb20ab6cd3f964c41cd067d404af5a14fc964d6017d520a888a6b13e1c7/etlantic_pyspark-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_pyspark-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "fac4000573ea90a861ba7777882234f903728b4366af46eced31cbad95719a57",
+          "url": "https://files.pythonhosted.org/packages/31/83/fbb3f08b8b4b2689cf995bc3f486bb0cd56f0cf16bd27801a6269bc2af7f/etlantic_pyspark-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-airflow",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_airflow-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "89ebbd04c7fb7223af024cc7649f12c4ec74ec7f2f7c82e939d36f52f58bdccd",
+          "url": "https://files.pythonhosted.org/packages/81/b8/641396b49bd7504d65db856e003da9f05ef2d7179af2cdc6c1cc3bfb9306/etlantic_airflow-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_airflow-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "a72de838b98894c6bded78f8b0e9ef8127df97476d4dfbea536c9cc1ba970a41",
+          "url": "https://files.pythonhosted.org/packages/56/28/7f90dafbc5720098fb67c98c0f67299ef46390f06905c9339987e3695904/etlantic_airflow-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-prefect",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_prefect-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "f6a707767e72fc637490b4a24f8264f986b58341ffe82a377641adac876439b4",
+          "url": "https://files.pythonhosted.org/packages/f4/7b/78245af577121cdd57b66a1f9b079111f95508d45ce62ac1bf0bae1979ba/etlantic_prefect-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_prefect-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "2763189d78ff8404c695d4bffccb30093c0e0672ba9b649fe88a39b9ad08f3d6",
+          "url": "https://files.pythonhosted.org/packages/2c/88/6c213972175b00ce4ddada168c37025612ecd9fb7ac3b45d14710d75ba22/etlantic_prefect-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-keyring",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_keyring-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "5ce57a1328d461318db5a49a18870eac2d53203494df37b428d27a9c7ee8ad7f",
+          "url": "https://files.pythonhosted.org/packages/8f/49/9c0812005b3440900a24d007518d67cdb439c8063c1a694b903b8a73e036/etlantic_keyring-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_keyring-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "674f7fd68f5eb96c818fb21788e619076db274258127b246f8677b659a498028",
+          "url": "https://files.pythonhosted.org/packages/ba/72/99d197b3bbf859837322d828b1f6b20052738deeaada12625b42d9855182/etlantic_keyring-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-sqlmodel",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_sqlmodel-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "c7aaa41fc0c0d31041bdf199888f48a414aeb10c5ee0d7574ce7925bf38cf843",
+          "url": "https://files.pythonhosted.org/packages/98/7f/ee235c0537a4183be296bc2ddca6a563ec2b4e6e17b90ed192fa0391f970/etlantic_sqlmodel-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_sqlmodel-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "5c2c06b0e97d0eb0592d156aa1b04efe124f6a0ebe66eccaca6fb2ef37367c24",
+          "url": "https://files.pythonhosted.org/packages/27/0f/a04d017b3037dd1e29bcc74f1011571522d1e3097f5ac5f1caffbefb67d4/etlantic_sqlmodel-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-fastapi",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_fastapi-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "5f958223099446a9ca554ef701fe4bbfc6715fd21489bacad000c25fcd8500d1",
+          "url": "https://files.pythonhosted.org/packages/89/84/75d886c287ec343277c1b094df04bccd54ad71aa47c02934327f43932bfe/etlantic_fastapi-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_fastapi-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "95d1a799e61eb635c0297ce8bb0eb4b3b3dcc2123d423f4bb55350ec76288b5f",
+          "url": "https://files.pythonhosted.org/packages/53/8e/b5adae8804ad3410f56f0d2bc29c08b9d3615a6e6dfa49544a3f094e89c2/etlantic_fastapi-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-datafusion",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_datafusion-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "a380634f6f5b8b2291835a0f75d2722897b6ae9d81e551c0d67e7c03c26ea83e",
+          "url": "https://files.pythonhosted.org/packages/ec/3b/3d3e5b13e614f2889ae5391e9bf73a4304406a935bd3bf095be77a593280/etlantic_datafusion-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_datafusion-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "0f3929083450c9d2cac62815b15bf91003e3470d5d160ee93aff22ff730c6f8b",
+          "url": "https://files.pythonhosted.org/packages/2b/cc/a30710a0613642f23159374dd4b8379818b798eeffcf16484db9f13c9278/etlantic_datafusion-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "etlantic-sparkforge",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "etlantic_sparkforge-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "fb693d13a8ee75ddda5101e8d49333eeebf617aa5f3e0076307d85b14af4ee57",
+          "url": "https://files.pythonhosted.org/packages/71/41/fcad3b84b4c0fb392bfc8fb0a8072abc28955b4d4672a90264b6a6d3a406/etlantic_sparkforge-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "etlantic_sparkforge-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "2edce1760e838ec3603cbab2253c4085de9f3fb9a63febcd210e4e37d391ccfe",
+          "url": "https://files.pythonhosted.org/packages/5e/f5/1d005676d6c4cba6867d502c5900d7fdba5094d1d4f190d9c1c280fb864f/etlantic_sparkforge-0.34.0.tar.gz"
+        }
+      ]
+    },
+    {
+      "package": "medallantic",
+      "version": "0.34.0",
+      "requires_python": ">=3.11",
+      "files": [
+        {
+          "filename": "medallantic-0.34.0-py3-none-any.whl",
+          "packagetype": "bdist_wheel",
+          "sha256": "cd5c1da7d9dd0a3124c81c2de2e1445b9bb369e58fd5095408f8f107088d051f",
+          "url": "https://files.pythonhosted.org/packages/48/c6/58ebfac6ca6b8ab5dd92f062cfa6a4091ef222347ba232ed136fc909beb1/medallantic-0.34.0-py3-none-any.whl"
+        },
+        {
+          "filename": "medallantic-0.34.0.tar.gz",
+          "packagetype": "sdist",
+          "sha256": "bad37deb6fbe9eb057a85f796b49d50e1fcc84ade306d73e6d78bfcb8b42c9f7",
+          "url": "https://files.pythonhosted.org/packages/96/a5/21f7d355e3e93563305fa9accfe6ef13c1ee0b0492364bd685d65517c00e/medallantic-0.34.0.tar.gz"
+        }
+      ]
+    }
+  ],
+  "notes": "Hash-verified published wheels from PyPI for compatibility burn-in."
+}

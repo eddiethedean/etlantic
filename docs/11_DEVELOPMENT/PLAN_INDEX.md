@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: Available in ETLantic 0.35.0.**
+> **Status: Available in ETLantic 0.36.0.**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
@@ -23,12 +23,13 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to ETLantic **0.35.0**.
+Status is relative to ETLantic **0.36.0**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
 | [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.35 shipped (gate closed); 0.36 is next | 0.36 joint compatibility burn-in |
-| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing preview available in 0.35; full foundation graduates later | Continues through 0.53 |
+| [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Planned milestone | No 0.36 capability is shipped; 0.35 is the compatibility baseline | Close joint upgrade, wire, plugin, application-case, and Medallantic burn-in |
+| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing preview available in 0.36; full foundation graduates later | Continues through 0.53 |
 | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.35 does not provide a production multi-tenant control plane | Incubation 0.40–0.43; graduation gate 0.44 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Control-plane work begins at 0.40 |
@@ -119,6 +120,7 @@ summary.
 
 ## Related records
 
+- [0.36 joint compatibility burn-in implementation plan](IMPLEMENTATION_PLAN_0_36.md)
 - [Programmatic authoring and lossless JSON — 0.24](PROGRAMMATIC_AUTHORING_0_24.md)
 - [SparkForge adoption record](SPARKFORGE_ADOPTION.md)
 - [Portable transformation evolution](DTCS_PORTABLE_EVOLUTION.md)

@@ -2,7 +2,7 @@
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under
-``tests/fixtures/burn_in/*/v0_24/``, ``v0_25/``, ``v0_26/``, and ``v0_27/`` (pipeline
+``tests/fixtures/burn_in/*/v0_24/``-``v0_27/`` and ``v0_34/``-``v0_36/`` (pipeline
 fixtures remain under ``check_pipeline_codec_burn_in.py``).
 """
 
@@ -16,7 +16,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BURN_IN = ROOT / "tests" / "fixtures" / "burn_in"
 MANIFEST = BURN_IN / "sibling_manifest.json"
-VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
+VERSIONS = (
+    "v0_24",
+    "v0_25",
+    "v0_26",
+    "v0_27",
+    "v0_34",
+    "v0_35",
+    "v0_36",
+)
 
 SIBLINGS: tuple[tuple[str, str | None], ...] = (
     ("plan", "etlantic.plan/1"),
@@ -24,6 +32,7 @@ SIBLINGS: tuple[tuple[str, str | None], ...] = (
     ("profile", None),
     ("capabilities", None),
     ("interchange", "etlantic.interchange/1"),
+    ("quality", "etlantic.quality/1"),
 )
 
 
@@ -40,12 +49,16 @@ def _check_siblings() -> dict[str, str]:
     from etlantic.interchange.tabular.select import select_mechanism
     from etlantic.plan.model import PipelinePlan
     from etlantic.profile import Profile
+    from etlantic.quality.serialize import quality_from_dict, quality_to_dict
     from etlantic.reports.model import PipelineRunReport
 
     digests: dict[str, str] = {}
     for version in VERSIONS:
         for family, expected_schema in SIBLINGS:
             directory = BURN_IN / family / version
+            if family == "quality" and version in {"v0_24", "v0_25", "v0_26", "v0_27"}:
+                # quality/1 shipped later; older window cells are unsupported.
+                continue
             paths = sorted(
                 p for p in directory.glob("*.json") if p.name != "manifest.json"
             )
@@ -94,6 +107,10 @@ def _check_siblings() -> dict[str, str]:
                             f"{key}: select_mechanism={selected.value!r} "
                             f"!= fixture mechanism={data['mechanism']!r}"
                         )
+                elif family == "quality":
+                    expr = quality_from_dict(data)
+                    if quality_to_dict(expr)["schema"] != expected_schema:
+                        raise SystemExit(f"{key}: quality schema drift on rewrite")
                 digests[key] = _content_hash(data)
                 print(f"ok {key} {digests[key][7:23]}…")
     return digests

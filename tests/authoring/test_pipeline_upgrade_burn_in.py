@@ -23,7 +23,15 @@ from etlantic.authoring import (
 from etlantic.authoring.upgrade import UnsupportedPipelineSchemaError
 
 BURN_IN = Path(__file__).resolve().parents[1] / "fixtures" / "burn_in" / "pipeline"
-VERSIONS = ("v0_24", "v0_25", "v0_26", "v0_27")
+VERSIONS = (
+    "v0_24",
+    "v0_25",
+    "v0_26",
+    "v0_27",
+    "v0_34",
+    "v0_35",
+    "v0_36",
+)
 
 
 def _fixture_paths(version: str) -> list[Path]:
