@@ -78,7 +78,7 @@ Then install ETLantic and initialize a fresh project directory:
 
 ```bash
 python -m pip install --upgrade pip
-python -m pip install etlantic
+python -m pip install 'etlantic==0.35.0'
 python -m etlantic --version
 
 mkdir my-pipeline
@@ -151,9 +151,9 @@ a complementary control layer.
 
 Core installs without dataframe engines, database drivers, Spark, Airflow, or
 Prefect. Add only what the pipeline uses. The middle column describes the
-capability shipped in 0.34, not future roadmap intent.
+capability shipped in 0.35, not future roadmap intent.
 
-| Capability | 0.34 | Install |
+| Capability | 0.35 | Install |
 |---|---|---|
 | Local Python + JSON/CSV | Built-in first-success and test path | `pip install etlantic` |
 | Polars | Eager/lazy dataframe execution and portable compilation | `pip install 'etlantic[polars]'` |

@@ -3293,7 +3293,7 @@ history and analytics remain optional providers/consumers.
 
 ## 0.35 — Migration Completion and Joint Freeze
 
-**Status:** Planned.
+**Status:** Shipped (exit gate closed in-tree; tag when release CI is green).
 
 **Medallantic phase:** M7 — Migration completion.
 

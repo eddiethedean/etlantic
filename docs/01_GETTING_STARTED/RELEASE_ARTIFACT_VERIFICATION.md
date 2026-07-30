@@ -3,14 +3,14 @@
 > **Status: Available.** How to verify what a tagged ETLantic release actually
 > published. Do not assume every release includes a CycloneDX SBOM.
 
-## What shipped for v0.34.0
+## What shipped for v0.35.0
 
 | Artifact | Status |
 |---|---|
-| PyPI wheels/sdists for core and official packages | Published (`etlantic==0.34.0`, matching plugins) |
-| Per-artifact SHA-256 manifest | [release-artifacts.json](https://github.com/eddiethedean/etlantic/releases/download/v0.34.0/release-artifacts.json) |
+| PyPI wheels/sdists for core and official packages | Published (`etlantic==0.35.0`, matching plugins) |
+| Per-artifact SHA-256 manifest | [release-artifacts.json](https://github.com/eddiethedean/etlantic/releases/download/v0.35.0/release-artifacts.json) |
 | GitHub build provenance attestations | Attached to release workflow / verifiable with `gh attestation verify` |
-| CycloneDX environment SBOM | **Failed** — see [sbom-warning.txt](https://github.com/eddiethedean/etlantic/releases/download/v0.34.0/sbom-warning.txt) |
+| CycloneDX environment SBOM | **Failed** — see [sbom-warning.txt](https://github.com/eddiethedean/etlantic/releases/download/v0.35.0/sbom-warning.txt) |
 
 Do **not** record “SPDX SBOM digest” for the SHA-256 manifest. Digests are
 checksums of published wheels/sdists, not an SBOM document.
@@ -18,14 +18,14 @@ checksums of published wheels/sdists, not an SBOM document.
 ## Verify digests
 
 1. Download the wheel (or sdist) and `release-artifacts.json` from the
-   [GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.34.0).
+   [GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0).
 2. Confirm the file’s SHA-256 matches the manifest entry for that basename.
-3. Prefer exact pins (`etlantic==0.34.0`) in lockfiles.
+3. Prefer exact pins (`etlantic==0.35.0`) in lockfiles.
 
 ## Verify attestations
 
 ```bash
-gh attestation verify path/to/etlantic-0.34.0-*.whl \
+gh attestation verify path/to/etlantic-0.35.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pyspark"
-version = "0.34.0"
+version = "0.35.0"
 description = "PySpark reference execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.34.0,<0.35",
+    "etlantic>=0.35.0,<0.36",
     "pyspark>=3.5,<4",
 ]
 

@@ -64,7 +64,7 @@ def test_manual_local_spoof_denied_under_production() -> None:
         info = _Info()
 
     runtime = PipelineRuntime()
-    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.35.0"})
     runtime.ensure_plugins_for_profile(profile)
     with pytest.raises(PipelineExecutionError) as exc:
         runtime.register_dataframe_plugin("local", _Plugin())
@@ -77,7 +77,7 @@ def test_observability_register_gated_under_production() -> None:
         version = "1.0.0"
 
     runtime = PipelineRuntime()
-    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.35.0"})
     runtime.ensure_plugins_for_profile(profile)
     with pytest.raises(PipelineExecutionError) as exc:
         runtime.register_observability_provider("evil-obs", _Provider())
@@ -87,9 +87,9 @@ def test_observability_register_gated_under_production() -> None:
 def test_builtin_exempt_disabled_for_manual_filter() -> None:
     from etlantic.registry import PluginDescriptor
 
-    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.35.0"})
     local = PluginDescriptor(
-        name="local", kind="runtime", version="0.34.0", engine="local"
+        name="local", kind="runtime", version="0.35.0", engine="local"
     )
     kept_open, _ = filter_plugins_by_allowlist({"local": local}, profile)
     assert "local" in kept_open

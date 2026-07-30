@@ -45,7 +45,7 @@ Start with the narrowest protocol that owns the behavior:
 Storage and resource extension documents describe integration patterns that are
 **not** backed by package entry-point discovery in **0.34** (many remain Future
 design / Design Proposals). Observability, run history, and event consumers
-**are** discoverable entry points as of 0.34. Do not publish against a proposed
+**are** discoverable entry points as of 0.35. Do not publish against a proposed
 discovery group. Use the public runtime/profile registration surface documented
 for other categories.
 
@@ -163,7 +163,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.34.0,<0.35",
+    "etlantic>=0.35.0,<0.36",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [

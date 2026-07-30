@@ -2,23 +2,23 @@
 
 ## Residual evaluation lead
 
-| Topic | 0.34 |
+| Topic | 0.35 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
 | Not included in 0.34 | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.34.0 is a **Beta** release suitable for the documented single-tenant
+ETLantic 0.35.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page. The milestone name “production readiness” (M6)
-means the observability / run-history *pilot* slice shipped in 0.34.0—it does
+means the observability / run-history *pilot* slice shipped in 0.35.0—it does
 **not** mean unrestricted enterprise production. See the Beta envelope above
 and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
-0.34.x patch without changing the documented pilot claims.
+0.35.x patch without changing the documented pilot claims.
 
 Experimental features remain experimental. Broader deployment topology,
 multi-tenancy, and compliance attestations remain adopter-owned today. Supply
-chain for v0.34.0 ships a SHA-256 artifact manifest and GitHub provenance
+chain for v0.35.0 ships a SHA-256 artifact manifest and GitHub provenance
 attestations; CycloneDX SBOM generation failed—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
 Multi-tenancy has a
@@ -43,7 +43,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.34.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.35.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -86,11 +86,11 @@ reference controls are shipped:
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
 - Broader supply-chain programs beyond package allowlists, pins, SHA-256
   release digests, and GitHub attestations (CycloneDX SBOM is optional and
-  failed for v0.34.0)
+  failed for v0.35.0)
 
 ## Shipped / adopter-owned / residual (0.34)
 
-| Concern | 0.34 status |
+| Concern | 0.35 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |
@@ -98,7 +98,7 @@ reference controls are shipped:
 | Plugin allowlists | **Shipped** (selection, not sandbox) |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
-| Release SHA-256 digests + GitHub attestations | **Shipped** (CycloneDX SBOM failed for v0.34.0) |
+| Release SHA-256 digests + GitHub attestations | **Shipped** (CycloneDX SBOM failed for v0.35.0) |
 | Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.34 |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |

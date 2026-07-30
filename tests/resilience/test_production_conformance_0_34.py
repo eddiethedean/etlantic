@@ -14,7 +14,7 @@ def test_production_profile_requires_allowlist() -> None:
 
 def test_production_profile_with_allowlist_passes() -> None:
     profile = production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         assets={"in": "json", "out": "json"},
     )
     result = run_production_conformance_suite(profile)
@@ -23,7 +23,7 @@ def test_production_profile_with_allowlist_passes() -> None:
 
 def test_durable_audit_requires_run_history_provider() -> None:
     profile = production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         assets={"in": "json", "out": "json"},
         observability_delivery="durable_audit",
     )
@@ -34,7 +34,7 @@ def test_durable_audit_requires_run_history_provider() -> None:
 
 def test_durable_audit_with_history_provider_passes() -> None:
     profile = production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         assets={"in": "json", "out": "json"},
         observability_delivery="durable_audit",
         run_history_provider="file",

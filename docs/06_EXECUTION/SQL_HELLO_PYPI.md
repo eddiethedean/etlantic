@@ -1,6 +1,6 @@
 # SQL hello (PyPI path)
 
-> **Status: Available in ETLantic 0.34.0.** Paste-ready SQLite demo — no
+> **Status: Available in ETLantic 0.35.0.** Paste-ready SQLite demo — no
 > git clone. PostgreSQL is the reference backend for production; MERGE
 > (`sql_merge`) is PostgreSQL-only.
 
@@ -17,7 +17,7 @@ Companion script (clone):
 ## 1. Install
 
 ```bash
-python -m pip install 'etlantic[sql]==0.34.0'
+python -m pip install 'etlantic[sql]==0.35.0'
 ```
 
 SQLite is the default when `ETLANTIC_SQL_URL` is unset. For PostgreSQL later:

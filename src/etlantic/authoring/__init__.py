@@ -41,6 +41,16 @@ from etlantic.authoring.definition import (
 )
 from etlantic.authoring.edits import EditCommand, EditResult, apply_edit
 from etlantic.authoring.graph_builder import build_logical_graph
+from etlantic.authoring.inspect import (
+    DEFINITION_PROVENANCE_EXTENSION_KEY,
+    FACADE_PROTOCOL_VERSION,
+    DefinitionInspection,
+    DefinitionProvenance,
+    definition_provenance,
+    inspect_definition,
+    negotiate_facade_protocol,
+    rewrite_definition,
+)
 from etlantic.authoring.lifecycle import (
     build_graph,
     inspect_pipeline_like,
@@ -73,11 +83,15 @@ from etlantic.authoring.serialize import (
 from etlantic.authoring.types import PipelineLike, coerce_definition
 
 __all__ = [
+    "DEFINITION_PROVENANCE_EXTENSION_KEY",
+    "FACADE_PROTOCOL_VERSION",
     "PIPELINE_SCHEMA",
     "AuthoringCatalog",
     "CallableRegistry",
     "CatalogEntry",
     "ContractDefinition",
+    "DefinitionInspection",
+    "DefinitionProvenance",
     "EdgeDefinition",
     "EditCommand",
     "EditResult",
@@ -101,6 +115,7 @@ __all__ = [
     "connect",
     "contract_definition",
     "definition_from_pipeline",
+    "definition_provenance",
     "disconnect",
     "discover_authoring_catalog",
     "edge",
@@ -109,10 +124,12 @@ __all__ = [
     "harvest_callables_from_pipeline",
     "implementation_ref",
     "input_port",
+    "inspect_definition",
     "inspect_pipeline_like",
     "load_node",
     "logical_graph_from_definition",
     "negotiate_capabilities",
+    "negotiate_facade_protocol",
     "output_port",
     "parameter_port",
     "pipeline_definition",
@@ -126,6 +143,7 @@ __all__ = [
     "read_pipeline_json",
     "remove_node",
     "resolve_definition",
+    "rewrite_definition",
     "step_node",
     "structural_validate_preview",
     "transformation_definition",

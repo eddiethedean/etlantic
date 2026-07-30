@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Practical questions for ETLantic **0.34.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.35.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -45,7 +45,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.34.0' 'etlantic-polars==0.34.0'
+python -m pip install 'etlantic==0.35.0' 'etlantic-polars==0.35.0'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -64,9 +64,9 @@ non-empty `plugin_allowlist` — **not** the profile name. See
 Use `SecretRef` — never put values in plans. Follow the
 [Secrets decision tree](../10_REFERENCE/SECRETS_DECISION.md).
 
-## Is ETLantic 0.34 production-supported?
+## Is ETLantic 0.35 production-supported?
 
-ETLantic **0.34.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.35.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots—not unrestricted enterprise production. See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).

@@ -51,7 +51,7 @@ def test_durable_audit_event_append_fails_closed() -> None:
     profile = Profile(
         name="prod",
         security_mode="production",
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         run_history_provider="file",
         observability_delivery="durable_audit",
     )

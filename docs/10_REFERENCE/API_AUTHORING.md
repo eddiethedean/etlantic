@@ -116,6 +116,16 @@ Immutable `PipelineDefinition`, builders, JSON codecs, catalog, edit commands,
 and lifecycle helpers. See
 [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md).
 
+Bounded migration helpers (0.35; secret-free, no untrusted import, no source
+rows, no target mutation during analysis):
+
+| API | Behavior |
+|---|---|
+| `inspect_definition(defn)` | Structural summary (nodes, assets, contract fingerprints, schema id) |
+| `rewrite_definition(defn, edits)` | Apply documented `EditCommand`s; refresh fingerprint; fail closed |
+| `definition_provenance(...)` | Attach/read generated-definition provenance in extension namespaces |
+| `negotiate_facade_protocol(...)` | Facade protocol/version compatibility negotiation |
+
 ::: etlantic.authoring
     options:
       show_root_heading: true

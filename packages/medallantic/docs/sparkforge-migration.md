@@ -123,3 +123,43 @@ resolved credentials, dataframes, or source rows.
 Existing `PMSF` codes identify the SparkForge migration boundary and remain
 stable until a documented major-version migration. New native Medallantic APIs
 will use Medallantic-specific diagnostic families.
+
+Migration inventory / generation codes (0.35 / M7):
+
+| Code | Meaning |
+|---|---|
+| `MDL200` | Inventory scan / candidate discovered |
+| `MDL210` | Manual conversion point (symbolic transforms, Python sources, …) |
+| `MDL220` | Unsupported / refuse auto generation |
+| `MDL230` | Native definition successfully generated |
+
+## Project inventory and safe generation (0.35)
+
+```bash
+python -m medallantic migrate inventory PATH
+python -m medallantic migrate generate path/to/pipeline.json
+```
+
+```python
+from medallantic.migrate import scan_project, generate_from_path
+
+report = scan_project("legacy-project/")
+result = generate_from_path("fixtures/bronze_only.json")
+```
+
+Analysis never imports untrusted project code, never resolves secrets, never
+reads production tables, and never mutates targets. Generated definitions stamp
+`etlantic.definition_provenance` (generator id, source fingerprint, facade
+protocol version `1`).
+
+## Deprecation timeline (transitional adapters retained)
+
+| Surface | Status in 0.35 | Removal |
+|---|---|---|
+| `medallantic.migrate.sparkforge` / `.sql` adapters | Supported | Not before a documented **major** |
+| `etlantic-sparkforge` compatibility package | Supported (shim) | Not before a documented **major** |
+| Serialized SparkForge IR JSON shapes used by adapters | Supported | Not before a documented **major**; any break requires a migration guide |
+| Live `from_pipeline_builder` / `from_sql_pipeline_builder` | Supported when legacy deps installed | Not before a documented **major** |
+
+0.35 completes migration tooling and freezes the facade protocol; it does **not**
+remove transitional adapters.

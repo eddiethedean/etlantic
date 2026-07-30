@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from etlantic.exceptions import PipelineExecutionError
@@ -112,5 +113,6 @@ class MountedFileSecretProvider:
             content_type=content_type,
         )
 
+    @asynccontextmanager
     async def lifespan(self, context: ProviderContext) -> AsyncIterator[None]:
         yield

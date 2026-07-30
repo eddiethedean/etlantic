@@ -94,8 +94,7 @@ def main() -> int:
             errors.append(f"{pkg} still uses Alpha classifier")
         if "Development Status :: 5 - Production/Stable" in text:
             errors.append(
-                f"{pkg} should use Beta, not Production/Stable "
-                "(Beta pilot envelope)"
+                f"{pkg} should use Beta, not Production/Stable (Beta pilot envelope)"
             )
         if "Development Status :: 4 - Beta" not in text:
             errors.append(f"{pkg} missing Beta classifier")

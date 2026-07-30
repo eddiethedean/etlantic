@@ -161,10 +161,13 @@ class LoweringResult:
         return replace(
             defn,
             provenance=immutable_mapping(
-                facade_provenance(
-                    identity="medallantic",
-                    version=str(_medallantic_version()),
-                )
+                {
+                    **facade_provenance(
+                        identity="medallantic",
+                        version=str(_medallantic_version()),
+                    ),
+                    "facade_protocol_version": "1",
+                }
             ),
             extensions=immutable_mapping(extensions),
             metadata=immutable_mapping(dict(defn.metadata)),

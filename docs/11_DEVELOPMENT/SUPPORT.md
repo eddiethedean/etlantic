@@ -1,6 +1,6 @@
 # Support Policy
 
-ETLantic **0.34.x** is a **Beta** (PyPI) release suitable for documented single-tenant
+ETLantic **0.35.x** is a **Beta** (PyPI) release suitable for documented single-tenant
 reference deployments. Community support is best-effort and provides **no
 formal SLA** or guaranteed response time.
 
@@ -16,7 +16,7 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Supported versions
 
-The current published minor line (`0.34.x`) receives best-effort correctness
+The current published minor line (`0.35.x`) receives best-effort correctness
 and security fixes. Older 0.x lines (including **0.19.x**) are not actively
 maintained. See `SECURITY.md` for the security-support table.
 
@@ -29,7 +29,7 @@ maintained. See `SECURITY.md` for the security-support table.
 - Compliance attestations (SOC2, GDPR certification, and similar)
 - Advanced supply-chain programs beyond shipped SHA-256 digests, GitHub build
   provenance attestations, OIDC-preferred publish, documented package pins,
-  and plugin allowlists (CycloneDX SBOM optional; failed for v0.34.0)
+  and plugin allowlists (CycloneDX SBOM optional; failed for v0.35.0)
 - Guarantees for Experimental APIs (including `etlantic-datafusion`)
 - Guarantees for Future design / Design Proposal pages
 

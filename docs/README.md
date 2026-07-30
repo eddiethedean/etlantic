@@ -5,7 +5,7 @@ hide:
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.34 · Beta</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.35 · Beta</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -88,7 +88,7 @@ hide:
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The commands below pin
-`etlantic==0.34.0` so this version of the documentation and the installed API
+`etlantic==0.35.0` so this version of the documentation and the installed API
 stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
 continues with an intentional validation failure after the first successful
 run.
@@ -99,7 +99,7 @@ run.
     python -m venv .venv
     source .venv/bin/activate
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.34.0'
+    python -m pip install 'etlantic==0.35.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -116,7 +116,7 @@ run.
     py -3.11 -m venv .venv
     .\.venv\Scripts\Activate.ps1
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.34.0'
+    python -m pip install 'etlantic==0.35.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -186,7 +186,7 @@ and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
 
 ## Know the release boundary
 
-ETLantic 0.34 is a **Beta** release for documented, controlled, single-tenant
+ETLantic 0.35 is a **Beta** release for documented, controlled, single-tenant
 pilots—not unrestricted enterprise production.
 
 <div class="etlantic-release-grid">

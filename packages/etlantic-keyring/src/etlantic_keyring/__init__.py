@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import keyring
 from etlantic.exceptions import PipelineExecutionError
@@ -15,7 +16,7 @@ from etlantic.secrets.provider import (
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 
-__version__ = "0.34.0"
+__version__ = "0.35.0"
 
 __all__ = [
     "KeyringSecretProvider",
@@ -84,6 +85,7 @@ class KeyringSecretProvider:
             version=reference.version,
         )
 
+    @asynccontextmanager
     async def lifespan(self, context: ProviderContext) -> AsyncIterator[None]:
         yield
 

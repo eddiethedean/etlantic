@@ -1,7 +1,8 @@
 # Roadmap Summary
 
-ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
-(M6)**. **0.35 / M7** is the next planned milestone. Milestones describe
+ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
+**0.36** is the next planned milestone (joint compatibility burn-in). Milestones
+describe
 capability order, not release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
@@ -10,8 +11,9 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
-| Next | 0.35 | Migration completion and joint freeze (M7) | Planned |
+| Current | 0.35 | Migration completion and joint freeze (M7) | [Closed](EXIT_GATE_0_35.md) |
+| Previous | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
+| Next | 0.36 | Joint compatibility burn-in | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
 | Post-foundation | 0.39–0.53 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
 
@@ -182,17 +184,25 @@ SQLite/PostgreSQL differential fixtures. See
 
 ## Shipped: 0.34
 
-ETLantic **0.34.0** shipped **Operations, Evidence, and Production Readiness
+ETLantic **0.35.0** shipped **Operations, Evidence, and Production Readiness
 (M6)**: observability/run-history/event-consumer protocols, runtime bridge,
 production conformance, and Medallantic explain/lifecycle/profile templates.
 See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and
 [Exit gate 0.34](EXIT_GATE_0_34.md).
 
-## Next: 0.35 — Migration completion and joint freeze (M7)
+## Shipped: 0.35 — Migration completion and joint freeze (M7)
 
-**0.35** covers SparkForge migration inventory, joint freeze prep, and the
-public application-pipeline testing preview in `etlantic.testing`. See
-[ROADMAP § 0.35](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#035--migration-completion-and-joint-freeze).
+ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**:
+SparkForge inventory/generation, authoring inspect/rewrite/provenance,
+application-pipeline testing preview, and facade protocol freeze prep.
+See [What's New in 0.35](../01_GETTING_STARTED/WHATS_NEW_0_35.md) and
+[Exit gate 0.35](EXIT_GATE_0_35.md).
+
+## Next: 0.36 — Joint compatibility burn-in
+
+**0.36** accumulates consecutive minor upgrade evidence for ETLantic and
+Medallantic together. See
+[ROADMAP § 0.36](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#036--joint-compatibility-burn-in).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 

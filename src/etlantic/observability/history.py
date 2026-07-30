@@ -60,7 +60,7 @@ class RunHistoryProviderDescriptor:
 
     name: str
     engine: str
-    version: str = "0.34.0"
+    version: str = "0.35.0"
     protocol: str = RUN_HISTORY_PROTOCOL
     capabilities: RunHistoryCapabilities = field(default_factory=RunHistoryCapabilities)
 

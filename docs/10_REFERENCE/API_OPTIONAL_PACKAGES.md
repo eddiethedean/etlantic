@@ -1,6 +1,6 @@
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.34.0.** Shallow module-level stubs for
+> **Status: Available in ETLantic 0.35.0.** Shallow module-level stubs for
 > first-party optional packages. Hub: [Optional Packages](OPTIONAL_PACKAGES.md).
 > Core authoring/runtime symbols remain in
 > [Python API Reference](API_REFERENCE.md).

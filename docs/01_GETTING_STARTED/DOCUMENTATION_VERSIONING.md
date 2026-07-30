@@ -11,7 +11,7 @@ ETLantic docs are published on Read the Docs.
 | **latest** | Tracks the default branch (`main`). May describe unreleased changes. |
 | **stable** | Tracks the latest tagged release on PyPI. Prefer this for pilots. |
 
-Pin installs to an exact version (`pip install 'etlantic==0.34.0'`) and open the
+Pin installs to an exact version (`pip install 'etlantic==0.35.0'`) and open the
 matching docs version when available. Do not mix a pinned wheel with `latest`
 docs that describe a newer branch tip.
 

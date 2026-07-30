@@ -7,7 +7,7 @@
 > Review this header for every release or parity-sequence change.
 
 **Current release:** Medallantic **0.34.0**. M0 through M6 are shipped;
-**M7 / ETLantic 0.35** is the next planned phase. Planned phases describe
+**M7 / ETLantic 0.35** is shipped (exit gate closed in-tree). Planned phases describe
 capability order, not release-date commitments.
 
 Medallantic is the engine-agnostic medallion pipeline facade built on
@@ -96,7 +96,7 @@ The baseline began in **0.28** with the renamed IR adapter. **0.29–0.34**
 shipped M1–M6: native authoring, quality rules, lifecycle/materialization,
 PySpark/Delta differential parity, SQLAlchemy relational differential parity,
 and operations evidence with production-readiness conformance. Migration
-completion remains planned for **0.35 / M7**.
+completion shipped in **0.35 / M7**.
 
 ## Joint 0.x foundation sequence
 
@@ -366,16 +366,20 @@ and has no undocumented fallback or mutation behavior.
 
 ### M7 / ETLantic 0.35 — Migration completion
 
-- [ ] Ship an automated scanner that inventories a SparkForge project and
+**Shipped in 0.35.0** (exit gate closed in-tree)
+
+- [x] Ship an automated scanner that inventories a SparkForge project and
   emits a migration report.
-- [ ] Generate native Medallantic definitions where conversion is safe.
-- [ ] Produce stable diagnostics for manual conversion points.
-- [ ] Maintain golden before/after plans and run reports.
-- [ ] Publish versioned deprecation timelines for legacy imports.
-- [ ] Remove transitional adapters only in a major release.
+- [x] Generate native Medallantic definitions where conversion is safe.
+- [x] Produce stable diagnostics for manual conversion points.
+- [x] Maintain golden before/after plans and run reports.
+- [x] Publish versioned deprecation timelines for legacy imports.
+- [x] Remove transitional adapters only in a major release (scheduled, not done).
 
 Exit criteria: both legacy builders have documented, tested migration paths
 and all claimed parity rows are backed by conformance evidence.
+
+Tracking: [EXIT_GATE_0_35.md](../../docs/11_DEVELOPMENT/EXIT_GATE_0_35.md).
 
 ## Test strategy
 

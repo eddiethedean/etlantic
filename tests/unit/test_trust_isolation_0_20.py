@@ -191,7 +191,7 @@ def test_builtin_exemption_rejects_third_party_engine_spoof() -> None:
         engine="local",
     )
     profile = production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
     )
     authorized, diags, _events = ProductionPolicy().authorize([fake], profile)
     assert authorized == []
@@ -541,7 +541,7 @@ def test_manual_register_denied_under_active_production_profile() -> None:
         info = _Info()
 
     runtime = PipelineRuntime()
-    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.35.0"})
     runtime.ensure_plugins_for_profile(profile)
     plugin = _Plugin()
     stamp_plugin_package_identity(

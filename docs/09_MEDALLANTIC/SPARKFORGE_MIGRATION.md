@@ -62,3 +62,28 @@ authorize plugins, resolve credentials, or prove backend parity by itself.
 
 Medallantic never removes an edge, changes a write mode, or substitutes an
 engine to make migration appear successful.
+
+## Inventory and safe generation (0.35 / M7)
+
+```bash
+python -m medallantic migrate inventory PATH
+python -m medallantic migrate generate path/to/pipeline.json
+```
+
+```python
+from medallantic.migrate import scan_project, generate_from_path
+
+report = scan_project("legacy-project/")
+result = generate_from_path("pipeline.json")
+```
+
+Analysis is static and secret-free. Generated definitions stamp
+`etlantic.definition_provenance` with generator id, source fingerprint, and
+facade protocol version `1`. Manual conversion points emit `MDL210`;
+unsupported paths emit `MDL220`.
+
+## Deprecation timeline
+
+Transitional SparkForge adapters (`medallantic.migrate.sparkforge` / `.sql`,
+`etlantic-sparkforge`, live builder bridges) remain supported in 0.35 and are
+**not** removed before a documented major release.

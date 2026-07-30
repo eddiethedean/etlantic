@@ -33,6 +33,10 @@ from medallantic.diagnostics import (
     MDL110_RULES_UNENFORCED,
     MDL111_TRANSFORM_PASSTHROUGH,
     MDL120_ACCEPT_RATE,
+    MDL200_INVENTORY,
+    MDL210_MANUAL,
+    MDL220_UNSUPPORTED,
+    MDL230_GENERATED,
 )
 from medallantic.explain import explain_medallion_plan
 from medallantic.ir import (
@@ -72,7 +76,7 @@ from medallantic.runtime_map import (
 )
 from medallantic.schema import MedallionDocument, MedallionStep
 
-__version__ = "0.34.0"
+__version__ = "0.35.0"
 
 __all__ = [
     "COMPATIBILITY_MATRIX",
@@ -88,6 +92,10 @@ __all__ = [
     "MDL110_RULES_UNENFORCED",
     "MDL111_TRANSFORM_PASSTHROUGH",
     "MDL120_ACCEPT_RATE",
+    "MDL200_INVENTORY",
+    "MDL210_MANUAL",
+    "MDL220_UNSUPPORTED",
+    "MDL230_GENERATED",
     "AdaptationResult",
     "AdaptedRow",
     "AdapterError",

@@ -1,0 +1,23 @@
+{
+  "assets": [
+    "bronze_orders",
+    "gold_order_kpis",
+    "orders__rejected",
+    "silver_orders"
+  ],
+  "convertibility": "manual",
+  "definition_fingerprint": "685cd5f8e8685a7474338e322024133108ba30bb68a27d63bef6cb362601cca1",
+  "generator_id": "medallantic.migrate.generate",
+  "node_names": [
+    "orders__ingest",
+    "orders",
+    "orders__rejected",
+    "clean_orders",
+    "clean_orders_out",
+    "order_kpis",
+    "order_kpis_out"
+  ],
+  "pipeline_id": "etlantic.pipeline:ecommercePipeline",
+  "source": "ecommerce_equivalent.json",
+  "source_fingerprint": "c57b27598f450584fefb8b7778ffcb103aa1d1dc3dafc9f5b8f9ac0f38aad319"
+}

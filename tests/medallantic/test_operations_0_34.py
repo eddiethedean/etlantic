@@ -84,7 +84,7 @@ def test_medallion_profile_templates() -> None:
     test = medallion_test_profile()
     assert test.security_mode == "test"
     prod = medallion_production_profile(
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         assets={"source": "json"},
     )
     assert_production_conformance(prod)

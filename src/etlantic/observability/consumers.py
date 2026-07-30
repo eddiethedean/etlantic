@@ -39,7 +39,7 @@ class EventConsumerDescriptor:
 
     name: str
     engine: str
-    version: str = "0.34.0"
+    version: str = "0.35.0"
     protocol: str = EVENT_CONSUMER_PROTOCOL
     capabilities: EventConsumerCapabilities = field(
         default_factory=EventConsumerCapabilities

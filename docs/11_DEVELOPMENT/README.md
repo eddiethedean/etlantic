@@ -23,6 +23,8 @@ released.
 
 - [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)
 - [Exit gate 0.34](EXIT_GATE_0_34.md) (Done — operations / evidence / M6)
+- [Migration 0.34 → 0.35](MIGRATION_0_34_TO_0_35.md)
+- [Exit gate 0.35](EXIT_GATE_0_35.md) (Done — migration completion / joint freeze / M7)
 - [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
 - [Exit gate 0.33](EXIT_GATE_0_33.md) (Done — SQLAlchemy / relational differential / M5)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)

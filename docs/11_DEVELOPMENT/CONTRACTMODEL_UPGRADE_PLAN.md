@@ -2,7 +2,7 @@
 
 > **Plan status: historical review baseline with active follow-up work.**
 >
-> **Current 0.34 boundary:** ETLantic requires ContractModel `>=0.2,<0.3`.
+> **Current 0.35 boundary:** ETLantic requires ContractModel `>=0.2,<0.3`.
 > This document's detailed review targeted ContractModel 0.1.2, so it does not
 > define the current upstream API. Proposed interfaces remain illustrative
 > unless the current ContractModel or ETLantic reference documents them.

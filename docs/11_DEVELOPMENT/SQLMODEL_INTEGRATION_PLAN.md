@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped; reference persistence remains planned.**
 >
-> **Current 0.34 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.35 boundary:** The optional `etlantic-sqlmodel` package provides
 > the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
 > repository helpers, and durable multi-tenant control-plane providers remain
 > future work.

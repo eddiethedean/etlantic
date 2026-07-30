@@ -13,7 +13,7 @@ body:
     id: version
     attributes:
       label: ETLantic version
-      placeholder: "0.34.0"
+      placeholder: "0.35.0"
     validations:
       required: true
   - type: input
@@ -34,7 +34,7 @@ body:
     id: plugins
     attributes:
       label: Installed optional plugins (with versions)
-      placeholder: "etlantic-polars==0.34.0, none, …"
+      placeholder: "etlantic-polars==0.35.0, none, …"
     validations:
       required: true
   - type: input

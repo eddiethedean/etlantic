@@ -2,7 +2,7 @@
 
 !!! warning "Future design — do not implement"
     This page previously showed a rich proposed `etlantic.toml` and 0.38
-    configuration model. **Do not copy those examples for 0.34 pilots.**
+    configuration model. **Do not copy those examples for 0.35 pilots.**
 
     Use these shipped pages instead:
 

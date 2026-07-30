@@ -3,7 +3,7 @@
 SQL plugins execute eligible transformations inside a database while preserving
 logical semantics from [DTCS](../04_TRANSFORMATIONS/DTCS.md) and the Pipeline Plan.
 
-**Status: available in 0.34.0.** `etlantic-sql` treats SQLite and PostgreSQL
+**Status: available in 0.35.0.** `etlantic-sql` treats SQLite and PostgreSQL
 as live Tier A dialects. PostgreSQL alone advertises `sql_merge`.
 
 Safe portable SQL lowering for kernel + `portable-relational/1` **shipped in
@@ -14,7 +14,7 @@ ETLantic does **not** depend on database drivers. Install the plugin
 separately:
 
 ```bash
-pip install 'etlantic[sql]==0.34.0'
+pip install 'etlantic[sql]==0.35.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 ```
 

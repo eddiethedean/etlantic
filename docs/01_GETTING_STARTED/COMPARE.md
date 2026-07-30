@@ -1,6 +1,6 @@
 # Is ETLantic for me?
 
-> **Status: Available in ETLantic 0.34.0.**
+> **Status: Available in ETLantic 0.35.0.**
 
 ETLantic is a typed **modeling, validation, and planning** layer for Python
 data pipelines. It is not a dataframe engine, warehouse transformer, or
@@ -40,7 +40,7 @@ durable orchestrator.
 - Managed Spark clusters
 - Broader compliance programs and multi-tenant attestation (adopters own these;
   ETLantic ships release SHA-256 digests / attestations for its own packages
-  since 0.20; CycloneDX SBOM is optional and failed for v0.34.0)
+  since 0.20; CycloneDX SBOM is optional and failed for v0.35.0)
 
 ## When NOT to use ETLantic
 

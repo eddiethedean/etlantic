@@ -45,7 +45,7 @@ class ObservabilityProviderDescriptor:
 
     name: str
     engine: str
-    version: str = "0.34.0"
+    version: str = "0.35.0"
     protocol: str = OBSERVABILITY_PROTOCOL
     capabilities: ObservabilityCapabilities = field(
         default_factory=ObservabilityCapabilities

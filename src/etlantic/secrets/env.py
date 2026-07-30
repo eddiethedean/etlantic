@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.secrets.provider import (
@@ -62,5 +63,6 @@ class EnvSecretProvider:
             version=reference.version,
         )
 
+    @asynccontextmanager
     async def lifespan(self, context: ProviderContext) -> AsyncIterator[None]:
         yield

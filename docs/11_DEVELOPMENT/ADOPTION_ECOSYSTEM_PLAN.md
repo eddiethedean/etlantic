@@ -1,7 +1,7 @@
 # Adoption, Connectivity, and Operations Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.34.0.** This plan assigns the adoption capabilities that were previously
+> 0.35.0.** This plan assigns the adoption capabilities that were previously
 > scattered across Future design pages to explicit 0.x phases and graduation
 > gates.
 >

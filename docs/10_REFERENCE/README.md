@@ -1,6 +1,6 @@
 # Reference
 
-This section separates ETLantic **0.34** shipped behavior from proposed 0.x
+This section separates ETLantic **0.35** shipped behavior from proposed 0.x
 interfaces.
 
 ## Shipped
@@ -31,7 +31,7 @@ interfaces.
 
 ## Future design / planned 0.x
 
-- [Configuration](CONFIGURATION.md) (**proposed** 0.38 — do not implement for 0.34)
+- [Configuration](CONFIGURATION.md) (**proposed** 0.38 — do not implement for 0.35)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (**proposed** names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,
   `portable-temporal-iana/1`, `portable-nondeterministic/1`,

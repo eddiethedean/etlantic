@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-07-30
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.34.x` or plugins with `<0.35` |
+| Breaking | Dependency floor becomes `etlantic>=0.35.0,<0.36` (no wire-schema reset) |
+| Upgrade | `pip install 'etlantic==0.35.0'` and matching plugins / `medallantic==0.35.0` |
+| Rollback | Re-pin 0.34.0 minors together; re-validate |
+| Security | Migration analysis remains secret-free; digests/attestations as shipped |
+
+### Added
+- Public authoring helpers: `inspect_definition`, `rewrite_definition`,
+  `definition_provenance`
+- Application-pipeline testing preview in `etlantic.testing`
+- Medallantic M7 SparkForge project inventory and safe native generation
+
+### Changed
+- Package versions and plugin pins advance to the 0.35.x line
+
 ## [0.34.0] - 2026-07-30
 
 ### Adopter summary
@@ -1299,6 +1320,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.35.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0
 [0.34.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.34.0
 [0.33.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.33.0
 [0.32.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.32.0

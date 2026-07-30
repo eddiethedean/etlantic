@@ -1,17 +1,17 @@
 # Documentation Status and Conventions
 
-Prefer pages marked **Available in 0.34** and the Green path on the docs
+Prefer pages marked **Available in 0.35** and the Green path on the docs
 home. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer adoption audit:
-[Exit gate 0.34](../11_DEVELOPMENT/EXIT_GATE_0_34.md) and
-[Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md). Prior audit:
+[Exit gate 0.35](../11_DEVELOPMENT/EXIT_GATE_0_35.md) and
+[Migration 0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md). Prior audit:
 [Documentation audit 0.33](../11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_33.md).
 
 ## How to read a page
 
 1. Read the page status label first (table below).
-2. Treat **Available in 0.34** / **Shipped in 0.x** as current package
+2. Treat **Available in 0.35** / **Shipped in 0.x** as current package
    behavior; treat **Future design** and Design Proposals as intended 0.x
    surfaces, not APIs to install against.
 3. Treat **Experimental** as public but changeable without a major bump.
@@ -22,7 +22,7 @@ this legend. Maintainer adoption audit:
    compiled artifact → run result.
 6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
    GUI catalogs/edit commands, and the FastAPI reference adapter as
-   **Available in 0.34** (see
+   **Available in 0.35** (see
    [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
    Historical design notes remain under Project → Archive.
 
@@ -30,7 +30,7 @@ this legend. Maintainer adoption audit:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.34 | Tested against the current package |
+| Available in 0.35 | Tested against the current package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

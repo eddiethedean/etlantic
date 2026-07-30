@@ -98,7 +98,7 @@ def test_report_nested_metadata_rejects_secrets() -> None:
 
 def test_register_storage_gated_under_production() -> None:
     runtime = PipelineRuntime()
-    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.34.0"})
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.35.0"})
     runtime.ensure_plugins_for_profile(profile)
     with pytest.raises(PipelineExecutionError) as exc:
         runtime.register_storage("evil-store", MemoryStorage())
@@ -238,7 +238,7 @@ def test_durable_audit_consumer_fail_closed() -> None:
     profile = Profile(
         name="prod",
         security_mode="production",
-        plugin_allowlist={"etlantic-polars": "==0.34.0"},
+        plugin_allowlist={"etlantic-polars": "==0.35.0"},
         observability_delivery="durable_audit",
     )
     bridge = ObservabilityBridge(events=EventBus())

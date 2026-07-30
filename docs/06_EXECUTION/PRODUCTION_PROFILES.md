@@ -1,6 +1,6 @@
 # Production Profiles
 
-ETLantic 0.34.0 treats production configuration as an explicit trust boundary
+ETLantic 0.35.0 treats production configuration as an explicit trust boundary
 via `Profile.security_mode == "production"`. The built-in `production` profile
 is a template, not a deployable setup.
 
@@ -36,7 +36,7 @@ profile = Profile(
     security_domain="production",
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.34.0",
+        "etlantic-polars": "==0.35.0",
     },
     assets={
         "customer_source": "json",

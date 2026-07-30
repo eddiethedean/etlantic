@@ -8,11 +8,11 @@
 
 Validate, plan, and run typed pipelines locally; add Polars, Pandas, SQL, or
 PySpark extras; compile Airflow DAGs; author via classes, functional builders,
-or lossless `etlantic.pipeline/1` JSON. ETLantic **0.34.0** is a **Beta**
+or lossless `etlantic.pipeline/1` JSON. ETLantic **0.35.0** is a **Beta**
 (PyPI) release for documented single-tenant pilots.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.34.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.35.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -28,7 +28,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits (read before production)
 
-| Topic | 0.34 |
+| Topic | 0.35 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
@@ -53,7 +53,17 @@ topology, compliance, and advanced control planes remain adopter-owned in
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.34
+## Available in 0.35
+
+### Migration and testing preview
+
+| Capability | Status |
+|---|---|
+| `inspect_definition` / `rewrite_definition` / `definition_provenance` | Available |
+| Application-pipeline testing (`PipelineTestCase`, snapshots, fakes) | Available (preview) |
+| Medallantic SparkForge project inventory + safe native generation | Available (`medallantic`) |
+
+## Previously shipped (through 0.34)
 
 ### Core authoring and validation
 
@@ -139,7 +149,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
 | Capability | Status |
 |---|---|
-| Application-pipeline testing helpers | Preview planned for 0.35; burn-in and graduation through 0.38 |
+| Application-pipeline testing helpers | **Available (preview)** in 0.35 (`etlantic.testing`); graduation planned for 0.38 |
 | Source/sink/storage connector SDK and reference set | Planned first-class for 0.39 |
 | OpenLineage metadata interoperability | Planned as a tenant-aware 0.41 gate |
 | GitOps preview-to-production workflow | Planned across 0.42–0.44 |
@@ -171,7 +181,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.34.0` first).
+(the sample uses Polars — install `etlantic-polars==0.35.0` first).
 
 ```json
 {
@@ -184,7 +194,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.34.0"
+    "etlantic-polars": "==0.35.0"
   },
   "assets": {},
   "secrets": {},
@@ -200,16 +210,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.34.0'
-pip install 'etlantic-polars==0.34.0'          # optional
-pip install 'etlantic-pandas==0.34.0'          # optional
-pip install 'etlantic-sql==0.34.0'             # optional
-pip install 'etlantic-pyspark==0.34.0'         # optional
-pip install 'etlantic-airflow==0.34.0'         # optional
-pip install 'etlantic-prefect==0.34.0'         # optional
-pip install 'etlantic-keyring==0.34.0'         # optional
-pip install 'etlantic-sqlmodel==0.34.0'        # optional
-pip install 'medallantic==0.34.0'              # optional
+pip install 'etlantic==0.35.0'
+pip install 'etlantic-polars==0.35.0'          # optional
+pip install 'etlantic-pandas==0.35.0'          # optional
+pip install 'etlantic-sql==0.35.0'             # optional
+pip install 'etlantic-pyspark==0.35.0'         # optional
+pip install 'etlantic-airflow==0.35.0'         # optional
+pip install 'etlantic-prefect==0.35.0'         # optional
+pip install 'etlantic-keyring==0.35.0'         # optional
+pip install 'etlantic-sqlmodel==0.35.0'        # optional
+pip install 'medallantic==0.35.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

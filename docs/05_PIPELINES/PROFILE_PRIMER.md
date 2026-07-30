@@ -26,13 +26,13 @@ python -m etlantic plan my_pipeline.py:MyPipeline --profile profiles/prod.json
 
 Load and save profiles through the SDK. Prefer shipped file/memory bindings
 (see [Storage today](../06_EXECUTION/STORAGE_TODAY.md)); S3 and warehouse
-storage plugins are **not** shipped in 0.34:
+storage plugins are **not** shipped in 0.35:
 
 ```python
 from etlantic.profile import load_profile, write_profile, production_profile
 
 profile = production_profile(
-    plugin_allowlist={"etlantic-polars": "==0.34.0", "local": None},
+    plugin_allowlist={"etlantic-polars": "==0.35.0", "local": None},
     assets={"raw": "json", "curated": "json"},
 )
 write_profile(profile, "profiles/prod.json")
@@ -61,8 +61,8 @@ In production, an empty allowlist rejects every discovered plugin. Example:
 
 ```json
 "plugin_allowlist": {
-  "etlantic-polars": "==0.34.0",
-  "etlantic-sql": "==0.34.0"
+  "etlantic-polars": "==0.35.0",
+  "etlantic-sql": "==0.35.0"
 }
 ```
 
@@ -84,7 +84,7 @@ Legacy **`bindings`** keys fail closed with `PMCFG111` unless
 - `orchestrator`: `local`, `airflow`, `prefect`, etc.
 
 Keep plugin package versions on the **same minor** as core (for example
-`etlantic-polars==0.34.0` with `etlantic==0.34.0`).
+`etlantic-polars==0.35.0` with `etlantic==0.35.0`).
 
 ### Optional 0.20 trust controls
 

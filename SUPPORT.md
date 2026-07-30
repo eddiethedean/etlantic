@@ -1,12 +1,12 @@
 # Support
 
-ETLantic **0.34.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic **0.35.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Community support has
 **no formal SLA** or guaranteed response time.
 
 ## What we support
 
-- Bug reports against the **current published minor** (`0.34.x`)
+- Bug reports against the **current published minor** (`0.35.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 
@@ -16,7 +16,7 @@ deployments (not unrestricted enterprise production). Community support has
 - Multi-tenant isolation and deployment topology
 - Compliance attestations (SOC2, GDPR certification, etc.)
 - advanced supply-chain controls beyond shipped SHA-256 digests, attestations, OIDC publish, and documented package
-  pins (CycloneDX SBOM optional; failed for v0.34.0)
+  pins (CycloneDX SBOM optional; failed for v0.35.0)
   pins and plugin allowlists
 - Guarantees for Experimental APIs (for example Structured Streaming)
 - Guarantees for Future design / Design Proposal pages

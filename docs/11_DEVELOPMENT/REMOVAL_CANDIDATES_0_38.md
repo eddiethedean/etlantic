@@ -1,6 +1,6 @@
 # 0.38 Stable-Foundation Removal Candidates
 
-> **Status: Available in ETLantic 0.34.0.** First-wave removals executed in
+> **Status: Available in ETLantic 0.35.0.** First-wave removals executed in
 > 0.26.0; second-wave removals executed in 0.27.0; third-wave removals executed
 > in 0.28.0; remaining inventory is due by the 0.38 stable foundation. See
 > [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md) and

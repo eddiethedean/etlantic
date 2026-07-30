@@ -1,0 +1,17 @@
+{
+  "assets": [
+    "bronze_orders",
+    "orders__rejected"
+  ],
+  "convertibility": "auto",
+  "definition_fingerprint": "4bd535b7f0c1184ae2fd9473f8aa703f2f7cd537735226346aa5b2cc16aea421",
+  "generator_id": "medallantic.migrate.generate",
+  "node_names": [
+    "orders__ingest",
+    "orders",
+    "orders__rejected"
+  ],
+  "pipeline_id": "etlantic.pipeline:bronze_only_autoPipeline",
+  "source": "bronze_only_auto.json",
+  "source_fingerprint": "18fb85964af09d6bc9cb0aa8074b677888471c8c00500d2216fb917073ca83ae"
+}
