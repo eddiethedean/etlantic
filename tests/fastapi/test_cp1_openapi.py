@@ -26,6 +26,8 @@ from etlantic_fastapi import (
     principal_from_header,
 )
 
+pytestmark = pytest.mark.fastapi
+
 REQUIRED_OPERATION_IDS = {
     "cp_health",
     "cp_ready",
@@ -81,14 +83,16 @@ def test_openapi_31_and_stable_operation_ids() -> None:
             op_ids.add(op_id)
     assert op_ids >= REQUIRED_OPERATION_IDS
 
-    # Snapshot: write on first run if absent; otherwise compare operationIds.
+    # Snapshot: fail if missing (do not auto-write silently).
     dump = {
         "openapi": schema["openapi"],
         "paths": sorted(schema["paths"]),
         "operationIds": sorted(op_ids),
     }
-    if not SNAPSHOT.exists():
-        SNAPSHOT.write_text(json.dumps(dump, indent=2) + "\n", encoding="utf-8")
+    assert SNAPSHOT.exists(), (
+        f"OpenAPI snapshot missing at {SNAPSHOT}; regenerate intentionally "
+        "and commit the updated snapshot."
+    )
     expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     assert dump["operationIds"] == expected["operationIds"]
     assert dump["paths"] == expected["paths"]

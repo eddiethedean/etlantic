@@ -1,4 +1,4 @@
-"""Full CP1 authz matrix: every operationId x two tenants (non-enumeration)."""
+"""Full CP1 authz matrix: every operationId x two tenants + two workspaces."""
 
 from __future__ import annotations
 
@@ -29,7 +29,9 @@ from etlantic_fastapi import (
     principal_from_header,
 )
 
-# Resource-addressed ops: cross-tenant id → opaque 404.
+pytestmark = pytest.mark.fastapi
+
+# Resource-addressed ops: cross-tenant/workspace id → opaque 404.
 CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ("cp_get_definition", "GET", "/v1/definitions/{definition_id}", None),
     (
@@ -91,7 +93,7 @@ def _ctx(tenant: str, workspace: str, subject: str) -> ControlPlaneContext:
     )
 
 
-def _build() -> tuple[TestClient, str]:
+def _build() -> tuple[TestClient, str, ETLanticAPI]:
     authz = MemoryAuthorizer()
     defs = MemoryDefinitionRepository()
     api = ETLanticAPI(
@@ -102,17 +104,22 @@ def _build() -> tuple[TestClient, str]:
         context_factory=membership_context_factory(
             {
                 "alice": ("tenant-a", "ws-1", "development", "default"),
+                "alice-ws2": ("tenant-a", "ws-2", "development", "default"),
                 "bob": ("tenant-b", "ws-1", "development", "default"),
             }
         ),
         principal_dependency=principal_from_header,
+        known_observation_ids={"obs-1"},
     )
     a = _ctx("tenant-a", "ws-1", "alice")
+    a2 = _ctx("tenant-a", "ws-2", "alice-ws2")
     b = _ctx("tenant-b", "ws-1", "bob")
     defs.put(a, "pipe-a", {"owner": "a"})
+    defs.put(a2, "pipe-a2", {"owner": "a2"})
     defs.put(b, "pipe-b", {"owner": "b"})
     for action in ACTIONS:
         authz.grant(a, action)
+        authz.grant(a2, action)
         authz.grant(b, action)
     client = TestClient(create_app(api))
     submit = client.post(
@@ -122,7 +129,7 @@ def _build() -> tuple[TestClient, str]:
     )
     assert submit.status_code == 202
     run_id = submit.json()["resource_id"] or submit.json()["submission_id"]
-    return client, run_id
+    return client, run_id, api
 
 
 def _path(template: str, *, definition_id: str, run_id: str) -> str:
@@ -134,9 +141,18 @@ def _path(template: str, *, definition_id: str, run_id: str) -> str:
 
 
 def test_public_health_ready_unauthenticated() -> None:
-    client, _ = _build()
+    client, _, _ = _build()
     assert client.get("/health").status_code == 200
     assert client.get("/ready").status_code == 200
+
+
+def test_ready_503_when_stores_missing() -> None:
+    client, _, api = _build()
+    api.events = None  # type: ignore[assignment]
+    ready = client.get("/ready")
+    assert ready.status_code == 503
+    assert ready.json()["status"] == "not_ready"
+    assert client.get("/health").status_code == 200
 
 
 @pytest.mark.parametrize(
@@ -151,11 +167,32 @@ def test_cross_tenant_resource_is_404(
     body: dict | None,
 ) -> None:
     del operation_id
-    client, run_id = _build()
+    client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "bob"}
     if template.endswith("/runs") and method == "POST":
         headers["Idempotency-Key"] = "bob-cross"
+    resp = client.request(method, path, headers=headers, json=body)
+    assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
+
+
+@pytest.mark.parametrize(
+    "operation_id,method,template,body",
+    CROSS_TENANT_404_CASES,
+    ids=[f"ws-{c[0]}" for c in CROSS_TENANT_404_CASES],
+)
+def test_cross_workspace_same_tenant_is_404(
+    operation_id: str,
+    method: str,
+    template: str,
+    body: dict | None,
+) -> None:
+    del operation_id
+    client, run_id, _ = _build()
+    path = _path(template, definition_id="pipe-a", run_id=run_id)
+    headers = {"X-Principal": "alice-ws2"}
+    if template.endswith("/runs") and method == "POST":
+        headers["Idempotency-Key"] = "alice-ws2-cross"
     resp = client.request(method, path, headers=headers, json=body)
     assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
 
@@ -171,7 +208,7 @@ def test_in_tenant_allow(
     template: str,
     body: dict | None,
 ) -> None:
-    client, run_id = _build()
+    client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "alice"}
     if operation_id == "cp_submit_run":
@@ -186,21 +223,25 @@ def test_in_tenant_allow(
     )
 
 
-def test_list_definitions_never_leaks_cross_tenant_ids() -> None:
-    client, _ = _build()
+def test_list_definitions_never_leaks_cross_tenant_or_workspace_ids() -> None:
+    client, _, _ = _build()
     alice = client.get("/v1/definitions", headers={"X-Principal": "alice"})
+    alice_ws2 = client.get("/v1/definitions", headers={"X-Principal": "alice-ws2"})
     bob = client.get("/v1/definitions", headers={"X-Principal": "bob"})
     assert alice.status_code == 200 and bob.status_code == 200
     alice_ids = {i["definition_id"] for i in alice.json()["items"]}
+    alice_ws2_ids = {i["definition_id"] for i in alice_ws2.json()["items"]}
     bob_ids = {i["definition_id"] for i in bob.json()["items"]}
     assert alice_ids == {"pipe-a"}
+    assert alice_ws2_ids == {"pipe-a2"}
     assert bob_ids == {"pipe-b"}
     assert "pipe-a" not in bob_ids
+    assert "pipe-a" not in alice_ws2_ids
     assert "pipe-b" not in alice_ids
 
 
 def test_unauthenticated_protected_is_401() -> None:
-    client, run_id = _build()
+    client, run_id, _ = _build()
     path = _path(
         "/v1/definitions/{definition_id}", definition_id="pipe-a", run_id=run_id
     )

@@ -35,6 +35,11 @@ outcome.
 | `etlantic.authoring-catalog/1` | N/A (not burn-in versioned) | Stable schema id; catalog envelopes are tooling metadata, not burn-in upgrade artifacts — see [Surface inventory](SURFACE_INVENTORY.md) |
 | `etlantic.quality/1` | 0.31+ (**provisional**) | Portable quality expressions; remains outside the full stable-foundation claim in 0.37; ContractModel remains semantic authority |
 | `etlantic.scheduler/1` | 0.36+ (**stable MVP**) | Promoted onto the foundation path with Prefect-bounded evidence |
+| `etlantic.control_plane.context/1` | 0.39+ (**provisional**) | CP1 identity context; ADR-016 |
+| `etlantic.control_plane.accept_receipt/1` | 0.39+ (**provisional**) | Durable accept receipt; `accepted` ≠ executed |
+| `etlantic.control_plane.event/1` | 0.39+ (**provisional**) | SSE / event envelope |
+| `etlantic.control_plane.sse_cursor/1` | 0.39+ (**provisional**) | Opaque resume cursor (410 on unknown) |
+| `etlantic.control_plane.error/1` | 0.39+ (**provisional**) | Control-plane error envelope |
 
 Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`,
 `etlantic.reports.upgrade`, and `etlantic.quality.upgrade`. Empty `_UPGRADERS`

@@ -7,7 +7,11 @@ request-scoped helpers and must not be passed into pipeline runtimes.
 
 from __future__ import annotations
 
-from etlantic_sqlmodel.control_plane.models import DefinitionRow, SubmissionRow
+from etlantic_sqlmodel.control_plane.models import (
+    DefinitionRow,
+    EventRow,
+    SubmissionRow,
+)
 from etlantic_sqlmodel.control_plane.session import (
     create_sqlite_engine,
     make_session_factory,
@@ -16,14 +20,17 @@ from etlantic_sqlmodel.control_plane.session import (
 )
 from etlantic_sqlmodel.control_plane.stores import (
     SQLModelDefinitionRepository,
+    SqlModelEventStore,
     SQLModelSubmissionStore,
     create_control_plane_tables,
 )
 
 __all__ = [
     "DefinitionRow",
+    "EventRow",
     "SQLModelDefinitionRepository",
     "SQLModelSubmissionStore",
+    "SqlModelEventStore",
     "SubmissionRow",
     "create_control_plane_tables",
     "create_sqlite_engine",

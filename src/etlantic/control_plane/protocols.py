@@ -13,6 +13,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from etlantic.control_plane.models import (
     AcceptReceipt,
+    AcceptResult,
     ControlPlaneContext,
     ControlPlaneEvent,
 )
@@ -73,7 +74,12 @@ class DefinitionRepository(Protocol):
 
 @runtime_checkable
 class SubmissionStore(Protocol):
-    """Durable acceptance and scoped idempotency lookup."""
+    """Durable acceptance and scoped idempotency lookup.
+
+    Effective store keys follow ADR-016::
+
+        (tenant_id, workspace_id, principal_subject, operation, idempotency_key)
+    """
 
     def accept(
         self,
@@ -83,16 +89,19 @@ class SubmissionStore(Protocol):
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
-    ) -> AcceptReceipt:
-        """Durably accept work; same key returns the original receipt."""
+        operation: str = "run.submit",
+    ) -> AcceptResult:
+        """Durably accept work; same ADR tuple returns the original receipt."""
         ...
 
     def lookup_idempotency(
         self,
         ctx: ControlPlaneContext,
         idempotency_key: str,
+        *,
+        operation: str = "run.submit",
     ) -> AcceptReceipt | None:
-        """Return a prior acceptance for ``idempotency_key`` in ``ctx`` scope."""
+        """Return a prior acceptance for the ADR-016 idempotency tuple."""
         ...
 
 

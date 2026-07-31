@@ -4,11 +4,14 @@
 
 ETLantic **0.39.x** is a **Beta** (PyPI) release suitable for documented
 single-tenant reference deployments. 0.x releases may still introduce breaking
-API changes between minor versions until the 0.38 stable-foundation freeze.
+API changes between minor versions. **CP1** (`etlantic.control_plane` /
+`etlantic-fastapi` `ETLanticAPI`) is identity/API incubation — **not**
+production multi-tenant GA (graduation remains **0.43**).
 
 | ID | Component | Affected | Symptom | Workaround | Status |
 |---|---|---|---|---|---|
 | DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.39.0` and matching plugins; follow Upgrade hub | Open (Beta) |
+| DOC-026 | Control plane (CP1) | Multi-tenant hosts | Treating CP1 as GA isolation / durable execution | Use CP1 for embeddable identity + durable accept only; graduation evidence is 0.43 | By design |
 | DOC-002 | Portable transforms | Polars / PySpark vs Pandas / SQL | Advanced portable families graduate unevenly across engines | Use [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md); keep Pandas/SQL on kernel + relational `/1` | Partial |
 | DOC-003 | Portable window | Window frames | Explicit `rowsBetween` / `rangeBetween` fail closed; `first_value` / `last_value` use ordered partition semantics | Avoid frame clauses until claimed; watch `portable-window/2` | Open |
 | DOC-004 | Portable semantics | Three-state / maps | Distinct `missing`/`invalid` fail closed without `semantic_mode:three_state_distinct`; Polars does not claim `dtcs:map` | Prefer `dtcs:object` on Polars; use PySpark for `dtcs:map` | Open |

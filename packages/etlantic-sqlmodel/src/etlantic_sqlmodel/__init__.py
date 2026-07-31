@@ -18,13 +18,11 @@ from etlantic.schema_drift import (
     normalize_schema_from_fields,
     normalize_schema_from_model,
 )
-from sqlmodel import Field, SQLModel
-
-__version__ = "0.39.0"
-
 from etlantic_sqlmodel.control_plane import (
     DefinitionRow,
+    EventRow,
     SQLModelDefinitionRepository,
+    SqlModelEventStore,
     SQLModelSubmissionStore,
     SubmissionRow,
     create_control_plane_tables,
@@ -33,11 +31,16 @@ from etlantic_sqlmodel.control_plane import (
     request_scoped_session,
     session_scope,
 )
+from sqlmodel import Field, SQLModel
+
+__version__ = "0.39.0"
 
 __all__ = [
     "DefinitionRow",
+    "EventRow",
     "SQLModelDefinitionRepository",
     "SQLModelSubmissionStore",
+    "SqlModelEventStore",
     "SqlModelIntegrationPlugin",
     "SubmissionRow",
     "__version__",

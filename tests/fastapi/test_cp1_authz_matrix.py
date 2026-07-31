@@ -29,6 +29,8 @@ from etlantic_fastapi import (
     principal_from_header,
 )
 
+pytestmark = pytest.mark.fastapi
+
 ACTIONS = (
     "definition.list",
     "definition.read",
@@ -142,6 +144,17 @@ def test_in_scope_forbidden_is_403() -> None:
         )
     )
     resp = client.get("/v1/definitions/only-a", headers={"X-Principal": "alice"})
+    assert resp.status_code == 403
+
+
+def test_in_scope_run_forbid_is_403() -> None:
+    client, authz, _ = _app()
+    headers = {"X-Principal": "alice", "Idempotency-Key": "forbid-run"}
+    submit = client.post("/v1/definitions/only-a/runs", headers=headers, json={})
+    assert submit.status_code == 202
+    run_id = submit.json()["resource_id"]
+    authz.forbidden_resources.add(("tenant-a", "ws-1", "run.read", f"run:{run_id}"))
+    resp = client.get(f"/v1/runs/{run_id}", headers={"X-Principal": "alice"})
     assert resp.status_code == 403
 
 

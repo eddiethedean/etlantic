@@ -3,7 +3,7 @@ name: External plugin echo
 # Out-of-monorepo Plugin SDK proof (etlantic-plugin-echo).
 # Clones the public reference plugin and runs its public conformance suite
 # against the workspace core.
-# Expected published echo core pin for the 0.38 line: etlantic>=0.38,<0.39
+# Expected published echo core pin for the 0.39 line: etlantic>=0.39,<0.40
 # (workflow installs --no-deps so workspace core remains the authority).
 
 on:
@@ -63,7 +63,7 @@ jobs:
       - name: Install echo against workspace core
         run: |
           # Core may be mid-minor during RC; install echo without resolving its
-          # published pin (target floor etlantic>=0.38,<0.39) so the workspace
+          # published pin (target floor etlantic>=0.39,<0.40) so the workspace
           # package is the authority.
           uv pip install --python .venv/bin/python --no-deps -e /tmp/etlantic-plugin-echo
 

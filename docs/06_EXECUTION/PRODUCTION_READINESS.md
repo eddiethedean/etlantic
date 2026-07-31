@@ -9,12 +9,15 @@
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
-| Not included in 0.38 | Multi-tenant control plane; capacity SLA; compliance SoR |
+| Not included as GA | Production multi-tenant isolation; capacity SLA; compliance SoR |
 
 ETLantic 0.39.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page. The milestone name “production readiness” (M6)
-means the observability / run-history *pilot* slice shipped in 0.38.0—it does
-**not** mean unrestricted enterprise production. See the Beta envelope above
+means the observability / run-history *pilot* slice—it does
+**not** mean unrestricted enterprise production. **CP1** ships embeddable
+identity, durable accept, and SSE via `ETLanticAPI` (plus thin
+`create_reference_app` for non-CP demos) but is **not** multi-tenant GA
+(graduation remains **0.43**). See the Beta envelope above
 and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
 0.39.x patch without changing the documented pilot claims.
 
@@ -41,8 +44,10 @@ Version-pinned application process / container
 
 Supported deployments are single-team or single-tenant, process-isolated, and
 reproducible. Adopters own data-classification controls. ETLantic does not
-provide multi-tenant process isolation, a distributed scheduler, durable
-control-plane state, or an SLA.
+provide production multi-tenant process isolation, a distributed scheduler,
+or an SLA. Optional CP1 durable accept / event stores are incubation surfaces
+(`etlantic.control_plane` / `etlantic-fastapi` `ETLanticAPI`) — **not** GA
+isolation.
 
 ## Reference single-process topology
 
@@ -91,7 +96,7 @@ reference controls are shipped:
   release digests, and GitHub attestations (CycloneDX SBOM is optional;
   confirm SBOM or `sbom-warning.txt` at tag time)
 
-## Shipped / adopter-owned / residual (0.38)
+## Shipped / adopter-owned / residual (0.39)
 
 | Concern | 0.39 status |
 |---|---|
@@ -102,7 +107,8 @@ reference controls are shipped:
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
 | Release SHA-256 digests + GitHub attestations | **Release-gated** (CycloneDX is optional; verify the published SBOM or `sbom-warning.txt`) |
-| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.39–0.42 incubation → 0.43 graduation); absent in 0.38 |
+| CP1 identity / durable accept / SSE (`ETLanticAPI`) | **Shipped (incubation)** — dual surface with thin `create_reference_app`; **≠ multi-tenant GA** |
+| Durable multi-worker / multi-tenant control plane GA | **Planned** (0.40–0.42 → **0.43** graduation) |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |

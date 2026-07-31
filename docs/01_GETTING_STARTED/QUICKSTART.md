@@ -20,7 +20,7 @@ block you. See [Installation](INSTALLATION.md) for full options.
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install 'etlantic==0.39.0'
-python -m etlantic --version   # expect 0.38.0
+python -m etlantic --version   # expect 0.39.0
 ```
 
 **Windows (PowerShell):**

@@ -71,7 +71,7 @@ class LocalFilesSourceConnector:
         return ConnectorInfo(
             name=self.name,
             protocol=SOURCE_PROTOCOL,
-            version="0.38.0",
+            version="0.39.0",
             provider=PROVIDER_NAME,
             capabilities=tuple(sorted(LOCAL_FILES_CAPABILITIES)),
             maturity=ConnectorMaturity.PREVIEW,

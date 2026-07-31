@@ -14,6 +14,7 @@ from typing import Any
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import (
     AcceptReceipt,
+    AcceptResult,
     ControlPlaneContext,
     ControlPlaneEvent,
 )
@@ -26,6 +27,22 @@ def _utcnow_iso() -> str:
 
 def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
+
+
+def _idem_key(
+    ctx: ControlPlaneContext,
+    idempotency_key: str,
+    *,
+    operation: str,
+) -> tuple[str, str, str, str, str]:
+    """ADR-016 scoped idempotency tuple."""
+    return (
+        ctx.tenant.tenant_id,
+        ctx.workspace.workspace_id,
+        ctx.principal.subject,
+        operation,
+        idempotency_key,
+    )
 
 
 @dataclass
@@ -76,21 +93,24 @@ class MemoryDefinitionRepository:
     """In-memory definition store keyed by (tenant, workspace, definition_id)."""
 
     _docs: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)
+    _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def get(self, ctx: ControlPlaneContext, definition_id: str) -> Mapping[str, Any]:
         key = (*_scope(ctx), definition_id)
-        try:
-            return deepcopy(self._docs[key])
-        except KeyError as exc:
-            raise KeyError(definition_id) from exc
+        with self._lock:
+            try:
+                return deepcopy(self._docs[key])
+            except KeyError as exc:
+                raise KeyError(definition_id) from exc
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         tenant_id, workspace_id = _scope(ctx)
-        return sorted(
-            def_id
-            for (t, w, def_id) in self._docs
-            if t == tenant_id and w == workspace_id
-        )
+        with self._lock:
+            return sorted(
+                def_id
+                for (t, w, def_id) in self._docs
+                if t == tenant_id and w == workspace_id
+            )
 
     def put(
         self,
@@ -99,19 +119,24 @@ class MemoryDefinitionRepository:
         document: Mapping[str, Any],
     ) -> None:
         key = (*_scope(ctx), definition_id)
-        self._docs[key] = deepcopy(dict(document))
+        with self._lock:
+            self._docs[key] = deepcopy(dict(document))
 
 
 @dataclass
 class MemorySubmissionStore:
-    """In-memory durable acceptance with scoped idempotency keys.
+    """In-memory durable acceptance with ADR-016 scoped idempotency keys.
 
     Also tracks accepted run records for status/cancel observation. Acceptance
     is durable store commit only — no pipeline execution and no BackgroundTasks.
     """
 
-    _by_id: dict[tuple[str, str, str], AcceptReceipt] = field(default_factory=dict)
-    _payloads: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)
+    _by_id: dict[tuple[str, str, str, str, str], AcceptReceipt] = field(
+        default_factory=dict
+    )
+    _payloads: dict[tuple[str, str, str, str, str], dict[str, Any]] = field(
+        default_factory=dict
+    )
     _runs: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)
     _accepted_queue: list[tuple[str, str, str]] = field(default_factory=list)
     _lock: threading.RLock = field(default_factory=threading.RLock)
@@ -120,8 +145,10 @@ class MemorySubmissionStore:
         self,
         ctx: ControlPlaneContext,
         idempotency_key: str,
+        *,
+        operation: str = "run.submit",
     ) -> AcceptReceipt | None:
-        key = (*_scope(ctx), idempotency_key)
+        key = _idem_key(ctx, idempotency_key, operation=operation)
         with self._lock:
             receipt = self._by_id.get(key)
             return deepcopy(receipt) if receipt is not None else None
@@ -134,8 +161,9 @@ class MemorySubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
-    ) -> AcceptReceipt:
-        key = (*_scope(ctx), idempotency_key)
+        operation: str = "run.submit",
+    ) -> AcceptResult:
+        key = _idem_key(ctx, idempotency_key, operation=operation)
         with self._lock:
             existing = self._by_id.get(key)
             if existing is not None:
@@ -145,7 +173,7 @@ class MemorySubmissionStore:
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
                     )
-                return deepcopy(existing)
+                return AcceptResult(receipt=deepcopy(existing), created=False)
 
             acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
             submission_id = f"sub-{uuid.uuid4().hex[:16]}"
@@ -178,7 +206,7 @@ class MemorySubmissionStore:
                 "resource_type": resource_type,
             }
             self._accepted_queue.append(run_key)
-            return deepcopy(receipt)
+            return AcceptResult(receipt=deepcopy(receipt), created=True)
 
     def get_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
         """Return scoped run status metadata (raises KeyError when absent)."""
@@ -189,26 +217,42 @@ class MemorySubmissionStore:
             except KeyError as exc:
                 raise KeyError(run_id) from exc
 
-    def cancel_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
-        """Mark an accepted run as cancel_requested (observation only)."""
+    def cancel_run(
+        self, ctx: ControlPlaneContext, run_id: str
+    ) -> tuple[dict[str, Any], bool]:
+        """Mark an accepted run as cancel_requested (observation only).
+
+        Returns ``(record, changed)`` where ``changed`` is True only on the
+        first transition to ``cancel_requested``.
+        """
         key = (*_scope(ctx), run_id)
         with self._lock:
             try:
                 record = self._runs[key]
             except KeyError as exc:
                 raise KeyError(run_id) from exc
-            if record["status"] in ("accepted", "cancel_requested"):
+            changed = False
+            if record["status"] == "accepted":
                 record["status"] = "cancel_requested"
                 record["updated_at"] = _utcnow_iso()
-            return deepcopy(record)
+                changed = True
+            return deepcopy(record), changed
 
-    def poll_accepted(self, *, limit: int = 1) -> Sequence[dict[str, Any]]:
-        """Return accepted jobs for an external worker poller (no execution)."""
+    def poll_accepted(
+        self, ctx: ControlPlaneContext, *, limit: int = 1
+    ) -> Sequence[dict[str, Any]]:
+        """Return accepted jobs for an external worker poller (no execution).
+
+        Results are filtered to ``ctx`` tenant/workspace scope.
+        """
         if limit < 1:
             return ()
+        tenant_id, workspace_id = _scope(ctx)
         with self._lock:
             out: list[dict[str, Any]] = []
             for key in list(self._accepted_queue):
+                if key[0] != tenant_id or key[1] != workspace_id:
+                    continue
                 record = self._runs.get(key)
                 if record is None or record["status"] != "accepted":
                     continue
@@ -225,6 +269,7 @@ class MemoryEventStore:
     _events: dict[tuple[str, str], list[ControlPlaneEvent]] = field(
         default_factory=dict
     )
+    _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def append(
         self,
@@ -234,21 +279,31 @@ class MemoryEventStore:
         payload: Mapping[str, Any] | None = None,
     ) -> ControlPlaneEvent:
         scope = _scope(ctx)
-        bucket = self._events.setdefault(scope, [])
-        sequence = len(bucket) + 1
-        cursor = hashlib.sha256(
-            f"{scope[0]}:{scope[1]}:{sequence}".encode()
-        ).hexdigest()[:24]
-        event = ControlPlaneEvent(
-            event_id=f"evt-{uuid.uuid4().hex[:16]}",
-            sequence=sequence,
-            cursor=cursor,
-            kind=kind,
-            created_at=_utcnow_iso(),
-            payload=dict(payload or {}),
-        )
-        bucket.append(event)
-        return deepcopy(event)
+        with self._lock:
+            bucket = self._events.setdefault(scope, [])
+            sequence = len(bucket) + 1
+            cursor = hashlib.sha256(
+                f"{scope[0]}:{scope[1]}:{sequence}".encode()
+            ).hexdigest()[:24]
+            event = ControlPlaneEvent(
+                event_id=f"evt-{uuid.uuid4().hex[:16]}",
+                sequence=sequence,
+                cursor=cursor,
+                kind=kind,
+                created_at=_utcnow_iso(),
+                payload=dict(payload or {}),
+                correlation_id=(
+                    ctx.correlation_key.value
+                    if ctx.correlation_key is not None
+                    else None
+                ),
+                scope={
+                    "tenant_id": ctx.tenant.tenant_id,
+                    "workspace_id": ctx.workspace.workspace_id,
+                },
+            )
+            bucket.append(event)
+            return deepcopy(event)
 
     def list_after_cursor(
         self,
@@ -259,25 +314,26 @@ class MemoryEventStore:
     ) -> Sequence[ControlPlaneEvent]:
         if limit < 1:
             return ()
-        bucket = self._events.get(_scope(ctx), [])
-        start = 0
-        if cursor is not None:
-            found = False
-            for i, ev in enumerate(bucket):
-                if ev.cursor == cursor:
-                    start = i + 1
-                    found = True
-                    break
-            if not found:
-                raise ControlPlaneError.gone(
-                    "SSE cursor expired or unknown; reconnect without "
-                    "cursor (or Last-Event-ID) to replay from the beginning",
-                    extensions={
-                        "hint": "omit_cursor_or_last_event_id",
-                        "schema": "etlantic.control_plane.sse_cursor/1",
-                    },
-                )
-        return [deepcopy(ev) for ev in bucket[start : start + limit]]
+        with self._lock:
+            bucket = self._events.get(_scope(ctx), [])
+            start = 0
+            if cursor is not None:
+                found = False
+                for i, ev in enumerate(bucket):
+                    if ev.cursor == cursor:
+                        start = i + 1
+                        found = True
+                        break
+                if not found:
+                    raise ControlPlaneError.gone(
+                        "SSE cursor expired or unknown; reconnect without "
+                        "cursor (or Last-Event-ID) to replay from the beginning",
+                        extensions={
+                            "hint": "omit_cursor_or_last_event_id",
+                            "schema": "etlantic.control_plane.sse_cursor/1",
+                        },
+                    )
+            return [deepcopy(ev) for ev in bucket[start : start + limit]]
 
 
 __all__ = [

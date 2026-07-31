@@ -228,6 +228,7 @@ markers = [
     "prefect: tests requiring the Prefect scheduler plugin",
     "keyring: tests requiring the keyring secret provider",
     "sqlmodel: tests requiring the SQLModel integration package",
+    "fastapi: tests requiring the FastAPI control-plane / reference adapter",
     "medallantic: tests for the Medallantic package",
     "datafusion: tests for the experimental DataFusion plugin stub",
     "s3: tests for the experimental S3 connector package",

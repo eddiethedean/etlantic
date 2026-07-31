@@ -6,8 +6,8 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 !!! note "Plans ≠ product"
     Maintainer roadmap / multi-tenant plans under Contribute are **not**
-    shipped 0.38 APIs. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
-    and the green path — not from future gate documents.
+    shipped product claims. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
+    and the green path — not from future gate documents. **CP1 ≠ multi-tenant GA.**
 
 ## Residual evaluation lead
 
@@ -17,7 +17,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
 | LTS | Current published minor only (`0.39.x`) |
-| Not included in 0.38 | Multi-tenant control plane; unrestricted enterprise production |
+| Not included as GA | Production multi-tenant isolation; unrestricted enterprise production |
 
 ## What ETLantic is
 
@@ -28,7 +28,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.38.0
+## What is ready in bounded 0.39.0
 
 | Area | Ready? |
 |---|---|
@@ -37,7 +37,7 @@ manager.
 | Lossless `etlantic.pipeline/1` JSON TARGET | Yes |
 | Authoring catalog + `EditCommand`s | Yes |
 | Service facade (`etlantic.service`) | Yes |
-| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not the 0.39–0.43 control plane) |
+| FastAPI dual surface (`etlantic-fastapi`) | Yes — CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
 | Validation and secret-free `PipelinePlan` | Yes |
 | [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange | Yes |
 | Local in-process runtime + run reports | Yes |
@@ -57,10 +57,11 @@ manager.
 | Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14) |
 | Portable SQL compiler (kernel + relational `/1`) | Yes (0.15) |
 | Public portable transform conformance suite | Yes (0.14) |
+| CP1 identity / durable accept / SSE | Yes (incubation; **not** production multi-tenant GA) |
 | Multi-tenant durable orchestration | No — planned through CP3 / 0.41 |
 | Formal SLA / support response times | No |
-| Production GUI | No in 0.38 — read-only-first operator console planned for 0.50 |
-| Multi-tenant control plane | No in 0.38 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.39–0.42 incubation and 0.43 graduation |
+| Production GUI | No in 0.39 — read-only-first operator console planned for 0.50 |
+| Production multi-tenant GA | No — [planned](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) 0.39–0.42 incubation → **0.43** graduation |
 
 ## Security posture
 

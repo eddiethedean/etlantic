@@ -35,6 +35,8 @@ class SubmissionRow(SQLModel, table=True):
         UniqueConstraint(
             "tenant_id",
             "workspace_id",
+            "principal_subject",
+            "operation",
             "idempotency_key",
             name="uq_cp_submission_idem",
         ),
@@ -43,6 +45,14 @@ class SubmissionRow(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
     workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    principal_subject: str = Field(
+        sa_column=Column(String(), index=True, nullable=False),
+        default="",
+    )
+    operation: str = Field(
+        sa_column=Column(String(), index=True, nullable=False),
+        default="run.submit",
+    )
     idempotency_key: str = Field(sa_column=Column(String(), index=True, nullable=False))
     acceptance_id: str
     submission_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
@@ -56,4 +66,27 @@ class SubmissionRow(SQLModel, table=True):
     definition_id: str | None = None
 
 
-__all__ = ["DefinitionRow", "SubmissionRow"]
+class EventRow(SQLModel, table=True):
+    __tablename__ = "cp_events"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "workspace_id",
+            "sequence",
+            name="uq_cp_event_scope_seq",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    event_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    sequence: int = Field(index=True)
+    cursor: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    kind: str
+    created_at: str
+    payload_json: str
+    correlation_id: str | None = None
+
+
+__all__ = ["DefinitionRow", "EventRow", "SubmissionRow"]

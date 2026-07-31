@@ -2254,6 +2254,7 @@ def main() -> None:
         ROOT / "packages/etlantic-prefect/README.md",
         ROOT / "examples/portable_polars_kernel.py",
         ROOT / "examples/portable_pandas_kernel.py",
+        ROOT / "examples/sample_pilot/profiles/prod.json",
     ]
     if prior_minor is not None:
         prior_pin = f"etlantic=={prior_minor}.0"
@@ -2315,6 +2316,19 @@ def main() -> None:
                 raise SystemExit(f"{path} still references checkout {prior_tag}")
             if "planned for 0.16" in text.lower() or "planned for **0.16" in text:
                 raise SystemExit(f"{path} still says Prefect/features planned for 0.16")
+            expect_prior = f"expect {prior_minor}.0"
+            prints_prior_full = f"prints `{prior_minor}.0`"
+            prints_prior_plain = f"prints {prior_minor}.0"
+            if expect_prior in text:
+                raise SystemExit(
+                    f"{path} still says {expect_prior!r}; expected "
+                    f"expect {package_version}"
+                )
+            if prints_prior_full in text or prints_prior_plain in text:
+                raise SystemExit(
+                    f"{path} still says prints `{prior_minor}.0`; expected "
+                    f"`{package_version}`"
+                )
 
     # Current authoring guides must not teach removed Extract/Load binding=.
     binding_scan_roots = [
@@ -2552,6 +2566,8 @@ def main() -> None:
             hard_pin = f"=={prior_minor}"
             version_example = f'etlantic.version = "{prior_minor}"'
             prints_prior = f"prints `{prior_minor}`"
+            prints_prior_full = f"prints `{prior_minor}.0`"
+            expect_prior = f"expect {prior_minor}.0"
             if (
                 hard_pin in text
                 and pin not in text
@@ -2565,10 +2581,15 @@ def main() -> None:
                     f"{path} still shows {version_example}; expected "
                     f'etlantic.version = "{package_version}"'
                 )
-            if prints_prior in text:
+            if prints_prior in text or prints_prior_full in text:
                 raise SystemExit(
-                    f"{path} still says prints `{prior_minor}`; expected "
-                    f"`{package_version}`"
+                    f"{path} still says prints `{prior_minor}` / "
+                    f"`{prior_minor}.0`; expected `{package_version}`"
+                )
+            if expect_prior in text:
+                raise SystemExit(
+                    f"{path} still says {expect_prior!r}; expected "
+                    f"expect {package_version}"
                 )
             # COMPATIBILITY / narrative "for 0.25.0" without current version nearby
             if (

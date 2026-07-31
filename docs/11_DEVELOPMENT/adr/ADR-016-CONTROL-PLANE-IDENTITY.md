@@ -206,11 +206,10 @@ third pipeline authoring kind.
 
 ## Compatibility
 
-- Additive relative to the shipped 0.38 thin `etlantic-fastapi` reference
-  adapter; that adapter remains available and is not the CP1 control plane
-  until routes and durable stores land.
+- Additive relative to the shipped thin `etlantic-fastapi` `create_reference_app`
+  surface; that adapter remains available and is **not** the CP1 control plane
+  (`ETLanticAPI` / `include_router` / `create_app`).
 - Wire schemas use `/1` with additive evolution preferred; a `/2` requires
   dual-read guidance.
-- Core package version remains **0.38.0** until the 0.39 exit wave bumps it;
-  CP1 docs describe incubation, not a published 0.39.0 claim.
+- Core package version for this ADR freeze wave is **0.39.0**.
 - Continuous watch documentation continues to place sensors outside core.

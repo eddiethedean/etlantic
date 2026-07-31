@@ -101,6 +101,12 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.interchange/1` | stable |
 | `etlantic.capabilities/1` | stable |
 | `etlantic.quality/1` | provisional (portable quality expressions; ContractModel remains semantic authority) |
+| `etlantic.landing_checkpoint/1` | provisional (0.38 connector burn-in; ADR-015) |
+| `etlantic.control_plane.context/1` | provisional (CP1 / ADR-016) |
+| `etlantic.control_plane.accept_receipt/1` | provisional (CP1 / ADR-016) |
+| `etlantic.control_plane.event/1` | provisional (CP1 / ADR-016) |
+| `etlantic.control_plane.sse_cursor/1` | provisional (CP1 / ADR-016) |
+| `etlantic.control_plane.error/1` | provisional (CP1 / ADR-016) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 
@@ -144,7 +150,7 @@ Pin to the same minor as core (`==0.39.0`). Details:
 | `etlantic-keyring` | OS keyring secret provider |
 | `etlantic-sqlmodel` | SQLModel ↔ contract bridge |
 | `medallantic` | Engine-agnostic medallion facade and SparkForge migration adapter |
-| `etlantic-fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24) |
+| `etlantic-fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
 | `etlantic-datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 ## See also

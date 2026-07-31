@@ -12,10 +12,16 @@ from sqlalchemy.engine import Engine
 
 from etlantic.control_plane import (
     AcceptReceipt,
+    AcceptResult,
     ControlPlaneContext,
     ControlPlaneError,
+    ControlPlaneEvent,
 )
-from etlantic_sqlmodel.control_plane.models import DefinitionRow, SubmissionRow
+from etlantic_sqlmodel.control_plane.models import (
+    DefinitionRow,
+    EventRow,
+    SubmissionRow,
+)
 from etlantic_sqlmodel.control_plane.session import session_scope
 from sqlmodel import Session, SQLModel, select
 
@@ -34,6 +40,7 @@ def create_control_plane_tables(engine: Engine) -> None:
         tables=[
             DefinitionRow.__table__,  # type: ignore[list-item]
             SubmissionRow.__table__,  # type: ignore[list-item]
+            EventRow.__table__,  # type: ignore[list-item]
         ],
     )
 
@@ -95,7 +102,7 @@ class SQLModelDefinitionRepository:
 
 
 class SQLModelSubmissionStore:
-    """Durable acceptance store with scoped idempotency and run observation."""
+    """Durable acceptance store with ADR-016 scoped idempotency and run observation."""
 
     def __init__(self, engine: Engine) -> None:
         self._engine = engine
@@ -104,9 +111,11 @@ class SQLModelSubmissionStore:
         self,
         ctx: ControlPlaneContext,
         idempotency_key: str,
+        *,
+        operation: str = "run.submit",
     ) -> AcceptReceipt | None:
         with session_scope(self._engine) as session:
-            row = self._by_idem(session, ctx, idempotency_key)
+            row = self._by_idem(session, ctx, idempotency_key, operation=operation)
             return None if row is None else self._to_receipt(row)
 
     def accept(
@@ -117,12 +126,15 @@ class SQLModelSubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
-    ) -> AcceptReceipt:
+        operation: str = "run.submit",
+    ) -> AcceptResult:
         from sqlalchemy.exc import IntegrityError
 
         try:
             with session_scope(self._engine) as session:
-                existing = self._by_idem(session, ctx, idempotency_key)
+                existing = self._by_idem(
+                    session, ctx, idempotency_key, operation=operation
+                )
                 if existing is not None:
                     prior = json.loads(existing.payload_json)
                     if prior != dict(payload):
@@ -130,7 +142,9 @@ class SQLModelSubmissionStore:
                             "Idempotency key reuse with a different payload",
                             extensions={"idempotency_key": idempotency_key},
                         )
-                    return self._to_receipt(existing)
+                    return AcceptResult(
+                        receipt=self._to_receipt(existing), created=False
+                    )
 
                 acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
                 submission_id = f"sub-{uuid.uuid4().hex[:16]}"
@@ -139,6 +153,8 @@ class SQLModelSubmissionStore:
                 row = SubmissionRow(
                     tenant_id=ctx.tenant.tenant_id,
                     workspace_id=ctx.workspace.workspace_id,
+                    principal_subject=ctx.principal.subject,
+                    operation=operation,
                     idempotency_key=idempotency_key,
                     acceptance_id=acceptance_id,
                     submission_id=submission_id,
@@ -157,10 +173,12 @@ class SQLModelSubmissionStore:
                 )
                 session.add(row)
                 session.flush()
-                return self._to_receipt(row)
+                return AcceptResult(receipt=self._to_receipt(row), created=True)
         except IntegrityError as exc:
             with session_scope(self._engine) as session:
-                winner = self._by_idem(session, ctx, idempotency_key)
+                winner = self._by_idem(
+                    session, ctx, idempotency_key, operation=operation
+                )
                 if winner is None:
                     raise ControlPlaneError.conflict(
                         "Idempotency collision without durable row",
@@ -172,7 +190,7 @@ class SQLModelSubmissionStore:
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
                     ) from exc
-                return self._to_receipt(winner)
+                return AcceptResult(receipt=self._to_receipt(winner), created=False)
 
     def get_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
         with session_scope(self._engine) as session:
@@ -181,24 +199,34 @@ class SQLModelSubmissionStore:
                 raise KeyError(run_id)
             return self._to_run(row)
 
-    def cancel_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
+    def cancel_run(
+        self, ctx: ControlPlaneContext, run_id: str
+    ) -> tuple[dict[str, Any], bool]:
         with session_scope(self._engine) as session:
             row = self._by_run(session, ctx, run_id)
             if row is None:
                 raise KeyError(run_id)
-            if row.run_status in ("accepted", "cancel_requested"):
+            changed = False
+            if row.run_status == "accepted":
                 row.run_status = "cancel_requested"
                 row.updated_at = _utcnow_iso()
                 session.add(row)
-            return self._to_run(row)
+                changed = True
+            return self._to_run(row), changed
 
-    def poll_accepted(self, *, limit: int = 1) -> Sequence[dict[str, Any]]:
+    def poll_accepted(
+        self, ctx: ControlPlaneContext, *, limit: int = 1
+    ) -> Sequence[dict[str, Any]]:
         if limit < 1:
             return ()
         with session_scope(self._engine) as session:
             statement = (
                 select(SubmissionRow)
-                .where(SubmissionRow.run_status == "accepted")
+                .where(
+                    SubmissionRow.run_status == "accepted",
+                    SubmissionRow.tenant_id == ctx.tenant.tenant_id,
+                    SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+                )
                 .limit(limit)
             )
             rows = session.exec(statement).all()
@@ -206,11 +234,17 @@ class SQLModelSubmissionStore:
 
     @staticmethod
     def _by_idem(
-        session: Session, ctx: ControlPlaneContext, idempotency_key: str
+        session: Session,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str,
     ) -> SubmissionRow | None:
         statement = select(SubmissionRow).where(
             SubmissionRow.tenant_id == ctx.tenant.tenant_id,
             SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_subject == ctx.principal.subject,
+            SubmissionRow.operation == operation,
             SubmissionRow.idempotency_key == idempotency_key,
         )
         return session.exec(statement).first()
@@ -262,6 +296,127 @@ class SQLModelSubmissionStore:
         }
 
 
+class SqlModelEventStore:
+    """Minimal SQLModel-backed EventStore with tenant/workspace isolation."""
+
+    def __init__(self, engine: Engine) -> None:
+        self._engine = engine
+
+    def append(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        import hashlib
+
+        with session_scope(self._engine) as session:
+            statement = (
+                select(EventRow)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                )
+                .order_by(EventRow.sequence.desc())  # type: ignore[union-attr]
+                .limit(1)
+            )
+            last = session.exec(statement).first()
+            sequence = 1 if last is None else int(last.sequence) + 1
+            cursor = hashlib.sha256(
+                f"{ctx.tenant.tenant_id}:{ctx.workspace.workspace_id}:{sequence}".encode()
+            ).hexdigest()[:24]
+            event_id = f"evt-{uuid.uuid4().hex[:16]}"
+            created = _utcnow_iso()
+            correlation_id = (
+                ctx.correlation_key.value if ctx.correlation_key is not None else None
+            )
+            row = EventRow(
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                event_id=event_id,
+                sequence=sequence,
+                cursor=cursor,
+                kind=kind,
+                created_at=created,
+                payload_json=json.dumps(dict(payload or {}), sort_keys=True),
+                correlation_id=correlation_id,
+            )
+            session.add(row)
+            session.flush()
+            return ControlPlaneEvent(
+                event_id=event_id,
+                sequence=sequence,
+                cursor=cursor,
+                kind=kind,
+                created_at=created,
+                payload=dict(payload or {}),
+                correlation_id=correlation_id,
+                scope={
+                    "tenant_id": ctx.tenant.tenant_id,
+                    "workspace_id": ctx.workspace.workspace_id,
+                },
+            )
+
+    def list_after_cursor(
+        self,
+        ctx: ControlPlaneContext,
+        cursor: str | None,
+        *,
+        limit: int = 100,
+    ) -> Sequence[ControlPlaneEvent]:
+        if limit < 1:
+            return ()
+        with session_scope(self._engine) as session:
+            start_seq = 0
+            if cursor is not None:
+                found = session.exec(
+                    select(EventRow).where(
+                        EventRow.tenant_id == ctx.tenant.tenant_id,
+                        EventRow.workspace_id == ctx.workspace.workspace_id,
+                        EventRow.cursor == cursor,
+                    )
+                ).first()
+                if found is None:
+                    raise ControlPlaneError.gone(
+                        "SSE cursor expired or unknown; reconnect without "
+                        "cursor (or Last-Event-ID) to replay from the beginning",
+                        extensions={
+                            "hint": "omit_cursor_or_last_event_id",
+                            "schema": "etlantic.control_plane.sse_cursor/1",
+                        },
+                    )
+                start_seq = int(found.sequence)
+            statement = (
+                select(EventRow)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                    EventRow.sequence > start_seq,
+                )
+                .order_by(EventRow.sequence)  # type: ignore[arg-type]
+                .limit(limit)
+            )
+            rows = session.exec(statement).all()
+            return [self._to_event(r) for r in rows]
+
+    @staticmethod
+    def _to_event(row: EventRow) -> ControlPlaneEvent:
+        return ControlPlaneEvent(
+            event_id=row.event_id,
+            sequence=int(row.sequence),
+            cursor=row.cursor,
+            kind=row.kind,
+            created_at=row.created_at,
+            payload=json.loads(row.payload_json),
+            correlation_id=row.correlation_id,
+            scope={
+                "tenant_id": row.tenant_id,
+                "workspace_id": row.workspace_id,
+            },
+        )
+
+
 # Typing helper for hosts that inject session factories later.
 SessionFactory = Callable[[], Session]
 
@@ -270,5 +425,6 @@ __all__ = [
     "SQLModelDefinitionRepository",
     "SQLModelSubmissionStore",
     "SessionFactory",
+    "SqlModelEventStore",
     "create_control_plane_tables",
 ]

@@ -32,6 +32,8 @@ from etlantic_fastapi import (
     principal_from_header,
 )
 
+pytestmark = pytest.mark.fastapi
+
 ACTIONS = (
     "definition.read",
     "run.submit",
@@ -180,21 +182,45 @@ def test_sse_authz_deny_and_cross_tenant_404() -> None:
     submit = client.post("/v1/definitions/pipe/runs", headers=headers, json={})
     run_id = submit.json()["resource_id"]
 
-    # Principal without run.events → opaque 404 (default deny disclosure).
-    api.authorizer.grants.discard(("tenant-a", "ws-1", "run.events"))
+    # In-scope forbid via forbidden_resources → 403 (not opaque 404).
+    api.authorizer.forbidden_resources.add(
+        ("tenant-a", "ws-1", "run.events", f"run:{run_id}")
+    )
     denied = client.get(
         f"/v1/runs/{run_id}/events",
         headers={"X-Principal": "alice"},
     )
-    assert denied.status_code == 404
+    assert denied.status_code == 403
 
     # Cross-tenant: bob cannot observe alice's run (non-enumeration).
-    api.authorizer.grant(_ctx(), "run.events")
+    api.authorizer.forbidden_resources.clear()
     cross = client.get(
         f"/v1/runs/{run_id}/events",
         headers={"X-Principal": "bob"},
     )
     assert cross.status_code == 404
+
+
+def test_event_matches_run_requires_explicit_run_id() -> None:
+    from etlantic.control_plane import ControlPlaneEvent
+    from etlantic_fastapi.sse import event_matches_run
+
+    base = dict(
+        event_id="e1",
+        sequence=1,
+        cursor="c1",
+        kind="run.accepted",
+        created_at="2026-07-31T00:00:00Z",
+    )
+    assert event_matches_run(
+        ControlPlaneEvent(**base, payload={"run_id": "run-1"}), "run-1"
+    )
+    assert not event_matches_run(
+        ControlPlaneEvent(**base, payload={"acceptance_id": "run-1"}), "run-1"
+    )
+    assert not event_matches_run(
+        ControlPlaneEvent(**base, payload={"submission_id": "run-1"}), "run-1"
+    )
 
 
 def test_memory_event_store_unknown_cursor_raises_gone() -> None:

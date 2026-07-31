@@ -31,6 +31,8 @@ from etlantic_fastapi import (
     principal_from_header,
 )
 
+pytestmark = pytest.mark.fastapi
+
 ACTIONS = (
     "definition.read",
     "definition.validate",
@@ -115,7 +117,7 @@ def test_submit_returns_202_and_status_cancel_report_artifacts_lineage() -> None
 
 
 def test_schema_and_reliability_stubs_labeled() -> None:
-    client, _, _ = _wired()
+    client, _, api = _wired()
     headers = {"X-Principal": "alice"}
     obs = client.get("/v1/schema/observations", headers=headers)
     assert obs.status_code == 200
@@ -123,6 +125,11 @@ def test_schema_and_reliability_stubs_labeled() -> None:
     assert body["label"] == "observations"
     assert "not contract authority" in body["note"]
 
+    # Unknown observation_id → 404 after authz (empty known set by default).
+    missing = client.post("/v1/schema/observations/obs-missing/ack", headers=headers)
+    assert missing.status_code == 404
+
+    api.known_observation_ids.add("obs-1")
     ack = client.post("/v1/schema/observations/obs-1/ack", headers=headers)
     assert ack.status_code == 200
     assert (
@@ -156,7 +163,7 @@ def test_multi_worker_shared_memory_idempotent_submit() -> None:
 
     assert r1["acceptance_id"] == r2["acceptance_id"]
     assert r1["submission_id"] == r2["submission_id"]
-    assert len(subs.poll_accepted(limit=10)) >= 1
+    assert len(subs.poll_accepted(_ctx(), limit=10)) >= 1
 
 
 def test_include_router_does_not_force_handlers() -> None:

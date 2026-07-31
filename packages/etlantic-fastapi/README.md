@@ -64,7 +64,8 @@ app = create_app(api)
 # Or embed without owning host lifespan / middleware / exception handlers:
 # from fastapi import FastAPI
 # host = FastAPI()
-# include_router(host, api)
+# include_router(host, api)  # host must register Problem Details handlers
+#                            # (create_app installs them; include_router does not)
 ```
 
 ### Auth adapters
@@ -72,6 +73,23 @@ app = create_app(api)
 - Inject an app-defined principal dependency (`principal_dependency=`).
 - OAuth2/OIDC: validate tokens in the host, then map claims with
   `oauth2_oidc_principal_hook` (placeholder; no bundled IdP client).
+
+### Operability probes
+
+| Endpoint | Role | Status when stores missing |
+|---|---|---|
+| `GET /health` | Liveness only (process up) | Always **200** |
+| `GET /ready` | Readiness (injected stores present) | **503** with `status=not_ready` |
+
+### Validate / plan (Experimental preview)
+
+`POST .../validate` and `POST .../plan` use the profile injected on
+`ETLanticAPI.profile` (default `"development"`).
+
+* Non-production `security_mode` → Experimental structural preview
+  (`verify=False` path); responses include `metadata.label = "Experimental"`.
+* Production-like `security_mode` → `verify=True` and real validate/plan where
+  possible. Exception messages are always redacted in diagnostics.
 
 ### Resumable SSE (`GET /v1/runs/{run_id}/events`)
 
@@ -87,8 +105,10 @@ cursor / `Last-Event-ID` to replay from the beginning. CP1 does **not**
 silently skip or invent a mid-stream position.
 
 Authorization (`run.events`) runs before existence lookup; cross-tenant runs
-map to opaque **404**. Default `follow=false` emits matching history then
-closes; `follow=true` keeps polling (heartbeats as SSE comments).
+map to opaque **404**; in-scope action deny maps to **403**. Default
+`follow=false` emits matching history then closes; `follow=true` keeps
+polling with a hard cap (default **100** polls / **60** seconds) so CP1 never
+blocks unbounded.
 
 Optional WebSocket adapters are experimental and **not** required for the
 0.39 exit gate.

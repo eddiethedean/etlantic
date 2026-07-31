@@ -38,6 +38,8 @@ from etlantic_fastapi.landing_sensor import (
     make_testclient_submit_run,
 )
 
+pytestmark = pytest.mark.fastapi
+
 
 def test_landing_sensor_module_is_outside_core() -> None:
     import etlantic_fastapi.landing_sensor as mod
@@ -132,5 +134,12 @@ def test_landing_watch_submitter_e2e(tmp_path: Path) -> None:
     )
     assert run.status_code == 200
     assert_no_file_bytes(run.json(), forbidden=secret_bytes)
-    stored_payload = subs._payloads[(*ctx.scope_key, receipts[0]["idempotency_key"])]
+    stored_payload = subs._payloads[
+        (
+            *ctx.scope_key,
+            ctx.principal.subject,
+            "run.submit",
+            receipts[0]["idempotency_key"],
+        )
+    ]
     assert_no_file_bytes(stored_payload, forbidden=secret_bytes)

@@ -41,6 +41,10 @@ class ETLanticAPI:
     events: EventStore
     context_factory: ContextFactory
     principal_dependency: PrincipalDependency = field(default=principal_from_header)
+    # Validate/plan profile (default development for CP1 Experimental preview).
+    profile: Any = "development"
+    # Seeded schema observation ids; empty → ack always 404 after authz.
+    known_observation_ids: set[str] = field(default_factory=set)
     title: str = "ETLantic Control Plane"
     version: str = __version__
     _router: APIRouter | None = field(default=None, init=False, repr=False)

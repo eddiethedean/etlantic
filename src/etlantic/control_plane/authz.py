@@ -85,9 +85,52 @@ def require_authorized(
 
     Raises:
         ControlPlaneError: On deny, using the non-enumeration disclosure map.
+
+    Disclosure mapping:
+        * ``decision.disclosure == "forbidden"`` → HTTP 403
+        * ``decision.disclosure == "not_found"`` → HTTP 404
+        * unset disclosure → 403 when ``resource_in_caller_scope`` else 404
     """
     decision = authorizer.authorize(ctx, action, resource)
     raise_for_deny(decision, resource_in_caller_scope=resource_in_caller_scope)
+
+
+def require_authorized_run(
+    authorizer: Authorizer,
+    ctx: ControlPlaneContext,
+    action: str,
+    run_id: str,
+    *,
+    probe_exists: Any = None,
+) -> None:
+    """Authorize a run action with ADR in-scope 403 vs cross-scope 404.
+
+    Authz runs first. When denied:
+
+    * explicit ``disclosure=\"forbidden\"`` → 403
+    * when the run exists in the caller's scoped store → 403 (in-scope forbid)
+    * otherwise → opaque 404 (cross-scope / unknown)
+
+    ``probe_exists`` is a zero-arg callable returning True when the run is
+    present in the caller's scope. It is only invoked after a deny so
+    cross-scope existence is never disclosed via the store of another tenant.
+    """
+    resource = f"run:{run_id}"
+    decision = authorizer.authorize(ctx, action, resource)
+    if decision.allowed:
+        return
+    if decision.disclosure == "forbidden":
+        raise_for_deny(decision, resource_in_caller_scope=True)
+        return
+    exists = False
+    if probe_exists is not None:
+        try:
+            exists = bool(probe_exists())
+        except KeyError:
+            exists = False
+    if exists:
+        raise ControlPlaneError.forbidden(decision.reason or "Forbidden")
+    raise_for_deny(decision, resource_in_caller_scope=False)
 
 
 def authorized_get_definition(
@@ -124,4 +167,5 @@ __all__ = [
     "map_deny_disclosure",
     "raise_for_deny",
     "require_authorized",
+    "require_authorized_run",
 ]

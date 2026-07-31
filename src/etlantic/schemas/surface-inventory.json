@@ -94,7 +94,12 @@
     "etlantic.capabilities/1": "stable",
     "etlantic.authoring-catalog/1": "stable",
     "etlantic.quality/1": "provisional",
-    "etlantic.landing_checkpoint/1": "provisional"
+    "etlantic.landing_checkpoint/1": "provisional",
+    "etlantic.control_plane.context/1": "provisional",
+    "etlantic.control_plane.accept_receipt/1": "provisional",
+    "etlantic.control_plane.event/1": "provisional",
+    "etlantic.control_plane.sse_cursor/1": "provisional",
+    "etlantic.control_plane.error/1": "provisional"
   },
   "protocols": {
     "etlantic.dataframe/1": "stable",

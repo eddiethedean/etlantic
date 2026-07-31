@@ -79,10 +79,18 @@ def idempotency_key_for_file(
     workspace_id: str,
     definition_id: str,
     file_ref: Mapping[str, Any],
+    principal_subject: str | None = None,
+    operation: str = "run.submit",
 ) -> str:
-    """Deterministic scoped key so the same drop does not double-accept."""
+    """Deterministic scoped key so the same drop does not double-accept.
+
+    The store applies the full ADR-016 tuple
+    ``(tenant, workspace, principal, operation, key)``; this helper hashes
+    the client-visible key material (optionally including principal/operation).
+    """
     material = (
         f"{tenant_id}:{workspace_id}:{definition_id}:"
+        f"{principal_subject or ''}:{operation}:"
         f"{file_ref.get('relative') or file_ref.get('name')}"
     )
     digest = hashlib.sha256(material.encode()).hexdigest()[:24]

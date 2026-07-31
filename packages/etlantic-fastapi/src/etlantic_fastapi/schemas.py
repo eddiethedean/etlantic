@@ -17,9 +17,14 @@ class AcceptReceiptResponse(BaseModel):
     workspace_id: str
     idempotency_key: str
     created_at: str
-    status: Literal["accepted"] = "accepted"
+    status: Literal["accepted"] = Field(
+        default="accepted",
+        description="Durable accept only — not pipeline execution status",
+    )
     resource_type: str = "run"
     resource_id: str | None = None
+    status_url: str | None = None
+    events_url: str | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -42,6 +47,7 @@ class ValidateResponse(BaseModel):
     definition_id: str
     diagnostics: list[dict[str, Any]] = Field(default_factory=list)
     fingerprint: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PlanResponse(BaseModel):
@@ -49,6 +55,7 @@ class PlanResponse(BaseModel):
     definition_id: str
     diagnostics: list[dict[str, Any]] = Field(default_factory=list)
     plan: dict[str, Any] | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunSubmitBody(BaseModel):

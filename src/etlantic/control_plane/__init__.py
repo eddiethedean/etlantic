@@ -19,6 +19,7 @@ from etlantic.control_plane.authz import (
     map_deny_disclosure,
     raise_for_deny,
     require_authorized,
+    require_authorized_run,
 )
 from etlantic.control_plane.errors import (
     CONTROL_PLANE_ERROR_SCHEMA,
@@ -38,6 +39,7 @@ from etlantic.control_plane.models import (
     CONTROL_PLANE_EVENT_SCHEMA,
     SSE_CURSOR_SCHEMA,
     AcceptReceipt,
+    AcceptResult,
     ControlPlaneContext,
     ControlPlaneEvent,
     CorrelationKey,
@@ -70,6 +72,7 @@ __all__ = [
     "REDACTED",
     "SSE_CURSOR_SCHEMA",
     "AcceptReceipt",
+    "AcceptResult",
     "Authorizer",
     "AuthzDecision",
     "ControlPlaneContext",
@@ -99,4 +102,5 @@ __all__ = [
     "redact_control_plane_payload",
     "redact_control_plane_text",
     "require_authorized",
+    "require_authorized_run",
 ]

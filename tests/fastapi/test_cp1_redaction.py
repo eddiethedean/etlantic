@@ -36,6 +36,8 @@ from etlantic_fastapi import (
 )
 from etlantic_fastapi.sse import format_sse_message
 
+pytestmark = pytest.mark.fastapi
+
 SECRET = "super-secret-token"
 ACTIONS = (
     "definition.read",
@@ -124,6 +126,8 @@ def test_sse_frame_and_report_have_no_secrets() -> None:
     submit = client.post("/v1/definitions/pipe/runs", headers=headers, json={})
     assert submit.status_code == 202
     run_id = submit.json()["resource_id"] or submit.json()["submission_id"]
+    assert submit.json().get("status_url") == f"/v1/runs/{run_id}"
+    assert submit.json().get("events_url") == f"/v1/runs/{run_id}/events"
 
     # Inject a secret into a follow-up event and stream
     events.append(
@@ -148,3 +152,43 @@ def test_sse_frame_and_report_have_no_secrets() -> None:
     redacted = redact_control_plane_payload({"token": SECRET, "run_id": run_id})
     assert redacted["token"] == "***"
     assert redacted["run_id"] == run_id
+
+
+def test_definition_validate_plan_redact_secrets() -> None:
+    authz = MemoryAuthorizer()
+    defs = MemoryDefinitionRepository()
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    ctx = _ctx()
+    defs.put(
+        ctx,
+        "pipe",
+        {"name": "pipe", "password": SECRET, "token": SECRET, "fingerprint": "fp1"},
+    )
+    for action in ("definition.read", "definition.validate", "definition.plan"):
+        authz.grant(ctx, action)
+    client = TestClient(create_app(api))
+    headers = {"X-Principal": "alice"}
+
+    got = client.get("/v1/definitions/pipe", headers=headers)
+    assert got.status_code == 200
+    assert_no_secrets(got.text, sentinel=SECRET)
+    assert got.json()["document"]["password"] == "***"
+
+    validate = client.post("/v1/definitions/pipe/validate", headers=headers)
+    assert validate.status_code == 200
+    assert_no_secrets(validate.text, sentinel=SECRET)
+    assert validate.json()["metadata"]["label"] == "Experimental"
+
+    plan = client.post("/v1/definitions/pipe/plan", headers=headers)
+    assert plan.status_code == 200
+    assert_no_secrets(plan.text, sentinel=SECRET)
+    assert plan.json()["metadata"]["label"] == "Experimental"

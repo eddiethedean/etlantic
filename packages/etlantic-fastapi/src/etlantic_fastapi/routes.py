@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 from starlette.responses import StreamingResponse
@@ -12,7 +13,9 @@ from etlantic.control_plane import (
     ControlPlaneError,
     authorized_get_definition,
     redact_control_plane_payload,
+    redact_control_plane_text,
     require_authorized,
+    require_authorized_run,
 )
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
@@ -58,23 +61,89 @@ def _run_store_methods(
     return get_run, cancel_run
 
 
+def _run_exists_probe(api: ETLanticAPI, ctx: ControlPlaneContext, run_id: str) -> bool:
+    get_run_fn, _ = _run_store_methods(api)
+
+    def _probe() -> bool:
+        try:
+            get_run_fn(ctx, run_id)
+            return True
+        except KeyError:
+            return False
+
+    return _probe()
+
+
+def _profile_meta(api: ETLanticAPI) -> tuple[Any, bool, dict[str, Any]]:
+    """Resolve injected profile and Experimental vs production-capable metadata."""
+    from etlantic.plugin_trust import is_production_profile
+    from etlantic.profile import resolve_profile
+
+    raw = getattr(api, "profile", "development")
+    try:
+        profile = resolve_profile(raw, allow_adhoc_profile=True)
+    except Exception:
+        profile = raw
+    production_like = False
+    try:
+        production_like = is_production_profile(profile)
+    except Exception:
+        mode = getattr(profile, "security_mode", None)
+        production_like = str(mode or "").lower() == "production"
+    name = getattr(profile, "name", None) or (
+        raw if isinstance(raw, str) else "development"
+    )
+    metadata = {
+        "label": "Experimental",
+        "mode": "production" if production_like else "experimental_preview",
+        "profile": str(name),
+        "note": (
+            "CP1 validate/plan uses production-capable verify when "
+            "profile.security_mode is production; otherwise Experimental preview."
+        ),
+    }
+    return profile, production_like, metadata
+
+
+def _redact_diagnostics(
+    diagnostics: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    redacted: list[dict[str, Any]] = []
+    for item in diagnostics:
+        row = redact_control_plane_payload(dict(item))
+        if isinstance(row, dict) and "message" in row and row["message"] is not None:
+            row["message"] = redact_control_plane_text(str(row["message"]))
+        redacted.append(row if isinstance(row, dict) else {"message": str(row)})
+    return redacted
+
+
 def _validate_document(
-    document: Mapping[str, Any], definition_id: str
+    document: Mapping[str, Any],
+    definition_id: str,
+    *,
+    api: ETLanticAPI,
 ) -> ValidateResponse:
     """Validate a stored definition document without executing pipelines."""
+    profile, production_like, metadata = _profile_meta(api)
     fingerprint = None
     diagnostics: list[dict[str, Any]] = []
     ok = True
     if document.get("schema") == "etlantic.pipeline/1" or "nodes" in document:
         try:
-            from etlantic.authoring.preview import structural_validate_preview
             from etlantic.authoring.serialize import (
                 pipeline_fingerprint,
                 pipeline_from_dict,
             )
 
-            defn = pipeline_from_dict(dict(document), verify=False)
-            report = structural_validate_preview(defn, profile="development")
+            defn = pipeline_from_dict(dict(document), verify=production_like)
+            if production_like:
+                from etlantic.authoring.lifecycle import validate_pipeline_like
+
+                report = validate_pipeline_like(defn, profile=profile)
+            else:
+                from etlantic.authoring.preview import structural_validate_preview
+
+                report = structural_validate_preview(defn, profile=profile)
             diagnostics = [d.to_dict() for d in report.diagnostics]
             ok = not report.has_errors
             fingerprint = defn.fingerprint or pipeline_fingerprint(defn)
@@ -84,7 +153,7 @@ def _validate_document(
                 {
                     "code": "PMCPVALIDATE",
                     "severity": "error",
-                    "message": str(exc),
+                    "message": redact_control_plane_text(str(exc)),
                 }
             ]
     else:
@@ -92,31 +161,56 @@ def _validate_document(
     return ValidateResponse(
         ok=ok,
         definition_id=definition_id,
-        diagnostics=diagnostics,
+        diagnostics=_redact_diagnostics(diagnostics),
         fingerprint=fingerprint,
+        metadata=metadata,
     )
 
 
-def _plan_document(document: Mapping[str, Any], definition_id: str) -> PlanResponse:
+def _plan_document(
+    document: Mapping[str, Any],
+    definition_id: str,
+    *,
+    api: ETLanticAPI,
+) -> PlanResponse:
+    profile, production_like, metadata = _profile_meta(api)
     diagnostics: list[dict[str, Any]] = []
     plan: dict[str, Any] | None = None
     ok = False
     if document.get("schema") == "etlantic.pipeline/1" or "nodes" in document:
         try:
-            from etlantic.authoring.preview import plan_preview
             from etlantic.authoring.serialize import pipeline_from_dict
 
-            defn = pipeline_from_dict(dict(document), verify=False)
-            planned, report = plan_preview(defn, profile="development")
-            diagnostics = [d.to_dict() for d in report.diagnostics]
-            plan = planned.to_dict() if planned is not None else None
-            ok = planned is not None and not report.has_errors
+            defn = pipeline_from_dict(dict(document), verify=production_like)
+            if production_like:
+                from etlantic.authoring.lifecycle import plan_pipeline_like
+
+                planned = plan_pipeline_like(defn, profile=profile)
+                from etlantic.authoring.lifecycle import validate_pipeline_like
+
+                report = validate_pipeline_like(defn, profile=profile)
+                diagnostics = [d.to_dict() for d in report.diagnostics]
+                plan = planned.to_dict() if planned is not None else None
+                ok = planned is not None and not report.has_errors
+            else:
+                from etlantic.authoring.preview import plan_preview
+
+                planned, report = plan_preview(defn, profile=profile)
+                diagnostics = [d.to_dict() for d in report.diagnostics]
+                plan = (
+                    redact_control_plane_payload(planned.to_dict())
+                    if planned is not None
+                    else None
+                )
+                ok = planned is not None and not report.has_errors
+            if plan is not None and production_like:
+                plan = redact_control_plane_payload(plan)
         except Exception as exc:
             diagnostics = [
                 {
                     "code": "PMCPPLAN",
                     "severity": "error",
-                    "message": str(exc),
+                    "message": redact_control_plane_text(str(exc)),
                 }
             ]
             ok = False
@@ -130,8 +224,18 @@ def _plan_document(document: Mapping[str, Any], definition_id: str) -> PlanRespo
     return PlanResponse(
         ok=ok,
         definition_id=definition_id,
-        diagnostics=diagnostics,
+        diagnostics=_redact_diagnostics(diagnostics),
         plan=plan,
+        metadata=metadata,
+    )
+
+
+def _receipt_with_urls(receipt: Any) -> Any:
+    run_id = receipt.resource_id or receipt.submission_id
+    return replace(
+        receipt,
+        status_url=f"/v1/runs/{run_id}",
+        events_url=f"/v1/runs/{run_id}/events",
     )
 
 
@@ -154,8 +258,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         operation_id="cp_ready",
         response_model=ReadyResponse,
         tags=["operability"],
+        responses={503: {"description": "Control-plane stores not injected"}},
     )
-    def ready() -> ReadyResponse:
+    def ready(response: Response) -> ReadyResponse:
         injected = all(
             store is not None
             for store in (
@@ -167,6 +272,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             )
         )
         if not injected:
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             return ReadyResponse(
                 status="not_ready",
                 stores_injected=False,
@@ -209,7 +315,8 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             api.authorizer, api.definitions, ctx, definition_id
         )
         return DefinitionGetResponse(
-            definition_id=definition_id, document=dict(document)
+            definition_id=definition_id,
+            document=redact_control_plane_payload(dict(document)),
         )
 
     @router.post(
@@ -229,7 +336,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             definition_id,
             action="definition.validate",
         )
-        return _validate_document(document, definition_id)
+        return _validate_document(document, definition_id, api=api)
 
     @router.post(
         "/v1/definitions/{definition_id}/plan",
@@ -248,7 +355,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             definition_id,
             action="definition.plan",
         )
-        return _plan_document(document, definition_id)
+        return _plan_document(document, definition_id, api=api)
 
     @router.post(
         "/v1/definitions/{definition_id}/runs",
@@ -296,14 +403,32 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 type="etlantic.control_plane/bad_request",
             )
         payload = dict(body.payload or {})
-        payload.setdefault("definition_id", definition_id)
-        receipt = api.submissions.accept(
+        if (
+            "definition_id" in payload
+            and payload["definition_id"] is not None
+            and str(payload["definition_id"]) != definition_id
+        ):
+            raise ControlPlaneError(
+                "payload.definition_id must match path definition_id",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+                extensions={
+                    "path_definition_id": definition_id,
+                    "payload_definition_id": str(payload["definition_id"]),
+                },
+            )
+        payload["definition_id"] = definition_id
+        result = api.submissions.accept(
             ctx,
             idempotency_key=idem,
             payload=payload,
             resource_type="run",
+            operation="run.submit",
         )
-        if api.events is not None:
+        receipt = _receipt_with_urls(result.receipt)
+        if result.created and api.events is not None:
             run_id = receipt.resource_id or receipt.submission_id
             api.events.append(
                 ctx,
@@ -318,6 +443,15 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         response.status_code = status.HTTP_202_ACCEPTED
         return AcceptReceiptResponse.model_validate(receipt.to_dict())
 
+    def _authorize_run(ctx: ControlPlaneContext, action: str, run_id: str) -> None:
+        require_authorized_run(
+            api.authorizer,
+            ctx,
+            action,
+            run_id,
+            probe_exists=lambda: _run_exists_probe(api, ctx, run_id),
+        )
+
     @router.get(
         "/v1/runs/{run_id}",
         operation_id="cp_get_run",
@@ -328,13 +462,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> RunStatusResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.read",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.read", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
             record = get_run_fn(ctx, run_id)
@@ -352,19 +480,18 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> RunStatusResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.cancel",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.cancel", run_id)
         _, cancel_fn = _run_store_methods(api)
         try:
-            record = cancel_fn(ctx, run_id)
+            cancelled = cancel_fn(ctx, run_id)
         except KeyError as exc:
             raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
-        if api.events is not None:
+        if isinstance(cancelled, tuple):
+            record, changed = cancelled
+        else:
+            record = cancelled
+            changed = True
+        if changed and api.events is not None:
             api.events.append(
                 ctx,
                 kind="run.cancel_requested",
@@ -399,7 +526,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         ),
         follow: bool = Query(
             default=False,
-            description="When true, keep polling for new events after history",
+            description=(
+                "When true, keep polling for new events after history "
+                "(capped: max 100 polls / 60s)"
+            ),
         ),
         last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
     ) -> StreamingResponse:
@@ -409,13 +539,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         Unknown/expired cursors return **410 Gone** (prefer reconnect without
         cursor to replay from the beginning) — see package README.
         """
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.events",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.events", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
             get_run_fn(ctx, run_id)
@@ -440,13 +564,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ReportStubResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.report",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.report", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
             record = get_run_fn(ctx, run_id)
@@ -477,13 +595,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ArtifactsResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.artifacts",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.artifacts", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
             get_run_fn(ctx, run_id)
@@ -510,13 +622,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> LineageStubResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.lineage",
-            f"run:{run_id}",
-            resource_in_caller_scope=False,
-        )
+        _authorize_run(ctx, "run.lineage", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
             record = get_run_fn(ctx, run_id)
@@ -565,6 +671,11 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             f"schema:observation:{observation_id}",
             resource_in_caller_scope=True,
         )
+        known = getattr(api, "known_observation_ids", set()) or set()
+        if observation_id not in known:
+            raise ControlPlaneError.not_found(
+                f"Schema observation {observation_id!r} not found"
+            )
         return SchemaObservationAckResponse(observation_id=observation_id)
 
     @router.get(

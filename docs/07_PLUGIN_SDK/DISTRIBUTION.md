@@ -56,7 +56,8 @@ Install matching minors throughout ETLantic's 0.x roadmap:
 - `etlantic-sqlmodel`
 - `medallantic`
 - `etlantic-datafusion` (experimental Gate B stub)
-- `etlantic-fastapi` (authoring/service reference adapter)
+- `etlantic-fastapi` (CP1 `ETLanticAPI` + thin non-CP `create_reference_app`;
+  CP1 ≠ production multi-tenant GA)
 
 ### Naming convention (examples only — not published)
 

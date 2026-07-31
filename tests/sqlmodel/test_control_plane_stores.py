@@ -20,10 +20,13 @@ from etlantic.control_plane import (
 )
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
+    SqlModelEventStore,
     SQLModelSubmissionStore,
     create_control_plane_tables,
     create_sqlite_engine,
 )
+
+pytestmark = pytest.mark.sqlmodel
 
 
 def _ctx(tenant: str = "tenant-a", workspace: str = "ws-1") -> ControlPlaneContext:
@@ -53,10 +56,29 @@ def test_sqlite_restart_preserves_accept(tmp_path: Path) -> None:
     store2 = SQLModelSubmissionStore(engine2)
     found = store2.lookup_idempotency(ctx, "idem-restart")
     assert found is not None
-    assert found.acceptance_id == first.acceptance_id
-    assert found.submission_id == first.submission_id
-    run = store2.get_run(ctx, first.resource_id or first.submission_id)
+    assert found.acceptance_id == first.receipt.acceptance_id
+    assert found.submission_id == first.receipt.submission_id
+    run = store2.get_run(ctx, first.receipt.resource_id or first.receipt.submission_id)
     assert run["status"] == "accepted"
+
+
+def test_sqlite_event_store_restart(tmp_path: Path) -> None:
+    db = tmp_path / "cp-events.db"
+    url = f"sqlite:///{db}"
+    engine = create_sqlite_engine(url)
+    create_control_plane_tables(engine)
+    events = SqlModelEventStore(engine)
+    ctx = _ctx()
+    first = events.append(
+        ctx, kind="run.accepted", payload={"run_id": "run-1", "note": "ok"}
+    )
+    engine2 = create_sqlite_engine(url)
+    events2 = SqlModelEventStore(engine2)
+    listed = events2.list_after_cursor(ctx, None, limit=10)
+    assert len(listed) == 1
+    assert listed[0].event_id == first.event_id
+    assert listed[0].payload == {"run_id": "run-1", "note": "ok"}
+    assert listed[0].to_dict()["run_id"] == "run-1"
 
 
 def test_sqlite_multi_worker_idempotent_submit(tmp_path: Path) -> None:
@@ -80,8 +102,9 @@ def test_sqlite_multi_worker_idempotent_submit(tmp_path: Path) -> None:
         f2 = pool.submit(accept, store_b)
         r1, r2 = f1.result(), f2.result()
 
-    assert r1.acceptance_id == r2.acceptance_id
-    assert r1.submission_id == r2.submission_id
+    assert r1.receipt.acceptance_id == r2.receipt.acceptance_id
+    assert r1.receipt.submission_id == r2.receipt.submission_id
+    assert r1.created or r2.created
 
 
 def test_definition_repo_scoped(tmp_path: Path) -> None:

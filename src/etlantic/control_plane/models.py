@@ -219,6 +219,8 @@ class AcceptReceipt:
     status: Literal["accepted"] = "accepted"
     resource_type: str = "run"
     resource_id: str | None = None
+    status_url: str | None = None
+    events_url: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -232,6 +234,8 @@ class AcceptReceipt:
             "status": self.status,
             "resource_type": self.resource_type,
             "resource_id": self.resource_id,
+            "status_url": self.status_url,
+            "events_url": self.events_url,
         }
 
     @classmethod
@@ -250,7 +254,26 @@ class AcceptReceipt:
                 if data.get("resource_id") is not None
                 else None
             ),
+            status_url=(
+                str(data["status_url"]) if data.get("status_url") is not None else None
+            ),
+            events_url=(
+                str(data["events_url"]) if data.get("events_url") is not None else None
+            ),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptResult:
+    """Outcome of :meth:`~etlantic.control_plane.protocols.SubmissionStore.accept`.
+
+    ``created`` is True only when a new acceptance row was written (first
+    durable commit for the ADR-016 idempotency tuple). Idempotent replays
+    return the original receipt with ``created=False``.
+    """
+
+    receipt: AcceptReceipt
+    created: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,27 +286,50 @@ class ControlPlaneEvent:
     kind: str
     created_at: str
     payload: Mapping[str, Any] | None = None
+    correlation_id: str | None = None
+    scope: Mapping[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        payload = redact_control_plane_payload(dict(self.payload or {}))
+        run_id = payload.get("run_id")
         return {
             "schema": CONTROL_PLANE_EVENT_SCHEMA,
             "event_id": self.event_id,
             "sequence": self.sequence,
             "cursor": self.cursor,
             "kind": self.kind,
+            # Additive ADR aliases (dual-read friendly for 0.41 migration).
+            "type": self.kind,
             "created_at": self.created_at,
-            "payload": redact_control_plane_payload(dict(self.payload or {})),
+            "occurred_at": self.created_at,
+            "correlation_id": self.correlation_id,
+            "scope": dict(self.scope) if self.scope is not None else None,
+            "run_id": str(run_id) if run_id is not None else None,
+            "payload": payload,
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ControlPlaneEvent:
+        kind = data.get("kind")
+        if kind is None:
+            kind = data.get("type")
+        created_at = data.get("created_at")
+        if created_at is None:
+            created_at = data.get("occurred_at")
+        scope = data.get("scope")
         return cls(
             event_id=str(data["event_id"]),
             sequence=int(data["sequence"]),
             cursor=str(data["cursor"]),
-            kind=str(data["kind"]),
-            created_at=str(data["created_at"]),
+            kind=str(kind),
+            created_at=str(created_at),
             payload=dict(data.get("payload") or {}),
+            correlation_id=(
+                str(data["correlation_id"])
+                if data.get("correlation_id") is not None
+                else None
+            ),
+            scope=dict(scope) if isinstance(scope, Mapping) else None,
         )
 
 
@@ -293,6 +339,7 @@ __all__ = [
     "CONTROL_PLANE_EVENT_SCHEMA",
     "SSE_CURSOR_SCHEMA",
     "AcceptReceipt",
+    "AcceptResult",
     "ControlPlaneContext",
     "ControlPlaneEvent",
     "CorrelationKey",

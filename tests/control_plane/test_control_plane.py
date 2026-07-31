@@ -75,9 +75,12 @@ def test_accept_receipt_and_event_round_trip() -> None:
         workspace_id="ws-1",
         idempotency_key="idem-1",
         created_at="2026-07-31T00:00:00Z",
+        status_url="/v1/runs/sub-1",
+        events_url="/v1/runs/sub-1/events",
     )
     assert receipt.to_dict()["schema"] == ACCEPT_RECEIPT_SCHEMA
     assert AcceptReceipt.from_dict(receipt.to_dict()).to_dict() == receipt.to_dict()
+    assert receipt.to_dict()["status_url"] == "/v1/runs/sub-1"
 
     event = ControlPlaneEvent(
         event_id="evt-1",
@@ -85,10 +88,33 @@ def test_accept_receipt_and_event_round_trip() -> None:
         cursor="cursor-1",
         kind="run.accepted",
         created_at="2026-07-31T00:00:00Z",
-        payload={"status": "accepted"},
+        payload={"status": "accepted", "run_id": "run-1"},
+        correlation_id="corr-1",
+        scope={"tenant_id": "tenant-a", "workspace_id": "ws-1"},
     )
     assert event.to_dict()["schema"] == CONTROL_PLANE_EVENT_SCHEMA
+    assert event.to_dict()["type"] == "run.accepted"
+    assert event.to_dict()["occurred_at"] == event.created_at
+    assert event.to_dict()["run_id"] == "run-1"
+    assert event.to_dict()["correlation_id"] == "corr-1"
     assert ControlPlaneEvent.from_dict(event.to_dict()).to_dict() == event.to_dict()
+
+
+def test_memory_event_store_concurrent_append() -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    events = MemoryEventStore()
+    ctx = _ctx()
+
+    def _append(i: int) -> None:
+        events.append(ctx, kind="run.probe", payload={"run_id": f"r-{i}"})
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(_append, range(40)))
+    listed = events.list_after_cursor(ctx, None, limit=100)
+    assert len(listed) == 40
+    sequences = [e.sequence for e in listed]
+    assert sequences == list(range(1, 41))
 
 
 def test_problem_details_round_trip() -> None:
@@ -240,9 +266,11 @@ def test_idempotency_same_key_same_receipt() -> None:
         idempotency_key="idem-42",
         payload={"definition_id": "pipe"},
     )
-    assert first == second
-    assert first.acceptance_id == second.acceptance_id
-    assert first.submission_id == second.submission_id
+    assert first.created is True
+    assert second.created is False
+    assert first.receipt == second.receipt
+    assert first.receipt.acceptance_id == second.receipt.acceptance_id
+    assert first.receipt.submission_id == second.receipt.submission_id
 
 
 def test_idempotency_conflict_on_different_payload() -> None:

@@ -5,6 +5,9 @@ with HTTP **410 Gone** and a hint to reconnect without ``cursor`` /
 ``Last-Event-ID`` to replay from the beginning. They do **not** silently skip
 or invent a mid-stream position.
 
+``follow=true`` is capped (default max polls / duration) so CP1 never blocks
+unbounded on a sync sleep loop.
+
 Optional WebSocket adapters are experimental and not required for the 0.39
 exit gate — they are intentionally omitted here.
 """
@@ -26,18 +29,22 @@ from etlantic.control_plane import (
 )
 
 SSE_MEDIA_TYPE = "text/event-stream"
+DEFAULT_FOLLOW_MAX_POLLS = 100
+DEFAULT_FOLLOW_MAX_DURATION_S = 60.0
 
 
 def event_matches_run(event: ControlPlaneEvent, run_id: str) -> bool:
-    """True when the event envelope is associated with ``run_id``."""
+    """True when the event envelope is associated with ``run_id``.
+
+    Matches an explicit ``run_id`` in the payload (and optional host-set
+    attribute). Does **not** treat ``acceptance_id`` / ``submission_id`` as
+    run identifiers.
+    """
     payload = event.payload or {}
     if str(payload.get("run_id") or "") == run_id:
         return True
-    # Accept receipts may key the run as submission/resource id.
-    for key in ("submission_id", "resource_id", "acceptance_id"):
-        if str(payload.get(key) or "") == run_id:
-            return True
-    return False
+    top = getattr(event, "run_id", None)
+    return bool(top is not None and str(top) == run_id)
 
 
 def format_sse_message(event: ControlPlaneEvent) -> str:
@@ -84,17 +91,31 @@ def iter_run_sse(
     poll_interval: float = 0.25,
     heartbeat_every: int = 4,
     max_polls: int | None = None,
+    max_duration_s: float | None = None,
 ) -> Iterator[str]:
     """Yield SSE frames for ``run_id`` after ``cursor``.
 
     When ``follow`` is False (default), emit matching history then close.
     When True, poll for new events with periodic heartbeat comments until
-    ``max_polls`` is reached (None = unbounded; tests should bound).
+    ``max_polls`` or ``max_duration_s`` is reached. CP1 defaults cap follow at
+    :data:`DEFAULT_FOLLOW_MAX_POLLS` polls and
+    :data:`DEFAULT_FOLLOW_MAX_DURATION_S` seconds (unbounded follow is rejected
+    by applying these defaults).
     """
+    if follow:
+        if max_polls is None:
+            max_polls = DEFAULT_FOLLOW_MAX_POLLS
+        if max_duration_s is None:
+            max_duration_s = DEFAULT_FOLLOW_MAX_DURATION_S
     seen: set[str] = set()
     position = cursor
     polls = 0
     idle = 0
+    deadline = (
+        time.monotonic() + float(max_duration_s)
+        if follow and max_duration_s is not None
+        else None
+    )
     while True:
         batch = events.list_after_cursor(ctx, position, limit=200)
         emitted = 0
@@ -111,6 +132,8 @@ def iter_run_sse(
             break
         polls += 1
         if max_polls is not None and polls >= max_polls:
+            break
+        if deadline is not None and time.monotonic() >= deadline:
             break
         if emitted == 0:
             idle += 1
@@ -129,6 +152,8 @@ def sse_streaming_response(
     cursor: str | None,
     follow: bool = False,
     headers: Mapping[str, str] | None = None,
+    max_polls: int | None = None,
+    max_duration_s: float | None = None,
 ) -> StreamingResponse:
     """Build a ``text/event-stream`` response for run events."""
     validate_resume_cursor(events, ctx, cursor)
@@ -140,13 +165,23 @@ def sse_streaming_response(
     if headers:
         extra.update(dict(headers))
     return StreamingResponse(
-        iter_run_sse(events, ctx, run_id, cursor=cursor, follow=follow),
+        iter_run_sse(
+            events,
+            ctx,
+            run_id,
+            cursor=cursor,
+            follow=follow,
+            max_polls=max_polls,
+            max_duration_s=max_duration_s,
+        ),
         media_type=SSE_MEDIA_TYPE,
         headers=extra,
     )
 
 
 __all__ = [
+    "DEFAULT_FOLLOW_MAX_DURATION_S",
+    "DEFAULT_FOLLOW_MAX_POLLS",
     "SSE_MEDIA_TYPE",
     "event_matches_run",
     "format_sse_message",
