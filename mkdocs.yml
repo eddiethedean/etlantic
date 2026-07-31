@@ -458,6 +458,7 @@ nav:
           - Portable transformations: 04_TRANSFORMATIONS/PORTABLE_HUB.md
       - Operate safely:
           - Deployment: 06_EXECUTION/DEPLOYMENT.md
+          - Durable submission and state: 06_EXECUTION/DURABLE_WORK.md
           - Control plane (CP1): 06_EXECUTION/CONTROL_PLANE.md
           - CI integration: 06_EXECUTION/CI_INTEGRATION.md
           - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md

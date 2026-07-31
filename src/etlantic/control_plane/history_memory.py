@@ -21,7 +21,10 @@ from etlantic.control_plane.history_models import (
     assert_history_metadata_only,
 )
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_control_plane_text,
+)
 
 
 def _utcnow_iso() -> str:
@@ -253,6 +256,7 @@ class MemoryHistoryStore:
         """Mark an observation acknowledged without touching registry revisions."""
         key = (*ctx.scope_key, observation_id)
         now = _utcnow_iso()
+        safe_note = redact_control_plane_text(note) if note is not None else None
         with self._lock:
             if kind == "schema":
                 record = self._schema.get(key)
@@ -265,7 +269,7 @@ class MemoryHistoryStore:
                     record,
                     acknowledged=True,
                     acknowledged_at=now,
-                    note=note if note is not None else record.note,
+                    note=safe_note if note is not None else record.note,
                 )
                 self._schema[key] = updated
                 return deepcopy(updated)
@@ -280,7 +284,7 @@ class MemoryHistoryStore:
                     record,
                     acknowledged=True,
                     acknowledged_at=now,
-                    note=note if note is not None else record.note,
+                    note=safe_note if note is not None else record.note,
                 )
                 self._reliability[key] = updated
                 return deepcopy(updated)
@@ -295,7 +299,7 @@ class MemoryHistoryStore:
                     record,
                     acknowledged=True,
                     acknowledged_at=now,
-                    note=note if note is not None else record.note,
+                    note=safe_note if note is not None else record.note,
                 )
                 self._plan[key] = updated
                 return deepcopy(updated)
@@ -327,6 +331,11 @@ class MemoryImpactIndex:
         edge_id = edge.edge_id or f"edge-{uuid.uuid4().hex[:16]}"
         key = (*ctx.scope_key, edge_id)
         with self._lock:
+            if key in self._edges:
+                raise ControlPlaneError.conflict(
+                    "Impact edge already exists",
+                    extensions={"edge_id": edge_id},
+                )
             stored = replace(
                 edge,
                 edge_id=edge_id,
@@ -367,6 +376,11 @@ class MemoryImpactIndex:
         assert_history_metadata_only(event.metadata)
         key = (*ctx.scope_key, event.event_id)
         with self._lock:
+            if key in self._invalidations:
+                raise ControlPlaneError.conflict(
+                    "Cache invalidation event already exists",
+                    extensions={"event_id": event.event_id},
+                )
             stored = replace(
                 event,
                 target_fingerprints=tuple(event.target_fingerprints),

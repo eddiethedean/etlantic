@@ -14,7 +14,10 @@ from typing import Any
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_control_plane_text,
+)
 from etlantic.control_plane.registry_models import (
     AliasRecord,
     EnvironmentRecord,
@@ -54,6 +57,48 @@ def _require_active(lifecycle: LifecycleState, *, resource: str) -> None:
 def _safe_metadata(metadata: Mapping[str, Any] | None) -> dict[str, Any]:
     redacted = redact_control_plane_payload(deepcopy(dict(metadata or {})))
     return redacted if isinstance(redacted, dict) else {}
+
+
+def _safe_registry_value(value: Any) -> Any:
+    """Redact resolved secrets while preserving canonical ``secret_ref`` objects."""
+    if isinstance(value, Mapping):
+        out: dict[str, Any] = {}
+        for raw_key, child in value.items():
+            key = str(raw_key)
+            normalized = key.casefold().replace("-", "_")
+            if normalized == "secret_ref":
+                if not isinstance(child, Mapping):
+                    out[key] = "***"
+                    continue
+                allowed = {"provider", "name"}
+                if set(child) == allowed:
+                    out[key] = {
+                        "provider": redact_control_plane_text(str(child["provider"])),
+                        "name": redact_control_plane_text(str(child["name"])),
+                    }
+                else:
+                    out[key] = "***"
+                continue
+            if normalized in {"has_secret_ref", "secret_provider"}:
+                out[key] = _safe_registry_value(child)
+                continue
+            probe = redact_control_plane_payload({key: "etlantic-safe-probe"})
+            if isinstance(probe, dict) and probe.get(key) == "***":
+                out[key] = "***"
+            else:
+                out[key] = _safe_registry_value(child)
+        return out
+    if isinstance(value, (list, tuple)):
+        return [_safe_registry_value(item) for item in value]
+    if isinstance(value, str):
+        return redact_control_plane_text(value)
+    return deepcopy(value)
+
+
+def safe_registry_content(content: Mapping[str, Any]) -> dict[str, Any]:
+    """Return a detached, JSON-shaped, secret-free registry content document."""
+    safe = _safe_registry_value(content)
+    return safe if isinstance(safe, dict) else {}
 
 
 @dataclass
@@ -407,10 +452,17 @@ class MemoryRevisionRegistry:
                         "revision_kind": revision.kind,
                     },
                 )
+            safe_content = safe_registry_content(revision.content)
             stored = replace(
                 revision,
-                content=deepcopy(dict(revision.content)),
+                content=safe_content,
+                content_fingerprint=content_fingerprint(safe_content),
                 created_at=revision.created_at or _utcnow_iso(),
+                signature_placeholder=(
+                    redact_control_plane_text(revision.signature_placeholder)
+                    if revision.signature_placeholder is not None
+                    else None
+                ),
                 provenance_placeholder=(
                     _safe_metadata(revision.provenance_placeholder)
                     if revision.provenance_placeholder is not None
@@ -528,11 +580,12 @@ class MemoryRevisionRegistry:
                     extensions={"revision_id": from_revision_id},
                 )
             source_snapshot = deepcopy(source)
-            body = (
+            requested_body = (
                 deepcopy(dict(content))
                 if content is not None
                 else deepcopy(dict(source.content))
             )
+            body = safe_registry_content(requested_body)
             new_revision_id = f"rev-{uuid.uuid4().hex[:16]}"
             created = _utcnow_iso()
             new_rev = RegistryRevision(
@@ -634,8 +687,30 @@ class MemoryRegistryProvider:
                 _require_active(
                     tenant.lifecycle, resource=f"tenant:{ctx.tenant.tenant_id}"
                 )
+            workspace = self.workspaces.peek(
+                ctx.tenant.tenant_id, ctx.workspace.workspace_id
+            )
+            if workspace is not None:
+                _require_active(
+                    workspace.lifecycle,
+                    resource=f"workspace:{ctx.workspace.workspace_id}",
+                )
             now = _utcnow_iso()
             existing = self._environments.get((record.tenant_id, record.environment_id))
+            if (
+                existing is not None
+                and existing.workspace_id is not None
+                and existing.workspace_id != ctx.workspace.workspace_id
+            ):
+                raise ControlPlaneError.not_found(
+                    "Environment not found",
+                    extensions={"environment_id": record.environment_id},
+                )
+            if existing is not None:
+                _require_active(
+                    existing.lifecycle,
+                    resource=f"environment:{record.environment_id}",
+                )
             stored = replace(
                 record,
                 created_at=existing.created_at
@@ -658,12 +733,27 @@ class MemoryRegistryProvider:
                 _require_active(
                     tenant.lifecycle, resource=f"tenant:{ctx.tenant.tenant_id}"
                 )
+            workspace = self.workspaces.peek(
+                ctx.tenant.tenant_id, ctx.workspace.workspace_id
+            )
+            if workspace is not None:
+                _require_active(
+                    workspace.lifecycle,
+                    resource=f"workspace:{ctx.workspace.workspace_id}",
+                )
             record = self._environments.get(key)
-            if record is None:
+            if record is None or (
+                record.workspace_id is not None
+                and record.workspace_id != ctx.workspace.workspace_id
+            ):
                 raise ControlPlaneError.not_found(
                     "Environment not found",
                     extensions={"environment_id": environment_id},
                 )
+            _require_active(
+                record.lifecycle,
+                resource=f"environment:{environment_id}",
+            )
             return deepcopy(record)
 
     def put_security_domain(
@@ -717,4 +807,5 @@ __all__ = [
     "MemoryTenantDirectory",
     "MemoryWorkspaceDirectory",
     "content_fingerprint",
+    "safe_registry_content",
 ]

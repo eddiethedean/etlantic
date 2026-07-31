@@ -2,7 +2,7 @@
 title: ETLantic 0.41 Implementation Plan
 description: Implementation-grade plan for durable submission, state, replay, and preview workspaces.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.41.0-dev
 ---
 
 # ETLantic 0.41 Implementation Plan
@@ -10,6 +10,10 @@ plan_last_reviewed: 0.37.0
 Phase 0.41 makes accepted work, execution ownership, checkpoints, and replay
 durable across API and worker failure. It consumes the 0.39 API and 0.40 registry
 without weakening their scope boundaries.
+
+The provider-neutral CP3 contracts and in-memory conformance provider are now
+implemented. Transactional database/broker adapters, multi-host chaos evidence,
+and the release exit gate remain required before this phase can be released.
 
 ## Outcome
 
@@ -71,4 +75,3 @@ workspaces are durable, bounded, expiring forks rather than ad hoc flags.
 - State-provider conformance and corruption-recovery results.
 - Replay/repair/backfill provenance records.
 - Preview TTL, cleanup, staleness, and authority matrix.
-

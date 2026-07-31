@@ -19,6 +19,7 @@ from etlantic.control_plane.models import (
     ControlPlaneEvent,
 )
 from etlantic.control_plane.protocols import AuthzDecision
+from etlantic.control_plane.redaction import redact_control_plane_payload
 
 
 def _utcnow_iso() -> str:
@@ -164,11 +165,14 @@ class MemorySubmissionStore:
         operation: str = "run.submit",
     ) -> AcceptResult:
         key = _idem_key(ctx, idempotency_key, operation=operation)
+        safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
+        if not isinstance(safe_payload, dict):
+            safe_payload = {}
         with self._lock:
             existing = self._by_id.get(key)
             if existing is not None:
                 prior = self._payloads[key]
-                if prior != dict(payload):
+                if prior != safe_payload:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
@@ -190,7 +194,7 @@ class MemorySubmissionStore:
                 resource_id=run_id,
             )
             self._by_id[key] = receipt
-            self._payloads[key] = dict(payload)
+            self._payloads[key] = deepcopy(safe_payload)
             run_key = (*_scope(ctx), run_id)
             self._runs[run_key] = {
                 "run_id": run_id,
@@ -199,7 +203,7 @@ class MemorySubmissionStore:
                 "status": "accepted",
                 "tenant_id": ctx.tenant.tenant_id,
                 "workspace_id": ctx.workspace.workspace_id,
-                "definition_id": payload.get("definition_id"),
+                "definition_id": safe_payload.get("definition_id"),
                 "created_at": created,
                 "updated_at": created,
                 "idempotency_key": idempotency_key,
@@ -279,6 +283,9 @@ class MemoryEventStore:
         payload: Mapping[str, Any] | None = None,
     ) -> ControlPlaneEvent:
         scope = _scope(ctx)
+        safe_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        if not isinstance(safe_payload, dict):
+            safe_payload = {}
         with self._lock:
             bucket = self._events.setdefault(scope, [])
             sequence = len(bucket) + 1
@@ -291,7 +298,7 @@ class MemoryEventStore:
                 cursor=cursor,
                 kind=kind,
                 created_at=_utcnow_iso(),
-                payload=dict(payload or {}),
+                payload=safe_payload,
                 correlation_id=(
                     ctx.correlation_key.value
                     if ctx.correlation_key is not None

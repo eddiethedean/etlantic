@@ -201,7 +201,8 @@ def _parse_iso(value: str | None) -> datetime | None:
 def _is_older(observed_at: str | None, older_than: datetime) -> bool:
     parsed = _parse_iso(observed_at)
     if parsed is None:
-        return True
+        # Corrupt or absent timestamps must not cause destructive retention.
+        return False
     cutoff = (
         older_than
         if older_than.tzinfo is not None
