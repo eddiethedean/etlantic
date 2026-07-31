@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.37 boundary:** Public reliability models, provider protocols,
+> **Current 0.38 boundary:** Public reliability models, provider protocols,
 > and local CLI inspection and preview workflows are available. Durable
 > managed history, control-plane coordination, federation, cost-aware
 > selection, and human-governed automation remain planned.
@@ -42,7 +42,7 @@ measurement, persistence, and notification.
 
 ## Scope
 
-This plan covers ten related capability families:
+This plan covers thirteen related capability families:
 
 1. freshness and partition completeness;
 2. incremental invalidation and repair planning;
@@ -53,7 +53,10 @@ This plan covers ten related capability families:
 7. cross-backend implementation parity;
 8. plan and environment drift;
 9. data-quality trends;
-10. statistical data drift.
+10. statistical data drift;
+11. pipeline and step delivery objectives, deadlines, and escalation;
+12. bounded dynamic mapping and explicit control flow;
+13. streaming record-error, dead-letter, and schema-registry reliability.
 
 These are operational models, policies, observations, and evidence. They are
 not additional top-level contract standards.
@@ -94,6 +97,115 @@ Shared models should include:
 - affected nodes, fields, partitions, and artifacts;
 - acknowledgement, approval, and remediation references;
 - deterministic fingerprints where possible.
+
+## Delivery Objectives, Deadlines, and Escalation
+
+### Problem
+
+A pipeline may be structurally correct and produce valid data while still
+missing the time at which its output is useful. Timeouts limit individual
+operations; they do not express a portable delivery objective or prove that a
+miss was detected, routed, escalated, and later recovered.
+
+### Model
+
+A versioned `DeliveryObjective` should describe:
+
+- pipeline, step, output, or data-product subject identity;
+- reference point such as scheduled, queued, started, source-ready, fixed time,
+  or an explicitly registered custom provider reference;
+- warning and hard deadlines, grace periods, timezone, and calendar;
+- owner, severity, policy revision, and notification route references;
+- repeat, deduplication, acknowledgement, escalation, and recovery behavior;
+- whether a missed objective warns, blocks publication, opens an approval, or
+  only records evidence.
+
+Evaluation must use durable clock and run/event history, survive process loss,
+and emit distinct approaching, breached, acknowledged, escalated, recovered,
+and unknown outcomes. Notification providers own transport; ETLantic owns the
+portable objective, policy decision, dedupe identity, and normalized evidence.
+
+### Acceptance
+
+- equivalent objective inputs produce the same deadline and dedupe identity;
+- API or worker restart cannot lose or duplicate a required breach/recovery
+  transition;
+- calendar, clock-skew, late-event, and historical-average inputs are explicit
+  and bounded;
+- notification routes are authorized before delivery and never receive
+  resolved secrets, source rows, or protected metadata beyond their policy;
+- failure of a required routing provider produces durable undelivered evidence
+  and follows an explicit retry/escalation policy.
+
+## Bounded Dynamic Mapping and Explicit Control Flow
+
+### Problem
+
+Static fan-out cannot express a run whose partitions or work items are known
+only after an authorized upstream operation. Arbitrary Python branching cannot
+be made portable, replayable, or safe merely by observing it at runtime.
+
+### Model
+
+ETLantic should model explicit, versioned constructs for:
+
+- map and reduce over a declared collection, partition set, or provider
+  enumeration;
+- conditional branches based on typed, bounded decision evidence;
+- failure branches and compensation paths;
+- stable child identities derived from plan, parent, map key, and input
+  snapshot identity;
+- expansion, nesting, concurrency, payload, duration, and total-work limits;
+- branch selection, skipped work, retries, cancellation, resume, replay, and
+  report aggregation.
+
+Expansion never grants new plugin, secret, network, tenant, or write authority.
+Every scheduler and compiler must preserve the declared semantics or reject the
+plan before emitting work.
+
+### Acceptance
+
+- identical declared inputs produce identical child identities, dependency
+  closure, branch decisions, and normalized report structure;
+- bounds fail before unbounded work or state is accepted;
+- retry, cancellation, resume, and replay cannot duplicate completed mapped
+  effects or silently bypass a failure/compensation branch;
+- unsupported dynamic semantics fail capability negotiation rather than being
+  flattened into an inequivalent static graph.
+
+## Streaming Record Errors, Dead Letters, and Schema Registries
+
+### Problem
+
+Stream-level retry and late-data handling do not define what happens to one
+malformed, incompatible, or repeatedly failing record. Silent skipping, unsafe
+offset advancement, or payload-bearing diagnostics can lose data or expose it.
+
+### Model
+
+Streaming providers should support explicit record-error policies for fail,
+skip, quarantine, and dead-letter outcomes. A policy should declare retry
+bounds, offset/checkpoint behavior, external DLQ identity, retention,
+authorization, deduplication, redrive, and reconciliation. ETLantic records only
+bounded identifiers and outcome metadata; provider-owned DLQ storage holds any
+payload under its own access policy.
+
+A schema-registry provider protocol should normalize subject/schema identity,
+format, version, compatibility mode, lookup, registration authority, cache
+freshness, outage behavior, and evolution evidence. The reference path should
+cover Avro, Protobuf, and JSON Schema through a Confluent-compatible provider
+without making that vendor or its SDK a core dependency.
+
+### Acceptance
+
+- a poison record cannot create an unbounded retry loop or silently advance an
+  offset/checkpoint contrary to policy;
+- redrive is idempotent, provenance-linked, and reconciled with original
+  failure and checkpoint evidence;
+- unauthorized principals cannot enumerate or retrieve DLQ payloads through
+  ETLantic metadata APIs;
+- incompatible, ambiguous, stale, or unavailable schema-registry results follow
+  an explicit fail-closed policy and never silently reinterpret an event.
 
 ## Durable Host Recovery Integration
 
@@ -564,6 +676,13 @@ etlantic plan diff
 etlantic environment diff
 etlantic quality trends
 etlantic data-drift inspect
+etlantic objectives check
+etlantic objectives history
+etlantic erasure plan
+etlantic erasure status
+etlantic stream dead-letters inspect
+etlantic stream redrive plan
+etlantic stream schemas check
 ```
 
 The Python API, CLI, FastAPI integration, IDE, notebooks, and AI tooling should
@@ -582,7 +701,13 @@ share the same request, result, policy, and evidence models.
 - implementation identity and parity status;
 - plan and environment drift;
 - quality trends;
-- statistical drift.
+- statistical drift;
+- delivery-objective calculation, breach, escalation, delivery, acknowledgement,
+  and recovery;
+- dynamic expansion and branch decisions, child summaries, skipped work, and
+  bound exhaustion;
+- record-error disposition, dead-letter identity, offset/checkpoint decision,
+  redrive, reconciliation, and schema-registry evidence.
 
 IDE and notebook tooling should offer:
 
@@ -593,6 +718,9 @@ IDE and notebook tooling should offer:
 - implementation comparison;
 - plan and environment diffs;
 - bounded quality and drift charts;
+- objective/deadline timelines, escalation state, and recovery evidence;
+- dynamic-map child and branch views with stable identities and explicit bounds;
+- dead-letter/redrive and schema-compatibility views that never expose payloads;
 - navigation to affected models, policies, fields, and sinks.
 
 AI tools may explain evidence and propose repairs, tests, adapters, or policy
@@ -611,6 +739,8 @@ Required controls include:
 - explicit destructive-write and backfill approval;
 - tenant and security-domain isolation;
 - no secret values in fingerprints, comparisons, or reports;
+- no source, event, dead-letter, or data-subject value in objective, expansion,
+  branch, DLQ, registry, erasure, or notification evidence;
 - privacy review for statistical metrics;
 - integrity-protected evidence used for deployment or recovery decisions;
 - audit events for repair, backfill, retry override, baseline, and policy
@@ -632,7 +762,13 @@ Conformance testing should cover:
 - cross-backend null, precision, ordering, timezone, and invalid-data behavior;
 - plan and environment fingerprint stability;
 - quality-trend windows and notification deduplication;
-- statistical-drift privacy budgets and bounded execution.
+- statistical-drift privacy budgets and bounded execution;
+- objective clock, timezone, calendar, restart, dedupe, escalation, and recovery
+  behavior;
+- deterministic expansion, branch, replay, cancellation, compensation, and
+  bound-exhaustion behavior;
+- poison-record retry/offset matrices, DLQ authorization/redrive/retention, and
+  Avro/Protobuf/JSON Schema registry compatibility and outage behavior.
 
 ## Roadmap Placement
 
@@ -651,14 +787,15 @@ Rows from 0.39 onward are future sequence.
 | 0.7 | Spark and Delta writes, partition completeness, backfill semantics |
 | 0.8 | Orchestrator mapping for retries, repair, backfills, and reports |
 | 0.9 | CLI, provider protocols, conformance suites, drift comparisons |
-| 0.39 | FastAPI inspection, planning, approval, and history routes |
-| 0.40 | Registry and workspace history for plans, environments, and quality |
-| 0.41 | Incremental invalidation, repair, state, and reproducibility |
-| 0.42 | Governance, approvals, budgets, destructive-write policy |
-| 0.43 | Integrated multi-tenant control-plane graduation |
-| 0.44 | IDE and notebook previews, diagnostics, and trend displays |
-| 0.45 | Cost-aware repair, materialization, and implementation selection |
-| 0.48 | Human-governed repair and migration proposals |
+| [0.39](IMPLEMENTATION_PLAN_0_39.md) | FastAPI inspection, planning, approval, and history routes |
+| [0.40](IMPLEMENTATION_PLAN_0_40.md) | Registry and workspace history for plans, environments, and quality |
+| [0.41](IMPLEMENTATION_PLAN_0_41.md) | Incremental invalidation, repair, state, and reproducibility |
+| [0.42](IMPLEMENTATION_PLAN_0_42.md) | Governance, delivery objectives, deadline/escalation routing, governed erasure, approvals, budgets, destructive-write policy |
+| [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
+| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook previews, diagnostics, and trend displays |
+| [0.45](IMPLEMENTATION_PLAN_0_45.md) | Cost-aware repair, materialization, and implementation selection |
+| [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability |
+| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed repair and migration proposals |
 
 ## Success Criteria
 
@@ -674,6 +811,12 @@ ETLantic succeeds when a developer can determine:
 - Why did the physical plan or environment change?
 - Is data quality degrading over time?
 - Did the data distribution change within approved privacy limits?
+- Will the pipeline or step meet its delivery objective, and was a miss routed,
+  escalated, and recovered correctly?
+- What dynamic work and branch decisions were created, and were all bounds and
+  replay guarantees preserved?
+- What happened to every rejected stream record, did checkpoint state remain
+  safe, and was schema compatibility proven?
 
 The core principle is:
 

@@ -28,7 +28,7 @@ STANDARD_PAGES = {
 }
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/v0.37.0/"
+        "https://etlantic.readthedocs.io/en/v0.38.0/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
@@ -410,7 +410,7 @@ def check_control_plane_plan() -> None:
     plan_urls = {
         f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
         f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
-        f"https://etlantic.readthedocs.io/en/v0.37.0/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/v0.38.0/{plan_rel}/",
     }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")
@@ -1639,7 +1639,6 @@ def main() -> None:
             raise SystemExit(f"{path} missing Future design / design-study admonition")
 
     future_plugin_pages = [
-        ROOT / "docs/07_PLUGIN_SDK/STORAGE_PLUGIN.md",
         ROOT / "docs/07_PLUGIN_SDK/RESOURCE_PROVIDER.md",
     ]
     for path in future_plugin_pages:
@@ -1951,10 +1950,7 @@ def main() -> None:
     if start < 0 or end < 0:
         raise SystemExit("status-banner.js missing futurePluginSdkPages array")
     future_sdk_block = banner_js[start:end]
-    for future_sdk in (
-        "STORAGE_PLUGIN",
-        "RESOURCE_PROVIDER",
-    ):
+    for future_sdk in ("RESOURCE_PROVIDER",):
         if f'"{future_sdk}"' not in future_sdk_block:
             raise SystemExit(f"status-banner.js must mark {future_sdk} as future")
 
@@ -2289,7 +2285,12 @@ def main() -> None:
         next_minor = f"{maj_s}.{int(min_s) + 1}"
     except ValueError:
         next_minor = None
-    experimental_packages = {"etlantic-datafusion"}
+    experimental_packages = {
+        "etlantic-datafusion",
+        "etlantic-s3",
+        "etlantic-iceberg",
+        "etlantic-snowflake",
+    }
     reference_packages = {"etlantic-fastapi"}
     redirect_packages = {"etlantic-sparkforge"}
     root_pyproject_path = ROOT / "pyproject.toml"

@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.37 boundary:** Schema inspection, comparison, impact analysis,
+> **Current 0.38 boundary:** Schema inspection, comparison, impact analysis,
 > acknowledgement, SARIF diagnostics, and fingerprint-only file-backed history
 > are available. Registry-backed, multi-tenant history and future IDE workflows
 > remain planned. Schema history stores fingerprints and metadata, never
@@ -453,13 +453,13 @@ Rows from 0.39 onward are future sequence.
 | 0.4 | Runtime observations, policy decisions, reports, events |
 | 0.5–0.7 | Dataframe, SQL, Spark, streaming, and storage inspectors |
 | 0.9 | CLI, diagnostics, provider protocols, SARIF, notifications |
-| 0.39 | FastAPI inspection, history, impact, and acknowledgement routes |
-| 0.40 | Registry-backed history, search, promotion, and cross-pipeline impact |
-| 0.41 | Baselines, state linkage, replay, concurrency, reproducibility |
-| 0.42 | Approval, governance, signed observations, retention, policy evidence |
-| 0.43 | Integrated multi-tenant control-plane graduation |
-| 0.44 | IDE and notebook history, impact, proposals, and navigation |
-| 0.48 | Human-governed AI remediation proposals |
+| [0.39](IMPLEMENTATION_PLAN_0_39.md) | FastAPI inspection, history, impact, and acknowledgement routes |
+| [0.40](IMPLEMENTATION_PLAN_0_40.md) | Registry-backed history, search, promotion, and cross-pipeline impact |
+| [0.41](IMPLEMENTATION_PLAN_0_41.md) | Baselines, state linkage, replay, concurrency, reproducibility |
+| [0.42](IMPLEMENTATION_PLAN_0_42.md) | Approval, governance, signed observations, retention, policy evidence |
+| [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
+| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook history, impact, proposals, and navigation |
+| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed AI remediation proposals |
 
 ## Success Criteria
 

@@ -1,6 +1,6 @@
 # Pilot evidence packet (0.37)
 
-> **Status: Available in ETLantic 0.37.0.** Reproducible checklist for a
+> **Status: Available in ETLantic 0.38.0.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -8,7 +8,7 @@
 
 | Component | Pin |
 |---|---|
-| Core | `etlantic==0.37.0` |
+| Core | `etlantic==0.38.0` |
 | Docs | `https://etlantic.readthedocs.io/en/v0.37.0/` |
 | Optional engines | Matching `0.37.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
 | Facade | `medallantic==0.37.0` when used |

@@ -88,6 +88,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_security_matrix.py
 
+      - name: Connector fake conformance
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_connector_conformance.py --fake
+
       - name: Runnable example
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: |

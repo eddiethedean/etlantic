@@ -1,6 +1,6 @@
 # Wire schema ranges (through 0.36)
 
-> **Status: Available in ETLantic 0.37.0.** Documents supported wire-schema
+> **Status: Available in ETLantic 0.38.0.** Documents supported wire-schema
 > ids for multi-minor burn-in and **unsupported downgrade** behavior. Package
 > minors may advance while schema ids stay on `/1` (no wire-schema reset in
 > 0.28–0.36).
@@ -56,7 +56,7 @@ Current codecs must continue to load and rewrite these golden trees.
 
 ## Joint burn-in window (0.34 ↔ 0.37)
 
-ETLantic 0.37 proves the joint compatibility path:
+ETLantic 0.38 proves the joint compatibility path:
 
 1. **0.34 → 0.35** — fixtures under `*/v0_34/` and `*/v0_35/`
 2. **0.35 → 0.36** — fixtures under `*/v0_35/` and `*/v0_36/`

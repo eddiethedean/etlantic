@@ -1,8 +1,8 @@
 # Reference
 
-> **Status: Available in ETLantic 0.37.0.**
+> **Status: Available in ETLantic 0.38.0.**
 
-This section separates ETLantic **0.37** shipped behavior from proposed 0.x
+This section separates ETLantic **0.38** shipped behavior from proposed 0.x
 interfaces.
 
 ## Shipped

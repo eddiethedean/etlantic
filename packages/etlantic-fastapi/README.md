@@ -1,8 +1,8 @@
 # etlantic-fastapi
 
-Thin FastAPI reference adapter for the ETLantic 0.37 authoring and service
+Thin FastAPI reference adapter for the ETLantic 0.38 authoring and service
 contract. It is not the production control plane; that surface is a
-[planned first-class program](https://etlantic.readthedocs.io/en/v0.37.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
+[planned first-class program](https://etlantic.readthedocs.io/en/v0.38.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
 with 0.39–0.42 incubation gates and a 0.43 graduation gate.
 
 ## Install

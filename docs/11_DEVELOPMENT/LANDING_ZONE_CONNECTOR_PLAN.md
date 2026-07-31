@@ -1,8 +1,9 @@
 # Landing-Zone File Connector Plan
 
-> **Status: Planned for post-foundation connectivity (0.38) with continuous
-> trigger and control-plane composition in 0.39+.** Not available in ETLantic
-> 0.37.0.
+> **Status: In progress for post-foundation connectivity (0.38 Wave 0 —
+> specification freeze) with continuous trigger and control-plane composition
+> in 0.39+.** Not available in shipped ETLantic 0.37.0; package version not
+> bumped yet.
 
 ## Outcome
 
@@ -89,7 +90,10 @@ trigger: manual | cron | watch | control_plane_sensor
 ## Acceptance scenarios
 
 1. **Batch:** Two CSVs in `inbox/` matching the glob; one run yields the union
-   of rows under `RawEvent`; plan records file identities without row payloads.
+   of rows under `RawEvent`. The static plan records the file **identity
+   scheme** (algorithm, root ref, listing intent) without enumerating live
+   files or retaining row payloads; concrete file identities appear only in the
+   run-scoped `LandingReadManifest` and run report.
 2. **Incremental:** After a successful run, a new CSV arrives; the next run
    reads only the new file; cursor does not advance if Load fails.
 3. **Continuous (0.39+):** A file-drop trigger submits a durable run that uses
@@ -100,6 +104,16 @@ trigger: manual | cron | watch | control_plane_sensor
    fails closed.
 5. **Trust:** Production profiles allowlist the connector package; paths stay
    inside Safe I/O roots; plans/reports remain secret-free and row-free.
+
+## Static plan vs runtime evidence
+
+Ordinary `validate` and `plan` must not list a live directory. A static
+`PipelinePlan` records connector selection, listing intent, identity scheme,
+capability decisions, config fingerprint, checkpoint reference, and secret
+references. Concrete landing-zone file identities belong only in
+`LandingReadManifest` and the run report. Any live preflight is an explicit
+`inspect` operation. See
+[ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md).
 
 ## Relationship to shipped 0.37 storage
 
@@ -114,6 +128,8 @@ conformance suites. See [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and
 | Artifact | Role |
 |---|---|
 | This plan | Domain outcomes and phase split |
+| [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Locked protocol, capability, and plan/runtime evidence decisions |
+| [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md) | Workstreams and quantified exit |
 | [Adoption ecosystem plan — DC](ADOPTION_ECOSYSTEM_PLAN.md#data-connectivity-and-connector-sdk) | Program umbrella |
 | [ROADMAP § 0.38 / 0.39+](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Release order |
 | Connector conformance (future) | Executable proof |

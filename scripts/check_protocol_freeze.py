@@ -23,8 +23,15 @@ CORE_FROZEN_PROTOCOLS = (
 )
 
 # Wire schemas may remain provisional outside protocol freeze (e.g. quality/1).
-# No provisional *protocols* remain on the foundation path after 0.36.
-PROVISIONAL_ALLOWED: frozenset[str] = frozenset()
+# Connector protocols burn in as provisional through 0.38 (ADR-015).
+PROVISIONAL_ALLOWED: frozenset[str] = frozenset(
+    {
+        "etlantic.source/1",
+        "etlantic.sink/1",
+        "etlantic.storage/1",
+        "etlantic.landing_checkpoint/1",
+    }
+)
 
 
 def main() -> int:

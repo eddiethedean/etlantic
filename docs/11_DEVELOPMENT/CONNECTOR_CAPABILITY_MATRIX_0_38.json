@@ -1,0 +1,144 @@
+{
+  "schema": "etlantic.connector_capability_matrix/1",
+  "release": "0.38.0",
+  "notes": "Advertised fake/CI capability matrix for first-party reference connectors. Live cells remain opt-in and are not claimed Supported.",
+  "providers": {
+    "local-files": {
+      "package": "etlantic (built-in)",
+      "maturity": "preview",
+      "classifier": "Beta (core)",
+      "protocols": ["etlantic.source/1"],
+      "source_capabilities": [
+        "cleanup",
+        "format.csv",
+        "idempotency",
+        "source.batch_snapshot",
+        "source.file_glob",
+        "source.incremental_cursor"
+      ],
+      "sink_capabilities": [],
+      "storage_capabilities": [],
+      "fake_ci": true,
+      "live": false
+    },
+    "s3": {
+      "package": "etlantic-s3",
+      "maturity": "experimental",
+      "classifier": "Alpha",
+      "protocols": [
+        "etlantic.source/1",
+        "etlantic.sink/1",
+        "etlantic.storage/1"
+      ],
+      "source_capabilities": [
+        "idempotency",
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "sink_capabilities": [
+        "cleanup",
+        "idempotency",
+        "publication.atomic",
+        "reconciliation",
+        "write.append",
+        "write.overwrite"
+      ],
+      "storage_capabilities": [
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "fake_ci": true,
+      "live": "opt-in aws extra (not required for 0.38 exit)"
+    },
+    "iceberg": {
+      "package": "etlantic-iceberg",
+      "maturity": "experimental",
+      "classifier": "Alpha",
+      "protocols": [
+        "etlantic.source/1",
+        "etlantic.sink/1",
+        "etlantic.storage/1"
+      ],
+      "source_capabilities": [
+        "idempotency",
+        "source.batch_snapshot",
+        "source.partitioned",
+        "source.schema_discovery"
+      ],
+      "sink_capabilities": [
+        "idempotency",
+        "publication.atomic",
+        "reconciliation",
+        "write.append",
+        "write.overwrite",
+        "write.partition_replace"
+      ],
+      "storage_capabilities": ["source.schema_discovery"],
+      "fake_ci": true,
+      "live": "opt-in pyiceberg extra"
+    },
+    "snowflake": {
+      "package": "etlantic-snowflake",
+      "maturity": "experimental",
+      "classifier": "Alpha",
+      "protocols": [
+        "etlantic.source/1",
+        "etlantic.sink/1",
+        "etlantic.storage/1"
+      ],
+      "source_capabilities": [
+        "idempotency",
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "sink_capabilities": [
+        "idempotency",
+        "publication.atomic",
+        "reconciliation",
+        "transactions",
+        "write.append",
+        "write.merge",
+        "write.overwrite"
+      ],
+      "storage_capabilities": [
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "fake_ci": true,
+      "live": "opt-in snowflake extra"
+    },
+    "postgresql": {
+      "package": "etlantic-sql",
+      "maturity": "experimental",
+      "classifier": "Beta (sql plugin; connector path Experimental)",
+      "protocols": [
+        "etlantic.source/1",
+        "etlantic.sink/1",
+        "etlantic.storage/1"
+      ],
+      "source_capabilities": [
+        "idempotency",
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "sink_capabilities": [
+        "idempotency",
+        "publication.atomic",
+        "reconciliation",
+        "transactions",
+        "write.append",
+        "write.merge",
+        "write.overwrite"
+      ],
+      "storage_capabilities": [
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "fake_ci": true,
+      "live": "postgresql CI / connection-fault injection"
+    }
+  }
+}

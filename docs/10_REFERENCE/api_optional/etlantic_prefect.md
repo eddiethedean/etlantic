@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.37.0"
-current_minor: "0.37"
+since: "0.38.0"
+current_minor: "0.38"
 audience: developer
 ---
 
 # etlantic-prefect API
 
-> **Status: Available in ETLantic 0.37.0.** Prefect local scheduler MVP.
+> **Status: Available in ETLantic 0.38.0.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

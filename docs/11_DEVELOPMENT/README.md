@@ -21,8 +21,15 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.37 → 0.38](MIGRATION_0_37_TO_0_38.md) (Gate-ready)
+- [Exit gate 0.38](EXIT_GATE_0_38.md) (Gate-ready — connectivity)
+- [Findings ledger 0.38](FINDINGS_0_38.md)
+- [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
+- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.52 delivery contract)
+- [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
+- [What's new in 0.38](../01_GETTING_STARTED/WHATS_NEW_0_38.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
-- [Exit gate 0.37](EXIT_GATE_0_37.md) (In progress — stable foundation)
+- [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)
 - [Findings ledger 0.37](FINDINGS_0_37.md)
 - [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md)
 - [Migration 0.35 → 0.36](MIGRATION_0_35_TO_0_36.md)
@@ -97,8 +104,17 @@ for release order, [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for
 current availability, and [architecture decisions](ARCHITECTURE_DECISIONS.md)
 for locked boundaries. Post-foundation connectivity includes the
 [Landing-zone file connector plan](LANDING_ZONE_CONNECTOR_PLAN.md) (batch and
-incremental in 0.38; continuous triggers in 0.39+). Historical material remains
+incremental in 0.38; continuous triggers in 0.39+),
+[ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and the
+[0.38 exit gate](EXIT_GATE_0_38.md). Historical material remains
 available through the [archive index](ARCHIVE_INDEX.md).
+
+Assigned post-control-plane reliability work includes portable delivery
+objectives and governed erasure in
+[0.42](IMPLEMENTATION_PLAN_0_42.md), followed by bounded dynamic control flow,
+streaming dead-letter policy, and schema-registry interoperability in
+[0.46](IMPLEMENTATION_PLAN_0_46.md). These are planned capabilities, not claims
+about the shipped 0.38 package.
 
 The [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) chapter
 defines how design examples, proposals, and normative requirements should be

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.37.0"
+version = "0.38.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,30 +30,36 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.37.0"]
-pandas = ["etlantic-pandas==0.37.0"]
-sql = ["etlantic-sql==0.37.0"]
-postgresql = ["etlantic-sql==0.37.0"]
-pyspark = ["etlantic-pyspark==0.37.0"]
-spark = ["etlantic-pyspark==0.37.0"]
-airflow = ["etlantic-airflow==0.37.0"]
-prefect = ["etlantic-prefect==0.37.0"]
-keyring = ["etlantic-keyring==0.37.0"]
-sqlmodel = ["etlantic-sqlmodel==0.37.0"]
-medallantic = ["medallantic==0.37.0"]
-sparkforge = ["etlantic-sparkforge==0.37.0"]
-fastapi = ["etlantic-fastapi==0.37.0"]
-datafusion = ["etlantic-datafusion==0.37.0"]
+polars = ["etlantic-polars==0.38.0"]
+pandas = ["etlantic-pandas==0.38.0"]
+sql = ["etlantic-sql==0.38.0"]
+postgresql = ["etlantic-sql==0.38.0"]
+pyspark = ["etlantic-pyspark==0.38.0"]
+spark = ["etlantic-pyspark==0.38.0"]
+airflow = ["etlantic-airflow==0.38.0"]
+prefect = ["etlantic-prefect==0.38.0"]
+keyring = ["etlantic-keyring==0.38.0"]
+sqlmodel = ["etlantic-sqlmodel==0.38.0"]
+medallantic = ["medallantic==0.38.0"]
+sparkforge = ["etlantic-sparkforge==0.38.0"]
+fastapi = ["etlantic-fastapi==0.38.0"]
+datafusion = ["etlantic-datafusion==0.38.0"]
+s3 = ["etlantic-s3==0.38.0"]
+iceberg = ["etlantic-iceberg==0.38.0"]
+snowflake = ["etlantic-snowflake==0.38.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 dataframes = [
-    "etlantic-polars==0.37.0",
-    "etlantic-pandas==0.37.0",
+    "etlantic-polars==0.38.0",
+    "etlantic-pandas==0.38.0",
 ]
 
 [project.scripts]
 etlantic = "etlantic.cli:run"
+
+[project.entry-points."etlantic.source_connectors"]
+local-files = "etlantic.connectors.local_files:create_local_files_source"
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"
@@ -117,6 +123,15 @@ medallantic = [
 datafusion = [
     "etlantic-datafusion",
 ]
+s3 = [
+    "etlantic-s3",
+]
+iceberg = [
+    "etlantic-iceberg",
+]
+snowflake = [
+    "etlantic-snowflake",
+]
 observability = [
     "opentelemetry-api>=1.36,<2",
 ]
@@ -160,6 +175,9 @@ members = [
     "packages/etlantic-sparkforge",
     "packages/etlantic-datafusion",
     "packages/etlantic-fastapi",
+    "packages/etlantic-s3",
+    "packages/etlantic-iceberg",
+    "packages/etlantic-snowflake",
 ]
 
 [tool.uv.sources]
@@ -176,6 +194,9 @@ medallantic = { workspace = true }
 etlantic-sparkforge = { workspace = true }
 etlantic-datafusion = { workspace = true }
 etlantic-fastapi = { workspace = true }
+etlantic-s3 = { workspace = true }
+etlantic-iceberg = { workspace = true }
+etlantic-snowflake = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -193,6 +214,9 @@ pythonpath = [
     "packages/etlantic-sparkforge/src",
     "packages/etlantic-datafusion/src",
     "packages/etlantic-fastapi/src",
+    "packages/etlantic-s3/src",
+    "packages/etlantic-iceberg/src",
+    "packages/etlantic-snowflake/src",
 ]
 markers = [
     "polars: tests requiring the Polars plugin",
@@ -206,6 +230,9 @@ markers = [
     "sqlmodel: tests requiring the SQLModel integration package",
     "medallantic: tests for the Medallantic package",
     "datafusion: tests for the experimental DataFusion plugin stub",
+    "s3: tests for the experimental S3 connector package",
+    "iceberg: tests for the experimental Iceberg connector package",
+    "snowflake: tests for the experimental Snowflake connector package",
 ]
 
 [tool.ruff]

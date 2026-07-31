@@ -6,25 +6,25 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.37.0** (Beta); **0.37** stable foundation is
-gate-ready for tag/publish rehearsal (not yet tagged/published). Milestones
-**0.25** (burn-in first slice) through **0.36** (joint compatibility burn-in)
+**Current release:** ETLantic **0.38.0** (Beta); **0.38** data connectivity /
+connector SDK is gate-ready for tag/publish rehearsal (not yet tagged/published).
+Milestones **0.25** (burn-in first slice) through **0.37** (stable foundation)
 are shipped. **0.35** closed migration completion and joint freeze /
 Medallantic M7.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.37 | Stable foundation | Gate-ready for tag/publish |
-| Previous | 0.36 | Joint compatibility burn-in | Gate-ready / shipped evidence |
-| Next | 0.38 | Data connectivity and connector SDK | Planned |
+| Current | 0.38 | Data connectivity and connector SDK | Gate-ready for tag/publish |
+| Previous | 0.37 | Stable foundation | Gate-ready / shipped evidence |
+| Next | 0.39 | Multi-tenant control plane (CP1) | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.51 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.38) |
 
-For foundation evidence, see
+For connectivity evidence, see
+[What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
+[0.38 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_38.md). Prior foundation:
 [What's New in 0.37](docs/01_GETTING_STARTED/WHATS_NEW_0_37.md) and the
-[0.37 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_37.md). Prior burn-in:
-[What's New in 0.36](docs/01_GETTING_STARTED/WHATS_NEW_0_36.md) and the
-[0.36 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_36.md). See the
+[0.37 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_37.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
 adopter-facing view, the
 [Planning Hub](docs/11_DEVELOPMENT/PLAN_INDEX.md) for the status and ownership
@@ -3504,6 +3504,13 @@ IDE, cloud control plane, or AI platform. Each initiative has one assigned
 phase or a named gate in an integrated multi-phase program; none is an
 open-ended placeholder.
 
+For phases 0.39 onward, use the
+[forward implementation plans](docs/11_DEVELOPMENT/FORWARD_IMPLEMENTATION_PLANS.md)
+for phase-specific prerequisites, workstreams, delivery order, required
+evidence, and exit gates. This roadmap remains authoritative for outcome and
+sequence; integrated domain plans remain authoritative for cross-release
+architecture.
+
 Each minor release should:
 
 - add one coherent integration or capability family;
@@ -3514,8 +3521,8 @@ Each minor release should:
 
 ## 0.38 — Data Connectivity and Connector SDK
 
-**Status:** planned first-class connectivity program; begins after ETLantic
-0.37 ships.
+**Status:** Gate-ready for tag/publish rehearsal (package **0.38.0**). Soft-continue
+`038-X-01` (echo plugin PyPI connector) disposed in FINDINGS.
 
 **Objective:** graduate logical source, sink, and storage bindings from Future
 design studies into a versioned, capability-driven connector family with
@@ -3795,8 +3802,9 @@ Acceptance:
 
 **Status:** Planned CP4 release-candidate gate.
 
-**Objective:** add the governance, noisy-neighbor controls, integrity evidence,
-and operational proof required before the integrated 0.43 graduation decision.
+**Objective:** add the governance, noisy-neighbor controls, portable delivery
+objectives, privacy-operation coordination, integrity evidence, and operational
+proof required before the integrated 0.43 graduation decision.
 
 Deliver:
 
@@ -3816,6 +3824,19 @@ Deliver:
 - policy gates for stale or incomplete inputs, unsafe retries, destructive
   writes, backfills, reconciliation failures, plan drift, environment drift,
   quality trends, and privacy-sensitive statistical profiling;
+- versioned pipeline and step delivery objectives with scheduled, queued,
+  started, source-ready, and fixed-time reference points; warning and hard
+  deadlines; grace periods; calendars; ownership; severity; and recovery state;
+- durable objective-breach and recovery evaluation with deduplicated,
+  policy-controlled routing and escalation through independently installable
+  email, webhook, Slack-compatible, and incident-management providers;
+- versioned data-subject erasure requests, plans, and reports that use
+  field/subject-key lineage to compute delete or anonymization closure while
+  preserving legal holds, retention policy, authorization, idempotency,
+  reconciliation, and explicit unsupported-provider evidence;
+- erasure-provider capability and conformance contracts for deletion,
+  anonymization, lookup, proof, retry, and partial-completion behavior without
+  placing subject values in plans, reports, audit evidence, or diagnostics;
 - source-revision provenance, untrusted-fork restrictions, preview budgets,
   separation of duties, promotion approvals, supersession, and rollback policy;
 - compatibility rules for policy revisions.
@@ -3828,6 +3849,12 @@ Acceptance:
 - approval and denial are durable, auditable, and free of secret values.
 - forged, cross-tenant, or cross-environment schema observations cannot satisfy
   a deployment or execution gate;
+- missed objectives and subsequent recovery produce durable, deduplicated
+  evidence and cannot notify an unauthorized destination or reveal protected
+  metadata;
+- an erasure request cannot silently skip an affected downstream subject,
+  bypass a legal hold, or report completion while a required provider remains
+  unsupported, unknown, or unreconciled;
 - identity, policy, quota, broker, and persistence outages fail closed according
   to documented degraded modes;
 - noisy-neighbor, backup/restore, migration, redaction, and external security
@@ -3844,7 +3871,9 @@ supported-isolation-profile matrix, public compatibility/migration policy,
 cross-tenant conformance for every public operation, measured capacity
 envelopes, multi-replica failure injection, operator runbooks, backup/restore
 evidence, a supported preview-to-production GitOps workflow, stable outbound
-metadata identity/export, and no unresolved critical/high isolation finding.
+metadata identity/export, delivery-objective and escalation recovery proof,
+lineage-complete governed-erasure proof, and no unresolved critical/high
+isolation finding.
 
 Failure of a mandatory gate keeps the program in release-candidate status. The
 project does not weaken “multi-tenant” to meet a release date.
@@ -3976,6 +4005,13 @@ Acceptance:
 
 Deliver:
 
+- bounded, explicit runtime mapping and reduction over declared upstream
+  collections, partitions, or provider enumerations;
+- portable conditional, failure, and compensation branches with typed decision
+  evidence; stable expanded-node identities; deterministic replay; and no
+  inference from arbitrary Python control flow;
+- capability negotiation and hard expansion, depth, concurrency, payload, and
+  duration limits for every dynamic construct;
 - stable streaming semantics beyond the 0.37 foundation;
 - event-time, watermark, trigger, state, late-data, and replay contracts;
 - versioned change-event envelopes with insert, update, delete/tombstone,
@@ -3985,12 +4021,23 @@ Deliver:
 - source offset, cursor, checkpoint, deduplication, and idempotent sink
   semantics shared with the 0.38 connector protocol;
 - Kafka and additional streaming provider integrations;
+- record-error policies for fail, skip, quarantine, and dead-letter outcomes,
+  including poison-record retry bounds, offset/checkpoint advancement rules,
+  external DLQ identity, redrive provenance, retention, and reconciliation;
+- schema-registry provider protocols and a Confluent-compatible reference path
+  for Avro, Protobuf, and JSON Schema identity, compatibility, versioning, and
+  evolution without embedding event payloads in plans or reports;
 - continuous `PipelineRunReport` snapshots and terminal/nonterminal status;
 - event-driven run triggers with deduplication and backpressure;
 - streaming contract compatibility and deployment migration rules.
 
 Acceptance:
 
+- identical expansion input produces identical child identities, branch
+  decisions, dependency closure, and report structure; bounds are enforced
+  before unbounded work is accepted;
+- retries, replay, cancellation, and resume preserve map/reduce and branch
+  semantics, and a compiler that cannot preserve them fails before emission;
 - batch and streaming implementations of the same eligible transformation have
   documented semantic equivalence;
 - restart and replay do not silently duplicate externally visible effects;
@@ -3999,6 +4046,10 @@ Acceptance:
   advance across restart and concurrent schema change;
 - unsupported delete, ordering, transaction, or schema-evolution semantics fail
   capability negotiation rather than degrading to append-only behavior.
+- a poison record cannot cause an unbounded retry loop, silent offset advance,
+  unauthorized payload disclosure, or an unreconciled dead-letter outcome;
+- schema-registry incompatibility or unavailability follows an explicit,
+  fail-closed provider policy and cannot silently reinterpret an event.
 
 ## 0.47 — Remote Execution Federation
 
@@ -4125,8 +4176,9 @@ Acceptance:
 
 - metadata import does not execute arbitrary project Python, Jinja, macros, or
   hooks;
-- unsupported dynamic graphs, macros, sensors, or platform semantics are
-  diagnosed rather than guessed;
+- unsupported arbitrary dynamic graphs, macros, sensors, or platform semantics
+  are diagnosed rather than guessed; supported 0.46 map/reduce and explicit
+  branch constructs are preserved or rejected through capability negotiation;
 - dbt-owned transformations may remain external while ETLantic imports their
   contracts and lineage;
 - each compiler fails when required plan semantics cannot be preserved;
@@ -4145,10 +4197,14 @@ Deliver:
 - a version-pinned client generated from the control-plane OpenAPI schema;
 - scoped views for definitions, revisions, plans, diffs, runs, attempts,
   lineage, partitions, checkpoints, quality, schema drift, repair, backfill,
+  delivery objectives, deadline breaches, notification/escalation state,
+  erasure requests, erasure plans, erasure evidence, dynamic expansions and
+  branch decisions, dead-letter/redrive state, schema-registry compatibility,
   quotas, policy, approvals, audit evidence, providers, and deployment health;
 - resumable live events with durable-history fallback;
 - explicit privileged actions for cancellation, retry, replay, repair,
-  acknowledgement, approval, promotion, suspension, and containment;
+  acknowledgement, approval, promotion, erasure authorization, erasure retry,
+  dead-letter redrive planning, suspension, and containment;
 - bounded, sampled, visibly truncated, and redacted artifact previews;
 - accessibility, localization readiness, interactive latency budgets, and
   large-workspace pagination/virtualization;
@@ -4163,6 +4219,8 @@ Acceptance:
   caches, browser history, or event streams;
 - reconnect or refresh cannot duplicate a privileged action;
 - hostile schemas, logs, and artifacts remain bounded and redacted;
+- erasure and dead-letter views never place data-subject values or event
+  payloads in browser state, URLs, telemetry, caches, logs, or fixtures;
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 

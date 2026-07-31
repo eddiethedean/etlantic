@@ -1,7 +1,7 @@
 # etlantic-sqlmodel
 
 Optional bridge between ETLantic `Data` contracts and
-[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.37.
+[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.38.
 
 ## Install
 
@@ -52,6 +52,6 @@ such as primary keys and table names must be supplied explicitly.
 
 ## Links
 
-[Optional packages](https://etlantic.readthedocs.io/en/v0.37.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
+[Optional packages](https://etlantic.readthedocs.io/en/v0.38.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sqlmodel) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

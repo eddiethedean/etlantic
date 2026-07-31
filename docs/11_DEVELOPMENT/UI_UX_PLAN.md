@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, cross-cutting plan.**
 >
-> **Current 0.37 boundary:** The local CLI and generated read-only HTML and
+> **Current 0.38 boundary:** The local CLI and generated read-only HTML and
 > diagram artifacts are available. Interactive workspace, dashboard, IDE, and
 > hosted operator phases remain planned and must pass their own accessibility,
 > security, and operational gates.
@@ -24,6 +24,11 @@ authorization, redaction, and audit evidence must power every interface.
 The phases below describe dependency order rather than release dates. They map
 onto existing roadmap milestones and may ship incrementally when their
 acceptance gates pass.
+
+Release-specific delivery and evidence are defined by the
+[0.44 developer-intelligence plan](IMPLEMENTATION_PLAN_0_44.md) and the
+[0.50 operator-console plan](IMPLEMENTATION_PLAN_0_50.md). This domain plan
+continues to own shared interaction, accessibility, and artifact semantics.
 
 ## Product principles
 
@@ -218,9 +223,11 @@ delivers the read-only-first Operator Console and governed actions.
 - visible tenant, workspace, environment, revision, and authorization context
   on every screen;
 - read-only-first definitions, plans, diffs, runs, lineage, quality, drift,
-  policy, quota, provider, and audit views;
+  delivery objectives, deadline/escalation state, erasure requests and proof,
+  dynamic expansions and branch decisions, dead-letter/redrive and schema
+  compatibility, policy, quota, provider, and audit views;
 - explicit privileged workflows for cancel, retry, replay, repair, approve,
-  acknowledge, promote, suspend, and contain;
+  acknowledge, promote, authorize/retry erasure, suspend, and contain;
 - idempotent action confirmation, durable event reconnection, accessibility,
   localization readiness, pagination, and virtualization.
 
@@ -235,6 +242,9 @@ delivers the read-only-first Operator Console and governed actions.
 4. Refresh, reconnect, or repeated submission cannot duplicate privileged
    actions.
 5. Deployment and frontend dependencies remain outside ETLantic core.
+6. Dead-letter and erasure screens expose bounded identifiers and policy
+   evidence only; event payloads and data-subject values never enter browser
+   state, URLs, logs, telemetry, or generated fixtures.
 
 ## Success measures
 

@@ -342,7 +342,7 @@ production = Profile(
     name="production",
     security_mode="production",
     validation_policy="strict",
-    plugin_allowlist={"etlantic-polars": ">=0.37.0,<0.38"},
+    plugin_allowlist={"etlantic-polars": ">=0.38.0,<0.39"},
 )
 ```
 
@@ -515,7 +515,7 @@ Users should not have to parse raw Pydantic error structures.
 
 ## Sync and Async Validation
 
-ETLantic 0.37 does not expose an `on_invalid_data` decorator. Callback-based
+ETLantic 0.38 does not expose an `on_invalid_data` decorator. Callback-based
 invalid-data handling, if added later, must define synchronous and asynchronous
 behavior without weakening plan-time capability checks.
 

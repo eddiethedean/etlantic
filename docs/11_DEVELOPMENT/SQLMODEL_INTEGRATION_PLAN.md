@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped; reference persistence remains planned.**
 >
-> **Current 0.37 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.38 boundary:** The optional `etlantic-sqlmodel` package provides
 > the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
 > repository helpers, and durable multi-tenant control-plane providers remain
 > future work.
@@ -74,7 +74,10 @@ The integration should:
 - compare SQLModel metadata with declared contracts and observed database
   schemas;
 - provide typed reference stores for registries, runs, reports, events, schema
-  observations, reliability evidence, approvals, and incremental state;
+  observations, reliability evidence, delivery objectives and transitions,
+  notification delivery, erasure requests/plans/provider outcomes,
+  dead-letter/redrive and schema-registry metadata, approvals, and incremental
+  state;
 - share appropriate Pydantic schemas with `etlantic-fastapi`;
 - preserve editor completion and static typing;
 - use explicit migrations and transactional repositories;
@@ -193,6 +196,12 @@ provider protocols:
 - lifecycle event store;
 - schema observation and acknowledgement history;
 - freshness, reconciliation, quality, and statistical evidence history;
+- delivery-objective definitions, breach/recovery transitions, deduplicated
+  notification delivery, and escalation history;
+- erasure request, plan, approval, legal-hold, provider outcome,
+  reconciliation, and closure history without data-subject values;
+- dynamic-expansion/branch summaries and payload-free dead-letter/redrive and
+  schema-registry evidence;
 - profile and environment revision history;
 - policy decision and approval records;
 - incremental state and checkpoint store;
@@ -343,12 +352,12 @@ availability. Rows from 0.39 onward are future sequence.
 | 0.3 | Adapter and mapping protocols, source-generation design |
 | 0.6 | SQLModel relation descriptors accepted by SQL plugins |
 | 0.9 | Optional package scaffold, generator CLI, conformance suite |
-| 0.39 | Request-scoped control-plane repository foundation |
-| 0.40 | Tenant-aware registry, revision, and history reference providers |
-| 0.41 | State, checkpoint, outbox, lease, and idempotency providers |
-| 0.42 | Policy/audit evidence stores and migration hardening |
-| 0.43 | Graduated multi-tenant reference persistence bundle |
-| 0.44 | IDE generation, navigation, comparison, and migration actions |
+| [0.39](IMPLEMENTATION_PLAN_0_39.md) | Request-scoped control-plane repository foundation |
+| [0.40](IMPLEMENTATION_PLAN_0_40.md) | Tenant-aware registry, revision, and history reference providers |
+| [0.41](IMPLEMENTATION_PLAN_0_41.md) | State, checkpoint, outbox, lease, and idempotency providers |
+| [0.42](IMPLEMENTATION_PLAN_0_42.md) | Policy/audit, delivery-objective/notification, and governed-erasure evidence stores plus migration hardening |
+| [0.43](IMPLEMENTATION_PLAN_0_43.md) | Graduated multi-tenant reference persistence bundle |
+| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE generation, navigation, comparison, and migration actions |
 | Later 0.x | Mature Alembic integration and provider templates |
 
 ## Graduation Gates

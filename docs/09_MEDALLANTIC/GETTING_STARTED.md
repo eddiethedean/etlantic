@@ -6,7 +6,7 @@ Medallantic and ETLantic use matching minor versions:
 
 ```bash
 python -m pip install \
-  'etlantic==0.37.0' \
+  'etlantic==0.38.0' \
   'medallantic==0.37.0'
 ```
 

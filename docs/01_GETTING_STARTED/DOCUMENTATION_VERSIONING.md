@@ -9,11 +9,11 @@ ETLantic docs are published on Read the Docs.
 
 | Alias / slug | Meaning |
 |---|---|
-| **`/en/v0.37.0/`** | Immutable docs for the tagged release. Prefer this with `etlantic==0.37.0`. |
+| **`/en/v0.37.0/`** | Immutable docs for the tagged release. Prefer this with `etlantic==0.38.0`. |
 | **stable** | Moves to the newest published release. Fine for pilots tracking the tip of PyPI. |
 | **latest** | Tracks the default branch (`main`) and may document unreleased behavior. |
 
-For `etlantic==0.37.0`, use the immutable `/en/v0.37.0/` documentation.
+For `etlantic==0.38.0`, use the immutable `/en/v0.37.0/` documentation.
 `stable` moves to the newest published release; `latest` follows `main` and
 may document unreleased behavior. Do not mix a pinned wheel with `latest`
 docs that describe a newer branch tip.

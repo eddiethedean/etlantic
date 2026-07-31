@@ -1,7 +1,7 @@
 # Protocol Evolution Policy
 
 > **Status (0.37.0):** Plugin `/1` families remain **frozen since 0.28.0** for
-> the 0.37 stable-foundation path (`dataframe`, `sql`, `spark`,
+> the 0.38 stable-foundation path (`dataframe`, `sql`, `spark`,
 > `orchestration`, `transform-compiler`). In 0.36, `etlantic.scheduler/1` is
 > promoted to a **stable MVP** on the foundation path (Prefect bounds);
 > `etlantic.quality/1` remains provisional wire outside the full
@@ -34,7 +34,7 @@ See [FINDINGS_0_36](../11_DEVELOPMENT/FINDINGS_0_36.md),
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
 | ≥1 documented external feedback cycle from a non-first-party plugin author | **Met** — see [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) | Maintainers + community |
-| No unresolved provisional core protocol on the 0.37 path | Met in 0.28 with `scheduler/1` deferred; **0.37** promotes `scheduler/1` to stable MVP and keeps `quality/1` provisional | Maintainers |
+| No unresolved provisional core protocol on the 0.38 path | Met in 0.28 with `scheduler/1` deferred; **0.37** promotes `scheduler/1` to stable MVP and keeps `quality/1` provisional | Maintainers |
 
 **Decision:** Declare core Plugin SDK `/1` **frozen in 0.28.0**. Only additive
 optional evolution within `/1` is permitted; incompatible changes require a

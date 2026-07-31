@@ -1,9 +1,14 @@
 {
   "capabilities": [
     "sql",
-    "portable"
+    "portable",
+    "source.batch_snapshot",
+    "write.append",
+    "write.overwrite",
+    "publication.atomic",
+    "transactions"
   ],
-  "digest": "sha256:8bc66d1062848a891b0704022a5c29e83ea9e0aaa482ff7ff0f7df3020876dd1",
+  "digest": "sha256:e786aade09f7e220f383ddfae04a2fc934b648c7cbb17506c9953189e068364f",
   "entries": [
     {
       "capabilities": [
@@ -25,14 +30,55 @@
       "name": "sql",
       "protocol": "etlantic.transform-compiler/1",
       "target": "etlantic_sql.transform_compiler:create_transform_compiler"
+    },
+    {
+      "capabilities": [
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "idempotency"
+      ],
+      "engine": "postgresql",
+      "group": "etlantic.source_connectors",
+      "name": "postgresql",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_sql.connectors:create_source"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "write.merge",
+        "publication.atomic",
+        "transactions",
+        "reconciliation",
+        "idempotency"
+      ],
+      "engine": "postgresql",
+      "group": "etlantic.sink_connectors",
+      "name": "postgresql",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_sql.connectors:create_sink"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "publication.atomic",
+        "transactions"
+      ],
+      "engine": "postgresql",
+      "group": "etlantic.storage_connectors",
+      "name": "postgresql",
+      "protocol": "etlantic.storage/1",
+      "target": "etlantic_sql.connectors:create_storage"
     }
   ],
   "package": "etlantic-sql",
   "privileges": [],
-  "protocol_range": "etlantic.sql/1,etlantic.transform-compiler/1",
+  "protocol_range": "etlantic.sql/1,etlantic.transform-compiler/1,etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
   "provenance": {
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.37.0"
+  "version": "0.38.0"
 }

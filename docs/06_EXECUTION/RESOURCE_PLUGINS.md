@@ -1,6 +1,6 @@
 # Resource Providers
 
-> **Status: planned design — not shipped in ETLantic 0.37.** Kubernetes and
+> **Status: planned design — not shipped in ETLantic 0.38.** Kubernetes and
 > managed execution reference proof is assigned to 0.47; supported enterprise
 > provider packs are assigned to 0.51. See the
 > [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).

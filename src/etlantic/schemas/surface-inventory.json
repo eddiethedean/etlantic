@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "classes": [
     "stable",
     "provisional",
@@ -38,7 +38,8 @@
     "secrets",
     "testing",
     "service",
-    "quality"
+    "quality",
+    "connectors"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -51,7 +52,8 @@
     "secrets": "etlantic.secrets",
     "testing": "etlantic.testing",
     "service": "etlantic.service",
-    "quality": "etlantic.quality"
+    "quality": "etlantic.quality",
+    "connectors": "etlantic.connectors"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",
@@ -89,7 +91,8 @@
     "etlantic.interchange/1": "stable",
     "etlantic.capabilities/1": "stable",
     "etlantic.authoring-catalog/1": "stable",
-    "etlantic.quality/1": "provisional"
+    "etlantic.quality/1": "provisional",
+    "etlantic.landing_checkpoint/1": "provisional"
   },
   "protocols": {
     "etlantic.dataframe/1": "stable",
@@ -97,7 +100,10 @@
     "etlantic.spark/1": "stable",
     "etlantic.orchestration/1": "stable",
     "etlantic.scheduler/1": "stable",
-    "etlantic.transform-compiler/1": "stable"
+    "etlantic.transform-compiler/1": "stable",
+    "etlantic.source/1": "provisional",
+    "etlantic.sink/1": "provisional",
+    "etlantic.storage/1": "provisional"
   },
   "foundations": {
     "etlantic.testing": "stable"

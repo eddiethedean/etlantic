@@ -6,6 +6,12 @@ from etlantic.testing.capability_truthfulness import (
     assert_capability_claims_consistent,
     assert_capability_matches_behavior,
 )
+from etlantic.testing.connectors import (
+    SECRET_SENTINEL,
+    run_sink_connector_conformance_suite,
+    run_source_connector_conformance_suite,
+    run_storage_connector_conformance_suite,
+)
 from etlantic.testing.dataframe import (
     assert_plugin_info,
     assert_roundtrip_records,
@@ -100,6 +106,7 @@ from . import portable_transform_conformance as portable_transform_conformance
 __all__ = [
     "MAX_SEED_ROWS_PER_ASSET",
     "MAX_SNAPSHOT_BYTES",
+    "SECRET_SENTINEL",
     "ExpectedResult",
     "FakeClock",
     "FakeRunIdentity",
@@ -152,10 +159,13 @@ __all__ = [
     "run_run_history_conformance_suite",
     "run_scheduler_conformance_suite",
     "run_secret_conformance_suite",
+    "run_sink_connector_conformance_suite",
+    "run_source_connector_conformance_suite",
     "run_spark_conformance_suite",
     "run_sparkforge_differential_suite",
     "run_sql_builder_differential_suite",
     "run_sql_conformance_suite",
+    "run_storage_connector_conformance_suite",
     "run_tabular_interchange_conformance_smoke",
     "run_write_semantics_parity_suite",
     "snapshot_plan",

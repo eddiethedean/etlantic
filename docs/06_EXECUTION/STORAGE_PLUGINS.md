@@ -1,48 +1,24 @@
-# Storage Plugins (Design Proposal)
+# Storage Plugins
 
-> **Status: planned for the first-class 0.38 connectivity program; not
-> shipped.** This page remains a design study until the 0.38 protocol and
-> reference-connector gates pass. See the
-> [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).
-> Do not treat the catalogs below as installable product.
->
-> **Storage today:** memory, callable, JSON, CSV, and no-write backends, plus
-> engine-specific I/O. See [Storage Today](STORAGE_TODAY.md) and
-> [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+> **Status: Partially available in ETLantic 0.38.0.** Structured connector
+> protocols ship under `etlantic.connectors`. Built-in memory/CSV/JSON/callable
+> storage remains; cloud connectors are Experimental optional packages.
+> See [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) and
+> [Landing zone](LANDING_ZONE.md).
 
-## Planned intent
+## What ships in 0.38
 
-A future storage plugin protocol would translate logical extract/load assets
-into operations for concrete storage technologies, without embedding
-storage-specific APIs into pipeline definitions.
+| Surface | Status |
+|---|---|
+| Memory / callable / JSON / CSV / no-write | Available ([Storage today](STORAGE_TODAY.md)) |
+| `local-files` directory landing zone | Preview |
+| `etlantic-s3` / `etlantic-iceberg` / `etlantic-snowflake` | Experimental (Alpha) |
+| PostgreSQL connectors (`etlantic-sql`) | Experimental connector path |
+| Continuous directory watch | Out of core (0.39+) |
 
-```text
-Pipeline Plan
-      │
-      ▼
- Storage Plugin (planned 0.38)
-      │
- ┌────┼─────────────────────────┐
- ▼    ▼            ▼            ▼
- … candidate backends (not shipped) …
-```
+## Authoring shape
 
-## Candidate backends (not available)
-
-The following are **design targets only** — none of these are first-party
-ETLantic storage plugins in 0.37.0:
-
-- Parquet as a portable storage plugin
-- MySQL / SQLite / DuckDB as storage plugins (SQL engine plugin is separate)
-- Snowflake / BigQuery
-- Delta Lake / Apache Iceberg
-- Amazon S3 / Azure Blob / Google Cloud Storage
-
-What ships instead: [Storage Today](STORAGE_TODAY.md).
-
-## Authoring shape (when shipped)
-
-Extracts and loads would keep logical assets; profiles would map them:
+Extracts and loads keep logical assets; profiles map them:
 
 ```python
 customers: Extract[Customer] = Extract(asset="customers")
@@ -52,8 +28,12 @@ warehouse: Load[Customer] = Load(
 )
 ```
 
+Swap providers via profile assets without rewriting topology.
+
 ## Related
 
 - [Storage Today](STORAGE_TODAY.md) — shipped backends
-- [Storage plugin SDK (planned 0.38)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
+- [Landing zone](LANDING_ZONE.md)
+- [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md)
+- [Storage plugin SDK](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
 - [Resource Providers (future)](RESOURCE_PLUGINS.md)

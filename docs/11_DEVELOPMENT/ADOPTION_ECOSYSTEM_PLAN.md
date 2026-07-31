@@ -48,8 +48,8 @@ adoption and ecosystem gates described below.
 | 0.36–0.37 | Cross-engine and upgrade burn-in for pipeline tests | Stable pipeline-testing foundation |
 | 0.38 | Data connectivity and connector SDK | Supported connector protocol and reference set |
 | 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
-| 0.41–0.43 | GitOps previews, promotion evidence, and graduation | Supported preview-to-production workflow |
-| 0.46 | Incremental and CDC source semantics | Supported change-stream contract |
+| 0.41–0.43 | GitOps previews, delivery objectives, governed erasure, promotion evidence, and graduation | Supported preview-to-production and governed operations workflow |
+| 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
 | 0.47 | Kubernetes and managed execution reference providers | Conforming remote execution profiles |
 | 0.49 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
 | 0.50 | Operator console | Supported control-plane operations UI |
@@ -58,6 +58,23 @@ adoption and ecosystem gates described below.
 
 No capability in this table is available merely because its phase is planned.
 Each claim begins only after the corresponding exit gate passes.
+
+## Release Implementation Plans
+
+The [shared forward delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) applies
+to every program below. Detailed implementation and release evidence live in:
+
+- [0.40 registry and metadata identity](IMPLEMENTATION_PLAN_0_40.md)
+- [0.41 durable state and GitOps previews](IMPLEMENTATION_PLAN_0_41.md)
+- [0.42 policy, delivery objectives, governed erasure, and assurance](IMPLEMENTATION_PLAN_0_42.md)
+- [0.43 control-plane graduation](IMPLEMENTATION_PLAN_0_43.md)
+- [0.46 dynamic control, streaming, dead-letter, and schema-registry contracts](IMPLEMENTATION_PLAN_0_46.md)
+- [0.47 remote execution providers](IMPLEMENTATION_PLAN_0_47.md)
+- [0.48 human-governed AI workflows](IMPLEMENTATION_PLAN_0_48.md)
+- [0.49 brownfield bridges](IMPLEMENTATION_PLAN_0_49.md)
+- [0.50 operator console](IMPLEMENTATION_PLAN_0_50.md)
+- [0.51 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_51.md)
+- [0.52 TransformationModel incubation](IMPLEMENTATION_PLAN_0_52.md)
 
 ## Product Boundaries
 
@@ -296,12 +313,16 @@ path.
 - side-by-side validation and normalized report comparison;
 - maintained compatibility fixtures for every supported upstream artifact
   version.
+- fidelity mapping for ETLantic 0.46 map/reduce, conditional, failure, and
+  compensation constructs; every compiler must preserve their stable child and
+  branch identities or reject the plan before artifact emission.
 
 ### Gates
 
 1. Importing metadata does not execute arbitrary project Python or Jinja.
-2. Unsupported macros, dynamic graph construction, sensors, or platform
-   semantics are reported rather than guessed.
+2. Unsupported macros, arbitrary dynamic graph construction, sensors, or
+   platform semantics are reported rather than guessed; supported ETLantic 0.46
+   dynamic constructs are preserved or rejected with a capability diagnostic.
 3. Generated files have deterministic provenance and reviewable diffs.
 4. dbt-owned transformations may remain external while ETLantic imports their
    contracts and lineage.
@@ -326,11 +347,13 @@ durable reports and history.
   control-plane client;
 - read-only-first views for definitions, revisions, plans, diffs, runs,
   attempts, lineage, partitions, checkpoints, quality, schema drift, repairs,
-  backfills, quotas, policies, approvals, audit evidence, providers, and
-  deployment health;
+  backfills, delivery objectives, deadline breaches, escalation state, erasure
+  requests/plans/evidence, dynamic expansions/branches, dead-letter/redrive
+  state, schema compatibility, quotas, policies, approvals, audit evidence,
+  providers, and deployment health;
 - resumable live event views and durable history fallback;
 - explicit privileged actions for cancel, retry, replay, repair, approve,
-  acknowledge, promote, suspend, and contain;
+  acknowledge, promote, erasure authorization/retry, suspend, and contain;
 - bounded, sampled, redacted artifact previews;
 - tenant/workspace/environment scope that is visible on every screen;
 - accessibility, localization readiness, latency budgets, and large-workspace

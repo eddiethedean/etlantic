@@ -1,6 +1,6 @@
 # Production sample pilot
 
-> **Status: Available in ETLantic 0.37.0.** Clone companion under
+> **Status: Available in ETLantic 0.38.0.** Clone companion under
 > `examples/sample_pilot/`. Demonstrates a production profile
 > (`security_mode=production` + allowlist), file I/O, SARIF validate,
 > and optional Airflow compile.

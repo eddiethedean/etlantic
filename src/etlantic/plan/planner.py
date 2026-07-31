@@ -1834,16 +1834,46 @@ def _resolve_bindings(
             continue
         provider_raw = context.profile.bindings.get(node.binding, "memory")
         from etlantic.bindings import parse_asset_descriptor
+        from etlantic.connectors.models import fingerprint_public_config
 
         parsed = parse_asset_descriptor(provider_raw)
         secret = context.profile.secrets.get(node.binding)
+        public_config = dict(parsed.config or {})
+        # Lift listing fields into config fingerprint when present.
+        for key in (
+            "glob",
+            "root",
+            "root_ref",
+            "mode",
+            "format",
+            "consume",
+            "checkpoint",
+        ):
+            value = getattr(parsed, key, None)
+            if value is not None and key not in public_config:
+                public_config[key] = value
+        meta = dict(parsed.metadata or {})
+        meta.update(parsed.connector_metadata())
+        protocol = parsed.protocol
+        if protocol is None and parsed.provider == "local-files":
+            protocol = "etlantic.source/1"
         resolved[node.name] = BindingDescriptor(
             binding=node.binding,
             provider=parsed.provider,
             kind="source" if node.kind is NodeKind.SOURCE else "sink",
             location=parsed.location,
             secret_ref=secret,
-            metadata=dict(parsed.metadata or {}),
+            metadata=meta,
+            protocol=protocol,
+            provider_version=parsed.provider_version,
+            config_fingerprint=(
+                fingerprint_public_config(public_config) if public_config else None
+            ),
+            required_capabilities=tuple(parsed.required_capabilities),
+            format=parsed.format,
+            mode=parsed.mode,
+            config=dict(parsed.config or {}),
+            root_ref=parsed.root_ref,
         )
     return resolved
 

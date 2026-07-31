@@ -1,20 +1,20 @@
 # Planning Hub
 
-> **Status: Available in ETLantic 0.37.0; current gate is 0.37 (in progress).**
+> **Status: Shipped product docs describe ETLantic 0.38.0; current gate is 0.38
+> (gate-ready for tag/publish rehearsal).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.37 can do now**, use
+    - To learn what **ETLantic 0.38 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
-    - To evaluate **shipped evidence**, use the
-      [0.37 exit gate](EXIT_GATE_0_37.md) (in progress), the
-      [0.36 exit gate](EXIT_GATE_0_36.md), release notes, and tests.
+    - To evaluate **connectivity gate evidence**, use the
+      [0.38 exit gate](EXIT_GATE_0_38.md), release notes, and tests.
     - To understand **why a boundary exists**, use
       [architecture decisions](ARCHITECTURE_DECISIONS.md).
 
@@ -24,18 +24,22 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to ETLantic **0.37.0** (stable-foundation line; gate in progress).
+Status is relative to the **0.38** connectivity gate (gate-ready). Shipped
+behavior is the **0.38.0** connectivity line.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.37 stable foundation in progress | 0.38 connectivity |
-| [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | In-progress milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | Close [EXIT_GATE_0_37](EXIT_GATE_0_37.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.38 connectivity gate-ready | 0.39 control plane |
+| [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md) | Gate-ready milestone | Connector protocols, landing-zone modes, reference providers, conformance, and release evidence | Close [EXIT_GATE_0_38](EXIT_GATE_0_38.md) at publish |
+| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.52 | Begin 0.39 only after 0.38 gates close |
+| [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | Previous milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | [EXIT_GATE_0_37](EXIT_GATE_0_37.md) gate-ready |
 | [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
-| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing graduates in 0.37; connectivity follows | Continues through 0.52 |
-| [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Planned (0.38 + 0.39+ composition) | Single-file CSV only in 0.37 | Batch/incremental in 0.38; continuous trigger in 0.39+ |
-| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.37 does not provide a production multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
+| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Connectivity gate-ready in 0.38; testing graduated in 0.37 | Continues through 0.52 |
+| [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Gate-ready (0.38 + 0.39+ composition) | Snapshot + incremental in 0.38 Preview; continuous trigger in 0.39+ | Continuous submitters |
+| [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Accepted | Protocol ids, entry points, capabilities, plan/runtime split, reference set | Maintenance |
+| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.38 does not provide a production multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
-| [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Control-plane work begins at 0.39 |
+| [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
 | [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped | The optional contract-to-SQLModel bridge exists; reference control-plane persistence remains planned | Persistence work begins at 0.39 |
 | [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Reference adapter shipped; control plane planned | The optional thin adapter is not a durable or multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
@@ -44,7 +48,19 @@ Status is relative to ETLantic **0.37.0** (stable-foundation line; gate in progr
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |
 | [TransformationModel incubation](TRANSFORMATIONMODEL_PLAN.md) | Proposed incubation | No TransformationModel package or API is shipped | Post-foundation 0.52 incubation |
-| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic 0.37 stable foundation | Matching-minor joint release |
+| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic 0.38 connectivity line | Matching-minor joint release |
+
+## Forward implementation sequence
+
+The roadmap defines outcomes; these documents define workstreams, ordering,
+evidence, and release gates. Read the
+[shared forward delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) first.
+
+| Program | Phase implementation plans |
+|---|---|
+| Control plane | [0.39](IMPLEMENTATION_PLAN_0_39.md) · [0.40](IMPLEMENTATION_PLAN_0_40.md) · [0.41](IMPLEMENTATION_PLAN_0_41.md) · [0.42](IMPLEMENTATION_PLAN_0_42.md) · [0.43](IMPLEMENTATION_PLAN_0_43.md) |
+| Intelligence and execution | [0.44](IMPLEMENTATION_PLAN_0_44.md) · [0.45](IMPLEMENTATION_PLAN_0_45.md) · [0.46 dynamic control + streaming](IMPLEMENTATION_PLAN_0_46.md) · [0.47](IMPLEMENTATION_PLAN_0_47.md) · [0.48](IMPLEMENTATION_PLAN_0_48.md) |
+| Adoption and incubation | [0.49](IMPLEMENTATION_PLAN_0_49.md) · [0.50](IMPLEMENTATION_PLAN_0_50.md) · [0.51](IMPLEMENTATION_PLAN_0_51.md) · [0.52](IMPLEMENTATION_PLAN_0_52.md) |
 
 ## Status vocabulary
 
@@ -94,8 +110,9 @@ portfolio row above. Verify every needed feature against
 ### Implementing a planned capability
 
 Read the main roadmap milestone, the owning domain plan, related architecture
-decisions, and the most recent exit gate. Treat code examples in plans as
-illustrative until the public reference documents them.
+decisions, the phase implementation plan, and the most recent exit gate. Treat
+code examples in plans as illustrative until the public reference documents
+them.
 
 ### Maintaining the portfolio
 
@@ -123,6 +140,7 @@ summary.
 
 ## Related records
 
+- [Forward implementation plans and delivery contract](FORWARD_IMPLEMENTATION_PLANS.md)
 - [0.37 stable foundation implementation plan](IMPLEMENTATION_PLAN_0_37.md)
 - [0.36 joint compatibility burn-in implementation plan](IMPLEMENTATION_PLAN_0_36.md)
 - [Programmatic authoring and lossless JSON — 0.24](PROGRAMMATIC_AUTHORING_0_24.md)

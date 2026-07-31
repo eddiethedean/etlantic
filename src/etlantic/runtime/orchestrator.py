@@ -242,6 +242,10 @@ class LocalOrchestrator:
     _state_transitions: list[StateTransitionResult] = field(
         default_factory=list, repr=False
     )
+    _pending_source_connector: Any | None = field(default=None, repr=False)
+    _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
+    _pending_source_context: dict[str, Any] = field(default_factory=dict, repr=False)
+    _sink_commit_receipts: list[Any] = field(default_factory=list, repr=False)
 
     def __post_init__(self) -> None:
         if self.state_store is None:
@@ -2471,6 +2475,60 @@ class LocalOrchestrator:
         provider_name = descriptor.provider if descriptor is not None else "memory"
         if provider_name in {"local", "python"}:
             provider_name = "memory"
+
+        # Connector path (0.38): source connectors such as local-files.
+        source_connectors = getattr(self.runtime, "source_connectors", None) or {}
+        if provider_name in source_connectors:
+            from etlantic.connectors.session import run_source_connector_extract
+
+            connector = source_connectors[provider_name]
+            binding_payload = self._connector_binding_payload(
+                descriptor, binding_name=binding_name
+            )
+            context: dict[str, Any] = {
+                "run_id": run_id,
+                "node": node.name,
+                "pipeline_id": self.plan.pipeline_id,
+                "contract_type": node.contract_type,
+                "extract_id": node.name,
+            }
+            profile = getattr(self.runtime, "_active_profile", None)
+            if profile is not None and getattr(profile, "safe_io", None):
+                from etlantic.io_policy import SafeIoPolicy
+
+                try:
+                    context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
+                except Exception as exc:
+                    raise NodeExecutionError(
+                        f"Invalid safe_io policy for source {node.name!r}: {exc}",
+                        node_name=node.name,
+                        stage=FailureStage.READ.value,
+                        code="PMEXEC432",
+                    ) from exc
+            if descriptor is not None and descriptor.secret_ref is not None:
+                context["secret"] = await self._resolve_secret(
+                    descriptor.secret_ref, run_id=run_id, step=node.name
+                )
+            try:
+                records, _batch = await run_source_connector_extract(
+                    connector,
+                    binding=binding_payload,
+                    context=context,
+                )
+            except Exception as exc:
+                if hasattr(connector, "discard_proposal"):
+                    connector.discard_proposal()
+                raise NodeExecutionError(
+                    redact_message(str(exc)),
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    code=getattr(exc, "code", None) or "PMEXEC430",
+                ) from exc
+            self._pending_source_connector = connector
+            self._pending_source_binding = dict(binding_payload)
+            self._pending_source_context = dict(context)
+            return records
+
         storage = self.runtime.storage.get(provider_name)
         if storage is None:
             if provider_name == "memory":
@@ -2484,17 +2542,86 @@ class LocalOrchestrator:
                     code="PMEXEC430",
                 )
         location = descriptor.location if descriptor is not None else None
-        context: dict[str, Any] = {"run_id": run_id, "node": node.name}
+        context = {"run_id": run_id, "node": node.name}
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
             )
+        profile = getattr(self.runtime, "_active_profile", None)
+        if profile is not None and getattr(profile, "safe_io", None):
+            from etlantic.io_policy import SafeIoPolicy
+
+            try:
+                context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
+            except Exception as exc:
+                raise NodeExecutionError(
+                    f"Invalid safe_io policy for source {node.name!r}: {exc}",
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    code="PMEXEC432",
+                ) from exc
         return await storage.read(
             binding=binding_name,
             location=location,
             contract_type=node.contract_type,
             context=context,
         )
+
+    def _connector_binding_payload(
+        self, descriptor: BindingDescriptor | None, *, binding_name: str
+    ) -> dict[str, Any]:
+        if descriptor is None:
+            return {"binding": binding_name, "provider": "memory"}
+        payload: dict[str, Any] = {
+            "binding": descriptor.binding or binding_name,
+            "provider": descriptor.provider,
+            "location": descriptor.location,
+            "format": descriptor.format,
+            "mode": descriptor.mode,
+            "config": dict(descriptor.config or {}),
+            "root_ref": descriptor.root_ref,
+            "required_capabilities": list(descriptor.required_capabilities),
+            "protocol": descriptor.protocol,
+            "provider_version": descriptor.provider_version,
+        }
+        meta = dict(descriptor.metadata or {})
+        for key in (
+            "glob",
+            "root",
+            "consume",
+            "checkpoint",
+            "empty_match",
+            "secret_refs",
+        ):
+            if key in meta and key not in payload:
+                payload[key] = meta[key]
+            if key in descriptor.config and key not in payload:
+                payload[key] = descriptor.config[key]
+        # Promote config keys for local-files.
+        for key, value in dict(descriptor.config or {}).items():
+            payload.setdefault(key, value)
+        return {k: v for k, v in payload.items() if v is not None}
+
+    async def _finalize_landing_after_commit(self, receipt: Any) -> None:
+        """Advance landing ledger only when CommitReceipt.status == committed."""
+        connector = self._pending_source_connector
+        if connector is None:
+            return
+        status = getattr(receipt, "status", None)
+        if status != "committed":
+            if hasattr(connector, "discard_proposal"):
+                connector.discard_proposal()
+            return
+        if hasattr(connector, "commit_ledger"):
+            await connector.commit_ledger(
+                publication_id=getattr(receipt, "publication_id", None),
+                context=self._pending_source_context,
+            )
+        if hasattr(connector, "consume_after_commit"):
+            await connector.consume_after_commit(
+                binding=self._pending_source_binding,
+                context=self._pending_source_context,
+            )
 
     async def _write_sink(self, node: Node, data: Any, *, run_id: str) -> None:
         binding_name = node.binding or node.name
@@ -2562,6 +2689,7 @@ class LocalOrchestrator:
             "run_id": run_id,
             "node": node.name,
             "write_mode": mode.value,
+            "contract_type": node.contract_type,
         }
         profile = getattr(self.runtime, "_active_profile", None)
         if profile is not None and getattr(profile, "safe_io", None):
@@ -2580,6 +2708,46 @@ class LocalOrchestrator:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
             )
+        # Prefer CommitReceipt barrier when a landing source is pending.
+        if self._pending_source_connector is not None and provider_name != "null":
+            from etlantic.connectors.session import write_via_storage_session
+
+            binding_payload = {
+                "binding": binding_name,
+                "name": binding_name,
+                "location": location,
+                "provider": provider_name,
+            }
+            try:
+                receipt = await write_via_storage_session(
+                    storage,
+                    binding=binding_payload,
+                    data=data,
+                    context=context,
+                )
+            except Exception as exc:
+                if hasattr(self._pending_source_connector, "discard_proposal"):
+                    self._pending_source_connector.discard_proposal()
+                raise NodeExecutionError(
+                    redact_message(str(exc)),
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code=getattr(exc, "code", None) or "PMEXEC431",
+                ) from exc
+            self._sink_commit_receipts.append(receipt)
+            if receipt.status != "committed":
+                if hasattr(self._pending_source_connector, "discard_proposal"):
+                    self._pending_source_connector.discard_proposal()
+                raise NodeExecutionError(
+                    redact_message(
+                        receipt.message or f"Sink commit status={receipt.status}"
+                    ),
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code="PMEXEC433",
+                )
+            await self._finalize_landing_after_commit(receipt)
+            return
         await storage.write(
             binding=binding_name,
             location=location,

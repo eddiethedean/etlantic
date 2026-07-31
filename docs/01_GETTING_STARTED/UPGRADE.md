@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.37.0.**
+> **Status: Available in ETLantic 0.38.0.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,15 +13,16 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.37.0** — choose your guide:
+**ETLantic 0.38.0** — choose your guide:
 
-| From version | Ordered path to 0.37 |
+| From version | Ordered path to 0.38 |
 |---|---|
-| 0.37.x | Already current |
-| 0.36.x | [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
-| 0.35.x | [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
-| 0.34.x | [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) → [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
-| 0.33.x | [0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) → [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) → [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
+| 0.38.x | Already current |
+| 0.37.x | [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| 0.36.x | [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) → [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| 0.35.x | [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) → [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| 0.34.x | [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) → [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) → [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| 0.33.x | [0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) → [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) → [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) → [0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) → [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
 | 0.32.x | [0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) → then the 0.33 chain |
 | 0.31.x | [0.31 → 0.32](../11_DEVELOPMENT/MIGRATION_0_31_TO_0_32.md) → then the 0.32 chain |
 | 0.30.x | [0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md) → then follow the newer rows above |
@@ -38,9 +39,9 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.19.x | [0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) → then follow the newer rows above |
 | 0.18.x | [0.18 → 0.19](../11_DEVELOPMENT/MIGRATION_0_18_TO_0_19.md) → then follow the newer rows above |
 | 0.17.x | [0.17 → 0.18](../11_DEVELOPMENT/MIGRATION_0_17_TO_0_18.md) → then follow the newer rows above |
-| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.37 |
+| ≤ 0.16 | Follow the [migration chain](#migration-chain-newest-first) oldest→newest until 0.38 |
 
-### Breaking highlights on the way to 0.37
+### Breaking highlights on the way to 0.38
 
 | Span | Watch for |
 |---|---|
@@ -64,6 +65,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.34 → 0.35 | Migration completion / joint freeze (M7); testing preview; pin floor `<0.36` |
 | 0.35 → 0.36 | Joint compatibility burn-in; bare report metadata → namespaced; pin floor `<0.37` |
 | 0.36 → 0.37 | Stable-foundation line; plugin floor `etlantic>=0.37.0,<0.38` |
+| 0.37 → 0.38 | Connectivity / connector SDK; plugin floor `etlantic>=0.38.0,<0.39` |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -72,6 +74,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.37 → 0.38 | [MIGRATION_0_37_TO_0_38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
 | 0.36 → 0.37 | [MIGRATION_0_36_TO_0_37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
 | 0.35 → 0.36 | [MIGRATION_0_35_TO_0_36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | 0.34 → 0.35 | [MIGRATION_0_34_TO_0_35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) |
@@ -218,7 +221,7 @@ See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 |---|---|
 | Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
 | `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.37.0`) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.38.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
@@ -260,19 +263,19 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
-## 0.37 configuration cheat sheet
+## 0.38 configuration cheat sheet
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.37.0` and matching plugins / `medallantic==0.37.0` | Mix 0.37 plugins with an older core |
-| Use non-empty version pins in production `plugin_allowlist` | Use `null` / empty pins (fail closed in 0.37) |
+| Pin `etlantic==0.38.0` and matching plugins / `medallantic==0.38.0` | Mix 0.37 plugins with an older core |
+| Use non-empty version pins in production `plugin_allowlist` | Use `null` / empty pins (fail closed in 0.38) |
 | Re-validate / re-plan after the pin bump | Assume plans from 0.35 remain bit-identical without checking |
 | Expect bare report metadata keys to rewrite to namespaced keys | Leave unresolved secrets or bare secret-like keys in reports |
 | Expect soft-continued runs (`CONTINUE`) to report `PARTIAL` | Treat soft-skips as overall `SUCCEEDED` / exit 0 |
-| Keep transitional adapters until a major | Expect adapter removal in 0.37 |
-| Treat `etlantic.testing` burn-in helpers per What's New / exit gate | Confirm testing-foundation graduation status in Exit Gate 0.37 |
+| Keep transitional adapters until a major | Expect adapter removal in a major |
+| Treat `etlantic.testing` burn-in helpers per What's New / exit gate | Confirm testing-foundation graduation status in Exit Gate 0.38 |
 
-See [Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md).
+See [Migration 0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md).
 
 ## 0.35 configuration cheat sheet
 

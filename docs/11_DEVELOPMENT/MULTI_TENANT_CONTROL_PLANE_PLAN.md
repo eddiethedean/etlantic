@@ -47,7 +47,7 @@ field.
 | 0.39 / CP1 | Typed control API, identity context, authorization envelope | Control API incubation |
 | 0.40 / CP2 | Tenant/workspace registry, persistence isolation, metadata identity, and outbound OpenLineage | Tenant-aware registry and metadata-export preview |
 | 0.41 / CP3 | Durable submission, state, leases, recovery, and GitOps preview workspaces | Multi-worker and preview-workspace preview |
-| 0.42 / CP4 | Policy, quotas, audit, supply-chain, and preview-promotion gates | Multi-tenant release candidate |
+| 0.42 / CP4 | Policy, delivery objectives, escalation, governed erasure, quotas, audit, supply-chain, and preview-promotion gates | Multi-tenant release candidate |
 | 0.43 / CP-GA | Operational graduation of the complete program, including preview-to-production evidence | First supported multi-tenant control plane |
 
 The 0.39–0.42 releases are implementation and burn-in phases. They do not
@@ -182,6 +182,9 @@ Initial action families:
 | Profile/environment | read, plan-with, submit-with, administer bindings |
 | Plan | create, read, compare, approve, sign, submit |
 | Run | submit, read, cancel, retry, replay, repair, approve |
+| Delivery objective | create, read, evaluate, acknowledge, route, escalate, administer |
+| Erasure request | create, read, plan, approve, execute, retry, reconcile, close |
+| Notification route | read, test, bind, suspend, administer |
 | Artifact | list metadata, read bounded preview, download, delete |
 | Schema history | observe, read, propose, acknowledge, promote baseline |
 | Plugin/provider | inspect, approve, bind, revoke |
@@ -213,6 +216,8 @@ Candidate protocol families:
 - run, report, event, and artifact metadata stores;
 - execution-host directory and submitter;
 - quota and rate decision provider;
+- delivery-objective evaluator and notification-routing provider;
+- erasure planner/coordinator and backend capability provider;
 - append-only audit evidence sink;
 - state/checkpoint provider;
 - signing and envelope verification provider.
@@ -367,6 +372,10 @@ records security-sensitive actions and decisions, including:
 - tenant, workspace, environment, action, and resource revision;
 - submission, cancellation, approval, promotion, acknowledgement, and
   administrative changes;
+- delivery-objective breach, routing, escalation, acknowledgement, recovery,
+  and undelivered-notification outcomes;
+- erasure request, plan, approval, provider action, legal-hold decision,
+  reconciliation, partial-completion, and closure outcomes;
 - plugin/provider approvals and execution-envelope verification;
 - migration, retention, export, and deletion operations;
 - correlation, causation, idempotency, and request identifiers;
@@ -480,6 +489,21 @@ unbounded tenants, users, pipelines, runs, or artifacts.
 No optional package may bypass core plan validation, plugin trust, redaction, or
 security-domain rules.
 
+## Release Implementation Plans
+
+This integrated plan owns the cross-release architecture and final support
+claim. The phase plans own implementation order and release evidence:
+
+- [0.39 — API and identity foundation](IMPLEMENTATION_PLAN_0_39.md)
+- [0.40 — tenant registry, workspaces, and persistence](IMPLEMENTATION_PLAN_0_40.md)
+- [0.41 — durable submission, state, and reproducibility](IMPLEMENTATION_PLAN_0_41.md)
+- [0.42 — policy, delivery objectives, governed erasure, quotas, audit, and supply chain](IMPLEMENTATION_PLAN_0_42.md)
+- [0.43 — integrated control-plane graduation](IMPLEMENTATION_PLAN_0_43.md)
+
+The 0.39–0.42 plans cannot independently make the production multi-tenant
+claim. That claim exists only when the 0.43 qualification plan closes every
+mandatory gate in this document.
+
 ## Delivery Gates
 
 ### CP1 — Typed API and identity foundation (0.39)
@@ -568,11 +592,17 @@ Exit:
   target-environment identity changes;
 - multi-worker chaos and recovery tests pass.
 
-### CP4 — Policy, quota, audit, and release candidate (0.42)
+### CP4 — Policy, objectives, privacy operations, quota, audit, and release candidate (0.42)
 
 Deliver:
 
 - tenant-aware policy-provider integration and separation of duties;
+- versioned pipeline/step delivery objectives with durable deadline evaluation,
+  authorized deduplicated notification routing, escalation, acknowledgement,
+  and recovery evidence;
+- governed data-subject erasure requests, lineage-derived plans, provider
+  capability checks, delete/anonymize coordination, legal-hold enforcement,
+  idempotent retry, reconciliation, and explicit partial/unsupported outcomes;
 - quotas, fairness, suspension, and emergency containment;
 - integrity-protected audit evidence and retention/export controls;
 - plugin, provider, secret, egress, residency, and classification policies;
@@ -584,6 +614,12 @@ Deliver:
 Exit:
 
 - fail-closed identity/policy/quota outage behavior is demonstrated;
+- deadline evaluation and escalation survive replica/worker loss without a lost
+  or duplicate required transition, and routing cannot leak unauthorized
+  metadata;
+- erasure cannot bypass authorization, retention, or legal hold and cannot
+  report completion while required downstream effects remain unknown,
+  unsupported, or unreconciled;
 - audit evidence covers every privileged mutation without secrets or source
   rows;
 - noisy-neighbor tests stay within published budgets;

@@ -1,6 +1,6 @@
 # Prefect Direct Execution
 
-> **Status: Available in ETLantic 0.37.0.** This guide runs the shipped Prefect
+> **Status: Available in ETLantic 0.38.0.** This guide runs the shipped Prefect
 > scheduler locally through `etlantic-prefect`.
 
 Runnable companion:
@@ -18,7 +18,7 @@ uv run python examples/prefect_run.py
 For an application install, keep core and plugin on the same minor line:
 
 ```bash
-pip install 'etlantic==0.37.0' 'etlantic-prefect==0.37.0'
+pip install 'etlantic==0.38.0' 'etlantic-prefect==0.38.0'
 ```
 
 The example creates a process-local `PipelineRuntime`, seeds an in-memory

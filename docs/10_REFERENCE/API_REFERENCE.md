@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.37.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.38.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -142,7 +142,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.37.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.38.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
@@ -158,7 +158,7 @@ ETLantic **0.28** removed the third wave of root facade aliases (`sql`,
 ETLantic **0.27** removed the second wave (reliability, schema_drift,
 registry). See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
-ETLantic **0.37** removed the remaining demoted root aliases (hard
+ETLantic **0.38** removed the remaining demoted root aliases (hard
 `AttributeError`). Import from owning modules — see
 [Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md).
 

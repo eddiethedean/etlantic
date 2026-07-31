@@ -1,7 +1,7 @@
 # etlantic-sql
 
 SQLite and PostgreSQL reference SQL execution plugin for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.37.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.38.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -44,6 +44,28 @@ SQLite and PostgreSQL are Tier A in 0.33. **MERGE / upsert** is advertised only
 for PostgreSQL (`sql_merge=True`, `INSERT … ON CONFLICT`); SQLite remains
 `sql_merge=False` and fails closed when merge is required.
 
+## Connector capability matrix (0.38 Experimental)
+
+Source/sink/storage entry points (`postgresql`) implement
+`etlantic.connectors` protocols. CI uses an in-memory SQLite fake; live
+PostgreSQL remains the intended production dialect for the SQL plugin.
+
+| Capability | Source | Sink | Storage | Notes |
+|---|:---:|:---:|:---:|---|
+| `source.batch_snapshot` | ✓ | | | Bounded table read |
+| `source.schema_discovery` | ✓ | | ✓ | Row-free field inspect |
+| `source.statistics_bounded` | ✓ | | ✓ | Row estimate only |
+| `write.append` | | ✓ | | Transactional |
+| `write.overwrite` | | ✓ | | DELETE + INSERT |
+| `write.merge` | | ✓ | | `ON CONFLICT` (PG / sqlite fake) |
+| `publication.atomic` | | ✓ | | Commit / rollback |
+| `transactions` | | ✓ | | Autocommit-off path |
+| `reconciliation` | | ✓ | | `query_id` evidence |
+| `idempotency` | ✓ | ✓ | | Declared |
+
+Entry points: `etlantic.source_connectors` / `sink_connectors` /
+`storage_connectors` → `postgresql`.
+
 ## Examples
 
 ```bash
@@ -55,7 +77,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.37.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.37.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.38.0/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.38.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

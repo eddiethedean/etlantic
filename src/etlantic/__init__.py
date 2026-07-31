@@ -82,6 +82,7 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "secrets": "etlantic.secrets",
     "testing": "etlantic.testing",
     "service": "etlantic.service",
+    "connectors": "etlantic.connectors",
 }
 
 # Demoted root aliases were removed in 0.37.0 (see _REMOVED_0_37).

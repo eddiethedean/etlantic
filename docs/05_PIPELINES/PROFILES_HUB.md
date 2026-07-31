@@ -1,6 +1,6 @@
 # Profiles hub
 
-> **Status: Available in ETLantic 0.37.0.** Start here for environment,
+> **Status: Available in ETLantic 0.38.0.** Start here for environment,
 > allowlist, and production trust. Detail pages remain authoritative.
 
 ## Read in this order

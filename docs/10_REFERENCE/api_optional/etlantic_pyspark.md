@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.37.0"
-current_minor: "0.37"
+since: "0.38.0"
+current_minor: "0.38"
 audience: developer
 ---
 
 # etlantic-pyspark API
 
-> **Status: Available in ETLantic 0.37.0.** PySpark plugin + portable compiler.
+> **Status: Available in ETLantic 0.38.0.** PySpark plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

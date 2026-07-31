@@ -59,6 +59,9 @@ class PipelineRuntime:
     provider_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     secret_providers: dict[str, SecretProvider] = field(default_factory=dict)
     storage: dict[str, StorageBinding] = field(default_factory=dict)
+    source_connectors: dict[str, Any] = field(default_factory=dict)
+    sink_connectors: dict[str, Any] = field(default_factory=dict)
+    storage_connectors: dict[str, Any] = field(default_factory=dict)
     dataframe_plugins: dict[str, Any] = field(default_factory=dict)
     sql_plugins: dict[str, Any] = field(default_factory=dict)
     spark_plugins: dict[str, Any] = field(default_factory=dict)
@@ -113,6 +116,10 @@ class PipelineRuntime:
             self.storage.setdefault("memory", self.memory)
             self.storage.setdefault("local", self.memory)
             self.storage.setdefault("python", self.memory)
+        if "local-files" not in self.source_connectors:
+            from etlantic.connectors.local_files import create_local_files_source
+
+            self.source_connectors["local-files"] = create_local_files_source()
         if self._observability_bridge is None:
             from etlantic.runtime.observability_bridge import ObservabilityBridge
 
@@ -402,6 +409,24 @@ class PipelineRuntime:
         """
         self._assert_manual_plugin_allowed(name, binding, kind="storage")
         self.storage[name] = binding
+        self._configured_profile_key = None
+
+    def register_source_connector(self, name: str, connector: Any) -> None:
+        """Register a source connector under ``name`` (e.g. ``local-files``)."""
+        self._assert_manual_plugin_allowed(name, connector, kind="source_connector")
+        self.source_connectors[name] = connector
+        self._configured_profile_key = None
+
+    def register_sink_connector(self, name: str, connector: Any) -> None:
+        """Register a sink connector under ``name``."""
+        self._assert_manual_plugin_allowed(name, connector, kind="sink_connector")
+        self.sink_connectors[name] = connector
+        self._configured_profile_key = None
+
+    def register_storage_connector(self, name: str, connector: Any) -> None:
+        """Register a storage connector under ``name``."""
+        self._assert_manual_plugin_allowed(name, connector, kind="storage_connector")
+        self.storage_connectors[name] = connector
         self._configured_profile_key = None
 
     def register_dataframe_plugin(self, engine: str, plugin: Any) -> None:

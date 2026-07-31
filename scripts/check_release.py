@@ -27,7 +27,12 @@ REDIRECT_PACKAGES = ("etlantic-sparkforge",)
 # Thin reference adapters align with core Beta maturity.
 REFERENCE_PACKAGES = ("etlantic-fastapi",)
 # Experimental packages may use Alpha classifiers and are optional in release CI.
-EXPERIMENTAL_PACKAGES = ("etlantic-datafusion",)
+EXPERIMENTAL_PACKAGES = (
+    "etlantic-datafusion",
+    "etlantic-s3",
+    "etlantic-iceberg",
+    "etlantic-snowflake",
+)
 
 
 def version_from(path: Path, pattern: str) -> str:

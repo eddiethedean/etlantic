@@ -43,6 +43,14 @@ Accepted portable-authoring decision (implemented since 0.11):
 
 - [ADR-013: Closed Portable Transformation IR](adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md)
 
+Accepted connectivity decision (0.38 Wave 0):
+
+- [ADR-015: Connector Protocols and Capability Vocabulary](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
+
+Related accepted refactor (UI-stable):
+
+- [ADR-014: SOLID Core Refactor](adr/ADR-014-SOLID-CORE-REFACTOR.md)
+
 ## Foundational ADRs
 
 The initial implementation should formalize at least these records.

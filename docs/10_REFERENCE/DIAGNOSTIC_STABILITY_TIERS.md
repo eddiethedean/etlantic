@@ -1,6 +1,6 @@
 # Diagnostic-code stability tiers (0.37)
 
-> **Status: Available in ETLantic 0.37.0.** Foundation freeze inventory for
+> **Status: Available in ETLantic 0.38.0.** Foundation freeze inventory for
 > diagnostic **code families** (alphabetic prefix before the numeric suffix).
 > Machine-readable companion:
 > [`diagnostic-stability-tiers.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/diagnostic-stability-tiers.json)
@@ -17,9 +17,9 @@ notes. Exhaustive code→source index:
 
 | Tier | Meaning |
 |---|---|
-| `stable` | Part of the 0.37 foundation envelope. Existing codes keep identity; incompatible renumbering or removal needs migration notes. |
+| `stable` | Part of the 0.38 foundation envelope. Existing codes keep identity; incompatible renumbering or removal needs migration notes. |
 | `provisional` | Public and emitted today, but the family may change before a later explicit graduation (aligned with provisional wire surfaces such as `etlantic.quality/1`). |
-| `experimental` | May change or be removed without a 0.37 stable-foundation compatibility obligation. |
+| `experimental` | May change or be removed without a 0.38 Beta compatibility obligation. |
 
 ## Family tiers
 
@@ -28,6 +28,7 @@ notes. Exhaustive code→source index:
 | `PMAUTH` | stable | Authoring lifecycle / resolve |
 | `PMCAT` | stable | Authoring catalog policy |
 | `PMCFG` | stable | Configuration and profiles |
+| `PMCONN` | stable | Connector protocols, bindings, landing zone, publication |
 | `PMDATA` | stable | Data-contract integration |
 | `PMDF` | stable | Dataframe plugin diagnostics |
 | `PMEXEC` | stable | Execution lifecycle |
@@ -63,4 +64,4 @@ Every shipped code family under `src/etlantic` must appear in
 - [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Surface inventory](SURFACE_INVENTORY.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-037)
+- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-038)

@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-07-31
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.37.x` or plugins with `<0.38` |
+| Breaking | Dependency floor becomes `etlantic>=0.38.0,<0.39` (connectivity line) |
+| Upgrade | `pip install 'etlantic==0.38.0'` and matching plugins / `medallantic==0.38.0`. See [Migration 0.37 → 0.38](docs/11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| Rollback | Re-pin 0.37.0 minors together; re-validate |
+| Security | Connector plans/checkpoints remain secret-free and row-free; production allowlist still fails closed before connector import |
+
+### Added
+- Public connector protocols `etlantic.source/1`, `etlantic.sink/1`,
+  `etlantic.storage/1` under `etlantic.connectors`
+- Built-in `local-files` landing-zone source (Preview): snapshot +
+  incremental ledger, checkpoint schema `etlantic.landing_checkpoint/1`
+- Connector CDK helpers and public `etlantic.testing` connector conformance
+- Optional Experimental packages: `etlantic-s3`, `etlantic-iceberg`,
+  `etlantic-snowflake`; PostgreSQL source/sink connectors on `etlantic-sql`
+- Capability matrix, What's New / Migration / Exit Gate / Findings for 0.38
+- Connector SDK and landing-zone execution docs
+
+### Changed
+- Official package versions align at 0.38.0; plugins require
+  `etlantic>=0.38.0,<0.39`
+- Supported security release line is 0.38.x
+- StorageBinding remains via compatibility adapter (no silent connector claims)
+- PyPI Beta classifier retained on core; cloud connector packages use Alpha
+
+### Security
+- Static plans record identity scheme only (no live file lists)
+- Physical landing-root paths excluded from new plans/reports
+- Publication barriers: cursor/ledger advance only after committed outcomes
+
 ## [0.37.0] - 2026-07-30
 
 ### Adopter summary
@@ -1451,6 +1486,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.38.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.38.0
 [0.37.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.37.0
 [0.36.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.36.0
 [0.35.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0

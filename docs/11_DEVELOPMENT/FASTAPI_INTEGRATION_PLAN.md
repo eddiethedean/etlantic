@@ -5,7 +5,7 @@
 > hardening continue through 0.40–0.42; the integrated production claim is
 > gated for 0.43.
 >
-> **Current 0.37 boundary:** The optional `etlantic-fastapi` thin reference
+> **Current 0.38 boundary:** The optional `etlantic-fastapi` thin reference
 > adapter is available. It is not a durable scheduler, persistence layer,
 > authorization boundary, or production multi-tenant control plane.
 >
@@ -13,7 +13,8 @@
 > [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines
 > the shipped adapter. This plan and the
 > [control-plane plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) own future
-> graduation gates. See the [Planning Hub](PLAN_INDEX.md).
+> graduation gates. The [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md)
+> owns CP1 delivery evidence. See the [Planning Hub](PLAN_INDEX.md).
 >
 > **Review trigger:** Update when the shipped adapter gains durable service
 > scope or any CP1–CP-GA gate changes state.
@@ -41,6 +42,10 @@ The integration should let applications:
 
 - expose pipeline discovery, validation, planning, submission, status,
   cancellation, reports, artifacts, and lineage as typed HTTP operations;
+- expose delivery-objective evaluation/history/acknowledgement, authorized
+  notification-route administration, governed erasure request/plan/approval/
+  execution/status/reconciliation, and payload-free dynamic/DLQ/schema-registry
+  evidence as typed operations when their capability phases are installed;
 - reuse ETLantic and Pydantic models as request and response schemas;
 - generate an OpenAPI 3.1 description and client SDKs;
 - stream run events through Server-Sent Events (SSE) and optionally WebSockets;
@@ -62,9 +67,9 @@ It should not:
 - make HTTP routes the source of truth for pipeline definitions.
 
 An optional `etlantic-sqlmodel` integration may provide typed reference
-implementations for registry, run, report, event, observation, approval, and
-state stores. FastAPI and SQLModel remain adapters around ETLantic's public
-provider protocols.
+implementations for registry, run, report, event, observation, objective,
+notification-delivery, erasure, approval, and state stores. FastAPI and SQLModel
+remain adapters around ETLantic's public provider protocols.
 
 ## Package Boundary
 
@@ -268,6 +273,8 @@ OpenAPI extensions may link:
 - idempotency behavior;
 - authorization scopes;
 - event-stream and callback schemas.
+- delivery-objective, breach/recovery, notification-delivery, erasure,
+  dynamic-control, dead-letter, redrive, and schema-registry evidence schemas.
 
 Generated clients are delivery artifacts, not hand-maintained source. FastAPI
 documents OpenAPI-based generation for multiple languages, including typed
@@ -291,6 +298,8 @@ Authorization decisions should include:
 - parameter and binding overrides;
 - artifact access;
 - cancellation and approval actions.
+- objective acknowledgement/route administration and every erasure planning,
+  approval, execution, retry, reconciliation, and closure action.
 
 Authorization is performed before resource lookup, pagination, serialization,
 or cursor creation. List and search endpoints must not reveal unauthorized
@@ -307,7 +316,8 @@ workspace, pipeline, and normalized request. Duplicate submissions return the
 existing run when policy permits.
 
 Optimistic concurrency tokens should protect mutable operations such as
-cancellation, approval, annotations, and promotion.
+cancellation, objective acknowledgement, notification-route changes, erasure
+approval/retry/closure, approval, annotations, and promotion.
 
 ## Multi-Worker Deployment
 
@@ -331,6 +341,11 @@ The integration suite should cover:
 - non-enumerating list, lookup, search, cursor, and event-stream behavior;
 - idempotent submission;
 - cancellation races;
+- deadline clock/calendar/restart and notification deduplication/routing races;
+- erasure authorization, legal-hold, idempotency, partial-provider,
+  reconciliation, and false-completion cases;
+- dynamic-child pagination/non-enumeration and payload-free DLQ/redrive/
+  schema-registry evidence responses;
 - SSE resume and disconnect behavior;
 - multiple worker simulations;
 - request size, rate, and timeout limits;
@@ -352,6 +367,8 @@ including:
   artifacts with no resolved secrets or source rows;
 - compatible OpenAPI and wire-schema evolution with generated-client tests;
 - deployment, migration, backup, restore, rollback, and incident runbooks.
+- delivery-objective and erasure action parity with durable, scoped,
+  non-enumerating, redacted audit evidence.
 
 An application factory, generated OpenAPI document, or passing single-process
 test suite is not sufficient for graduation.

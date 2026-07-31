@@ -128,7 +128,7 @@ Start with a tutorial, then deepen:
 5. [Secrets Management](SECRETS_MANAGEMENT.md)
 6. Plugin reference pages only when you need API detail
 
-!!! note "Future design (not in the 0.37 operator path)"
+!!! note "Future design (not in the 0.38 operator path)"
     [Lifecycle Extensions](LIFECYCLE_EXTENSIONS.md),
     [Plugins overview](PLUGINS.md),
     [Storage Plugins](STORAGE_PLUGINS.md), and

@@ -51,7 +51,7 @@ def test_compatible_manifest_passes() -> None:
     row = evaluate_manifest_text(
         _manifest(),
         python_requires=">=3.11",
-        core_requires="etlantic>=0.37,<0.38",
+        core_requires="etlantic>=0.38,<0.39",
         allowlist=["etlantic-echo"],
     )
     assert row.ok

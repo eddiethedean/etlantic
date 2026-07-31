@@ -1,9 +1,10 @@
 # Roadmap Summary
 
 ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
-**0.36.0** closed joint compatibility burn-in. **0.37** is the current
-in-progress stable-foundation gate. Milestones describe capability order, not
-release-date commitments.
+**0.36.0** closed joint compatibility burn-in. **0.37** closed the
+stable-foundation gate. **0.38.0** is the current connectivity line
+(gate-ready for tag/publish rehearsal). Milestones describe capability order,
+not release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -11,11 +12,11 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.37 | Stable foundation | [Gate-ready for tag/publish](EXIT_GATE_0_37.md) |
-| Previous | 0.36 | Joint compatibility burn-in | [Gate-ready / shipped evidence](EXIT_GATE_0_36.md) |
-| Next | 0.38 | Data connectivity and connector SDK | Planned |
+| Current | 0.38 | Data connectivity and connector SDK | [Gate-ready for tag/publish](EXIT_GATE_0_38.md) |
+| Previous | 0.37 | Stable foundation | [Gate-ready / shipped evidence](EXIT_GATE_0_37.md) |
+| Next | 0.39 | Multi-tenant control plane (CP1) | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.38 gate-ready) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -259,8 +260,10 @@ connectivity and connector SDK program:
   drops); continuous watch is a run-submitter concern composed in **0.39+**.
 
 See the
-[Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md) and
-[Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md).
+[Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md),
+[Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md),
+[ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and
+[Exit gate 0.38](EXIT_GATE_0_38.md).
 
 TransformationModel incubation moves to 0.52.
 
@@ -269,34 +272,39 @@ TransformationModel incubation moves to 0.52.
 The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
-- **0.39 / CP1:** typed API, identity context, authorization, and idempotency;
+- **[0.39 / CP1](IMPLEMENTATION_PLAN_0_39.md):** typed API, identity context, authorization, and idempotency;
   durable submission hooks for continuous landing-zone file-drop triggers
   against 0.38 snapshot/incremental bindings
-- **0.40 / CP2:** tenant/workspace registry, persistence isolation, stable
+- **[0.40 / CP2](IMPLEMENTATION_PLAN_0_40.md):** tenant/workspace registry, persistence isolation, stable
   metadata identities, and outbound OpenLineage preview; workspace-scoped
   landing roots and checkpoint stores
-- **0.41 / CP3:** durable submission, leases, fencing, state, recovery, and
+- **[0.41 / CP3](IMPLEMENTATION_PLAN_0_41.md):** durable submission, leases, fencing, state, recovery, and
   bounded GitOps preview workspaces
-- **0.42 / CP4:** policy, quotas, audit evidence, preview promotion controls,
-  and release-candidate proof
-- **0.43 / CP-GA:** integrated production graduation after every gate passes
+- **[0.42 / CP4](IMPLEMENTATION_PLAN_0_42.md):** policy, quotas, pipeline delivery objectives,
+  deadline/escalation evidence, governed data-subject erasure, audit evidence,
+  preview promotion controls, and release-candidate proof
+- **[0.43 / CP-GA](IMPLEMENTATION_PLAN_0_43.md):** integrated production graduation after every gate passes
 
-The program remains outside the 0.37 single-tenant envelope and never treats
+The program remains outside the 0.38 single-tenant envelope and never treats
 in-process Python context as a tenant boundary. See the
 [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+The [forward delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) defines the
+shared entry, evidence, and completion rules for all later phases.
 
 ## Remaining post-foundation 0.x sequence
 
-- **0.44:** developer intelligence, LSP, IDE, and static analysis
-- **0.45:** planner and optimization SDK
-- **0.46:** streaming and event-driven pipelines
-- **0.47:** remote execution federation with Kubernetes and a managed Spark
+- **[0.44](IMPLEMENTATION_PLAN_0_44.md):** developer intelligence, LSP, IDE, and static analysis
+- **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK
+- **[0.46](IMPLEMENTATION_PLAN_0_46.md):** bounded dynamic mapping and control flow,
+  streaming and event-driven pipelines, poison-record/DLQ policy, and
+  schema-registry interoperability
+- **[0.47](IMPLEMENTATION_PLAN_0_47.md):** remote execution federation with Kubernetes and a managed Spark
   reference provider
-- **0.48:** AI-assisted, human-governed engineering
-- **0.49:** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
-- **0.50:** read-only-first operator console
-- **0.51:** managed runtime and enterprise provider packs
-- **0.52:** TransformationModel incubation
+- **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed engineering
+- **[0.49](IMPLEMENTATION_PLAN_0_49.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **[0.50](IMPLEMENTATION_PLAN_0_50.md):** read-only-first operator console
+- **[0.51](IMPLEMENTATION_PLAN_0_51.md):** managed runtime and enterprise provider packs
+- **[0.52](IMPLEMENTATION_PLAN_0_52.md):** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.

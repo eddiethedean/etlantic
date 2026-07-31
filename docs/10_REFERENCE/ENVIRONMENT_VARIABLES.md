@@ -1,7 +1,7 @@
 # Environment Variables (future design)
 
 !!! warning "Future design — most names are proposed 0.37"
-    Do **not** treat this page as the 0.37 configuration contract.
+    Do **not** treat this page as the 0.38 configuration contract.
 
     **Shipped today:**
 

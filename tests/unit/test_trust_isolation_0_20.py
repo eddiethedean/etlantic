@@ -141,7 +141,7 @@ def test_allowlist_package_identity_authorizes() -> None:
     )
     if package is None:
         pytest.skip("no distribution metadata available")
-    profile = production_profile(plugin_allowlist={str(package): "==0.37.0"})
+    profile = production_profile(plugin_allowlist={str(package): "==0.38.0"})
     authorized, diags, _events = authorize_plugins(discovered, profile)
     assert authorized, f"expected {package!r} to authorize; diags={diags}"
     assert all(

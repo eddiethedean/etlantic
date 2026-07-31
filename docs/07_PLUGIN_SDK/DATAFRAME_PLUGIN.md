@@ -153,7 +153,7 @@ ownership helpers. See [Testing Plugins](TESTING_PLUGINS.md).
 
 ## Gate A tabular interchange capabilities
 
-> **Available in ETLantic 0.37.0.** Gate A covers **Polars ↔ Pandas** only.
+> **Available in ETLantic 0.38.0.** Gate A covers **Polars ↔ Pandas** only.
 
 Advertise supported mechanisms on `PluginCapabilities.interchange_mechanisms`
 using the vocabulary in `etlantic.interchange.tabular.InterchangeMechanism`

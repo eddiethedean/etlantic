@@ -122,10 +122,19 @@ class BindingDescriptor:
     location: str | None = None
     secret_ref: SecretRef | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    # 0.38 connector fields (additive; defaults preserve 0.37 compatibility).
+    protocol: str | None = None
+    provider_version: str | None = None
+    config_fingerprint: str | None = None
+    required_capabilities: tuple[str, ...] = ()
+    format: str | None = None
+    mode: str | None = None
+    config: dict[str, Any] = field(default_factory=dict)
+    root_ref: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize binding descriptor."""
-        return {
+        payload: dict[str, Any] = {
             "binding": self.binding,
             "provider": self.provider,
             "kind": self.kind,
@@ -133,6 +142,23 @@ class BindingDescriptor:
             "secret_ref": self.secret_ref.to_dict() if self.secret_ref else None,
             "metadata": dict(self.metadata),
         }
+        if self.protocol is not None:
+            payload["protocol"] = self.protocol
+        if self.provider_version is not None:
+            payload["provider_version"] = self.provider_version
+        if self.config_fingerprint is not None:
+            payload["config_fingerprint"] = self.config_fingerprint
+        if self.required_capabilities:
+            payload["required_capabilities"] = list(self.required_capabilities)
+        if self.format is not None:
+            payload["format"] = self.format
+        if self.mode is not None:
+            payload["mode"] = self.mode
+        if self.config:
+            payload["config"] = dict(self.config)
+        if self.root_ref is not None:
+            payload["root_ref"] = self.root_ref
+        return payload
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BindingDescriptor:
@@ -143,6 +169,8 @@ class BindingDescriptor:
         location_text = str(location) if location is not None else None
         _reject_location_userinfo(location_text)
         secret_raw = data.get("secret_ref")
+        caps_raw = data.get("required_capabilities") or ()
+        config_raw = data.get("config") or {}
         return cls(
             binding=str(data["binding"]),
             provider=str(data["provider"]),
@@ -154,6 +182,26 @@ class BindingDescriptor:
                 else None
             ),
             metadata=dict(data.get("metadata") or {}),
+            protocol=(
+                str(data["protocol"]) if data.get("protocol") is not None else None
+            ),
+            provider_version=(
+                str(data["provider_version"])
+                if data.get("provider_version") is not None
+                else None
+            ),
+            config_fingerprint=(
+                str(data["config_fingerprint"])
+                if data.get("config_fingerprint") is not None
+                else None
+            ),
+            required_capabilities=tuple(str(x) for x in caps_raw),
+            format=(str(data["format"]) if data.get("format") is not None else None),
+            mode=(str(data["mode"]) if data.get("mode") is not None else None),
+            config=dict(config_raw) if isinstance(config_raw, dict) else {},
+            root_ref=(
+                str(data["root_ref"]) if data.get("root_ref") is not None else None
+            ),
         )
 
 

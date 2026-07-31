@@ -1,7 +1,7 @@
 # Public Surface Inventory (0.37)
 
-> **Status: Available in ETLantic 0.37.0.** Canonical public surface for the
-> **0.37 reference envelope**.
+> **Status: Available in ETLantic 0.38.0.** Canonical public surface for the
+> **0.38 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,10 +10,10 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.37 reference envelope |
+| `stable` | Supported within the documented 0.38 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a 0.37 stable-foundation obligation |
-| `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
+| `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.38.0** (hard error). Prefer owning modules |
 | `private` | Underscore modules / internal helpers — do not import |
 
 ## Recommended import style
@@ -34,8 +34,8 @@ Stable root symbols (`sdk_root_stable`):
 | `ValidationReport`, `PipelineRunReport`, `SecretRef` |
 
 Prefer `etl.authoring` for programmatic definition APIs. `DataContractModel`
-was **removed** in 0.37.0 — use `ContractModel` / `Data` (see
-[Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md)). Earlier
+was **removed** in 0.38.0 — use `ContractModel` / `Data` (see
+[Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md)). Earlier
 root facade alias waves:
 [0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md),
 [0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md),
@@ -57,6 +57,7 @@ root facade alias waves:
 | `etl.secrets` | `etlantic.secrets` | stable |
 | `etl.testing` | `etlantic.testing` | stable (application-pipeline foundation in 0.37) |
 | `etl.quality` | `etlantic.quality` | provisional |
+| `etl.connectors` | `etlantic.connectors` | provisional (0.38 burn-in) |
 
 ## Plan helpers (stable)
 
@@ -112,6 +113,13 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.orchestration/1` | stable |
 | `etlantic.transform-compiler/1` | stable |
 | `etlantic.scheduler/1` | stable (MVP — Prefect direct-execution bounds) |
+| `etlantic.source/1` | provisional (0.38 connector burn-in; ADR-015) |
+| `etlantic.sink/1` | provisional (0.38 connector burn-in; ADR-015) |
+| `etlantic.storage/1` | provisional (0.38 connector burn-in; ADR-015) |
+
+Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
+(provisional). Concrete file identities appear only in run-scoped
+`LandingReadManifest` evidence, not in static `PipelinePlan` listings.
 
 ## Foundations
 
@@ -121,7 +129,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.37.0`). Details:
+Pin to the same minor as core (`==0.38.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

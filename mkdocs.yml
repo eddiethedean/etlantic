@@ -184,11 +184,19 @@ not_in_nav: |
   11_DEVELOPMENT/EXIT_GATE_0_35.md
   11_DEVELOPMENT/EXIT_GATE_0_36.md
   11_DEVELOPMENT/EXIT_GATE_0_37.md
+  11_DEVELOPMENT/EXIT_GATE_0_38.md
   11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
   11_DEVELOPMENT/FACADE_PACKAGES.md
   11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
   11_DEVELOPMENT/FINDINGS_0_36.md
   11_DEVELOPMENT/FINDINGS_0_37.md
+  11_DEVELOPMENT/FINDINGS_0_38.md
+  11_DEVELOPMENT/FORWARD_IMPLEMENTATION_PLANS.md
+  11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_39.md
+  11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_40.md
+  11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_41.md
+  11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_42.md
+  11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_43.md
   11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md
   11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md
   11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md
@@ -217,6 +225,7 @@ not_in_nav: |
   11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md
   11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md
   11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md
+  11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md
   11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
   11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
@@ -239,6 +248,7 @@ not_in_nav: |
   11_DEVELOPMENT/UI_UX_PLAN.md
   11_DEVELOPMENT/adr/ADR-013-PORTABLE-TRANSFORMATION-IR.md
   11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
+  11_DEVELOPMENT/adr/ADR-015-CONNECTOR-PROTOCOLS.md
   specifications/DPCS_SPEC.md
   specifications/DTCS.md
   specifications/DTCS_SPEC.md
@@ -379,7 +389,7 @@ nav:
       - Python SDK in 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
-      - Current 0.37 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.38 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -394,6 +404,7 @@ nav:
       - End-to-end pilot: 01_GETTING_STARTED/END_TO_END_PILOT.md
       - Core data paths:
           - File-backed pipeline: 06_EXECUTION/FILE_STORAGE_TUTORIAL.md
+          - Landing zone: 06_EXECUTION/LANDING_ZONE.md
           - Contract-first workflow: 09_EXAMPLES/CONTRACT_FIRST_TUTORIAL.md
       - Execution engines:
           - Polars: 06_EXECUTION/POLARS_TUTORIAL.md
@@ -463,7 +474,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.37.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.38.0: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -498,6 +509,8 @@ nav:
           - Observability: 07_PLUGIN_SDK/OBSERVABILITY_PROVIDER.md
           - Run history: 07_PLUGIN_SDK/RUN_HISTORY_PROVIDER.md
           - Event consumers: 07_PLUGIN_SDK/EVENT_CONSUMER.md
+          - Connectors: 07_PLUGIN_SDK/CONNECTOR_SDK.md
+          - Storage plugins: 07_PLUGIN_SDK/STORAGE_PLUGIN.md
       - Portable compilers:
           - Portable Transform Compiler: 07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md
           - Third-party compiler tutorial: 07_PLUGIN_SDK/THIRD_PARTY_COMPILER_TUTORIAL.md
@@ -507,13 +520,31 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - What's new in 0.38: 01_GETTING_STARTED/WHATS_NEW_0_38.md
           - What's new in 0.37: 01_GETTING_STARTED/WHATS_NEW_0_37.md
           - What's new in 0.36: 01_GETTING_STARTED/WHATS_NEW_0_36.md
           - What's new in 0.34: 01_GETTING_STARTED/WHATS_NEW_0_34.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Planning:
           - Planning hub: 11_DEVELOPMENT/PLAN_INDEX.md
+          - 0.38 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_38.md
           - Landing-zone connector plan: 11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md
+          - Forward implementation plans:
+              - Delivery contract and index: 11_DEVELOPMENT/FORWARD_IMPLEMENTATION_PLANS.md
+              - 0.39 API and identity: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_39.md
+              - 0.40 registry and persistence: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_40.md
+              - 0.41 durable state: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_41.md
+              - 0.42 policy, objectives, privacy, and audit: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_42.md
+              - 0.43 control-plane graduation: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_43.md
+              - 0.44 developer intelligence: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_44.md
+              - 0.45 optimization SDK: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_45.md
+              - 0.46 dynamic control and streaming: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md
+              - 0.47 remote federation: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md
+              - 0.48 governed AI: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_48.md
+              - 0.49 brownfield bridges: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md
+              - 0.50 operator console: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md
+              - 0.51 provider packs: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md
+              - 0.52 TransformationModel: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md
           - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
           - 0.37 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_37.md
           - 0.36 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_36.md

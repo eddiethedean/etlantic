@@ -1,6 +1,6 @@
 # Structured Streaming
 
-**Status: Experimental in ETLantic 0.37.0.** Batch Spark is the production path;
+**Status: Experimental in ETLantic 0.38.0.** Batch Spark is the production path;
 streaming APIs may change without a major version bump.
 
 Structured Streaming is ETLantic's execution model for unbounded data using

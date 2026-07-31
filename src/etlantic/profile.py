@@ -107,8 +107,9 @@ class Profile:
     allow_trusted_sql: bool = False
     spark_udf_policy: str = "warn"
     spark_streaming: bool = False
-    # Internal store for logical asset name → provider (plan wire name: bindings).
-    bindings: dict[str, str] = field(default_factory=dict)
+    # Internal store for logical asset → provider string or structured connector
+    # descriptor (plan wire name: bindings). Values are str or canonical dict.
+    bindings: dict[str, Any] = field(default_factory=dict)
     implementation_overrides: dict[str, str] = field(default_factory=dict)
     secret_providers: dict[str, str] = field(default_factory=dict)
     resources: dict[str, str] = field(default_factory=dict)
@@ -154,7 +155,7 @@ class Profile:
         allow_trusted_sql: bool = False,
         spark_udf_policy: str = "warn",
         spark_streaming: bool = False,
-        assets: dict[str, str] | None = None,
+        assets: dict[str, Any] | None = None,
         implementation_overrides: dict[str, str] | None = None,
         secret_providers: dict[str, str] | None = None,
         resources: dict[str, str] | None = None,
@@ -357,11 +358,12 @@ class Profile:
         )
 
     @property
-    def assets(self) -> dict[str, str]:
+    def assets(self) -> dict[str, Any]:
         """Preferred public view of logical asset → provider resolution.
 
         Returns:
-            A shallow copy of the internal asset→provider store.
+            A shallow copy of the internal asset store (string or structured
+            connector descriptor).
         """
         return dict(self.bindings)
 

@@ -164,7 +164,7 @@ def test_sf_10_plugin_conformance_and_production_trust_policy() -> None:
         contract_type=None,
     )
 
-    ok = production_profile(plugin_allowlist={"etlantic-polars": "==0.37.0"})
+    ok = production_profile(plugin_allowlist={"etlantic-polars": "==0.38.0"})
     assert run_production_conformance_suite(ok).passed
 
 

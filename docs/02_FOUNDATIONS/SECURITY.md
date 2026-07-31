@@ -1,13 +1,13 @@
 # Security Model
 
-> **Status: Available in ETLantic 0.37.0.**
+> **Status: Available in ETLantic 0.38.0.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through the 0.37 stable-foundation
-claim** and the broader **proposed threat model**. ETLantic 0.37.0 is a
+This chapter covers **controls shipped through the 0.38 stable-foundation
+claim** and the broader **proposed threat model**. ETLantic 0.38.0 is a
 **Beta** (PyPI) release suitable for documented single-tenant pilots—not
 unrestricted enterprise production. It does not provide multi-tenant control
 planes, SLA, compliance attestations, deployment-topology guarantees, or
@@ -317,8 +317,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.37.0",
-        "etlantic-airflow": "==0.37.0",
+        "etlantic-polars": "==0.38.0",
+        "etlantic-airflow": "==0.38.0",
     },
 )
 ```
@@ -741,8 +741,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.37.0",
-        "etlantic-sql": "==0.37.0",
+        "etlantic-polars": "==0.38.0",
+        "etlantic-sql": "==0.38.0",
     },
 )
 ```
@@ -787,7 +787,7 @@ configuration.
 ## Verification
 
 The authoritative single-tenant control → owner → automated check → residual
-risk table for the 0.37 foundation claim is
+risk table for the 0.38 foundation claim is
 [SECURITY_VERIFICATION_MATRIX.md](SECURITY_VERIFICATION_MATRIX.md)
 (machine-readable companion
 [security-verification-matrix.json](security-verification-matrix.json);
