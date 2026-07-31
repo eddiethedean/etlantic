@@ -88,7 +88,7 @@ Package metadata declares these backend dependency ranges:
 | `etlantic-sqlmodel` | `sqlmodel>=0.0.22,<1` |
 | `etlantic-keyring` | `keyring` (no narrower range declared) |
 | `etlantic-airflow` | No Apache Airflow runtime dependency; it compiles DAG source |
-| `airflow-runtime` (uv group, 0.23) | `etlantic-airflow` only; CI installs `apache-airflow` 2.8.x–2.10.x separately for import matrix |
+| `airflow-runtime` (uv group, 0.23) | `etlantic-airflow` only; CI imports generated DAGs with `apache-airflow` 2.11.1 and 3.2.1 |
 | `etlantic-prefect` | `prefect>=3,<4` |
 | `etlantic[otel]` / `[observability]` | `opentelemetry-api>=1.36,<2` |
 | `etlantic[arrow]` | `pyarrow>=14` |

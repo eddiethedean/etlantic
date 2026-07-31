@@ -82,9 +82,9 @@ jobs:
   validate-and-plan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -102,7 +102,7 @@ jobs:
             --format sarif > etlantic.sarif
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: etlantic.sarif
         # Skip upload forks without security-events permission:
@@ -115,7 +115,7 @@ jobs:
             --format json > pipeline-plan.json
 
       - name: Retain plan artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pipeline-plan
           path: pipeline-plan.json

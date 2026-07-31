@@ -14,12 +14,12 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -116,12 +116,12 @@ jobs:
       matrix:
         engine: [polars, pandas]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -184,12 +184,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -234,12 +234,12 @@ jobs:
     name: PySpark plugin (sparkless)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -286,12 +286,12 @@ jobs:
     name: Portable Polars ↔ PySpark ↔ Pandas differentials
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -326,12 +326,12 @@ jobs:
     name: Airflow orchestrator plugin
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -365,12 +365,12 @@ jobs:
     name: Prefect scheduler plugin
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -397,11 +397,11 @@ jobs:
     name: Keyring secret provider
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -414,11 +414,11 @@ jobs:
     name: SQLModel integration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -431,11 +431,11 @@ jobs:
     name: Medallantic
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -448,12 +448,12 @@ jobs:
     name: Build and test wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -618,12 +618,12 @@ jobs:
     name: Microbenchmark regression gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -638,12 +638,12 @@ jobs:
     name: DataFusion plugin (experimental)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -670,12 +670,12 @@ jobs:
     name: FastAPI reference adapter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -691,18 +691,18 @@ jobs:
     name: Real PySpark (JVM)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -723,14 +723,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        airflow-version: ["2.8.4", "2.9.3", "2.10.4"]
+        # Final Airflow 2 line and current Airflow 3.
+        airflow-version: ["2.11.1", "3.2.1"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
-          version: "0.11.3"
+          version: "0.12.0"
           python-version: "3.11"
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -738,8 +739,10 @@ jobs:
       - name: Sync airflow runtime
         run: uv sync --locked --group airflow --group airflow-runtime
 
-      - name: Pin Airflow version
-        run: uv pip install "apache-airflow==${{ matrix.airflow-version }}"
+      - name: Install and verify Airflow version
+        run: |
+          uv pip install "apache-airflow==${{ matrix.airflow-version }}"
+          uv pip check
 
       - name: Compile and import generated DAG
         env:
