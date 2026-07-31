@@ -28,6 +28,17 @@ class Normalize(Transformation):
     result: Output[Customer]
 
 
+@Normalize.implementation("local")
+def normalize_parity(customers: list[RawCustomer]) -> list[Customer]:
+    return [
+        Customer(
+            customer_id=c.customer_id,
+            full_name=f"{c.first_name} {c.last_name}",
+        )
+        for c in customers
+    ]
+
+
 def _canonical_pipeline() -> type[Pipeline]:
     class CanonicalPipeline(Pipeline):
         __published_id__ = "parity-pipeline"

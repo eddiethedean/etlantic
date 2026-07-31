@@ -30,6 +30,11 @@ class Identity(Transformation):
     result: Output[Row]
 
 
+@Identity.implementation("local")
+def identity_local(rows: list[Row]) -> list[Row]:
+    return list(rows)
+
+
 class Sample(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
     step = Identity.step(rows=raw)

@@ -13,7 +13,12 @@ from etlantic.authoring.upgrade import (
     UnsupportedPipelineSchemaError,
     upgrade_pipeline_dict,
 )
-from etlantic.extensions import validate_extension_metadata
+from etlantic.extensions import (
+    _STRICT_SECRET_KEYS,
+    _URL_USERINFO_VALUE_RE,
+    _is_secret_like_key,
+    validate_extension_metadata,
+)
 from etlantic.interchange.security import DEFAULT_MAX_BYTES, read_text_bounded
 from etlantic.plan.freeze import mutable_copy
 
@@ -53,6 +58,7 @@ _FORBIDDEN_KEYS = frozenset(
         "bytecode",
         "secret_value",
         "password",
+        "pass",
         "token",
         "resolved_secret",
         "api_token",
@@ -68,15 +74,18 @@ _FORBIDDEN_KEYS = frozenset(
         "authorization",
         "aws_secret_access_key",
         "aws_access_key_id",
+        *_STRICT_SECRET_KEYS,
     }
 )
 _SECRET_REF_ALLOWED = frozenset({"provider", "name"})
 # Nested plaintext material that must never appear under any key (except
-# parameter ``value`` / ``default``, which are ordinary authoring fields).
+# parameter ``value`` / ``default``, which are ordinary authoring fields —
+# still scanned for URL userinfo below).
 _NESTED_SECRET_MATERIAL = frozenset(
     {
         "token",
         "password",
+        "pass",
         "secret",
         "secret_value",
         "resolved_secret",
@@ -93,6 +102,7 @@ _NESTED_SECRET_MATERIAL = frozenset(
         "authorization",
         "aws_secret_access_key",
         "aws_access_key_id",
+        *_STRICT_SECRET_KEYS,
     }
 )
 
@@ -116,8 +126,12 @@ def _reject_forbidden(value: Any, *, path: str = "$") -> None:
             )
         for key, child in value.items():
             key_s = str(key)
-            lowered = key_s.lower()
-            if key_s in _FORBIDDEN_KEYS or lowered in _FORBIDDEN_KEYS:
+            lowered = key_s.lower().replace("-", "_")
+            if (
+                key_s in _FORBIDDEN_KEYS
+                or lowered in _FORBIDDEN_KEYS
+                or _is_secret_like_key(key_s)
+            ):
                 raise ValueError(
                     f"Pipeline definition rejects forbidden field {key_s!r} at {path}"
                 )
@@ -146,6 +160,10 @@ def _reject_forbidden(value: Any, *, path: str = "$") -> None:
                 raise ValueError(
                     f"Pipeline definition rejects secret payload at {path}.{key_s}"
                 )
+            if isinstance(child, str) and _URL_USERINFO_VALUE_RE.search(child):
+                raise ValueError(
+                    f"Pipeline definition rejects URL userinfo secret at {path}.{key_s}"
+                )
             if isinstance(child, dict):
                 bad = [
                     str(k) for k in child if str(k).lower() in _NESTED_SECRET_MATERIAL
@@ -163,6 +181,8 @@ def _reject_forbidden(value: Any, *, path: str = "$") -> None:
             )
         for idx, child in enumerate(value):
             _reject_forbidden(child, path=f"{path}[{idx}]")
+    elif isinstance(value, str) and _URL_USERINFO_VALUE_RE.search(value):
+        raise ValueError(f"Pipeline definition rejects URL userinfo secret at {path}")
 
 
 def _check_depth(value: Any, *, depth: int = 0) -> None:

@@ -1,10 +1,11 @@
 # Exit Gate 0.36 — Joint Compatibility Burn-In
 
-> **Status: Gate-ready / in progress toward release.** This page tracks exit
-> evidence for ETLantic and Medallantic **0.36.0**. It does **not** claim that
-> wheels are published to PyPI or that immutable Read the Docs pages are live.
-> Tag and publish only after every P0 is closed and the scorecard below is
-> green against the exact candidate artifacts.
+> **Status: Gate-ready for tag/publish rehearsal.** In-tree evidence for
+> ETLantic and Medallantic **0.36.0** is green, including post-burn-in
+> fail-closed hardenings recorded in CHANGELOG / Migration. This page does
+> **not** claim that wheels are published to PyPI or that immutable Read the
+> Docs pages are live. Tag and publish only after every P0 is closed and the
+> scorecard below is green against the exact candidate artifacts.
 
 | Deliverable | Status |
 |---|---|
@@ -25,17 +26,17 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 
 | Measure | Required | Current |
 |---|---:|---|
-| Supported wire-schema/protocol matrix cells with executable evidence | 100% | In progress |
-| First-party plugins passing applicable public conformance from wheels | 100% | In progress |
-| Required application-case/engine cells passing | 100% | In progress |
-| Unexplained Medallantic semantic differences | 0 | In progress |
-| Unversioned wire-schema changes | 0 | Gate-ready (no reset planned) |
-| Resolved secret values in retained artifacts | 0 | In progress |
-| Production plugin paths that bypass allowlist/compatibility checks | 0 | In progress |
-| Unresolved P0 findings | 0 | Required before tag — see [FINDINGS_0_36](FINDINGS_0_36.md) |
-| Remaining P1 findings without owner, phase, mitigation, and rationale | 0 | In progress |
+| Supported wire-schema/protocol matrix cells with executable evidence | 100% | Done (local + CI gates) |
+| First-party plugins passing applicable public conformance from wheels | 100% | Done (CI package job) |
+| Required application-case/engine cells passing | 100% | Done (engine CI jobs) |
+| Unexplained Medallantic semantic differences | 0 | Done (hard-gated differentials) |
+| Unversioned wire-schema changes | 0 | Done (no reset) |
+| Resolved secret values in retained artifacts | 0 | Done (fail-closed suites) |
+| Production plugin paths that bypass allowlist/compatibility checks | 0 | Done (pin + canonicalize hardenings) |
+| Unresolved P0 findings | 0 | Done — see [FINDINGS_0_36](FINDINGS_0_36.md) |
+| Remaining P1 findings without owner, phase, mitigation, and rationale | 0 | Done (ledger has no open P1) |
 | Release-facing immutable documentation URLs returning non-200 | 0 | Pre-publish |
-| Runnable documentation claims without executed CI evidence | 0 | In progress |
+| Runnable documentation claims without executed CI evidence | 0 | Done (docs + CI gates) |
 
 ## Evidence map
 
@@ -77,6 +78,12 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 - [x] All thirteen distributions build from the same candidate commit (CI package job)
 - [x] First-party plugins pass applicable public conformance from clean wheels
 - [x] Production allowlist / digest / incompatible-protocol paths fail closed
+- [x] Production allowlist null/empty pins fail closed (`PMPLUG403`); package
+  names canonicalized
+- [x] Safe I/O empty roots / symlink reject / authoring secret denylist /
+  schema-history row guards / outbound production default-deny hardened
+- [x] Missing implementations fail at plan (`PMPLAN301`); CONTINUE soft-skips
+  report `PARTIAL`
 - [x] Core wheel Quickstart runs without engine/orchestrator deps
 
 ### Application and Medallantic burn-in

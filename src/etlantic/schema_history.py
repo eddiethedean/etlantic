@@ -89,12 +89,41 @@ _FORBIDDEN_ROW_KEYS = frozenset(
 )
 
 
+_JSON_ROW_STRING_MIN = 32
+_JSON_ARRAY_OR_OBJECT_RE = re.compile(r"^\s*[\[{]")
+
+
 def _is_list_of_mappings(value: Any) -> bool:
     return (
         isinstance(value, list)
         and bool(value)
         and all(isinstance(item, dict) for item in value)
     )
+
+
+def _is_tabular_list(value: Any) -> bool:
+    """True for non-empty lists that look like row/cell matrices."""
+    if not isinstance(value, list) or not value:
+        return False
+    if _is_list_of_mappings(value):
+        return True
+    # List-of-lists / list-of-tuples (matrix / cells) — common row bypass.
+    return all(isinstance(item, (list, tuple)) for item in value)
+
+
+def _looks_like_json_row_string(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if len(text) < _JSON_ROW_STRING_MIN or not _JSON_ARRAY_OR_OBJECT_RE.match(text):
+        return False
+    try:
+        parsed = json.loads(text)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return False
+    if isinstance(parsed, list) and parsed:
+        return True
+    return isinstance(parsed, dict) and _looks_like_row_payload(parsed)
 
 
 def _looks_like_row_payload(metadata: dict[str, Any] | None) -> bool:
@@ -105,15 +134,28 @@ def _looks_like_row_payload(metadata: dict[str, Any] | None) -> bool:
         key_l = str(key).lower()
         if key_l in _FORBIDDEN_ROW_KEYS:
             return True
-        if key_l.endswith("_rows") or "sample" in key_l:
+        if (
+            key_l.endswith("_rows")
+            or "sample" in key_l
+            or key_l
+            in {
+                "cells",
+                "table_data",
+                "export",
+            }
+        ):
             return True
-        if _is_list_of_mappings(value):
+        if _is_tabular_list(value) or _is_list_of_mappings(value):
+            return True
+        if _looks_like_json_row_string(value):
             return True
         if isinstance(value, dict) and _looks_like_row_payload(value):
             return True
         if isinstance(value, list):
             for item in value:
                 if isinstance(item, dict) and _looks_like_row_payload(item):
+                    return True
+                if isinstance(item, (list, tuple)) and item:
                     return True
     return False
 

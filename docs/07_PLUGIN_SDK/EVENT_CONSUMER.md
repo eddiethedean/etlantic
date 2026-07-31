@@ -22,7 +22,9 @@ Entry-point group: `etlantic.event_consumers`.
 ## Reference implementation
 
 `InMemoryTrendConsumer` aggregates `quality_metric` / `quality_value` annotations
-for `etlantic reliability quality-trends`.
+for programmatic trend summaries. The CLI
+`etlantic reliability quality-trends` surface is **preview-only** and requires
+inline `--values` samples (it does not load a live consumer store).
 
 ## Conformance
 

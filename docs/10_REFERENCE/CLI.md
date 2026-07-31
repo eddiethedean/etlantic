@@ -285,7 +285,9 @@ These are local ops helpers—not a managed reliability product.
 
 ```bash
 python -m etlantic reliability freshness orders --max-age 3600 --observed-age 120
-python -m etlantic reliability partition-check orders --keys dt,region --count 24 --minimum-count 24
+python -m etlantic reliability partition-check orders --keys dt,region \
+  --observed 2024-01-01/us,2024-01-01/eu --minimum-count 2
+python -m etlantic reliability quality-trends orders --values 0.1,0.2,0.15
 python -m etlantic reliability reconcile orders --left 100 --right 100
 python -m etlantic reliability env-diff LEFT.json RIGHT.json
 ```

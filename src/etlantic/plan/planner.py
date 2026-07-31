@@ -605,32 +605,60 @@ def _build_plan(
         environment=str((plan.profile_snapshot or {}).get("environment") or "default"),
         authorization=str(plan.profile_name or "default"),
     )
-    return PipelinePlan(
-        schema=plan.schema,
-        plan_id=f"plan:{fingerprint[:16]}",
-        pipeline_id=plan.pipeline_id,
-        pipeline_name=plan.pipeline_name,
-        profile_name=plan.profile_name,
-        fingerprint=fingerprint,
-        logical_graph=plan.logical_graph,
-        regions=plan.regions,
-        physical_units=plan.physical_units,
-        logical_to_physical=plan.logical_to_physical,
-        implementations=plan.implementations,
-        bindings=plan.bindings,
-        resource_refs=plan.resource_refs,
-        materialization_boundaries=plan.materialization_boundaries,
-        output_resolutions=tuple(outputs),
-        capability_decisions=plan.capability_decisions,
-        selected_nodes=plan.selected_nodes,
-        security_domain=plan.security_domain,
-        contract_versions=plan.contract_versions,
-        plugin_versions=plan.plugin_versions,
-        intents=plan.intents,
-        profile_snapshot=plan.profile_snapshot,
-        execution_settings=plan.execution_settings,
-        metadata=plan.metadata,
+    return _freeze_built_plan(
+        PipelinePlan(
+            schema=plan.schema,
+            plan_id=f"plan:{fingerprint[:16]}",
+            pipeline_id=plan.pipeline_id,
+            pipeline_name=plan.pipeline_name,
+            profile_name=plan.profile_name,
+            fingerprint=fingerprint,
+            logical_graph=plan.logical_graph,
+            regions=plan.regions,
+            physical_units=plan.physical_units,
+            logical_to_physical=plan.logical_to_physical,
+            implementations=plan.implementations,
+            bindings=plan.bindings,
+            resource_refs=plan.resource_refs,
+            materialization_boundaries=plan.materialization_boundaries,
+            output_resolutions=tuple(outputs),
+            capability_decisions=plan.capability_decisions,
+            selected_nodes=plan.selected_nodes,
+            security_domain=plan.security_domain,
+            contract_versions=plan.contract_versions,
+            plugin_versions=plan.plugin_versions,
+            intents=plan.intents,
+            profile_snapshot=plan.profile_snapshot,
+            execution_settings=plan.execution_settings,
+            metadata=plan.metadata,
+        )
     )
+
+
+def _freeze_built_plan(plan: PipelinePlan) -> PipelinePlan:
+    """Freeze planner-built plan graphs the same way as ``PipelinePlan.from_dict``."""
+    from etlantic.plan.freeze import deep_freeze
+
+    object.__setattr__(
+        plan, "logical_to_physical", deep_freeze(plan.logical_to_physical)
+    )
+    object.__setattr__(plan, "implementations", deep_freeze(plan.implementations))
+    object.__setattr__(plan, "bindings", deep_freeze(plan.bindings))
+    object.__setattr__(plan, "resource_refs", deep_freeze(plan.resource_refs))
+    object.__setattr__(
+        plan,
+        "capability_decisions",
+        tuple(deep_freeze(item) for item in plan.capability_decisions),
+    )
+    object.__setattr__(plan, "contract_versions", deep_freeze(plan.contract_versions))
+    object.__setattr__(plan, "plugin_versions", deep_freeze(plan.plugin_versions))
+    object.__setattr__(plan, "intents", deep_freeze(plan.intents))
+    object.__setattr__(plan, "profile_snapshot", deep_freeze(plan.profile_snapshot))
+    object.__setattr__(
+        plan, "execution_settings", deep_freeze(plan.execution_settings)
+    )
+    object.__setattr__(plan, "metadata", deep_freeze(plan.metadata))
+    return plan
 
 
 def _select_implementations_from_definition(
@@ -666,8 +694,6 @@ def _select_implementations_from_definition(
         engine = context.profile.implementation_overrides.get(node.name, default_engine)
         transform_id = node.transformation_id or "unknown"
         xf = xf_by_id.get(transform_id)
-        identity = implementation_id(transform_id, engine)
-        is_async = False
         portable_plan = (
             dict(xf.portable_plan) if xf is not None and xf.portable_plan else None
         )
@@ -810,13 +836,7 @@ def _select_implementations_from_definition(
                 kind=ref.kind,
             )
             continue
-        selected[node.name] = ImplementationDescriptor(
-            transformation_id=transform_id,
-            engine=engine,
-            identity=identity,
-            is_async=is_async,
-            kind="native",
-        )
+        _missing_implementation_error(node.name, requested_engine)
     return selected
 
 
@@ -1033,10 +1053,11 @@ def _select_implementations(
                 native_impls=native_impls,
                 explicit_override=explicit_override,
             )
-        if native_record is not None:
-            engine = native_record.engine
-            identity = native_record.identity
-            is_async = native_record.is_async
+        if native_record is None:
+            _missing_implementation_error(node.name, requested_engine)
+        engine = native_record.engine
+        identity = native_record.identity
+        is_async = native_record.is_async
 
         selected[node.name] = ImplementationDescriptor(
             transformation_id=transform_id,
@@ -1070,6 +1091,28 @@ def _ambiguous_impls_error(node_name: str, native_impls: dict[str, Any]) -> None
                         f'Step "{node_name}" has ambiguous '
                         f"implementations {sorted(native_impls)}; "
                         f"select one via profile override."
+                    ),
+                    path=("pipeline", node_name),
+                    phase="policy",
+                )
+            ],
+            phases=("policy",),
+        ),
+    )
+
+
+def _missing_implementation_error(node_name: str, requested_engine: str) -> None:
+    raise PipelineValidationError(
+        f'Step "{node_name}" has no implementation for engine '
+        f"{requested_engine!r}.",
+        report=ValidationReport.from_diagnostics(
+            [
+                Diagnostic(
+                    code="PMPLAN301",
+                    severity=Severity.ERROR,
+                    message=(
+                        f'Step "{node_name}" has no registered implementation '
+                        f"for engine {requested_engine!r}."
                     ),
                     path=("pipeline", node_name),
                     phase="policy",

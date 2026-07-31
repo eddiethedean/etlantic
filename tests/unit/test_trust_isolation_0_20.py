@@ -141,7 +141,7 @@ def test_allowlist_package_identity_authorizes() -> None:
     )
     if package is None:
         pytest.skip("no distribution metadata available")
-    profile = production_profile(plugin_allowlist={str(package): None})
+    profile = production_profile(plugin_allowlist={str(package): "==0.36.0"})
     authorized, diags, _events = authorize_plugins(discovered, profile)
     assert authorized, f"expected {package!r} to authorize; diags={diags}"
     assert all(
@@ -149,6 +149,26 @@ def test_allowlist_package_identity_authorizes() -> None:
         for item in authorized
         if item.distribution_name == package
     )
+
+
+def test_production_allowlist_requires_version_pin() -> None:
+    discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
+    if not discovered:
+        pytest.skip("no dataframe plugins installed")
+    package = next(
+        (item.distribution_name for item in discovered if item.distribution_name),
+        None,
+    )
+    if package is None:
+        pytest.skip("no distribution metadata available")
+    profile = production_profile(plugin_allowlist={str(package): None})
+    authorized, diags, _events = authorize_plugins(discovered, profile)
+    assert not any(
+        item.authorization == "allowed"
+        for item in authorized
+        if item.distribution_name == package
+    )
+    assert any(d.code == "PMPLUG403" for d in diags)
 
 
 def test_discover_dataframe_plugins_exposes_last_diagnostics() -> None:
@@ -276,6 +296,30 @@ def test_safe_io_rejects_symlink_escape(tmp_path: Path) -> None:
     policy = SafeIoPolicy.for_root(root, symlink_policy="reject")
     with pytest.raises(UnsafeLoadError):
         read_text_safe(link, policy)
+
+
+def test_safe_io_reject_denies_in_root_dir_symlink(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    sub = root / "sub"
+    sub.mkdir(parents=True)
+    target = sub / "file.txt"
+    target.write_text("ok", encoding="utf-8")
+    linkdir = root / "linkdir"
+    try:
+        linkdir.symlink_to(sub)
+    except OSError:
+        pytest.skip("symlinks not supported")
+    policy = SafeIoPolicy.for_root(root, symlink_policy="reject")
+    with pytest.raises(UnsafeLoadError, match=r"Symlink"):
+        read_text_safe(linkdir / "file.txt", policy)
+
+
+def test_safe_io_empty_approved_roots_fail_closed(tmp_path: Path) -> None:
+    target = tmp_path / "x.txt"
+    target.write_text("x", encoding="utf-8")
+    policy = SafeIoPolicy(approved_roots=(), max_read_bytes=1024)
+    with pytest.raises(UnsafeLoadError, match=r"approved_roots"):
+        read_text_safe(target, policy)
 
 
 def test_artifact_isolation_dimensions() -> None:
@@ -425,8 +469,9 @@ def test_capability_probe_failure_emits_pmplug432(
         pytest.skip("no dataframe plugins installed")
     item = discovered[0]
     allow_key = item.distribution_name or item.name
+    pin = item.distribution_version or "0.36.0"
     profile = production_profile(
-        plugin_allowlist={allow_key: None},
+        plugin_allowlist={allow_key: f"=={pin}" if pin[0].isdigit() else pin},
         require_plugin_probe=True,
     )
     result = discover_evaluate_authorize_load(

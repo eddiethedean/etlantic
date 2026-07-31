@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 
@@ -10,20 +9,40 @@ class SecretSerializationError(TypeError):
     """Raised when a SecretValue is asked to serialize."""
 
 
-@dataclass(slots=True)
 class SecretValue:
     """Runtime-only secret payload with redacted display.
 
     Must never appear in plans, reports, events, or logs. Prefer passing this
     only to the declared resource consumer.
+
+    Intentionally not a ``dataclass``: ``dataclasses.asdict`` must not dump
+    plaintext ``_value``.
     """
 
-    _value: Any
-    provider: str
-    name: str
-    key: str
-    version: str = "current"
-    content_type: str = "text"
+    __slots__ = (
+        "_value",
+        "content_type",
+        "key",
+        "name",
+        "provider",
+        "version",
+    )
+
+    def __init__(
+        self,
+        _value: Any,
+        provider: str,
+        name: str,
+        key: str,
+        version: str = "current",
+        content_type: str = "text",
+    ) -> None:
+        object.__setattr__(self, "_value", _value)
+        object.__setattr__(self, "provider", provider)
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "key", key)
+        object.__setattr__(self, "version", version)
+        object.__setattr__(self, "content_type", content_type)
 
     @property
     def value(self) -> Any:
@@ -54,3 +73,9 @@ class SecretValue:
 
     def __getstate__(self) -> dict[str, Any]:
         raise SecretSerializationError("SecretValue cannot be pickled.")
+
+    def __iter__(self) -> Any:
+        raise SecretSerializationError(
+            "SecretValue cannot be iterated for serialization; "
+            "use SecretRef identities only."
+        )

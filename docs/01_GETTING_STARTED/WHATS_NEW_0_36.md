@@ -25,16 +25,22 @@
   with Prefect-bounded direct-execution evidence
 - **`etlantic.quality/1` remains provisional** — wire schema stays outside
   the full stable-foundation claim (no silent graduation)
+- **Fail-closed hardening** — production allowlist version pins required;
+  Safe I/O / outbound / schema-history / authoring secret denylists tightened;
+  missing implementations fail at plan (`PMPLAN301`); soft-continued runs
+  report `PARTIAL`
 
 ## Adopter actions
 
 | Who | Action |
 |---|---|
-| Everyone on 0.36.x | Bump pins to `etlantic==0.36.0` and matching plugins / `medallantic==0.36.0` |
+| Everyone on 0.35.x | Bump pins to `etlantic==0.36.0` and matching plugins / `medallantic==0.36.0` |
 | Plugin authors | Raise the core floor to `etlantic>=0.36.0,<0.37` and re-run public conformance |
 | Report consumers | Expect bare run-report metadata keys to migrate to namespaced keys |
+| Production profiles | Use non-empty version pins in `plugin_allowlist` (null/empty pins fail closed) |
 | Scheduler users | Treat `scheduler/1` as a stable MVP (Prefect bounds); keep Airflow as compile-only |
 | Quality authors | Continue treating `quality/1` as provisional wire |
+| Reliability CLI users | Pass `--observed` to `partition-check` and `--values` to `quality-trends` |
 
 ## Not in 0.36
 

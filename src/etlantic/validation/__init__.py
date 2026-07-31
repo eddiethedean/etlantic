@@ -763,6 +763,35 @@ def _validate_port_compatibility(
         prod_type = producer_port.contract_type
         cons_type = consumer_port.contract_type
         if prod_type is None or cons_type is None:
+            if (prod_type is None) != (cons_type is None):
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPIPE210",
+                        severity=Severity.ERROR,
+                        message=(
+                            f'Port pair "{edge.producer_node}.'
+                            f'{edge.producer_port}" → "{edge.consumer_node}.'
+                            f'{edge.consumer_port}" mixes a typed contract with '
+                            f"an untyped port; failing closed."
+                        ),
+                        path=("pipeline", edge.consumer_node, edge.consumer_port),
+                        related=(
+                            ("pipeline", edge.producer_node, edge.producer_port),
+                        ),
+                        help=(
+                            "Annotate both Extract/Load and Input/Output ports "
+                            "with compatible Data contracts."
+                        ),
+                        metadata={
+                            "producer_contract": (
+                                contract_id(prod_type) if prod_type else None
+                            ),
+                            "consumer_contract": (
+                                contract_id(cons_type) if cons_type else None
+                            ),
+                        },
+                    )
+                )
             continue
 
         if not _contracts_compatible(prod_type, cons_type):
@@ -798,14 +827,25 @@ def _contracts_compatible(producer: type[Any], consumer: type[Any]) -> bool:
     """Return True when producer/consumer contracts are the same logical type.
 
     Exact Python identity remains the primary check. Distinct classes that share
-    the same published ODCS/CCM identity (common after ODCS load) are also
-    treated as compatible.
+    the same published ODCS/CCM identity must also share a compatible schema
+    fingerprint — published id alone is not enough.
     """
     if producer is consumer:
         return True
     left = published_contract_id(producer)
     right = published_contract_id(consumer)
-    return bool(left and right and left == right)
+    if not (left and right and left == right):
+        return False
+    try:
+        from etlantic.schema_drift import normalize_schema_from_model
+
+        return (
+            normalize_schema_from_model(producer).fingerprint()
+            == normalize_schema_from_model(consumer).fingerprint()
+        )
+    except Exception:
+        # If schema normalization fails, fail closed on published-id-only match.
+        return False
 
 
 def validate_transformation(transform: type[Transformation]) -> ValidationReport:

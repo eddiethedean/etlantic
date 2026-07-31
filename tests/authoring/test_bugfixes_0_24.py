@@ -60,6 +60,24 @@ def test_api_token_key_rejected() -> None:
         pipeline_from_dict(data)
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"dsn": "postgresql://localhost/db"},
+        {"connection_string": "Server=x;Password=y"},
+        {"jdbc_url": "jdbc:postgresql://localhost/db"},
+        {"pass": "hunter2"},
+        {"note": "postgresql://user:SuperSecret@host/db"},
+    ],
+)
+def test_dsn_and_userinfo_secrets_rejected(metadata: dict) -> None:
+    defn = definition_from_pipeline(CustomerPipeline)
+    data = pipeline_to_dict(defn)
+    data["metadata"] = metadata
+    with pytest.raises(ValueError, match=r"forbidden|secret|userinfo"):
+        pipeline_from_dict(data)
+
+
 def test_catalog_contract_ids_align_with_ports() -> None:
     defn = definition_from_pipeline(CustomerPipeline)
     catalog = catalog_from_definition(defn)

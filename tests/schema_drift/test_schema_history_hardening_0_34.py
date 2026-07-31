@@ -50,3 +50,18 @@ def test_file_history_keeps_distinct_subjects(tmp_path) -> None:
     assert provider.latest("foo_bar") is not None
     assert provider.latest("foo:bar").schema.fields[0].name == "a"
     assert provider.latest("foo_bar").schema.fields[0].name == "b"
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"table_data": [[1, "alice"], [2, "bob"]]},
+        {"note": '[{"id": 1, "ssn": "000-00-0000"}]'},
+        {"export": {"cells": [[1, 2], [3, 4]]}},
+        {"cells": [["a", "b"], ["c", "d"]]},
+    ],
+)
+def test_row_payload_bypass_shapes_fail_closed(metadata: dict) -> None:
+    obs = SchemaObservation(subject_id="s", schema=_schema("id"), metadata=metadata)
+    with pytest.raises(ValueError, match="must not store source rows"):
+        assert_no_row_payload(obs)

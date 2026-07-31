@@ -128,8 +128,8 @@ def test_cli_partition_check_flags() -> None:
             "orders",
             "--keys",
             "dt,region",
-            "--count",
-            "2",
+            "--observed",
+            "2024-01-01/us,2024-01-01/eu",
             "--minimum-count",
             "2",
             "--format",
@@ -140,6 +140,30 @@ def test_cli_partition_check_flags() -> None:
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert payload["expectation"]["partition_keys"] == ["dt", "region"]
+    assert payload["observed_partitions"] == [
+        "2024-01-01/eu",
+        "2024-01-01/us",
+    ]
+
+
+def test_cli_partition_check_requires_observed() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "reliability",
+            "partition-check",
+            "orders",
+            "--keys",
+            "dt",
+            "--observed",
+            "",
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code != 0
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
 
 
 def test_cli_diff_load_failure_is_explicit() -> None:

@@ -249,9 +249,14 @@ class Profile:
         object.__setattr__(self, "security_domain", security_domain)
         object.__setattr__(self, "security_mode", mode)
         domain_key = str(security_domain or "").strip().lower()
-        if domain_key in {"production", "prod"} and mode != "production":
+        name_key = str(name or "").strip().lower()
+        looks_production = domain_key in {"production", "prod"} or name_key in {
+            "production",
+            "prod",
+        }
+        if looks_production and mode != "production":
             warnings.warn(
-                "Profile.security_domain looks like production but "
+                "Profile name/security_domain looks like production but "
                 f"security_mode={mode!r}; fail-closed trust uses security_mode only. "
                 "Set security_mode='production' or use production_profile().",
                 UserWarning,
@@ -279,7 +284,21 @@ class Profile:
         object.__setattr__(self, "tenant", str(tenant or "default"))
         object.__setattr__(self, "environment", str(environment or "default"))
         object.__setattr__(self, "safe_io", dict(safe_io or {}))
-        object.__setattr__(self, "outbound", dict(outbound or {}))
+        outbound_data = dict(outbound or {})
+        if mode == "production" and outbound_data:
+            from etlantic.outbound import OutboundPolicy
+
+            policy = OutboundPolicy.from_dict(outbound_data)
+            if not policy.default_deny:
+                raise ValueError(
+                    "Production profiles require outbound.default_deny=true"
+                )
+            if not policy.allowed_hosts:
+                raise ValueError(
+                    "Production profiles require non-empty outbound.allowed_hosts"
+                )
+            outbound_data = policy.to_dict()
+        object.__setattr__(self, "outbound", outbound_data)
         object.__setattr__(self, "require_plugin_probe", bool(require_plugin_probe))
         delivery = str(observability_delivery or "best_effort")
         if delivery not in {"best_effort", "durable_audit"}:

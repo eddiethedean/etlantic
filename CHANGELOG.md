@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | | |
 |---|---|
 | Who must act | Anyone pinning `etlantic==0.35.x` or plugins with `<0.36` |
-| Breaking | Dependency floor becomes `etlantic>=0.36.0,<0.37` (no wire-schema reset). Bare run-report metadata keys migrate to namespaced keys |
+| Breaking | Dependency floor becomes `etlantic>=0.36.0,<0.37` (no wire-schema reset). Bare run-report metadata keys migrate to namespaced keys. Production allowlists require non-empty version pins. Soft-continued runs report `PARTIAL`. Missing implementations fail at plan (`PMPLAN301`). Reliability `partition-check` / `quality-trends` require evidence flags |
 | Upgrade | `pip install 'etlantic==0.36.0'` and matching plugins / `medallantic==0.36.0`. See [Migration 0.35 → 0.36](docs/11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | Rollback | Re-pin 0.35.0 minors together; re-validate |
-| Security | Compatibility fixtures and reports remain secret-free; production allowlist fail-closed unchanged; digests/attestations as shipped |
+| Security | Compatibility fixtures and reports remain secret-free; production allowlist pins + outbound default-deny fail closed; schema history / authoring / Safe I/O hardened; digests/attestations as shipped |
 
 ### Added
 - Joint compatibility burn-in evidence for `0.34 → 0.35` and `0.35 → 0.36`
@@ -38,11 +38,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   claim)
 - Run-report bare metadata keys migrate to namespaced keys without silent
   field loss
+- Production `plugin_allowlist` entries require non-empty version pins;
+  package names are canonicalized for matching
+- Reliability CLI: `partition-check` requires `--observed`; `quality-trends`
+  requires `--values` (preview-only)
 
 ### Fixed
 - Forward compatibility for 0.35.0 bare-key run-report metadata via documented
   migration and known-defect fixture
   (`tests/fixtures/releases/v0_35/known_defects/run_report_bare_metadata.json`)
+- `SecretValue` is no longer a dataclass (blocks `dataclasses.asdict` plaintext
+  leaks)
+- Schema history rejects list-of-lists, nested cells, and JSON-string row
+  payloads
+- Authoring serialization rejects DSN keys and URL userinfo in definition
+  values
+- Safe I/O: empty `approved_roots` fail closed; `symlink_policy=reject` denies
+  any symlink component; invalid profile `safe_io` no longer silently dropped;
+  lock/append files use `0o600`
+- Production outbound requires `default_deny` and non-empty `allowed_hosts`
+- Profile warns when `name` looks like production without
+  `security_mode=production`
+- Planner fails closed (`PMPLAN301`) without a real implementation; plan graphs
+  are frozen after build
+- Contract validation requires schema fingerprint match for shared published
+  [ODCS](docs/03_DATA_CONTRACTS/ODCS.md) ids; mixed typed/untyped ports fail
+  closed
+- `FailureAction.CONTINUE` soft-skips report `PARTIAL` (never pure `SUCCEEDED`)
+- Spark sinks no longer coerce Delta for `overwrite_partition` / bare
+  `pyspark` provider
+- LazyFrame record counts report unknown (`None`) instead of a false zero
+- OPS examples, FastAPI OpenAPI version, and Medallantic ROADMAP release header
+  aligned to 0.36.0
+- Log redaction covers `auth`/`jwt`/`bearer` keys and JWT-shaped tokens
 
 ## [0.35.0] - 2026-07-30
 

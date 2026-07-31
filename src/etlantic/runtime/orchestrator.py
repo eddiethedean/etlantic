@@ -921,12 +921,20 @@ class LocalOrchestrator:
                 StepStatus.PENDING,
             }
         )
+        soft_continued = any(
+            s.status is StepStatus.SKIPPED
+            and bool((s.metadata or {}).get("continue_after_failure"))
+            for s in nodes.values()
+        )
         succeeded = sum(1 for s in nodes.values() if s.status is StepStatus.SUCCEEDED)
         skipped = sum(1 for s in nodes.values() if s.status is StepStatus.SKIPPED)
         if cancelled:
             status = RunStatus.CANCELLED
         elif failed_count:
             status = RunStatus.FAILED if succeeded == 0 else RunStatus.PARTIAL
+        elif soft_continued:
+            # Soft-skipped CONTINUE failures must never report pure SUCCEEDED.
+            status = RunStatus.PARTIAL
         else:
             status = RunStatus.SUCCEEDED
 
@@ -1524,10 +1532,9 @@ class LocalOrchestrator:
                     self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                     self._commit_state_after_write(node=node)
                     return
-                enable_delta = provider in {"delta", "pyspark"} or write_mode in {
+                enable_delta = provider == "delta" or write_mode in {
                     "merge",
                     "upsert",
-                    "overwrite_partition",
                 }
                 result = await execute_spark_sink(
                     plugin=plugin,
@@ -1754,7 +1761,7 @@ class LocalOrchestrator:
 
         if node.kind is NodeKind.STEP:
             inputs = self._gather_inputs(node, graph, artifacts)
-            state.records_in = sum(_count(v) for v in inputs.values())
+            state.records_in = _sum_counts(inputs.values())
             params = self._parameters_for(node)
             descriptor = self.plan.implementations.get(node.name)
             if descriptor is not None and descriptor.kind == "portable_compiled":
@@ -2096,7 +2103,7 @@ class LocalOrchestrator:
                     validations=validations,
                     port_name=port_name,
                 )
-            state.records_in = sum(_count(v) for v in inputs.values())
+            state.records_in = _sum_counts(inputs.values())
             result = await self._invoke_transform(
                 impl,
                 inputs,
@@ -2158,7 +2165,7 @@ class LocalOrchestrator:
                     or artifacts.should_durable(strategy)
                 )
                 artifacts.put(ref, value, durable=durable)
-            state.records_out = sum(_count(v) for v in outputs.values())
+            state.records_out = _sum_counts(outputs.values())
             return
 
         raise NodeExecutionError(
@@ -2560,8 +2567,15 @@ class LocalOrchestrator:
         if profile is not None and getattr(profile, "safe_io", None):
             from etlantic.io_policy import SafeIoPolicy
 
-            with contextlib.suppress(Exception):
+            try:
                 context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
+            except Exception as exc:
+                raise NodeExecutionError(
+                    f"Invalid safe_io policy for sink {node.name!r}: {exc}",
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code="PMEXEC432",
+                ) from exc
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
@@ -2802,7 +2816,7 @@ class LocalOrchestrator:
             )
 
 
-def _count(data: Any) -> int:
+def _count(data: Any) -> int | None:
     if data is None:
         return 0
     if isinstance(data, (list, tuple)):
@@ -2812,7 +2826,17 @@ def _count(data: Any) -> int:
             return len(data)
         except Exception:
             pass
-    # LazyFrame: unknown without collect
+    # LazyFrame: unknown without collect — do not report a false zero.
     if type(data).__name__ == "LazyFrame":
-        return 0
+        return None
     return 1
+
+
+def _sum_counts(values: Any) -> int | None:
+    total = 0
+    for value in values:
+        count = _count(value)
+        if count is None:
+            return None
+        total += count
+    return total

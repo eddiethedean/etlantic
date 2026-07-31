@@ -18,7 +18,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | From version | Ordered path to 0.36 |
 |---|---|
 | 0.36.x | Already current |
-| 0.36.x | [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
+| 0.35.x | [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | 0.34.x | [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) → [0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | 0.33.x | [0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) → [0.34 → 0.35](../11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md) |
 | 0.32.x | [0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) → then the 0.33 chain |
@@ -262,8 +262,10 @@ See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 | Do | Don't |
 |---|---|
 | Pin `etlantic==0.36.0` and matching plugins / `medallantic==0.36.0` | Mix 0.36 plugins with an older core |
+| Use non-empty version pins in production `plugin_allowlist` | Use `null` / empty pins (fail closed in 0.36) |
 | Re-validate / re-plan after the pin bump | Assume plans from 0.35 remain bit-identical without checking |
 | Expect bare report metadata keys to rewrite to namespaced keys | Leave unresolved secrets or bare secret-like keys in reports |
+| Expect soft-continued runs (`CONTINUE`) to report `PARTIAL` | Treat soft-skips as overall `SUCCEEDED` / exit 0 |
 | Keep transitional adapters until a major | Expect adapter removal in 0.36 |
 | Treat `etlantic.testing` burn-in helpers as a frozen preview contract | Assume 0.38 testing-foundation graduation already shipped |
 

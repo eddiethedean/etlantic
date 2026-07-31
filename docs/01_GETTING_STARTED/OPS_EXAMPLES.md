@@ -23,8 +23,8 @@ Schema history stores fingerprints and metadata — never source rows.
 
 ```bash
 python -m etlantic schema inspect path.py:MyContract --format json
-python -m etlantic schema check path.py:MyContract --format json
-python -m etlantic schema history --format json
+python -m etlantic schema check path.py:MyContract --subject orders --format json
+python -m etlantic schema history orders --format json
 ```
 
 See CLI `etlantic schema --help` and

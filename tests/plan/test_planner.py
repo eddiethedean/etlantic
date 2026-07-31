@@ -42,14 +42,44 @@ class Normalize(Transformation):
     result: Output[Customer]
 
 
+@Normalize.implementation("local")
+def normalize_local(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
+
+
+@Normalize.implementation("null")
+def normalize_null(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
+
+
 class Enrich(Transformation):
     customers: Input[Customer]
     result: Output[Customer]
 
 
+@Enrich.implementation("local")
+def enrich_local(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
+
+
+@Enrich.implementation("null")
+def enrich_null(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
+
+
 class Audit(Transformation):
     customers: Input[Customer]
     result: Output[Customer]
+
+
+@Audit.implementation("local")
+def audit_local(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
+
+
+@Audit.implementation("null")
+def audit_null(customers: list[Customer]) -> list[Customer]:
+    return list(customers)
 
 
 class CustomerPipeline(Pipeline):

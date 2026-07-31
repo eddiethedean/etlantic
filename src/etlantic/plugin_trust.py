@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.utils import canonicalize_name
 from packaging.version import InvalidVersion, Version
 
 from etlantic.diagnostics import Diagnostic, Severity
@@ -57,6 +58,30 @@ def _is_production_profile(profile: Profile) -> bool:
     return is_production_profile(profile)
 
 
+def _canonicalize_allowlist_key(name: str) -> str:
+    text = str(name or "").strip()
+    if not text:
+        return text
+    try:
+        return canonicalize_name(text)
+    except Exception:
+        return text.lower()
+
+
+def _normalize_allowlist(allowlist: dict[str, str | None]) -> dict[str, str | None]:
+    """Return allowlist keyed by canonical distribution names."""
+    out: dict[str, str | None] = {}
+    for key, pin in dict(allowlist or {}).items():
+        canon = _canonicalize_allowlist_key(str(key))
+        if not canon:
+            continue
+        # Prefer an existing non-empty pin if duplicate keys collide.
+        if canon in out and out[canon] not in (None, "") and pin in (None, ""):
+            continue
+        out[canon] = pin
+    return out
+
+
 def _normalize_version_pin(pin: str) -> str:
     """Accept bare versions as exact pins (``0.11.0`` → ``==0.11.0``)."""
     text = pin.strip()
@@ -78,13 +103,16 @@ def plugin_allowed(
     name: str,
     version: str | None,
     allowlist: dict[str, str | None],
+    require_pin: bool = False,
 ) -> bool:
     """Return True when ``name`` is permitted by ``allowlist`` (and pin)."""
-    if name not in allowlist:
+    canon = _canonicalize_allowlist_key(name)
+    normalized = _normalize_allowlist(allowlist)
+    if canon not in normalized:
         return False
-    pin = allowlist.get(name)
+    pin = normalized.get(canon)
     if pin is None or pin == "":
-        return True
+        return not require_pin
     if version is None:
         return False
     try:
@@ -116,7 +144,7 @@ def package_identity_candidates(
     """
     out: list[str] = []
     for value in (distribution_name, package):
-        text = str(value or "").strip()
+        text = _canonicalize_allowlist_key(str(value or "").strip())
         if text and text not in out:
             out.append(text)
     return out
@@ -242,7 +270,7 @@ def filter_plugins_by_allowlist(
     ``denial_phase`` tags allowlist denials: use ``plugin_discovery`` for broad
     sibling discovery and ``plugin_trust`` for selected-engine / manual checks.
     """
-    allowlist = dict(profile.plugin_allowlist or {})
+    allowlist = _normalize_allowlist(dict(profile.plugin_allowlist or {}))
     production = _is_production_profile(profile)
     diagnostics: list[Diagnostic] = []
     phase = str(denial_phase or "plugin_trust")
@@ -297,14 +325,33 @@ def filter_plugins_by_allowlist(
         )
         # Prefer package metadata; fall back to plugin.info.name when it looks
         # like a distribution (etlantic-*), never bare engine keys alone.
-        if str(pname).startswith("etlantic-") and str(pname) not in identity_candidates:
-            identity_candidates.append(str(pname))
+        pname_canon = _canonicalize_allowlist_key(str(pname))
+        if (
+            str(pname).startswith("etlantic-")
+            and pname_canon not in identity_candidates
+        ):
+            identity_candidates.append(pname_canon)
         listed_name = next(
             (c for c in identity_candidates if c and c in allowlist),
             None,
         )
         if listed_name is not None:
             pin = allowlist.get(listed_name)
+            if pin in (None, "") and production:
+                diagnostics.append(
+                    Diagnostic(
+                        code="PMPLUG403",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Production plugin_allowlist entry for {pname!r} "
+                            f"requires a non-empty version pin "
+                            f"(for example '==0.36.0')."
+                        ),
+                        path=("plugin", str(pname)),
+                        phase=phase,
+                    )
+                )
+                continue
             if pin not in (None, ""):
                 try:
                     SpecifierSet(_normalize_version_pin(str(pin)))
@@ -322,7 +369,12 @@ def filter_plugins_by_allowlist(
                     )
                     continue
         if any(
-            plugin_allowed(name=str(c), version=pversion, allowlist=allowlist)
+            plugin_allowed(
+                name=str(c),
+                version=pversion,
+                allowlist=allowlist,
+                require_pin=production,
+            )
             for c in identity_candidates
             if c
         ):

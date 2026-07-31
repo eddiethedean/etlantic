@@ -456,23 +456,56 @@ def register_commands(
     def partition_check_cmd(
         subject_id: str = typer.Argument(...),
         keys: str = typer.Option(..., "--keys", help="Comma-separated partition keys"),
-        count: int = typer.Option(0, "--count"),
+        observed: str = typer.Option(
+            ...,
+            "--observed",
+            help="Comma-separated observed partition ids (required evidence)",
+        ),
+        expected: str = typer.Option(
+            "",
+            "--expected",
+            help="Optional comma-separated expected partition ids",
+        ),
         minimum_count: int = typer.Option(1, "--minimum-count"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         from etlantic.reliability import PartitionCompletenessExpectation
+        from etlantic.reliability_runtime import check_partition_completeness
 
+        partition_keys = tuple(k.strip() for k in keys.split(",") if k.strip())
+        observed_partitions = {
+            part.strip() for part in observed.split(",") if part.strip()
+        }
+        if not observed_partitions:
+            emit_payload(
+                {
+                    "ok": False,
+                    "error": "partition-check requires non-empty --observed evidence",
+                    "subject_id": subject_id,
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.GENERAL_FAILURE)
         expectation = PartitionCompletenessExpectation(
             subject_id=subject_id,
-            partition_keys=tuple(k.strip() for k in keys.split(",") if k.strip()),
+            partition_keys=partition_keys,
             minimum_count=minimum_count,
         )
-        ok = count >= (expectation.minimum_count or 0)
+        expected_partitions = {
+            part.strip() for part in expected.split(",") if part.strip()
+        }
+        ok, reason = check_partition_completeness(
+            expectation,
+            observed_partitions=observed_partitions,
+            expected_partitions=expected_partitions or None,
+        )
         emit_payload(
             {
                 "ok": ok,
+                "reason": reason,
                 "expectation": expectation.to_dict(),
-                "count": count,
+                "observed_partitions": sorted(observed_partitions),
+                "expected_partitions": sorted(expected_partitions) or None,
             },
             fmt=fmt,
         )
@@ -615,30 +648,54 @@ def register_commands(
             fmt=fmt,
         )
 
-    @reliability_app.command("quality-trends")
+    @reliability_app.command(
+        "quality-trends",
+        help="Preview-only trend summary from inline --values samples.",
+    )
     def quality_trends_cmd(
         subject_id: str = typer.Argument(...),
         values: str = typer.Option(
-            "", "--values", help="Comma-separated metric samples (legacy fallback)"
+            "",
+            "--values",
+            help="Comma-separated metric samples (required for preview)",
         ),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        from etlantic.observability.consumers import InMemoryTrendConsumer
-
-        consumer = InMemoryTrendConsumer(subject_id=subject_id)
-        if values.strip():
-            samples = [float(x) for x in values.split(",") if x.strip()]
-            mean = sum(samples) / len(samples) if samples else None
-            payload = {
-                "subject_id": subject_id,
-                "n": len(samples),
-                "mean": mean,
-                "min": min(samples) if samples else None,
-                "max": max(samples) if samples else None,
-                "source": "inline",
-            }
-        else:
-            payload = {**consumer.trend_summary(subject_id), "source": "consumer"}
+        if not values.strip():
+            emit_payload(
+                {
+                    "ok": False,
+                    "error": (
+                        "quality-trends is preview-only and requires --values "
+                        "(comma-separated metric samples); refusing empty summary"
+                    ),
+                    "subject_id": subject_id,
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.GENERAL_FAILURE)
+        samples = [float(x) for x in values.split(",") if x.strip()]
+        if not samples:
+            emit_payload(
+                {
+                    "ok": False,
+                    "error": "quality-trends requires at least one numeric sample",
+                    "subject_id": subject_id,
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.GENERAL_FAILURE)
+        mean = sum(samples) / len(samples)
+        payload = {
+            "ok": True,
+            "subject_id": subject_id,
+            "n": len(samples),
+            "mean": mean,
+            "min": min(samples),
+            "max": max(samples),
+            "source": "inline",
+            "preview_only": True,
+        }
         emit_payload(payload, fmt=fmt)
 
     @viz_app.command("dot")

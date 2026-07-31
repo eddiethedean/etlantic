@@ -16,6 +16,9 @@
 | Quality | `etlantic.quality/1` remains **provisional** (outside full foundation claim) |
 | Testing | Preview minimum case/result/snapshot contract frozen for burn-in |
 | Medallantic | Joint definition / migration-IR / differential burn-in on matching minors |
+| Production trust | `plugin_allowlist` entries require non-empty version pins |
+| Plan / run | Missing implementations fail at plan (`PMPLAN301`); soft-continued runs are `PARTIAL` |
+| Reliability CLI | `partition-check` needs `--observed`; `quality-trends` needs `--values` |
 
 ## Upgrade steps
 
@@ -59,6 +62,14 @@
 - Consumers that assumed bare run-report metadata keys remain stable without
   namespacing must update to namespaced keys (or rely on the documented
   migration path).
+- Production `plugin_allowlist` values of `null` / `""` no longer authorize any
+  version — set an explicit pin such as `"==0.36.0"`.
+- Pipelines without a registered `@Transformation.implementation` (or portable
+  selection) fail at **plan** with `PMPLAN301` (previously deferred to run).
+- `FailureAction.CONTINUE` soft-skips yield overall run status `PARTIAL` (CLI
+  non-zero), never pure `SUCCEEDED`.
+- `etlantic reliability partition-check` requires `--observed` partition
+  evidence; `quality-trends` requires `--values` samples.
 
 ## Protocol status changes
 

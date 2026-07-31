@@ -47,13 +47,26 @@ A patch release does not erase compatibility responsibility for already-publishe
 
 ## Open findings
 
-No additional open P0–P3 findings are recorded in this ledger yet.
+No open P0–P3 findings block the 0.36.0 tag.
 
 Maintainers: append rows below as burn-in work proceeds.
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | *(none yet)* | P0 count must remain **0** before tag |
+| — | — | — | — | *(none)* | P0 count must remain **0** before tag |
+
+## Closed in 0.36.0 (post-burn-in hardenings)
+
+| ID | Severity | Summary | Evidence |
+|---|---|---|---|
+| `036-SEC-SECRETVALUE-ASDICT` | P0 | `SecretValue` plaintext via `dataclasses.asdict` | `src/etlantic/secrets/value.py`; `tests/secrets/test_secrets.py` |
+| `036-SEC-SCHEMA-HISTORY-ROWS` | P0 | Schema history row-payload bypasses | `src/etlantic/schema_history.py`; schema-history hardening tests |
+| `036-SEC-AUTHORING-DSN` | P0 | Authoring allowed DSN / URL userinfo secrets | `src/etlantic/authoring/serialize.py` |
+| `036-SEC-SAFE-IO` | P0 | Empty roots / symlink reject / swallowed `safe_io` | `src/etlantic/io_policy.py`; orchestrator write path |
+| `036-CORR-PHANTOM-IMPL` | P0 | Planner emitted phantom native implementations | `PMPLAN301` in planner; runtime bugfix tests |
+| `036-CORR-CONTINUE-STATUS` | P1 | CONTINUE soft-skips reported `SUCCEEDED` | orchestrator status aggregation |
+| `036-CORR-ODCS-FP` | P1 | Published [ODCS](../03_DATA_CONTRACTS/ODCS.md) id alone skipped structural check | validation `_contracts_compatible` |
+| `036-TRUST-ALLOWLIST-PIN` | P1 | Production null allowlist pins authorized any version | `plugin_trust.py` `PMPLUG403` |
 
 ## Closure rules
 

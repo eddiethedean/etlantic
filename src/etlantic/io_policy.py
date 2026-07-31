@@ -194,37 +194,49 @@ def resolve_under_policy(
         raise _io_error("PMSRC110", f"Symlink rejected: {raw}", raw)
 
     if not policy.approved_roots:
+        events.append(
+            _deny_event(
+                run_id=run_id,
+                path=raw,
+                outcome="denied",
+                message="SafeIoPolicy requires approved_roots (default deny).",
+            )
+        )
+        raise _io_error(
+            "PMSRC101",
+            "SafeIoPolicy requires non-empty approved_roots; failing closed.",
+            path,
+        )
+
+    # Prefer first root as default confinement.
+    root = policy.approved_roots[0]
+    try:
+        resolved = resolve_safe_path(raw, root=root)
+    except UnsafeLoadError:
+        # Allow if under any approved root.
         resolved = raw.resolve(strict=False)
-    else:
-        # Prefer first root as default confinement.
-        root = policy.approved_roots[0]
-        try:
-            resolved = resolve_safe_path(raw, root=root)
-        except UnsafeLoadError:
-            # Allow if under any approved root.
-            resolved = raw.resolve(strict=False)
-            ok = False
-            for candidate_root in policy.approved_roots:
-                try:
-                    resolved.relative_to(candidate_root.expanduser().resolve())
-                    ok = True
-                    break
-                except ValueError:
-                    continue
-            if not ok:
-                events.append(
-                    _deny_event(
-                        run_id=run_id,
-                        path=raw,
-                        outcome="denied",
-                        message="Path escapes approved roots.",
-                    )
+        ok = False
+        for candidate_root in policy.approved_roots:
+            try:
+                resolved.relative_to(candidate_root.expanduser().resolve())
+                ok = True
+                break
+            except ValueError:
+                continue
+        if not ok:
+            events.append(
+                _deny_event(
+                    run_id=run_id,
+                    path=raw,
+                    outcome="denied",
+                    message="Path escapes approved roots.",
                 )
-                raise _io_error(
-                    "PMSRC101",
-                    f"Path {path!s} escapes approved roots.",
-                    path,
-                ) from None
+            )
+            raise _io_error(
+                "PMSRC101",
+                f"Path {path!s} escapes approved roots.",
+                path,
+            ) from None
 
     if must_exist and not resolved.exists():
         raise _io_error("PMSRC102", f"File not found: {resolved}", resolved)
@@ -283,11 +295,32 @@ def _reject_symlink_escape(
     events: list[SecurityEvent],
     allow_within_root: bool = False,
 ) -> None:
-    """Reject symlink paths that escape approved roots."""
-    if not _path_has_symlink_component(raw) and not _path_has_symlink_component(
+    """Reject symlink paths per policy.
+
+    When ``allow_within_root`` is False (``symlink_policy="reject"``), any
+    symlink component on the path is denied. When True
+    (``follow_within_root``), only escapes outside approved roots are denied.
+    """
+    has_symlink = _path_has_symlink_component(raw) or _path_has_symlink_component(
         resolved
-    ):
+    )
+    if not has_symlink:
         return
+
+    if not allow_within_root:
+        events.append(
+            _deny_event(
+                run_id=run_id,
+                path=resolved,
+                outcome="denied",
+                message="Symlink component rejected by SafeIoPolicy.",
+            )
+        )
+        raise _io_error(
+            "PMSRC110",
+            f"Symlink rejected: {raw}",
+            raw,
+        )
 
     if allow_within_root and policy.approved_roots:
         for candidate_root in policy.approved_roots:
@@ -358,7 +391,7 @@ def _acquire_lock(path: Path, *, timeout: float) -> Path:
     deadline = time.monotonic() + timeout
     while True:
         try:
-            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.write(fd, str(os.getpid()).encode("ascii"))
             os.close(fd)
             return lock
@@ -387,7 +420,7 @@ def write_text_safe(
 ) -> SafeIoResult:
     """Atomic, locked, integrity-aware text write under policy."""
     resolved, events = resolve_under_policy(path, policy, run_id=run_id)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     if resolved.exists() and policy.overwrite_policy == "reject":
         events.append(
@@ -464,7 +497,7 @@ def append_line_safe(
 ) -> SafeIoResult:
     """Append one line under file lock using O_APPEND (no full-file read)."""
     resolved, events = resolve_under_policy(path, policy, run_id=run_id)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     text = line if line.endswith("\n") else f"{line}\n"
     payload = text.encode(encoding)
     digest = (
@@ -476,7 +509,7 @@ def append_line_safe(
     if policy.enable_locking:
         lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)
     try:
-        fd = os.open(str(resolved), os.O_APPEND | os.O_WRONLY | os.O_CREAT, 0o644)
+        fd = os.open(str(resolved), os.O_APPEND | os.O_WRONLY | os.O_CREAT, 0o600)
         try:
             os.write(fd, payload)
             os.fsync(fd)
@@ -524,7 +557,7 @@ def read_modify_write_json_safe(
 ) -> SafeIoResult:
     """Read-modify-write JSON atomically under a single file lock."""
     resolved, events = resolve_under_policy(path, policy, run_id=run_id)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     lock: Path | None = None
     if policy.enable_locking:
         lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)

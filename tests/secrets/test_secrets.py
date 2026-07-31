@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pickle
+from dataclasses import asdict
 from pathlib import Path
 
 import anyio
@@ -58,3 +60,20 @@ def test_file_provider_rejects_path_traversal(tmp_path: Path) -> None:
 
     with pytest.raises(PipelineExecutionError, match="escapes mount root"):
         anyio.run(_run)
+
+
+def test_secret_value_refuses_asdict_and_pickle() -> None:
+    secret = SecretValue(
+        _value="hunter2",
+        provider="env",
+        name="DB",
+        key="password",
+    )
+    with pytest.raises(TypeError):
+        asdict(secret)
+    with pytest.raises(SecretSerializationError):
+        pickle.dumps(secret)
+    with pytest.raises(SecretSerializationError):
+        secret.to_dict()
+    assert "hunter2" not in repr(secret)
+    assert str(secret) == "***"

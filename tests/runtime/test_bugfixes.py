@@ -65,11 +65,13 @@ class MissingImplPipeline(Pipeline):
 
 
 def test_missing_implementation_fails_closed() -> None:
+    from etlantic.exceptions import PipelineValidationError
+
     runtime = PipelineRuntime()
     runtime.memory.seed("rows", [Row(id=1, name="a")])
-    report = MissingImplPipeline.run(profile="development", runtime=runtime)
-    assert report.status in {RunStatus.FAILED, RunStatus.PARTIAL}
-    assert any("No implementation" in (d.message or "") for d in report.diagnostics)
+    with pytest.raises(PipelineValidationError) as exc:
+        MissingImplPipeline.run(profile="development", runtime=runtime)
+    assert any(d.code == "PMPLAN301" for d in exc.value.report.errors)
 
 
 def test_durable_policy_controls_workspace_files(tmp_path: Path) -> None:
@@ -228,6 +230,8 @@ def test_continue_failure_action_soft_skips_step() -> None:
     report = BoomPipeline.run(profile="development", runtime=runtime)
     step = next(s for s in report.steps if s.step_name == "step")
     assert step.status.value == "skipped"
+    assert report.status is RunStatus.PARTIAL
+    assert any(d.code == "PMEXEC301" for d in report.diagnostics)
 
 
 def test_schema_drift_policy_blocks_breaking_changes() -> None:
@@ -343,7 +347,7 @@ def test_continue_allows_independent_sibling() -> None:
     assert by_name["boom"].status.value == "skipped"
     assert by_name["ok"].status.value == "succeeded"
     assert by_name["out_ok"].status.value == "succeeded"
-    assert report.status is RunStatus.SUCCEEDED
+    assert report.status is RunStatus.PARTIAL
 
 
 def test_skip_abandons_dependents_not_siblings() -> None:

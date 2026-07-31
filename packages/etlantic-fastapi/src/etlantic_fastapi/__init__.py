@@ -30,7 +30,7 @@ def create_reference_app(
     *,
     service: AuthoringService | None = None,
     title: str = "ETLantic Authoring Reference",
-    version: str = "0.35.0",
+    version: str = __version__,
 ) -> FastAPI:
     """Create a FastAPI app exposing the public authoring/service facade."""
     svc = service or AuthoringService(policy=PolicyContext())
