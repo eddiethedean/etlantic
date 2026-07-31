@@ -1,6 +1,6 @@
 # Experimental surfaces (0.34)
 
-> **Status: Available in ETLantic 0.39.0 as a map of Experimental APIs.**
+> **Status: Available in ETLantic 0.40.0 as a map of Experimental APIs.**
 > These are **not** part of the Beta pilot claim. Prefer Available paths on
 > [Capabilities](CAPABILITIES.md).
 
@@ -8,6 +8,7 @@
 |---|---|---|
 | Structured Streaming | `etlantic-pyspark` / streaming foundation | Experimental — batch Spark is the production path |
 | DataFusion | `etlantic-datafusion` | Experimental Gate B stub — not recommended for pilots |
+| OpenLineage outbound | `etlantic-openlineage` | Experimental CP2 export — cannot mutate registry; not production multi-tenant |
 | Prefect deployment / serve | `etlantic-prefect` | Local direct-execution MVP only; deployment/serve remain future |
 | FastAPI control plane | `etlantic-fastapi` | Thin authoring/service **reference** adapter; [first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) is planned, not shipped |
 

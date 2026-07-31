@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.39.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.40.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Security reports
 concerning the published package, contract loading, planning, local runtime,
 storage bindings, connectors, secret handling, dataframe, SQL, and PySpark plugins,
@@ -10,17 +10,17 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.39.x | Current supported Beta line; security fixes are released on this line |
-| 0.38.x | Not actively maintained; upgrade to 0.39.x |
-| 0.37.x | Not actively maintained; upgrade to 0.39.x |
-| 0.36.x | Not actively maintained; upgrade to 0.39.x |
-| 0.35.x | Not actively maintained; upgrade to 0.39.x |
-| 0.34.x | Not actively maintained; upgrade to 0.39.x |
-| 0.33.x | Not actively maintained; upgrade to 0.39.x |
-| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.39.x |
-| 0.27.x and earlier | Not actively maintained; upgrade to 0.39.x |
+| 0.40.x | Current supported Beta line; security fixes are released on this line |
+| 0.38.x | Not actively maintained; upgrade to 0.40.x |
+| 0.37.x | Not actively maintained; upgrade to 0.40.x |
+| 0.36.x | Not actively maintained; upgrade to 0.40.x |
+| 0.35.x | Not actively maintained; upgrade to 0.40.x |
+| 0.34.x | Not actively maintained; upgrade to 0.40.x |
+| 0.33.x | Not actively maintained; upgrade to 0.40.x |
+| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.40.x |
+| 0.27.x and earlier | Not actively maintained; upgrade to 0.40.x |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.39.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.40.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability

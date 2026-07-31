@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.39 boundary:** Public reliability models, provider protocols,
+> **Current 0.40 boundary:** Public reliability models, provider protocols,
 > and local CLI inspection and preview workflows are available. Durable
 > managed history, control-plane coordination, federation, cost-aware
 > selection, and human-governed automation remain planned.

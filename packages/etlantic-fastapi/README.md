@@ -1,9 +1,9 @@
 # etlantic-fastapi
 
-Optional FastAPI adapter for ETLantic **0.39.0**. Use **CP1** (`ETLanticAPI`)
+Optional FastAPI adapter for ETLantic **0.40.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
 Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
-not the control plane. CP1 is incubation, **not** multi-tenant GA (0.43).
+not the control plane. CP2 is incubation, **not** multi-tenant GA (0.43).
 
 ## Two surfaces
 
@@ -22,9 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.39.0'
+pip install 'etlantic-fastapi==0.40.0'
 # keep core on the same pin:
-# pip install 'etlantic==0.39.0'
+# pip install 'etlantic==0.40.0'
 ```
 
 ## Control-plane usage
@@ -126,6 +126,26 @@ and must not live under `src/etlantic/`. Use
 call durable `POST /v1/definitions/{id}/runs` with 0.38 `local-files`-style
 binding refs (`root_ref`, `glob`, `mode`, …) and must **never** embed file
 bytes in plans or submit bodies.
+
+### Registry admin (`/v1/registry`, CP2)
+
+Admin directory and revision routes live under **`/v1/registry`** (not
+`/v1/admin`) so host-level admin surfaces stay free. Inject
+`ETLanticAPI(registry=...)` (memory or SQLModel). Authz runs before lookup;
+suspended tenants/workspaces fail closed. Stable operationIds use the
+`cp_registry_*` prefix.
+
+To back existing **`/v1/definitions*`** paths with registry revisions (same
+operationIds), use `ETLanticAPI.with_registry_definitions(...)` or
+`create_app(..., registry=..., definitions_backend="registry")`.
+`MemoryDefinitionRepository` remains the default for existing tests.
+
+CLI parity stub (lists tenants / promote-suspend conformance without extending
+the public CLI yet):
+
+```bash
+uv run python scripts/check_registry_conformance.py --fake
+```
 
 ## Non-CP reference app
 

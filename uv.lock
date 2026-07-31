@@ -17,6 +17,7 @@ members = [
     "etlantic-fastapi",
     "etlantic-iceberg",
     "etlantic-keyring",
+    "etlantic-openlineage",
     "etlantic-pandas",
     "etlantic-polars",
     "etlantic-prefect",
@@ -716,7 +717,7 @@ wheels = [
 
 [[package]]
 name = "etlantic"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -758,6 +759,9 @@ medallantic = [
 ]
 observability = [
     { name = "opentelemetry-api" },
+]
+openlineage = [
+    { name = "etlantic-openlineage" },
 ]
 otel = [
     { name = "opentelemetry-api" },
@@ -836,6 +840,9 @@ medallantic = [
 observability = [
     { name = "opentelemetry-api" },
 ]
+openlineage = [
+    { name = "etlantic-openlineage" },
+]
 pandas = [
     { name = "etlantic-pandas" },
     { name = "pyarrow" },
@@ -876,6 +883,7 @@ requires-dist = [
     { name = "etlantic-fastapi", marker = "extra == 'fastapi'", editable = "packages/etlantic-fastapi" },
     { name = "etlantic-iceberg", marker = "extra == 'iceberg'", editable = "packages/etlantic-iceberg" },
     { name = "etlantic-keyring", marker = "extra == 'keyring'", editable = "packages/etlantic-keyring" },
+    { name = "etlantic-openlineage", marker = "extra == 'openlineage'", editable = "packages/etlantic-openlineage" },
     { name = "etlantic-pandas", marker = "extra == 'dataframes'", editable = "packages/etlantic-pandas" },
     { name = "etlantic-pandas", marker = "extra == 'pandas'", editable = "packages/etlantic-pandas" },
     { name = "etlantic-polars", marker = "extra == 'dataframes'", editable = "packages/etlantic-polars" },
@@ -898,7 +906,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "typer", specifier = ">=0.15,<1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "s3", "iceberg", "snowflake", "otel", "observability", "arrow", "dataframes"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "s3", "iceberg", "snowflake", "openlineage", "otel", "observability", "arrow", "dataframes"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -928,6 +936,7 @@ medallantic = [
     { name = "medallantic", editable = "packages/medallantic" },
 ]
 observability = [{ name = "opentelemetry-api", specifier = ">=1.36,<2" }]
+openlineage = [{ name = "etlantic-openlineage", editable = "packages/etlantic-openlineage" }]
 pandas = [
     { name = "etlantic-pandas", editable = "packages/etlantic-pandas" },
     { name = "pyarrow", specifier = ">=14" },
@@ -948,7 +957,7 @@ sqlmodel = [{ name = "etlantic-sqlmodel", editable = "packages/etlantic-sqlmodel
 
 [[package]]
 name = "etlantic-airflow"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-airflow" }
 dependencies = [
     { name = "etlantic" },
@@ -959,7 +968,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-datafusion"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-datafusion" }
 dependencies = [
     { name = "etlantic" },
@@ -970,7 +979,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-fastapi"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-fastapi" }
 dependencies = [
     { name = "etlantic" },
@@ -1006,7 +1015,7 @@ dev = [
 
 [[package]]
 name = "etlantic-iceberg"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-iceberg" }
 dependencies = [
     { name = "etlantic" },
@@ -1026,7 +1035,7 @@ provides-extras = ["pyiceberg"]
 
 [[package]]
 name = "etlantic-keyring"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-keyring" }
 dependencies = [
     { name = "etlantic" },
@@ -1040,8 +1049,28 @@ requires-dist = [
 ]
 
 [[package]]
+name = "etlantic-openlineage"
+version = "0.40.0"
+source = { editable = "packages/etlantic-openlineage" }
+dependencies = [
+    { name = "etlantic" },
+]
+
+[package.optional-dependencies]
+openlineage = [
+    { name = "openlineage-python" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "etlantic", editable = "." },
+    { name = "openlineage-python", marker = "extra == 'openlineage'", specifier = ">=1.0,<2" },
+]
+provides-extras = ["openlineage"]
+
+[[package]]
 name = "etlantic-pandas"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-pandas" }
 dependencies = [
     { name = "etlantic" },
@@ -1063,7 +1092,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-polars"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-polars" }
 dependencies = [
     { name = "etlantic" },
@@ -1085,7 +1114,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-prefect"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-prefect" }
 dependencies = [
     { name = "etlantic" },
@@ -1100,7 +1129,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-pyspark"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-pyspark" }
 dependencies = [
     { name = "etlantic" },
@@ -1122,7 +1151,7 @@ provides-extras = ["delta"]
 
 [[package]]
 name = "etlantic-s3"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-s3" }
 dependencies = [
     { name = "etlantic" },
@@ -1152,7 +1181,7 @@ provides-extras = ["aws", "boto3", "pyarrow"]
 
 [[package]]
 name = "etlantic-snowflake"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-snowflake" }
 dependencies = [
     { name = "etlantic" },
@@ -1172,7 +1201,7 @@ provides-extras = ["snowflake"]
 
 [[package]]
 name = "etlantic-sparkforge"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-sparkforge" }
 dependencies = [
     { name = "medallantic" },
@@ -1183,7 +1212,7 @@ requires-dist = [{ name = "medallantic", editable = "packages/medallantic" }]
 
 [[package]]
 name = "etlantic-sql"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-sql" }
 dependencies = [
     { name = "etlantic" },
@@ -1201,7 +1230,7 @@ provides-extras = ["sqlite"]
 
 [[package]]
 name = "etlantic-sqlmodel"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/etlantic-sqlmodel" }
 dependencies = [
     { name = "etlantic" },
@@ -1829,7 +1858,7 @@ wheels = [
 
 [[package]]
 name = "medallantic"
-version = "0.39.0"
+version = "0.40.0"
 source = { editable = "packages/medallantic" }
 dependencies = [
     { name = "etlantic" },
@@ -2219,6 +2248,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0b/5f/19930f824ffeb0ad4372da4812c50edbd1434f678c90c2733e1188edfc63/oauthlib-3.3.1.tar.gz", hash = "sha256:0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9", size = 185918, upload-time = "2025-06-19T22:48:08.269Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/9c/92789c596b8df838baa98fa71844d84283302f7604ed565dafe5a6b5041a/oauthlib-3.3.1-py3-none-any.whl", hash = "sha256:88119c938d2b8fb88561af5f6ee0eec8cc8d552b7bb1f712743136eb7523b7a1", size = 160065, upload-time = "2025-06-19T22:48:06.508Z" },
+]
+
+[[package]]
+name = "openlineage-python"
+version = "1.52.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpx" },
+    { name = "packaging" },
+    { name = "python-dateutil" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/77/2f5b471c93c8c89f8777a18e0a05abd8dd14abf76f71bcd57f5e3c90d8e5/openlineage_python-1.52.0-py3-none-any.whl", hash = "sha256:e1bd73b3066021eecf69cc5c3571f6fd7e253768ea941f2c76f18969ea0ecb20", size = 116447, upload-time = "2026-07-23T14:40:32.073Z" },
 ]
 
 [[package]]

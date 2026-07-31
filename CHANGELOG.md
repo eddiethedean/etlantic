@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   covers Airflow 2.11.1 and 3.2.1 (the resolvable final 2.x line and current
   3.x line)
 
+## [0.40.0] - 2026-07-31
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.39.x` or plugins with `<0.40` |
+| Breaking | Dependency floor becomes `etlantic>=0.40.0,<0.41` (CP2 registry line) |
+| Upgrade | `pip install 'etlantic==0.40.0'` and matching plugins / `medallantic==0.40.0`. See [Migration 0.39 → 0.40](docs/11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
+| Rollback | Re-pin 0.39.0 minors together; re-validate |
+| Security | CP2 registry isolation evidence + OpenLineage non-authority; **not** a production multi-tenant isolation claim (**0.43**) |
+
+### Added
+- CP2 registry: tenant/workspace directories, immutable revisions, aliases,
+  promotions, memory + optional SQLModel providers and migrations
+- Metadata-only histories / impact indexes; workspace safe-root resources
+- Ops: revision metadata search/pagination, observation retention hooks,
+  SQLite registry backup/restore transcript
+- Optional Experimental `etlantic-openlineage` outbound exporter (non-authority)
+- Isolation-profile matrix fake evidence (isolated / dedicated-schema /
+  shared-service + second control)
+- What's New / Migration / Exit Gate / Findings for 0.40; ADR-017 Accepted
+
+### Changed
+- Official package versions align at 0.40.0; plugins require
+  `etlantic>=0.40.0,<0.41`
+- Supported security release line is 0.40.x
+- PyPI Beta classifier retained on core
+- Release inventory is seventeen distributions (adds `etlantic-openlineage`)
+
+### Security
+- Two-tenant / two-workspace isolation matrix on supported profiles
+- Shared-service WHERE-only filters documented as insufficient without a
+  second control (RLS stub / tenant credentials)
+- OpenLineage transport failures cannot mutate registry authority
+- Explicit docs boundary: CP2 ≠ production multi-tenant
+
 ## [0.39.0] - 2026-07-31
 
 ### Adopter summary
@@ -1533,6 +1570,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.40.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.40.0
 [0.39.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.39.0
 [0.38.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.38.0
 [0.37.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.37.0

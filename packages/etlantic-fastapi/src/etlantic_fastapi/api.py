@@ -11,6 +11,9 @@ from etlantic.control_plane import (
     Authorizer,
     DefinitionRepository,
     EventStore,
+    HistoryStore,
+    RegistryDefinitionRepository,
+    RegistryProvider,
     SubmissionStore,
 )
 from etlantic_fastapi._version import __version__
@@ -33,6 +36,11 @@ class ETLanticAPI:
     Heavy pipeline work is never scheduled via FastAPI BackgroundTasks.
     Submission acceptance is a durable store commit only; optional pollers
     may observe accepted jobs without executing them in-request.
+
+    Optional ``registry`` enables ``/v1/registry`` admin routes (CP2). Use
+    :meth:`with_registry_definitions` or ``definitions_backend="registry"`` so
+    ``/v1/definitions*`` read/write through registry revisions without changing
+    route paths or operationIds.
     """
 
     authorizer: Authorizer
@@ -43,14 +51,43 @@ class ETLanticAPI:
     principal_dependency: PrincipalDependency = field(default=principal_from_header)
     # Validate/plan profile (default development for CP1 Experimental preview).
     profile: Any = "development"
+    # Optional CP2 history store; when set, schema/reliability routes read it.
+    history_store: HistoryStore | None = None
     # Seeded schema observation ids; empty → ack always 404 after authz.
+    # Used when history_store is not injected (CP1 stub compatibility).
     known_observation_ids: set[str] = field(default_factory=set)
+    # Optional CP2 registry provider for /v1/registry admin routes.
+    registry: RegistryProvider | None = None
     title: str = "ETLantic Control Plane"
     version: str = __version__
     _router: APIRouter | None = field(default=None, init=False, repr=False)
     _context_dependency: Callable[..., Any] | None = field(
         default=None, init=False, repr=False
     )
+
+    @classmethod
+    def with_registry_definitions(
+        cls,
+        *,
+        authorizer: Authorizer,
+        registry: RegistryProvider,
+        submissions: SubmissionStore,
+        events: EventStore,
+        context_factory: ContextFactory,
+        principal_dependency: PrincipalDependency | None = None,
+        **kwargs: Any,
+    ) -> ETLanticAPI:
+        """Build an API whose ``/v1/definitions*`` use registry-backed storage."""
+        return cls(
+            authorizer=authorizer,
+            definitions=RegistryDefinitionRepository(registry),
+            submissions=submissions,
+            events=events,
+            context_factory=context_factory,
+            principal_dependency=principal_dependency or principal_from_header,
+            registry=registry,
+            **kwargs,
+        )
 
     @property
     def context_dependency(self) -> Callable[..., Any]:
@@ -102,6 +139,8 @@ def create_app(
     events: EventStore | None = None,
     context_factory: ContextFactory | None = None,
     principal_dependency: PrincipalDependency | None = None,
+    registry: RegistryProvider | None = None,
+    definitions_backend: str | None = None,
     title: str | None = None,
     version: str | None = None,
     install_handlers: bool = True,
@@ -111,18 +150,38 @@ def create_app(
 
     Optional lifespan wires injected stores onto ``app.state`` and verifies
     readiness. It does not start BackgroundTasks or execute pipelines.
+
+    ``definitions_backend="registry"`` requires ``registry`` and wraps it as
+    :class:`RegistryDefinitionRepository` for stable ``/v1/definitions*``
+    routes. Default keeps an injected ``definitions`` store (callers must pass
+    one when not using the registry backend).
     """
     if api is None:
-        if (
-            authorizer is None
-            or definitions is None
-            or submissions is None
-            or events is None
-        ):
+        if authorizer is None or submissions is None or events is None:
             raise TypeError(
                 "create_app requires an ETLanticAPI instance or all of "
-                "authorizer, definitions, submissions, and events"
+                "authorizer, submissions, and events "
+                "(plus definitions, or registry with definitions_backend='registry')"
             )
+        if definitions is None:
+            if definitions_backend == "registry":
+                if registry is None:
+                    raise TypeError(
+                        "definitions_backend='registry' requires a registry provider"
+                    )
+                definitions = RegistryDefinitionRepository(registry)
+            else:
+                # Preserve prior required-args behavior for non-registry hosts.
+                raise TypeError(
+                    "create_app requires an ETLanticAPI instance or all of "
+                    "authorizer, definitions, submissions, and events"
+                )
+        elif definitions_backend == "registry":
+            if registry is None:
+                raise TypeError(
+                    "definitions_backend='registry' requires a registry provider"
+                )
+            definitions = RegistryDefinitionRepository(registry)
         api = ETLanticAPI(
             authorizer=authorizer,
             definitions=definitions,
@@ -131,6 +190,7 @@ def create_app(
             context_factory=context_factory
             or static_context_factory(tenant_id="default", workspace_id="default"),
             principal_dependency=principal_dependency or principal_from_header,
+            registry=registry,
             title=title or "ETLantic Control Plane",
             version=version or __version__,
         )
@@ -143,6 +203,14 @@ def create_app(
             api.principal_dependency = principal_dependency
         if context_factory is not None:
             api.context_factory = context_factory
+        if registry is not None:
+            api.registry = registry
+        if definitions_backend == "registry":
+            if api.registry is None:
+                raise TypeError(
+                    "definitions_backend='registry' requires a registry provider"
+                )
+            api.definitions = RegistryDefinitionRepository(api.registry)
 
     lifespan = None
     if with_lifespan:
@@ -154,6 +222,7 @@ def create_app(
             app.state.definitions = api.definitions
             app.state.submissions = api.submissions
             app.state.events = api.events
+            app.state.registry = api.registry
             # Ready signal only — no BackgroundTasks worker started here.
             app.state.control_plane_ready = api.stores_ready()
             yield

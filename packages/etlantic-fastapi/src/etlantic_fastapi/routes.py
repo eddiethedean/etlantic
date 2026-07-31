@@ -9,8 +9,12 @@ from typing import TYPE_CHECKING, Any
 from starlette.responses import StreamingResponse
 
 from etlantic.control_plane import (
+    AliasRecord,
     ControlPlaneContext,
     ControlPlaneError,
+    LifecycleState,
+    TenantRecord,
+    WorkspaceRecord,
     authorized_get_definition,
     redact_control_plane_payload,
     redact_control_plane_text,
@@ -19,6 +23,8 @@ from etlantic.control_plane import (
 )
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
+    AliasPutBody,
+    AliasResponse,
     ArtifactMeta,
     ArtifactsResponse,
     DefinitionGetResponse,
@@ -27,14 +33,24 @@ from etlantic_fastapi.schemas import (
     HealthResponse,
     LineageStubResponse,
     PlanResponse,
+    PromoteBody,
+    PromotionResponse,
     ReadyResponse,
     ReliabilityListResponse,
     ReportStubResponse,
+    RevisionListResponse,
+    RevisionResponse,
     RunStatusResponse,
     RunSubmitBody,
     SchemaObservationAckResponse,
     SchemaObservationsResponse,
+    TenantListResponse,
+    TenantPutBody,
+    TenantRecordResponse,
     ValidateResponse,
+    WorkspaceListResponse,
+    WorkspacePutBody,
+    WorkspaceRecordResponse,
 )
 from etlantic_fastapi.sse import (
     resolve_resume_cursor,
@@ -652,6 +668,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "schema:observations",
             resource_in_caller_scope=True,
         )
+        history = getattr(api, "history_store", None)
+        if history is not None:
+            items = [rec.to_dict() for rec in history.list_schema_observations(ctx)]
+            return SchemaObservationsResponse(items=items)
         return SchemaObservationsResponse(items=[])
 
     @router.post(
@@ -671,6 +691,11 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             f"schema:observation:{observation_id}",
             resource_in_caller_scope=True,
         )
+        history = getattr(api, "history_store", None)
+        if history is not None:
+            # Unknown observation → 404; ack is non-authority (observation only).
+            history.acknowledge_baseline(ctx, observation_id, kind="schema")
+            return SchemaObservationAckResponse(observation_id=observation_id)
         known = getattr(api, "known_observation_ids", set()) or set()
         if observation_id not in known:
             raise ControlPlaneError.not_found(
@@ -694,7 +719,291 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "reliability:*",
             resource_in_caller_scope=True,
         )
+        history = getattr(api, "history_store", None)
+        if history is not None:
+            items = [
+                rec.to_dict() for rec in history.list_reliability_observations(ctx)
+            ]
+            return ReliabilityListResponse(items=items)
         return ReliabilityListResponse(items=[])
+
+    # ------------------------------------------------------------------
+    # CP2 registry admin routes under /v1/registry
+    # (chosen over /v1/admin to keep admin/ops naming free for later hosts)
+    # Authz always runs before directory/revision lookup (non-enumeration).
+    # ------------------------------------------------------------------
+
+    def _require_registry():
+        if api.registry is None:
+            raise ControlPlaneError(
+                "Registry provider is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return api.registry
+
+    @router.get(
+        "/v1/registry/tenants",
+        operation_id="cp_registry_list_tenants",
+        response_model=TenantListResponse,
+        tags=["registry"],
+    )
+    def registry_list_tenants(
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> TenantListResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.tenant.list",
+            "registry:tenant:*",
+            resource_in_caller_scope=True,
+        )
+        registry = _require_registry()
+        items = [
+            TenantRecordResponse.model_validate(t.to_dict())
+            for t in registry.tenants.list(ctx)
+        ]
+        return TenantListResponse(items=items)
+
+    @router.get(
+        "/v1/registry/tenants/{tenant_id}",
+        operation_id="cp_registry_get_tenant",
+        response_model=TenantRecordResponse,
+        tags=["registry"],
+    )
+    def registry_get_tenant(
+        tenant_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> TenantRecordResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.tenant.read",
+            f"registry:tenant:{tenant_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        record = registry.tenants.get(ctx, tenant_id)
+        return TenantRecordResponse.model_validate(record.to_dict())
+
+    @router.put(
+        "/v1/registry/tenants/{tenant_id}",
+        operation_id="cp_registry_put_tenant",
+        response_model=TenantRecordResponse,
+        tags=["registry"],
+    )
+    def registry_put_tenant(
+        tenant_id: str,
+        body: TenantPutBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> TenantRecordResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.tenant.write",
+            f"registry:tenant:{tenant_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        record = TenantRecord(
+            tenant_id=tenant_id,
+            lifecycle=LifecycleState(body.lifecycle),
+            display_name=body.display_name,
+            security_domain_id=body.security_domain_id or ctx.security_domain.domain_id,
+            metadata=dict(body.metadata),
+        )
+        registry.tenants.put(ctx, record)
+        stored = registry.tenants.get(ctx, tenant_id)
+        return TenantRecordResponse.model_validate(stored.to_dict())
+
+    @router.get(
+        "/v1/registry/workspaces",
+        operation_id="cp_registry_list_workspaces",
+        response_model=WorkspaceListResponse,
+        tags=["registry"],
+    )
+    def registry_list_workspaces(
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> WorkspaceListResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.workspace.list",
+            "registry:workspace:*",
+            resource_in_caller_scope=True,
+        )
+        registry = _require_registry()
+        items = [
+            WorkspaceRecordResponse.model_validate(w.to_dict())
+            for w in registry.workspaces.list(ctx)
+        ]
+        return WorkspaceListResponse(items=items)
+
+    @router.get(
+        "/v1/registry/workspaces/{workspace_id}",
+        operation_id="cp_registry_get_workspace",
+        response_model=WorkspaceRecordResponse,
+        tags=["registry"],
+    )
+    def registry_get_workspace(
+        workspace_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> WorkspaceRecordResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.workspace.read",
+            f"registry:workspace:{workspace_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        record = registry.workspaces.get(ctx, workspace_id)
+        return WorkspaceRecordResponse.model_validate(record.to_dict())
+
+    @router.put(
+        "/v1/registry/workspaces/{workspace_id}",
+        operation_id="cp_registry_put_workspace",
+        response_model=WorkspaceRecordResponse,
+        tags=["registry"],
+    )
+    def registry_put_workspace(
+        workspace_id: str,
+        body: WorkspacePutBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> WorkspaceRecordResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.workspace.write",
+            f"registry:workspace:{workspace_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        record = WorkspaceRecord(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=workspace_id,
+            lifecycle=LifecycleState(body.lifecycle),
+            display_name=body.display_name,
+            metadata=dict(body.metadata),
+        )
+        registry.workspaces.put(ctx, record)
+        stored = registry.workspaces.get(ctx, workspace_id)
+        return WorkspaceRecordResponse.model_validate(stored.to_dict())
+
+    @router.get(
+        "/v1/registry/logicals/{logical_id}/revisions",
+        operation_id="cp_registry_list_revisions",
+        response_model=RevisionListResponse,
+        tags=["registry"],
+    )
+    def registry_list_revisions(
+        logical_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> RevisionListResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.revision.list",
+            f"registry:logical:{logical_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        items = [
+            RevisionResponse.model_validate(redact_control_plane_payload(r.to_dict()))
+            for r in registry.revisions.list_revisions(ctx, logical_id)
+        ]
+        return RevisionListResponse(items=items)
+
+    @router.get(
+        "/v1/registry/revisions/{revision_id}",
+        operation_id="cp_registry_get_revision",
+        response_model=RevisionResponse,
+        tags=["registry"],
+    )
+    def registry_get_revision(
+        revision_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> RevisionResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.revision.read",
+            f"registry:revision:{revision_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        revision = registry.revisions.get_revision(ctx, revision_id)
+        return RevisionResponse.model_validate(
+            redact_control_plane_payload(revision.to_dict())
+        )
+
+    @router.put(
+        "/v1/registry/aliases/{alias}",
+        operation_id="cp_registry_put_alias",
+        response_model=AliasResponse,
+        tags=["registry"],
+    )
+    def registry_put_alias(
+        alias: str,
+        body: AliasPutBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> AliasResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.alias.write",
+            f"registry:alias:{alias}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        record = AliasRecord(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            alias=alias,
+            logical_id=body.logical_id,
+            revision_id=body.revision_id,
+            metadata=dict(body.metadata),
+        )
+        registry.revisions.put_alias(ctx, record)
+        resolved = registry.revisions.resolve_alias(ctx, alias)
+        return AliasResponse(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            alias=alias,
+            logical_id=resolved.logical_id,
+            revision_id=resolved.revision_id,
+            metadata=dict(body.metadata),
+        )
+
+    @router.post(
+        "/v1/registry/promotions",
+        operation_id="cp_registry_promote",
+        response_model=PromotionResponse,
+        tags=["registry"],
+    )
+    def registry_promote(
+        body: PromoteBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> PromotionResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "registry.promote",
+            f"registry:logical:{body.logical_id}",
+            resource_in_caller_scope=False,
+        )
+        registry = _require_registry()
+        promotion = registry.revisions.promote(
+            ctx,
+            logical_id=body.logical_id,
+            from_revision_id=body.from_revision_id,
+            from_environment=body.from_environment,
+            to_environment=body.to_environment,
+            content=body.content,
+            metadata=body.metadata,
+        )
+        return PromotionResponse.model_validate(promotion.to_dict())
 
     return router
 

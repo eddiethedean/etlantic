@@ -1,6 +1,6 @@
 # Reports and history
 
-> **Status: Available in ETLantic 0.39.0.** Operator hub for run reports,
+> **Status: Available in ETLantic 0.40.0.** Operator hub for run reports,
 > durable history, and `durable_audit`. Protocol detail lives under Plugin SDK.
 
 ## What to use when
@@ -34,7 +34,7 @@ python -m etlantic report query --since 2026-01-01T00:00:00+00:00 --status succe
 {
   "name": "production",
   "security_mode": "production",
-  "plugin_allowlist": {"etlantic-polars": "==0.39.0"},
+  "plugin_allowlist": {"etlantic-polars": "==0.40.0"},
   "run_history_provider": "file",
   "observability_delivery": "durable_audit"
 }
@@ -63,7 +63,7 @@ from etlantic.runtime.observability_bridge import ObservabilityBridge
 profile = etl.Profile(
     name="production",
     security_mode="production",
-    plugin_allowlist={"etlantic-polars": "==0.39.0"},
+    plugin_allowlist={"etlantic-polars": "==0.40.0"},
     run_history_provider="file",
     observability_delivery="durable_audit",
 )

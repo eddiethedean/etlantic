@@ -1,7 +1,7 @@
 # etlantic-pandas
 
 Pandas dataframe plugin **and** portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.40**. Install when
 you select `Profile(dataframe_engine="pandas")` or need portable DTCS
 compilation on Pandas. Keep the pin matched to core.
 
@@ -11,10 +11,10 @@ compilation on Pandas. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-pandas==0.39.0'
+pip install 'etlantic-pandas==0.40.0'
 # Optional Arrow interchange:
-pip install 'etlantic-pandas[arrow]==0.39.0'
-# pip install 'etlantic==0.39.0'
+pip install 'etlantic-pandas[arrow]==0.40.0'
+# pip install 'etlantic==0.40.0'
 ```
 
 ## Dataframe plugin
@@ -58,7 +58,7 @@ run_portable_transform_conformance_suite(create_transform_compiler())
 
 ## Links
 
-[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.39.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.39.0/10_REFERENCE/COMPATIBILITY/) ·
+[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.40.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.40.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.39.0"
-current_minor: "0.39"
+since: "0.40.0"
+current_minor: "0.40"
 audience: developer
 ---
 
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.39.0.** Per-package API pages for first-party
+> **Status: Available in ETLantic 0.40.0.** Per-package API pages for first-party
 > optional packages. Install/overview hub:
 > [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).
@@ -30,6 +30,7 @@ install and narrative home.
 - [etlantic-s3](api_optional/etlantic_s3.md) — Experimental S3-compatible connectors
 - [etlantic-iceberg](api_optional/etlantic_iceberg.md) — Experimental Iceberg connectors
 - [etlantic-snowflake](api_optional/etlantic_snowflake.md) — Experimental Snowflake connectors
+- [etlantic-openlineage](api_optional/etlantic_openlineage.md) — Experimental outbound OpenLineage (CP2)
 - [etlantic-fastapi](api_optional/etlantic_fastapi.md) — FastAPI reference adapter
 - [medallantic](api_optional/medallantic.md) — Medallion facade + SparkForge migrate
 

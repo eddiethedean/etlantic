@@ -1,6 +1,6 @@
 # Control plane API (CP1)
 
-> **Status: Available in ETLantic 0.39.0** (incubation). **CP1 ≠ production
+> **Status: Available in ETLantic 0.40.0** (incubation). **CP1 ≠ production
 > multi-tenant isolation** — that claim remains **0.43**.
 
 Short hub for the provisional `etlantic.control_plane` surface and optional
@@ -45,7 +45,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP1** | `ETLanticAPI`, `include_router`, `create_app` | Authz’d durable-accept API + `GET /health` / `GET /ready` |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.39.0'` (match `etlantic==0.39.0`).
+Pin: `pip install 'etlantic-fastapi==0.40.0'` (match `etlantic==0.40.0`).
 
 ## PMCP errors
 

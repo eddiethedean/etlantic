@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.39.0,<0.40`.
+Official plugins declare `etlantic>=0.40.0,<0.41`.
 
 ## Package categories
 
@@ -34,7 +34,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes sixteen distributions:
+Tag `vX.Y.Z` publishes seventeen distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -54,6 +54,7 @@ Tag `vX.Y.Z` publishes sixteen distributions:
 | `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
 | `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
+| `etlantic-openlineage` | `packages/etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
 
 ## Pre-Release Checklist
 
@@ -132,7 +133,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all sixteen wheels/sdists.
+3. Builds all seventeen wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (thirteen established
@@ -201,7 +202,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.38 plugins, `etlantic>=0.39.0,<0.40`). A core
+0.38 plugins, `etlantic>=0.40.0,<0.41`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

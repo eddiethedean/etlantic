@@ -1,21 +1,21 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.39.0.** What ships now for controlled
+> **Status: Available in ETLantic 0.40.0.** What ships now for controlled
 > single-tenant pilots.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.39)
+## What works today (0.40)
 
-ETLantic 0.39.0 is a Beta release for documented, controlled,
+ETLantic 0.40.0 is a Beta release for documented, controlled,
 single-tenant pilots. It validates and plans typed pipelines, runs them
 locally or through supported engine plugins, and compiles valid plans to
 supported orchestration targets.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.39.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.40.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -33,7 +33,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.39 |
+| Topic | ETLantic 0.40 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots |
@@ -42,17 +42,17 @@ Fit check: [Compare](COMPARE.md).
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
 topology, compliance, and advanced control planes remain adopter-owned in
-0.39 (CP1 is incubated; production isolation remains **0.43**). Roadmap
+0.40 (CP2 is incubated; production isolation remains **0.43**). Roadmap
 programs live under Contribute → Maintainers — not day-0 reading (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
-## Supported standards policy (0.39)
+## Supported standards policy (0.40)
 
-For the 0.39 foundation envelope, ETLantic supports these standards and
+For the 0.40 foundation envelope, ETLantic supports these standards and
 toolkits at the declared ranges (exact pins and protocol notes:
 [Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
 
-| Standard / surface | 0.39 foundation policy |
+| Standard / surface | 0.40 foundation policy |
 |---|---|
 | Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
 | ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
@@ -78,7 +78,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.39
+## Available in 0.40
 
 ### Migration and testing foundation
 
@@ -178,7 +178,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 |---|---|
 | Source/sink/storage connector SDK and reference set | **Available** in 0.38 — see [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md); cloud packages Experimental |
 | Directory / CSV landing-zone connector (batch + incremental; continuous trigger in 0.39+) | **Available** (Preview) — [Landing zone](../06_EXECUTION/LANDING_ZONE.md) |
-| OpenLineage metadata interoperability | Planned as a tenant-aware 0.40 gate |
+| OpenLineage metadata interoperability | **Experimental** outbound via `etlantic-openlineage` (non-authority; not production multi-tenant) |
 | GitOps preview-to-production workflow | Planned across 0.41–0.43 |
 | Pipeline/step delivery objectives, deadline evaluation, and escalation routing | Planned first-class for 0.42 |
 | Governed data-subject erasure planning, execution coordination, and proof | Planned first-class for 0.42; operator workflows in 0.50 |
@@ -191,8 +191,8 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.51 |
 | TransformationModel incubation | Deferred to 0.52 |
 | Full LSP server productization | Continues in 0.44 |
-| Registry-backed schema history | Continues in 0.40 |
-| Production multi-tenant control plane | **Planned first-class**: CP1 incubated in 0.39 → 0.40–0.42 continue incubation → **0.43** graduation (CP1 ≠ production multi-tenant isolation) |
+| Registry-backed schema history | **Available** (CP2 metadata-only histories) |
+| Production multi-tenant control plane | **Planned first-class**: CP1 in 0.39 → CP2 incubated in 0.40 → 0.41–0.42 continue → **0.43** graduation (CP2 ≠ production multi-tenant isolation) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
@@ -212,7 +212,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.39.0` first).
+(the sample uses Polars — install `etlantic-polars==0.40.0` first).
 
 ```json
 {
@@ -225,7 +225,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.39.0"
+    "etlantic-polars": "==0.40.0"
   },
   "assets": {},
   "secrets": {},
@@ -241,16 +241,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.39.0'
-pip install 'etlantic-polars==0.39.0'          # optional
-pip install 'etlantic-pandas==0.39.0'          # optional
-pip install 'etlantic-sql==0.39.0'             # optional
-pip install 'etlantic-pyspark==0.39.0'         # optional
-pip install 'etlantic-airflow==0.39.0'         # optional
-pip install 'etlantic-prefect==0.39.0'         # optional
-pip install 'etlantic-keyring==0.39.0'         # optional
-pip install 'etlantic-sqlmodel==0.39.0'        # optional
-pip install 'medallantic==0.39.0'              # optional
+pip install 'etlantic==0.40.0'
+pip install 'etlantic-polars==0.40.0'          # optional
+pip install 'etlantic-pandas==0.40.0'          # optional
+pip install 'etlantic-sql==0.40.0'             # optional
+pip install 'etlantic-pyspark==0.40.0'         # optional
+pip install 'etlantic-airflow==0.40.0'         # optional
+pip install 'etlantic-prefect==0.40.0'         # optional
+pip install 'etlantic-keyring==0.40.0'         # optional
+pip install 'etlantic-sqlmodel==0.40.0'        # optional
+pip install 'medallantic==0.40.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

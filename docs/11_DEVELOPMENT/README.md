@@ -21,6 +21,13 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.39 → 0.40](MIGRATION_0_39_TO_0_40.md) (Gate-ready — CP2)
+- [Exit gate 0.40](EXIT_GATE_0_40.md) (Gate-ready — CP2)
+- [Findings ledger 0.40](FINDINGS_0_40.md)
+- [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md)
+- [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md)
+- [What's new in 0.40](../01_GETTING_STARTED/WHATS_NEW_0_40.md) (Gate-ready)
+- [Isolation profile matrix (fake evidence)](isolation_profile_matrix_0_40.json)
 - [Migration 0.38 → 0.39](MIGRATION_0_38_TO_0_39.md) (Gate-ready — CP1)
 - [Exit gate 0.39](EXIT_GATE_0_39.md) (Gate-ready — CP1)
 - [Findings ledger 0.39](FINDINGS_0_39.md)

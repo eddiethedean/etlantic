@@ -28,7 +28,7 @@ STANDARD_PAGES = {
 }
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/v0.39.0/"
+        "https://etlantic.readthedocs.io/en/v0.40.0/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
@@ -410,7 +410,7 @@ def check_control_plane_plan() -> None:
     plan_urls = {
         f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
         f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
-        f"https://etlantic.readthedocs.io/en/v0.39.0/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/v0.40.0/{plan_rel}/",
     }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")
@@ -557,6 +557,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-s3",
         "etlantic-iceberg",
         "etlantic-snowflake",
+        "etlantic-openlineage",
         "etlantic-fastapi",
         "etlantic-keyring",
         "etlantic-pandas",
@@ -649,6 +650,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-s3",
         "etlantic-iceberg",
         "etlantic-snowflake",
+        "etlantic-openlineage",
     )
     for distribution in release_distributions:
         if f"| `{distribution}` |" not in release_process:
@@ -656,9 +658,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes sixteen distributions" not in release_process:
+    if "publishes seventeen distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 16-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 17-package "
             "release inventory"
         )
 
@@ -2408,6 +2410,7 @@ def main() -> None:
         "etlantic-s3",
         "etlantic-iceberg",
         "etlantic-snowflake",
+        "etlantic-openlineage",
     }
     reference_packages = {"etlantic-fastapi"}
     redirect_packages = {"etlantic-sparkforge"}

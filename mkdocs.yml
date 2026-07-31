@@ -48,6 +48,7 @@ not_in_nav: |
   01_GETTING_STARTED/WHATS_NEW_0_36.md
   01_GETTING_STARTED/WHATS_NEW_0_37.md
   01_GETTING_STARTED/WHATS_NEW_0_38.md
+  01_GETTING_STARTED/WHATS_NEW_0_40.md
   02_FOUNDATIONS/DESIGN_PRINCIPLES.md
   02_FOUNDATIONS/DOCUMENTATION_STATUS.md
   02_FOUNDATIONS/FASTAPI_PHILOSOPHY.md
@@ -190,6 +191,7 @@ not_in_nav: |
   11_DEVELOPMENT/EXIT_GATE_0_37.md
   11_DEVELOPMENT/EXIT_GATE_0_38.md
   11_DEVELOPMENT/EXIT_GATE_0_39.md
+  11_DEVELOPMENT/EXIT_GATE_0_40.md
   11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
   11_DEVELOPMENT/FACADE_PACKAGES.md
   11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
@@ -197,6 +199,7 @@ not_in_nav: |
   11_DEVELOPMENT/FINDINGS_0_37.md
   11_DEVELOPMENT/FINDINGS_0_38.md
   11_DEVELOPMENT/FINDINGS_0_39.md
+  11_DEVELOPMENT/FINDINGS_0_40.md
   11_DEVELOPMENT/FORWARD_IMPLEMENTATION_PLANS.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_36.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_37.md
@@ -248,6 +251,7 @@ not_in_nav: |
   11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md
   11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md
   11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md
+  11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md
   11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
   11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
@@ -272,6 +276,7 @@ not_in_nav: |
   11_DEVELOPMENT/adr/ADR-014-SOLID-CORE-REFACTOR.md
   11_DEVELOPMENT/adr/ADR-015-CONNECTOR-PROTOCOLS.md
   11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md
+  11_DEVELOPMENT/adr/ADR-017-REGISTRY-AND-ISOLATION.md
   specifications/DPCS_SPEC.md
   specifications/DTCS.md
   specifications/DTCS_SPEC.md
@@ -380,6 +385,7 @@ plugins:
             - packages/etlantic-s3/src
             - packages/etlantic-iceberg/src
             - packages/etlantic-snowflake/src
+            - packages/etlantic-openlineage/src
             - packages/etlantic-fastapi/src
             - packages/medallantic/src
           options:
@@ -414,7 +420,7 @@ nav:
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
-      - Current 0.39 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.40 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -499,12 +505,13 @@ nav:
           - etlantic-s3: 10_REFERENCE/api_optional/etlantic_s3.md
           - etlantic-iceberg: 10_REFERENCE/api_optional/etlantic_iceberg.md
           - etlantic-snowflake: 10_REFERENCE/api_optional/etlantic_snowflake.md
+          - etlantic-openlineage: 10_REFERENCE/api_optional/etlantic_openlineage.md
           - etlantic-fastapi: 10_REFERENCE/api_optional/etlantic_fastapi.md
           - medallantic: 10_REFERENCE/api_optional/medallantic.md
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.39.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.40.0: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -550,6 +557,7 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - What's new in 0.40: 01_GETTING_STARTED/WHATS_NEW_0_40.md
           - What's new in 0.39: 01_GETTING_STARTED/WHATS_NEW_0_39.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Contribute:

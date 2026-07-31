@@ -142,6 +142,39 @@ def test_schema_and_reliability_stubs_labeled() -> None:
     assert rel.json()["schema"] == "etlantic.control_plane.reliability_stub/1"
 
 
+def test_schema_routes_backed_by_history_store() -> None:
+    from etlantic.control_plane import MemoryHistoryStore, SchemaObservationRecord
+
+    client, _, api = _wired()
+    history = MemoryHistoryStore()
+    api.history_store = history
+    ctx = _ctx()
+    history.append_schema_observation(
+        ctx,
+        SchemaObservationRecord(
+            observation_id="obs-hist-1",
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            subject_id="orders",
+            schema_fingerprint="fp-1",
+        ),
+    )
+    headers = {"X-Principal": "alice"}
+    listed = client.get("/v1/schema/observations", headers=headers)
+    assert listed.status_code == 200
+    items = listed.json()["items"]
+    assert len(items) == 1
+    assert items[0]["observation_id"] == "obs-hist-1"
+
+    missing = client.post("/v1/schema/observations/obs-missing/ack", headers=headers)
+    assert missing.status_code == 404
+
+    ack = client.post("/v1/schema/observations/obs-hist-1/ack", headers=headers)
+    assert ack.status_code == 200
+    assert "authority" in ack.json()["note"].lower()
+    assert history.get_schema_observation(ctx, "obs-hist-1").acknowledged is True
+
+
 def test_multi_worker_shared_memory_idempotent_submit() -> None:
     """Two 'workers' (threads) sharing one MemorySubmissionStore."""
     _, subs, api = _wired()

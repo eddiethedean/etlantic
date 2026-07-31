@@ -1,0 +1,53 @@
+{
+  "schema": "etlantic.isolation_profile_matrix/1",
+  "phase": "0.40",
+  "cp2_production_multi_tenant_claim": false,
+  "production_multi_tenant_gate": "0.43",
+  "notes": "Fake evidence for CP2 exit. CP2 incubates mechanisms; it does not claim production multi-tenant isolation.",
+  "profiles": [
+    {
+      "profile": "isolated-deployment",
+      "primary_control": "Separate deployment / database per tenant",
+      "second_control_required": false,
+      "evidence": "two-tenant matrix with separate in-memory/SQLModel engines (fake)",
+      "status": "pass",
+      "tests": [
+        "tests/control_plane/test_isolation_matrix_0_40.py::test_two_tenant_two_workspace_matrix_memory",
+        "tests/control_plane/test_isolation_matrix_0_40.py::test_two_tenant_matrix_sqlmodel_compound_keys"
+      ]
+    },
+    {
+      "profile": "dedicated-schema",
+      "primary_control": "Dedicated database or schema per tenant",
+      "second_control_required": false,
+      "evidence": "compound scope keys + schema boundary documented; fake SQLite per-tenant engines",
+      "status": "pass",
+      "tests": [
+        "tests/control_plane/test_isolation_matrix_0_40.py::test_two_tenant_matrix_sqlmodel_compound_keys"
+      ]
+    },
+    {
+      "profile": "shared-service",
+      "primary_control": "Compound scope keys + application filters",
+      "second_control_required": true,
+      "second_control": "RLS stub or per-tenant credentials (session filter)",
+      "where_only_insufficient": true,
+      "evidence": "WHERE-only forged tenant claim leaks; second session control fails closed",
+      "status": "pass",
+      "tests": [
+        "tests/control_plane/test_isolation_matrix_0_40.py::test_shared_service_where_alone_is_insufficient"
+      ]
+    }
+  ],
+  "matrix": {
+    "tenants": ["tenant-a", "tenant-b"],
+    "workspaces": ["ws-1", "ws-2"],
+    "operations": [
+      "tenants.get",
+      "workspaces.get",
+      "revisions.get_revision",
+      "revisions.list_revisions",
+      "search_revisions"
+    ]
+  }
+}

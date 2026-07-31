@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "classes": [
     "stable",
     "provisional",
@@ -99,7 +99,21 @@
     "etlantic.control_plane.accept_receipt/1": "provisional",
     "etlantic.control_plane.event/1": "provisional",
     "etlantic.control_plane.sse_cursor/1": "provisional",
-    "etlantic.control_plane.error/1": "provisional"
+    "etlantic.control_plane.error/1": "provisional",
+    "etlantic.control_plane.tenant_record/1": "provisional",
+    "etlantic.control_plane.workspace_record/1": "provisional",
+    "etlantic.control_plane.environment_record/1": "provisional",
+    "etlantic.control_plane.security_domain_record/1": "provisional",
+    "etlantic.control_plane.logical_identity/1": "provisional",
+    "etlantic.control_plane.registry_revision/1": "provisional",
+    "etlantic.control_plane.alias/1": "provisional",
+    "etlantic.control_plane.promotion/1": "provisional",
+    "etlantic.control_plane.schema_observation_record/1": "provisional",
+    "etlantic.control_plane.reliability_observation_record/1": "provisional",
+    "etlantic.control_plane.plan_observation_record/1": "provisional",
+    "etlantic.control_plane.impact_edge/1": "provisional",
+    "etlantic.control_plane.cache_invalidation_event/1": "provisional",
+    "etlantic.control_plane.workspace_resource_record/1": "provisional"
   },
   "protocols": {
     "etlantic.dataframe/1": "stable",

@@ -1,6 +1,6 @@
 # Foundations
 
-> **Status: Available in ETLantic 0.39.0.**
+> **Status: Available in ETLantic 0.40.0.**
 
 The Foundations section defines ETLantic's product identity, architectural
 boundaries, vocabulary, and documentation stability model.

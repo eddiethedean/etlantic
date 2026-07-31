@@ -1,6 +1,6 @@
 # SQL Dialect
 
-**Status: available in ETLantic 0.39.0** as part of `etlantic.sql/1`.
+**Status: available in ETLantic 0.40.0** as part of `etlantic.sql/1`.
 `etlantic-sql` treats SQLite and PostgreSQL as live Tier A dialects;
 PostgreSQL alone advertises `sql_merge`. Other detected dialects remain
 fail-closed Tier B paths.

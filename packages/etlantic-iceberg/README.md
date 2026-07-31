@@ -1,7 +1,7 @@
 # etlantic-iceberg (Experimental)
 
 Apache Iceberg connector for
-[ETLantic](https://github.com/eddiethedean/etlantic) **0.39** via PyIceberg.
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.40** via PyIceberg.
 Install when pipelines need Experimental `iceberg` source/sink/storage
 connectors. CI uses an in-memory fake catalog; live PyIceberg is optional.
 Pin with core.
@@ -14,13 +14,13 @@ until partition-scoped replace is real.
 ## Install
 
 ```bash
-pip install 'etlantic-iceberg==0.39.0'
+pip install 'etlantic-iceberg==0.40.0'
 # Optional live PyIceberg:
-# pip install 'etlantic-iceberg[pyiceberg]==0.39.0'
-# pip install 'etlantic==0.39.0'
+# pip install 'etlantic-iceberg[pyiceberg]==0.40.0'
+# pip install 'etlantic==0.40.0'
 ```
 
-Core dependency: `etlantic>=0.39.0,<0.40`.
+Core dependency: `etlantic>=0.40.0,<0.41`.
 
 ## Entry points
 

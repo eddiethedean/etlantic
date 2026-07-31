@@ -1,22 +1,23 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.39.0; current gate is 0.39
-> CP1 (gate-ready for tag/publish rehearsal). CP1 ≠ production multi-tenant
-> (**0.43**).**
+> **Status: Shipped product docs describe ETLantic 0.40.0; CP2 is gate-ready /
+> released incubation. CP1/CP2 ≠ production multi-tenant (**0.43**).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.39 can do now**, use
+    - To learn what **ETLantic 0.40 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
-    - To evaluate **CP1 gate evidence**, use the
-      [0.39 exit gate](EXIT_GATE_0_39.md), [ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md),
+    - To evaluate **CP2 gate evidence**, use the
+      [0.40 exit gate](EXIT_GATE_0_40.md), [ADR-017](adr/ADR-017-REGISTRY-AND-ISOLATION.md),
       release notes, and tests.
+    - To evaluate **CP1 gate evidence**, use the
+      [0.39 exit gate](EXIT_GATE_0_39.md) and [ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
     - To evaluate **connectivity gate evidence**, use the
       [0.38 exit gate](EXIT_GATE_0_38.md).
     - To understand **why a boundary exists**, use
@@ -28,33 +29,35 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.39** CP1 control-plane line (gate-ready). Prior
-connectivity evidence remains in **0.38**.
+Status is relative to the **0.40** CP2 gate-ready line. Prior CP1 evidence
+remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.39 CP1 gate-ready | Close [EXIT_GATE_0_39](EXIT_GATE_0_39.md) at publish; then 0.40 |
-| [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md) | Gate-ready milestone | Identity, API, durable submit, SSE, landing submitter, optional SQLModel | [EXIT_GATE_0_39](EXIT_GATE_0_39.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.40 CP2 gate-ready; 0.39 CP1 prior | [EXIT_GATE_0_40](EXIT_GATE_0_40.md); next CP3 at 0.41 |
+| [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Gate-ready milestone | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
+| [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md) | Previous / gate-ready | Identity, API, durable submit, SSE, landing submitter, optional SQLModel | [EXIT_GATE_0_39](EXIT_GATE_0_39.md) |
 | [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md) | Previous / gate-ready | Connector protocols, landing-zone modes, reference providers, conformance | [EXIT_GATE_0_38](EXIT_GATE_0_38.md) |
-| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.52 | 0.40 CP2 next |
+| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.52 | 0.40 CP2 gate-ready |
 | [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | Previous milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | [EXIT_GATE_0_37](EXIT_GATE_0_37.md) gate-ready |
 | [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
 | [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Connectivity gate-ready in 0.38; testing graduated in 0.37 | Continues through 0.52 |
 | [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Gate-ready (0.38 + 0.39 composition) | Snapshot + incremental in 0.38 Preview; continuous submitters in 0.39 (outside core) | CP1 submitter bridge landed |
 | [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Accepted | Protocol ids, entry points, capabilities, plan/runtime split, reference set | Maintenance |
-| [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) | Accepted | Identity vocabulary, non-enumeration, durable accept, SSE cursor shapes | CP1 gate-ready |
-| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program; CP1 gate-ready | 0.38 thin reference ≠ control plane; CP1 incubating under 0.39 | Incubation 0.39–0.42; graduation gate 0.43 |
+| [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) | Accepted | Identity vocabulary, non-enumeration, durable accept, SSE cursor shapes | CP1 prior |
+| [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md) | Accepted | Directory records, revisions, isolation profiles, metadata-only histories | CP2 gate-ready |
+| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program; CP2 gate-ready | 0.38 thin reference ≠ control plane; CP1 prior; CP2 under 0.40 | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
-| [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped; CP1 persistence open | The optional contract-to-SQLModel bridge exists; reference control-plane stores incubate with 0.39 | Request-scoped CP1 stores |
-| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Thin reference shipped; CP1 in progress | The optional thin adapter is not the durable control plane; CP1 grows it under 0.39 | Incubation 0.39–0.42; graduation gate 0.43 |
+| [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped; CP2 persistence open | The optional contract-to-SQLModel bridge exists; reference registry stores incubate with 0.40 | Request-scoped CP stores |
+| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Thin reference shipped; CP1/CP2 in progress | The optional thin adapter is not the durable control plane; CP routes grow under 0.39–0.40 | Incubation 0.39–0.42; graduation gate 0.43 |
 | [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP shipped | The built-in scheduler and optional local Prefect path exist; deploy and serve workflows remain open | Graduate only with deployment, recovery, and parity evidence |
 | [Portable transformations](PORTABLE_TRANSFORM_PLAN.md) | Shipped record with follow-up work | Authoring, planning, conformance, and first-party compilers exist; support remains operation- and backend-specific | Expand only through the published compiler matrix and conformance gates |
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |
 | [TransformationModel incubation](TRANSFORMATIONMODEL_PLAN.md) | Proposed incubation | No TransformationModel package or API is shipped | Post-foundation 0.52 incubation |
-| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic 0.38 connectivity line | Matching-minor joint release |
+| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic matching minor | Matching-minor joint release |
 
 ## Forward implementation sequence
 

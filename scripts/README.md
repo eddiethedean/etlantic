@@ -14,6 +14,8 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 | `check_plugin_manifests.py` | Plugin manifest digests / trust metadata | Checks |
 | `check_agent_guidance.py` | AGENTS.md / agent surface consistency | Checks |
 | `check_release.py` | Release readiness (versions, packages) | Checks |
+| `check_registry_conformance.py` | CP2 registry promote/suspend (memory + SQLModel `--fake`) | Manual / optional |
+| `check_registry_isolation.py` | CP2 two-tenant/two-workspace isolation + profile matrix (`--fake`) | Manual / optional |
 | `check_surface_inventory.py` | Public surface inventory gate | Checks |
 | `check_protocol_freeze.py` | Plugin SDK `/1` freeze vs surface inventory | Checks |
 | `check_transform_compiler_drift.py` | Portable compiler drift across engines | Checks |

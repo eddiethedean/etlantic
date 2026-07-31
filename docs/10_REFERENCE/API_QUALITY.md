@@ -1,6 +1,6 @@
 # API — Quality
 
-> **Status: Available in ETLantic 0.39.0 (provisional).** Generated from
+> **Status: Available in ETLantic 0.40.0 (provisional).** Generated from
 > `etlantic.quality`. Hub: [Python API Reference](API_REFERENCE.md).
 >
 > Wire id: `etlantic.quality/1`. ContractModel remains the semantic authority
@@ -9,7 +9,7 @@
 
 !!! warning "Provisional"
     `etlantic.quality` may change with migration notes in a future minor. Prefer
-    documented helpers below; pin core to `==0.39.0` in pilots.
+    documented helpers below; pin core to `==0.40.0` in pilots.
 
 ## Behavioral contracts
 

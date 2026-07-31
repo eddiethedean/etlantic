@@ -10,8 +10,8 @@ families listed in the portable compiler matrix.
 ## Install
 
 ```bash
-pip install 'etlantic[polars]==0.39.0'
-pip install 'etlantic-polars[arrow]==0.39.0'  # optional Arrow interchange
+pip install 'etlantic[polars]==0.40.0'
+pip install 'etlantic-polars[arrow]==0.40.0'  # optional Arrow interchange
 ```
 
 ## Behavior

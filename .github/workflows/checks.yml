@@ -472,7 +472,8 @@ jobs:
           for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
             medallantic etlantic-sparkforge etlantic-fastapi etlantic-datafusion \
-            etlantic-s3 etlantic-iceberg etlantic-snowflake; do
+            etlantic-s3 etlantic-iceberg etlantic-snowflake \
+            etlantic-openlineage; do
             uv build --package "$pkg" --out-dir dist
           done
           ls -la dist/
@@ -576,7 +577,8 @@ jobs:
             "etlantic_datafusion:etlantic_datafusion" \
             "etlantic_s3:etlantic_s3" \
             "etlantic_iceberg:etlantic_iceberg" \
-            "etlantic_snowflake:etlantic_snowflake"; do
+            "etlantic_snowflake:etlantic_snowflake" \
+            "etlantic_openlineage:etlantic_openlineage"; do
             wheel_glob="${pair%%:*}"
             mod="${pair##*:}"
             wheel=$(ls dist/${wheel_glob}-*.whl 2>/dev/null | head -1 || true)

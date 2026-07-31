@@ -32,6 +32,7 @@ EXPERIMENTAL_PACKAGES = (
     "etlantic-s3",
     "etlantic-iceberg",
     "etlantic-snowflake",
+    "etlantic-openlineage",
 )
 
 
@@ -208,6 +209,7 @@ def main() -> int:
     if "Development Status :: 5 - Production/Stable" in root_pyproject:
         errors.append("root pyproject.toml should use Beta, not Production/Stable")
     release_yml = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    checks_yml = (ROOT / ".github/workflows/checks.yml").read_text(encoding="utf-8")
     for pkg in (
         *PACKAGES,
         *FACADE_PACKAGES,
@@ -218,6 +220,8 @@ def main() -> int:
         expected = pkg.replace("-", "_")
         if expected not in release_yml:
             errors.append(f"release.yml missing publish artifact stem {expected}")
+        if pkg not in checks_yml:
+            errors.append(f"checks.yml missing package build coverage for {pkg}")
 
     names = (
         "etlantic",

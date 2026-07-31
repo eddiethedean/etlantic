@@ -1,16 +1,19 @@
 # Multi-Tenant Control Plane Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.37.0.** Incubation is sequenced across 0.39–0.42. **CP1 (0.39) identity and
-> API work is in progress** ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md),
-> [EXIT_GATE_0_39](EXIT_GATE_0_39.md)). A production, multi-tenant compatibility
+> 0.37.0.** Incubation is sequenced across 0.39–0.42. **CP1 (0.39) is
+> gate-ready** ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md),
+> [EXIT_GATE_0_39](EXIT_GATE_0_39.md)). **CP2 (0.40) registry and isolation
+> incubation is in progress** ([ADR-017](adr/ADR-017-REGISTRY-AND-ISOLATION.md),
+> [EXIT_GATE_0_40](EXIT_GATE_0_40.md)). A production, multi-tenant compatibility
 > claim is gated for 0.43 only after every isolation, durability, policy, and
 > operations gate on this page passes.
 >
 > **Current boundary:** Process-local registries, runtimes, caches, report
 > stores, and the 0.38 thin FastAPI reference adapter are not multi-tenant
 > merely because they carry identity fields. CP1 incubates typed context and
-> durable contracts; it does not claim production isolation.
+> durable contracts; CP2 incubates directory/revision mechanisms and isolation
+> evidence. Neither claims production isolation.
 >
 > **Authority:** The
 > [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)

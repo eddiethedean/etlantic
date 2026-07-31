@@ -9,8 +9,8 @@ Package version is **0.39.0** — pin with core.
 ## Install
 
 ```bash
-pip install 'etlantic-sqlmodel==0.39.0'
-# pip install 'etlantic==0.39.0'
+pip install 'etlantic-sqlmodel==0.40.0'
+# pip install 'etlantic==0.40.0'
 ```
 
 ## Schema bridge
@@ -33,25 +33,35 @@ CustomerTable = contract_to_sqlmodel(
 assert compare_metadata(Customer, CustomerTable).valid
 ```
 
-## Control-plane reference stores (CP1)
+## Control-plane reference stores (CP1/CP2)
 
 Request-scoped sessions and SQLModel-backed `DefinitionRepository` /
-`SubmissionStore` implementations. Persistence models are separate from HTTP
-response models. `create_control_plane_tables` is for tests and local demos —
-not a production migration strategy.
+`SubmissionStore` / CP2 `RegistryProvider` implementations. Persistence models
+are separate from HTTP response models. **`create_control_plane_tables` and
+`create_registry_tables` are for tests and local demos only** — production must
+apply versioned migrations via `etlantic_sqlmodel.migrations` (do not use
+`create_all` as the sole schema path).
 
 ```python
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
     SQLModelSubmissionStore,
-    create_control_plane_tables,
+    SqlModelRegistryProvider,
     create_sqlite_engine,
 )
+from etlantic_sqlmodel.migrations import apply_migrations
 
 engine = create_sqlite_engine("sqlite:///cp.db")
-create_control_plane_tables(engine)
+apply_migrations(engine)  # CP2 registry tables (001_registry_cp2)
+registry = SqlModelRegistryProvider(engine)
 definitions = SQLModelDefinitionRepository(engine)
 submissions = SQLModelSubmissionStore(engine)
+```
+
+Registry conformance (memory vs SQLModel promote/suspend):
+
+```bash
+uv run python scripts/check_registry_conformance.py --fake
 ```
 
 These stores honor scoped idempotency and survive process restart when backed
@@ -59,6 +69,6 @@ by a durable database URL. They are not a production multi-tenant claim.
 
 ## Links
 
-[Optional packages](https://etlantic.readthedocs.io/en/v0.39.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
+[Optional packages](https://etlantic.readthedocs.io/en/v0.40.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sqlmodel) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

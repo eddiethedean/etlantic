@@ -26,17 +26,45 @@ def test_importing_etlantic_does_not_require_fastapi() -> None:
     import etlantic.control_plane as cp_mod
     import etlantic.control_plane.authz as authz
     import etlantic.control_plane.errors as errors
+    import etlantic.control_plane.history_memory as history_memory
+    import etlantic.control_plane.history_models as history_models
+    import etlantic.control_plane.history_protocols as history_protocols
     import etlantic.control_plane.memory as memory
     import etlantic.control_plane.models as models
     import etlantic.control_plane.protocols as protocols
+    import etlantic.control_plane.registry_definitions as registry_definitions
+    import etlantic.control_plane.registry_memory as registry_memory
+    import etlantic.control_plane.registry_models as registry_models
+    import etlantic.control_plane.registry_ops as registry_ops
+    import etlantic.control_plane.registry_protocols as registry_protocols
+    import etlantic.control_plane.workspace_resources as workspace_resources
 
-    for mod in (cp_mod, models, protocols, authz, errors, memory):
+    for mod in (
+        cp_mod,
+        models,
+        protocols,
+        authz,
+        errors,
+        memory,
+        registry_models,
+        registry_protocols,
+        registry_memory,
+        registry_definitions,
+        registry_ops,
+        history_models,
+        history_protocols,
+        history_memory,
+        workspace_resources,
+    ):
         assert "fastapi" not in mod.__dict__
+        assert "sqlmodel" not in mod.__dict__
         path = Path(mod.__file__ or "")
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     assert not alias.name.startswith("fastapi")
+                    assert not alias.name.startswith("sqlmodel")
             elif isinstance(node, ast.ImportFrom) and node.module:
                 assert not node.module.startswith("fastapi")
+                assert not node.module.startswith("sqlmodel")

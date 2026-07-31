@@ -15,9 +15,9 @@ For the status, current boundary, and owner of every domain plan, use the
 |---|---:|---|---|
 | Current | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready for tag/publish](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next / Planned | 0.40 | Tenant registry / workspaces (CP2) | Planned |
+| Next / In progress | 0.40 | Tenant registry / workspaces (CP2) | [In progress](EXIT_GATE_0_40.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.39 CP1 gate-ready) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.40 CP2; 0.39 CP1 gate-ready) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -273,11 +273,12 @@ TransformationModel incubation moves to 0.52.
 The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
-- **[0.39 / CP1](IMPLEMENTATION_PLAN_0_39.md)** *(in progress):* typed API, identity context
+- **[0.39 / CP1](IMPLEMENTATION_PLAN_0_39.md)** *(gate-ready):* typed API, identity context
   ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)), authorization, and
   idempotency; durable submission hooks for continuous landing-zone file-drop
   triggers against 0.38 snapshot/incremental bindings
-- **[0.40 / CP2](IMPLEMENTATION_PLAN_0_40.md):** tenant/workspace registry, persistence isolation, stable
+- **[0.40 / CP2](IMPLEMENTATION_PLAN_0_40.md)** *(gate-ready):* tenant/workspace registry
+  ([ADR-017](adr/ADR-017-REGISTRY-AND-ISOLATION.md)), persistence isolation, stable
   metadata identities, and outbound OpenLineage preview; workspace-scoped
   landing roots and checkpoint stores
 - **[0.41 / CP3](IMPLEMENTATION_PLAN_0_41.md):** durable submission, leases, fencing, state, recovery, and

@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, cross-cutting plan.**
 >
-> **Current 0.39 boundary:** The local CLI and generated read-only HTML and
+> **Current 0.40 boundary:** The local CLI and generated read-only HTML and
 > diagram artifacts are available. Interactive workspace, dashboard, IDE, and
 > hosted operator phases remain planned and must pass their own accessibility,
 > security, and operational gates.

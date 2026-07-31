@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from etlantic.control_plane import LifecycleState
+
 
 class AcceptReceiptResponse(BaseModel):
     schema_: str = Field(
@@ -148,6 +150,121 @@ class ReliabilityListResponse(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TenantRecordResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema", default="etlantic.control_plane.tenant_record/1"
+    )
+    tenant_id: str
+    lifecycle: str
+    display_name: str | None = None
+    security_domain_id: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
+class TenantListResponse(BaseModel):
+    items: list[TenantRecordResponse] = Field(default_factory=list)
+
+
+class TenantPutBody(BaseModel):
+    display_name: str | None = None
+    security_domain_id: str | None = None
+    lifecycle: LifecycleState = LifecycleState.ACTIVE
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkspaceRecordResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema", default="etlantic.control_plane.workspace_record/1"
+    )
+    tenant_id: str
+    workspace_id: str
+    lifecycle: str
+    display_name: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
+class WorkspaceListResponse(BaseModel):
+    items: list[WorkspaceRecordResponse] = Field(default_factory=list)
+
+
+class WorkspacePutBody(BaseModel):
+    display_name: str | None = None
+    lifecycle: LifecycleState = LifecycleState.ACTIVE
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class RevisionResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema", default="etlantic.control_plane.registry_revision/1"
+    )
+    logical_id: str
+    revision_id: str
+    tenant_id: str
+    workspace_id: str
+    content_fingerprint: str
+    content: dict[str, Any] = Field(default_factory=dict)
+    created_at: str | None = None
+    kind: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class RevisionListResponse(BaseModel):
+    items: list[RevisionResponse] = Field(default_factory=list)
+
+
+class AliasPutBody(BaseModel):
+    logical_id: str
+    revision_id: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AliasResponse(BaseModel):
+    schema_: str = Field(alias="schema", default="etlantic.control_plane.alias/1")
+    tenant_id: str
+    workspace_id: str
+    alias: str
+    logical_id: str
+    revision_id: str
+    created_at: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
+class PromoteBody(BaseModel):
+    logical_id: str
+    from_revision_id: str
+    from_environment: str
+    to_environment: str
+    content: dict[str, Any] | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class PromotionResponse(BaseModel):
+    schema_: str = Field(alias="schema", default="etlantic.control_plane.promotion/1")
+    promotion_id: str
+    tenant_id: str
+    workspace_id: str
+    logical_id: str
+    from_revision_id: str
+    to_revision_id: str
+    from_environment: str
+    to_environment: str
+    created_at: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
 
@@ -160,6 +277,8 @@ class ReadyResponse(BaseModel):
 
 __all__ = [
     "AcceptReceiptResponse",
+    "AliasPutBody",
+    "AliasResponse",
     "ArtifactMeta",
     "ArtifactsResponse",
     "DefinitionGetResponse",
@@ -168,12 +287,22 @@ __all__ = [
     "HealthResponse",
     "LineageStubResponse",
     "PlanResponse",
+    "PromoteBody",
+    "PromotionResponse",
     "ReadyResponse",
     "ReliabilityListResponse",
     "ReportStubResponse",
+    "RevisionListResponse",
+    "RevisionResponse",
     "RunStatusResponse",
     "RunSubmitBody",
     "SchemaObservationAckResponse",
     "SchemaObservationsResponse",
+    "TenantListResponse",
+    "TenantPutBody",
+    "TenantRecordResponse",
     "ValidateResponse",
+    "WorkspaceListResponse",
+    "WorkspacePutBody",
+    "WorkspaceRecordResponse",
 ]

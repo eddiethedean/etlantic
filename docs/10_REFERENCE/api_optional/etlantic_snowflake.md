@@ -1,20 +1,20 @@
 ---
 status: available
-since: "0.39.0"
-current_minor: "0.39"
+since: "0.40.0"
+current_minor: "0.40"
 audience: developer
 ---
 
 # etlantic-snowflake API
 
-> **Status: Experimental in ETLantic 0.39.0.** Snowflake source, sink, and
+> **Status: Experimental in ETLantic 0.40.0.** Snowflake source, sink, and
 > storage connectors with fake/CI conformance evidence. Install narrative:
 > package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-snowflake==0.39.0'
+pip install 'etlantic-snowflake==0.40.0'
 ```
 
 ```python

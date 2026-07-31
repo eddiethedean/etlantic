@@ -1,5 +1,5 @@
 # Changelog
 
-> **Status: Available in ETLantic 0.39.0.**
+> **Status: Available in ETLantic 0.40.0.**
 
 --8<-- "../CHANGELOG.md"
