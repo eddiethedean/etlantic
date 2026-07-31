@@ -6,9 +6,10 @@ globs:
 
 # ETLantic
 
-- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing.
+- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
+- FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.

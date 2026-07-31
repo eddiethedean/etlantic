@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Supported security release line is 0.39.x
 - PyPI Beta classifier retained on core
 
+### Fixed
+- Generated agent guidance includes the 0.39 connector/control-plane public
+  surfaces and preserves the FastAPI CP1 versus reference-app boundary
+- Medallantic migration goldens align with the 0.39 version-tagged adapter
+  metadata
+- Plugin trust-isolation coverage authorizes the installed release candidate
+  version instead of a stale prior-minor pin
+
 ### Security
 - Non-enumeration matrix across CP operationIds × two tenants
 - Problem Details / event / report bodies redact secret-like keys

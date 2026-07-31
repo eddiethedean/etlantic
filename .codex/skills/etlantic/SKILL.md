@@ -10,7 +10,11 @@ Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
 `reliability`, `viz`, `report`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.viz`, `.secrets`, `.testing`).
+`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`).
+
+For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
+control plane. `create_reference_app` is only a thin, non-CP authoring demo.
+Continuous directory watchers are optional submitters, never core behavior.
 
 Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 
 PUBLIC_CLI_COMMANDS = (
@@ -31,6 +32,8 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.secrets",
     "etlantic.testing",
     "etlantic.quality",
+    "etlantic.connectors",
+    "etlantic.control_plane",
 )
 
 SECURITY_RULES = (
@@ -44,7 +47,12 @@ SECURITY_RULES = (
 
 def render_agents_md() -> str:
     cmds = ", ".join(f"`etlantic {c}`" for c in PUBLIC_CLI_COMMANDS)
-    imports = ", ".join(f"`{i}`" for i in PUBLIC_SDK_IMPORTS)
+    imports = textwrap.fill(
+        "Also supported: " + ", ".join(f"`{i}`" for i in PUBLIC_SDK_IMPORTS),
+        width=80,
+        break_long_words=False,
+        break_on_hyphens=False,
+    )
     rules = "\n".join(f"- {r}" for r in SECURITY_RULES)
     return f"""# AGENTS.md — ETLantic
 
@@ -61,7 +69,15 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 
-Also supported: {imports}
+{imports}
+
+## FastAPI dual surface
+
+- **CP1 control plane:** `ETLanticAPI` / `include_router` / `create_app`
+  (durable accept, authz, `/health` + `/ready`)
+- **Non-CP reference:** `create_reference_app` (thin authoring demo only)
+- Continuous directory watchers are **not** in core; use optional submitters
+  (for example `etlantic_fastapi.landing_sensor`)
 
 ## Security
 
@@ -102,7 +118,11 @@ Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
 `reliability`, `viz`, `report`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.viz`, `.secrets`, `.testing`).
+`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`).
+
+For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
+control plane. `create_reference_app` is only a thin, non-CP authoring demo.
+Continuous directory watchers are optional submitters, never core behavior.
 
 Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
@@ -120,9 +140,10 @@ globs:
 
 # ETLantic
 
-- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing.
+- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
+- FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.

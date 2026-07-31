@@ -135,13 +135,18 @@ def test_allowlist_package_identity_authorizes() -> None:
     discovered, _ = discover_entry_points("etlantic.dataframe_plugins")
     if not discovered:
         pytest.skip("no dataframe plugins installed")
-    package = next(
-        (item.distribution_name for item in discovered if item.distribution_name),
+    identity = next(
+        (
+            (item.distribution_name, item.distribution_version)
+            for item in discovered
+            if item.distribution_name and item.distribution_version
+        ),
         None,
     )
-    if package is None:
-        pytest.skip("no distribution metadata available")
-    profile = production_profile(plugin_allowlist={str(package): "==0.38.0"})
+    if identity is None:
+        pytest.skip("no complete distribution metadata available")
+    package, version = identity
+    profile = production_profile(plugin_allowlist={package: f"=={version}"})
     authorized, diags, _events = authorize_plugins(discovered, profile)
     assert authorized, f"expected {package!r} to authorize; diags={diags}"
     assert all(
