@@ -7,16 +7,16 @@
     [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md). For storage
     that exists today, see [Storage today](STORAGE_TODAY.md).
 
-## What ships in 0.37 (start here)
+## What ships in 0.38 (start here)
 
-| Category | Reality in 0.37 |
+| Category | Reality in 0.38 |
 |---|---|
 | Dataframe / SQL / Spark engines | Shipped as `etlantic-*` packages |
 | Orchestrators | Airflow compile + Prefect local MVP |
 | Secrets | Env / file / keyring providers |
 | Observability / run history / event consumers | Shipped protocols in 0.34 (M6) |
-| Extract / Load I/O | Bind to **assets** and storage providers — **not** SourcePlugin / SinkPlugin APIs |
-| General storage / connector SDK | Planned (0.38+) — not a discoverable protocol today |
+| Extract / Load I/O | Bind to typed source / sink / storage connectors through assets and profiles |
+| General storage / connector SDK | Shipped as `etlantic.source/1`, `etlantic.sink/1`, and `etlantic.storage/1`; see [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) |
 | Resource providers | Not shipped |
 | Dagster / Kafka / managed registries | Planned — not APIs |
 
@@ -33,11 +33,8 @@ declare capabilities honestly, and stay loosely coupled to core.
 ## Planned catalog (not installable)
 
 The following categories appear in older design pages and **must not** be
-treated as 0.37 APIs:
+treated as 0.38 APIs:
 
-- Source plugins / Sink plugins (use assets + [Storage today](STORAGE_TODAY.md))
-- General storage plugins (Snowflake, S3, Iceberg, …) — see
-  [Storage Plugin](../07_PLUGIN_SDK/STORAGE_PLUGIN.md) (Future design)
 - Managed resource providers — see
   [Resource Provider](../07_PLUGIN_SDK/RESOURCE_PROVIDER.md) (Future design)
 - Registry plugins / approval workflows

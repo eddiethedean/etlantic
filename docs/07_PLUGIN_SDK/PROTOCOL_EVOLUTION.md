@@ -1,7 +1,7 @@
 # Protocol Evolution Policy
 
-> **Status (0.37.0):** Plugin `/1` families remain **frozen since 0.28.0** for
-> the 0.38 stable-foundation path (`dataframe`, `sql`, `spark`,
+> **Status (0.38.0):** Plugin `/1` families remain **frozen since 0.28.0** on
+> the post-foundation path (`dataframe`, `sql`, `spark`,
 > `orchestration`, `transform-compiler`). In 0.36, `etlantic.scheduler/1` is
 > promoted to a **stable MVP** on the foundation path (Prefect bounds);
 > `etlantic.quality/1` remains provisional wire outside the full
@@ -126,7 +126,7 @@ Rules:
 While ETLantic remains on its 0.x roadmap:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.37: `etlantic>=0.37.0,<0.38`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.38: `etlantic>=0.38.0,<0.39`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

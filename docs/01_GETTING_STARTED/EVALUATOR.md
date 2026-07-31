@@ -6,7 +6,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 !!! note "Plans ≠ product"
     Maintainer roadmap / multi-tenant plans under Contribute are **not**
-    shipped 0.37 APIs. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
+    shipped 0.38 APIs. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
     and the green path — not from future gate documents.
 
 ## Residual evaluation lead
@@ -17,7 +17,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
 | LTS | Current published minor only (`0.38.x`) |
-| Not included in 0.37 | Multi-tenant control plane; unrestricted enterprise production |
+| Not included in 0.38 | Multi-tenant control plane; unrestricted enterprise production |
 
 ## What ETLantic is
 
@@ -28,7 +28,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.37.0
+## What is ready in bounded 0.38.0
 
 | Area | Ready? |
 |---|---|
@@ -59,8 +59,8 @@ manager.
 | Public portable transform conformance suite | Yes (0.14) |
 | Multi-tenant durable orchestration | No — planned through CP3 / 0.41 |
 | Formal SLA / support response times | No |
-| Production GUI | No in 0.37 — read-only-first operator console planned for 0.50 |
-| Multi-tenant control plane | No in 0.37 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.39–0.42 incubation and 0.43 graduation |
+| Production GUI | No in 0.38 — read-only-first operator console planned for 0.50 |
+| Multi-tenant control plane | No in 0.38 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.39–0.42 incubation and 0.43 graduation |
 
 ## Security posture
 
@@ -86,7 +86,7 @@ manager.
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
 | Release SHA-256 manifest + GitHub attestations | **Release-gated** — verify the published assets with `gh attestation verify`; CycloneDX is optional, so confirm the SBOM or `sbom-warning.txt`. See [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md). |
-| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.37; first-class plan published** |
+| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.38; first-class plan published** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
 | HA/DR, SOC2/GDPR certs, identity/RBAC/SSO | **Adopter-owned / out of scope** |

@@ -65,7 +65,7 @@ table):
 
 Profiles never redefine pipeline contracts. Logging configuration, durable
 checkpoint stores, and deployment-topology metadata are **not** first-class
-Profile fields in 0.37 — keep those outside ETLantic or in adopter-owned
+Profile fields in 0.38 — keep those outside ETLantic or in adopter-owned
 orchestration.
 
 Profiles also must not:
@@ -86,7 +86,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.37.0",
+        "etlantic-polars": "==0.38.0",
     },
 )
 
@@ -95,7 +95,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.37.0",
+        "etlantic-sql": "==0.38.0",
     },
 )
 ```

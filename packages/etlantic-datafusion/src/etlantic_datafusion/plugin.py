@@ -31,26 +31,26 @@ class DataFusionPlugin:
 
     def materialize(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError(
-            "etlantic-datafusion is an experimental stub as of 0.37.0; "
+            "etlantic-datafusion is an experimental stub as of 0.38.0; "
             "materialize is not implemented. See CAPABILITIES."
         )
 
     def execute_transformation(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError(
             "etlantic-datafusion execute_transformation is experimental/ungraduated "
-            "as of 0.37.0"
+            "as of 0.38.0"
         )
 
     def to_records(
         self, value: Any, *, contract_type: type[Any] | None = None
     ) -> list[Any]:
         raise NotImplementedError(
-            "etlantic-datafusion to_records is ungraduated as of 0.37.0"
+            "etlantic-datafusion to_records is ungraduated as of 0.38.0"
         )
 
     def from_records(
         self, rows: list[Any], *, contract_type: type[Any] | None = None
     ) -> Any:
         raise NotImplementedError(
-            "etlantic-datafusion from_records is ungraduated as of 0.37.0"
+            "etlantic-datafusion from_records is ungraduated as of 0.38.0"
         )

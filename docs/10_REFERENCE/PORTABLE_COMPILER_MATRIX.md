@@ -3,7 +3,7 @@
 > **Status: Available in ETLantic 0.38.0.**
 
 This matrix records the portable transformation claims shipped in ETLantic
-0.37.0. It is narrower than each backend's native capabilities.
+0.38.0. It is narrower than each backend's native capabilities.
 
 ## Compiler claims
 

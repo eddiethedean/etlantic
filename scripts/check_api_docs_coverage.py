@@ -18,6 +18,9 @@ REQUIRED_MODULES = (
     "etlantic_keyring",
     "etlantic_sqlmodel",
     "etlantic_datafusion",
+    "etlantic_s3",
+    "etlantic_iceberg",
+    "etlantic_snowflake",
     "etlantic_fastapi",
     "medallantic",
 )

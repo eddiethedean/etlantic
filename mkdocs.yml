@@ -354,6 +354,9 @@ plugins:
             - packages/etlantic-keyring/src
             - packages/etlantic-sqlmodel/src
             - packages/etlantic-datafusion/src
+            - packages/etlantic-s3/src
+            - packages/etlantic-iceberg/src
+            - packages/etlantic-snowflake/src
             - packages/etlantic-fastapi/src
             - packages/medallantic/src
           options:
@@ -469,6 +472,9 @@ nav:
           - etlantic-keyring: 10_REFERENCE/api_optional/etlantic_keyring.md
           - etlantic-sqlmodel: 10_REFERENCE/api_optional/etlantic_sqlmodel.md
           - etlantic-datafusion: 10_REFERENCE/api_optional/etlantic_datafusion.md
+          - etlantic-s3: 10_REFERENCE/api_optional/etlantic_s3.md
+          - etlantic-iceberg: 10_REFERENCE/api_optional/etlantic_iceberg.md
+          - etlantic-snowflake: 10_REFERENCE/api_optional/etlantic_snowflake.md
           - etlantic-fastapi: 10_REFERENCE/api_optional/etlantic_fastapi.md
           - medallantic: 10_REFERENCE/api_optional/medallantic.md
       - CLI and configuration:

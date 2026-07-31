@@ -9,7 +9,7 @@ running Airflow itself.
 ## Setup
 
 ```bash
-git clone --branch v0.37.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.38.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync --group airflow
 ```

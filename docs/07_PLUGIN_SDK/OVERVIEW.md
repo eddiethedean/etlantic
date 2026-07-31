@@ -23,6 +23,7 @@ concrete runtime behavior.
 | Observability provider | [OBSERVABILITY_PROVIDER](OBSERVABILITY_PROVIDER.md) | core reference + `etlantic[otel]` |
 | Run history provider | [RUN_HISTORY_PROVIDER](RUN_HISTORY_PROVIDER.md) | file / in-memory reference |
 | Event consumer | [EVENT_CONSUMER](EVENT_CONSUMER.md) | trend consumer reference |
+| Source / sink / storage connectors | [CONNECTOR_SDK](CONNECTOR_SDK.md) | core `local-files`; `etlantic-s3`, `etlantic-iceberg`, `etlantic-snowflake`, `etlantic-sql` |
 | Portable transform compiler | [PORTABLE_TRANSFORM_COMPILER](PORTABLE_TRANSFORM_COMPILER.md) | engine packages above |
 | Testing / conformance | [TESTING_PLUGINS](TESTING_PLUGINS.md) | `etlantic.testing` |
 
@@ -40,7 +41,7 @@ Validation → Planning → PipelinePlan
         │
         ▼
 Shipped plugins: dataframe / SQL / Spark / orchestrator / secrets /
-observability / run history / event consumers / compilers
+observability / run history / event consumers / connectors / compilers
 ```
 
 Every plugin consumes or contributes to planning, compilation, execution, or
@@ -61,10 +62,8 @@ pipeline.
 ## Appendix — planned / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.37.0**:
+protocols in **0.38.0**:
 
-- General storage plugins (Snowflake, S3, Iceberg, …) — planned for 0.38; see
-  [Storage today](../06_EXECUTION/STORAGE_TODAY.md).
 - Managed resource providers — Kubernetes/reference proof in 0.47 and
   supported provider packs in 0.51.
 - Registry plugins / approval workflows — planned through 0.40–0.43.

@@ -13,7 +13,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-pandas==0.37.0'
+pip install 'etlantic-pandas==0.38.0'
 ```
 
 ```python

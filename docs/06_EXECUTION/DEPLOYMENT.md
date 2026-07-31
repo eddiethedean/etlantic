@@ -10,7 +10,7 @@
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime |
-| Multi-worker / multi-tenant control plane | Not included in 0.37; planned first-class |
+| Multi-worker / multi-tenant control plane | Not included in 0.38; planned first-class |
 | SLA | None (community support) |
 
 ## Process model

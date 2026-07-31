@@ -2,18 +2,20 @@
 
 Native Snowflake connector for [ETLantic](https://github.com/eddiethedean/etlantic).
 
+**Current release:** 0.38.0.
+
 **Maturity:** Experimental (Alpha classifier). CI uses an in-memory fake with
 `autocommit=False` transactional semantics and `query_id` evidence on
 `CommitReceipt`. Live Snowflake is optional:
 
 ```bash
-pip install "etlantic-snowflake[snowflake]"
+pip install "etlantic-snowflake[snowflake]==0.38.0"
 ```
 
 ## Install
 
 ```bash
-pip install etlantic-snowflake
+pip install 'etlantic-snowflake==0.38.0'
 ```
 
 Core dependency: `etlantic>=0.38.0,<0.39`.

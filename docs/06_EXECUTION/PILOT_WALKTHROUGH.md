@@ -8,7 +8,7 @@ unrestricted production-readiness claim.
 
 Multi-tenancy is a
 [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
-but its future guarantees do not apply to this 0.37 walkthrough.
+but its future guarantees do not apply to this 0.38 walkthrough.
 
 ## 1. Install a pinned release
 

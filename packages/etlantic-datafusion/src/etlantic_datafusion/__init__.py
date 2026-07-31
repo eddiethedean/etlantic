@@ -1,4 +1,4 @@
-"""Experimental DataFusion plugin package (stub; not production-ready in 0.37.0)."""
+"""Experimental DataFusion plugin package (stub; not production-ready in 0.38.0)."""
 
 from __future__ import annotations
 

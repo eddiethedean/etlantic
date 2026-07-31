@@ -554,6 +554,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
     current_package_readmes = (
         "etlantic-airflow",
         "etlantic-datafusion",
+        "etlantic-s3",
+        "etlantic-iceberg",
+        "etlantic-snowflake",
         "etlantic-fastapi",
         "etlantic-keyring",
         "etlantic-pandas",
@@ -625,6 +628,39 @@ def check_release_surface_version_drift(package_version: str) -> None:
                     f"{path}: predicted release outcome must be verified after publish: "
                     f"{claim!r}"
                 )
+
+    release_process = (ROOT / "docs/11_DEVELOPMENT/RELEASE_PROCESS.md").read_text(
+        encoding="utf-8"
+    )
+    release_distributions = (
+        "etlantic",
+        "etlantic-polars",
+        "etlantic-pandas",
+        "etlantic-sql",
+        "etlantic-pyspark",
+        "etlantic-airflow",
+        "etlantic-prefect",
+        "etlantic-keyring",
+        "etlantic-sqlmodel",
+        "medallantic",
+        "etlantic-sparkforge",
+        "etlantic-datafusion",
+        "etlantic-fastapi",
+        "etlantic-s3",
+        "etlantic-iceberg",
+        "etlantic-snowflake",
+    )
+    for distribution in release_distributions:
+        if f"| `{distribution}` |" not in release_process:
+            raise SystemExit(
+                "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
+                f"distribution {distribution}"
+            )
+    if "publishes sixteen distributions" not in release_process:
+        raise SystemExit(
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 16-package "
+            "release inventory"
+        )
 
 
 def check_observability_doc_consistency() -> None:
@@ -2146,10 +2182,16 @@ def main() -> None:
         ROOT / "docs/01_GETTING_STARTED/COMPARE.md",
         ROOT / "docs/01_GETTING_STARTED/COOKBOOK.md",
         ROOT / "docs/01_GETTING_STARTED/OPS_EXAMPLES.md",
+        ROOT / "docs/01_GETTING_STARTED/END_TO_END_PILOT.md",
+        ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+        ROOT / "docs/01_GETTING_STARTED/PILOT_EVIDENCE_PACKET.md",
+        ROOT / "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md",
         ROOT / "docs/01_GETTING_STARTED/PORTABLE_VS_NATIVE.md",
         ROOT / "docs/01_GETTING_STARTED/PORTABLE_FAILURE_COOKBOOK.md",
         ROOT / "docs/01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md",
         ROOT / "docs/05_PIPELINES/PROFILE_PRIMER.md",
+        ROOT / "docs/05_PIPELINES/PROFILES.md",
+        ROOT / "docs/05_PIPELINES/PROFILES_HUB.md",
         ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md",
         ROOT / "docs/10_REFERENCE/CONFIGURATION_TODAY.md",
         ROOT / "docs/10_REFERENCE/RUNTIME_CONFIGURATION.md",
@@ -2179,6 +2221,14 @@ def main() -> None:
         ROOT / "docs/06_EXECUTION/CI_INTEGRATION.md",
         ROOT / "docs/06_EXECUTION/DEPLOYMENT.md",
         ROOT / "docs/06_EXECUTION/RUN_REPORTS.md",
+        ROOT / "docs/08_VISUALIZATION/APPLICATION_INTEGRATION.md",
+        ROOT / "docs/09_EXAMPLES/PRODUCTION_SAMPLE.md",
+        ROOT / "docs/09_EXAMPLES/AIRFLOW_COMPILE.md",
+        ROOT / "docs/09_MEDALLANTIC/GETTING_STARTED.md",
+        ROOT / "docs/09_MEDALLANTIC/TROUBLESHOOTING.md",
+        ROOT / "docs/10_REFERENCE/API_QUALITY.md",
+        ROOT / "docs/10_REFERENCE/DIAGNOSTICS.md",
+        *sorted((ROOT / "docs/10_REFERENCE/api_optional").glob("*.md")),
         ROOT / "docs/07_PLUGIN_SDK/THIRD_PARTY_COMPILER_TUTORIAL.md",
         ROOT / "docs/07_PLUGIN_SDK/BUILDING_A_PLUGIN.md",
         ROOT / "docs/07_PLUGIN_SDK/TESTING_PLUGINS.md",
@@ -2196,6 +2246,11 @@ def main() -> None:
         ROOT / "packages/etlantic-keyring/README.md",
         ROOT / "packages/etlantic-sqlmodel/README.md",
         ROOT / "packages/medallantic/README.md",
+        ROOT / "packages/medallantic/docs/getting-started.md",
+        ROOT / "packages/medallantic/ROADMAP.md",
+        ROOT / "packages/etlantic-s3/README.md",
+        ROOT / "packages/etlantic-iceberg/README.md",
+        ROOT / "packages/etlantic-snowflake/README.md",
         ROOT / "packages/etlantic-prefect/README.md",
         ROOT / "examples/portable_polars_kernel.py",
         ROOT / "examples/portable_pandas_kernel.py",
@@ -2228,6 +2283,15 @@ def main() -> None:
             if not path.exists():
                 continue
             text = path.read_text(encoding="utf-8")
+            stale_package_pin = re.search(
+                rf"(?:etlantic(?:-[a-z0-9]+)*|medallantic)=={re.escape(prior_minor)}\.0",
+                text,
+            )
+            if stale_package_pin is not None:
+                raise SystemExit(
+                    f"{path} still pins prior-minor package "
+                    f"{stale_package_pin.group(0)}"
+                )
             for stale in stale_pins:
                 if stale in text:
                     raise SystemExit(f"{path} still pins {stale}")

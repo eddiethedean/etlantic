@@ -14,7 +14,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
   phase, deprecation evidence, and persistent-format compatibility handling
 
 Breaking changes must be documented. Official plugin packages currently share
-the core minor version (for example `0.37.0`).
+the core minor version (for example `0.38.0`).
 Official plugins declare `etlantic>=0.38.0,<0.39`.
 
 ## Package categories
@@ -34,7 +34,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes thirteen distributions:
+Tag `vX.Y.Z` publishes sixteen distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -51,6 +51,9 @@ Tag `vX.Y.Z` publishes thirteen distributions:
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | **compatibility redirect** → medallantic |
 | `etlantic-fastapi` | `packages/etlantic-fastapi` | thin reference adapter (since 0.24) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
+| `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
+| `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
+| `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
 
 ## Pre-Release Checklist
 
@@ -96,8 +99,8 @@ Tag `vX.Y.Z` publishes thirteen distributions:
    existing projects. Prefer Trusted Publishing / OIDC when configured;
    otherwise use the least-privilege token documented for this repository.
    Treat long-lived user tokens and first-project bootstrap as exceptional.
-   Experimental `etlantic-datafusion` may be a brand-new PyPI name on first
-   publish—pace new-project creates accordingly.
+   For 0.38.0, `etlantic-s3`, `etlantic-iceberg`, and `etlantic-snowflake` are
+   brand-new PyPI names—pace new-project creates accordingly.
 8. **New distribution bootstrap only:** if introducing a brand-new PyPI name,
    review `scripts/check_release.py` output and PyPI new-project rate limits
    (`429 Too many new projects created`). Release CI waits between brand-new
@@ -129,11 +132,11 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all thirteen wheels/sdists.
+3. Builds all sixteen wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
-5. Publishes to PyPI: **existing projects first** (all thirteen packages are
-   established uploads as of 0.26; brand-new names are exceptional),
+5. Publishes to PyPI: **existing projects first** (thirteen established
+   projects, then the three new 0.38 experimental connector projects),
    **10-minute** gaps only between brand-new project creates; skips files
    already present via `--check-url`; retries on transient 429s.
 6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
@@ -166,7 +169,7 @@ Release notes should state:
 Major and high-risk minor releases should publish a release candidate:
 
 ```text
-0.37.0rc1
+0.38.0rc1
 ```
 
 Validate installation, end-to-end examples, external plugin compatibility, and
@@ -198,7 +201,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.37 plugins, `etlantic>=0.38.0,<0.39`). A core
+0.38 plugins, `etlantic>=0.38.0,<0.39`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

@@ -50,8 +50,8 @@ job = service.submit_run("demo")
 Install the optional package (same minor as core):
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.37.0'
-# or: python -m pip install 'etlantic[fastapi]==0.37.0'
+python -m pip install 'etlantic-fastapi==0.38.0'
+# or: python -m pip install 'etlantic[fastapi]==0.38.0'
 ```
 
 Contributor checkout (editable monorepo):

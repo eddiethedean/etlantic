@@ -3,6 +3,8 @@
 Apache Iceberg connector for [ETLantic](https://github.com/eddiethedean/etlantic)
 via PyIceberg.
 
+**Current release:** 0.38.0.
+
 **Maturity:** Experimental (Alpha classifier). CI uses an in-memory fake catalog;
 live PyIceberg is optional (`pip install "etlantic-iceberg[pyiceberg]"`).
 
@@ -14,7 +16,7 @@ Advertised sink modes today: **append** and **overwrite**.
 ## Install
 
 ```bash
-pip install etlantic-iceberg
+pip install 'etlantic-iceberg==0.38.0'
 ```
 
 Core dependency: `etlantic>=0.38.0,<0.39`.

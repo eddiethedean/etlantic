@@ -8,8 +8,8 @@
 > expression envelope used for planning and capability negotiation.
 
 !!! warning "Provisional"
-    `etlantic.quality` may change with migration notes before 0.37. Prefer
-    documented helpers below; pin core to `==0.37.0` in pilots.
+    `etlantic.quality` may change with migration notes in a future minor. Prefer
+    documented helpers below; pin core to `==0.38.0` in pilots.
 
 ## Behavioral contracts
 

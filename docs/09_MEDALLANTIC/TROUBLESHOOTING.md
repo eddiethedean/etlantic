@@ -7,7 +7,7 @@ Install matching ETLantic and Medallantic minors:
 ```bash
 python -m pip install --upgrade \
   'etlantic==0.38.0' \
-  'medallantic==0.37.0'
+  'medallantic==0.38.0'
 ```
 
 ## Unknown source or cycle
@@ -49,4 +49,3 @@ Keep rejected rows in bounded runtime artifacts rather than reports.
 uv sync --locked --group medallantic
 uv run pytest -q tests/medallantic -m medallantic
 ```
-

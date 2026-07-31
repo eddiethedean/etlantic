@@ -1,9 +1,8 @@
 # Landing-Zone File Connector Plan
 
-> **Status: In progress for post-foundation connectivity (0.38 Wave 0 —
-> specification freeze) with continuous trigger and control-plane composition
-> in 0.39+.** Not available in shipped ETLantic 0.37.0; package version not
-> bumped yet.
+> **Status: Shipped in ETLantic 0.38.0 for snapshot and incremental modes;
+> continuous trigger and control-plane composition remain 0.39+.** See the
+> [0.38 exit gate](EXIT_GATE_0_38.md) for exact acceptance evidence.
 
 ## Outcome
 

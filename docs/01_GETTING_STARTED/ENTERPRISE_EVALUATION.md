@@ -76,23 +76,23 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 |---|---|
 | Version pins | Pin `etlantic==0.38.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 | SBOM / attestations | Release CI digests + GitHub attestations — see [Verify release attestations](#verify-release-attestations) below |
 
 ### Verify release attestations
 
-For a published GitHub Release asset (example: wheel from the `v0.37.0` release):
+For a published GitHub Release asset (example: wheel from the `v0.38.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
-gh attestation verify path/to/etlantic-0.37.0-*.whl \
+gh attestation verify path/to/etlantic-0.38.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```
 
-After the v0.37.0 tag workflow succeeds, expect a per-artifact SHA-256
+After the v0.38.0 tag workflow succeeds, expect a per-artifact SHA-256
 manifest (`release-artifacts.json`) and GitHub build provenance attestations.
 CycloneDX SBOM generation is optional: the release may include
 `etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published

@@ -18,7 +18,7 @@ mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
 
-Confirm `python -m etlantic --version` prints `0.37.0`.
+Confirm `python -m etlantic --version` prints `0.38.0`.
 
 ## 2. Reshape transform
 

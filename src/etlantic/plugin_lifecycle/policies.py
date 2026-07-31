@@ -176,7 +176,7 @@ class BaseAuthorizationPolicy:
                                 f"Production plugin_allowlist entry for "
                                 f"{item.distribution_name or item.name!r} "
                                 f"requires a non-empty version pin "
-                                f"(for example '==0.37.0')."
+                                f"(for example '==X.Y.Z')."
                             ),
                             path=("plugin", item.distribution_name or item.name),
                             phase="plugin_authorize",

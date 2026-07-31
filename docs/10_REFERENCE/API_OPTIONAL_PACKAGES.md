@@ -27,6 +27,9 @@ install and narrative home.
 - [etlantic-keyring](api_optional/etlantic_keyring.md) — OS keyring secret provider
 - [etlantic-sqlmodel](api_optional/etlantic_sqlmodel.md) — SQLModel bridge helpers
 - [etlantic-datafusion](api_optional/etlantic_datafusion.md) — Experimental DataFusion stub
+- [etlantic-s3](api_optional/etlantic_s3.md) — Experimental S3-compatible connectors
+- [etlantic-iceberg](api_optional/etlantic_iceberg.md) — Experimental Iceberg connectors
+- [etlantic-snowflake](api_optional/etlantic_snowflake.md) — Experimental Snowflake connectors
 - [etlantic-fastapi](api_optional/etlantic_fastapi.md) — FastAPI reference adapter
 - [medallantic](api_optional/medallantic.md) — Medallion facade + SparkForge migrate
 
@@ -109,6 +112,33 @@ The directives below keep root-level coverage discoverable from this hub:
 ## etlantic-datafusion
 
 ::: etlantic_datafusion
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-s3
+
+::: etlantic_s3
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-iceberg
+
+::: etlantic_iceberg
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-snowflake
+
+::: etlantic_snowflake
     options:
       show_source: false
       members_order: source
