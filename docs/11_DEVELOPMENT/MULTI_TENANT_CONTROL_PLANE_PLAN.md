@@ -492,7 +492,12 @@ Deliver:
 - workspace-scoped catalog, validate, plan, submit, observe, and cancel;
 - durable-acceptance and idempotency contracts;
 - non-enumerating errors, bounded pagination, and authorized event streams;
-- protocol conformance fakes that require scope on every repository call.
+- protocol conformance fakes that require scope on every repository call;
+- landing-zone continuous trigger composition: file-drop / directory-watch
+  sensors may submit durable runs against the same logical pipeline and 0.38
+  snapshot/incremental landing-zone bindings under tenant-scoped
+  authorization (see
+  [Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md)).
 
 Exit:
 
@@ -500,7 +505,9 @@ Exit:
 - every operation has an action/resource authorization test;
 - the API embeds without owning application identity or lifespan policy;
 - no heavy execution uses API-process background tasks;
-- no production multi-tenant claim is made yet.
+- no production multi-tenant claim is made yet;
+- continuous landing-zone triggers are documented as submitters, not as a
+  third pipeline authoring kind.
 
 ### CP2 — Registry and persistence isolation (0.40)
 
@@ -512,6 +519,9 @@ Deliver:
 - registry, schema-history, artifact-metadata, report, event, and policy
   repositories;
 - promotion, aliases, signatures, provenance, and tenant-scoped cursors;
+- workspace-scoped Safe I/O roots and authorized checkpoint stores for
+  landing-zone connectors (compose with
+  [Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md));
 - stable identity mappings for pipeline, step, run, attempt, input, output,
   contract, plan, schema-observation, and artifact revisions;
 - optional outbound OpenLineage provider with tenant/workspace/environment

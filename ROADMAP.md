@@ -3544,13 +3544,28 @@ packages.
   rows;
 - a compatibility matrix for ETLantic, connector, external service or format,
   and Python versions;
-- at least one independently maintained third-party connector.
+- at least one independently maintained third-party connector;
+- a **local file landing-zone reference connector** so authors choose, at
+  binding/profile design time, how a periodically populated directory is
+  consumed without rewriting the logical pipeline:
+  - **batch snapshot** — each run lists and reads matching files (e.g. `*.csv`)
+    under a Safe I/O root in deterministic order;
+  - **incremental** — only new/unprocessed files since the last successfully
+    committed cursor; cursor must not advance after an uncommitted write;
+  - idempotent consume/cleanup (rename, archive, or ledger) so retries do not
+    double-commit;
+  - continuous **file-drop watching** remains a trigger/submitter concern
+    (compose in 0.39+); the extract stays snapshot or incremental.
+
+Exact authoring and phase split:
+[Landing-Zone File Connector Plan](docs/11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md).
 
 #### Reference set
 
 The exit candidate must prove:
 
-- one local reference connector suitable for deterministic CI;
+- one local reference connector suitable for deterministic CI (**including
+  directory/glob CSV landing-zone batch snapshot and incremental modes**);
 - one S3-compatible object-storage path with Parquet;
 - one open table-format path using Iceberg or Delta;
 - one cloud warehouse path using Snowflake or BigQuery;
@@ -3573,10 +3588,13 @@ allowlist it explicitly.
   secrets;
 - live-system conformance publishes isolation, cost, rate-limit, and cleanup
   controls;
-- an independent connector passes public conformance without private imports.
+- an independent connector passes public conformance without private imports;
+- landing-zone batch and incremental modes are selectable via binding/profile
+  without changing `Extract` topology; missing mode capability fails at plan.
 
 See the
-[Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md)
+[Adoption, Connectivity, and Operations Plan](docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md),
+the [Landing-Zone File Connector Plan](docs/11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md),
 and the [Storage Plugin design](docs/07_PLUGIN_SDK/STORAGE_PLUGIN.md).
 
 ### First-class control-plane program
@@ -3587,12 +3605,18 @@ policy/audit hardening. These are incubation gates for a 0.43 graduation, not
 four unrelated optional experiments. ETLantic core remains a library, and no
 phase claims in-process isolation for mutually untrusted Python.
 
+**Landing-zone composition in 0.39+:** continuous directory watches and
+file-drop sensors submit durable control-plane runs against the same logical
+pipeline and 0.38 landing-zone bindings; tenant/workspace-scoped Safe I/O
+roots and authorized checkpoint stores are control-plane concerns. See
+[Landing-Zone File Connector Plan](docs/11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md).
+
 The authoritative integrated gates are in the
 [Multi-Tenant Control Plane Plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## 0.39 — Multi-Tenant Control Plane: API and Identity Foundation
 
-**Status:** Planned CP1 incubation; not shipped in 0.33.
+**Status:** Planned CP1 incubation; not shipped in 0.37.
 
 **Objective:** establish typed, tenant-aware control-plane contracts and a
 deny-by-default HTTP/SDK boundary without treating the API process as a worker
@@ -3626,7 +3650,11 @@ Deliver:
 - optional SQLModel-backed reference stores for registry, runs, reports,
   events, schema observations, reliability evidence, and approvals;
 - separate request, persistence, and response models where fields or security
-  boundaries differ.
+  boundaries differ;
+- **landing-zone continuous trigger hook:** file-drop / directory-watch
+  sensors may call the durable submission API so the same 0.38
+  snapshot/incremental landing-zone binding runs under tenant-scoped
+  authorization (no in-process watch loop in core).
 
 Acceptance:
 

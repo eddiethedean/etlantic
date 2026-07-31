@@ -176,6 +176,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Capability | Status |
 |---|---|
 | Source/sink/storage connector SDK and reference set | Planned first-class for 0.38 |
+| Directory / CSV landing-zone connector (batch + incremental; continuous trigger in 0.39+) | Planned — [Landing-zone plan](../11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md) |
 | OpenLineage metadata interoperability | Planned as a tenant-aware 0.40 gate |
 | GitOps preview-to-production workflow | Planned across 0.41–0.43 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |

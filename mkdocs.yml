@@ -513,6 +513,7 @@ nav:
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Planning:
           - Planning hub: 11_DEVELOPMENT/PLAN_INDEX.md
+          - Landing-zone connector plan: 11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md
           - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
           - 0.37 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_37.md
           - 0.36 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_36.md

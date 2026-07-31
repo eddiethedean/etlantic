@@ -95,8 +95,10 @@ Use the
 [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 for release order, [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for
 current availability, and [architecture decisions](ARCHITECTURE_DECISIONS.md)
-for locked boundaries. Historical material remains available through the
-[archive index](ARCHIVE_INDEX.md).
+for locked boundaries. Post-foundation connectivity includes the
+[Landing-zone file connector plan](LANDING_ZONE_CONNECTOR_PLAN.md) (batch and
+incremental in 0.38; continuous triggers in 0.39+). Historical material remains
+available through the [archive index](ARCHIVE_INDEX.md).
 
 The [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) chapter
 defines how design examples, proposals, and normative requirements should be

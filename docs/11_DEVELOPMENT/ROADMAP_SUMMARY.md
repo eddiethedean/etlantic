@@ -253,19 +253,28 @@ connectivity and connector SDK program:
   relational reference paths;
 - explicit incremental cursor, transaction, publication, reconciliation, and
   cleanup semantics;
-- measurable connector maturity and support levels.
+- measurable connector maturity and support levels;
+- **local file landing-zone** modes chosen when designing bindings:
+  batch snapshot and incremental directory/glob consume (e.g. periodic CSV
+  drops); continuous watch is a run-submitter concern composed in **0.39+**.
 
-TransformationModel incubation moves to 0.52. See the
-[Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md).
+See the
+[Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md) and
+[Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md).
+
+TransformationModel incubation moves to 0.52.
 
 ## First-class control-plane program
 
 The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
-- **0.39 / CP1:** typed API, identity context, authorization, and idempotency
+- **0.39 / CP1:** typed API, identity context, authorization, and idempotency;
+  durable submission hooks for continuous landing-zone file-drop triggers
+  against 0.38 snapshot/incremental bindings
 - **0.40 / CP2:** tenant/workspace registry, persistence isolation, stable
-  metadata identities, and outbound OpenLineage preview
+  metadata identities, and outbound OpenLineage preview; workspace-scoped
+  landing roots and checkpoint stores
 - **0.41 / CP3:** durable submission, leases, fencing, state, recovery, and
   bounded GitOps preview workspaces
 - **0.42 / CP4:** policy, quotas, audit evidence, preview promotion controls,

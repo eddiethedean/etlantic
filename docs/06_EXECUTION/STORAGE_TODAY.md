@@ -47,4 +47,5 @@ contracts and plans.
 - [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) — memory seed/run
 - [File storage example](https://github.com/eddiethedean/etlantic/blob/main/examples/file_storage.py)
 - [Storage plugin protocol (planned 0.38)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
+- [Landing-zone file connector (planned 0.38 / continuous in 0.39+)](../11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md)
 - [Storage plugins design study (not shipped)](STORAGE_PLUGINS.md)

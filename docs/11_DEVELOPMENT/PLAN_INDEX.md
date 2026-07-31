@@ -32,6 +32,7 @@ Status is relative to ETLantic **0.37.0** (stable-foundation line; gate in progr
 | [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | In-progress milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | Close [EXIT_GATE_0_37](EXIT_GATE_0_37.md) |
 | [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
 | [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing graduates in 0.37; connectivity follows | Continues through 0.52 |
+| [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Planned (0.38 + 0.39+ composition) | Single-file CSV only in 0.37 | Batch/incremental in 0.38; continuous trigger in 0.39+ |
 | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.37 does not provide a production multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Control-plane work begins at 0.39 |

@@ -159,13 +159,22 @@ pipeline definitions.
 - compatibility records covering ETLantic, provider, service API, file/table
   format, and Python versions;
 - bounded schema and statistics inspection that never retains source rows;
-- at least one independently maintained third-party connector.
+- at least one independently maintained third-party connector;
+- a **local file landing-zone reference connector** (see
+  [Landing-Zone File Connector Plan](LANDING_ZONE_CONNECTOR_PLAN.md)) so
+  pipeline authors choose at binding/profile design time among:
+  - **batch snapshot** — read all matching files under a Safe I/O root each run;
+  - **incremental** — only new/unprocessed files since a committed cursor;
+  - **continuous** triggers (watch/sensor) that submit runs without changing
+    Extract topology — continuous composition is owned with **0.39+**
+    control-plane durable submission.
 
 ### Reference set
 
 The 0.38 exit candidate must include:
 
-- one local reference connector suitable for deterministic CI;
+- one local reference connector suitable for deterministic CI (**directory/glob
+  CSV landing-zone batch snapshot and incremental modes required**);
 - one S3-compatible object-storage path with Parquet;
 - one open table-format path using Iceberg or Delta;
 - one cloud warehouse path using Snowflake or BigQuery;
@@ -188,6 +197,11 @@ every listed dependency part of core.
 6. Production profiles reject unapproved connector packages before import.
 7. Live-system tests publish cost, account-isolation, cleanup, and rate-limit
    controls.
+8. Landing-zone **batch** and **incremental** modes are selected via
+   binding/profile without rewriting `Extract` topology; requesting an
+   unsupported mode fails at plan.
+9. Continuous file-drop watching is documented as a **trigger** that submits
+   runs (0.39+ durable submission), not as a third logical pipeline kind.
 
 ## MI — Metadata and Catalog Interoperability { #metadata-and-catalog-interoperability }
 
