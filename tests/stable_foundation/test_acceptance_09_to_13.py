@@ -109,7 +109,7 @@ def test_sf_09_lifecycle_middleware_resource_callback_outbound_logging_redaction
     runtime.add_run_middleware(mw, name="sf09")
     runtime.override_resource("db", provide_db)
     runtime.callbacks.on_step_failed(
-        lambda _ctx: (failed_callbacks.append("step_failed") or FailureAction.CONTINUE)
+        lambda _ctx: failed_callbacks.append("step_failed") or FailureAction.CONTINUE
     )
     runtime.memory.seed("rows", [_Sf09Row(id=1)])
     report = _Sf09ResourcePipeline.run(profile="development", runtime=runtime)
@@ -119,7 +119,7 @@ def test_sf_09_lifecycle_middleware_resource_callback_outbound_logging_redaction
 
     boom_runtime = PipelineRuntime()
     boom_runtime.callbacks.on_step_failed(
-        lambda _ctx: (failed_callbacks.append("step_failed") or FailureAction.CONTINUE)
+        lambda _ctx: failed_callbacks.append("step_failed") or FailureAction.CONTINUE
     )
     boom_runtime.memory.seed("rows", [_Sf09Row(id=1)])
     boom_report = _Sf09BoomPipeline.run(profile="development", runtime=boom_runtime)

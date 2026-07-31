@@ -35,9 +35,7 @@ def _provider_takes_context(provider: Callable[..., Any]) -> bool:
         sig = inspect.signature(provider)
     except (TypeError, ValueError):
         return True
-    if any(
-        p.kind is inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()
-    ):
+    if any(p.kind is inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()):
         return True
     if "context" in sig.parameters:
         return True

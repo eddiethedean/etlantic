@@ -420,9 +420,7 @@ def run_pipeline_case(
             plan_blob = _normalize_plan(plan)
             for asset, rows in dict(case.seed).items():
                 rt.memory.seed(asset, list(rows))
-            report = pipe.run(
-                profile=resolved_profile, runtime=rt, context=plan_ctx
-            )
+            report = pipe.run(profile=resolved_profile, runtime=rt, context=plan_ctx)
             report_blob = _normalize_report(report)
             status = (
                 report.status.value

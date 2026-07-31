@@ -33,7 +33,7 @@ def test_datacontractmodel_removed() -> None:
     with pytest.raises(
         AttributeError, match=r"removed from the etlantic root in 0\.37\.0"
     ):
-        getattr(etlantic, "DataContractModel")
+        _ = etlantic.DataContractModel
 
 
 def test_author_with_data() -> None:

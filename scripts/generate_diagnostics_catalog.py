@@ -68,12 +68,8 @@ def main() -> None:
             "human-oriented"
         )
         print("> meanings. This page is the exhaustive code→source index. Family")
-        print(
-            "> stability tiers (`stable` / `provisional` / `experimental`):"
-        )
-        print(
-            "> [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md)."
-        )
+        print("> stability tiers (`stable` / `provisional` / `experimental`):")
+        print("> [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md).")
         print()
         print("| Code | Example source paths |")
         print("|---|---|")

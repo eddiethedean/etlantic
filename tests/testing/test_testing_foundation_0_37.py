@@ -18,8 +18,8 @@ Burn-in corpus from 0.36 remains in ``test_application_pipeline_burn_in_0_36.py`
 
 from __future__ import annotations
 
-import asyncio
 import ast
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -186,7 +186,9 @@ def test_independent_app_pipeline_via_public_testing() -> None:
     assert "should-never" not in blob
 
 
-def test_fault_and_write_injection_via_public_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fault_and_write_injection_via_public_fakes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("ETLANTIC_FAULT_INJECTION", "1")
     case = PipelineTestCase(
         case_id="foundation_load_fault",
@@ -198,9 +200,7 @@ def test_fault_and_write_injection_via_public_fakes(monkeypatch: pytest.MonkeyPa
             )
         },
         expected=ExpectedResult(status="failed"),
-        faults=(
-            FaultSpec(boundary=FaultBoundary.LOAD, message="injected-write-fail"),
-        ),
+        faults=(FaultSpec(boundary=FaultBoundary.LOAD, message="injected-write-fail"),),
         metadata={"foundation": FOUNDATION},
     )
     result = run_pipeline_case(case, runtime=PipelineRuntime())

@@ -6,7 +6,7 @@
     "silver_orders"
   ],
   "convertibility": "manual",
-  "definition_fingerprint": "842417068432547776fc2c21f61e4039d7458241a6d9dba688d5e5dab62dcdbf",
+  "definition_fingerprint": "ba1b2319f4087c74f7bbc2863ecb8432507e88bc02f77fc42b8eeafac8317947",
   "generator_id": "medallantic.migrate.generate",
   "node_names": [
     "orders__ingest",

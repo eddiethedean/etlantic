@@ -60,7 +60,7 @@ def test_demoted_alias_removed() -> None:
     with pytest.raises(
         AttributeError, match=r"removed from the etlantic root in 0\.37\.0"
     ):
-        getattr(etlantic, "Edge")
+        _ = etlantic.Edge
     from etlantic.model import Edge
 
     assert Edge is etlantic.model.Edge

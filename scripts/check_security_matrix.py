@@ -23,9 +23,7 @@ REQUIRED_FIELDS = ("id", "name", "owner", "verification", "residual_risk")
 CONTROL_ID_RE = re.compile(r"^SEC-[A-Z0-9-]+$")
 # Full matrix rows have five content columns (id, name, owner, verification,
 # residual). Shorter summary tables (e.g. Partial rationale) are ignored.
-MD_MATRIX_ROW_RE = re.compile(
-    r"^\|\s*(SEC-[A-Z0-9-]+)\s*\|(?:[^|\n]*\|){4}\s*$"
-)
+MD_MATRIX_ROW_RE = re.compile(r"^\|\s*(SEC-[A-Z0-9-]+)\s*\|(?:[^|\n]*\|){4}\s*$")
 
 
 def _load_matrix() -> dict[str, Any]:
@@ -58,7 +56,9 @@ def _validate_control(control: dict[str, Any], index: int) -> list[str]:
             if not isinstance(value, list) or not value:
                 errors.append(f"{label}: verification must be a non-empty list")
             elif any(not isinstance(item, str) or not item.strip() for item in value):
-                errors.append(f"{label}: verification entries must be non-empty strings")
+                errors.append(
+                    f"{label}: verification entries must be non-empty strings"
+                )
         elif not isinstance(value, str) or not value.strip():
             errors.append(f"{label}: {field} must be a non-empty string")
 
@@ -68,7 +68,9 @@ def _validate_control(control: dict[str, Any], index: int) -> list[str]:
 
     status = control.get("status")
     if status not in {"mandatory", "partial"}:
-        errors.append(f"{label}: status must be 'mandatory' or 'partial' (got {status!r})")
+        errors.append(
+            f"{label}: status must be 'mandatory' or 'partial' (got {status!r})"
+        )
 
     # Mandatory rows explicitly called out by the exit gate.
     if status == "mandatory":
@@ -144,9 +146,7 @@ def main(argv: list[str] | None = None) -> int:
             "markdown missing control ids from JSON: " + ", ".join(missing_from_md)
         )
     if extra_in_md:
-        errors.append(
-            "markdown has control ids not in JSON: " + ", ".join(extra_in_md)
-        )
+        errors.append("markdown has control ids not in JSON: " + ", ".join(extra_in_md))
 
     if errors:
         print("Security verification matrix gate FAILED:")
