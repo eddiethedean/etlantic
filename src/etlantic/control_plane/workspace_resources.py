@@ -21,6 +21,11 @@ from etlantic.control_plane.redaction import redact_control_plane_payload
 WORKSPACE_RESOURCE_RECORD_SCHEMA = "etlantic.control_plane.workspace_resource_record/1"
 
 
+def _safe_metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    redacted = redact_control_plane_payload(dict(value or {}))
+    return dict(redacted) if isinstance(redacted, dict) else {}
+
+
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
@@ -97,7 +102,7 @@ def reject_symlink_or_traversal(
             )
 
     try:
-        resolved = raw.resolve(strict=False)
+        resolved = raw_absolute.resolve(strict=False)
     except (OSError, RuntimeError) as exc:
         raise ControlPlaneError.conflict(
             "Failed to resolve workspace root path",
@@ -177,7 +182,7 @@ class WorkspaceResourceRecord:
             "preview_namespace": self.preview_namespace,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod

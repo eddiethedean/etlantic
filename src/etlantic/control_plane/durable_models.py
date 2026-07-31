@@ -11,7 +11,10 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_control_plane_text,
+)
 
 SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
 OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
@@ -23,7 +26,7 @@ REPLAY_RECORD_SCHEMA = "etlantic.control_plane.replay_record/1"
 PREVIEW_WORKSPACE_SCHEMA = "etlantic.control_plane.preview_workspace/1"
 
 SubmissionStatus = Literal[
-    "accepted", "dispatched", "cancel_requested", "completed", "failed"
+    "accepted", "dispatched", "cancel_requested", "cancelled", "completed", "failed"
 ]
 AttemptStatus = Literal["running", "cancelled", "completed", "failed", "lost"]
 EffectStatus = Literal[
@@ -50,6 +53,8 @@ class SubmissionRecord:
     plugin_fingerprint: str | None = None
     policy_fingerprint: str | None = None
     input_snapshot: str | None = None
+    principal_issuer: str | None = None
+    principal_kind: str = "human"
     status: SubmissionStatus = "accepted"
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
@@ -154,6 +159,16 @@ class EffectRecord:
         return {
             "schema": EFFECT_RECORD_SCHEMA,
             **asdict(self),
+            "idempotency_evidence": (
+                redact_control_plane_text(self.idempotency_evidence)
+                if self.idempotency_evidence is not None
+                else None
+            ),
+            "reconciliation_evidence": (
+                redact_control_plane_text(self.reconciliation_evidence)
+                if self.reconciliation_evidence is not None
+                else None
+            ),
             "metadata": _metadata(self.metadata),
         }
 

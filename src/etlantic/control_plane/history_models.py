@@ -12,6 +12,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from etlantic.control_plane.redaction import redact_control_plane_payload
+
 SCHEMA_OBSERVATION_RECORD_SCHEMA = "etlantic.control_plane.schema_observation_record/1"
 RELIABILITY_OBSERVATION_RECORD_SCHEMA = (
     "etlantic.control_plane.reliability_observation_record/1"
@@ -79,6 +81,12 @@ def assert_history_metadata_only(metadata: Mapping[str, Any] | None) -> None:
         )
 
 
+def _safe_metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    assert_history_metadata_only(value)
+    redacted = redact_control_plane_payload(dict(value or {}))
+    return dict(redacted) if isinstance(redacted, dict) else {}
+
+
 def _wire_bool(value: Any, *, field_name: str) -> bool:
     """Decode a JSON boolean without treating non-empty strings as true."""
     if isinstance(value, bool):
@@ -125,7 +133,7 @@ class SchemaObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -188,7 +196,7 @@ class ReliabilityObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -245,7 +253,7 @@ class PlanObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -297,7 +305,7 @@ class ImpactEdge:
             "source_fingerprint": self.source_fingerprint,
             "target_kind": self.target_kind,
             "target_logical_id": self.target_logical_id,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -335,7 +343,7 @@ class CacheInvalidationEvent:
             "reason": self.reason,
             "target_fingerprints": list(self.target_fingerprints),
             "created_at": self.created_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod

@@ -25,6 +25,10 @@ from etlantic.control_plane.durable_models import (
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_control_plane_text,
+)
 
 
 def _now() -> datetime:
@@ -48,7 +52,7 @@ class MemoryDurableWorkStore:
 
     def __init__(self) -> None:
         self._submissions: dict[tuple[str, str, str], SubmissionRecord] = {}
-        self._idempotency: dict[tuple[str, str, str, str, str], str] = {}
+        self._idempotency: dict[tuple[str, str, str, str, str, str, str], str] = {}
         self._outbox: dict[tuple[str, str, str], OutboxRecord] = {}
         self._leases: dict[tuple[str, str, str], LeaseRecord] = {}
         self._attempts: dict[tuple[str, str, str], AttemptRecord] = {}
@@ -69,7 +73,22 @@ class MemoryDurableWorkStore:
         policy_fingerprint: str | None = None,
         input_snapshot: str | None = None,
     ) -> tuple[SubmissionRecord, bool]:
-        idem = (*_scope(ctx), ctx.principal.subject, operation, idempotency_key)
+        self._require_nonempty(
+            idempotency_key,
+            "idempotency_key",
+            operation,
+            "operation",
+            plan_fingerprint,
+            "plan_fingerprint",
+        )
+        idem = (
+            *_scope(ctx),
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            operation,
+            idempotency_key,
+        )
         requested = (
             plan_fingerprint,
             revision_id,
@@ -106,6 +125,8 @@ class MemoryDurableWorkStore:
                 plugin_fingerprint,
                 policy_fingerprint,
                 input_snapshot,
+                ctx.principal.issuer,
+                ctx.principal.kind,
             )
             payload = hashlib.sha256(
                 "|".join(str(v or "") for v in requested).encode()
@@ -121,6 +142,12 @@ class MemoryDurableWorkStore:
             self._outbox[(*_scope(ctx), outbox.outbox_id)] = outbox
             self._idempotency[idem] = submission_id
             return deepcopy(record), True
+
+    @staticmethod
+    def _require_nonempty(*values: str) -> None:
+        for value, name in zip(values[::2], values[1::2], strict=True):
+            if not value.strip():
+                raise ValueError(f"{name} must not be empty")
 
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
@@ -149,6 +176,23 @@ class MemoryDurableWorkStore:
                 )
             return deepcopy(row)
 
+    def cancel_submission(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> SubmissionRecord:
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            submission = self._submissions.get(key)
+            if submission is None:
+                raise ControlPlaneError.not_found("Submission not found")
+            if submission.status in {"cancelled", "completed", "failed"}:
+                raise ControlPlaneError.conflict(
+                    "Terminal submission cannot be cancelled"
+                )
+            if submission.status != "cancel_requested":
+                submission = replace(submission, status="cancel_requested")
+                self._submissions[key] = submission
+            return deepcopy(submission)
+
     def acquire_lease(
         self,
         ctx: ControlPlaneContext,
@@ -161,8 +205,18 @@ class MemoryDurableWorkStore:
             raise ValueError("ttl_seconds must be positive")
         key = (*_scope(ctx), submission_id)
         with self._lock:
-            if key not in self._submissions:
+            submission = self._submissions.get(key)
+            if submission is None:
                 raise ControlPlaneError.not_found("Submission not found")
+            if submission.status in {
+                "cancel_requested",
+                "cancelled",
+                "completed",
+                "failed",
+            }:
+                raise ControlPlaneError.conflict(
+                    "Submission is not eligible for execution"
+                )
             old = self._leases.get(key)
             now = _now()
             if (
@@ -199,6 +253,8 @@ class MemoryDurableWorkStore:
         fencing_token: int,
         ttl_seconds: int,
     ) -> LeaseRecord:
+        if ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
         key = (*_scope(ctx), submission_id)
         with self._lock:
             old = self._require_lease(key, owner_id, fencing_token)
@@ -235,6 +291,23 @@ class MemoryDurableWorkStore:
         key = (*_scope(ctx), submission_id)
         with self._lock:
             self._require_lease(key, owner_id, fencing_token)
+            submission = self._submissions[key]
+            if submission.status == "cancel_requested":
+                raise ControlPlaneError.conflict(
+                    "Cancelled submission cannot start an attempt"
+                )
+            if submission.status in {"cancelled", "completed", "failed"}:
+                raise ControlPlaneError.conflict(
+                    "Terminal submission cannot start an attempt"
+                )
+            if any(
+                attempt.submission_id == submission_id and attempt.status == "running"
+                for (tenant, workspace, _), attempt in self._attempts.items()
+                if (tenant, workspace) == _scope(ctx)
+            ):
+                raise ControlPlaneError.conflict(
+                    "Submission already has a running attempt"
+                )
             record = AttemptRecord(
                 f"att-{uuid.uuid4().hex[:16]}",
                 submission_id,
@@ -269,6 +342,14 @@ class MemoryDurableWorkStore:
                 return deepcopy(attempt)
             result = replace(attempt, status=status, completed_at=_iso())
             self._attempts[key] = result
+            submission_key = (*_scope(ctx), attempt.submission_id)
+            submission = self._submissions[submission_key]
+            terminal_status = "completed" if status == "completed" else "failed"
+            if status == "cancelled" or submission.status == "cancel_requested":
+                terminal_status = "cancelled"
+            self._submissions[submission_key] = replace(
+                submission, status=terminal_status
+            )
             return deepcopy(result)
 
     def compare_and_swap_checkpoint(
@@ -317,27 +398,66 @@ class MemoryDurableWorkStore:
     def record_effect(
         self, ctx: ControlPlaneContext, effect: EffectRecord
     ) -> EffectRecord:
+        if effect.status not in {
+            "none",
+            "pending",
+            "committed",
+            "not_committed",
+            "failed",
+            "unknown",
+        }:
+            raise ValueError("unsupported external effect status")
+        self._require_nonempty(
+            effect.effect_id,
+            "effect_id",
+            effect.submission_id,
+            "submission_id",
+        )
         if (effect.tenant_id, effect.workspace_id) != _scope(ctx):
             raise ControlPlaneError.not_found("Effect not found")
-        if effect.status == "unknown" and not (
-            effect.idempotency_evidence or effect.reconciliation_evidence
-        ):
-            # Unknown effects stay visible, but no automatic retry evidence exists.
-            pass
+        metadata = redact_control_plane_payload(deepcopy(dict(effect.metadata)))
+        safe_effect = replace(
+            effect,
+            metadata=dict(metadata) if isinstance(metadata, dict) else {},
+            idempotency_evidence=(
+                redact_control_plane_text(effect.idempotency_evidence)
+                if effect.idempotency_evidence is not None
+                else None
+            ),
+            reconciliation_evidence=(
+                redact_control_plane_text(effect.reconciliation_evidence)
+                if effect.reconciliation_evidence is not None
+                else None
+            ),
+        )
         with self._lock:
-            if (*_scope(ctx), effect.submission_id) not in self._submissions:
+            if (*_scope(ctx), safe_effect.submission_id) not in self._submissions:
                 raise ControlPlaneError.not_found("Submission not found")
-            existing = self._effects.get((*_scope(ctx), effect.effect_id))
+            existing = self._effects.get((*_scope(ctx), safe_effect.effect_id))
             if (
                 existing is not None
                 and existing.status == "committed"
-                and effect.status != "committed"
+                and safe_effect.status != "committed"
             ):
                 raise ControlPlaneError.conflict(
                     "Committed external effect cannot be downgraded"
                 )
-            self._effects[(*_scope(ctx), effect.effect_id)] = deepcopy(effect)
-            return deepcopy(effect)
+            if (
+                existing is not None
+                and existing.status == "unknown"
+                and (
+                    safe_effect.status in {"none", "pending", "not_committed"}
+                    or (
+                        safe_effect.status == "committed"
+                        and not safe_effect.reconciliation_evidence
+                    )
+                )
+            ):
+                raise ControlPlaneError.conflict(
+                    "Unknown external effect requires reconciliation evidence"
+                )
+            self._effects[(*_scope(ctx), safe_effect.effect_id)] = deepcopy(safe_effect)
+            return deepcopy(safe_effect)
 
     def replay(
         self,
@@ -352,6 +472,12 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.not_found("Submission not found")
             if checkpoint_id and (*_scope(ctx), checkpoint_id) not in self._checkpoints:
                 raise ControlPlaneError.not_found("Checkpoint not found")
+            if checkpoint_id:
+                checkpoint = self._checkpoints[(*_scope(ctx), checkpoint_id)]
+                if checkpoint.submission_id not in {None, submission_id}:
+                    raise ControlPlaneError.conflict(
+                        "Checkpoint belongs to another submission"
+                    )
             return ReplayRecord(
                 f"rep-{uuid.uuid4().hex[:16]}",
                 submission_id,
@@ -376,6 +502,8 @@ class MemoryDurableWorkStore:
             )
         if preview.base_revision_id == preview.candidate_revision_id:
             raise ValueError("Preview candidate must differ from base revision")
+        if _parse(preview.expires_at) <= _now():
+            raise ValueError("Preview expiry must be in the future")
         with self._lock:
             self._previews[(*_scope(ctx), preview.preview_id)] = deepcopy(preview)
             return deepcopy(preview)

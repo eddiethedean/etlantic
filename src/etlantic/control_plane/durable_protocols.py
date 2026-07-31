@@ -38,6 +38,9 @@ class DurableWorkStore(Protocol):
     def mark_published(
         self, ctx: ControlPlaneContext, outbox_id: str
     ) -> OutboxRecord: ...
+    def cancel_submission(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> SubmissionRecord: ...
     def acquire_lease(
         self,
         ctx: ControlPlaneContext,

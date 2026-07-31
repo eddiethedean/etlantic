@@ -79,6 +79,24 @@ def _revision(**overrides: object) -> RegistryRevision:
     return RegistryRevision(**values)  # type: ignore[arg-type]
 
 
+def test_public_control_plane_record_serializers_redact_metadata() -> None:
+    secret_metadata = {"api_token": "super-secret-token"}
+    assert TenantRecord(tenant_id="tenant-a", metadata=secret_metadata).to_dict()[
+        "metadata"
+    ] == {"api_token": "***"}
+    assert WorkspaceResourceRecord(
+        tenant_id="tenant-a", workspace_id="ws-a", metadata=secret_metadata
+    ).to_dict()["metadata"] == {"api_token": "***"}
+    assert SchemaObservationRecord(
+        observation_id="obs",
+        tenant_id="tenant-a",
+        workspace_id="ws-a",
+        subject_id="orders",
+        schema_fingerprint="sha256:schema",
+        metadata=secret_metadata,
+    ).to_dict()["metadata"] == {"api_token": "***"}
+
+
 def test_environment_is_not_visible_or_reassignable_cross_workspace() -> None:
     provider = MemoryRegistryProvider()
     ctx_a, ctx_b = _ctx("ws-a"), _ctx("ws-b")

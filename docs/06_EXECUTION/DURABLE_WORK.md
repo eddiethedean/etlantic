@@ -10,6 +10,21 @@ in one provider transaction; dispatchers publish the outbox after commit.
 Execution hosts lease a submission before starting an attempt, and every host
 write carries a monotonically increasing fencing token.
 
+## State-machine invariants
+
+- Idempotency is scoped by tenant, workspace, operation, and the authenticated
+  issuer-qualified principal. A key may be replayed only with the same immutable
+  submission inputs.
+- A cancellation request prevents new leases and attempts. Once an attempt
+  acknowledges it, the submission is terminally `cancelled`; completed, failed,
+  and cancelled submissions cannot be leased again.
+- A submission has at most one running attempt. The attempt must hold the
+  current lease and fencing token for every terminal write or checkpoint.
+- Replay can select a workspace checkpoint only when it is global or belongs to
+  the source submission. A checkpoint owned by another submission is rejected.
+- Preview expiry must be in the future at creation time. Cleanup is reserved for
+  previews that expire after they were successfully recorded.
+
 `etlantic.control_plane.DurableWorkStore` is the provider contract. Its
 `MemoryDurableWorkStore` implementation is suitable for local development and
 conformance tests; production deployments must use a transactional provider.

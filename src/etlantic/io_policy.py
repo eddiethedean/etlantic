@@ -36,6 +36,22 @@ def _security_event(**kwargs: Any) -> Any:
     return SecurityEvent(**kwargs)
 
 
+def _root_refs(value: Any) -> tuple[str, ...]:
+    """Decode plan root aliases without accepting paths or string characters."""
+    raw = (value,) if isinstance(value, str) else tuple(value or ())
+    refs = tuple(str(item) for item in raw)
+    for root_ref in refs:
+        normalized = root_ref.replace("\\", "/")
+        if (
+            not root_ref.strip()
+            or normalized.startswith("/")
+            or (len(normalized) >= 2 and normalized[1] == ":")
+            or ".." in normalized.split("/")
+        ):
+            raise ValueError("safe_io root_refs must be relative, non-empty aliases")
+    return refs
+
+
 @dataclass(frozen=True, slots=True)
 class SafeIoPolicy:
     """Policy for contract/profile/report/history/cache/artifact/viz FS access."""
@@ -187,10 +203,9 @@ class SafeIoPlanPolicy:
         fail_on = data.get("fail_on_symlink")
         if fail_on is None:
             fail_on = symlink_policy == "reject"
-        root_refs_raw = data.get("root_refs") or ()
         return cls(
             version=str(data.get("version") or "safe_io_plan/1"),
-            root_refs=tuple(str(r) for r in root_refs_raw),
+            root_refs=_root_refs(data.get("root_refs")),
             max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
             symlink_policy=symlink_policy,  # type: ignore[arg-type]
             overwrite_policy=overwrite_policy,  # type: ignore[arg-type]

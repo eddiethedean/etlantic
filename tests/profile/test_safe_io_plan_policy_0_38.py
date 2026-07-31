@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import anyio
+import pytest
 
 from etlantic.connectors.local_files import LocalFilesSourceConnector
 from etlantic.io_policy import SafeIoPlanPolicy, SafeIoPolicy, sanitize_safe_io_for_plan
@@ -53,6 +54,15 @@ def test_profile_plan_snapshot_strips_absolute_safe_io_roots(tmp_path: Path) -> 
 def test_sanitize_empty_safe_io_preserves_empty() -> None:
     assert sanitize_safe_io_for_plan({}) == {}
     assert sanitize_safe_io_for_plan(None) == {}
+
+
+def test_safe_io_plan_root_refs_are_atomic_relative_aliases() -> None:
+    assert SafeIoPlanPolicy.from_safe_io({"root_refs": "landing"}).root_refs == (
+        "landing",
+    )
+    for unsafe_ref in ("/var/landing", "C:\\landing", "../landing", ""):
+        with pytest.raises(ValueError, match="relative"):
+            SafeIoPlanPolicy.from_safe_io({"root_refs": [unsafe_ref]})
 
 
 def test_source_plan_has_no_absolute_landing_root(tmp_path: Path) -> None:

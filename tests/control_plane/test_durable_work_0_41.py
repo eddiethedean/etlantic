@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -56,6 +57,32 @@ def test_accept_is_scoped_idempotent_and_creates_an_outbox_record() -> None:
         plan_fingerprint="plan-2",
     )
     assert other_created and other.submission_id != first.submission_id
+
+
+def test_accept_idempotency_is_issuer_qualified_and_rejects_empty_inputs() -> None:
+    store = MemoryDurableWorkStore()
+    first, _ = store.accept(
+        ctx(), idempotency_key="same", operation="run.submit", plan_fingerprint="plan"
+    )
+    different_issuer = ControlPlaneContext(
+        principal=Principal("worker-a", issuer="another-issuer"),
+        tenant=TenantRef("tenant-a"),
+        workspace=WorkspaceRef("tenant-a", "workspace-a"),
+        environment=EnvironmentRef("dev"),
+        security_domain=SecurityDomain("internal"),
+    )
+    second, created = store.accept(
+        different_issuer,
+        idempotency_key="same",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    assert created and second.submission_id != first.submission_id
+    assert first.principal_issuer == "tests"
+    with pytest.raises(ValueError, match="plan_fingerprint"):
+        store.accept(
+            ctx(), idempotency_key="k", operation="run.submit", plan_fingerprint=" "
+        )
 
 
 def test_fencing_prevents_stale_attempt_from_advancing_checkpoint() -> None:
@@ -122,6 +149,52 @@ def test_fencing_prevents_stale_attempt_from_advancing_checkpoint() -> None:
         )
 
 
+def test_cancellation_and_terminal_state_prevent_new_execution() -> None:
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(), idempotency_key="cancel", operation="run.submit", plan_fingerprint="plan"
+    )
+    assert (
+        store.cancel_submission(ctx(), submission.submission_id).status
+        == "cancel_requested"
+    )
+    with pytest.raises(ControlPlaneError, match="not eligible"):
+        store.acquire_lease(
+            ctx(), submission.submission_id, owner_id="one", ttl_seconds=30
+        )
+
+    completed, _ = store.accept(
+        ctx(), idempotency_key="done", operation="run.submit", plan_fingerprint="plan"
+    )
+    lease = store.acquire_lease(
+        ctx(), completed.submission_id, owner_id="one", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx(),
+        completed.submission_id,
+        owner_id="one",
+        fencing_token=lease.fencing_token,
+    )
+    with pytest.raises(ControlPlaneError, match="already has a running"):
+        store.start_attempt(
+            ctx(),
+            completed.submission_id,
+            owner_id="one",
+            fencing_token=lease.fencing_token,
+        )
+    store.finish_attempt(
+        ctx(),
+        attempt.attempt_id,
+        owner_id="one",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+    with pytest.raises(ControlPlaneError, match="not eligible"):
+        store.acquire_lease(
+            ctx(), completed.submission_id, owner_id="two", ttl_seconds=30
+        )
+
+
 def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
     store = MemoryDurableWorkStore()
     submission, _ = store.accept(
@@ -161,6 +234,7 @@ def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
         "workspace-a",
         "committed",
         datetime.now(UTC).isoformat(),
+        reconciliation_evidence="sink query matched",
     )
     store.record_effect(ctx(), committed)
     with pytest.raises(ControlPlaneError):
@@ -172,12 +246,91 @@ def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
         "r1",
         "r2",
         datetime.now(UTC).isoformat(),
-        (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+        (datetime.now(UTC) + timedelta(seconds=30)).isoformat(),
         1,
         "code",
         "plan",
     )
     store.create_preview(ctx(), preview)
+    store._previews[(*ctx().scope_key, preview.preview_id)] = replace(
+        preview, expires_at=(datetime.now(UTC) - timedelta(seconds=1)).isoformat()
+    )
     assert store.cleanup_expired_previews(ctx())[0].cleaned_at is not None
     with pytest.raises(ControlPlaneError):
         store.create_preview(ctx("tenant-b", "workspace-b"), preview)
+
+
+def test_replay_rejects_another_submission_checkpoint_and_expired_preview() -> None:
+    store = MemoryDurableWorkStore()
+    first, _ = store.accept(
+        ctx(), idempotency_key="one", operation="run.submit", plan_fingerprint="one"
+    )
+    second, _ = store.accept(
+        ctx(), idempotency_key="two", operation="run.submit", plan_fingerprint="two"
+    )
+    lease = store.acquire_lease(
+        ctx(), first.submission_id, owner_id="one", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx(), first.submission_id, owner_id="one", fencing_token=lease.fencing_token
+    )
+    checkpoint = store.compare_and_swap_checkpoint(
+        ctx(),
+        "owned",
+        expected_version=None,
+        value_fingerprint="v1",
+        attempt_id=attempt.attempt_id,
+        fencing_token=lease.fencing_token,
+    )
+    with pytest.raises(ControlPlaneError, match="another submission"):
+        store.replay(
+            ctx(), second.submission_id, checkpoint_id=checkpoint.checkpoint_id
+        )
+    expired = PreviewWorkspace(
+        "expired",
+        "tenant-a",
+        "workspace-a",
+        "r1",
+        "r2",
+        datetime.now(UTC).isoformat(),
+        (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+        1,
+        "code",
+        "plan",
+    )
+    with pytest.raises(ValueError, match="expiry"):
+        store.create_preview(ctx(), expired)
+
+
+def test_unknown_effect_cannot_be_retried_without_reconciliation() -> None:
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(), idempotency_key="effect", operation="run.submit", plan_fingerprint="plan"
+    )
+    unknown = EffectRecord(
+        "effect",
+        submission.submission_id,
+        "tenant-a",
+        "workspace-a",
+        "unknown",
+        datetime.now(UTC).isoformat(),
+        metadata={"api_token": "super-secret-token"},
+    )
+    stored = store.record_effect(ctx(), unknown)
+    assert stored.metadata == {"api_token": "***"}
+    with pytest.raises(ControlPlaneError, match="reconciliation"):
+        store.record_effect(ctx(), replace(unknown, status="pending", metadata={}))
+    with pytest.raises(ControlPlaneError, match="reconciliation"):
+        store.record_effect(ctx(), replace(unknown, status="committed", metadata={}))
+    assert (
+        store.record_effect(
+            ctx(),
+            replace(
+                unknown,
+                status="committed",
+                reconciliation_evidence="sink query matched",
+                metadata={},
+            ),
+        ).status
+        == "committed"
+    )

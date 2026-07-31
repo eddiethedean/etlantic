@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from etlantic.control_plane.redaction import redact_control_plane_payload
+
 TENANT_RECORD_SCHEMA = "etlantic.control_plane.tenant_record/1"
 WORKSPACE_RECORD_SCHEMA = "etlantic.control_plane.workspace_record/1"
 ENVIRONMENT_RECORD_SCHEMA = "etlantic.control_plane.environment_record/1"
@@ -36,6 +38,11 @@ def _lifecycle(value: LifecycleState | str) -> LifecycleState:
     return LifecycleState(str(value))
 
 
+def _safe_metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    redacted = redact_control_plane_payload(dict(value or {}))
+    return dict(redacted) if isinstance(redacted, dict) else {}
+
+
 @dataclass(frozen=True, slots=True)
 class TenantRecord:
     """Durable tenant directory entry (distinct from :class:`TenantRef`)."""
@@ -57,7 +64,7 @@ class TenantRecord:
             "security_domain_id": self.security_domain_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -106,7 +113,7 @@ class WorkspaceRecord:
             "display_name": self.display_name,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -153,7 +160,7 @@ class EnvironmentRecord:
             "lifecycle": self.lifecycle.value,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -197,7 +204,7 @@ class SecurityDomainRecord:
             "display_name": self.display_name,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -239,7 +246,7 @@ class LogicalIdentity:
             "workspace_id": self.workspace_id,
             "kind": self.kind,
             "created_at": self.created_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -336,7 +343,7 @@ class AliasRecord:
             "logical_id": self.logical_id,
             "revision_id": self.revision_id,
             "created_at": self.created_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -381,7 +388,7 @@ class PromotionRecord:
             "from_environment": self.from_environment,
             "to_environment": self.to_environment,
             "created_at": self.created_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
