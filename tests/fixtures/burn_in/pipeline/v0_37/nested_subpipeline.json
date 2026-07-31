@@ -1,0 +1,424 @@
+{
+  "contracts": [
+    {
+      "authoring_id": "tests.conftest:RawCustomer",
+      "fields": [
+        {
+          "name": "customer_id",
+          "nullable": false,
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "name": "first_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "last_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "identity": "rawcustomer",
+      "metadata": {},
+      "name": "RawCustomer",
+      "version": "1.0.0"
+    },
+    {
+      "authoring_id": "tests.conftest:Customer",
+      "fields": [
+        {
+          "name": "customer_id",
+          "nullable": false,
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "name": "full_name",
+          "nullable": false,
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "identity": "customer",
+      "metadata": {},
+      "name": "Customer",
+      "version": "1.0.0"
+    }
+  ],
+  "edges": [
+    {
+      "consumer_contract_id": "tests.conftest:RawCustomer",
+      "consumer_node": "customers",
+      "consumer_port": "raw",
+      "producer_contract_id": "tests.conftest:RawCustomer",
+      "producer_node": "inbound",
+      "producer_port": "result"
+    },
+    {
+      "consumer_contract_id": "tests.conftest:Customer",
+      "consumer_node": "out",
+      "consumer_port": "input",
+      "producer_contract_id": "tests.conftest:Customer",
+      "producer_node": "customers",
+      "producer_port": "curated"
+    }
+  ],
+  "extensions": {},
+  "fingerprint": "7ac03976100035afc208db4d60889b21c5f14d9e738410a3f1b0c82dfd2dbde5",
+  "metadata": {},
+  "nodes": [
+    {
+      "asset": "inbound",
+      "bindings": {},
+      "contract_id": "tests.conftest:RawCustomer",
+      "identity": "__main__:Parent/inbound",
+      "inputs": [],
+      "kind": "source",
+      "metadata": {},
+      "name": "inbound",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [
+        {
+          "contract_id": "tests.conftest:RawCustomer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    },
+    {
+      "asset": null,
+      "bindings": {
+        "raw": {
+          "node": "inbound",
+          "port": "result"
+        }
+      },
+      "contract_id": null,
+      "identity": "__main__:Parent/customers",
+      "inputs": [
+        {
+          "contract_id": "tests.conftest:RawCustomer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "raw",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "kind": "subpipeline",
+      "metadata": {},
+      "name": "customers",
+      "nested": {
+        "contracts": [
+          {
+            "authoring_id": "tests.conftest:RawCustomer",
+            "fields": [
+              {
+                "name": "customer_id",
+                "nullable": false,
+                "required": true,
+                "type": "integer"
+              },
+              {
+                "name": "first_name",
+                "nullable": false,
+                "required": true,
+                "type": "string"
+              },
+              {
+                "name": "last_name",
+                "nullable": false,
+                "required": true,
+                "type": "string"
+              }
+            ],
+            "identity": "rawcustomer",
+            "metadata": {},
+            "name": "RawCustomer",
+            "version": "1.0.0"
+          },
+          {
+            "authoring_id": "tests.conftest:Customer",
+            "fields": [
+              {
+                "name": "customer_id",
+                "nullable": false,
+                "required": true,
+                "type": "integer"
+              },
+              {
+                "name": "full_name",
+                "nullable": false,
+                "required": true,
+                "type": "string"
+              }
+            ],
+            "identity": "customer",
+            "metadata": {},
+            "name": "Customer",
+            "version": "1.0.0"
+          }
+        ],
+        "edges": [
+          {
+            "consumer_contract_id": "tests.conftest:RawCustomer",
+            "consumer_node": "normalized",
+            "consumer_port": "customers",
+            "producer_contract_id": "tests.conftest:RawCustomer",
+            "producer_node": "raw",
+            "producer_port": "result"
+          },
+          {
+            "consumer_contract_id": "tests.conftest:Customer",
+            "consumer_node": "curated",
+            "consumer_port": "input",
+            "producer_contract_id": "tests.conftest:Customer",
+            "producer_node": "normalized",
+            "producer_port": "result"
+          }
+        ],
+        "extensions": {},
+        "fingerprint": null,
+        "metadata": {},
+        "nodes": [
+          {
+            "asset": "raw.customers",
+            "bindings": {},
+            "contract_id": "tests.conftest:RawCustomer",
+            "identity": "tests.unit.test_subpipeline:CustomerCurationPipeline/raw",
+            "inputs": [],
+            "kind": "source",
+            "metadata": {},
+            "name": "raw",
+            "nested": null,
+            "nested_pipeline_id": null,
+            "outputs": [
+              {
+                "contract_id": "tests.conftest:RawCustomer",
+                "direction": "output",
+                "has_default": false,
+                "has_value": false,
+                "name": "result",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              }
+            ],
+            "parameters": [],
+            "transformation_id": null,
+            "transformation_name": null
+          },
+          {
+            "asset": null,
+            "bindings": {},
+            "contract_id": null,
+            "identity": "tests.unit.test_subpipeline:CustomerCurationPipeline/normalized",
+            "inputs": [
+              {
+                "contract_id": "tests.conftest:RawCustomer",
+                "direction": "input",
+                "has_default": false,
+                "has_value": false,
+                "name": "customers",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              }
+            ],
+            "kind": "step",
+            "metadata": {},
+            "name": "normalized",
+            "nested": null,
+            "nested_pipeline_id": null,
+            "outputs": [
+              {
+                "contract_id": "tests.conftest:Customer",
+                "direction": "output",
+                "has_default": false,
+                "has_value": false,
+                "name": "result",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              }
+            ],
+            "parameters": [],
+            "transformation_id": "tests.unit.test_subpipeline:NormalizeCustomers",
+            "transformation_name": "NormalizeCustomers"
+          },
+          {
+            "asset": "curated.customers",
+            "bindings": {},
+            "contract_id": "tests.conftest:Customer",
+            "identity": "tests.unit.test_subpipeline:CustomerCurationPipeline/curated",
+            "inputs": [
+              {
+                "contract_id": "tests.conftest:Customer",
+                "direction": "input",
+                "has_default": false,
+                "has_value": false,
+                "name": "input",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              }
+            ],
+            "kind": "sink",
+            "metadata": {},
+            "name": "curated",
+            "nested": null,
+            "nested_pipeline_id": null,
+            "outputs": [],
+            "parameters": [],
+            "transformation_id": null,
+            "transformation_name": null
+          }
+        ],
+        "pipeline_id": "tests.unit.test_subpipeline:CustomerCurationPipeline",
+        "pipeline_name": "CustomerCurationPipeline",
+        "policy_refs": {},
+        "profile_ref": null,
+        "provenance": {
+          "kind": "python",
+          "source_identity": "tests.unit.test_subpipeline:CustomerCurationPipeline"
+        },
+        "reliability": {},
+        "schema": "etlantic.pipeline/1",
+        "transformations": [
+          {
+            "identity": "tests.unit.test_subpipeline:NormalizeCustomers",
+            "implementation_refs": [],
+            "metadata": {},
+            "name": "NormalizeCustomers",
+            "portable_plan": null,
+            "ports": [
+              {
+                "contract_id": "tests.conftest:RawCustomer",
+                "direction": "input",
+                "has_default": false,
+                "has_value": false,
+                "name": "customers",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              },
+              {
+                "contract_id": "tests.conftest:Customer",
+                "direction": "output",
+                "has_default": false,
+                "has_value": false,
+                "name": "result",
+                "required": true,
+                "role": "valid",
+                "value_type": null
+              }
+            ],
+            "version": null
+          }
+        ],
+        "version": null
+      },
+      "nested_pipeline_id": "tests.unit.test_subpipeline:CustomerCurationPipeline",
+      "outputs": [
+        {
+          "contract_id": "tests.conftest:Customer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "curated",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    },
+    {
+      "asset": "out",
+      "bindings": {},
+      "contract_id": "tests.conftest:Customer",
+      "identity": "__main__:Parent/out",
+      "inputs": [
+        {
+          "contract_id": "tests.conftest:Customer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "input",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "kind": "sink",
+      "metadata": {},
+      "name": "out",
+      "nested": null,
+      "nested_pipeline_id": null,
+      "outputs": [],
+      "parameters": [],
+      "transformation_id": null,
+      "transformation_name": null
+    }
+  ],
+  "pipeline_id": "__main__:Parent",
+  "pipeline_name": "Parent",
+  "policy_refs": {},
+  "profile_ref": null,
+  "provenance": {
+    "kind": "python",
+    "source_identity": "__main__:Parent"
+  },
+  "reliability": {},
+  "schema": "etlantic.pipeline/1",
+  "transformations": [
+    {
+      "identity": "tests.unit.test_subpipeline:NormalizeCustomers",
+      "implementation_refs": [],
+      "metadata": {},
+      "name": "NormalizeCustomers",
+      "portable_plan": null,
+      "ports": [
+        {
+          "contract_id": "tests.conftest:RawCustomer",
+          "direction": "input",
+          "has_default": false,
+          "has_value": false,
+          "name": "customers",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        },
+        {
+          "contract_id": "tests.conftest:Customer",
+          "direction": "output",
+          "has_default": false,
+          "has_value": false,
+          "name": "result",
+          "required": true,
+          "role": "valid",
+          "value_type": null
+        }
+      ],
+      "version": null
+    }
+  ],
+  "version": null
+}

@@ -13,7 +13,7 @@ Capabilities teaser: [Capabilities](CAPABILITIES.md) (full matrix after first su
 
 After Ada/Grace success: [SDK 10 minutes](SDK_10_MINUTES.md) (secondary),
 [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md), [Upgrade](UPGRADE.md),
-[What's New in 0.36](WHATS_NEW_0_36.md).
+[What's New in 0.37](WHATS_NEW_0_37.md).
 
 Ignore **Project → Archive index** (and maintainer plans linked from it) until you contribute.
 

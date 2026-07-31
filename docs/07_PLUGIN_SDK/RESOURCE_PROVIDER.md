@@ -1,8 +1,8 @@
 # Resource Provider
 
-!!! warning "Planned provider boundary—not a shipped 0.36 entry-point protocol"
+!!! warning "Planned provider boundary—not a shipped 0.37 entry-point protocol"
     Resource providers are not a discoverable entry-point protocol in
-    ETLantic 0.36. Kubernetes/reference proof is assigned to 0.47 and
+    ETLantic 0.37. Kubernetes/reference proof is assigned to 0.47 and
     supported provider packs to 0.51.
 
 **Do not implement a package against this page.** Prefer shipped dataframe /

@@ -209,7 +209,7 @@ etlantic viz html path/to/pipeline.py:CustomerPipeline -o customer_pipeline.html
 
 !!! note "Future design"
     Multi-page documentation sites, `project.write_documentation(...)`, and
-    rich interactive explorers are not shipped in 0.36. Use the single-page
+    rich interactive explorers are not shipped in 0.37. Use the single-page
     HTML export above.
 
 ## Profile-Aware Documentation

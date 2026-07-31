@@ -1,8 +1,8 @@
-"""Experimental DataFusion plugin package (stub; not production-ready in 0.36.0)."""
+"""Experimental DataFusion plugin package (stub; not production-ready in 0.37.0)."""
 
 from __future__ import annotations
 
-__version__ = "0.36.0"
+__version__ = "0.37.0"
 
 STREAMING_STABILITY = "experimental"
 

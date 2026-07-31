@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import warnings
-
+import pytest
 from contractmodel import ContractModel
 
+import etlantic
 from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 
 
@@ -29,13 +29,11 @@ def test_data_is_contract_model() -> None:
     assert Data is ContractModel
 
 
-def test_datacontractmodel_deprecated() -> None:
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        from etlantic import DataContractModel
-
-        assert DataContractModel is Data
-    assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+def test_datacontractmodel_removed() -> None:
+    with pytest.raises(
+        AttributeError, match=r"removed from the etlantic root in 0\.37\.0"
+    ):
+        getattr(etlantic, "DataContractModel")
 
 
 def test_author_with_data() -> None:

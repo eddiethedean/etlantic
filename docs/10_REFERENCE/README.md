@@ -1,8 +1,8 @@
 # Reference
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
-This section separates ETLantic **0.36** shipped behavior from proposed 0.x
+This section separates ETLantic **0.37** shipped behavior from proposed 0.x
 interfaces.
 
 ## Shipped
@@ -22,6 +22,8 @@ interfaces.
 - [Optional Packages](OPTIONAL_PACKAGES.md) (core-first API; plugin READMEs on GitHub)
 - [Known Limitations](KNOWN_ISSUES.md)
 - [Diagnostics](DIAGNOSTICS.md)
+- [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md)
+- [Surface inventory](SURFACE_INVENTORY.md)
 - [Exceptions](EXCEPTIONS.md)
 - [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 Transformation Plan / Rich Portable Analytics models through
   `dtcs>=0.13`; ETLantic `@Transformation.portable` authoring (0.11+) and

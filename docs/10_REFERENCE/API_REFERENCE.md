@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.36.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.37.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -46,7 +46,9 @@ from etlantic import (
 )
 ```
 
-`DataContractModel` is a deprecated alias for `Data`.
+`DataContractModel` was removed from the public root and
+`etlantic.contracts` in **0.37.0**. Use `Data` (or ContractModel) instead —
+see [Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md).
 
 ## Author essentials (curated root)
 
@@ -140,7 +142,7 @@ memory store unless durable providers are configured.
 
 ## Stability
 
-ETLantic 0.36.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
+ETLantic 0.37.0 is a **Beta** (PyPI) release suitable for documented single-tenant reference
 deployments (not unrestricted enterprise production). Public compatibility
 follows the documented 0.x deprecation policy; minor releases may still include
 announced migrations. Review the changelog and
@@ -156,13 +158,14 @@ ETLantic **0.28** removed the third wave of root facade aliases (`sql`,
 ETLantic **0.27** removed the second wave (reliability, schema_drift,
 registry). See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 
-A remaining set of specialist root exports are still **demoted** (warn once).
-Prefer lazy namespaces or owning modules.
+ETLantic **0.37** removed the remaining demoted root aliases (hard
+`AttributeError`). Import from owning modules — see
+[Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md).
 
-| Category | Examples (still demoted) | Prefer |
+| Category | Examples (removed from root in 0.37) | Prefer |
 |---|---|---|
 | Model graph | `Edge`, `Node`, `LogicalGraph` | `etlantic.model` |
-| Reliability | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
+| Policy / I/O | `SafeIoPolicy`, `OutboundPolicy` | `etlantic.io_policy`, `etlantic.outbound` |
 
 Removed in 0.28 (raise on root import): `col`, `select`, `load_profile`,
 `write_profile`, `Inject`, `FailureAction`, and other symbols listed in the

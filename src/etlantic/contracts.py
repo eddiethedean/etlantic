@@ -2,7 +2,8 @@
 
 ``Data`` is ETLantic's thin public facade over ContractModel (DD-010A).
 ContractModel retains authority for data-contract semantics and ODCS.
-``DataContractModel`` remains as a deprecated compatibility alias.
+``DataContractModel`` was removed from the public root in 0.37.0 — use
+``Data`` / ``ContractModel`` instead (see Migration 0.36 → 0.37).
 """
 
 from __future__ import annotations
@@ -14,14 +15,10 @@ from contractmodel import ContractModel
 
 # Preferred public facade (DD-010A): thin alias, not a new implementation.
 Data: TypeAlias = ContractModel
-# Compatibility alias (prefer ``Data``). Deprecation is emitted from the
-# package root ``etlantic.__getattr__``.
-DataContractModel: TypeAlias = Data
 
 __all__ = [
     "ContractModel",
     "Data",
-    "DataContractModel",
     "is_data_contract_type",
     "load_data_contract",
     "resolve_contract_type",

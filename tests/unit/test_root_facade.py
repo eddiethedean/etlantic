@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import subprocess
 import sys
-import warnings
+
+import pytest
 
 import etlantic
 import etlantic as etl
@@ -55,23 +56,14 @@ def test_curated_identity_across_import_styles() -> None:
     assert etl.SecretRef is etlantic.secrets.SecretRef
 
 
-def test_demoted_alias_warns_once() -> None:
-    # Clear cached demoted binding if a prior test populated it.
-    etlantic.__dict__.pop("Edge", None)
-    etlantic._warned_demoted.discard("Edge")
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        first = etlantic.Edge
-        second = etlantic.Edge
-    assert first is second
-    assert first is etlantic.model.Edge
-    demoted = [
-        w
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "compatibility alias" in str(w.message)
-    ]
-    assert len(demoted) == 1
+def test_demoted_alias_removed() -> None:
+    with pytest.raises(
+        AttributeError, match=r"removed from the etlantic root in 0\.37\.0"
+    ):
+        getattr(etlantic, "Edge")
+    from etlantic.model import Edge
+
+    assert Edge is etlantic.model.Edge
 
 
 def test_import_budget_no_optional_engines() -> None:

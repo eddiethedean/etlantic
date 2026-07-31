@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-07-30
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.36.x` or plugins with `<0.37` |
+| Breaking | Dependency floor becomes `etlantic>=0.37.0,<0.38` (stable-foundation line). Remaining demoted root aliases and `DataContractModel` removed |
+| Upgrade | `pip install 'etlantic==0.37.0'` and matching plugins / `medallantic==0.37.0`. See [Migration 0.36 → 0.37](docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) |
+| Rollback | Re-pin 0.36.0 minors together; re-validate |
+| Security | Compatibility fixtures and reports remain secret-free; production allowlist pins fail closed; security verification matrix ships with automated checks |
+
+### Added
+- Stable-foundation acceptance suite evidence for items 1–21
+  (`tests/stable_foundation/` + `scripts/check_stable_foundation.py`)
+- Security verification matrix with owner + automated check per control
+  (`docs/02_FOUNDATIONS/SECURITY_VERIFICATION_MATRIX.md`,
+  `scripts/check_security_matrix.py`)
+- Diagnostic-code stability tiers inventory
+  (`docs/10_REFERENCE/DIAGNOSTIC_STABILITY_TIERS.md`,
+  `scripts/check_diagnostic_stability.py`)
+- Release baseline / burn-in fixtures for `v0_37` under
+  `tests/fixtures/releases/` and `tests/fixtures/burn_in/`
+- What's New / Migration / Exit Gate / Findings documentation for 0.37
+
+### Changed
+- Official package versions align at 0.37.0; plugins require
+  `etlantic>=0.37.0,<0.38` (external echo reference pin
+  `etlantic>=0.37,<0.38`)
+- Supported security release line is 0.37.x
+- `etlantic.testing` graduates from preview freeze to stable
+  application-pipeline testing foundation
+- Public surface / protocol freeze inventories align to the 0.37 reference
+  envelope; first-party packages declare `etlantic>=0.37.0,<0.38`
+- `etlantic.scheduler/1` remains stable MVP; `etlantic.quality/1` remains
+  provisional; DataFusion remains experimental; Arrow stays Gate A only
+- PyPI Beta classifier retained on core and first-party packages
+
+### Removed
+- Remaining demoted root facade aliases (`_DEMOTED_ALIASES` empty;
+  `_REMOVED_0_37` raises with migration guidance)
+- `DataContractModel` root / contracts compatibility alias; use
+  `etlantic.Data` / `ContractModel`
+
+### Fixed
+- Root removal regressions covered by
+  `tests/unit/test_root_removals_0_37.py` and testing-foundation suites
+- Docs / release-facts / artifact verification contract pointed at v0.37.0
+  (expected after tag; digests filled at publish)
+
+### Upgrade notes
+- Pin core and matching plugins / `medallantic` together at `==0.37.0`
+- Replace demoted root imports and any `DataContractModel` usage before
+  upgrade
+- Plugin authors: raise the floor to `etlantic>=0.37.0,<0.38` and re-run
+  public conformance
+- Prefer graduated public `etlantic.testing` for application pipeline cases
+
 ## [0.36.0] - 2026-07-30
 
 ### Adopter summary
@@ -1393,6 +1451,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.37.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.37.0
 [0.36.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.36.0
 [0.35.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.35.0
 [0.34.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.34.0

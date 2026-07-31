@@ -1,6 +1,6 @@
 # Top-10 diagnostics playbook
 
-> **Status: Available in ETLantic 0.36.0.** Fix recipes for the codes adopters
+> **Status: Available in ETLantic 0.37.0.** Fix recipes for the codes adopters
 > hit first. Full catalog: [Diagnostics catalog](DIAGNOSTICS_CATALOG.md).
 
 | Code | Usually means | Fix |

@@ -1,7 +1,7 @@
 # etlantic-sql
 
 SQLite and PostgreSQL reference SQL execution plugin for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.36.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.37.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -55,7 +55,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.36.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.36.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.37.0/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.37.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

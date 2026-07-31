@@ -15,7 +15,6 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
-    SchemaDriftPolicy,
     SecretRef,
     Transformation,
 )
@@ -29,7 +28,7 @@ from etlantic.schema_drift import (
     normalize_schema_from_fields,
     normalize_schema_from_model,
 )
-from etlantic.schema_policy import DriftAction, evaluate_drift
+from etlantic.schema_policy import DriftAction, SchemaDriftPolicy, evaluate_drift
 
 
 class Row(Data):

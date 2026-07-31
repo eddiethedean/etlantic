@@ -183,10 +183,12 @@ not_in_nav: |
   11_DEVELOPMENT/EXIT_GATE_0_34.md
   11_DEVELOPMENT/EXIT_GATE_0_35.md
   11_DEVELOPMENT/EXIT_GATE_0_36.md
+  11_DEVELOPMENT/EXIT_GATE_0_37.md
   11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
   11_DEVELOPMENT/FACADE_PACKAGES.md
   11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
   11_DEVELOPMENT/FINDINGS_0_36.md
+  11_DEVELOPMENT/FINDINGS_0_37.md
   11_DEVELOPMENT/INTEROPERABILITY_FOUNDATION_PLAN.md
   11_DEVELOPMENT/MIGRATION_0_10_TO_0_11.md
   11_DEVELOPMENT/MIGRATION_0_11_TO_0_12.md
@@ -214,6 +216,7 @@ not_in_nav: |
   11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md
   11_DEVELOPMENT/MIGRATION_0_34_TO_0_35.md
   11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md
+  11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md
   11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
   11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
@@ -376,7 +379,7 @@ nav:
       - Python SDK in 10 minutes: 01_GETTING_STARTED/SDK_10_MINUTES.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
-      - Current 0.36 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.37 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -434,6 +437,7 @@ nav:
       - Validation everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
       - Execution model: 06_EXECUTION/EXECUTION_MODEL.md
       - Security: 02_FOUNDATIONS/SECURITY.md
+      - Security verification matrix: 02_FOUNDATIONS/SECURITY_VERIFICATION_MATRIX.md
       - Glossary: 02_FOUNDATIONS/GLOSSARY.md
       - Manifesto: ETLANTIC_MANIFESTO.md
   - Reference:
@@ -459,7 +463,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.36.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.37.0: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -467,6 +471,7 @@ nav:
           - Diagnostics: 10_REFERENCE/DIAGNOSTICS.md
           - Diagnostics playbook: 10_REFERENCE/DIAGNOSTICS_PLAYBOOK.md
           - Diagnostics catalog: 10_REFERENCE/DIAGNOSTICS_CATALOG.md
+          - Diagnostic stability tiers: 10_REFERENCE/DIAGNOSTIC_STABILITY_TIERS.md
           - Exceptions: 10_REFERENCE/EXCEPTIONS.md
       - Compatibility and limits:
           - Compatibility: 10_REFERENCE/COMPATIBILITY.md
@@ -502,12 +507,14 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - What's new in 0.37: 01_GETTING_STARTED/WHATS_NEW_0_37.md
           - What's new in 0.36: 01_GETTING_STARTED/WHATS_NEW_0_36.md
           - What's new in 0.34: 01_GETTING_STARTED/WHATS_NEW_0_34.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Planning:
           - Planning hub: 11_DEVELOPMENT/PLAN_INDEX.md
           - Roadmap summary: 11_DEVELOPMENT/ROADMAP_SUMMARY.md
+          - 0.37 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_37.md
           - 0.36 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_36.md
       - Contribute:
           - Contributor guide: 11_DEVELOPMENT/CONTRIBUTING.md

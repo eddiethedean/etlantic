@@ -1,8 +1,8 @@
-# DataContractModel (deprecated)
+# DataContractModel (removed)
 
-!!! warning "Deprecated alias"
-    `DataContractModel` is a deprecated alias for `Data`. New code should
-    subclass `Data`. Prefer:
+!!! warning "Removed in 0.37.0"
+    `DataContractModel` was removed from the public root and
+    `etlantic.contracts` in 0.37.0. New code should subclass `Data`. Prefer:
 
     ```python
     from etlantic import Data
@@ -13,8 +13,9 @@
         last_name: str
     ```
 
-    Importing `DataContractModel` from `etlantic` emits a deprecation
-    warning. This page remains for migration context only.
+    Accessing `DataContractModel` on `etlantic` raises `AttributeError`.
+    This page remains for migration context only. See
+    [Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md).
 
 ## Why the rename
 
@@ -25,11 +26,11 @@ between ContractModel and ETLantic.
 
 ## Migration
 
-1. Replace `from etlantic import DataContractModel` with
-   `from etlantic import Data`.
+1. Replace root/`contracts` `DataContractModel` imports with
+   `from etlantic import Data` (or `from contractmodel import ContractModel`).
 2. Replace `class X(DataContractModel)` with `class X(Data)`.
 3. Load [ODCS](ODCS.md) with `load_data_contract(...)` and write with
-   `write_odcs(...)`.
+   `write_odcs(...)` from `etlantic.contracts`.
 
 See [Data Contracts overview](README.md), [ODCS](ODCS.md), and
 [Loading](LOADING.md).

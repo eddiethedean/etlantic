@@ -1,12 +1,12 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.36.0.** Deep diligence packet. Start with the
+> **Status: Available in ETLantic 0.37.0.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
 !!! warning "PyPI classifiers ≠ enterprise readiness"
     Official engine packages declare **Beta** classifiers that match the
-    **ETLantic 0.36 Beta** pilot envelope. Do not treat classifiers as an SLA,
+    **ETLantic 0.37 Beta** pilot envelope. Do not treat classifiers as an SLA,
     multi-tenant guarantee, or unrestricted enterprise production claim. See
     [Capabilities](CAPABILITIES.md) and
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
@@ -32,7 +32,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.36.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.37.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -74,7 +74,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.36.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.37.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -83,23 +83,22 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-For a published GitHub Release asset (example: wheel from the `v0.36.0` release):
+For a published GitHub Release asset (example: wheel from the `v0.37.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
-gh attestation verify path/to/etlantic-0.36.0-*.whl \
+gh attestation verify path/to/etlantic-0.37.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```
 
-The v0.36.0 release includes a per-artifact SHA-256 manifest
-(`release-artifacts.json`) and GitHub build provenance attestations.
-CycloneDX SBOM generation failed for this release, so v0.36.0 does **not**
-include an SBOM—review
-[`sbom-warning.txt`](https://github.com/eddiethedean/etlantic/releases/download/v0.36.0/sbom-warning.txt)
-before recording supply-chain evidence. Full checklist:
+After the v0.37.0 tag workflow succeeds, expect a per-artifact SHA-256
+manifest (`release-artifacts.json`) and GitHub build provenance attestations.
+CycloneDX SBOM generation is optional: the release may include
+`etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published
+asset before recording supply-chain evidence. Full checklist:
 [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
-Prefer exact pins (`etlantic==0.36.0` and matching plugins) over floating
+Prefer exact pins (`etlantic==0.37.0` and matching plugins) over floating
 ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
@@ -121,7 +120,7 @@ remains in Medallantic—not core.
 
 ## Explicit non-goals (do not expect these from docs or product)
 
-- Multi-tenant isolation guarantees or a managed control plane **in 0.36**;
+- Multi-tenant isolation guarantees or a managed control plane **in 0.37**;
   these are a
   [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
   not a current capability
@@ -143,6 +142,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.36 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.37 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

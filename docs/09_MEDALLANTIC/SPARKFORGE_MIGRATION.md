@@ -85,5 +85,5 @@ unsupported paths emit `MDL220`.
 ## Deprecation timeline
 
 Transitional SparkForge adapters (`medallantic.migrate.sparkforge` / `.sql`,
-`etlantic-sparkforge`, live builder bridges) remain supported in 0.36 and are
+`etlantic-sparkforge`, live builder bridges) remain supported in 0.37 and are
 **not** removed before a documented major release.

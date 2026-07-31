@@ -3,7 +3,7 @@
     "sql",
     "portable"
   ],
-  "digest": "sha256:740e2d51cb51ec9f08b3078ee06198964d27572245f6994803a59accd828d824",
+  "digest": "sha256:8bc66d1062848a891b0704022a5c29e83ea9e0aaa482ff7ff0f7df3020876dd1",
   "entries": [
     {
       "capabilities": [
@@ -34,5 +34,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.36.0"
+  "version": "0.37.0"
 }

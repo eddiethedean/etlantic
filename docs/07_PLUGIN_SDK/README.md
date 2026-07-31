@@ -1,6 +1,6 @@
 # Plugin SDK
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 !!! tip "Start here when creating a plugin"
     Follow [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md) for the canonical
@@ -48,8 +48,9 @@ stay import-safe until accessed:
 - `etl.testing` / `etlantic.testing` — conformance suites (dataframe, SQL, Spark,
   orchestrator, scheduler, secrets, write-semantics, portable transform)
 
-`from etlantic import Data, Pipeline` remains supported. Specialist root
-exports demoted in 0.22 remain as 0.x compatibility aliases (warn once).
+`from etlantic import Data, Pipeline` remains supported. Specialist symbols
+belong on owning modules or lazy namespaces — demoted root aliases were
+removed in 0.37.0.
 
 Also see [Capability Vocabulary](CAPABILITY_VOCABULARY.md),
 [Protocol Evolution](PROTOCOL_EVOLUTION.md), and

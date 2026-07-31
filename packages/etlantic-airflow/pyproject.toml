@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-airflow"
-version = "0.36.0"
+version = "0.37.0"
 description = "Airflow reference orchestrator compiler for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.36.0,<0.37",
+    "etlantic>=0.37.0,<0.38",
 ]
 
 [project.urls]

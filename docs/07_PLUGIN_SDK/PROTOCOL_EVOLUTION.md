@@ -1,6 +1,6 @@
 # Protocol Evolution Policy
 
-> **Status (0.36.0):** Plugin `/1` families remain **frozen since 0.28.0** for
+> **Status (0.37.0):** Plugin `/1` families remain **frozen since 0.28.0** for
 > the 0.37 stable-foundation path (`dataframe`, `sql`, `spark`,
 > `orchestration`, `transform-compiler`). In 0.36, `etlantic.scheduler/1` is
 > promoted to a **stable MVP** on the foundation path (Prefect bounds);
@@ -10,7 +10,7 @@
 > Prior freeze-eligible status:
 > [EXIT_GATE_0_27](../11_DEVELOPMENT/EXIT_GATE_0_27.md).
 
-## Protocol decisions (0.36)
+## Protocol decisions (0.37)
 
 Joint compatibility burn-in locks these protocol/public-surface outcomes:
 
@@ -18,7 +18,7 @@ Joint compatibility burn-in locks these protocol/public-surface outcomes:
 |---|---|---|
 | `etlantic.scheduler/1` | **Promoted to stable MVP** on the foundation path | Prefect-bounded direct-execution cases; Airflow remains compile-only via `etlantic-airflow` |
 | `etlantic.quality/1` | **Remains provisional** | Wire schema outside the full stable-foundation claim; ContractModel remains semantic authority |
-| `etlantic.testing` preview | **Minimum case/result/snapshot contract frozen** for burn-in | Foundation graduation remains **0.37**; do not treat preview helpers as final |
+| `etlantic.testing` | **Graduated** to stable application-pipeline testing foundation | Public case/result/snapshot contract; evidence in `tests/testing/` |
 | Core Plugin SDK `/1` families | Unchanged (frozen since 0.28) | Additive optional evolution only; incompatible changes require a new major |
 | Facade protocol + provenance | Supported joint range across ETLantic / Medallantic | No medallion vocabulary in core |
 
@@ -34,7 +34,7 @@ See [FINDINGS_0_36](../11_DEVELOPMENT/FINDINGS_0_36.md),
 | Out-of-monorepo `etlantic-plugin-echo` CI workflow | Met | Maintainers |
 | Packaging / manifest gates | Met | Maintainers |
 | ≥1 documented external feedback cycle from a non-first-party plugin author | **Met** — see [EXTERNAL_PLUGIN_FEEDBACK.md](../11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md) | Maintainers + community |
-| No unresolved provisional core protocol on the 0.37 path | Met in 0.28 with `scheduler/1` deferred; **0.36** promotes `scheduler/1` to stable MVP and keeps `quality/1` provisional | Maintainers |
+| No unresolved provisional core protocol on the 0.37 path | Met in 0.28 with `scheduler/1` deferred; **0.37** promotes `scheduler/1` to stable MVP and keeps `quality/1` provisional | Maintainers |
 
 **Decision:** Declare core Plugin SDK `/1` **frozen in 0.28.0**. Only additive
 optional evolution within `/1` is permitted; incompatible changes require a
@@ -73,7 +73,7 @@ Do not conflate these:
 | Term | What freezes | Status in 0.28 |
 |---|---|---|
 | **Contract / configuration freeze** | Authoring contracts, Profile trust fields, and related config surfaces stop incompatible churn without migration notes | Shipped since **0.19** (see [Deprecation Policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md)) |
-| **Plan immutability** | Plan graphs use fingerprint verify + `deep_freeze` on nested mappings/lists/sets; dataclasses and unknown objects are **not** recursively frozen | Shipped helper; not full object-graph immutability |
+| **Plan immutability** | Foundation contract: `deep_freeze` (nested mappings/lists/sets) + canonical `etlantic.plan/1` serialize + `verify_plan_fingerprint` at trust boundaries; dataclasses and unknown objects are **not** recursively frozen | Shipped helpers; **not** full object-graph immutability |
 | **Protocol `/1` freeze** | Plugin protocol majors lock required methods and incompatible wire meaning | **Frozen in 0.28.0** for core `/1` families |
 
 Wire schemas marked “wire-stable” mean schema ids keep meaning under the additive `/1` rules above; they do **not** imply protocol `/1` freeze.
@@ -126,7 +126,7 @@ Rules:
 While ETLantic remains on its 0.x roadmap:
 
 - **Core minor pin:** plugin packages should declare
-  `etlantic>=X.Y,<X.(Y+1)` (for 0.36: `etlantic>=0.36.0,<0.37`).
+  `etlantic>=X.Y,<X.(Y+1)` (for 0.37: `etlantic>=0.37.0,<0.38`).
 - **Protocol major:** a plugin that implements `etlantic.dataframe/1` remains
   protocol-compatible across core minors that still speak `/1`, subject to the
   package pin above.

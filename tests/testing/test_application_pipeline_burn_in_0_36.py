@@ -1,8 +1,7 @@
-"""0.36 application-pipeline burn-in corpus (preview contract freeze).
+"""0.36 application-pipeline burn-in corpus (contract freeze).
 
-Canonical cases use public ``etlantic.testing`` imports. Final testing-foundation
-graduation remains 0.37; this module freezes the minimum 0.36 case/result/snapshot
-surface needed for burn-in evidence.
+Canonical cases use public ``etlantic.testing`` imports. The 0.37 stable
+foundation graduation evidence lives in ``test_testing_foundation_0_37.py``.
 """
 
 from __future__ import annotations

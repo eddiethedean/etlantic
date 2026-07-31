@@ -10,8 +10,8 @@ frontmatter (preferred) and/or a visible status banner:
 ```yaml
 ---
 status: available   # available | experimental | partial | future | normative | plan
-since: "0.36.0"
-current_minor: "0.36"
+since: "0.37.0"
+current_minor: "0.37"
 audience: adopter   # adopter | developer | maintainer | evaluator
 ---
 ```

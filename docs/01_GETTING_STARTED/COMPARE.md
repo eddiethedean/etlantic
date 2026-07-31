@@ -1,6 +1,6 @@
 # Is ETLantic for me?
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 ETLantic is a typed **modeling, validation, and planning** layer for Python
 data pipelines. It is not a dataframe engine, warehouse transformer, or
@@ -40,7 +40,7 @@ durable orchestrator.
 - Managed Spark clusters
 - Broader compliance programs and multi-tenant attestation (adopters own these;
   ETLantic ships release SHA-256 digests / attestations for its own packages
-  since 0.20; CycloneDX SBOM is optional and failed for v0.36.0)
+  since 0.20; CycloneDX SBOM is optional and verified at tag time)
 
 ## When NOT to use ETLantic
 
@@ -51,7 +51,7 @@ Prefer another tool (or use ETLantic only as a thin companion) when:
 | Warehouse-only SQL analytics with dbt already owning the project | **dbt** alone |
 | You only need a durable multi-worker scheduler / ops UI | **Airflow / Dagster / Prefect** alone |
 | You only need row-level dataframe checks inside notebooks | **Pandera / Great Expectations** alone |
-| You need a managed multi-tenant control plane or formal SLA today | Wait — **not in 0.36** (Beta single-tenant pilots only) |
+| You need a managed multi-tenant control plane or formal SLA today | Wait — **not in 0.37** (Beta single-tenant pilots only) |
 | You need bronze/silver/gold medallion vocabulary as core APIs | **SparkForge / medallantic**, not core ETLantic |
 | You refuse typed Python modeling and only want SQL files on disk | Stick with your SQL toolchain |
 

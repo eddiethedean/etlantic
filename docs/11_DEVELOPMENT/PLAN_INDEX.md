@@ -1,18 +1,19 @@
 # Planning Hub
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0; current gate is 0.37 (in progress).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.36 can do now**, use
+    - To learn what **ETLantic 0.37 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
     - To evaluate **shipped evidence**, use the
+      [0.37 exit gate](EXIT_GATE_0_37.md) (in progress), the
       [0.36 exit gate](EXIT_GATE_0_36.md), release notes, and tests.
     - To understand **why a boundary exists**, use
       [architecture decisions](ARCHITECTURE_DECISIONS.md).
@@ -23,14 +24,15 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to ETLantic **0.36.0**.
+Status is relative to ETLantic **0.37.0** (stable-foundation line; gate in progress).
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.36 is gate-ready for tag/publish | 0.37 stable foundation |
-| [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready milestone | In-tree compatibility, plugin, application-case, and Medallantic burn-in gates are closed | Publish exact candidate artifacts and verify immutable docs |
-| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing preview available in 0.36; full foundation graduates later | Continues through 0.52 |
-| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.36 does not provide a production multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.37 stable foundation in progress | 0.38 connectivity |
+| [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | In-progress milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | Close [EXIT_GATE_0_37](EXIT_GATE_0_37.md) |
+| [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
+| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Testing graduates in 0.37; connectivity follows | Continues through 0.52 |
+| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program | 0.37 does not provide a production multi-tenant control plane | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Control-plane work begins at 0.39 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
@@ -41,7 +43,7 @@ Status is relative to ETLantic **0.36.0**.
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |
 | [TransformationModel incubation](TRANSFORMATIONMODEL_PLAN.md) | Proposed incubation | No TransformationModel package or API is shipped | Post-foundation 0.52 incubation |
-| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic 0.36 joint burn-in is gate-ready with ETLantic | 0.37 stable foundation |
+| [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic 0.37 stable foundation | Matching-minor joint release |
 
 ## Status vocabulary
 
@@ -120,6 +122,7 @@ summary.
 
 ## Related records
 
+- [0.37 stable foundation implementation plan](IMPLEMENTATION_PLAN_0_37.md)
 - [0.36 joint compatibility burn-in implementation plan](IMPLEMENTATION_PLAN_0_36.md)
 - [Programmatic authoring and lossless JSON — 0.24](PROGRAMMATIC_AUTHORING_0_24.md)
 - [SparkForge adoption record](SPARKFORGE_ADOPTION.md)

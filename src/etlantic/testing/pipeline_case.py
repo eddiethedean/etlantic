@@ -1,15 +1,15 @@
-"""Application-pipeline testing preview helpers (ETLantic 0.35).
+"""Application-pipeline testing foundation (ETLantic 0.37).
 
-Available (preview): typed cases, fakes, plan/report snapshots, and a
+Stable foundation: typed cases, fakes, plan/report snapshots, and a
 validate → plan → run → normalize path for independently maintained pipelines.
-Full graduation of this foundation is planned for 0.37.
 
 Security invariants:
 
-- fixtures are static logical rows only
+- fixtures are static logical rows only (bounded counts)
 - snapshots and case results must not contain resolved secret values
 - secret providers used here return only fixture-declared values
 - snapshot files are never overwritten unless ``update=True`` is explicit
+- artifacts must stay size-bounded (no unbounded source rows)
 """
 
 from __future__ import annotations
@@ -25,7 +25,8 @@ from typing import Any
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.serialize import canonical_plan_dict
-from etlantic.profile import Profile
+from etlantic.profile import Profile, resolve_profile
+from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.faults import FaultSpec
 from etlantic.runtime.state import RunStatus
@@ -41,10 +42,14 @@ from etlantic.testing.faults import with_faults
 
 PipelineTarget = type | Any
 
+# Foundation bounds — keep fixtures and snapshots reviewable.
+MAX_SEED_ROWS_PER_ASSET = 100
+MAX_SNAPSHOT_BYTES = 256_000
+
 
 @dataclass(frozen=True, slots=True)
 class ExpectedResult:
-    """Expected outcome for a pipeline test case (preview).
+    """Expected outcome for a pipeline test case.
 
     Attributes:
         status: Expected run status (``succeeded``, ``failed``, …).
@@ -93,7 +98,7 @@ class ExpectedResult:
 
 @dataclass(frozen=True, slots=True)
 class PipelineTestCase:
-    """Typed, deterministic, serializable application-pipeline test case (preview).
+    """Typed, deterministic, serializable application-pipeline test case.
 
     Attributes:
         case_id: Stable case identity.
@@ -142,7 +147,7 @@ class PipelineTestCase:
 
 @dataclass(frozen=True, slots=True)
 class FakeClock:
-    """Deterministic clock for pipeline tests (preview)."""
+    """Deterministic clock for pipeline tests."""
 
     instant: datetime = field(
         default_factory=lambda: datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -154,7 +159,7 @@ class FakeClock:
 
 @dataclass(frozen=True, slots=True)
 class FakeRunIdentity:
-    """Deterministic run identity (preview)."""
+    """Deterministic run identity."""
 
     run_id: str = "test-run-0001"
     pipeline_id: str | None = None
@@ -164,7 +169,7 @@ class FakeRunIdentity:
 
 
 class FakeSecretProvider:
-    """Fixture-only secret provider (preview).
+    """Fixture-only secret provider.
 
     Resolves only names declared in ``values``. Never contacts external systems.
     Resolved values must not be written into plans/reports by callers.
@@ -175,7 +180,7 @@ class FakeSecretProvider:
         self.descriptor = SecretProviderDescriptor(
             name="fake",
             engine="fake",
-            version="0.36.0",
+            version="0.37.0",
             capabilities=SecretProviderCapabilities(in_memory_cache=True),
         )
 
@@ -196,7 +201,7 @@ class FakeSecretProvider:
 
 @dataclass(frozen=True, slots=True)
 class PipelineCaseResult:
-    """Normalized result of ``run_pipeline_case`` (preview)."""
+    """Normalized result of ``run_pipeline_case``."""
 
     case_id: str
     status: str
@@ -216,6 +221,28 @@ class PipelineCaseResult:
         }
 
 
+def _assert_seed_bounds(seed: Mapping[str, Sequence[Any]]) -> None:
+    for asset, rows in dict(seed).items():
+        if len(rows) > MAX_SEED_ROWS_PER_ASSET:
+            raise ValueError(
+                f"seed asset {asset!r} has {len(rows)} rows; "
+                f"max is {MAX_SEED_ROWS_PER_ASSET} (foundation size bound)"
+            )
+
+
+def _assert_payload_size(payload: Mapping[str, Any] | str, *, path: str) -> None:
+    text = (
+        payload
+        if isinstance(payload, str)
+        else json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    )
+    if len(text.encode("utf-8")) > MAX_SNAPSHOT_BYTES:
+        raise ValueError(
+            f"{path} exceeds {MAX_SNAPSHOT_BYTES} bytes "
+            "(foundation size bound; reduce fixtures or expected rows)"
+        )
+
+
 def _normalize_report(report: PipelineRunReport) -> dict[str, Any]:
     data = report.to_dict()
     # Drop volatile timestamps for snapshot stability.
@@ -230,12 +257,14 @@ def _normalize_report(report: PipelineRunReport) -> dict[str, Any]:
         transition.pop("at", None)
         transition.pop("timestamp", None)
     _assert_no_resolved_secrets(data, path="report")
+    _assert_payload_size(data, path="report")
     return data
 
 
 def _normalize_plan(plan: PipelinePlan) -> dict[str, Any]:
     data = canonical_plan_dict(plan)
     _assert_no_resolved_secrets(data, path="plan")
+    _assert_payload_size(data, path="plan")
     return data
 
 
@@ -279,6 +308,7 @@ def snapshot_plan(
     target = Path(path)
     payload = _normalize_plan(plan) if isinstance(plan, PipelinePlan) else dict(plan)
     _assert_no_resolved_secrets(payload, path="snapshot_plan")
+    _assert_payload_size(payload, path="snapshot_plan")
     if update:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(
@@ -307,6 +337,7 @@ def snapshot_report(
         else dict(report)
     )
     _assert_no_resolved_secrets(payload, path="snapshot_report")
+    _assert_payload_size(payload, path="snapshot_report")
     if update:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(
@@ -340,14 +371,17 @@ def run_pipeline_case(
     profile: str | Profile | None = None,
     runtime: PipelineRuntime | None = None,
     identity: FakeRunIdentity | None = None,
+    context: PlanningContext | None = None,
 ) -> PipelineCaseResult:
-    """Validate → plan → run → normalize a pipeline test case (preview).
+    """Validate → plan → run → normalize a pipeline test case.
 
     Args:
         case: Typed test case with static seed rows.
         profile: Optional profile override.
         runtime: Optional runtime (defaults to a fresh ``PipelineRuntime``).
-        identity: Optional fake run identity (metadata only for preview).
+        identity: Optional fake run identity (metadata only).
+        context: Optional planning context; when omitted, built from the
+            runtime registry after ``ensure_plugins_for_profile``.
 
     Returns:
         ``PipelineCaseResult`` with normalized plan/report and ``ok`` flag.
@@ -362,7 +396,17 @@ def run_pipeline_case(
     fault_ctx = with_faults(*case.faults) if case.faults else nullcontext()
     with fault_ctx:
         try:
-            validation = pipe.validate(profile=resolved_profile)
+            _assert_seed_bounds(case.seed)
+            profile_obj = (
+                resolved_profile
+                if isinstance(resolved_profile, Profile)
+                else resolve_profile(resolved_profile)
+            )
+            rt.ensure_plugins_for_profile(profile_obj)
+            plan_ctx = context or PlanningContext.create(
+                profile=profile_obj, registry=rt.registry
+            )
+            validation = pipe.validate(profile=resolved_profile, context=plan_ctx)
             has_errors = getattr(validation, "has_errors", False)
             if callable(has_errors):
                 has_errors = has_errors()
@@ -372,11 +416,13 @@ def run_pipeline_case(
                     if hasattr(validation, "to_text")
                     else str(validation)
                 )
-            plan = pipe.plan(profile=resolved_profile)
+            plan = pipe.plan(profile=resolved_profile, context=plan_ctx)
             plan_blob = _normalize_plan(plan)
             for asset, rows in dict(case.seed).items():
                 rt.memory.seed(asset, list(rows))
-            report = pipe.run(profile=resolved_profile, runtime=rt)
+            report = pipe.run(
+                profile=resolved_profile, runtime=rt, context=plan_ctx
+            )
             report_blob = _normalize_report(report)
             status = (
                 report.status.value
@@ -453,6 +499,7 @@ def emit_case_result_json(
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = result.to_dict()
     _assert_no_resolved_secrets(payload, path="case_result")
+    _assert_payload_size(payload, path="case_result")
     target.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -460,11 +507,13 @@ def emit_case_result_json(
 
 
 def inject_faults(*specs: FaultSpec):
-    """Case-level fault binding (preview alias of ``with_faults``)."""
+    """Case-level fault binding (alias of ``with_faults``)."""
     return with_faults(*specs)
 
 
 __all__ = [
+    "MAX_SEED_ROWS_PER_ASSET",
+    "MAX_SNAPSHOT_BYTES",
     "ExpectedResult",
     "FakeClock",
     "FakeRunIdentity",

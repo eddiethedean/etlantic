@@ -1,0 +1,9 @@
+{
+  "schema": "etlantic.release_baseline/1",
+  "release": "0.37.0",
+  "source_tag": "v0.37.0",
+  "python_range": ">=3.11,<3.14",
+  "packages": [],
+  "notes": "Filled at candidate freeze with locally built wheel hashes before publish.",
+  "status": "candidate-pending"
+}

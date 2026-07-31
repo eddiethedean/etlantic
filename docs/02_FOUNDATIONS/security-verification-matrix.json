@@ -1,0 +1,246 @@
+{
+  "schema": "etlantic.security_verification_matrix/1",
+  "release": "0.37",
+  "scope": "single-tenant pilot envelope",
+  "source": "docs/02_FOUNDATIONS/SECURITY.md § Implemented through 0.37",
+  "controls": [
+    {
+      "id": "SEC-SECRETS-PLAN",
+      "name": "Secret-free plans and reports",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/plan/test_planner.py",
+        "tests/plan/test_serialize.py",
+        "tests/secrets/test_secrets.py",
+        "tests/unit/test_hardening_top20_0_34.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-PROFILE-MODE",
+      "name": "Profile.security_mode production fail-closed trust",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/profile/test_profile_0_19.py",
+        "tests/unit/test_tooling_0_9.py",
+        "tests/cli/test_production_allowlist_cli.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-PLUGIN-ALLOWLIST",
+      "name": "Production plugin_allowlist fail-closed selection",
+      "status": "mandatory",
+      "owner": "plugin maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py",
+        "tests/unit/test_tooling_0_9.py",
+        "tests/cli/test_production_allowlist_cli.py",
+        "tests/runtime/test_plugin_discovery_profile.py"
+      ],
+      "residual_risk": "Allowlist is selection policy, not an import-time sandbox; install boundary remains adopter-owned"
+    },
+    {
+      "id": "SEC-PROFILE-NAMED",
+      "name": "Strict named profile resolution (PMCFG100)",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/profile/test_profile_0_19.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-PLAN-FINGERPRINT",
+      "name": "Plan fingerprint verification at trust boundaries",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/plan/test_freeze_0_19.py",
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-VALIDATION-PHASES",
+      "name": "Multi-phase validation before planning/execution",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/validation/test_phases.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-SCHEMA-HISTORY",
+      "name": "Schema history fingerprints without source rows",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/schema_drift/test_schema_history_hardening_0_34.py",
+        "tests/unit/test_hardening_top20_0_34.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-SQL-PARAMS",
+      "name": "Parameterized SQL and trusted-SQL gates",
+      "status": "mandatory",
+      "owner": "plugin maintainers",
+      "verification": [
+        "tests/sql/test_sql_security.py",
+        "tests/sql/test_sql_portable_security.py"
+      ],
+      "residual_risk": "Untrusted raw SQL fragments remain out of scope"
+    },
+    {
+      "id": "SEC-DIAG-SARIF",
+      "name": "SARIF/JSON diagnostics for CI",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/cli/test_cli.py",
+        "tests/unit/test_tooling_0_9.py",
+        "tests/testing/test_application_pipeline_burn_in_0_36.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-REDACTION",
+      "name": "Central redaction for logs and reports",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/runtime/test_bugfixes.py",
+        "tests/unit/test_hardening_next20_0_34.py",
+        "tests/compatibility/test_security_compatibility_0_36.py",
+        "tests/testing/test_testing_foundation_0_37.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-SAFE-IO",
+      "name": "SafeIoPolicy approved roots and atomic writes",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "Kernel/FS race windows and host mounts outside SafeIoPolicy remain adopter-owned"
+    },
+    {
+      "id": "SEC-OUTBOUND-DENY",
+      "name": "Outbound default-deny (SSRF edges)",
+      "status": "partial",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "Default-deny and host allowlists are tested; residual SSRF edges include DNS rebinding races, redirect chains, and adopter webhook topology outside the unit envelope"
+    },
+    {
+      "id": "SEC-UNSAFE-SERIAL",
+      "name": "Unsafe serialization prohibition",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py",
+        "tests/secrets/test_secrets.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-ARTIFACT-ISOLATION",
+      "name": "Artifact and cache isolation keys",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "Single-tenant reference keys only; cross-tenant isolation is adopter-owned until the control-plane program"
+    },
+    {
+      "id": "SEC-SECURITY-EVENT",
+      "name": "Versioned SecurityEvent audit events",
+      "status": "partial",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "Versioned SecurityEvent is operational evidence only; not an immutable compliance audit system of record"
+    },
+    {
+      "id": "SEC-RELEASE-PROVENANCE",
+      "name": "Release SHA-256 digests and GitHub attestations",
+      "status": "mandatory",
+      "owner": "release maintainers",
+      "verification": [
+        ".github/workflows/release.yml",
+        "tests/compatibility/test_security_compatibility_0_36.py",
+        "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope when adopters verify published digests and attestations"
+    },
+    {
+      "id": "SEC-SBOM-OPTIONAL",
+      "name": "CycloneDX SBOM optional with sbom-warning.txt",
+      "status": "partial",
+      "owner": "release maintainers",
+      "verification": [
+        ".github/workflows/release.yml",
+        "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md"
+      ],
+      "residual_risk": "CycloneDX generation is optional; a release may ship sbom-warning.txt instead of an SBOM—confirm the published asset before assuming SBOM coverage"
+    },
+    {
+      "id": "SEC-PROTOCOL-FREEZE",
+      "name": "Plugin SDK /1 protocol freeze",
+      "status": "mandatory",
+      "owner": "plugin maintainers",
+      "verification": [
+        "scripts/check_protocol_freeze.py",
+        "src/etlantic/schemas/surface-inventory.json"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-WIRE-CODEC",
+      "name": "Wire codec burn-in across consecutive minors",
+      "status": "mandatory",
+      "owner": "core maintainers",
+      "verification": [
+        "scripts/check_pipeline_codec_burn_in.py",
+        "scripts/check_codec_burn_in_matrix.py",
+        "scripts/check_isolated_codec_burn_in.py",
+        "tests/compatibility/test_codec_burn_in_matrix.py"
+      ],
+      "residual_risk": "None for single-tenant pilot envelope"
+    },
+    {
+      "id": "SEC-CLI-WRITE-ROOTS",
+      "name": "CLI write-root restriction",
+      "status": "partial",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_trust_isolation_0_20.py",
+        "tests/cli/test_cli.py"
+      ],
+      "residual_risk": "SafeIoPolicy covers approved roots for policy-backed writes; residual CLI generate/compile output-path restriction remains partial—operators must constrain working directories"
+    },
+    {
+      "id": "SEC-DOS-BUDGETS",
+      "name": "Denial-of-service / I/O budgets",
+      "status": "partial",
+      "owner": "core maintainers",
+      "verification": [
+        "tests/unit/test_extensions_0_19.py",
+        "tests/unit/transform/test_portable_corpus.py",
+        "tests/compatibility/test_security_compatibility_0_36.py",
+        "tests/unit/test_trust_isolation_0_20.py"
+      ],
+      "residual_risk": "Partial I/O, metadata, probe, and outbound budgets only; formal capacity SLA is residual"
+    }
+  ]
+}

@@ -14,10 +14,11 @@ SKIP_FILES = {
     "test_root_removals_0_26.py",
     "test_root_removals_0_27.py",
     "test_root_removals_0_28.py",
+    "test_root_removals_0_37.py",
 }
 # Historical migration / what's-new pages may show pre-removal imports intentionally.
 DOCS_SKIP = re.compile(
-    r"(MIGRATION_0_(?:1[0-9]|2[0-9]|5|6|7|8|9)_TO_|WHATS_NEW_0_(?:1[0-9]|2[0-9])|"
+    r"(MIGRATION_0_(?:1[0-9]|2[0-9]|3[0-9]|5|6|7|8|9)_TO_|WHATS_NEW_0_(?:1[0-9]|2[0-9]|3[0-9])|"
     r"CURSOR_EXTRACT_LOAD|DOCUMENTATION_AUDIT_)"
 )
 _IMPORT_RE = re.compile(
@@ -28,9 +29,14 @@ _IMPORT_RE = re.compile(
 
 def _load_removed_names() -> set[str]:
     sys.path.insert(0, str(ROOT / "src"))
-    from etlantic import _REMOVED_0_26, _REMOVED_0_27, _REMOVED_0_28
+    from etlantic import _REMOVED_0_26, _REMOVED_0_27, _REMOVED_0_28, _REMOVED_0_37
 
-    return set(_REMOVED_0_26) | set(_REMOVED_0_27) | set(_REMOVED_0_28)
+    return (
+        set(_REMOVED_0_26)
+        | set(_REMOVED_0_27)
+        | set(_REMOVED_0_28)
+        | set(_REMOVED_0_37)
+    )
 
 
 def _names_imported_from_etlantic(tree: ast.AST) -> set[str]:

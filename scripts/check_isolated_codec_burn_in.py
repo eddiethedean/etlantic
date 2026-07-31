@@ -40,22 +40,30 @@ MATRIX: tuple[tuple[str, str, str, str], ...] = (
     ("pipeline", "0.35", "0.34", "compatible"),
     ("pipeline", "0.35", "0.36", "compatible"),
     ("pipeline", "0.36", "0.35", "compatible"),
+    ("pipeline", "0.36", "0.37", "compatible"),
+    ("pipeline", "0.37", "0.36", "compatible"),
     ("pipeline", "current", "current", "compatible"),
     ("plan", "0.34", "0.35", "compatible"),
     ("plan", "0.35", "0.36", "compatible"),
+    ("plan", "0.36", "0.37", "compatible"),
     ("plan", "current", "current", "compatible"),
     ("run_report", "0.34", "0.35", "compatible"),
     ("run_report", "0.35", "0.36", "compatible"),
+    ("run_report", "0.36", "0.37", "compatible"),
     ("run_report", "0.35.0-bare", "0.36", "migrated"),
     ("run_report", "current", "current", "compatible"),
     ("profile", "0.34", "0.35", "compatible"),
     ("profile", "0.35", "0.36", "compatible"),
+    ("profile", "0.36", "0.37", "compatible"),
     ("capabilities", "0.34", "0.35", "compatible"),
     ("capabilities", "0.35", "0.36", "compatible"),
+    ("capabilities", "0.36", "0.37", "compatible"),
     ("interchange", "0.34", "0.35", "compatible"),
     ("interchange", "0.35", "0.36", "compatible"),
+    ("interchange", "0.36", "0.37", "compatible"),
     ("quality", "0.34", "0.35", "unsupported"),
     ("quality", "0.35", "0.36", "compatible"),
+    ("quality", "0.36", "0.37", "compatible"),
     ("quality", "current", "current", "compatible"),
 )
 
@@ -65,7 +73,8 @@ def _fixture_for(family: str, writer: str) -> Path | None:
         "0.34": "v0_34",
         "0.35": "v0_35",
         "0.36": "v0_36",
-        "current": "v0_36",
+        "0.37": "v0_37",
+        "current": "v0_37",
     }
     if writer == "0.35.0-bare":
         path = RELEASES / "v0_35" / "known_defects" / "run_report_bare_metadata.json"
@@ -323,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     skipped = sum(1 for f in findings if f.get("status") == "skipped")
     summary = {
         "schema": EVIDENCE_SCHEMA,
-        "release": "0.36.0",
+        "release": "0.37.0",
         "matrix": "old-new-readers-writers",
         "passed": passed,
         "failed": failed,
@@ -338,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
             / "tests"
             / "fixtures"
             / "releases"
-            / "v0_36"
+            / "v0_37"
             / "compatibility_evidence.json"
         )
     out_path.parent.mkdir(parents=True, exist_ok=True)

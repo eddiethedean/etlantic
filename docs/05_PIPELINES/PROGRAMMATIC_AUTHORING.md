@@ -1,12 +1,12 @@
 # Programmatic Authoring
 
-> **Status: Available in ETLantic 0.36.0** (introduced in 0.24).
+> **Status: Available in ETLantic 0.37.0** (introduced in 0.24).
 
 Author pipelines with immutable builders or JSON — no class declarations
 required. Class authoring remains fully supported and normalizes to the same
 `PipelineDefinition` (`etlantic.pipeline/1`).
 
-After `pip install 'etlantic==0.36.0'`, you can build, write JSON, and validate
+After `pip install 'etlantic==0.37.0'`, you can build, write JSON, and validate
 with no repository checkout.
 
 ```text

@@ -1,4 +1,7 @@
-"""Application-pipeline testing preview (0.35) — public-import examples."""
+"""Application-pipeline testing public-import examples (introduced 0.35).
+
+Stable foundation documentation lives in ``test_testing_foundation_0_37.py``.
+"""
 
 from __future__ import annotations
 
@@ -44,7 +47,7 @@ def _succeeding_case() -> PipelineTestCase:
                 )
             },
         ),
-        metadata={"preview": True},
+        metadata={"foundation": "etlantic.testing.foundation/0.37"},
     )
 
 
@@ -68,7 +71,7 @@ def test_succeeding_pipeline_case() -> None:
     result = run_pipeline_case(
         _succeeding_case(),
         runtime=PipelineRuntime(),
-        identity=FakeRunIdentity(run_id="preview-run"),
+        identity=FakeRunIdentity(run_id="foundation-run"),
     )
     assert_case_succeeded(result)
     assert result.plan

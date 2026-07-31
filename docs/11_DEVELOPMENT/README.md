@@ -21,13 +21,17 @@ released.
 
 ## Current migrations and exit gates
 
-- [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)
-- [Exit gate 0.34](EXIT_GATE_0_34.md) (Done — operations / evidence / M6)
+- [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
+- [Exit gate 0.37](EXIT_GATE_0_37.md) (In progress — stable foundation)
+- [Findings ledger 0.37](FINDINGS_0_37.md)
+- [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md)
 - [Migration 0.35 → 0.36](MIGRATION_0_35_TO_0_36.md)
-- [Exit gate 0.36](EXIT_GATE_0_36.md) (Gate-ready — joint compatibility burn-in)
+- [Exit gate 0.36](EXIT_GATE_0_36.md) (Done — joint compatibility burn-in)
 - [Findings ledger 0.36](FINDINGS_0_36.md)
 - [Migration 0.34 → 0.35](MIGRATION_0_34_TO_0_35.md)
 - [Exit gate 0.35](EXIT_GATE_0_35.md) (Done — migration completion / joint freeze / M7)
+- [Migration 0.33 → 0.34](MIGRATION_0_33_TO_0_34.md)
+- [Exit gate 0.34](EXIT_GATE_0_34.md) (Done — operations / evidence / M6)
 - [Migration 0.32 → 0.33](MIGRATION_0_32_TO_0_33.md)
 - [Exit gate 0.33](EXIT_GATE_0_33.md) (Done — SQLAlchemy / relational differential / M5)
 - [Migration 0.31 → 0.32](MIGRATION_0_31_TO_0_32.md)

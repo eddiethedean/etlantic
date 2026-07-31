@@ -1,6 +1,6 @@
 # Callbacks
 
-> **Status: Available in ETLantic 0.36.0** for the shipped lifecycle callback
+> **Status: Available in ETLantic 0.37.0** for the shipped lifecycle callback
 > surface. Broader invalid-data quarantine APIs remain future design.
 
 Callbacks let applications respond to pipeline lifecycle outcomes without
@@ -72,7 +72,7 @@ from the plan; they do not require unshipped callback helpers.
 
 ## Future design — invalid-data quarantine
 
-!!! warning "Future design—not an ETLantic 0.36 API guide"
+!!! warning "Future design—not an ETLantic 0.37 API guide"
     Dedicated `on_invalid_data` / quarantine action helpers are not shipped.
     Use contract validation boundaries, invalid-output ports, and sinks for
     quarantine-style flows today.

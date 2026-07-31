@@ -1,20 +1,19 @@
-# Public Surface Inventory (0.36)
+# Public Surface Inventory (0.37)
 
-> **Status: Available in ETLantic 0.36.0.** Canonical public surface for the
-> **0.36 reference envelope**.
+> **Status: Available in ETLantic 0.37.0.** Canonical public surface for the
+> **0.37 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
-(also packaged under `etlantic.schemas`). Regenerated from that file for the
-**0.36 reference envelope**.
+(also packaged under `etlantic.schemas`). Keep this page aligned with that file.
 
 Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.36 reference envelope |
-| `provisional` | Public but may change with migration notes before the 0.37 stable foundation |
+| `stable` | Supported within the documented 0.37 reference envelope |
+| `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a 0.37 stable-foundation obligation |
-| `compatibility` | 0.x root alias (warn once); prefer the owning namespace |
+| `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
 | `private` | Underscore modules / internal helpers — do not import |
 
 ## Recommended import style
@@ -34,13 +33,13 @@ Stable root symbols (`sdk_root_stable`):
 | `plan_pipeline`, `explain_plan`, `compile_plan` |
 | `ValidationReport`, `PipelineRunReport`, `SecretRef` |
 
-Prefer `etl.authoring` for programmatic definition APIs. Provisional root:
-`DataContractModel` (prefer [ODCS](../03_DATA_CONTRACTS/ODCS.md) / `Data` paths). In **0.26**/**0.27**/**0.28**, root
-facade aliases were removed in waves (see
-[Migration 0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md),
-[Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md), and
-[Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md)). Remaining
-demoted 0.x root aliases warn once — see
+Prefer `etl.authoring` for programmatic definition APIs. `DataContractModel`
+was **removed** in 0.37.0 — use `ContractModel` / `Data` (see
+[Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md)). Earlier
+root facade alias waves:
+[0.25 → 0.26](../11_DEVELOPMENT/MIGRATION_0_25_TO_0_26.md),
+[0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md),
+[0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md). Removal inventory:
 [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md).
 
 ## Lazy namespaces
@@ -56,16 +55,24 @@ demoted 0.x root aliases warn once — see
 | `etl.orchestration` | `etlantic.orchestration` | stable |
 | `etl.viz` | `etlantic.viz` | stable |
 | `etl.secrets` | `etlantic.secrets` | stable |
-| `etl.testing` | `etlantic.testing` | stable |
+| `etl.testing` | `etlantic.testing` | stable (application-pipeline foundation in 0.37) |
 | `etl.quality` | `etlantic.quality` | provisional |
 
 ## Plan helpers (stable)
 
-| Symbol | Notes |
+Foundation immutability contract for `PipelinePlan` (not full object-graph
+immutability):
+
+| Symbol | Role |
 |---|---|
-| `verify_plan_fingerprint` | Trust boundary check at deserialize / compile / run |
-| `deep_freeze` | Freezes nested mappings → `MappingProxyType`, lists → tuples, sets → frozensets; dataclasses and unknown objects pass through unchanged |
+| `deep_freeze` | Freeze nested mappings → `MappingProxyType`, lists → tuples, sets → frozensets; dataclasses and unknown objects pass through unchanged |
+| Canonical serialize | Secret-free `etlantic.plan/1` JSON with stable key ordering for fingerprints |
+| `verify_plan_fingerprint` | Trust-boundary check at deserialize / compile / run |
 | `resolve_profile` | Strict named profile resolution |
+
+See the
+[freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
+and [Planning](../05_PIPELINES/PLANNING.md#plan-immutability-contract).
 
 ## CLI (stable)
 
@@ -81,7 +88,7 @@ See [CLI](CLI.md).
 
 Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 [protocol `/1` freeze](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
-**frozen in 0.28.0** per [PROTOCOL_EVOLUTION](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)).
+(**frozen in 0.28.0** per [PROTOCOL_EVOLUTION](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)).
 
 | Schema ID | Class |
 |---|---|
@@ -104,11 +111,17 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.spark/1` | stable |
 | `etlantic.orchestration/1` | stable |
 | `etlantic.transform-compiler/1` | stable |
-| `etlantic.scheduler/1` | provisional |
+| `etlantic.scheduler/1` | stable (MVP — Prefect direct-execution bounds) |
+
+## Foundations
+
+| Surface | Class |
+|---|---|
+| `etlantic.testing` | stable |
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.36.0`). Details:
+Pin to the same minor as core (`==0.37.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |
@@ -129,4 +142,5 @@ Pin to the same minor as core (`==0.36.0`). Details:
 
 - [API Reference](API_REFERENCE.md)
 - [Optional packages](OPTIONAL_PACKAGES.md)
+- [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md)
 - [Protocol Evolution](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)

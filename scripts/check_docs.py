@@ -28,7 +28,7 @@ STANDARD_PAGES = {
 }
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/v0.36.0/"
+        "https://etlantic.readthedocs.io/en/v0.37.0/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
@@ -410,7 +410,7 @@ def check_control_plane_plan() -> None:
     plan_urls = {
         f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
         f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
-        f"https://etlantic.readthedocs.io/en/v0.36.0/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/v0.37.0/{plan_rel}/",
     }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")
@@ -2430,6 +2430,19 @@ def main() -> None:
             "surface-inventory.json cli_flags_stable must include "
             "--accept-legacy-bindings"
         )
+
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_surface_inventory.py")],
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_diagnostic_stability.py")],
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_protocol_freeze.py")],
+        check=True,
+    )
 
     # CLI.md must document every public CLI command (contract vs Typer surface).
     sys.path.insert(0, str(ROOT / "src"))

@@ -15,9 +15,8 @@ from etlantic import (
     Output,
     Pipeline,
     Transformation,
-    load_data_contract,
-    write_odcs,
 )
+from etlantic.contracts import load_data_contract, write_odcs
 from etlantic.interchange import (
     diff_data_contracts,
     graphs_equivalent,

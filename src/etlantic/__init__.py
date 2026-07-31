@@ -19,8 +19,8 @@ Lazy namespaces (import-safe; no optional engines until accessed):
 ``import etlantic as etl``).
 
 ``from etlantic import Data, Pipeline`` and public submodule imports remain
-supported. Specialist root exports demoted in 0.22 remain available as
-0.x compatibility aliases (warn once) — prefer the owning namespace.
+supported. Specialist symbols live on owning modules or lazy namespaces
+(``etl.dataframe``, ``etl.sql``, …) — not on the curated root.
 
 Optional plugins live in separate packages (``etlantic-polars``,
 ``etlantic-sql``, ``etlantic-pyspark``, ``etlantic-airflow``, …). Install only
@@ -30,7 +30,6 @@ the engines you need and pin matching minors throughout ETLantic's 0.x roadmap.
 from __future__ import annotations
 
 import importlib
-import warnings
 from typing import Any
 
 from etlantic._version import __version__
@@ -47,7 +46,7 @@ from etlantic.secrets import SecretRef
 from etlantic.transformation import Transformation
 
 # Curated root facade (stable ownership — see surface-inventory.json).
-# Lazy namespaces and demoted aliases are resolved in __getattr__.
+# Lazy namespaces and removed-root messages are resolved in __getattr__.
 
 _CURATED: dict[str, Any] = {
     "Data": Data,
@@ -85,49 +84,160 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "service": "etlantic.service",
 }
 
-# 0.x compatibility aliases for symbols demoted off the curated root.
-# Values are (module, attribute). Access warns once per process.
-_DEMOTED_ALIASES: dict[str, tuple[str, str]] = {
-    "ArtifactOwnership": ("etlantic.dataframe", "ArtifactOwnership"),
-    "ArtifactRef": ("etlantic.plan", "ArtifactRef"),
-    "ArtifactStrategy": ("etlantic.plan", "ArtifactStrategy"),
-    "BackfillRequest": ("etlantic.reliability_runtime", "BackfillRequest"),
-    "CapabilityDecision": ("etlantic.capabilities", "CapabilityDecision"),
-    "DataframeValidationOutcome": ("etlantic.dataframe", "DataframeValidationOutcome"),
-    "DataframeValidationPolicy": ("etlantic.dataframe", "DataframeValidationPolicy"),
-    "DatasetRef": ("etlantic.spark", "DatasetRef"),
-    "Diagnostic": ("etlantic.diagnostics", "Diagnostic"),
-    "DiagnosticAction": ("etlantic.diagnostics", "DiagnosticAction"),
-    "DriftAction": ("etlantic.schema_policy", "DriftAction"),
-    "Edge": ("etlantic.model", "Edge"),
-    "ImplementationRecord": ("etlantic.transformation", "ImplementationRecord"),
-    "LogicalGraph": ("etlantic.model", "LogicalGraph"),
-    "Node": ("etlantic.model", "Node"),
-    "NodeKind": ("etlantic.model", "NodeKind"),
-    "OutboundPolicy": ("etlantic.outbound", "OutboundPolicy"),
-    "OutputRef": ("etlantic.refs", "OutputRef"),
-    "PluginCapabilities": ("etlantic.capabilities", "PluginCapabilities"),
-    "PluginManifest": ("etlantic.plugin_manifest", "PluginManifest"),
-    "ReportStore": ("etlantic.reports", "ReportStore"),
-    "SafeIoPolicy": ("etlantic.io_policy", "SafeIoPolicy"),
-    "SchemaDriftPolicy": ("etlantic.schema_policy", "SchemaDriftPolicy"),
-    "SecretValue": ("etlantic.secrets", "SecretValue"),
-    "Severity": ("etlantic.diagnostics", "Severity"),
-    "SourceLocation": ("etlantic.diagnostics", "SourceLocation"),
-    "SparkUdfPolicy": ("etlantic.spark", "SparkUdfPolicy"),
-    "Step": ("etlantic.transformation", "Step"),
-    "SubpipelineInstance": ("etlantic.pipeline", "SubpipelineInstance"),
-    "ValidationPolicy": ("etlantic.policy", "ValidationPolicy"),
-    "discover_dataframe_plugins": ("etlantic.dataframe", "discover_dataframe_plugins"),
-    "discover_orchestrator_plugins": (
-        "etlantic.orchestration",
-        "discover_orchestrator_plugins",
+# Demoted root aliases were removed in 0.37.0 (see _REMOVED_0_37).
+_DEMOTED_ALIASES: dict[str, tuple[str, str]] = {}
+
+_REMOVED_0_37: dict[str, str] = {
+    "ArtifactOwnership": (
+        "ArtifactOwnership was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.dataframe instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
     ),
-    "discover_spark_plugins": ("etlantic.spark", "discover_spark_plugins"),
-    "discover_spark_providers": ("etlantic.spark", "discover_spark_providers"),
-    "load_data_contract": ("etlantic.contracts", "load_data_contract"),
-    "write_odcs": ("etlantic.contracts", "write_odcs"),
+    "ArtifactRef": (
+        "ArtifactRef was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.plan instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "ArtifactStrategy": (
+        "ArtifactStrategy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.plan instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "BackfillRequest": (
+        "BackfillRequest was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.reliability_runtime instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "CapabilityDecision": (
+        "CapabilityDecision was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.capabilities instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DataframeValidationOutcome": (
+        "DataframeValidationOutcome was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.dataframe instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DataframeValidationPolicy": (
+        "DataframeValidationPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.dataframe instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DatasetRef": (
+        "DatasetRef was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "Diagnostic": (
+        "Diagnostic was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.diagnostics instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DiagnosticAction": (
+        "DiagnosticAction was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.diagnostics instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DriftAction": (
+        "DriftAction was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.schema_policy instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "Edge": (
+        "Edge was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.model instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "ImplementationRecord": (
+        "ImplementationRecord was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.transformation instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "LogicalGraph": (
+        "LogicalGraph was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.model instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "Node": (
+        "Node was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.model instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "NodeKind": (
+        "NodeKind was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.model instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "OutboundPolicy": (
+        "OutboundPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.outbound instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "OutputRef": (
+        "OutputRef was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.refs instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "PluginCapabilities": (
+        "PluginCapabilities was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.capabilities instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "PluginManifest": (
+        "PluginManifest was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.plugin_manifest instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "ReportStore": (
+        "ReportStore was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.reports instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SafeIoPolicy": (
+        "SafeIoPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.io_policy instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SchemaDriftPolicy": (
+        "SchemaDriftPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.schema_policy instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SecretValue": (
+        "SecretValue was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.secrets instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "Severity": (
+        "Severity was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.diagnostics instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SourceLocation": (
+        "SourceLocation was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.diagnostics instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SparkUdfPolicy": (
+        "SparkUdfPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "Step": (
+        "Step was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.transformation instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "SubpipelineInstance": (
+        "SubpipelineInstance was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.pipeline instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "ValidationPolicy": (
+        "ValidationPolicy was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.policy instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "discover_dataframe_plugins": (
+        "discover_dataframe_plugins was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.dataframe instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "discover_orchestrator_plugins": (
+        "discover_orchestrator_plugins was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.orchestration instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "discover_spark_plugins": (
+        "discover_spark_plugins was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "discover_spark_providers": (
+        "discover_spark_providers was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.spark instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "load_data_contract": (
+        "load_data_contract was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.contracts instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "write_odcs": (
+        "write_odcs was removed from the etlantic root in 0.37.0; "
+        "import from etlantic.contracts instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
+    "DataContractModel": (
+        "DataContractModel was removed from the etlantic root in 0.37.0; "
+        "use etlantic.Data / ContractModel instead. See docs/11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md."
+    ),
 }
+
 
 _REMOVED_AUTHORING = {
     "Source": (
@@ -470,7 +580,6 @@ _REMOVED_0_28: dict[str, str] = {
     ),
 }
 
-_warned_demoted: set[str] = set()
 
 __all__ = [
     *list(_CURATED.keys()),
@@ -480,23 +589,15 @@ __all__ = [
 def __dir__() -> list[str]:
     return sorted(
         set(__all__)
-        | set(_DEMOTED_ALIASES)
         | set(_REMOVED_0_26)
         | set(_REMOVED_0_27)
         | set(_REMOVED_0_28)
-        | {"DataContractModel"}
+        | set(_REMOVED_0_37)
         | set(_LAZY_NAMESPACES)
     )
 
 
 def __getattr__(name: str) -> Any:
-    if name == "DataContractModel":
-        warnings.warn(
-            "DataContractModel is deprecated; use etlantic.Data instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return Data
     if name in _REMOVED_AUTHORING:
         raise AttributeError(_REMOVED_AUTHORING[name])
     if name in _REMOVED_0_26:
@@ -505,25 +606,10 @@ def __getattr__(name: str) -> Any:
         raise AttributeError(_REMOVED_0_27[name])
     if name in _REMOVED_0_28:
         raise AttributeError(_REMOVED_0_28[name])
+    if name in _REMOVED_0_37:
+        raise AttributeError(_REMOVED_0_37[name])
     if name in _LAZY_NAMESPACES:
         module = importlib.import_module(_LAZY_NAMESPACES[name])
         globals()[name] = module
         return module
-    if name in _DEMOTED_ALIASES:
-        module_name, attr = _DEMOTED_ALIASES[name]
-        if name not in _warned_demoted:
-            _warned_demoted.add(name)
-            warnings.warn(
-                f"etlantic.{name} is a 0.x compatibility alias; "
-                f"prefer importing from {module_name} "
-                f"(or use the owning lazy namespace). "
-                "See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md and "
-                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        value = getattr(importlib.import_module(module_name), attr)
-        # Cache without re-warning on subsequent attribute access.
-        globals()[name] = value
-        return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

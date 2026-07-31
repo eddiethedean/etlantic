@@ -1,6 +1,6 @@
-# Pilot evidence packet (0.36)
+# Pilot evidence packet (0.37)
 
-> **Status: Available in ETLantic 0.36.0.** Reproducible checklist for a
+> **Status: Available in ETLantic 0.37.0.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -8,10 +8,10 @@
 
 | Component | Pin |
 |---|---|
-| Core | `etlantic==0.36.0` |
-| Docs | `https://etlantic.readthedocs.io/en/v0.36.0/` |
-| Optional engines | Matching `0.36.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
-| Facade | `medallantic==0.36.0` when used |
+| Core | `etlantic==0.37.0` |
+| Docs | `https://etlantic.readthedocs.io/en/v0.37.0/` |
+| Optional engines | Matching `0.37.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
+| Facade | `medallantic==0.37.0` when used |
 
 ## Topology (reference)
 
@@ -21,7 +21,7 @@
 3. Local or one engine plugin (Polars **or** Pandas **or** SQL **or** local PySpark)
 4. Optional Airflow compile or Prefect local MVP — not a managed control plane
 
-Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.36.0/examples/sample_pilot).
+Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.37.0/examples/sample_pilot).
 
 ## Ownership
 
@@ -30,7 +30,7 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 | Pipeline contracts and wiring | Adopter |
 | Plugin allowlist / trust | Adopter (fail-closed in production) |
 | Secrets | Adopter SecretRef providers — never embed values |
-| Multi-tenant isolation | Out of scope in 0.36 |
+| Multi-tenant isolation | Out of scope in 0.37 |
 | Incident response / SLA | Community only — see [SUPPORT](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md) |
 
 ## Recovery
@@ -50,8 +50,8 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 
 ## Sign-off checklist
 
-- [ ] `etlantic --version` prints `0.36.0`
+- [ ] `etlantic --version` prints `0.37.0`
 - [ ] Quickstart succeeds and intentional `PMPIPE210` fails closed
 - [ ] Production profile has `plugin_allowlist`
-- [ ] Docs consulted from `/en/v0.36.0/` for the pin
+- [ ] Docs consulted from `/en/v0.37.0/` for the pin
 - [ ] Limitations reviewed in [Capabilities](CAPABILITIES.md)

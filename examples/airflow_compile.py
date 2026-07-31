@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.35.0 etlantic-airflow==0.35.0
+    pip install etlantic==0.37.0 etlantic-airflow==0.37.0
 
 Run with:
 

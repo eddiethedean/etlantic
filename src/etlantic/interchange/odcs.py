@@ -172,7 +172,7 @@ def ensure_data_contract_type(
             Diagnostic(
                 code="PMDATA101",
                 severity=Severity.ERROR,
-                message="Expected a DataContractModel / ContractModel subclass.",
+                message="Expected a Data / ContractModel subclass.",
                 path=path,
                 source=SourceLocation(object_ref=repr(model)),
             )

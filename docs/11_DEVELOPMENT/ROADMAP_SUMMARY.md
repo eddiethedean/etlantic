@@ -1,8 +1,9 @@
 # Roadmap Summary
 
 ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
-**0.36.0** is the current gate-ready candidate for joint compatibility
-burn-in. Milestones describe capability order, not release-date commitments.
+**0.36.0** closed joint compatibility burn-in. **0.37** is the current
+in-progress stable-foundation gate. Milestones describe capability order, not
+release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -10,10 +11,10 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.36 | Joint compatibility burn-in | [Gate-ready for tag/publish](EXIT_GATE_0_36.md) |
-| Previous | 0.35 | Migration completion and joint freeze (M7) | [Shipped](EXIT_GATE_0_35.md) |
-| Next | 0.37 | Stable foundation | Planned |
-| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | In progress |
+| Current | 0.37 | Stable foundation | [Gate-ready for tag/publish](EXIT_GATE_0_37.md) |
+| Previous | 0.36 | Joint compatibility burn-in | [Gate-ready / shipped evidence](EXIT_GATE_0_36.md) |
+| Next | 0.38 | Data connectivity and connector SDK | Planned |
+| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
 | Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
 
 “Planned” records capability order only. It does not imply a release date or
@@ -191,17 +192,27 @@ See [What's New in 0.34](../01_GETTING_STARTED/WHATS_NEW_0_34.md) and
 
 ## Shipped: 0.35 — Migration completion and joint freeze (M7)
 
-ETLantic **0.36.0** closed **Migration Completion and Joint Freeze (M7)**:
+ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**:
 SparkForge inventory/generation, authoring inspect/rewrite/provenance,
 application-pipeline testing preview, and facade protocol freeze prep.
-See [What's New in 0.36](../01_GETTING_STARTED/WHATS_NEW_0_36.md) and
+See [What's New in 0.35](../01_GETTING_STARTED/WHATS_NEW_0_35.md) and
 [Exit gate 0.35](EXIT_GATE_0_35.md).
 
-## Next: 0.36 — Joint compatibility burn-in
+## Shipped: 0.36 — Joint compatibility burn-in
 
-**0.36** accumulates consecutive minor upgrade evidence for ETLantic and
+**0.36.0** accumulates consecutive minor upgrade evidence for ETLantic and
 Medallantic together. See
+[What's New in 0.36](../01_GETTING_STARTED/WHATS_NEW_0_36.md),
+[Exit gate 0.36](EXIT_GATE_0_36.md), and
 [ROADMAP § 0.36](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#036--joint-compatibility-burn-in).
+
+## Current: 0.37 — Stable foundation
+
+**0.37** graduates the stable foundation: removals, testing graduation,
+acceptance suite 1–21, security matrix, freeze, and release rehearsal. See
+[What's New in 0.37](../01_GETTING_STARTED/WHATS_NEW_0_37.md),
+[Exit gate 0.37](EXIT_GATE_0_37.md), and
+[ROADMAP § 0.37](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md#037--stable-foundation).
 
 ## 0.29–0.35 — Medallantic feature parity (with ETLantic substrate)
 
@@ -261,7 +272,7 @@ than an indefinite residual:
   and release-candidate proof
 - **0.43 / CP-GA:** integrated production graduation after every gate passes
 
-The program remains outside the 0.36 single-tenant envelope and never treats
+The program remains outside the 0.37 single-tenant envelope and never treats
 in-process Python context as a tenant boundary. See the
 [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
@@ -304,8 +315,8 @@ trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
 frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 0.24 functional/JSON authoring convergence, followed by core compatibility
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
-parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), release
-candidate (**0.37**), and stable foundation (**0.37**).
+parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), and stable
+foundation (**0.37**).
 TransformationModel incubation is deferred to **0.52** so connectivity,
 interoperability, operations, and provider work can precede it.
 

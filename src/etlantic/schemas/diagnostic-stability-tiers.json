@@ -1,0 +1,40 @@
+{
+  "schema": "etlantic.diagnostic-stability-tiers/1",
+  "version": "0.37.0",
+  "classes": [
+    "stable",
+    "provisional",
+    "experimental"
+  ],
+  "class_meanings": {
+    "stable": "Code family is part of the 0.37 foundation envelope. Existing codes keep identity; incompatible renumbering or removal requires migration notes.",
+    "provisional": "Public and emitted today, but the family may change before a later explicit graduation (aligned with provisional wire/protocol surfaces).",
+    "experimental": "May change or be removed without a 0.37 stable-foundation compatibility obligation."
+  },
+  "families": {
+    "PMAUTH": "stable",
+    "PMCAT": "stable",
+    "PMCFG": "stable",
+    "PMDATA": "stable",
+    "PMDF": "stable",
+    "PMEXEC": "stable",
+    "PMGEN": "stable",
+    "PMORCH": "stable",
+    "PMPIPE": "stable",
+    "PMPLAN": "stable",
+    "PMPLUG": "stable",
+    "PMQTY": "provisional",
+    "PMSCHED": "stable",
+    "PMSEC": "stable",
+    "PMSPARK": "stable",
+    "PMSQL": "stable",
+    "PMSRC": "stable",
+    "PMTRN": "stable",
+    "PMXFORM": "stable"
+  },
+  "notes": [
+    "Family = alphabetic prefix of a shipped diagnostic code (trailing digits stripped).",
+    "PMQTY is provisional while etlantic.quality/1 remains provisional.",
+    "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families."
+  ]
+}

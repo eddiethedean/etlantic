@@ -6,21 +6,23 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.36.0** (Beta / compatibility burn-in).
-Milestones **0.25** (burn-in first slice) through **0.35** (migration
-completion and joint freeze / Medallantic M7) are shipped. **0.36** is the
-joint compatibility burn-in milestone (in progress toward publish), followed
-by the **0.37** stable foundation.
+**Current release:** ETLantic **0.37.0** (Beta); **0.37** stable foundation is
+gate-ready for tag/publish rehearsal (not yet tagged/published). Milestones
+**0.25** (burn-in first slice) through **0.36** (joint compatibility burn-in)
+are shipped. **0.35** closed migration completion and joint freeze /
+Medallantic M7.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.36 | Joint compatibility burn-in | Gate-ready for tag/publish |
-| Previous | 0.35 | Migration completion and joint freeze (M7) | Shipped |
-| Next | 0.37 | Stable foundation | Planned |
-| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | In progress |
-| Post-foundation | 0.37–0.51 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
+| Current | 0.37 | Stable foundation | Gate-ready for tag/publish |
+| Previous | 0.36 | Joint compatibility burn-in | Gate-ready / shipped evidence |
+| Next | 0.38 | Data connectivity and connector SDK | Planned |
+| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
+| Post-foundation | 0.38–0.51 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
 
-For burn-in evidence, see
+For foundation evidence, see
+[What's New in 0.37](docs/01_GETTING_STARTED/WHATS_NEW_0_37.md) and the
+[0.37 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_37.md). Prior burn-in:
 [What's New in 0.36](docs/01_GETTING_STARTED/WHATS_NEW_0_36.md) and the
 [0.36 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_36.md). See the
 [roadmap summary](docs/11_DEVELOPMENT/ROADMAP_SUMMARY.md) for the short
@@ -2432,7 +2434,7 @@ first named slice of the broader compatibility burn-in band; **0.26** is the
 second slice; **0.27** is the third; **0.28** is the fourth (quadruple-minor
 window plus Plugin `/1` freeze and Medallantic M0 closeout); **0.29–0.35**
 preserve co-evolution discipline while ETLantic and Medallantic advance feature
-parity, followed by joint burn-in in **0.36** toward the 0.37 stable foundation.
+parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
@@ -3397,7 +3399,7 @@ plugin protocol remains on the stable-foundation path.
 
 ## 0.37 — Stable Foundation
 
-**Status:** Planned.
+**Status:** Gate-ready for tag/publish rehearsal.
 
 ### Public stability
 

@@ -1,6 +1,6 @@
 # Project Structure
 
-> **Status: Available in ETLantic 0.36.0.** Recommended layout after the flat
+> **Status: Available in ETLantic 0.37.0.** Recommended layout after the flat
 > `etlantic init` scaffold.
 
 An ETLantic project separates **modeling** from **execution**. Your Python
@@ -71,8 +71,8 @@ customer-pipeline/
 
 ### contracts/
 
-Contains `Data` contract models (`Data` is the preferred public alias;
-`DataContractModel` remains as a deprecated name).
+Contains `Data` contract models (`Data` is the public authoring type;
+the historical `DataContractModel` alias was removed in 0.37.0).
 
 ``` python
 class Customer(Data):

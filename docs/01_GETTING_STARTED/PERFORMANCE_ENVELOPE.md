@@ -1,17 +1,17 @@
 # Performance envelope
 
-> **Status: Available in ETLantic 0.36.0.** Coordination microbenchmarks only—
+> **Status: Available in ETLantic 0.37.0.** Coordination microbenchmarks only—
 > not warehouse throughput or SLA claims.
 
 ## Residual evaluation lead
 
-| Topic | 0.36 |
+| Topic | 0.37 |
 |---|---|
 | Maturity | Beta |
 | Support | Community; **no SLA** |
 | Scale claim | Measured **framework overhead** envelopes only |
 | Engine sizing | Adopter-owned (measure Polars/Pandas/SQL/Spark yourself) |
-| Multi-tenant / HA | Not included in 0.36; multi-tenancy is [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md), HA claims remain separately gated |
+| Multi-tenant / HA | Not included in 0.37; multi-tenancy is [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md), HA claims remain separately gated |
 
 ## What ETLantic claims
 

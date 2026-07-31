@@ -72,9 +72,21 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_surface_inventory.py
 
+      - name: Diagnostic stability check
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_diagnostic_stability.py
+
       - name: Protocol freeze check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_protocol_freeze.py
+
+      - name: Stable-foundation acceptance suite
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_stable_foundation.py
+
+      - name: Security verification matrix
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_security_matrix.py
 
       - name: Runnable example
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -585,9 +597,9 @@ jobs:
           for path in sorted(dist.glob("*.whl")) + sorted(dist.glob("*.tar.gz")):
               digest = hashlib.sha256(path.read_bytes()).hexdigest()
               files.append({"filename": path.name, "sha256": digest, "packagetype": "bdist_wheel" if path.suffix == ".whl" else "sdist"})
-          out = Path("tests/fixtures/releases/v0_36/manifest.json")
+          out = Path("tests/fixtures/releases/v0_37/manifest.json")
           payload = json.loads(out.read_text())
-          payload["packages"] = [{"package": "candidate-set", "version": "0.36.0", "files": files}]
+          payload["packages"] = [{"package": "candidate-set", "version": "0.37.0", "files": files}]
           payload["status"] = "candidate-local"
           payload["notes"] = "Locally built candidate wheel hashes from CI package job."
           out.write_text(json.dumps(payload, indent=2) + "\n")

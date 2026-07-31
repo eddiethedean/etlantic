@@ -1,6 +1,6 @@
 # Foundations
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 The Foundations section defines ETLantic's product identity, architectural
 boundaries, vocabulary, and documentation stability model.
@@ -13,7 +13,8 @@ boundaries, vocabulary, and documentation stability model.
 2. [Core Concepts](CORE_CONCEPTS.md)
 3. [Architecture](ARCHITECTURE.md)
 4. [Security Model](SECURITY.md)
-5. [Glossary](GLOSSARY.md)
+5. [Security Verification Matrix](SECURITY_VERIFICATION_MATRIX.md)
+6. [Glossary](GLOSSARY.md)
 
 **Optional philosophy** (same thesis, different angles—skip on the first pass):
 

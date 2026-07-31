@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
@@ -26,6 +27,30 @@ class _CachedResource:
     cleanup: Callable[[], Any] | None = None
     scope: str = "run"
     scope_key: str = ""
+
+
+def _provider_takes_context(provider: Callable[..., Any]) -> bool:
+    """Return True when ``provider`` accepts a positional/context argument."""
+    try:
+        sig = inspect.signature(provider)
+    except (TypeError, ValueError):
+        return True
+    if any(
+        p.kind is inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()
+    ):
+        return True
+    if "context" in sig.parameters:
+        return True
+    positional = [
+        p
+        for p in sig.parameters.values()
+        if p.kind
+        in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        )
+    ]
+    return len(positional) >= 1
 
 
 @dataclass
@@ -56,16 +81,28 @@ class ResourceManager:
             provider = self.providers.get(name)
             if provider is None:
                 raise KeyError(f"No resource provider registered for {name!r}")
-            value = await maybe_await(provider, context or {})
+            ctx = context or {}
+            if _provider_takes_context(provider):
+                value = await maybe_await(provider, ctx)
+            else:
+                value = await maybe_await(provider)
             cleanup: Callable[[], Any] | None = None
             if hasattr(value, "__aenter__") and hasattr(value, "__aexit__"):
                 cm: AbstractAsyncContextManager[Any] = value
                 value = await cm.__aenter__()
 
-                async def _cleanup() -> None:
+                async def _cleanup_async() -> None:
                     await cm.__aexit__(None, None, None)
 
-                cleanup = _cleanup
+                cleanup = _cleanup_async
+            elif hasattr(value, "__enter__") and hasattr(value, "__exit__"):
+                sync_cm = value
+                value = await anyio.to_thread.run_sync(sync_cm.__enter__)
+
+                def _cleanup_sync() -> None:
+                    sync_cm.__exit__(None, None, None)
+
+                cleanup = _cleanup_sync
             self._cache[cache_key] = _CachedResource(
                 value=value, cleanup=cleanup, scope=scope, scope_key=scope_key
             )

@@ -1,21 +1,21 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.36.0.** What ships now for controlled
+> **Status: Available in ETLantic 0.37.0.** What ships now for controlled
 > single-tenant pilots.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.36)
+## What works today (0.37)
 
-ETLantic 0.36.0 is a Beta release for documented, controlled,
+ETLantic 0.37.0 is a Beta release for documented, controlled,
 single-tenant pilots. It validates and plans typed pipelines, runs them
 locally or through supported engine plugins, and compiles valid plans to
 supported orchestration targets.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.36.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.37.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -27,12 +27,12 @@ Fit check: [Compare](COMPARE.md).
 | Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`) |
 | Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist` |
 | Observability and evidence | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
-| Testing (preview) | Application-pipeline cases via `etlantic.testing` |
+| Testing | Application-pipeline cases via `etlantic.testing` (stable foundation) |
 | Facades | `medallantic` medallion + SparkForge inventory/generate; optional `etlantic-keyring`, SQLModel, OTel |
 
 ## Limits
 
-| Topic | ETLantic 0.36 |
+| Topic | ETLantic 0.37 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots |
@@ -41,9 +41,29 @@ Fit check: [Compare](COMPARE.md).
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
 topology, compliance, and advanced control planes remain adopter-owned in
-0.36. Roadmap programs live under Contribute → Maintainers — not day-0 reading
+0.37. Roadmap programs live under Contribute → Maintainers — not day-0 reading
 (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
+
+## Supported standards policy (0.37)
+
+For the 0.37 foundation envelope, ETLantic supports these standards and
+toolkits at the declared ranges (exact pins and protocol notes:
+[Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
+
+| Standard / surface | 0.37 foundation policy |
+|---|---|
+| Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
+| ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
+| [ODCS](../03_DATA_CONTRACTS/ODCS.md) | Generate / load via ContractModel / `Data` paths |
+| [DTCS](../04_TRANSFORMATIONS/DTCS.md) | Spec `3.0.0` (`dtcsVersion: "3.0.0"`); toolkit `dtcs>=0.13,<1` (2.0.0 / 1.0.0 remain readable) |
+| [DPCS](../05_PIPELINES/DPCS.md) | Toolkit `dpcs>=0.13,<1` |
+
+Outside these ranges, expect fail-closed unknown-version / migration
+diagnostics—not silent acceptance. Diagnostic **code family** stability:
+[Diagnostic-code stability tiers](../10_REFERENCE/DIAGNOSTIC_STABILITY_TIERS.md).
+Public surface classes:
+[Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 ## Recommended bounded production deployment
 
@@ -57,14 +77,14 @@ topology, compliance, and advanced control planes remain adopter-owned in
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.36
+## Available in 0.37
 
-### Migration and testing preview
+### Migration and testing foundation
 
 | Capability | Status |
 |---|---|
 | `inspect_definition` / `rewrite_definition` / `definition_provenance` | Available |
-| Application-pipeline testing (`PipelineTestCase`, snapshots, fakes) | Available (preview) |
+| Application-pipeline testing (`PipelineTestCase`, snapshots, fakes) | Available (stable foundation) |
 | Medallantic SparkForge project inventory + safe native generation | Available (`medallantic`) |
 
 ## Previously shipped (through 0.34)
@@ -116,6 +136,8 @@ topology, compliance, and advanced control planes remain adopter-owned in
 | Runtime fault injection (test/dev) + terminal report semantics | Available |
 | Microbenchmark baselines + CI regression gate | Available |
 | Contract and configuration freeze | Available — fingerprint verify, `security_mode`, strict profiles |
+| Plan immutability helpers | Available — nest `deep_freeze` + canonical serialize + fingerprint verify (not full object-graph freeze) |
+| Diagnostic-code stability tiers | Available — [tiers](../10_REFERENCE/DIAGNOSTIC_STABILITY_TIERS.md) |
 | SQL protocol + PostgreSQL reference plugin | Available (`etlantic-sql`); PG `sql_merge=True`; SQLite fail-closed |
 | Spark protocol + local provider | Available (`etlantic-pyspark`) |
 | Delta-compatible write intents | Available (fail-closed without Delta) |
@@ -153,7 +175,6 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
 | Capability | Status |
 |---|---|
-| Application-pipeline testing helpers | **Available (preview)** in 0.36 (`etlantic.testing`); graduation planned for 0.37 |
 | Source/sink/storage connector SDK and reference set | Planned first-class for 0.38 |
 | OpenLineage metadata interoperability | Planned as a tenant-aware 0.40 gate |
 | GitOps preview-to-production workflow | Planned across 0.41–0.43 |
@@ -165,8 +186,8 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | TransformationModel incubation | Deferred to 0.52 |
 | Full LSP server productization | Continues in 0.44 |
 | Registry-backed schema history | Continues in 0.40 |
-| Production multi-tenant control plane | **Planned first-class**: 0.39–0.42 incubation → 0.43 graduation (0.36 ships only the thin reference adapter) |
-| Stable-foundation compatibility guarantees | Planned for 0.37 |
+| Production multi-tenant control plane | **Planned first-class**: 0.39–0.42 incubation → 0.43 graduation (0.37 ships only the thin reference adapter) |
+| Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 
@@ -185,7 +206,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.36.0` first).
+(the sample uses Polars — install `etlantic-polars==0.37.0` first).
 
 ```json
 {
@@ -198,7 +219,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.36.0"
+    "etlantic-polars": "==0.37.0"
   },
   "assets": {},
   "secrets": {},
@@ -214,16 +235,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.36.0'
-pip install 'etlantic-polars==0.36.0'          # optional
-pip install 'etlantic-pandas==0.36.0'          # optional
-pip install 'etlantic-sql==0.36.0'             # optional
-pip install 'etlantic-pyspark==0.36.0'         # optional
-pip install 'etlantic-airflow==0.36.0'         # optional
-pip install 'etlantic-prefect==0.36.0'         # optional
-pip install 'etlantic-keyring==0.36.0'         # optional
-pip install 'etlantic-sqlmodel==0.36.0'        # optional
-pip install 'medallantic==0.36.0'              # optional
+pip install 'etlantic==0.37.0'
+pip install 'etlantic-polars==0.37.0'          # optional
+pip install 'etlantic-pandas==0.37.0'          # optional
+pip install 'etlantic-sql==0.37.0'             # optional
+pip install 'etlantic-pyspark==0.37.0'         # optional
+pip install 'etlantic-airflow==0.37.0'         # optional
+pip install 'etlantic-prefect==0.37.0'         # optional
+pip install 'etlantic-keyring==0.37.0'         # optional
+pip install 'etlantic-sqlmodel==0.37.0'        # optional
+pip install 'medallantic==0.37.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

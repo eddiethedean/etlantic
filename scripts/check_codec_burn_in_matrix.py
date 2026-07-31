@@ -2,7 +2,7 @@
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under
-``tests/fixtures/burn_in/*/v0_24/``-``v0_27/`` and ``v0_34/``-``v0_36/`` (pipeline
+``tests/fixtures/burn_in/*/v0_24/``-``v0_27/`` and ``v0_34/``-``v0_37/`` (pipeline
 fixtures remain under ``check_pipeline_codec_burn_in.py``).
 """
 
@@ -24,6 +24,7 @@ VERSIONS = (
     "v0_34",
     "v0_35",
     "v0_36",
+    "v0_37",
 )
 
 SIBLINGS: tuple[tuple[str, str | None], ...] = (

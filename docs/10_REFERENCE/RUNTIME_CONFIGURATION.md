@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: Available in ETLantic 0.36.0.** Configure profiles, bindings, and
+> **Status: Available in ETLantic 0.37.0.** Configure profiles, bindings, and
 > engines in Python or JSON. Optional `etlantic.toml` may set `default_profile`
 > and named profile references. Only the environment variables listed here are
 > read by shipped code.
@@ -19,8 +19,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.36.0",
-        "etlantic-sql": "==0.36.0",
+        "etlantic-polars": "==0.37.0",
+        "etlantic-sql": "==0.37.0",
     },
     assets={"customer_source": "customers"},
 )
@@ -70,7 +70,7 @@ protocol. JSON console logging is available without OTel. See
 
 ## Not shipped
 
-Do not configure these as if they exist in 0.36:
+Do not configure these as if they exist in 0.37:
 
 - `ETLANTIC_CONFIG` / `ETLANTIC_PROFILE` / `ETLANTIC_PROJECT` auto-loading
 - AWS Secrets Manager / Vault providers (OS keyring is optional via

@@ -1,19 +1,19 @@
 ---
 status: available
-since: "0.36.0"
-current_minor: "0.36"
+since: "0.37.0"
+current_minor: "0.37"
 audience: developer
 ---
 
 # etlantic-fastapi API
 
-> **Status: Available in ETLantic 0.36.0.** FastAPI reference adapter.
+> **Status: Available in ETLantic 0.37.0.** FastAPI reference adapter.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-fastapi==0.36.0'
+pip install 'etlantic-fastapi==0.37.0'
 ```
 
 ```python

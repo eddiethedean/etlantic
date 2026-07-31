@@ -25,7 +25,8 @@ def main() -> int:
     exported = set(etlantic.__all__) - {"__version__"}
 
     missing_from_export = sorted(documented - exported - provisional)
-    # Provisional aliases (e.g. DataContractModel) may live only on __getattr__.
+    # Provisional symbols may be inventoried before they appear in __all__.
+    # Removed aliases (e.g. DataContractModel) must not be listed as provisional.
     extra_stable_required = sorted(stable - exported)
     if missing_from_export or extra_stable_required:
         print("Surface inventory lists symbols missing from etlantic.__all__:")
@@ -56,6 +57,23 @@ def main() -> int:
             for cmd in extra:
                 print(f"  - {cmd}")
         return 1
+
+    protocols: dict[str, str] = payload.get("protocols") or {}
+    wire: dict[str, str] = payload.get("wire_schemas") or {}
+    foundations: dict[str, str] = payload.get("foundations") or {}
+    locked = {
+        "etlantic.scheduler/1": ("protocols", protocols, "stable"),
+        "etlantic.quality/1": ("wire_schemas", wire, "provisional"),
+        "etlantic.testing": ("foundations", foundations, "stable"),
+    }
+    for key, (section, table, expected) in locked.items():
+        got = table.get(key)
+        if got != expected:
+            print(
+                f"surface-inventory {section}[{key!r}] must be {expected!r} "
+                f"(got {got!r})"
+            )
+            return 1
 
     for ns in sorted(namespaces):
         expected = ownership.get(ns)

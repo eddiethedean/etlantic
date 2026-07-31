@@ -3,7 +3,7 @@
 **Status: shipped in 0.7.0** via `etlantic-pyspark` (local Spark provider).
 Kubernetes and one managed reference path are planned for 0.47; supported
 Databricks/EMR/Spark Connect provider packs are assigned to 0.51. They are not
-shipped in 0.36.
+shipped in 0.37.
 Structured Streaming APIs are **experimental**.
 
 The PySpark execution backend enables ETLantic to execute eligible

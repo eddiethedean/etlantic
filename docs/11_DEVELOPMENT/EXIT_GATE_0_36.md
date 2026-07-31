@@ -18,7 +18,7 @@
 | `quality/1` remains provisional (documented) | Done |
 | Run-report bare → namespaced metadata migration | Done |
 | Docs: What's New / Migration 0.35→0.36 / this exit gate / findings | Done |
-| Immutable `/en/v0.36.0/` docs + published wheels | Not started (pre-publish; do not tag until asked) |
+| Immutable `/en/v0.36.0/` docs + published wheels | Wheels published (`v0.36.0`); RTD version exists but needs dashboard activate/build |
 
 ## Quantified exit scorecard
 
@@ -35,7 +35,7 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 | Production plugin paths that bypass allowlist/compatibility checks | 0 | Done (pin + canonicalize hardenings) |
 | Unresolved P0 findings | 0 | Done — see [FINDINGS_0_36](FINDINGS_0_36.md) |
 | Remaining P1 findings without owner, phase, mitigation, and rationale | 0 | Done (ledger has no open P1) |
-| Release-facing immutable documentation URLs returning non-200 | 0 | Pre-publish |
+| Release-facing immutable documentation URLs returning non-200 | 0 | Residual — activate/build RTD `v0.36.0` (inactive/unbuilt; `/en/v0.36.0/` 404) |
 | Runnable documentation claims without executed CI evidence | 0 | Done (docs + CI gates) |
 
 ## Evidence map
@@ -105,12 +105,18 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 - [x] Unresolved P0 count is **0** ([FINDINGS_0_36](FINDINGS_0_36.md))
 - [x] Every remaining P1 has owner, target phase, mitigation, rationale
   (none open; ledger empty)
-- [ ] SHA-256 digests, package metadata, and attestations rehearsed at tag time
+- [x] SHA-256 digests, package metadata, and attestations rehearsed at tag time
+  (`release-artifacts.json`; `gh attestation verify` against
+  `eddiethedean/etlantic`; release workflow run for `v0.36.0`)
 - [ ] Immutable `/en/v0.36.0/` docs return HTTP 200 before announcement
-- [ ] Tag/publish only after the scorecard is green (not claimed yet)
+  (RTD version slug exists, `active=false` / `built=false` — activate and
+  build in the Read the Docs dashboard; no token available in CI/local env)
+- [x] Tag/publish completed (`v0.36.0` on GitHub + PyPI `etlantic==0.36.0`)
 
 ## Residual / follow-ons
 
+- **RTD activate/build `v0.36.0`** — maintainer dashboard action so
+  `/en/v0.36.0/` returns HTTP 200 (same for older inactive tag versions)
 - **0.37** — stable foundation: release rehearsal, application-pipeline
   testing foundation graduation; remaining
   provisional surfaces dispositioned for the stable foundation

@@ -1,6 +1,6 @@
 # All current guides
 
-> **Status: Available in ETLantic 0.36.0.** Index of primary navigation pages
+> **Status: Available in ETLantic 0.37.0.** Index of primary navigation pages
 > for the current minor. Generated for discoverability; the sidebar remains
 > authoritative for hierarchy.
 
@@ -9,7 +9,7 @@
 - [Installation](INSTALLATION.md)
 - [Quickstart](QUICKSTART.md)
 - [Capabilities](CAPABILITIES.md)
-- [What's new in 0.36](WHATS_NEW_0_36.md)
+- [What's new in 0.37](WHATS_NEW_0_37.md)
 - [Tutorials](TUTORIALS.md)
 - [How-to](HOW_TO.md)
 - [Pilot evidence packet](PILOT_EVIDENCE_PACKET.md)

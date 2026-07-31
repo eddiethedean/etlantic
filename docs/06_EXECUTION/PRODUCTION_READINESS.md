@@ -1,27 +1,28 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 ## Residual evaluation lead
 
-| Topic | 0.36 |
+| Topic | 0.37 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
-| Not included in 0.36 | Multi-tenant control plane; capacity SLA; compliance SoR |
+| Not included in 0.37 | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.36.0 is a **Beta** release suitable for the documented single-tenant
+ETLantic 0.37.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page. The milestone name “production readiness” (M6)
-means the observability / run-history *pilot* slice shipped in 0.36.0—it does
+means the observability / run-history *pilot* slice shipped in 0.37.0—it does
 **not** mean unrestricted enterprise production. See the Beta envelope above
 and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
-0.36.x patch without changing the documented pilot claims.
+0.37.x patch without changing the documented pilot claims.
 
 Experimental features remain experimental. Broader deployment topology,
 multi-tenancy, and compliance attestations remain adopter-owned today. Supply
-chain for v0.36.0 ships a SHA-256 artifact manifest and GitHub provenance
-attestations; CycloneDX SBOM generation failed—see
+chain for v0.37.0 is expected at tag time as a SHA-256 artifact manifest and
+GitHub provenance attestations; CycloneDX SBOM generation is optional (SBOM or
+`sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
 Multi-tenancy has a
 [first-class gated plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
@@ -45,7 +46,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.36.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.37.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -87,12 +88,12 @@ reference controls are shipped:
 - Stable-foundation compatibility and support windows (planned for 0.37)
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
 - Broader supply-chain programs beyond package allowlists, pins, SHA-256
-  release digests, and GitHub attestations (CycloneDX SBOM is optional and
-  failed for v0.36.0)
+  release digests, and GitHub attestations (CycloneDX SBOM is optional;
+  confirm SBOM or `sbom-warning.txt` at tag time)
 
-## Shipped / adopter-owned / residual (0.36)
+## Shipped / adopter-owned / residual (0.37)
 
-| Concern | 0.36 status |
+| Concern | 0.37 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |
@@ -101,7 +102,7 @@ reference controls are shipped:
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
 | Release SHA-256 digests + GitHub attestations | **Release-gated** (CycloneDX is optional; verify the published SBOM or `sbom-warning.txt`) |
-| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.39–0.42 incubation → 0.43 graduation); absent in 0.36 |
+| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.39–0.42 incubation → 0.43 graduation); absent in 0.37 |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |

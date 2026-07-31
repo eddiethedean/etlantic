@@ -2,14 +2,14 @@
 hide:
   - toc
 status: available
-since: "0.36.0"
-current_minor: "0.36"
+since: "0.37.0"
+current_minor: "0.37"
 audience: adopter
 ---
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.36 · Beta</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.37 · Beta</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 
 <div class="etlantic-path-grid">
@@ -95,7 +95,7 @@ audience: adopter
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The commands below pin
-`etlantic==0.36.0` so this version of the documentation and the installed API
+`etlantic==0.37.0` so this version of the documentation and the installed API
 stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
 continues with an intentional validation failure after the first successful
 run.
@@ -106,7 +106,7 @@ run.
     python -m venv .venv
     source .venv/bin/activate
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.36.0'
+    python -m pip install 'etlantic==0.37.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -123,7 +123,7 @@ run.
     py -3.11 -m venv .venv
     .\.venv\Scripts\Activate.ps1
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.36.0'
+    python -m pip install 'etlantic==0.37.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -193,7 +193,7 @@ and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
 
 ## Know the release boundary
 
-ETLantic 0.36 is a **Beta** release for documented, controlled, single-tenant
+ETLantic 0.37 is a **Beta** release for documented, controlled, single-tenant
 pilots—not unrestricted enterprise production.
 
 <div class="etlantic-release-grid">
@@ -231,6 +231,6 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release | [What's new in 0.36](01_GETTING_STARTED/WHATS_NEW_0_36.md) |
+| Review the current release | [What's new in 0.37](01_GETTING_STARTED/WHATS_NEW_0_37.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

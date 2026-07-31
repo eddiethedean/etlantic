@@ -1,6 +1,6 @@
 # Wire schema ranges (through 0.36)
 
-> **Status: Available in ETLantic 0.36.0.** Documents supported wire-schema
+> **Status: Available in ETLantic 0.37.0.** Documents supported wire-schema
 > ids for multi-minor burn-in and **unsupported downgrade** behavior. Package
 > minors may advance while schema ids stay on `/1` (no wire-schema reset in
 > 0.28–0.36).
@@ -26,14 +26,14 @@ outcome.
 
 | Wire id | Package minors proven | Notes |
 |---|---|---|
-| `etlantic.pipeline/1` | 0.25 → 0.28 and 0.34 → 0.36 | Goldens under `tests/fixtures/burn_in/pipeline/v0_24/`–`v0_27/` and `v0_34/`–`v0_36/` |
-| `etlantic.plan/1` | 0.25 → 0.28 and 0.34 → 0.36 | Goldens under `tests/fixtures/burn_in/plan/…` |
-| `etlantic.run_report/1` | 0.25 → 0.28 and 0.34 → 0.36 | Goldens under `tests/fixtures/burn_in/run_report/…`; bare metadata keys migrate to namespaced keys in 0.36 |
-| Profile JSON (no schema id) | 0.25 → 0.28 and 0.34 → 0.36 | Round-trip via `Profile.to_dict` / `from_dict` |
-| `etlantic.capabilities/1` | 0.25 → 0.28 and 0.34 → 0.36 | Vocabulary major `/1`; see `vocabulary_major_compatible` |
-| `etlantic.interchange/1` | 0.25 → 0.28 and 0.34 → 0.36 | Gate A tabular descriptors |
+| `etlantic.pipeline/1` | 0.25 → 0.28 and 0.34 → 0.37 | Goldens under `tests/fixtures/burn_in/pipeline/v0_24/`–`v0_27/` and `v0_34/`–`v0_37/` |
+| `etlantic.plan/1` | 0.25 → 0.28 and 0.34 → 0.37 | Goldens under `tests/fixtures/burn_in/plan/…` |
+| `etlantic.run_report/1` | 0.25 → 0.28 and 0.34 → 0.37 | Goldens under `tests/fixtures/burn_in/run_report/…`; bare metadata keys migrate to namespaced keys in 0.37 |
+| Profile JSON (no schema id) | 0.25 → 0.28 and 0.34 → 0.37 | Round-trip via `Profile.to_dict` / `from_dict` |
+| `etlantic.capabilities/1` | 0.25 → 0.28 and 0.34 → 0.37 | Vocabulary major `/1`; see `vocabulary_major_compatible` |
+| `etlantic.interchange/1` | 0.25 → 0.28 and 0.34 → 0.37 | Gate A tabular descriptors |
 | `etlantic.authoring-catalog/1` | N/A (not burn-in versioned) | Stable schema id; catalog envelopes are tooling metadata, not burn-in upgrade artifacts — see [Surface inventory](SURFACE_INVENTORY.md) |
-| `etlantic.quality/1` | 0.31+ (**provisional**) | Portable quality expressions; remains outside the full stable-foundation claim in 0.36; ContractModel remains semantic authority |
+| `etlantic.quality/1` | 0.31+ (**provisional**) | Portable quality expressions; remains outside the full stable-foundation claim in 0.37; ContractModel remains semantic authority |
 | `etlantic.scheduler/1` | 0.36+ (**stable MVP**) | Promoted onto the foundation path with Prefect-bounded evidence |
 
 Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`,
@@ -54,18 +54,19 @@ wire-schema reset:
 
 Current codecs must continue to load and rewrite these golden trees.
 
-## Joint burn-in window (0.34 ↔ 0.36)
+## Joint burn-in window (0.34 ↔ 0.37)
 
-ETLantic 0.36 proves the joint compatibility path:
+ETLantic 0.37 proves the joint compatibility path:
 
 1. **0.34 → 0.35** — fixtures under `*/v0_34/` and `*/v0_35/`
 2. **0.35 → 0.36** — fixtures under `*/v0_35/` and `*/v0_36/`
-3. **0.36.0 known defect** — bare run-report metadata under
+3. **0.36 → 0.37** — fixtures under `*/v0_36/` and `*/v0_37/`
+4. **0.35.0 known defect** — bare run-report metadata under
    `tests/fixtures/releases/v0_35/known_defects/` must `migrated` to
    namespaced keys
 
 Release baseline manifests live under `tests/fixtures/releases/v0_34/`,
-`v0_35/`, and `v0_36/`.
+`v0_35/`, `v0_36/`, and `v0_37/`.
 
 ## Evidence gates (current-reader and isolated-wheel)
 
@@ -77,7 +78,7 @@ Release baseline manifests live under `tests/fixtures/releases/v0_34/`,
 | `tests/authoring/test_pipeline_upgrade_burn_in.py` | Authoring upgrade burn-in |
 | `tests/compatibility/test_codec_burn_in_matrix.py` | Compatibility matrix tests |
 
-Current-reader gates are necessary but not sufficient for 0.36. Isolated-wheel
+Current-reader gates are necessary but not sufficient for 0.37. Isolated-wheel
 evidence must confirm declared outcomes using only public imports from the
 writer and reader environments.
 
@@ -90,7 +91,7 @@ ETLantic does **not** silently downgrade documents:
 | Unknown major (`…/99`, `…/2` before support) | Fail closed (`Unsupported*SchemaError` / descriptor error) |
 | Missing required `schema` field | Fail closed |
 | Hostile / secret-bearing payloads in pipeline JSON | Fail closed |
-| Writing `/1` then reading with an older codec that lacks new optional fields | Older readers may ignore unknown optional keys only if they already did; 0.36 does not promise downgrade of **new required** fields |
+| Writing `/1` then reading with an older codec that lacks new optional fields | Older readers may ignore unknown optional keys only if they already did; 0.37 does not promise downgrade of **new required** fields |
 
 There is **no** supported path to emit an older wire major from a newer runtime.
 To move between package minors on the same `/1` id, use the burn-in fixtures and

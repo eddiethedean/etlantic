@@ -1,12 +1,12 @@
 # Multi-Tenant Control Plane Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.36.0.** Incubation is sequenced across 0.39–0.42. A production,
+> 0.37.0.** Incubation is sequenced across 0.39–0.42. A production,
 > multi-tenant compatibility claim is gated for 0.43 only after every isolation,
 > durability, policy, and operations gate on this page passes.
 >
 > **Current boundary:** Process-local registries, runtimes, caches, report
-> stores, and reference adapters in 0.36 are not multi-tenant merely because
+> stores, and reference adapters in 0.37 are not multi-tenant merely because
 > they carry identity fields.
 >
 > **Authority:** The

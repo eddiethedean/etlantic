@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.36.0"
+version = "0.37.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,26 +30,26 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.36.0"]
-pandas = ["etlantic-pandas==0.36.0"]
-sql = ["etlantic-sql==0.36.0"]
-postgresql = ["etlantic-sql==0.36.0"]
-pyspark = ["etlantic-pyspark==0.36.0"]
-spark = ["etlantic-pyspark==0.36.0"]
-airflow = ["etlantic-airflow==0.36.0"]
-prefect = ["etlantic-prefect==0.36.0"]
-keyring = ["etlantic-keyring==0.36.0"]
-sqlmodel = ["etlantic-sqlmodel==0.36.0"]
-medallantic = ["medallantic==0.36.0"]
-sparkforge = ["etlantic-sparkforge==0.36.0"]
-fastapi = ["etlantic-fastapi==0.36.0"]
-datafusion = ["etlantic-datafusion==0.36.0"]
+polars = ["etlantic-polars==0.37.0"]
+pandas = ["etlantic-pandas==0.37.0"]
+sql = ["etlantic-sql==0.37.0"]
+postgresql = ["etlantic-sql==0.37.0"]
+pyspark = ["etlantic-pyspark==0.37.0"]
+spark = ["etlantic-pyspark==0.37.0"]
+airflow = ["etlantic-airflow==0.37.0"]
+prefect = ["etlantic-prefect==0.37.0"]
+keyring = ["etlantic-keyring==0.37.0"]
+sqlmodel = ["etlantic-sqlmodel==0.37.0"]
+medallantic = ["medallantic==0.37.0"]
+sparkforge = ["etlantic-sparkforge==0.37.0"]
+fastapi = ["etlantic-fastapi==0.37.0"]
+datafusion = ["etlantic-datafusion==0.37.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 dataframes = [
-    "etlantic-polars==0.36.0",
-    "etlantic-pandas==0.36.0",
+    "etlantic-polars==0.37.0",
+    "etlantic-pandas==0.37.0",
 ]
 
 [project.scripts]

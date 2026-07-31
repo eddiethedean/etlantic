@@ -7,9 +7,9 @@
     [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md). For storage
     that exists today, see [Storage today](STORAGE_TODAY.md).
 
-## What ships in 0.36 (start here)
+## What ships in 0.37 (start here)
 
-| Category | Reality in 0.36 |
+| Category | Reality in 0.37 |
 |---|---|
 | Dataframe / SQL / Spark engines | Shipped as `etlantic-*` packages |
 | Orchestrators | Airflow compile + Prefect local MVP |
@@ -33,7 +33,7 @@ declare capabilities honestly, and stay loosely coupled to core.
 ## Planned catalog (not installable)
 
 The following categories appear in older design pages and **must not** be
-treated as 0.36 APIs:
+treated as 0.37 APIs:
 
 - Source plugins / Sink plugins (use assets + [Storage today](STORAGE_TODAY.md))
 - General storage plugins (Snowflake, S3, Iceberg, …) — see

@@ -1,6 +1,6 @@
 # Application Integration Contract (0.25)
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 Framework-agnostic contract for visual builders and host applications.
 
@@ -50,8 +50,8 @@ job = service.submit_run("demo")
 Install the optional package (same minor as core):
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.36.0'
-# or: python -m pip install 'etlantic[fastapi]==0.36.0'
+python -m pip install 'etlantic-fastapi==0.37.0'
+# or: python -m pip install 'etlantic[fastapi]==0.37.0'
 ```
 
 Contributor checkout (editable monorepo):

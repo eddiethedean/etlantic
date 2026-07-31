@@ -1,15 +1,15 @@
 ---
 status: release-candidate
 since: "0.35.0"
-current_minor: "0.36"
+plan_minor: "0.36"
 audience: maintainer
 ---
 
 # ETLantic 0.36 Implementation Plan — Joint Compatibility Burn-In
 
-> **Status: Gate-ready release candidate.** ETLantic 0.36 is the current
-> in-tree candidate; this document does not claim PyPI publication or live
-> immutable documentation. The
+> **Status: Shipped (previous gate).** ETLantic 0.36 completed the joint
+> compatibility burn-in; this document does not claim live immutable
+> documentation for residual RTD activation. The
 > [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 > owns release order, [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
 > owns shipped behavior, and `EXIT_GATE_0_36.md` owns release evidence.

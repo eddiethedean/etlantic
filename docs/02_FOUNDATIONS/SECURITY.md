@@ -1,22 +1,24 @@
 # Security Model
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.36** and the broader
-**proposed threat model**. ETLantic 0.36.0 is a **Beta** (PyPI) release
-suitable for documented single-tenant pilots—not unrestricted enterprise
-production. It does not provide multi-tenant control planes, SLA, compliance
-attestations, deployment-topology guarantees, or advanced supply-chain
-guarantees; those controls remain adopter-owned. A hardened
-multi-tenant control plane is a
+This chapter covers **controls shipped through the 0.37 stable-foundation
+claim** and the broader **proposed threat model**. ETLantic 0.37.0 is a
+**Beta** (PyPI) release suitable for documented single-tenant pilots—not
+unrestricted enterprise production. It does not provide multi-tenant control
+planes, SLA, compliance attestations, deployment-topology guarantees, or
+advanced supply-chain guarantees; those controls remain adopter-owned. A
+hardened multi-tenant control plane is a
 [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
-not a current guarantee.
+not a current guarantee. Control ownership and automated verification live in
+the
+[Security Verification Matrix](SECURITY_VERIFICATION_MATRIX.md).
 
-## Implemented through 0.36
+## Implemented through 0.37
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -33,7 +35,8 @@ not a current guarantee.
 - Artifact/cache isolation keys for the single-tenant reference envelope
 - Versioned `SecurityEvent` audit events
 - Release SHA-256 artifact digests and GitHub build provenance attestations
-  (CycloneDX SBOM optional; failed for v0.36.0 — see
+  (CycloneDX SBOM optional / expected at tag time as SBOM or `sbom-warning.txt` —
+  see
   [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md))
 - Plugin SDK `/1` freeze for core protocol families (0.28)
 - Wire codec burn-in across consecutive minors (see [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md))
@@ -314,8 +317,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.36.0",
-        "etlantic-airflow": "==0.36.0",
+        "etlantic-polars": "==0.37.0",
+        "etlantic-airflow": "==0.37.0",
     },
 )
 ```
@@ -738,8 +741,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.36.0",
-        "etlantic-sql": "==0.36.0",
+        "etlantic-polars": "==0.37.0",
+        "etlantic-sql": "==0.37.0",
     },
 )
 ```
@@ -783,7 +786,14 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.36 Beta support envelope, automated tests
+The authoritative single-tenant control → owner → automated check → residual
+risk table for the 0.37 foundation claim is
+[SECURITY_VERIFICATION_MATRIX.md](SECURITY_VERIFICATION_MATRIX.md)
+(machine-readable companion
+[security-verification-matrix.json](security-verification-matrix.json);
+CI gate `scripts/check_security_matrix.py`).
+
+Before expanding beyond the bounded 0.37 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -817,7 +827,7 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.36 Beta deployment is bounded stable
+The documented single-tenant/reference 0.37 Beta deployment is bounded stable
 for pilots. Broader production claims require:
 
 - the threat model is reviewed

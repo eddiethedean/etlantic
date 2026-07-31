@@ -1,15 +1,17 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.36.0 is a Beta (PyPI) release suitable for documented single-tenant
+ETLantic 0.37.0 is a Beta (PyPI) release suitable for documented single-tenant
 pilots—not unrestricted enterprise production. The roadmap remains entirely
-within the 0.x series. Breaking changes remain possible, but they must not be
-silent. See [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
+within the 0.x series; **0.37** is the stable-foundation gate (in-tree
+gate-ready; tag/publish separate). Breaking
+changes remain possible, but they must not be silent. See
+[Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 
 ## Stability levels
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.36 public imports | Supported for the 0.36.x line |
+| Documented 0.37 public imports | Supported for the 0.37.x line |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |
@@ -24,7 +26,7 @@ full plan object-graph immutability.
 
 | Surface | Status | Target |
 |---|---|---|
-| `DataContractModel` alias | provisional | remove or hard-error by 0.37 |
+| `DataContractModel` alias | **removed in 0.37.0** | use `ContractModel` / `Data` |
 | Silent legacy profile `bindings` load | rejected (`PMCFG111`) unless `--accept-legacy-bindings` | done in 0.21 |
 | Name/`security_domain` production heuristics | removed in 0.19 (`security_mode` only) | n/a |
 | Missing wire `schema` defaults | removed in 0.19 | n/a |
@@ -32,8 +34,8 @@ full plan object-graph immutability.
 | Structured Streaming | experimental | graduate in 0.46 or remain experimental |
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
-| Prefect scheduler MVP | provisional | expand or freeze protocol by 0.37 |
-| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.28.0** | remainder by 0.37; see [Removal candidates](REMOVAL_CANDIDATES_0_37.md) |
+| Prefect scheduler MVP | **frozen as `scheduler/1` stable MVP** (0.36) | Prefect bounds unchanged; no further expand-or-freeze gate in 0.37 |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave 0.26.0; second 0.27.0; third **0.28.0**; remainder **removed in 0.37.0** | empty; see [Removal candidates](REMOVAL_CANDIDATES_0_37.md) |
 
 ### 0.x burn-in discipline (0.28 line)
 

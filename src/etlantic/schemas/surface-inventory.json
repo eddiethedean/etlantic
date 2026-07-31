@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "classes": [
     "stable",
     "provisional",
@@ -62,11 +62,9 @@
     "--allow-adhoc-profile",
     "--accept-legacy-bindings"
   ],
-  "sdk_root_provisional": [
-    "DataContractModel"
-  ],
+  "sdk_root_provisional": [],
   "sdk_root_experimental": [],
-  "sdk_root_compatibility": "Demoted pre-1.0 root aliases (warn once); prefer owning namespace. See MIGRATION_0_21_TO_0_22.md.",
+  "sdk_root_compatibility": "Demoted pre-1.0 root aliases were removed in 0.37.0 (hard AttributeError); import from owning modules. See MIGRATION_0_36_TO_0_37.md and REMOVAL_CANDIDATES_0_37.md.",
   "cli_stable": [
     "init",
     "doctor",
@@ -100,5 +98,8 @@
     "etlantic.orchestration/1": "stable",
     "etlantic.scheduler/1": "stable",
     "etlantic.transform-compiler/1": "stable"
+  },
+  "foundations": {
+    "etlantic.testing": "stable"
   }
 }

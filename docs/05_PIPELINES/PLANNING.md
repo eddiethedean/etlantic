@@ -1,6 +1,6 @@
 # Planning
 
-> **Status: Available in ETLantic 0.36.0** for deterministic
+> **Status: Available in ETLantic 0.37.0** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs. Plans are
 > secret-free and do not execute transforms. Some advanced analysis surfaces
 > described later on this page may still be design-forward—prefer CLI JSON
@@ -227,6 +227,23 @@ The final plan contains:
 - Retry, timeout, and failure requirements
 - Capability decisions
 - Generation and compilation metadata
+
+## Plan immutability contract
+
+The 0.37 foundation treats plan immutability as three cooperating pieces—not
+full recursive object-graph freezing:
+
+1. **`deep_freeze`** — nested mappings become `MappingProxyType`, lists become
+   tuples, sets become frozensets; dataclasses and unknown objects pass through
+   unchanged.
+2. **Canonical serialize** — secret-free `etlantic.plan/1` JSON with stable
+   participation rules for digests.
+3. **`verify_plan_fingerprint`** — checked at deserialize / compile / run trust
+   boundaries.
+
+Do not hand-edit fingerprints. See the
+[freeze glossary](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md#freeze-glossary-three-different-terms)
+and [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md#plan-helpers-stable).
 
 ## Determinism
 

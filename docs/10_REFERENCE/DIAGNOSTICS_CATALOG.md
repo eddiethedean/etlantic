@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.36.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.37.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -9,7 +9,9 @@
 > ```
 >
 > Prefer the curated tables in [Diagnostics](DIAGNOSTICS.md) for human-oriented
-> meanings. This page is the exhaustive code→source index.
+> meanings. This page is the exhaustive code→source index. Family stability
+> tiers (`stable` / `provisional` / `experimental`):
+> [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md).
 
 | Code | Example source paths |
 |---|---|

@@ -1,6 +1,6 @@
 # Glossary
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 This glossary defines the core terminology used throughout the
 ETLantic documentation. Unless otherwise noted, these definitions
@@ -61,8 +61,6 @@ The primary authoring type for a typed dataset in ETLantic. Subclass
 `Data` (from `etlantic`) to declare schema and constraints; pipelines
 and transformations reference these classes at ports.
 
-`DataContractModel` remains a deprecated compatibility alias for `Data`.
-
 ## Data Contract
 
 A typed description of a dataset. In ETLantic, data contracts are
@@ -71,8 +69,9 @@ and can be represented as ODCS documents.
 
 ## Data Contract Model
 
-Deprecated name for a `Data` subclass. Prefer `Data`; `DataContractModel`
-is kept only as a compatibility alias.
+Historical name for a `Data` subclass. Prefer `Data`. The
+`DataContractModel` alias was **removed in 0.37.0** (hard error on root and
+`etlantic.contracts` import).
 
 ## Execution Engine
 
@@ -92,6 +91,8 @@ The preferred public term is `PipelinePlan`.
 The immutable, secret-free resolved IR produced by planning. Contains
 resolved assets, capability decisions, validation phases, and a fingerprint.
 Plans are inspectable before any write and are the input to `run` / `compile`.
+Immutability in 0.37 means nest `deep_freeze` + canonical serialize +
+fingerprint verify—not full object-graph freezing.
 
 ## Plugin allowlist
 

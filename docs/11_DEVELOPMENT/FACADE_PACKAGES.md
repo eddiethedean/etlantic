@@ -1,6 +1,6 @@
 # Facade packages
 
-> **Status: Available in ETLantic 0.36.0.** Defines first-party **facade**
+> **Status: Available in ETLantic 0.37.0.** Defines first-party **facade**
 > packages — domain-specific authoring layers that lower to ETLantic public
 > definitions without adding domain vocabulary to core wire schemas.
 
@@ -47,7 +47,7 @@ Standard facade provenance helper:
 ```python
 from etlantic.extensions import facade_provenance
 
-provenance = facade_provenance(identity="medallantic", version="0.36.0")
+provenance = facade_provenance(identity="medallantic", version="0.37.0")
 ```
 
 ## Release category

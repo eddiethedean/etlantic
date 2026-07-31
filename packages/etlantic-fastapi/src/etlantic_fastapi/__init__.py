@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from etlantic.service import AuthoringService, PolicyContext
 from fastapi import FastAPI, HTTPException
 
-__version__ = "0.36.0"
+__version__ = "0.37.0"
 
 
 class DefinitionDocument(BaseModel):

@@ -6,7 +6,7 @@
 > status, and the [current package guide](README.md) owns shipped behavior.
 > Review this header for every release or parity-sequence change.
 
-**Current release:** Medallantic **0.36.0**. M0 through M7 are shipped
+**Current release:** Medallantic **0.37.0**. M0 through M7 are shipped
 (exit gate closed; published with ETLantic 0.36). Planned phases describe
 capability order, not release-date commitments.
 
@@ -113,7 +113,7 @@ Medallantic milestones are release-gated with ETLantic's 0.x roadmap:
 | 0.33 | M5 | SQLAlchemy/relational differential parity |
 | 0.34 | M6 | Operations, evidence, and production readiness |
 | 0.35 | M7 | Migration completion and joint freeze |
-| 0.36 | — | Joint compatibility burn-in |
+| 0.37 | — | Joint compatibility burn-in |
 | 0.37 | — | Stable foundation |
 
 The [ETLantic roadmap](../../ROADMAP.md) is authoritative for the core

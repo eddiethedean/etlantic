@@ -1,6 +1,6 @@
 # Profiles
 
-> **Status: Available in ETLantic 0.36.0.** Field reference. Start with the
+> **Status: Available in ETLantic 0.37.0.** Field reference. Start with the
 > [Profiles hub](PROFILES_HUB.md) for the adopter path.
 
 A **Profile** defines how a validated Pipeline Plan is bound to a specific
@@ -65,7 +65,7 @@ table):
 
 Profiles never redefine pipeline contracts. Logging configuration, durable
 checkpoint stores, and deployment-topology metadata are **not** first-class
-Profile fields in 0.36 — keep those outside ETLantic or in adopter-owned
+Profile fields in 0.37 — keep those outside ETLantic or in adopter-owned
 orchestration.
 
 Profiles also must not:
@@ -86,7 +86,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.36.0",
+        "etlantic-polars": "==0.37.0",
     },
 )
 
@@ -95,7 +95,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.36.0",
+        "etlantic-sql": "==0.37.0",
     },
 )
 ```
@@ -236,7 +236,7 @@ pipeline contracts, plans, or generated [DPCS](DPCS.md) artifacts.
 
 !!! warning "Future design—not shipped"
     Cloud secret managers (AWS Secrets Manager, HashiCorp Vault, and peers)
-    are **not** available in 0.36. Do not configure them yet. See
+    are **not** available in 0.37. Do not configure them yet. See
     [Secrets Management](../06_EXECUTION/SECRETS_MANAGEMENT.md).
 
 ## Environment Overrides

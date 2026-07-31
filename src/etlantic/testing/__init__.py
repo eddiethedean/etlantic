@@ -25,6 +25,7 @@ from etlantic.testing.faults import (
     clear_faults,
     fault_injection_enabled,
     maybe_inject,
+    maybe_inject_async,
     register_faults,
     reset_fault_counts,
     with_faults,
@@ -39,6 +40,8 @@ from etlantic.testing.orchestrator import (
     run_orchestrator_conformance_suite,
 )
 from etlantic.testing.pipeline_case import (
+    MAX_SEED_ROWS_PER_ASSET,
+    MAX_SNAPSHOT_BYTES,
     ExpectedResult,
     FakeClock,
     FakeRunIdentity,
@@ -95,6 +98,8 @@ from etlantic.testing.write_semantics import (
 from . import portable_transform_conformance as portable_transform_conformance
 
 __all__ = [
+    "MAX_SEED_ROWS_PER_ASSET",
+    "MAX_SNAPSHOT_BYTES",
     "ExpectedResult",
     "FakeClock",
     "FakeRunIdentity",
@@ -129,6 +134,7 @@ __all__ = [
     "fault_injection_enabled",
     "inject_faults",
     "maybe_inject",
+    "maybe_inject_async",
     "normalize_rows",
     "portable_transform_conformance",
     "register_faults",

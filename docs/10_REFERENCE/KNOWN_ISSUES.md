@@ -1,21 +1,21 @@
 # Known Limitations
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
-ETLantic **0.36.x** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.37.x** is a **Beta** (PyPI) release suitable for documented
 single-tenant reference deployments. 0.x releases may still introduce breaking
 API changes between minor versions until the 0.37 stable-foundation freeze.
 
 | ID | Component | Affected | Symptom | Workaround | Status |
 |---|---|---|---|---|---|
-| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.36.0` and matching plugins; follow Upgrade hub | Open (Beta) |
+| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.37.0` and matching plugins; follow Upgrade hub | Open (Beta) |
 | DOC-002 | Portable transforms | Polars / PySpark vs Pandas / SQL | Advanced portable families graduate unevenly across engines | Use [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md); keep Pandas/SQL on kernel + relational `/1` | Partial |
 | DOC-003 | Portable window | Window frames | Explicit `rowsBetween` / `rangeBetween` fail closed; `first_value` / `last_value` use ordered partition semantics | Avoid frame clauses until claimed; watch `portable-window/2` | Open |
 | DOC-004 | Portable semantics | Three-state / maps | Distinct `missing`/`invalid` fail closed without `semantic_mode:three_state_distinct`; Polars does not claim `dtcs:map` | Prefer `dtcs:object` on Polars; use PySpark for `dtcs:map` | Open |
 | DOC-005 | Portable authoring | Closed syntax | Actions, arbitrary Python tracing, raw SQL expressions, silent UDF fallback excluded | Stay within documented portable IR; use native implementations for excluded ops | By design |
 | DOC-006 | [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 families | Facades / compilers | Facades may emit IR for unclaimed families; first-party compilers reject at analyze | Check claimed profiles before authoring advanced DTCS families | By design |
 | DOC-007 | Runtime | Local execution | In-process only; not a distributed scheduler | Use Airflow/Prefect/external schedulers for multi-process orchestration | By design |
-| DOC-008 | Spark providers | Cloud Spark | Managed Databricks / EMR / Connect not in 0.36 | Run local `etlantic-pyspark` or own provider; reference proof planned 0.47 / packs 0.51 | Open |
+| DOC-008 | Spark providers | Cloud Spark | Managed Databricks / EMR / Connect not in 0.37 | Run local `etlantic-pyspark` or own provider; reference proof planned 0.47 / packs 0.51 | Open |
 | DOC-009 | Orchestration | Compilers / schedulers | Airflow via `etlantic-airflow` (compile-only); Prefect local MVP via `etlantic-prefect`; Dagster / expanded Prefect compilers not shipped | Use shipped Airflow compile or Prefect local path | Partial |
 | DOC-010 | Streaming | Structured Streaming | APIs experimental since 0.7+ | Prefer batch Spark for production-shaped pilots | Experimental |
 | DOC-011 | SQL safety | SQL plugins | Untrusted raw SQL is not treated as safe | Use typed expression model and dialect identifier/parameter APIs | By design |

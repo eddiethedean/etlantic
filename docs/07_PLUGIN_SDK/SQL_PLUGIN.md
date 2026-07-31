@@ -1,6 +1,6 @@
 # SQL Plugin
 
-**Status: available in ETLantic 0.36.0** (`etlantic.sql/1`). The
+**Status: available in ETLantic 0.37.0** (`etlantic.sql/1`). The
 `etlantic-sql` reference plugin runs SQLite and PostgreSQL as Tier A dialects;
 other detected dialects fail closed as Tier B. Discover plugins through the
 `etlantic.sql_plugins` entry point.

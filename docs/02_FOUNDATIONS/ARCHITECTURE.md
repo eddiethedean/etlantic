@@ -1,6 +1,6 @@
 # Architecture
 
-> **Status: Available in ETLantic 0.36.0.**
+> **Status: Available in ETLantic 0.37.0.**
 
 ETLantic is a typed modeling, validation, planning, and coordination
 framework for data pipelines.
@@ -346,7 +346,7 @@ semantics are predictable.
 
 ## Resource Architecture
 
-!!! warning "Future design (not shipped in 0.36)"
+!!! warning "Future design (not shipped in 0.37)"
     Third-party **resource / storage / observability provider protocols** are
     **not** shipped. Built-in storage bindings and profile `resources` metadata
     exist today; see [Storage today](../06_EXECUTION/STORAGE_TODAY.md) and

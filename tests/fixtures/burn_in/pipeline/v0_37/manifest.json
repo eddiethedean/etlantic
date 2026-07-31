@@ -1,0 +1,9 @@
+{
+  "fingerprints": {
+    "memory_customers.json": "660b905db2411f7b6f5439c509188c93213d708f654b969eb761307b8f5a7af2",
+    "minimal.json": "7ee31406d37a1fddf7f8c3ea4fd3a253af23e34378707a38eaf81bd806a6d563",
+    "multi_node.json": "44f6b7fb0dd393fe21650f5d0e2f6f5b78de09dd1b2e842ba3160269f2fbc5b0",
+    "nested_subpipeline.json": "7ac03976100035afc208db4d60889b21c5f14d9e738410a3f1b0c82dfd2dbde5"
+  },
+  "schema": "etlantic.pipeline/1"
+}
