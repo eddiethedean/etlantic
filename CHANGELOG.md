@@ -8,9 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- GitHub Actions use the current checkout, uv, Java, provenance, SARIF, and
-  artifact action majors; CI runs on uv 0.12.0 and covers Airflow 2.11.1 and
-  3.2.1 (the resolvable final 2.x line and current 3.x line)
+- GitHub Actions use the current checkout, uv (setup-uv@v9.0.0), Java,
+  provenance, SARIF, and artifact action majors; CI runs on uv 0.12.0 and
+  covers Airflow 2.11.1 and 3.2.1 (the resolvable final 2.x line and current
+  3.x line)
 
 ## [0.39.0] - 2026-07-31
 
