@@ -6,6 +6,9 @@ S3-compatible object-store connector for [ETLantic](https://github.com/eddiethed
 path today. Live AWS opt-in lands later behind the `aws` extra and an explicit
 profile allowlist — do not treat this package as production-ready.
 
+Payload format today is **JSON** (not Parquet). Fake multipart staging buffers
+records and serializes once at prepare/commit.
+
 ## Install
 
 ```bash
@@ -21,6 +24,8 @@ Core dependency: `etlantic>=0.38.0,<0.39`. Optional: `boto3`, `pyarrow`.
 - Without `boto3`, factories use `InMemoryS3Fake` (multipart abort + conditional
   commit-pointer semantics).
 - Immutable data objects; readers resolve only committed pointers.
+- Overwrite/append replace the commit pointer; create/first-write modes keep
+  conditional create (`If-None-Match`).
 - Publication evidence carries ETag / operation metadata without secret endpoints.
 
 ## Entry points

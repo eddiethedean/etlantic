@@ -1,11 +1,10 @@
 # Findings Ledger 0.38 — Data Connectivity and Connector SDK
 
-> **Status: Gate-ready for tag/publish rehearsal toward ETLantic 0.38.0.**
-> Ledger for the 0.38 connectivity program. Record protocol, planning,
-> landing-zone, publication, reference-provider, conformance, and
-> release-integrity findings. Close a finding only when its regression test
-> and durable evidence land. **P0 must be 0 before tag.** Package version is
-> **0.38.0**.
+> **Status: Gate-ready for tag/publish rehearsal toward ETLantic 0.38.0** after
+> post-exit honesty pass (fake connectors, manifests/CI, plan caps, pin docs).
+> Ledger for the 0.38 connectivity program. Close a finding only when its
+> regression test and durable evidence land. **P0 must be 0 before tag.**
+> Package version is **0.38.0**. Soft-continue: `038-X-01`.
 
 ## Severity policy
 
@@ -41,9 +40,9 @@ reopen without a written finding and migration plan.
 
 | Provider | Maturity | Classifier | Notes |
 |---|---|---|---|
-| `local-files` | Preview | Beta (core) | Snapshot + incremental fake/CI green |
-| `s3` | Experimental | Alpha (`etlantic-s3`) | Fake multipart/conditional commit |
-| `iceberg` | Experimental | Alpha (`etlantic-iceberg`) | Fake catalog; snapshot id publication |
+| `local-files` | Preview | Beta (core) | Snapshot + incremental; rename_done preserves nested paths |
+| `s3` | Experimental | Alpha (`etlantic-s3`) | JSON payloads; overwrite replaces pointer; fake multipart |
+| `iceberg` | Experimental | Alpha (`etlantic-iceberg`) | Fake catalog; no `write.partition_replace` claim |
 | `snowflake` | Experimental | Alpha (`etlantic-snowflake`) | Fake autocommit=False + query_id |
 | `postgresql` | Experimental | Beta package / Experimental connector path | Via `etlantic-sql` |
 
@@ -58,7 +57,7 @@ Matrix artifact:
 | `038-A17` | Pass | Snapshot ↔ incremental mode switch without Extract rewrite |
 | `038-A19` | Pass | Matrix caps match connector `info()` for local, s3, iceberg, snowflake, postgresql |
 | `038-A20` / `038-X-01` | Soft-continue | In-repo third-party EP stub + public-import check; echo plugin PyPI proof deferred |
-| Fake conformance | Pass | `scripts/check_connector_conformance.py --fake` |
+| Fake conformance | Pass | `scripts/check_connector_conformance.py --fake` (exit 1 on failed cases) |
 
 ## Open findings
 
@@ -70,9 +69,29 @@ Open **P0 count is 0**.
 
 ## Closed in 0.38
 
+Post-exit audit reopened P0/P1 honesty gaps; all listed rows closed with regressions.
+
 | ID | Severity | Summary | Evidence |
 |---|---|---|---|
-| — | — | *(no P0 opened during Waves 1–8)* | Wave 7 burn-in + exit scorecard |
+| `038-P0-01` | P0 | Multi-sink publication barrier unused; ledger advanced per sink | `PublicationBarrier` wired in orchestrator; `tests/connectors/test_publication_barrier_0_38.py` |
+| `038-P0-02` | P0 | Connector EPs omitted from coordinator / runtime registries | Connector groups in `PluginDiscoveryCoordinator`; runtime population in `lifecycle/runtime.py` |
+| `038-P0-03` | P0 | `discover_connectors_for_profile` TypeError (`instantiate=True`) | Fixed discovery helper; `tests/connectors/test_discovery_0_38.py` |
+| `038-P0-04` | P0 | Cloud packages missing plugin manifests → undiscoverable | `etlantic-plugin-manifest.json` + hatch force-include for s3/iceberg/snowflake; `scripts/check_plugin_manifests.py` |
+| `038-P0-05` | P0 | Secret-like keys accepted into assets/plans | `reject_secret_like_keys` at asset parse; `tests/connectors/test_asset_secrets_0_38.py` |
+| `038-P0-06` | P0 | `StorageBindingAdapter` leaked context secrets + over-claimed `rolled_back` | Redacted metadata; ambiguous → `unknown`; `tests/connectors/test_adapter_redaction_0_38.py` |
+| `038-P0-07` | P0 | Absolute landing roots in plan snapshots / listing intent | `SafeIoPlanPolicy` + plan-safe stripping; `tests/profile/test_safe_io_plan_policy_0_38.py` |
+| `038-P0-08` | P0 | Postgres fake reconcile-after-rollback false `committed` | Pending vs committed query ids; `tests/sql/test_postgresql_connectors.py` |
+| `038-P0-09` | P0 | `unknown` publication discarded proposal / released lease | Hold + reconcile path in orchestrator (`038-R04`) |
+| `038-H10` | P1 | S3 commit always `if_none_match=True` blocked overwrite | Mode-gated pointer replace; `tests/s3/test_fake_s3.py::test_second_overwrite_publish_succeeds` |
+| `038-H11` | P1 | S3 advertised parquet / multipart JSON concat | `format=json`; single serialize at prepare; multi-batch test |
+| `038-H12` | P1 | Iceberg advertised `write.partition_replace` without semantics | Capability dropped; matrix + README; mode rejected |
+| `038-H13` | P1 | Iceberg abort after commit rolled back published snapshot | Staged id cleared on commit; abort-after-commit test |
+| `038-H15` | P1 | `rename_done` flattened nested paths (basename collisions) | Preserve relative path under `.done/`; snapshot nested test |
+| `038-H16` | P1 | Conformance script ignored failed cases; tautological assert | Exit 1 on `ok=false`; removed `or True`; optional fake sinks |
+| `038-H17` | P1 | CI package job omitted s3/iceberg/snowflake wheels | `checks.yml` build + import smoke |
+| `038-H18` | P1 | Adopter pin/doc bugs (0.37 expect / bad rollback / RTD slug) | QUICKSTART, TROUBLESHOOTING, MIGRATION, DOCUMENTATION_VERSIONING |
+| `038-H19` | P1 | Plan-time connector capability negotiation missing | `connectors/negotiate.py` + planner hook; `PMCONN850`; plan caps tests |
+| `038-H20` | P1 | `commit_ledger` / TOCTOU residual | Optional `CommitReceipt` + `may_advance_cursor`; O_NOFOLLOW same-fd read |
 
 ## Closure rules
 

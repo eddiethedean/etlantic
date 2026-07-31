@@ -201,7 +201,7 @@ async def _case_empty_listing_allow(connector: Any, tmp: Path) -> dict[str, Any]
         plan=plan, binding=binding, context=context
     ):
         batches += 1
-        assert batch.exhausted or len(batch.records) == 0 or True
+        assert batch.exhausted or len(batch.records) == 0
     assert batches >= 1
     return {"case": "fault.empty_listing_allow", "ok": True}
 

@@ -6,6 +6,7 @@ import contextlib
 import inspect
 import threading
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -246,6 +247,8 @@ class LocalOrchestrator:
     _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
     _pending_source_context: dict[str, Any] = field(default_factory=dict, repr=False)
     _sink_commit_receipts: list[Any] = field(default_factory=list, repr=False)
+    _expected_sink_commits: int = field(default=0, repr=False)
+    _publication_barrier: Any | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.state_store is None:
@@ -2527,6 +2530,16 @@ class LocalOrchestrator:
             self._pending_source_connector = connector
             self._pending_source_binding = dict(binding_payload)
             self._pending_source_context = dict(context)
+            self._sink_commit_receipts = []
+            self._expected_sink_commits = self._count_expected_sink_commits()
+            from etlantic.connectors.session import PublicationBarrier
+
+            self._publication_barrier = PublicationBarrier(
+                source_connector=connector,
+                source_binding=dict(binding_payload),
+                source_context=dict(context),
+                expected_sink_commits=self._expected_sink_commits,
+            )
             return records
 
         storage = self.runtime.storage.get(provider_name)
@@ -2602,13 +2615,83 @@ class LocalOrchestrator:
             payload.setdefault(key, value)
         return {k: v for k, v in payload.items() if v is not None}
 
+    def _count_expected_sink_commits(self) -> int:
+        """Count Load/sink nodes that will actually write (not no_write/null)."""
+        count = 0
+        for node in self.plan.logical_graph.nodes:
+            if node.kind is not NodeKind.SINK:
+                continue
+            binding_name = node.binding or node.name
+            binding_name = self.request.binding_overrides.get(node.name, binding_name)
+            mode = self._effective_write_mode(node, binding_name)
+            if self.request.no_write or mode is WriteMode.NO_WRITE:
+                continue
+            descriptor = self._binding_descriptor(node, binding_name)
+            provider_name = descriptor.provider if descriptor is not None else "memory"
+            if provider_name in {"local", "python"}:
+                provider_name = "memory"
+            if provider_name in {"null", "no_write"}:
+                continue
+            count += 1
+        return count
+
+    async def _reconcile_unknown_receipt(
+        self,
+        receipt: Any,
+        *,
+        provider_name: str,
+        storage: Any,
+        context: Mapping[str, Any],
+    ) -> Any:
+        """Attempt sink reconcile for unknown outcomes; keep proposal on failure."""
+        if getattr(receipt, "status", None) != "unknown":
+            return receipt
+        adapter: Any | None = None
+        sink_connectors = getattr(self.runtime, "sink_connectors", None) or {}
+        if provider_name in sink_connectors:
+            adapter = sink_connectors[provider_name]
+        else:
+            from etlantic.connectors.compatibility import StorageBindingAdapter
+
+            adapter = StorageBindingAdapter(storage, provider=provider_name)
+        if not hasattr(adapter, "reconcile"):
+            return receipt
+        try:
+            result = await adapter.reconcile(receipt, context=context)
+        except Exception:
+            return receipt
+        status = getattr(result, "status", None)
+        if status not in {"committed", "rolled_back", "unknown"}:
+            return receipt
+        from etlantic.connectors.models import CommitReceipt
+
+        return CommitReceipt(
+            status=status,
+            session_id=getattr(receipt, "session_id", None),
+            provider=getattr(receipt, "provider", None) or provider_name,
+            publication_id=(
+                getattr(result, "publication_id", None)
+                or getattr(receipt, "publication_id", None)
+            ),
+            message=getattr(result, "message", None)
+            or getattr(receipt, "message", None),
+            metadata=dict(getattr(result, "metadata", None) or {}),
+        )
+
     async def _finalize_landing_after_commit(self, receipt: Any) -> None:
-        """Advance landing ledger only when CommitReceipt.status == committed."""
+        """Advance landing ledger via publication barrier when all sinks commit."""
+        barrier = self._publication_barrier
+        if barrier is not None:
+            if barrier.is_complete and barrier.all_committed:
+                await barrier.finalize_source()
+            return
         connector = self._pending_source_connector
         if connector is None:
             return
         status = getattr(receipt, "status", None)
         if status != "committed":
+            if status == "unknown":
+                return
             if hasattr(connector, "discard_proposal"):
                 connector.discard_proposal()
             return
@@ -2726,6 +2809,7 @@ class LocalOrchestrator:
                     context=context,
                 )
             except Exception as exc:
+                # Write raised before a receipt — nothing published; discard OK.
                 if hasattr(self._pending_source_connector, "discard_proposal"):
                     self._pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
@@ -2734,8 +2818,19 @@ class LocalOrchestrator:
                     stage=FailureStage.WRITE.value,
                     code=getattr(exc, "code", None) or "PMEXEC431",
                 ) from exc
+            if getattr(receipt, "status", None) == "unknown":
+                receipt = await self._reconcile_unknown_receipt(
+                    receipt,
+                    provider_name=provider_name,
+                    storage=storage,
+                    context=context,
+                )
+            barrier = self._publication_barrier
+            if barrier is not None:
+                barrier.record(receipt)
             self._sink_commit_receipts.append(receipt)
-            if receipt.status != "committed":
+            status = getattr(receipt, "status", None)
+            if status == "rolled_back":
                 if hasattr(self._pending_source_connector, "discard_proposal"):
                     self._pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
@@ -2746,6 +2841,28 @@ class LocalOrchestrator:
                     stage=FailureStage.WRITE.value,
                     code="PMEXEC433",
                 )
+            if status == "unknown":
+                # Keep lease/proposal — sink may already be durable.
+                raise NodeExecutionError(
+                    redact_message(
+                        receipt.message or f"Sink commit status={receipt.status}"
+                    ),
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code="PMEXEC433",
+                )
+            if status != "committed":
+                if hasattr(self._pending_source_connector, "discard_proposal"):
+                    self._pending_source_connector.discard_proposal()
+                raise NodeExecutionError(
+                    redact_message(
+                        receipt.message or f"Sink commit status={receipt.status}"
+                    ),
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code="PMEXEC433",
+                )
+            # Finalize only when every required sink has committed.
             await self._finalize_landing_after_commit(receipt)
             return
         await storage.write(

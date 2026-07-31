@@ -71,8 +71,7 @@
         "publication.atomic",
         "reconciliation",
         "write.append",
-        "write.overwrite",
-        "write.partition_replace"
+        "write.overwrite"
       ],
       "storage_capabilities": ["source.schema_discovery"],
       "fake_ci": true,

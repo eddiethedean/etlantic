@@ -414,15 +414,19 @@ def assert_plugin_trust(
 
 # Per-plugin allowlist denials are expected when other packages remain allowed.
 # Only discovery-phase ``PMPLUG402`` is non-blocking; authorize/trust 402s fail closed.
-_NON_BLOCKING_TRUST_CODES = frozenset({"PMPLUG402"})
+# Missing static manifests (``PMPLUG413``) skip the EP during discover; the code is
+# informational for that skip and must not fail every profile ensure when optional
+# connector wheels are installed without manifests yet.
+_NON_BLOCKING_TRUST_CODES = frozenset({"PMPLUG402", "PMPLUG413"})
 _DISCOVERY_TRUST_PHASES = frozenset({"plugin_discovery", "plugin_discover"})
 
 
 def is_non_blocking_trust_diagnostic(diagnostic: Any) -> bool:
-    """Return True for sibling discovery allowlist denials only.
+    """Return True for sibling discovery allowlist denials / skipped EPs.
 
     ``PMPLUG402`` from ``plugin_trust`` / ``plugin_authorize`` (selected engines
-    or manual overlays) is blocking. Discovery-phase sibling denials are not.
+    or manual overlays) is blocking. Discovery-phase sibling denials and
+    missing-manifest skips (``PMPLUG413``) are not.
     """
     code = getattr(diagnostic, "code", None)
     if code not in _NON_BLOCKING_TRUST_CODES:

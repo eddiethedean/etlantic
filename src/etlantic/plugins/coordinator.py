@@ -36,6 +36,9 @@ class PluginDiscoveryResult:
     observability_providers: dict[str, Any] = field(default_factory=dict)
     run_history_providers: dict[str, Any] = field(default_factory=dict)
     event_consumers: dict[str, Any] = field(default_factory=dict)
+    source_connectors: dict[str, Any] = field(default_factory=dict)
+    sink_connectors: dict[str, Any] = field(default_factory=dict)
+    storage_connectors: dict[str, Any] = field(default_factory=dict)
     diagnostics: list[Diagnostic] = field(default_factory=list)
     trust_records: list[dict[str, Any]] = field(default_factory=list)
 
@@ -50,6 +53,12 @@ def _generic_key(item: Any, plugin: Any) -> str:
 
 def _provider_key(item: Any, plugin: Any) -> str:
     return str(getattr(getattr(plugin, "info", None), "name", None) or item.name)
+
+
+def _connector_key(item: Any, plugin: Any) -> str:
+    from etlantic.connectors.discovery import connector_key
+
+    return connector_key(item, plugin)
 
 
 _NON_ENGINE = frozenset({"local", "null", ""})
@@ -128,6 +137,24 @@ _RUNTIME_GROUPS: tuple[PluginGroupSpec, ...] = (
         runtime_attr="event_consumers",
         key_fn=_provider_key,
         register_kind="event_consumer",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.source_connectors",
+        runtime_attr="source_connectors",
+        key_fn=_connector_key,
+        register_kind="none",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.sink_connectors",
+        runtime_attr="sink_connectors",
+        key_fn=_connector_key,
+        register_kind="none",
+    ),
+    PluginGroupSpec(
+        entry_point_group="etlantic.storage_connectors",
+        runtime_attr="storage_connectors",
+        key_fn=_connector_key,
+        register_kind="none",
     ),
 )
 
@@ -275,6 +302,8 @@ class PluginDiscoveryCoordinator:
         *,
         profile: Profile,
     ) -> None:
+        if kind in {"none", ""}:
+            return
         if kind == "dataframe":
             from etlantic.dataframe.discovery import register_discovered_plugins
 

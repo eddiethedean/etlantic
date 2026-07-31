@@ -407,8 +407,12 @@ class Profile:
 
         Returns:
             A mapping suitable for embedding in a frozen plan (uses ``bindings``
-            rather than public ``assets``).
+            rather than public ``assets``). Physical ``safe_io.approved_roots``
+            are replaced with :class:`~etlantic.io_policy.SafeIoPlanPolicy`
+            root-ref semantics.
         """
+        from etlantic.io_policy import sanitize_safe_io_for_plan
+
         data = asdict(self)
         data["secrets"] = {}
         for key, ref in self.secrets.items():
@@ -420,6 +424,7 @@ class Profile:
             data["secrets"][key] = ref.to_dict()
         # Intentionally omit ``assets`` so equivalent plans keep fingerprints.
         data["bindings"] = dict(self.bindings)
+        data["safe_io"] = sanitize_safe_io_for_plan(dict(self.safe_io or {}))
         return data
 
     @classmethod

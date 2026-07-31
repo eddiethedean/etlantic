@@ -128,7 +128,15 @@ def test_reconcile_after_lost_commit() -> None:
     backend = InMemoryS3Fake()
     sink = create_sink()
     sink.backend = backend
-    binding = {"config": {"bucket": "b", "prefix": "p", "pointer_key": "p.commit"}}
+    # create mode keeps If-None-Match; a rival pointer makes this writer lose.
+    binding = {
+        "config": {
+            "bucket": "b",
+            "prefix": "p",
+            "pointer_key": "p.commit",
+            "mode": "create",
+        }
+    }
 
     async def _run() -> None:
         plan = await sink.plan_write(binding=binding, context={})
@@ -151,3 +159,73 @@ def test_reconcile_after_lost_commit() -> None:
 
 def test_boto3_probe_is_bool() -> None:
     assert isinstance(boto3_available(), bool)
+
+
+def test_second_overwrite_publish_succeeds() -> None:
+    backend = InMemoryS3Fake()
+    sink = create_sink()
+    sink.backend = backend
+    binding = {
+        "config": {
+            "bucket": "lake",
+            "prefix": "orders",
+            "pointer_key": "orders.commit",
+            "mode": "overwrite",
+        }
+    }
+
+    async def _publish(run_id: str, rows: list) -> None:
+        plan = await sink.plan_write(binding=binding, context={})
+        session = await sink.begin_write(
+            plan=plan, binding=binding, context={"run_id": run_id}
+        )
+        await sink.write_batch(session, rows, context={})
+        receipt = await sink.commit(session, context={})
+        assert receipt.status == "committed"
+
+    async def _run() -> list:
+        await _publish("r1", [{"id": 1}])
+        await _publish("r2", [{"id": 2}, {"id": 3}])
+        source = create_source()
+        source.backend = backend
+        src_plan = await source.plan_read(binding=binding, context={})
+        batches = [
+            b
+            async for b in source.read_batches(
+                plan=src_plan, binding=binding, context={}
+            )
+        ]
+        return list(batches[0].records)
+
+    assert anyio.run(_run) == [{"id": 2}, {"id": 3}]
+
+
+def test_multi_batch_serializes_as_one_json_array() -> None:
+    backend = InMemoryS3Fake()
+    sink = create_sink()
+    sink.backend = backend
+    binding = {
+        "config": {
+            "bucket": "b",
+            "prefix": "p",
+            "pointer_key": "p.commit",
+            "mode": "append",
+        }
+    }
+
+    async def _run() -> None:
+        plan = await sink.plan_write(binding=binding, context={})
+        session = await sink.begin_write(
+            plan=plan, binding=binding, context={"run_id": "mb"}
+        )
+        await sink.write_batch(session, [{"a": 1}], context={})
+        await sink.write_batch(session, [{"a": 2}], context={})
+        receipt = await sink.commit(session, context={})
+        assert receipt.status == "committed"
+        assert sink.info().metadata.get("format") == "json"
+        resolved = backend.get_committed_object(bucket="b", pointer_key="p.commit")
+        assert resolved is not None
+        _, payload = resolved
+        assert payload.decode("utf-8") == '[{"a": 1}, {"a": 2}]'
+
+    anyio.run(_run)

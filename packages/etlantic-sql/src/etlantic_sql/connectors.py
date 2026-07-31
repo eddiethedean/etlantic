@@ -90,12 +90,15 @@ class FakePostgresConnection:
     """SQLite-backed transactional fake for CI without a live Postgres.
 
     Mirrors autocommit-off semantics: DML is held until commit/rollback.
+    Pending query/op ids move to committed only on ``commit()``; ``rollback()``
+    clears pending so reconciliation cannot treat aborted work as committed.
     """
 
     conn: sqlite3.Connection = field(
         default_factory=lambda: sqlite3.connect(":memory:")
     )
-    _ops: list[dict[str, Any]] = field(default_factory=list, repr=False)
+    _pending_ops: dict[str, dict[str, Any]] = field(default_factory=dict, repr=False)
+    _committed_ops: dict[str, dict[str, Any]] = field(default_factory=dict, repr=False)
     _query_seq: int = 0
 
     def __post_init__(self) -> None:
@@ -126,7 +129,11 @@ class FakePostgresConnection:
         query_id = f"pgqid-{self._query_seq:08d}"
         safe = table.replace(".", "_")
         if not rows:
-            self._ops.append({"query_id": query_id, "table": table, "mode": mode})
+            self._pending_ops[query_id] = {
+                "query_id": query_id,
+                "table": table,
+                "mode": mode,
+            }
             return query_id
         cols = list(rows[0].keys())
         self.ensure_table(table, cols)
@@ -147,14 +154,12 @@ class FakePostgresConnection:
             else:
                 sql = f'INSERT INTO "{safe}" ({col_list}) VALUES ({placeholders})'
             self.conn.execute(sql, values)
-        self._ops.append(
-            {
-                "query_id": query_id,
-                "table": table,
-                "mode": mode,
-                "rows": len(rows),
-            }
-        )
+        self._pending_ops[query_id] = {
+            "query_id": query_id,
+            "table": table,
+            "mode": mode,
+            "rows": len(rows),
+        }
         return query_id
 
     def select(self, table: str) -> tuple[dict[str, Any], ...]:
@@ -167,17 +172,17 @@ class FakePostgresConnection:
 
     def commit(self) -> None:
         self.conn.execute("COMMIT")
+        self._committed_ops.update(self._pending_ops)
+        self._pending_ops.clear()
         self.conn.execute("BEGIN")
 
     def rollback(self) -> None:
         self.conn.execute("ROLLBACK")
+        self._pending_ops.clear()
         self.conn.execute("BEGIN")
 
     def lookup_query(self, query_id: str) -> dict[str, Any] | None:
-        for op in self._ops:
-            if op.get("query_id") == query_id:
-                return op
-        return None
+        return self._committed_ops.get(query_id) or self._pending_ops.get(query_id)
 
 
 @dataclass
@@ -407,10 +412,17 @@ class PostgresSinkConnector:
                 message="query_id not found",
                 metadata={"query_id": query_id},
             )
+        if str(query_id) in self.connection._pending_ops:
+            return ReconciliationResult(
+                status="unknown",
+                publication_id=str(query_id),
+                message="query still pending in open transaction",
+                metadata={"query_id": query_id},
+            )
         return ReconciliationResult(
             status="committed",
             publication_id=str(query_id),
-            message="query_id found",
+            message="query_id found in committed history",
             metadata={"query_id": query_id},
         )
 

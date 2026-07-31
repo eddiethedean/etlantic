@@ -26,7 +26,7 @@ Until you have the docs train version, upgrade from PyPI:
 ```bash
 python -m pip uninstall -y etlantic
 python -m pip install 'etlantic==0.38.0'
-python -m etlantic --version   # expect 0.37.0
+python -m etlantic --version   # expect 0.38.0
 ```
 
 Or accept compatible 0.38.x patches within the minor:

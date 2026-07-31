@@ -92,6 +92,9 @@ class PipelineRuntime:
         default_factory=dict, repr=False
     )
     _manual_event_consumers: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_source_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_sink_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_storage_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
@@ -193,6 +196,9 @@ class PipelineRuntime:
             ("observability", dict(self._manual_observability_providers)),
             ("run_history", dict(self._manual_run_history_providers)),
             ("event_consumer", dict(self._manual_event_consumers)),
+            ("source_connector", dict(self._manual_source_connectors)),
+            ("sink_connector", dict(self._manual_sink_connectors)),
+            ("storage_connector", dict(self._manual_storage_connectors)),
         ]
         allowed_manual: dict[str, dict[str, Any]] = {}
         manual_diags: list[Diagnostic] = []
@@ -272,6 +278,23 @@ class PipelineRuntime:
             **dict(getattr(result, "event_consumers", {}) or {}),
             **allowed_manual.get("event_consumer", {}),
         }
+        self.source_connectors = {
+            **dict(getattr(result, "source_connectors", {}) or {}),
+            **allowed_manual.get("source_connector", {}),
+        }
+        self.sink_connectors = {
+            **dict(getattr(result, "sink_connectors", {}) or {}),
+            **allowed_manual.get("sink_connector", {}),
+        }
+        self.storage_connectors = {
+            **dict(getattr(result, "storage_connectors", {}) or {}),
+            **allowed_manual.get("storage_connector", {}),
+        }
+        # Builtin local-files is allowlist-exempt (same idea as memory storage).
+        if "local-files" not in self.source_connectors:
+            from etlantic.connectors.local_files import create_local_files_source
+
+            self.source_connectors["local-files"] = create_local_files_source()
         if self._observability_bridge is not None:
             self._observability_bridge.observability_providers = dict(
                 self.observability_providers
@@ -415,18 +438,21 @@ class PipelineRuntime:
         """Register a source connector under ``name`` (e.g. ``local-files``)."""
         self._assert_manual_plugin_allowed(name, connector, kind="source_connector")
         self.source_connectors[name] = connector
+        self._manual_source_connectors[name] = connector
         self._configured_profile_key = None
 
     def register_sink_connector(self, name: str, connector: Any) -> None:
         """Register a sink connector under ``name``."""
         self._assert_manual_plugin_allowed(name, connector, kind="sink_connector")
         self.sink_connectors[name] = connector
+        self._manual_sink_connectors[name] = connector
         self._configured_profile_key = None
 
     def register_storage_connector(self, name: str, connector: Any) -> None:
         """Register a storage connector under ``name``."""
         self._assert_manual_plugin_allowed(name, connector, kind="storage_connector")
         self.storage_connectors[name] = connector
+        self._manual_storage_connectors[name] = connector
         self._configured_profile_key = None
 
     def register_dataframe_plugin(self, engine: str, plugin: Any) -> None:

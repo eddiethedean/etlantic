@@ -103,7 +103,7 @@
 
 ## Rollback
 
-Re-pin `etlantic==0.38.0` and matching `0.37.0` plugins / `medallantic==0.37.0`,
+Re-pin `etlantic==0.37.0` and matching `0.37.0` plugins / `medallantic==0.37.0`,
 then re-validate. Prefer rolling back the whole environment together.
 
 ## Security notes

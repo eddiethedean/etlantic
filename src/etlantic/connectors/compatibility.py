@@ -18,7 +18,27 @@ from etlantic.connectors.models import (
     SinkPlan,
     WriteSession,
 )
-from etlantic.storage.protocol import StorageBinding
+
+# Only these context keys may appear on receipts — never secrets or SafeIoPolicy.
+_SAFE_CONTEXT_KEYS = frozenset({"run_id", "node", "write_mode"})
+
+
+def _safe_receipt_metadata(
+    context: Mapping[str, Any] | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Build receipt metadata with redacted safe keys only."""
+    meta: dict[str, Any] = {"adapter": True}
+    meta.update(extra)
+    if not context:
+        return meta
+    for key in _SAFE_CONTEXT_KEYS:
+        if key not in context:
+            continue
+        value = context[key]
+        if isinstance(value, (str, int, float, bool)):
+            meta[key] = value
+    return meta
 
 
 class StorageBindingAdapter:
@@ -29,7 +49,7 @@ class StorageBindingAdapter:
     publication-barrier coordination.
     """
 
-    def __init__(self, binding: StorageBinding, *, provider: str | None = None) -> None:
+    def __init__(self, binding: Any, *, provider: str | None = None) -> None:
         self._binding = binding
         self._provider = provider or getattr(binding, "name", "storage")
         self._sessions: dict[str, dict[str, Any]] = {}
@@ -136,12 +156,14 @@ class StorageBindingAdapter:
                 context=ctx,
             )
         except Exception as exc:
+            # Write failure is not a confirmed transactional abort.
             self._sessions.pop(session.session_id, None)
             return CommitReceipt(
-                status="rolled_back",
+                status="unknown",
                 session_id=session.session_id,
                 provider=str(self._provider),
                 message=str(exc),
+                metadata=_safe_receipt_metadata(ctx),
             )
         self._sessions.pop(session.session_id, None)
         publication_id = None
@@ -158,7 +180,7 @@ class StorageBindingAdapter:
             session_id=session.session_id,
             provider=str(self._provider),
             publication_id=publication_id,
-            metadata={"adapter": True},
+            metadata=_safe_receipt_metadata(ctx),
         )
 
     async def abort(
@@ -167,13 +189,14 @@ class StorageBindingAdapter:
         *,
         context: Mapping[str, Any],
     ) -> CommitReceipt:
+        # Explicit abort is a confirmed transactional rollback.
         self._sessions.pop(session.session_id, None)
         return CommitReceipt(
             status="rolled_back",
             session_id=session.session_id,
             provider=str(self._provider),
             message="aborted",
-            metadata={"adapter": True, **dict(context)},
+            metadata=_safe_receipt_metadata(context),
         )
 
     async def reconcile(
@@ -187,7 +210,7 @@ class StorageBindingAdapter:
             status=receipt.status,
             publication_id=receipt.publication_id,
             message="StorageBindingAdapter cannot independently reconcile",
-            metadata={"adapter": True, **dict(context)},
+            metadata=_safe_receipt_metadata(context),
         )
 
     async def cleanup(
@@ -200,7 +223,7 @@ class StorageBindingAdapter:
             status="skipped",
             consume="none",
             message="StorageBindingAdapter has no cleanup",
-            metadata={"adapter": True, **dict(context)},
+            metadata=_safe_receipt_metadata(context),
         )
 
     async def inspect_schema(

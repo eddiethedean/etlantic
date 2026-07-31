@@ -1,7 +1,7 @@
 [project]
 name = "etlantic-s3"
 version = "0.38.0"
-description = "Experimental S3-compatible Parquet connector for ETLantic."
+description = "Experimental S3-compatible JSON connector for ETLantic."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -47,3 +47,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/etlantic_s3"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/etlantic_s3/etlantic-plugin-manifest.json" = "etlantic_s3/etlantic-plugin-manifest.json"

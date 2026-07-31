@@ -106,7 +106,7 @@ class S3SourceConnector:
             capabilities=tuple(sorted(S3_SOURCE_CAPS)),
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
-                "format": "parquet",
+                "format": "json",
                 "fake": self.force_fake or not boto3_available(),
                 "live_aws": "opt-in-later",
             },
@@ -129,7 +129,7 @@ class S3SourceConnector:
             listing_intent={
                 "bucket": bucket,
                 "pointer_key": pointer,
-                "format": cfg.get("format") or "parquet",
+                "format": cfg.get("format") or "json",
             },
             config_fingerprint=fingerprint_public_config(cfg),
             root_ref=str(cfg.get("root_ref") or bucket),
@@ -193,7 +193,7 @@ class S3SinkConnector:
             capabilities=tuple(sorted(S3_SINK_CAPS)),
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
-                "format": "parquet",
+                "format": "json",
                 "fake": self.force_fake or not boto3_available(),
                 "multipart": True,
                 "commit_pointer": "conditional",
@@ -209,7 +209,7 @@ class S3SinkConnector:
         cfg = _public_config(binding)
         bucket = _bucket(binding, cfg)
         mode = str(cfg.get("mode") or binding.get("mode") or "overwrite")
-        if mode not in {"append", "overwrite"}:
+        if mode not in {"append", "overwrite", "create", "create_only", "first_write"}:
             raise ConnectorConfigError(
                 f"unsupported s3 write mode {mode!r}",
                 code="PMCONN802",
@@ -259,6 +259,8 @@ class S3SinkConnector:
             "bucket": bucket,
             "data_key": data_key,
             "pointer_key": str(meta["pointer_key"]),
+            "write_mode": plan.write_mode or "overwrite",
+            "records": [],
             "parts": 0,
             "prepared": False,
             "data_etag": None,
@@ -285,18 +287,43 @@ class S3SinkConnector:
                 code="PMCONN810",
                 provider=PROVIDER,
             )
-        if isinstance(batch, (bytes, bytearray)):
-            body = bytes(batch)
+        records = state["records"]
+        if isinstance(batch, Mapping):
+            records.append(dict(batch))
+        elif isinstance(batch, (list, tuple)):
+            for item in batch:
+                if isinstance(item, Mapping):
+                    records.append(dict(item))
+                else:
+                    records.append(item)
+        elif isinstance(batch, (bytes, bytearray)):
+            try:
+                parsed = json.loads(bytes(batch).decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ConnectorWriteError(
+                    "s3 JSON sink expects UTF-8 JSON bytes",
+                    code="PMCONN812",
+                    provider=PROVIDER,
+                ) from exc
+            if isinstance(parsed, list):
+                records.extend(parsed)
+            else:
+                records.append(parsed)
         elif isinstance(batch, str):
-            body = batch.encode("utf-8")
+            try:
+                parsed = json.loads(batch)
+            except json.JSONDecodeError as exc:
+                raise ConnectorWriteError(
+                    "s3 JSON sink expects JSON text",
+                    code="PMCONN812",
+                    provider=PROVIDER,
+                ) from exc
+            if isinstance(parsed, list):
+                records.extend(parsed)
+            else:
+                records.append(parsed)
         else:
-            body = json.dumps(batch, default=str).encode("utf-8")
-        state["parts"] = int(state["parts"]) + 1
-        self.backend.upload_part(
-            upload_id=str(state["upload_id"]),
-            part_number=int(state["parts"]),
-            body=body,
-        )
+            records.append(batch)
 
     async def prepare(
         self,
@@ -305,14 +332,14 @@ class S3SinkConnector:
         context: Mapping[str, Any],
     ) -> None:
         state = self._require_session(session.session_id)
-        if int(state["parts"]) == 0:
-            # Empty publication still materializes an empty object.
-            self.backend.upload_part(
-                upload_id=str(state["upload_id"]),
-                part_number=1,
-                body=b"[]",
-            )
-            state["parts"] = 1
+        # Serialize once — never multipart-concat separate JSON arrays.
+        body = json.dumps(list(state["records"]), default=str).encode("utf-8")
+        self.backend.upload_part(
+            upload_id=str(state["upload_id"]),
+            part_number=1,
+            body=body,
+        )
+        state["parts"] = 1
         etag = self.backend.complete_multipart_upload(upload_id=str(state["upload_id"]))
         state["data_etag"] = etag
         state["prepared"] = True
@@ -326,11 +353,14 @@ class S3SinkConnector:
         state = self._require_session(session.session_id)
         if not state.get("prepared"):
             await self.prepare(session, context=context)
+        # Create/first-write modes keep conditional create; overwrite/append replace.
+        write_mode = str(state.get("write_mode") or "overwrite")
+        if_none_match = write_mode in {"create", "create_only", "first_write"}
         result = self.backend.put_commit_pointer(
             bucket=str(state["bucket"]),
             pointer_key=str(state["pointer_key"]),
             data_key=str(state["data_key"]),
-            if_none_match=True,
+            if_none_match=if_none_match,
         )
         if not result.get("ok"):
             state["status"] = "unknown"

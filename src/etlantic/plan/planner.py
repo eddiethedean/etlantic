@@ -273,6 +273,9 @@ def _build_plan(
 
     # Bindings resolve early so source/sink engines follow providers, not only neighbors.
     bindings = _resolve_bindings(graph, context)
+    from etlantic.connectors.negotiate import assert_binding_connector_capabilities
+
+    assert_binding_connector_capabilities(bindings)
 
     # 6. Regions by resolved engine (never merge across engines/security domains)
     regions = _form_regions(

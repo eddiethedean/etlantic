@@ -30,6 +30,7 @@ from etlantic.connectors.maturity import ConnectorMaturity
 from etlantic.connectors.models import (
     SOURCE_PROTOCOL,
     CleanupReceipt,
+    CommitReceipt,
     ConnectorInfo,
     CursorProposal,
     LandingCheckpoint,
@@ -113,21 +114,32 @@ class LocalFilesSourceConnector:
                 code="PMCONN703",
                 provider=PROVIDER_NAME,
             )
+        # Plan artifacts use root_ref (+ relative root only). Absolute physical
+        # landing roots stay runtime-only via binding + SafeIoPolicy.
+        listing_intent: dict[str, Any] = {
+            "root_ref": root_ref,
+            "glob": glob_pat,
+            "format": fmt,
+            "consume": cfg.get("consume") or binding.get("consume") or "none",
+            "empty_match": cfg.get("empty_match")
+            or binding.get("empty_match")
+            or "fail",
+        }
+        root_rel = cfg.get("root") or binding.get("root")
+        if root_rel is not None:
+            root_text = str(root_rel).strip()
+            if (
+                root_text
+                and not Path(root_text).is_absolute()
+                and not root_text.startswith("~")
+            ):
+                listing_intent["root"] = root_text
         return SourcePlan(
             provider=PROVIDER_NAME,
             protocol=SOURCE_PROTOCOL,
             mode=mode,  # type: ignore[arg-type]
             identity_scheme="landing_file_sha256/1",
-            listing_intent={
-                "root_ref": root_ref,
-                "root": cfg.get("root") or binding.get("root"),
-                "glob": glob_pat,
-                "format": fmt,
-                "consume": cfg.get("consume") or binding.get("consume") or "none",
-                "empty_match": cfg.get("empty_match")
-                or binding.get("empty_match")
-                or "fail",
-            },
+            listing_intent=listing_intent,
             required_capabilities=tuple(
                 str(x)
                 for x in (
@@ -248,8 +260,31 @@ class LocalFilesSourceConnector:
         *,
         publication_id: str | None,
         context: Mapping[str, Any],
+        receipt: CommitReceipt | None = None,
     ) -> LandingCheckpoint | None:
         """Advance ledger only after sink CommitReceipt.status == committed."""
+        from etlantic.connectors.cdk.publication import may_advance_cursor
+
+        resolved_receipt = receipt
+        if resolved_receipt is None:
+            raw = context.get("commit_receipt") or context.get("receipt")
+            if isinstance(raw, CommitReceipt):
+                resolved_receipt = raw
+        if resolved_receipt is not None:
+            decision = may_advance_cursor(
+                resolved_receipt, proposal=self._last_proposal
+            )
+            if not decision.may_advance:
+                self._release_lease()
+                raise ConnectorCheckpointError(
+                    f"Refusing ledger advance; publication status="
+                    f"{resolved_receipt.status!r}",
+                    code="PMCONN940",
+                    provider=PROVIDER_NAME,
+                    details={"status": resolved_receipt.status},
+                )
+            if publication_id is None:
+                publication_id = resolved_receipt.publication_id
         if self._lease_base is None or self._lease_checkpoint is None:
             return None
         if self._last_manifest is None or not self._last_manifest.identities:
@@ -297,10 +332,11 @@ class LocalFilesSourceConnector:
         archived: list[str] = []
         try:
             for identity in self._last_manifest.identities:
-                src = physical_root / Path(identity.relative_path)
-                dest_dir = physical_root / ".done"
-                dest_dir.mkdir(parents=True, exist_ok=True)
-                dest = dest_dir / Path(identity.relative_path).name
+                rel = Path(identity.relative_path)
+                src = physical_root / rel
+                # Preserve nested relative path under .done/ (avoid basename collisions).
+                dest = physical_root / ".done" / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
                 if dest.exists():
                     raise ConnectorReadError(
                         f"Archive collision for {identity.relative_path}",
@@ -643,51 +679,83 @@ def read_csv_identities(
                 code="PMCONN772",
                 provider=PROVIDER_NAME,
             )
-        digest = _sha256_file(resolved)
-        if digest != identity.content_sha256:
-            raise ConnectorReadError(
-                f"Content changed since listing for {identity.relative_path}",
-                code="PMCONN773",
-                provider=PROVIDER_NAME,
-            )
-        with resolved.open(newline="", encoding=encoding) as handle:
-            reader = csv.DictReader(handle, delimiter=delimiter)
-            if reader.fieldnames is None:
+        # Best-effort: O_NOFOLLOW open, hash through the same fd, then read CSV.
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        fd = -1
+        try:
+            try:
+                fd = os.open(resolved, flags)
+            except OSError as exc:
                 raise ConnectorReadError(
-                    f"CSV missing header: {identity.relative_path}",
-                    code="PMCONN774",
+                    f"TOCTOU on open: {identity.relative_path}",
+                    code="PMCONN770",
+                    provider=PROVIDER_NAME,
+                ) from exc
+            digest = _sha256_fd(fd)
+            if digest != identity.content_sha256:
+                raise ConnectorReadError(
+                    f"Content changed since listing for {identity.relative_path}",
+                    code="PMCONN773",
                     provider=PROVIDER_NAME,
                 )
-            fields = [_normalize_rel(str(f)) for f in reader.fieldnames]
-            if header is None:
-                header = fields
-            elif fields != header:
-                raise ConnectorReadError(
-                    f"Cross-file CSV header mismatch at {identity.relative_path}",
-                    code="PMCONN775",
-                    provider=PROVIDER_NAME,
-                    details={"expected": header, "got": fields},
-                )
-            for row in reader:
-                rows.append(dict(row))
-                if len(rows) > max_rows:
+            os.lseek(fd, 0, os.SEEK_SET)
+            with os.fdopen(
+                fd, "r", newline="", encoding=encoding, closefd=True
+            ) as handle:
+                fd = -1
+                reader = csv.DictReader(handle, delimiter=delimiter)
+                if reader.fieldnames is None:
                     raise ConnectorReadError(
-                        f"Row budget exceeded (max_rows={max_rows})",
-                        code="PMCONN776",
+                        f"CSV missing header: {identity.relative_path}",
+                        code="PMCONN774",
                         provider=PROVIDER_NAME,
                     )
+                fields = [_normalize_rel(str(f)) for f in reader.fieldnames]
+                if header is None:
+                    header = fields
+                elif fields != header:
+                    raise ConnectorReadError(
+                        f"Cross-file CSV header mismatch at {identity.relative_path}",
+                        code="PMCONN775",
+                        provider=PROVIDER_NAME,
+                        details={"expected": header, "got": fields},
+                    )
+                for row in reader:
+                    rows.append(dict(row))
+                    if len(rows) > max_rows:
+                        raise ConnectorReadError(
+                            f"Row budget exceeded (max_rows={max_rows})",
+                            code="PMCONN776",
+                            provider=PROVIDER_NAME,
+                        )
+        finally:
+            if fd >= 0:
+                with suppress(OSError):
+                    os.close(fd)
     return as_records(rows, contract_type)
 
 
-def _sha256_file(path: Path) -> str:
+def _sha256_fd(fd: int) -> str:
     h = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            h.update(chunk)
+    while True:
+        chunk = os.read(fd, 1024 * 1024)
+        if not chunk:
+            break
+        h.update(chunk)
     return h.hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(path, flags)
+    try:
+        return _sha256_fd(fd)
+    finally:
+        os.close(fd)
 
 
 __all__ = [

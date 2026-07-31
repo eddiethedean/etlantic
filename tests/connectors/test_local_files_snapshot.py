@@ -129,3 +129,38 @@ def test_reject_absolute_and_recursive_glob(tmp_path) -> None:
             )
 
     anyio.run(_run)
+
+
+def test_rename_done_preserves_nested_relative_paths(tmp_path) -> None:
+    """Nested files with the same basename must not collide under .done/."""
+    inbox = tmp_path / "inbox"
+    _write_csv(inbox / "a" / "events.csv", [("1", "alpha")])
+    _write_csv(inbox / "b" / "events.csv", [("2", "beta")])
+    connector = LocalFilesSourceConnector(allow_recursive_glob=True)
+    policy = SafeIoPolicy.for_root(tmp_path)
+    binding = {
+        "provider": "local-files",
+        "format": "csv",
+        "root": "inbox",
+        "root_ref": "landing",
+        "glob": "*/*.csv",
+        "mode": "snapshot",
+        "consume": "rename_done",
+        "empty_match": "fail",
+    }
+    context: dict = {"run_id": "rename-nested", "safe_io": policy}
+
+    async def _run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+        receipt = await connector.consume_after_commit(binding=binding, context=context)
+        assert receipt.status == "completed"
+        assert (inbox / ".done" / "a" / "events.csv").is_file()
+        assert (inbox / ".done" / "b" / "events.csv").is_file()
+        assert not (inbox / "a" / "events.csv").exists()
+        assert not (inbox / "b" / "events.csv").exists()
+
+    anyio.run(_run)

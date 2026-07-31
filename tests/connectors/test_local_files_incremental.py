@@ -193,12 +193,56 @@ def test_commit_receipt_barrier_unit(tmp_path) -> None:
         )
         receipt = CommitReceipt(status="committed", publication_id="pub-1")
         await connector2.commit_ledger(
-            publication_id=receipt.publication_id, context=context2
+            publication_id=receipt.publication_id,
+            context=context2,
+            receipt=receipt,
         )
         await connector2.consume_after_commit(binding=binding, context=context2)
         ckpt = load_landing_checkpoint(ckpt_path, policy=policy)
         assert ckpt is not None
         assert len(ckpt.committed_identities) == 1
         assert ckpt.generation == 1
+
+    anyio.run(_run)
+
+
+def test_commit_ledger_refuses_non_committed_receipt(tmp_path) -> None:
+    inbox = tmp_path / "inbox"
+    _write_csv(inbox / "a.csv", [("1", "a")])
+    connector = LocalFilesSourceConnector()
+    policy = SafeIoPolicy.for_root(tmp_path)
+    binding = {
+        "provider": "local-files",
+        "format": "csv",
+        "root": "inbox",
+        "root_ref": "landing",
+        "glob": "*.csv",
+        "mode": "incremental",
+        "consume": "ledger",
+        "checkpoint": "landing_csv_checkpoint",
+    }
+    context: dict = {"run_id": "refuse", "safe_io": policy}
+
+    async def _run() -> None:
+        from etlantic.connectors.errors import ConnectorCheckpointError
+
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+        manifest = context["landing_read_manifest"]
+        await connector.propose_cursor(plan=plan, manifest=manifest, context=context)
+        bad = CommitReceipt(status="unknown", publication_id="maybe")
+        try:
+            await connector.commit_ledger(
+                publication_id=bad.publication_id,
+                context=context,
+                receipt=bad,
+            )
+        except ConnectorCheckpointError as exc:
+            assert exc.code == "PMCONN940"
+            return
+        raise AssertionError("non-committed receipt must refuse ledger advance")
 
     anyio.run(_run)

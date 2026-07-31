@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from contractmodel.validation.limits import check_file_byte_limit
 
@@ -22,10 +22,18 @@ from etlantic.interchange.security import (
     ensure_file_within_budget,
     resolve_safe_path,
 )
-from etlantic.runtime.events import SecurityEvent
+
+if TYPE_CHECKING:
+    from etlantic.runtime.events import SecurityEvent
 
 SymlinkPolicy = Literal["reject", "follow_within_root"]
 OverwritePolicy = Literal["reject", "allow", "atomic_replace"]
+
+
+def _security_event(**kwargs: Any) -> Any:
+    from etlantic.runtime.events import SecurityEvent
+
+    return SecurityEvent(**kwargs)
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +121,99 @@ class SafeIoPolicy:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class SafeIoPlanPolicy:
+    """Plan-safe I/O policy: root refs only — no absolute approved_roots.
+
+    Runtime :class:`SafeIoPolicy` may carry physical paths. Plan snapshots and
+    connector plans must retain aliases / policy semantics instead.
+    """
+
+    version: str = "safe_io_plan/1"
+    root_refs: tuple[str, ...] = ()
+    max_read_bytes: int = DEFAULT_MAX_BYTES
+    symlink_policy: SymlinkPolicy = "reject"
+    overwrite_policy: OverwritePolicy = "atomic_replace"
+    require_regular_files: bool = True
+    enable_locking: bool = True
+    lock_timeout_seconds: float = 30.0
+    compute_integrity_digest: bool = True
+    retention_seconds: int | None = None
+    tenant: str = "default"
+    environment: str = "default"
+    security_domain: str = "default"
+    fail_on_symlink: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "root_refs": list(self.root_refs),
+            "max_read_bytes": self.max_read_bytes,
+            "symlink_policy": self.symlink_policy,
+            "overwrite_policy": self.overwrite_policy,
+            "require_regular_files": self.require_regular_files,
+            "enable_locking": self.enable_locking,
+            "lock_timeout_seconds": self.lock_timeout_seconds,
+            "compute_integrity_digest": self.compute_integrity_digest,
+            "retention_seconds": self.retention_seconds,
+            "tenant": self.tenant,
+            "environment": self.environment,
+            "security_domain": self.security_domain,
+            "fail_on_symlink": self.fail_on_symlink,
+        }
+
+    @classmethod
+    def from_safe_io(cls, data: dict[str, Any] | None) -> SafeIoPlanPolicy:
+        """Build a plan policy from a runtime ``safe_io`` mapping.
+
+        Physical ``approved_roots`` are omitted; only ``root_refs`` (when
+        present) and non-path policy flags are retained.
+        """
+        data = dict(data or {})
+        symlink_policy = str(data.get("symlink_policy") or "reject")
+        overwrite_policy = str(data.get("overwrite_policy") or "atomic_replace")
+        allowed_symlink = {"reject", "follow_within_root"}
+        allowed_overwrite = {"reject", "allow", "atomic_replace"}
+        if symlink_policy not in allowed_symlink:
+            raise ValueError(
+                f"Invalid symlink_policy {symlink_policy!r}; "
+                f"expected one of {sorted(allowed_symlink)}"
+            )
+        if overwrite_policy not in allowed_overwrite:
+            raise ValueError(
+                f"Invalid overwrite_policy {overwrite_policy!r}; "
+                f"expected one of {sorted(allowed_overwrite)}"
+            )
+        fail_on = data.get("fail_on_symlink")
+        if fail_on is None:
+            fail_on = symlink_policy == "reject"
+        root_refs_raw = data.get("root_refs") or ()
+        return cls(
+            version=str(data.get("version") or "safe_io_plan/1"),
+            root_refs=tuple(str(r) for r in root_refs_raw),
+            max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
+            symlink_policy=symlink_policy,  # type: ignore[arg-type]
+            overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
+            require_regular_files=bool(data.get("require_regular_files", True)),
+            enable_locking=bool(data.get("enable_locking", True)),
+            lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),
+            compute_integrity_digest=bool(data.get("compute_integrity_digest", True)),
+            retention_seconds=data.get("retention_seconds"),
+            tenant=str(data.get("tenant") or "default"),
+            environment=str(data.get("environment") or "default"),
+            security_domain=str(data.get("security_domain") or "default"),
+            fail_on_symlink=bool(fail_on),
+        )
+
+
+def sanitize_safe_io_for_plan(data: dict[str, Any] | None) -> dict[str, Any]:
+    """Replace physical approved_roots with plan-safe root_ref semantics."""
+    raw = dict(data or {})
+    if not raw:
+        return {}
+    return SafeIoPlanPolicy.from_safe_io(raw).to_dict()
+
+
 @dataclass
 class SafeIoResult:
     """Outcome of a safe I/O operation."""
@@ -145,8 +246,8 @@ def _deny_event(
     path: Path,
     outcome: str,
     message: str,
-) -> SecurityEvent:
-    return SecurityEvent(
+) -> Any:
+    return _security_event(
         kind="safe_io",
         run_id=run_id,
         provider="filesystem",
@@ -470,7 +571,7 @@ def write_text_safe(
             _release_lock(lock)
 
     events.append(
-        SecurityEvent(
+        _security_event(
             kind="safe_io",
             run_id=run_id,
             provider="filesystem",
@@ -519,7 +620,7 @@ def append_line_safe(
         if lock is not None:
             _release_lock(lock)
     events.append(
-        SecurityEvent(
+        _security_event(
             kind="safe_io",
             run_id=run_id,
             provider="filesystem",

@@ -26,6 +26,10 @@ pip install 'etlantic-sqlmodel==0.38.0'
 pip install 'medallantic==0.38.0'
 # optional compatibility redirect (deprecated):
 pip install 'etlantic-sparkforge==0.38.0'
+# experimental connectors (fake/CI; Alpha — not Supported):
+pip install 'etlantic-s3==0.38.0'
+pip install 'etlantic-iceberg==0.38.0'
+pip install 'etlantic-snowflake==0.38.0'
 ```
 
 Official first-party plugins declare `etlantic>=0.38.0,<0.39`.
@@ -52,6 +56,9 @@ Optional reference adapter: `pip install 'etlantic-fastapi==0.38.0'` or
 | [`etlantic-prefect`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-prefect/README.md) | `etlantic_prefect` | Prefect direct-execution scheduler (`Profile(orchestrator="prefect")`) |
 | [`etlantic-keyring`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-keyring/README.md) | `etlantic_keyring` | OS keyring secret provider |
 | [`etlantic-sqlmodel`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sqlmodel/README.md) | `etlantic_sqlmodel` | SQLModel ↔ contract bridge |
+| [`etlantic-s3`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-s3/README.md) | `etlantic_s3` | **Experimental** S3 JSON connector (fake/CI; Alpha) |
+| [`etlantic-iceberg`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-iceberg/README.md) | `etlantic_iceberg` | **Experimental** Iceberg connector (fake/CI; Alpha) |
+| [`etlantic-snowflake`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-snowflake/README.md) | `etlantic_snowflake` | **Experimental** Snowflake connector (fake/CI; Alpha) |
 | [`medallantic`](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md) | `medallantic` | **Facade** — medallion vocabulary and SparkForge migration adapter |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | **Redirect** (deprecated) — re-exports `medallantic` |
 | [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Thin FastAPI authoring/service reference adapter (shipped since 0.24; pin `==0.38.0`) |

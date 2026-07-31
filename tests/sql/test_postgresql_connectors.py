@@ -78,6 +78,28 @@ def test_merge_upsert() -> None:
     anyio.run(_run)
 
 
+def test_abort_then_reconcile_not_committed() -> None:
+    """begin → prepare → abort → reconcile must not report committed."""
+    sink = create_sink()
+    binding = {"config": {"table": "orders", "mode": "append"}}
+
+    async def _run() -> None:
+        plan = await sink.plan_write(binding=binding, context={})
+        session = await sink.begin_write(plan=plan, binding=binding, context={})
+        await sink.write_batch(session, [{"id": "1", "payload": "a"}], context={})
+        await sink.prepare(session, context={})
+        aborted = await sink.abort(session, context={})
+        assert aborted.status == "rolled_back"
+        query_id = (aborted.metadata or {}).get("query_id")
+        assert query_id
+        assert sink.connection.lookup_query(str(query_id)) is None
+        result = await sink.reconcile(aborted, context={})
+        assert result.status != "committed"
+        assert result.status == "rolled_back"
+
+    anyio.run(_run)
+
+
 def test_protocols_and_matrix_metadata() -> None:
     assert isinstance(create_source(), SourceConnector)
     assert isinstance(create_sink(), SinkConnector)

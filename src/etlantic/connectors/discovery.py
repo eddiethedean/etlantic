@@ -39,6 +39,19 @@ def discover_storage_connectors() -> tuple[list[DiscoveredPlugin], list[Diagnost
     return discover_entry_points(STORAGE_CONNECTORS_GROUP)
 
 
+def _ensure_connector_instances(loaded: dict[str, Any]) -> dict[str, Any]:
+    """Instantiate remaining callable factories (match coordinator load path)."""
+    instances: dict[str, Any] = {}
+    for key, plugin in loaded.items():
+        if isinstance(plugin, type) or (
+            callable(plugin) and not hasattr(plugin, "info")
+        ):
+            instances[key] = plugin()
+        else:
+            instances[key] = plugin
+    return instances
+
+
 def discover_connectors_for_profile(
     profile: Profile | None,
     *,
@@ -48,12 +61,14 @@ def discover_connectors_for_profile(
     """Discover → evaluate → authorize → load connector groups for a profile."""
     results: dict[str, PluginLifecycleResult] = {}
     for group in groups or CONNECTOR_ENTRY_POINT_GROUPS:
-        results[group] = discover_evaluate_authorize_load(
+        result = discover_evaluate_authorize_load(
             group,
-            profile,
+            profile=profile,
             run_id=run_id,
-            instantiate=True,
+            key_fn=connector_key,
         )
+        result.loaded = _ensure_connector_instances(dict(result.loaded))
+        results[group] = result
     return results
 
 

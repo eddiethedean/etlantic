@@ -287,6 +287,12 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
         _reject_location_userinfo(location_text)
         config_raw = value.get("config")
         config = dict(config_raw) if isinstance(config_raw, dict) else None
+        if config is not None:
+            # Lazy import: avoid connectors package during Profile bootstrap.
+            from etlantic.connectors.cdk.config import reject_secret_like_keys
+
+            # Fail closed before planner/profile snapshots can embed secrets.
+            reject_secret_like_keys(config, path="config", provider=provider)
         caps_raw = value.get("required_capabilities") or ()
         secret_refs_raw = value.get("secret_refs") or {}
         return ParsedAssetDescriptor(

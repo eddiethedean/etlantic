@@ -16,7 +16,6 @@ from etlantic.connectors.capabilities import (
     SOURCE_SCHEMA_DISCOVERY,
     WRITE_APPEND,
     WRITE_OVERWRITE,
-    WRITE_PARTITION_REPLACE,
 )
 from etlantic.connectors.errors import ConnectorConfigError, ConnectorWriteError
 from etlantic.connectors.maturity import ConnectorMaturity
@@ -54,7 +53,6 @@ SINK_CAPS = frozenset(
     {
         WRITE_APPEND,
         WRITE_OVERWRITE,
-        WRITE_PARTITION_REPLACE,
         PUBLICATION_ATOMIC,
         RECONCILIATION,
         IDEMPOTENCY,
@@ -182,7 +180,7 @@ class IcebergSinkConnector:
         cfg = _public_config(binding)
         table_id = _table_id(binding, cfg)
         mode = str(cfg.get("mode") or binding.get("mode") or "append")
-        if mode not in {"append", "overwrite", "partition_replace"}:
+        if mode not in {"append", "overwrite"}:
             raise ConnectorConfigError(
                 f"unsupported iceberg write mode {mode!r}",
                 code="PMCONN822",
@@ -262,11 +260,13 @@ class IcebergSinkConnector:
         table_id = str(state["table"])
         mode = str(state["mode"])
         rows = list(state["rows"])
-        if mode == "overwrite" or mode == "partition_replace":
+        if mode == "overwrite":
             snap = self.catalog.overwrite(table_id, rows)
         else:
             snap = self.catalog.append(table_id, rows)
-        state["staged_snapshot_id"] = snap.snapshot_id
+        # Clear staging so a later abort cannot roll back the published snapshot.
+        state["staged_snapshot_id"] = None
+        state["published_snapshot_id"] = snap.snapshot_id
         state["status"] = "committed"
         # Snapshot id is the publication identity.
         return CommitReceipt(
@@ -290,6 +290,23 @@ class IcebergSinkConnector:
         context: Mapping[str, Any],
     ) -> CommitReceipt:
         state = self._require(session.session_id)
+        # Abort only uncommitted staging — never roll back a published snapshot.
+        if state.get("status") == "committed":
+            return CommitReceipt(
+                status="committed",
+                session_id=session.session_id,
+                provider=PROVIDER,
+                publication_id=(
+                    str(state["published_snapshot_id"])
+                    if state.get("published_snapshot_id") is not None
+                    else None
+                ),
+                message="iceberg abort ignored after successful commit",
+                metadata={
+                    "table": state["table"],
+                    "snapshot_id": state.get("published_snapshot_id"),
+                },
+            )
         staged = state.get("staged_snapshot_id")
         if staged is not None:
             self.catalog.rollback(str(state["table"]), int(staged))

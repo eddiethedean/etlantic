@@ -1,0 +1,64 @@
+{
+  "capabilities": [
+    "source.batch_snapshot",
+    "source.schema_discovery",
+    "source.statistics_bounded",
+    "write.append",
+    "write.overwrite",
+    "publication.atomic",
+    "reconciliation",
+    "cleanup",
+    "idempotency"
+  ],
+  "digest": "sha256:af77769841ac1a38aacb66d3ef412bb3998c41344a302a48baf1b4e784474b60",
+  "entries": [
+    {
+      "capabilities": [
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "source.statistics_bounded",
+        "idempotency"
+      ],
+      "engine": "s3",
+      "group": "etlantic.source_connectors",
+      "name": "s3",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_s3:create_source"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "publication.atomic",
+        "reconciliation",
+        "cleanup",
+        "idempotency"
+      ],
+      "engine": "s3",
+      "group": "etlantic.sink_connectors",
+      "name": "s3",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_s3:create_sink"
+    },
+    {
+      "capabilities": [
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "engine": "s3",
+      "group": "etlantic.storage_connectors",
+      "name": "s3",
+      "protocol": "etlantic.storage/1",
+      "target": "etlantic_s3:create_storage"
+    }
+  ],
+  "package": "etlantic-s3",
+  "privileges": [],
+  "protocol_range": "etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.38.0"
+}

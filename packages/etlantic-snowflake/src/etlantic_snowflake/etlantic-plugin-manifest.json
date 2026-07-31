@@ -1,0 +1,66 @@
+{
+  "capabilities": [
+    "source.batch_snapshot",
+    "source.schema_discovery",
+    "source.statistics_bounded",
+    "write.append",
+    "write.overwrite",
+    "write.merge",
+    "publication.atomic",
+    "transactions",
+    "reconciliation",
+    "idempotency"
+  ],
+  "digest": "sha256:3f13efa403ec55103580cc0794e4b321dd073021c23967c2533b87e5c9992385",
+  "entries": [
+    {
+      "capabilities": [
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "source.statistics_bounded",
+        "idempotency"
+      ],
+      "engine": "snowflake",
+      "group": "etlantic.source_connectors",
+      "name": "snowflake",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_snowflake:create_source"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "write.merge",
+        "publication.atomic",
+        "transactions",
+        "reconciliation",
+        "idempotency"
+      ],
+      "engine": "snowflake",
+      "group": "etlantic.sink_connectors",
+      "name": "snowflake",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_snowflake:create_sink"
+    },
+    {
+      "capabilities": [
+        "source.schema_discovery",
+        "source.statistics_bounded"
+      ],
+      "engine": "snowflake",
+      "group": "etlantic.storage_connectors",
+      "name": "snowflake",
+      "protocol": "etlantic.storage/1",
+      "target": "etlantic_snowflake:create_storage"
+    }
+  ],
+  "package": "etlantic-snowflake",
+  "privileges": [],
+  "protocol_range": "etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.38.0"
+}

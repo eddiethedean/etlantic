@@ -1,20 +1,21 @@
 # Exit Gate 0.38 — Data Connectivity and Connector SDK
 
-> **Status: Gate-ready for tag/publish rehearsal toward ETLantic 0.38.0.**
-> Connector protocols, local landing-zone reference, CDK/conformance, and
-> experimental cloud packages are in-tree. Close only against exact candidate
-> wheels when publishing. **P0 = 0.** Soft-continue: `038-X-01` (independent
-> echo plugin connector on PyPI) mitigated by in-repo third-party EP proof.
+> **Status: Gate-ready for tag/publish rehearsal toward ETLantic 0.38.0** after
+> post-exit honesty pass (runtime barrier/wiring, secrets/paths, fake connector
+> honesty, manifests/CI, plan caps, adopter pin docs). Close only against exact
+> candidate wheels when publishing. **P0 = 0.** Soft-continue: `038-X-01`
+> (independent echo plugin connector on PyPI) mitigated by in-repo third-party
+> EP proof.
 
 | Deliverable | Status |
 |---|---|
 | Planning: ADR-015 / this exit gate / findings / What's New / migration | Met |
 | Public source/sink/storage protocols + `etlantic.connectors` | Met |
-| Structured bindings, manifests, trust, planning | Met |
-| Runtime publication barrier + cursor correctness | Met |
-| Local landing-zone snapshot + incremental | Met |
-| Connector CDK + public conformance suites | Met |
-| Reference providers (S3, Iceberg, Snowflake, PostgreSQL) | Met (fake/CI; Experimental) |
+| Structured bindings, manifests, trust, planning | Met (plan-time `PMCONN850`) |
+| Runtime publication barrier + cursor correctness | Met (multi-sink barrier + unknown hold) |
+| Local landing-zone snapshot + incremental | Met (`rename_done` nested paths; ledger receipt gate) |
+| Connector CDK + public conformance suites | Met (`--fake` exits non-zero on failures) |
+| Reference providers (S3, Iceberg, Snowflake, PostgreSQL) | Met (fake/CI; Experimental; honest caps/format) |
 | Maturity / compatibility records + third-party proof | Met with soft-continue `038-X-01` |
 | Release rehearsal (wheels, digests, immutable docs) | Gate-ready (in-repo); publish residual |
 
@@ -26,26 +27,26 @@ From [IMPLEMENTATION_PLAN_0_38](IMPLEMENTATION_PLAN_0_38.md):
 |---|---:|---|
 | Public versioned connector protocol families | 3 | **Met** (source/sink/storage `/1`) |
 | Required reference paths passing | 5 / 5 | **Met** (local, s3, iceberg, snowflake, postgresql fake) |
-| Advertised capability-to-conformance coverage | 100% | **Met** (matrix + `--fake` conformance) |
+| Advertised capability-to-conformance coverage | 100% | **Met** (matrix + `--fake` conformance; Iceberg without false `partition_replace`) |
 | Same-pipeline portability profiles passing | 3 / 3 | **Met** (`038-A01` local/s3/snowflake) |
 | Landing snapshot acceptance scenarios passing | 100% | **Met** |
 | Landing incremental acceptance scenarios passing | 100% | **Met** |
 | Concrete live files listed during ordinary static planning | 0 | **Met** |
-| Resolved secrets in retained artifacts | 0 | **Met** (carry-forward + connector suites) |
+| Resolved secrets in retained artifacts | 0 | **Met** (asset reject + adapter redaction) |
 | Arbitrary source rows in plans/reports/checkpoints/history | 0 | **Met** |
-| Physical landing-root paths in new plans/reports | 0 | **Met** |
-| Failed/unresolved publications advancing state | 0 | **Met** |
-| Partial object publications visible as committed | 0 | **Met** (S3 fake conditional pointer) |
+| Physical landing-root paths in new plans/reports | 0 | **Met** (`SafeIoPlanPolicy`) |
+| Failed/unresolved publications advancing state | 0 | **Met** (barrier + `commit_ledger` receipt gate) |
+| Partial object publications visible as committed | 0 | **Met** (S3 mode-gated pointer; Iceberg abort-after-commit) |
 | Concurrent local runs selecting the same landing files | 0 | **Met** (lease tests) |
-| Unsupported modes silently falling back | 0 | **Met** |
+| Unsupported modes silently falling back | 0 | **Met** (`PMCONN850` plan negotiation) |
 | Core long-lived directory-watch loops | 0 | **Met** (spec + code) |
 | Production connector imports bypassing allowlist | 0 | **Met** |
 | Supported compatibility matrix cells passing | 100% | **Met** for declared fake cells |
 | Cleanup leaks during declared burn-in | 0 | **Met** (fake burn-in) |
 | Independent connectors using private imports | 0 | **Met** (in-repo EP stub) |
-| Unresolved P0 findings | 0 | **Met** |
+| Unresolved P0 findings | 0 | **Met** (post-exit P0s closed in FINDINGS) |
 | Remaining P1s without full disposition | 0 | **Met** (`038-X-01` disposed soft-continue) |
-| Candidate wheels missing manifest/conformance evidence | 0 | Gate-ready (rehearsal residual at publish) |
+| Candidate wheels missing manifest/conformance evidence | 0 | Gate-ready (s3/iceberg/snowflake manifests + CI smoke; publish residual) |
 
 ## Evidence map
 
@@ -60,6 +61,7 @@ From [IMPLEMENTATION_PLAN_0_38](IMPLEMENTATION_PLAN_0_38.md):
 | Adopter migration | [MIGRATION_0_37_TO_0_38](MIGRATION_0_37_TO_0_38.md) |
 | Adopter highlights | [WHATS_NEW_0_38](../01_GETTING_STARTED/WHATS_NEW_0_38.md) |
 | Prior foundation exit | [EXIT_GATE_0_37](EXIT_GATE_0_37.md) |
+| Post-exit honesty regressions | `tests/s3`, `tests/iceberg`, `tests/connectors/test_plan_connector_caps.py`, manifests + `checks.yml` |
 
 ## Acceptance checklist
 
@@ -77,7 +79,7 @@ From [IMPLEMENTATION_PLAN_0_38](IMPLEMENTATION_PLAN_0_38.md):
 
 - [x] Source, sink, and storage protocols public and discoverable
 - [x] Structured bindings secret-free and fingerprint-stable
-- [x] Capability negotiation fails closed at plan time
+- [x] Capability negotiation fails closed at plan time (`PMCONN850`)
 - [x] Static plans never list live files
 - [x] StorageBinding compatibility adapter without false connector claims
 
@@ -102,7 +104,9 @@ From [IMPLEMENTATION_PLAN_0_38](IMPLEMENTATION_PLAN_0_38.md):
 - Distributed checkpoint fencing and multi-worker recovery — **0.40–0.41**
 - Echo plugin source connector on PyPI (`038-X-01`) — before/with first
   cloud Supported promotion
+- Real Parquet / partition-scoped Iceberg replace — only when implemented
 - TransformationModel incubation — **0.52**
+- Publish residual: tag, PyPI, RTD `/en/v0.38.0/` activate
 
 ## See also
 

@@ -64,11 +64,17 @@ Third-party and future plugins should follow a consistent naming pattern.
 These names are **illustrative only** and are **not** available on PyPI today:
 
 - `etlantic-postgres`
-- `etlantic-s3`
 - `etlantic-secrets-aws`
 - `etlantic-secrets-azure`
 - `etlantic-secrets-gcp`
 - `etlantic-secrets-vault`
+
+First-party **Experimental** connector packages (in-tree; Alpha fake/CI — not
+Supported) ship as real workspace packages:
+
+- `etlantic-s3`
+- `etlantic-iceberg`
+- `etlantic-snowflake`
 
 ## Installation
 

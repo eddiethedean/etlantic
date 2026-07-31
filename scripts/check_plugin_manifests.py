@@ -18,6 +18,9 @@ MANIFEST_PACKAGES = (
     "etlantic-airflow",
     "etlantic-prefect",
     "etlantic-datafusion",
+    "etlantic-s3",
+    "etlantic-iceberg",
+    "etlantic-snowflake",
 )
 
 

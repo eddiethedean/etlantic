@@ -8,6 +8,9 @@ live PyIceberg is optional (`pip install "etlantic-iceberg[pyiceberg]"`).
 
 Iceberg **snapshot id** is the publication identity on `CommitReceipt`.
 
+Advertised sink modes today: **append** and **overwrite**.
+`write.partition_replace` is **not** claimed until partition-scoped replace is real.
+
 ## Install
 
 ```bash

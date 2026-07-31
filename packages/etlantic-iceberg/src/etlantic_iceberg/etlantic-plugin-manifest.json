@@ -1,0 +1,61 @@
+{
+  "capabilities": [
+    "source.batch_snapshot",
+    "source.partitioned",
+    "source.schema_discovery",
+    "write.append",
+    "write.overwrite",
+    "publication.atomic",
+    "reconciliation",
+    "idempotency"
+  ],
+  "digest": "sha256:ea33fdc85f7e362e896c03cc7f83c94711b714edd5217a9f7480f3ec9e779619",
+  "entries": [
+    {
+      "capabilities": [
+        "source.batch_snapshot",
+        "source.partitioned",
+        "source.schema_discovery",
+        "idempotency"
+      ],
+      "engine": "iceberg",
+      "group": "etlantic.source_connectors",
+      "name": "iceberg",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_iceberg:create_source"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "publication.atomic",
+        "reconciliation",
+        "idempotency"
+      ],
+      "engine": "iceberg",
+      "group": "etlantic.sink_connectors",
+      "name": "iceberg",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_iceberg:create_sink"
+    },
+    {
+      "capabilities": [
+        "source.schema_discovery"
+      ],
+      "engine": "iceberg",
+      "group": "etlantic.storage_connectors",
+      "name": "iceberg",
+      "protocol": "etlantic.storage/1",
+      "target": "etlantic_iceberg:create_storage"
+    }
+  ],
+  "package": "etlantic-iceberg",
+  "privileges": [],
+  "protocol_range": "etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.38.0"
+}
