@@ -1,6 +1,6 @@
 # Event Consumer
 
-> **Status: Available in ETLantic 0.38.0.** Optional analytics over normalized
+> **Status: Available in ETLantic 0.39.0.** Optional analytics over normalized
 > lifecycle events.
 
 Event consumers derive trend, quality, performance, or anomaly signals from

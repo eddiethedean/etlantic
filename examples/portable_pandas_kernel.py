@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.38.0 etlantic-pandas==0.38.0
+    pip install etlantic==0.39.0 etlantic-pandas==0.39.0
 
 Run with:
 

@@ -2,7 +2,7 @@
   "capabilities": [
     "experimental"
   ],
-  "digest": "sha256:f54ccb740c33f72e3084d640bdce47eafb4f48562e1ddd7aa19743c6dc1deb52",
+  "digest": "sha256:718d1025e4ffa5c9362002f749b7970f5c9bb1eb8fd7050e996b86490c2469c7",
   "entries": [
     {
       "capabilities": [
@@ -32,5 +32,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.38.0"
+  "version": "0.39.0"
 }

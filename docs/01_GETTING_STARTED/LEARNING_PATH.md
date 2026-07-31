@@ -1,6 +1,6 @@
 # Learning path
 
-> **Status: Available in ETLantic 0.38.0.** One ordered ladder from first
+> **Status: Available in ETLantic 0.39.0.** One ordered ladder from first
 > install to week-2 CI. First paste still lives on the
 > [docs home green path](../README.md).
 
@@ -9,7 +9,7 @@
 | Step | Page | Done when |
 |---|---|---|
 | 0 | [Compare](COMPARE.md) (optional) | You know ETLantic is not dbt / Airflow / a dataframe engine |
-| 1 | [Installation](INSTALLATION.md) | `python -m etlantic --version` prints `0.38.0` |
+| 1 | [Installation](INSTALLATION.md) | `python -m etlantic --version` prints `0.39.0` |
 | 2 | [Quickstart](QUICKSTART.md) | `validate` / `run` succeed; Ada/Grace in `data/out.json`; aha failure observed |
 | 3 | [First Pipeline](FIRST_PIPELINE.md) | Transform evolved; validate → plan → run still green |
 | 4 | [Engine selection](ENGINE_SELECTION.md) | One engine tutorial completed (or stay on local) |
@@ -39,7 +39,7 @@ observability/history pilot. Details: [Capabilities](CAPABILITIES.md).
 
 ## Reference after first success
 
-- [Current 0.38 Guide](CURRENT_VERSION.md) — task table
+- [Current 0.39 Guide](CURRENT_VERSION.md) — task table
 - [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
 - Evaluators: [Evaluator Brief](EVALUATOR.md) → [Enterprise evaluation](ENTERPRISE_EVALUATION.md)

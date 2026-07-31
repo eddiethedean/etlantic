@@ -1,7 +1,7 @@
 [project]
 name = "etlantic-fastapi"
-version = "0.38.0"
-description = "Thin FastAPI reference adapter for ETLantic 0.25 authoring/service contracts."
+version = "0.39.0"
+description = "FastAPI adapter for ETLantic control-plane (CP1) and authoring reference."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.38.0,<0.39",
+    "etlantic>=0.39.0,<0.40",
     "fastapi>=0.115,<1",
     "pydantic>=2.12,<3",
 ]

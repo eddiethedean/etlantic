@@ -1,7 +1,7 @@
 # etlantic-pandas
 
 Pandas dataframe plugin **and** portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.38.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.39.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -55,7 +55,7 @@ run_portable_transform_conformance_suite(create_transform_compiler())
 
 ## Links
 
-[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.38.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.38.0/10_REFERENCE/COMPATIBILITY/) ·
+[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.39.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.39.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

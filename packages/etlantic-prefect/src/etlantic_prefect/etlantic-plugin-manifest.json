@@ -2,7 +2,7 @@
   "capabilities": [
     "scheduler"
   ],
-  "digest": "sha256:9358e304667a1ab659ed9fd81784d0c322f197c350f4ec26e30525802b3f66c7",
+  "digest": "sha256:e8764d7523f5204c5304f9b2e99273c55a5457a85c6925b0f537d1139bc1e7e1",
   "entries": [
     {
       "capabilities": [
@@ -22,5 +22,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.38.0"
+  "version": "0.39.0"
 }

@@ -1,6 +1,6 @@
 # Project Structure
 
-> **Status: Available in ETLantic 0.38.0.** Recommended layout after the flat
+> **Status: Available in ETLantic 0.39.0.** Recommended layout after the flat
 > `etlantic init` scaffold.
 
 An ETLantic project separates **modeling** from **execution**. Your Python

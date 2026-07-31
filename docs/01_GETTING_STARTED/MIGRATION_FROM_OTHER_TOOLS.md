@@ -1,6 +1,6 @@
 # Migration from other tools
 
-> **Status: Available in ETLantic 0.38.0.** Honest scope for evaluators who
+> **Status: Available in ETLantic 0.39.0.** Honest scope for evaluators who
 > already run Airflow, dbt, or Dagster. There is **no automated migrator in
 > 0.36**; bounded brownfield import and compiler bridges are planned for
 > [0.49](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#brownfield-adoption-bridges).
@@ -45,7 +45,7 @@ pipelines. Typical coexistence:
 
 ## From Dagster / Prefect
 
-| Tool | ETLantic relationship in 0.38 |
+| Tool | ETLantic relationship in 0.39 |
 |---|---|
 | Dagster | No compiler plugin; a Definitions compiler is planned for 0.49 |
 | Prefect | Optional `etlantic-prefect` local MVP (direct execution); compile/deployment expansion is planned for 0.49 |
@@ -63,5 +63,5 @@ or keep the existing orchestrator and call ETLantic validate/plan from CI.
 ## Next
 
 - [Compare](COMPARE.md) — positioning vs dbt / Airflow / Pandera
-- [Capabilities](CAPABILITIES.md) — what ships in 0.38
+- [Capabilities](CAPABILITIES.md) — what ships in 0.39
 - [Evaluator brief](EVALUATOR.md) — diligence packet

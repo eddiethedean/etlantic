@@ -1,21 +1,21 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.38.0.** What ships now for controlled
+> **Status: Available in ETLantic 0.39.0.** What ships now for controlled
 > single-tenant pilots.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.38)
+## What works today (0.39)
 
-ETLantic 0.38.0 is a Beta release for documented, controlled,
+ETLantic 0.39.0 is a Beta release for documented, controlled,
 single-tenant pilots. It validates and plans typed pipelines, runs them
 locally or through supported engine plugins, and compiles valid plans to
 supported orchestration targets.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.38.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.39.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -78,7 +78,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.38
+## Available in 0.39
 
 ### Migration and testing foundation
 
@@ -212,7 +212,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.38.0` first).
+(the sample uses Polars — install `etlantic-polars==0.39.0` first).
 
 ```json
 {
@@ -225,7 +225,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.38.0"
+    "etlantic-polars": "==0.39.0"
   },
   "assets": {},
   "secrets": {},
@@ -241,16 +241,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.38.0'
-pip install 'etlantic-polars==0.38.0'          # optional
-pip install 'etlantic-pandas==0.38.0'          # optional
-pip install 'etlantic-sql==0.38.0'             # optional
-pip install 'etlantic-pyspark==0.38.0'         # optional
-pip install 'etlantic-airflow==0.38.0'         # optional
-pip install 'etlantic-prefect==0.38.0'         # optional
-pip install 'etlantic-keyring==0.38.0'         # optional
-pip install 'etlantic-sqlmodel==0.38.0'        # optional
-pip install 'medallantic==0.38.0'              # optional
+pip install 'etlantic==0.39.0'
+pip install 'etlantic-polars==0.39.0'          # optional
+pip install 'etlantic-pandas==0.39.0'          # optional
+pip install 'etlantic-sql==0.39.0'             # optional
+pip install 'etlantic-pyspark==0.39.0'         # optional
+pip install 'etlantic-airflow==0.39.0'         # optional
+pip install 'etlantic-prefect==0.39.0'         # optional
+pip install 'etlantic-keyring==0.39.0'         # optional
+pip install 'etlantic-sqlmodel==0.39.0'        # optional
+pip install 'medallantic==0.39.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

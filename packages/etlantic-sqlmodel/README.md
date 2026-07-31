@@ -1,7 +1,10 @@
 # etlantic-sqlmodel
 
 Optional bridge between ETLantic `Data` contracts and
-[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.38.
+[SQLModel](https://sqlmodel.tiangolo.com/) table models, plus optional CP1
+control-plane reference stores.
+
+Package version remains **0.39.0** until the 0.39 exit wave.
 
 ## Install
 
@@ -9,20 +12,11 @@ Optional bridge between ETLantic `Data` contracts and
 pip install etlantic-sqlmodel
 ```
 
-Sessions, Alembic migrations, and repository helpers are planned across
-0.39–0.43.
-This package focuses on schema mapping and metadata comparison only.
-
-## Usage
+## Schema bridge
 
 ```python
 from etlantic import Data
-from etlantic_sqlmodel import (
-    compare_metadata,
-    contract_to_sqlmodel,
-    create_plugin,
-    sqlmodel_to_contract,
-)
+from etlantic_sqlmodel import contract_to_sqlmodel, compare_metadata
 
 
 class Customer(Data):
@@ -35,23 +29,35 @@ CustomerTable = contract_to_sqlmodel(
     table_name="customer",
     primary_key=("customer_id",),
 )
-
-metadata = sqlmodel_to_contract(CustomerTable)
-report = compare_metadata(Customer, CustomerTable)
-assert report.valid
-
-plugin = create_plugin()
+assert compare_metadata(Customer, CustomerTable).valid
 ```
 
-This bridge is used explicitly through its public conversion helpers; it does
-not require a profile engine setting. Register `create_plugin()` only with
-tooling that consumes the schema-mapping plugin object.
+## Control-plane reference stores (CP1)
 
-Generated SQLModel classes are reviewable starting points — relational choices
-such as primary keys and table names must be supplied explicitly.
+Request-scoped sessions and SQLModel-backed `DefinitionRepository` /
+`SubmissionStore` implementations. Persistence models are separate from HTTP
+response models. `create_control_plane_tables` is for tests and local demos —
+not a production migration strategy.
+
+```python
+from etlantic_sqlmodel.control_plane import (
+    SQLModelDefinitionRepository,
+    SQLModelSubmissionStore,
+    create_control_plane_tables,
+    create_sqlite_engine,
+)
+
+engine = create_sqlite_engine("sqlite:///cp.db")
+create_control_plane_tables(engine)
+definitions = SQLModelDefinitionRepository(engine)
+submissions = SQLModelSubmissionStore(engine)
+```
+
+These stores honor scoped idempotency and survive process restart when backed
+by a durable database URL. They are not a production multi-tenant claim.
 
 ## Links
 
-[Optional packages](https://etlantic.readthedocs.io/en/v0.38.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
+[Optional packages](https://etlantic.readthedocs.io/en/v0.39.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sqlmodel) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

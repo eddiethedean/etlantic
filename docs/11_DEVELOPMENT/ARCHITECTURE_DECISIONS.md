@@ -47,6 +47,10 @@ Accepted connectivity decision (0.38 Wave 0):
 
 - [ADR-015: Connector Protocols and Capability Vocabulary](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
 
+Accepted control-plane identity decision (0.39 Wave 0):
+
+- [ADR-016: Control-Plane Identity, Durability, and Event Contracts](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
+
 Related accepted refactor (UI-stable):
 
 - [ADR-014: SOLID Core Refactor](adr/ADR-014-SOLID-CORE-REFACTOR.md)

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pandas"
-version = "0.38.0"
+version = "0.39.0"
 description = "Pandas dataframe execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.38.0,<0.39",
+    "etlantic>=0.39.0,<0.40",
     "pandas>=2.2,<3",
 ]
 

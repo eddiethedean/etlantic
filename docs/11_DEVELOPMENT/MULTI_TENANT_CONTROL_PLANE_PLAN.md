@@ -1,13 +1,16 @@
 # Multi-Tenant Control Plane Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.37.0.** Incubation is sequenced across 0.39–0.42. A production,
-> multi-tenant compatibility claim is gated for 0.43 only after every isolation,
-> durability, policy, and operations gate on this page passes.
+> 0.37.0.** Incubation is sequenced across 0.39–0.42. **CP1 (0.39) identity and
+> API work is in progress** ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md),
+> [EXIT_GATE_0_39](EXIT_GATE_0_39.md)). A production, multi-tenant compatibility
+> claim is gated for 0.43 only after every isolation, durability, policy, and
+> operations gate on this page passes.
 >
 > **Current boundary:** Process-local registries, runtimes, caches, report
-> stores, and reference adapters in 0.37 are not multi-tenant merely because
-> they carry identity fields.
+> stores, and the 0.38 thin FastAPI reference adapter are not multi-tenant
+> merely because they carry identity fields. CP1 incubates typed context and
+> durable contracts; it does not claim production isolation.
 >
 > **Authority:** The
 > [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
@@ -122,10 +125,11 @@ workspace.
 | Security domain | Data-handling and reuse boundary | Preserved in plans, artifacts, caches, and execution envelopes |
 | Request context | Principal plus tenant/workspace/environment and correlation data | Server-derived, immutable, and request-scoped |
 
-Planned typed references should preserve these identities without embedding
-credentials or display names. Candidate models include `TenantRef`,
-`WorkspaceRef`, `EnvironmentRef`, `PrincipalRef`, and an immutable
-`ControlPlaneContext`; exact names remain provisional until CP1 freezes them.
+Planned typed references preserve these identities without embedding
+credentials or display names. Locked CP1 names
+([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)): `TenantRef`,
+`WorkspaceRef`, `EnvironmentRef`, `Principal`, `SecurityDomain`, and immutable
+`ControlPlaneContext`.
 
 ### Scope rules
 

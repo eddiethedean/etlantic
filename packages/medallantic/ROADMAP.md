@@ -6,7 +6,7 @@
 > status, and the [current package guide](README.md) owns shipped behavior.
 > Review this header for every release or parity-sequence change.
 
-**Current release:** Medallantic **0.38.0**. M0 through M7 are shipped
+**Current release:** Medallantic **0.39.0**. M0 through M7 are shipped
 (exit gate closed; released in the ETLantic 0.36 line). Planned phases describe
 capability order, not release-date commitments.
 

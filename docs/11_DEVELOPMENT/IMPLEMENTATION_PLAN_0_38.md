@@ -1,7 +1,7 @@
 ---
 status: gate_ready
-since: "0.38.0"
-current_minor: "0.38"
+since: "0.39.0"
+current_minor: "0.39"
 target_minor: "0.38"
 audience: maintainer
 ---
@@ -524,7 +524,7 @@ and `doctor` checks configuration/trust readiness.
 - Reconcile the roadmap, adoption plan, landing-zone plan, protocol evolution,
   dependency strategy, and security model.
 - Create `FINDINGS_0_38.md`, `EXIT_GATE_0_38.md`,
-  `MIGRATION_0_37_TO_0_38.md`, and `WHATS_NEW_0_38.md` scaffolds.
+  `MIGRATION_0_37_TO_0_38.md`, and `WHATS_NEW_0_39.md` scaffolds.
 
 ### Wave 1 — Core contracts and planning
 
@@ -684,7 +684,7 @@ etlantic plan TARGET --format json
 - `docs/11_DEVELOPMENT/FINDINGS_0_38.md`
 - `docs/11_DEVELOPMENT/EXIT_GATE_0_38.md`
 - `docs/11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md`
-- `docs/01_GETTING_STARTED/WHATS_NEW_0_38.md`
+- `docs/01_GETTING_STARTED/WHATS_NEW_0_39.md`
 - connector ADRs under `docs/11_DEVELOPMENT/adr/`
 - connector compatibility records in each provider distribution
 - capability-selected fake/live evidence and exact-wheel release records

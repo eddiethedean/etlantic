@@ -2,9 +2,10 @@
 
 ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
-stable-foundation gate. **0.38.0** is the current connectivity line
-(gate-ready for tag/publish rehearsal). Milestones describe capability order,
-not release-date commitments.
+stable-foundation gate. **0.38.0** closed the connectivity line.
+**0.39.0** is the current CP1 control-plane incubation line
+(gate-ready for tag/publish rehearsal). **CP1 ≠ production multi-tenant**
+(**0.43**). Milestones describe capability order, not release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -12,11 +13,11 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.38 | Data connectivity and connector SDK | [Gate-ready for tag/publish](EXIT_GATE_0_38.md) |
-| Previous | 0.37 | Stable foundation | [Gate-ready / shipped evidence](EXIT_GATE_0_37.md) |
-| Next | 0.39 | Multi-tenant control plane (CP1) | Planned |
+| Current | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready for tag/publish](EXIT_GATE_0_39.md) |
+| Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
+| Next / Planned | 0.40 | Tenant registry / workspaces (CP2) | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.38 gate-ready) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.39 CP1 gate-ready) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -272,9 +273,10 @@ TransformationModel incubation moves to 0.52.
 The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
-- **[0.39 / CP1](IMPLEMENTATION_PLAN_0_39.md):** typed API, identity context, authorization, and idempotency;
-  durable submission hooks for continuous landing-zone file-drop triggers
-  against 0.38 snapshot/incremental bindings
+- **[0.39 / CP1](IMPLEMENTATION_PLAN_0_39.md)** *(in progress):* typed API, identity context
+  ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)), authorization, and
+  idempotency; durable submission hooks for continuous landing-zone file-drop
+  triggers against 0.38 snapshot/incremental bindings
 - **[0.40 / CP2](IMPLEMENTATION_PLAN_0_40.md):** tenant/workspace registry, persistence isolation, stable
   metadata identities, and outbound OpenLineage preview; workspace-scoped
   landing roots and checkpoint stores

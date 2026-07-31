@@ -1,16 +1,19 @@
 # SQLModel Integration Plan
 
-> **Plan status: partially shipped; reference persistence remains planned.**
+> **Plan status: partially shipped; reference persistence remains planned;
+> CP1 optional stores are in progress under 0.39.**
 >
-> **Current 0.38 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.39 boundary:** The optional `etlantic-sqlmodel` package provides
 > the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
 > repository helpers, and durable multi-tenant control-plane providers remain
-> future work.
+> future work relative to production graduation. CP1 may add thin,
+> request-scoped reference stores; they are not the production isolation claim.
 >
 > **Authority:** The
 > [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines
 > the shipped bridge. This plan owns future persistence goals subject to the
-> [control-plane gates](MULTI_TENANT_CONTROL_PLANE_PLAN.md). See the
+> [control-plane gates](MULTI_TENANT_CONTROL_PLANE_PLAN.md) and
+> [ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md). See the
 > [Planning Hub](PLAN_INDEX.md).
 >
 > **Review trigger:** Update when the optional package adds persistence or

@@ -2,8 +2,8 @@
 hide:
   - toc
 status: available
-since: "0.38.0"
-current_minor: "0.38"
+since: "0.39.0"
+current_minor: "0.39"
 audience: adopter
 ---
 
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: Available in ETLantic 0.38.0.**
+> **Status: Available in ETLantic 0.39.0.**
 
 
 <div class="etlantic-path-grid">
@@ -95,7 +95,7 @@ audience: adopter
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The commands below pin
-`etlantic==0.38.0` so this version of the documentation and the installed API
+`etlantic==0.39.0` so this version of the documentation and the installed API
 stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
 continues with an intentional validation failure after the first successful
 run.
@@ -106,7 +106,7 @@ run.
     python -m venv .venv
     source .venv/bin/activate
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.38.0'
+    python -m pip install 'etlantic==0.39.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -123,7 +123,7 @@ run.
     py -3.11 -m venv .venv
     .\.venv\Scripts\Activate.ps1
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.38.0'
+    python -m pip install 'etlantic==0.39.0'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -231,6 +231,6 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release | [What's new in 0.38](01_GETTING_STARTED/WHATS_NEW_0_38.md) |
+| Review the current release | [What's new in 0.39](01_GETTING_STARTED/WHATS_NEW_0_39.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

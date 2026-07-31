@@ -1,6 +1,6 @@
 # Landing-Zone File Connector
 
-> **Status: Available in ETLantic 0.38.0 (Preview).** Built-in `local-files`
+> **Status: Available in ETLantic 0.39.0 (Preview).** Built-in `local-files`
 > source connector for directory/glob CSV landing zones in snapshot and
 > incremental modes. Continuous directory watching is **not** in core
 > (compose submitters in **0.39+**).
@@ -51,7 +51,7 @@ or absolute host paths).
 The same logical pipeline can swap storage/source bindings to Experimental
 `s3` / `snowflake` / `iceberg` providers without changing graph topology.
 See [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) and
-[What's New in 0.38](../01_GETTING_STARTED/WHATS_NEW_0_38.md).
+[What's New in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md).
 
 ## Related
 

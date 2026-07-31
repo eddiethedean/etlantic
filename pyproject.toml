@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.38.0"
+version = "0.39.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,29 +30,29 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.38.0"]
-pandas = ["etlantic-pandas==0.38.0"]
-sql = ["etlantic-sql==0.38.0"]
-postgresql = ["etlantic-sql==0.38.0"]
-pyspark = ["etlantic-pyspark==0.38.0"]
-spark = ["etlantic-pyspark==0.38.0"]
-airflow = ["etlantic-airflow==0.38.0"]
-prefect = ["etlantic-prefect==0.38.0"]
-keyring = ["etlantic-keyring==0.38.0"]
-sqlmodel = ["etlantic-sqlmodel==0.38.0"]
-medallantic = ["medallantic==0.38.0"]
-sparkforge = ["etlantic-sparkforge==0.38.0"]
-fastapi = ["etlantic-fastapi==0.38.0"]
-datafusion = ["etlantic-datafusion==0.38.0"]
-s3 = ["etlantic-s3==0.38.0"]
-iceberg = ["etlantic-iceberg==0.38.0"]
-snowflake = ["etlantic-snowflake==0.38.0"]
+polars = ["etlantic-polars==0.39.0"]
+pandas = ["etlantic-pandas==0.39.0"]
+sql = ["etlantic-sql==0.39.0"]
+postgresql = ["etlantic-sql==0.39.0"]
+pyspark = ["etlantic-pyspark==0.39.0"]
+spark = ["etlantic-pyspark==0.39.0"]
+airflow = ["etlantic-airflow==0.39.0"]
+prefect = ["etlantic-prefect==0.39.0"]
+keyring = ["etlantic-keyring==0.39.0"]
+sqlmodel = ["etlantic-sqlmodel==0.39.0"]
+medallantic = ["medallantic==0.39.0"]
+sparkforge = ["etlantic-sparkforge==0.39.0"]
+fastapi = ["etlantic-fastapi==0.39.0"]
+datafusion = ["etlantic-datafusion==0.39.0"]
+s3 = ["etlantic-s3==0.39.0"]
+iceberg = ["etlantic-iceberg==0.39.0"]
+snowflake = ["etlantic-snowflake==0.39.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 dataframes = [
-    "etlantic-polars==0.38.0",
-    "etlantic-pandas==0.38.0",
+    "etlantic-polars==0.39.0",
+    "etlantic-pandas==0.39.0",
 ]
 
 [project.scripts]
@@ -279,6 +279,12 @@ known-first-party = [
     "etlantic_datafusion",
     "etlantic_fastapi",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI Depends()/Header() defaults are the framework's DI idiom.
+"packages/etlantic-fastapi/src/etlantic_fastapi/routes.py" = ["B008"]
+"packages/etlantic-fastapi/src/etlantic_fastapi/deps.py" = ["B008"]
+"packages/etlantic-fastapi/src/etlantic_fastapi/reference.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

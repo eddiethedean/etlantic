@@ -1,41 +1,44 @@
-# ETLantic 0.38 User Guide
+# ETLantic 0.39 User Guide
 
-> **Status: Available in ETLantic 0.38.0.**
+> **Status: Available in ETLantic 0.39.0.**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.38.0** is a **Beta** (PyPI) release for documented single-tenant
-pilots. Linked reference and design pages may describe Experimental, partial,
-or future work and retain their own status labels.
+ETLantic **0.39.0** is a **Beta** (PyPI) release for documented single-tenant
+pilots plus CP1 control-plane incubation. **CP1 is not production multi-tenant
+isolation** (**0.43**). Linked reference and design pages may describe
+Experimental, partial, or future work and retain their own status labels.
 
 ## After first success
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — what you can use today
-3. [What's new in 0.38](WHATS_NEW_0_38.md)
+3. [What's new in 0.39](WHATS_NEW_0_39.md)
 4. [Learning path](LEARNING_PATH.md)
 5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 
 Prefer `import etlantic as etl` for application code. Portable quality rules live
-under `etl.quality` (`etlantic.quality/1`).
+under `etl.quality` (`etlantic.quality/1`). Control-plane identity lives under
+`etl.control_plane` / `etlantic.control_plane`.
 
 ## Choose your next task
 
 | Goal | Guide |
 |---|---|
-| Inventory / migrate SparkForge projects | [What's new in 0.38](WHATS_NEW_0_38.md) / [SparkForge migration](../09_MEDALLANTIC/SPARKFORGE_MIGRATION.md) |
+| Embed CP1 control-plane HTTP API | [What's new in 0.39](WHATS_NEW_0_39.md) / `pip install etlantic-fastapi` |
+| Inventory / migrate SparkForge projects | [What's new in 0.39](WHATS_NEW_0_39.md) / [SparkForge migration](../09_MEDALLANTIC/SPARKFORGE_MIGRATION.md) |
 | Application-pipeline testing foundation | [Capabilities](CAPABILITIES.md) / `etlantic.testing` |
 | Configure observability and durable run history | [What's new in 0.34](WHATS_NEW_0_34.md) / [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
 | Author without classes / JSON round trip | [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md) |
 | Native bronze/silver/gold + portable rules | `pip install medallantic` / [Facade packages](../11_DEVELOPMENT/FACADE_PACKAGES.md) |
 | SQL / SqlPipelineBuilder migration | [What's new in 0.33](WHATS_NEW_0_33.md) / [Migration 0.32 → 0.33](../11_DEVELOPMENT/MIGRATION_0_32_TO_0_33.md) |
 | Visual builder / service integration | [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
-| FastAPI reference adapter | `pip install etlantic-fastapi` / [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
+| FastAPI reference adapter (non-CP demo) | `pip install etlantic-fastapi` / [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md) |
 | Read and write JSON or CSV | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) |
 | Execute with Polars | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Upgrade from 0.37 | [Migration 0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
-| Upgrade from 0.36 | [Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md) → [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
+| Upgrade from 0.38 | [Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
+| Upgrade from 0.37 | [Migration 0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) → [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
 | Landing-zone CSV directories | [Landing zone](../06_EXECUTION/LANDING_ZONE.md) / [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) |
 
 ## Status vocabulary

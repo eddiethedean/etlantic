@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-07-31
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.38.x` or plugins with `<0.39` |
+| Breaking | Dependency floor becomes `etlantic>=0.39.0,<0.40` (CP1 control-plane line) |
+| Upgrade | `pip install 'etlantic==0.39.0'` and matching plugins / `medallantic==0.39.0`. See [Migration 0.38 → 0.39](docs/11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
+| Rollback | Re-pin 0.38.0 minors together; re-validate |
+| Security | CP1 authz-before-lookup + redaction on errors/SSE/reports; **not** a production multi-tenant isolation claim (**0.43**) |
+
+### Added
+- Public `etlantic.control_plane` identity, authz, memory fakes, and error envelopes
+- Embeddable CP1 FastAPI surface (`ETLanticAPI`, `include_router`, `create_app`)
+  with durable `202` submit, run observation stubs, schema/reliability stubs,
+  and resumable SSE (`cp_stream_run_events`)
+- Landing-zone watch submitter outside core (`LandingWatchSubmitter`)
+- Optional SQLModel request-scoped control-plane reference stores
+- What's New / Migration / Exit Gate / Findings for 0.39; ADR-016 Accepted
+
+### Changed
+- Official package versions align at 0.39.0; plugins require
+  `etlantic>=0.39.0,<0.40`
+- Supported security release line is 0.39.x
+- PyPI Beta classifier retained on core
+
+### Security
+- Non-enumeration matrix across CP operationIds × two tenants
+- Problem Details / event / report bodies redact secret-like keys
+- Path/header tenant claims remain routing-only (never authority)
+- Explicit docs boundary: CP1 ≠ production multi-tenant
+
 ## [0.38.0] - 2026-07-31
 
 ### Adopter summary
@@ -1486,6 +1519,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.39.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.39.0
 [0.38.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.38.0
 [0.37.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.37.0
 [0.36.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.36.0

@@ -1,9 +1,21 @@
 # etlantic-fastapi
 
-Thin FastAPI reference adapter for the ETLantic 0.38 authoring and service
-contract. It is not the production control plane; that surface is a
-[planned first-class program](https://etlantic.readthedocs.io/en/v0.38.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
-with 0.39–0.42 incubation gates and a 0.43 graduation gate.
+Optional FastAPI adapter for ETLantic. Package version is **0.39.0** (CP1 gate-ready).
+
+## Two surfaces
+
+| Surface | Entry point | Role |
+|---|---|---|
+| **CP1 control plane** | `ETLanticAPI`, `include_router`, `create_app` | Embeddable, authz’d, durable-accept HTTP API |
+| **Reference (non-CP)** | `create_reference_app` | Sync `AuthoringService` demo only |
+
+CP1 is an incubation foundation. It is **not** a production multi-tenant
+isolation claim (reserved for 0.43). Do not treat path/header tenant strings as
+authority — `ControlPlaneContext` is server-derived.
+
+Heavy pipeline work must **never** use FastAPI `BackgroundTasks`. Submit returns
+`202` only after durable acceptance in an injected store. Optional worker
+pollers observe accepted jobs outside the request.
 
 ## Install
 
@@ -11,7 +23,87 @@ with 0.39–0.42 incubation gates and a 0.43 graduation gate.
 pip install etlantic-fastapi
 ```
 
-## Usage
+## Control-plane usage
+
+```python
+from etlantic.control_plane import (
+    MemoryAuthorizer,
+    MemoryDefinitionRepository,
+    MemoryEventStore,
+    MemorySubmissionStore,
+)
+from etlantic_fastapi import (
+    ETLanticAPI,
+    create_app,
+    include_router,
+    membership_context_factory,
+    principal_from_header,
+)
+
+authorizer = MemoryAuthorizer()
+definitions = MemoryDefinitionRepository()
+submissions = MemorySubmissionStore()
+events = MemoryEventStore()
+
+api = ETLanticAPI(
+    authorizer=authorizer,
+    definitions=definitions,
+    submissions=submissions,
+    events=events,
+    context_factory=membership_context_factory(
+        {
+            "alice": ("tenant-a", "ws-1", "development", "default"),
+        }
+    ),
+    principal_dependency=principal_from_header,
+)
+
+# Standalone (installs Problem Details handlers + optional lifespan)
+app = create_app(api)
+
+# Or embed without owning host lifespan / middleware / exception handlers:
+# from fastapi import FastAPI
+# host = FastAPI()
+# include_router(host, api)
+```
+
+### Auth adapters
+
+- Inject an app-defined principal dependency (`principal_dependency=`).
+- OAuth2/OIDC: validate tokens in the host, then map claims with
+  `oauth2_oidc_principal_hook` (placeholder; no bundled IdP client).
+
+### Resumable SSE (`GET /v1/runs/{run_id}/events`)
+
+Streams ordered `etlantic.control_plane.event/1` envelopes as
+`text/event-stream`. Resume with the opaque `cursor` query parameter or the
+`Last-Event-ID` header (query wins when both are set). SSE `id:` fields are
+resume cursors (`etlantic.control_plane.sse_cursor/1`).
+
+**History fallback (CP1):** unknown or expired cursors fail closed with
+**HTTP 410 Gone** (`PMCP410`) and
+`extensions.hint = omit_cursor_or_last_event_id`. Reconnect **without** a
+cursor / `Last-Event-ID` to replay from the beginning. CP1 does **not**
+silently skip or invent a mid-stream position.
+
+Authorization (`run.events`) runs before existence lookup; cross-tenant runs
+map to opaque **404**. Default `follow=false` emits matching history then
+closes; `follow=true` keeps polling (heartbeats as SSE comments).
+
+Optional WebSocket adapters are experimental and **not** required for the
+0.39 exit gate.
+
+### Landing-zone watch submitter (outside core)
+
+Continuous directory watching is a **submitter**, not a third `Extract` kind
+and must not live under `src/etlantic/`. Use
+`etlantic_fastapi.landing_sensor.LandingWatchSubmitter` (stdlib polling; no
+`watchdog` required) or `examples/landing_zone_watch_submitter.py`. Submitters
+call durable `POST /v1/definitions/{id}/runs` with 0.38 `local-files`-style
+binding refs (`root_ref`, `glob`, `mode`, …) and must **never** embed file
+bytes in plans or submit bodies.
+
+## Non-CP reference app
 
 ```python
 from etlantic_fastapi import create_reference_app
@@ -19,8 +111,8 @@ from etlantic_fastapi import create_reference_app
 app = create_reference_app()
 ```
 
-Use this adapter for local evaluation and integration examples, not as a
-multi-tenant production control plane.
+Use only for local evaluation of the sync authoring facade. It is not the
+control plane.
 
 ## Links
 

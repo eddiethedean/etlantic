@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.38.0"
-current_minor: "0.38"
+since: "0.39.0"
+current_minor: "0.39"
 audience: developer
 ---
 
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.38.0.** Per-package API pages for first-party
+> **Status: Available in ETLantic 0.39.0.** Per-package API pages for first-party
 > optional packages. Install/overview hub:
 > [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).

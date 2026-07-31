@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "classes": [
     "stable",
     "provisional",
@@ -39,7 +39,8 @@
     "testing",
     "service",
     "quality",
-    "connectors"
+    "connectors",
+    "control_plane"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -53,7 +54,8 @@
     "testing": "etlantic.testing",
     "service": "etlantic.service",
     "quality": "etlantic.quality",
-    "connectors": "etlantic.connectors"
+    "connectors": "etlantic.connectors",
+    "control_plane": "etlantic.control_plane"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",

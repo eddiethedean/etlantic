@@ -1,8 +1,10 @@
 # Landing-Zone File Connector Plan
 
-> **Status: Shipped in ETLantic 0.38.0 for snapshot and incremental modes;
-> continuous trigger and control-plane composition remain 0.39+.** See the
-> [0.38 exit gate](EXIT_GATE_0_38.md) for exact acceptance evidence.
+> **Status: Shipped in ETLantic 0.39.0 for snapshot and incremental modes;
+> continuous trigger and control-plane composition are in progress for 0.39
+> (submitters outside core — thin reference vs CP1 durable API).** See the
+> [0.38 exit gate](EXIT_GATE_0_38.md) for connectivity acceptance evidence and
+> [ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) for CP1 submitter rules.
 
 ## Outcome
 

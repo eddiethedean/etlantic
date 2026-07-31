@@ -1,4 +1,4 @@
-"""etlantic-sqlmodel — ContractModel ↔ SQLModel bridge (no sessions)."""
+"""etlantic-sqlmodel — ContractModel ↔ SQLModel bridge + CP1 reference stores."""
 
 from __future__ import annotations
 
@@ -20,17 +20,38 @@ from etlantic.schema_drift import (
 )
 from sqlmodel import Field, SQLModel
 
-__version__ = "0.38.0"
+__version__ = "0.39.0"
+
+from etlantic_sqlmodel.control_plane import (
+    DefinitionRow,
+    SQLModelDefinitionRepository,
+    SQLModelSubmissionStore,
+    SubmissionRow,
+    create_control_plane_tables,
+    create_sqlite_engine,
+    make_session_factory,
+    request_scoped_session,
+    session_scope,
+)
 
 __all__ = [
+    "DefinitionRow",
+    "SQLModelDefinitionRepository",
+    "SQLModelSubmissionStore",
     "SqlModelIntegrationPlugin",
+    "SubmissionRow",
     "__version__",
     "compare_metadata",
     "contract_to_sqlmodel",
     "contract_to_sqlmodel_source",
+    "create_control_plane_tables",
     "create_plugin",
+    "create_sqlite_engine",
+    "make_session_factory",
     "primary_key_fields",
+    "request_scoped_session",
     "run_conformance_checks",
+    "session_scope",
     "sqlmodel_to_contract",
     "validate_model_primary_keys",
 ]

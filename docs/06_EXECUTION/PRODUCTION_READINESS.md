@@ -1,26 +1,26 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.38.0.**
+> **Status: Available in ETLantic 0.39.0.**
 
 ## Residual evaluation lead
 
-| Topic | 0.38 |
+| Topic | 0.39 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
 | Not included in 0.38 | Multi-tenant control plane; capacity SLA; compliance SoR |
 
-ETLantic 0.38.0 is a **Beta** release suitable for the documented single-tenant
+ETLantic 0.39.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page. The milestone name “production readiness” (M6)
 means the observability / run-history *pilot* slice shipped in 0.38.0—it does
 **not** mean unrestricted enterprise production. See the Beta envelope above
 and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
-0.38.x patch without changing the documented pilot claims.
+0.39.x patch without changing the documented pilot claims.
 
 Experimental features remain experimental. Broader deployment topology,
 multi-tenancy, and compliance attestations remain adopter-owned today. Supply
-chain for v0.38.0 is expected at tag time as a SHA-256 artifact manifest and
+chain for v0.39.0 is expected at tag time as a SHA-256 artifact manifest and
 GitHub provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
@@ -46,7 +46,7 @@ control-plane state, or an SLA.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.38.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.39.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -93,7 +93,7 @@ reference controls are shipped:
 
 ## Shipped / adopter-owned / residual (0.38)
 
-| Concern | 0.38 status |
+| Concern | 0.39 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

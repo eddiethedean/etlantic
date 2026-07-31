@@ -21,13 +21,18 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.38 → 0.39](MIGRATION_0_38_TO_0_39.md) (Gate-ready — CP1)
+- [Exit gate 0.39](EXIT_GATE_0_39.md) (Gate-ready — CP1)
+- [Findings ledger 0.39](FINDINGS_0_39.md)
+- [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md)
+- [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
+- [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) (Gate-ready)
 - [Migration 0.37 → 0.38](MIGRATION_0_37_TO_0_38.md) (Gate-ready)
 - [Exit gate 0.38](EXIT_GATE_0_38.md) (Gate-ready — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
 - [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.52 delivery contract)
 - [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
-- [What's new in 0.38](../01_GETTING_STARTED/WHATS_NEW_0_38.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
 - [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)
 - [Findings ledger 0.37](FINDINGS_0_37.md)

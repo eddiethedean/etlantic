@@ -2,7 +2,7 @@
 
 S3-compatible object-store connector for [ETLantic](https://github.com/eddiethedean/etlantic).
 
-**Current release:** 0.38.0.
+**Current release:** 0.39.0.
 
 **Maturity:** Experimental (Alpha classifier). Fake/stub mode is the supported CI
 path today. Live AWS opt-in lands later behind the `aws` extra and an explicit
@@ -14,12 +14,12 @@ records and serializes once at prepare/commit.
 ## Install
 
 ```bash
-pip install 'etlantic-s3==0.38.0'
+pip install 'etlantic-s3==0.39.0'
 # Live AWS (opt-in later; not required for CI):
-# pip install "etlantic-s3[aws]==0.38.0"
+# pip install "etlantic-s3[aws]==0.39.0"
 ```
 
-Core dependency: `etlantic>=0.38.0,<0.39`. Optional: `boto3`, `pyarrow`.
+Core dependency: `etlantic>=0.39.0,<0.40`. Optional: `boto3`, `pyarrow`.
 
 ## Behavior
 

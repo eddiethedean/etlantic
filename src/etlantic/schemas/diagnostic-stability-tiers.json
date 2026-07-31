@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.diagnostic-stability-tiers/1",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "classes": [
     "stable",
     "provisional",
@@ -16,6 +16,7 @@
     "PMCAT": "stable",
     "PMCFG": "stable",
     "PMCONN": "stable",
+    "PMCP": "provisional",
     "PMDATA": "stable",
     "PMDF": "stable",
     "PMEXEC": "stable",
@@ -36,6 +37,7 @@
   "notes": [
     "Family = alphabetic prefix of a shipped diagnostic code (trailing digits stripped).",
     "PMCONN covers connector protocol, binding, landing-zone, and publication diagnostics introduced in 0.38.",
+    "PMCP covers control-plane identity, authorization, and submission diagnostics incubating in 0.39 CP1 (provisional until CP1 exit).",
     "PMQTY is provisional while etlantic.quality/1 remains provisional.",
     "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families."
   ]

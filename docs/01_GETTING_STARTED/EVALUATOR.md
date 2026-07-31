@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: Available in ETLantic 0.38.0.**
+> **Status: Available in ETLantic 0.39.0.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -11,12 +11,12 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.38 |
+| Topic | 0.39 |
 |---|---|
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots |
 | Support | Community; **no formal SLA** |
-| LTS | Current published minor only (`0.38.x`) |
+| LTS | Current published minor only (`0.39.x`) |
 | Not included in 0.38 | Multi-tenant control plane; unrestricted enterprise production |
 
 ## What ETLantic is
@@ -75,7 +75,7 @@ manager.
   unsafe-serialization prohibition, versioned `SecurityEvent`, release digests /
   attestations (see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md))
   digests and GitHub attestations
-- Report vulnerabilities privately; security fixes are supported on 0.38.x
+- Report vulnerabilities privately; security fixes are supported on 0.39.x
 
 ### Shipped trust controls vs residual gaps
 
@@ -86,7 +86,7 @@ manager.
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
 | Release SHA-256 manifest + GitHub attestations | **Release-gated** — verify the published assets with `gh attestation verify`; CycloneDX is optional, so confirm the SBOM or `sbom-warning.txt`. See [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md). |
-| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.38; first-class plan published** |
+| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.39; first-class plan published** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
 | HA/DR, SOC2/GDPR certs, identity/RBAC/SSO | **Adopter-owned / out of scope** |
@@ -99,7 +99,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.38.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.39.0** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilot deployments. Shipped trust controls do not make an
 arbitrary multi-tenant topology safe.
 
@@ -144,10 +144,10 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.38 |
+| Concern | Status in 0.39 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current Beta line is 0.38.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current Beta line is 0.39.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
@@ -161,14 +161,14 @@ How to read status labels in deeper chapters:
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.38.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.39.0`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.38.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.39.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
 8. [Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) if

@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.38.0.** Deep diligence packet. Start with the
+> **Status: Available in ETLantic 0.39.0.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -32,7 +32,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.38.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.39.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -74,7 +74,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.38.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.39.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -83,7 +83,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-For a published GitHub Release asset (example: wheel from the `v0.38.0` release):
+For a published GitHub Release asset (example: wheel from the `v0.39.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
@@ -92,13 +92,13 @@ gh attestation verify path/to/etlantic-0.38.0-*.whl \
   --repo etlantic
 ```
 
-After the v0.38.0 tag workflow succeeds, expect a per-artifact SHA-256
+After the v0.39.0 tag workflow succeeds, expect a per-artifact SHA-256
 manifest (`release-artifacts.json`) and GitHub build provenance attestations.
 CycloneDX SBOM generation is optional: the release may include
 `etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published
 asset before recording supply-chain evidence. Full checklist:
 [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
-Prefer exact pins (`etlantic==0.38.0` and matching plugins) over floating
+Prefer exact pins (`etlantic==0.39.0` and matching plugins) over floating
 ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
@@ -142,6 +142,6 @@ certifications, or a turnkey managed runtime without adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.38 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.39 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

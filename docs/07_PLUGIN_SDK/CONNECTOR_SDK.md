@@ -1,6 +1,6 @@
 # Connector SDK
 
-> **Status: Available in ETLantic 0.38.0.** Public source, sink, and storage
+> **Status: Available in ETLantic 0.39.0.** Public source, sink, and storage
 > connector protocols under `etlantic.connectors`.
 
 ## Protocols
@@ -86,4 +86,4 @@ See [Landing-zone guide](../06_EXECUTION/LANDING_ZONE.md) and the
 - [Storage plugin](STORAGE_PLUGIN.md)
 - [Testing plugins](TESTING_PLUGINS.md)
 - [Capability vocabulary](CAPABILITY_VOCABULARY.md)
-- [What's New in 0.38](../01_GETTING_STARTED/WHATS_NEW_0_38.md)
+- [What's New in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md)

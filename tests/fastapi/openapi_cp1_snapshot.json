@@ -1,0 +1,39 @@
+{
+  "openapi": "3.1.0",
+  "paths": [
+    "/health",
+    "/ready",
+    "/v1/definitions",
+    "/v1/definitions/{definition_id}",
+    "/v1/definitions/{definition_id}/plan",
+    "/v1/definitions/{definition_id}/runs",
+    "/v1/definitions/{definition_id}/validate",
+    "/v1/reliability",
+    "/v1/runs/{run_id}",
+    "/v1/runs/{run_id}/artifacts",
+    "/v1/runs/{run_id}/cancel",
+    "/v1/runs/{run_id}/events",
+    "/v1/runs/{run_id}/lineage",
+    "/v1/runs/{run_id}/report",
+    "/v1/schema/observations",
+    "/v1/schema/observations/{observation_id}/ack"
+  ],
+  "operationIds": [
+    "cp_ack_schema_observation",
+    "cp_cancel_run",
+    "cp_get_definition",
+    "cp_get_run",
+    "cp_get_run_lineage",
+    "cp_get_run_report",
+    "cp_health",
+    "cp_list_definitions",
+    "cp_list_reliability",
+    "cp_list_run_artifacts",
+    "cp_list_schema_observations",
+    "cp_plan_definition",
+    "cp_ready",
+    "cp_stream_run_events",
+    "cp_submit_run",
+    "cp_validate_definition"
+  ]
+}

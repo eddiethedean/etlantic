@@ -1,19 +1,19 @@
 ---
 status: available
-since: "0.38.0"
-current_minor: "0.38"
+since: "0.39.0"
+current_minor: "0.39"
 audience: developer
 ---
 
 # etlantic-pandas API
 
-> **Status: Available in ETLantic 0.38.0.** Pandas dataframe plugin + portable compiler.
+> **Status: Available in ETLantic 0.39.0.** Pandas dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-pandas==0.38.0'
+pip install 'etlantic-pandas==0.39.0'
 ```
 
 ```python

@@ -6,19 +6,20 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.38.0** (Beta); **0.38** data connectivity /
-connector SDK is gate-ready for tag/publish rehearsal (not yet tagged/published).
+**Current release:** ETLantic **0.39.0** (Beta) — CP1 control-plane incubation
+(gate-ready for tag/publish rehearsal; **not** production multi-tenant).
+Prior **0.38** connectivity / connector SDK remains the connectivity baseline.
 Milestones **0.25** (burn-in first slice) through **0.37** (stable foundation)
 are shipped. **0.35** closed migration completion and joint freeze /
 Medallantic M7.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.38 | Data connectivity and connector SDK | Gate-ready for tag/publish |
-| Previous | 0.37 | Stable foundation | Gate-ready / shipped evidence |
-| Next | 0.39 | Multi-tenant control plane (CP1) | Planned |
+| Current | 0.39 | Multi-tenant control plane (CP1) | Gate-ready for tag/publish |
+| Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
+| Next | 0.40 | Tenant registry / workspaces (CP2) | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.38) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.39 CP1 gate-ready; 0.38 prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -3623,7 +3624,9 @@ The authoritative integrated gates are in the
 
 ## 0.39 — Multi-Tenant Control Plane: API and Identity Foundation
 
-**Status:** Planned CP1 incubation; not shipped in 0.37.
+**Status:** Gate-ready for tag/publish rehearsal (package **0.39.0**). Soft-continue
+`038-X-01` (echo plugin PyPI connector). **CP1 is not a production multi-tenant
+isolation claim** (reserved for **0.43**).
 
 **Objective:** establish typed, tenant-aware control-plane contracts and a
 deny-by-default HTTP/SDK boundary without treating the API process as a worker

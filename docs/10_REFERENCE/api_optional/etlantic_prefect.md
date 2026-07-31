@@ -1,19 +1,19 @@
 ---
 status: available
-since: "0.38.0"
-current_minor: "0.38"
+since: "0.39.0"
+current_minor: "0.39"
 audience: developer
 ---
 
 # etlantic-prefect API
 
-> **Status: Available in ETLantic 0.38.0.** Prefect local scheduler MVP.
+> **Status: Available in ETLantic 0.39.0.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-prefect==0.38.0'
+pip install 'etlantic-prefect==0.39.0'
 ```
 
 ```python
