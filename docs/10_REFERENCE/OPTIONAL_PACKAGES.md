@@ -5,7 +5,7 @@
 
 !!! warning "Maturity vs PyPI classifiers"
     Official engine packages declare **Beta** PyPI classifiers that match the
-    **ETLantic 0.35 Beta** pilot envelope (single-tenant, no SLA). Treat that
+    **ETLantic 0.36 Beta** pilot envelope (single-tenant, no SLA). Treat that
     envelope as authoritative for readiness claims. See
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 

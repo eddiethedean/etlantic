@@ -12,7 +12,7 @@
       env vars actually read today
     - [Secrets decision tree](SECRETS_DECISION.md) — `SecretRef` / env mapping
     - [Environment variables](ENVIRONMENT_VARIABLES.md) — proposed 0.38 names
-      (most are not read by 0.34)
+      (most are not read by 0.36)
 
 Proposed 0.38 design notes live in the roadmap and ADRs under Development.
 They are intentionally omitted here so adopters do not treat aspirational

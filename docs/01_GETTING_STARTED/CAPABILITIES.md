@@ -165,7 +165,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | TransformationModel incubation | Deferred to 0.53 |
 | Full LSP server productization | Continues in 0.45 |
 | Registry-backed schema history | Continues in 0.41 |
-| Production multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation (0.34 ships only the thin reference adapter) |
+| Production multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation (0.36 ships only the thin reference adapter) |
 | Stable-foundation compatibility guarantees | Planned for 0.38 |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |

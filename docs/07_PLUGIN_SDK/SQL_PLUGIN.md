@@ -275,7 +275,7 @@ sqlite = PluginCapabilities(
 )
 ```
 
-Advertise only what the plugin actually implements. In 0.34,
+Advertise only what the plugin actually implements. In 0.36,
 `etlantic-sql` sets `sql_merge=True` for PostgreSQL and `False` for SQLite.
 It uses durable run-scoped staging tables rather than session TEMP tables for
 intermediates.

@@ -1,7 +1,7 @@
 # Environment Variables (future design)
 
 !!! warning "Future design — most names are proposed 0.38"
-    Do **not** treat this page as the 0.34 configuration contract.
+    Do **not** treat this page as the 0.36 configuration contract.
 
     **Shipped today:**
 
@@ -14,7 +14,7 @@
 
 ETLantic loads an optional project `etlantic.toml` for `default_profile` but
 does **not** auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
-`ETLANTIC_PROJECT`, logging overrides, or output-format overrides in 0.34.
+`ETLANTIC_PROJECT`, logging overrides, or output-format overrides in 0.36.
 
 Proposed 0.38 variable names remain out of this page so they are not mistaken
 for a shipped contract.

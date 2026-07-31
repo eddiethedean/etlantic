@@ -534,6 +534,99 @@ def check_residual_table_version_drift(package_version: str) -> None:
             )
 
 
+def check_release_surface_version_drift(package_version: str) -> None:
+    """Keep current-facing metadata, package summaries, and release claims aligned."""
+    current_minor = ".".join(package_version.split(".")[:2])
+
+    for path in sorted((ROOT / "docs").rglob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        for marker in re.findall(r'(?m)^current_minor:\s*"([^"]+)"\s*$', text):
+            if marker != current_minor:
+                raise SystemExit(
+                    f"{path}: current_minor={marker!r}; expected {current_minor!r}"
+                )
+        for marker in re.findall(r"\*\*Current (0\.\d+) boundary:", text):
+            if marker != current_minor:
+                raise SystemExit(
+                    f"{path}: current boundary is {marker}; expected {current_minor}"
+                )
+
+    current_package_readmes = (
+        "etlantic-airflow",
+        "etlantic-datafusion",
+        "etlantic-fastapi",
+        "etlantic-keyring",
+        "etlantic-pandas",
+        "etlantic-polars",
+        "etlantic-pyspark",
+        "etlantic-sql",
+        "etlantic-sqlmodel",
+        "medallantic",
+    )
+    for package in current_package_readmes:
+        path = ROOT / "packages" / package / "README.md"
+        opening = "\n".join(path.read_text(encoding="utf-8").splitlines()[:14])
+        if current_minor not in opening:
+            raise SystemExit(
+                f"{path}: opening must identify the current {current_minor} line"
+            )
+        if "PyPI Production/Stable classifiers" in opening:
+            raise SystemExit(
+                f"{path}: README contradicts the package's Beta classifier"
+            )
+
+    issue_config = (ROOT / ".github/ISSUE_TEMPLATE/config.yml").read_text(
+        encoding="utf-8"
+    )
+    if f"Current {current_minor} guide" not in issue_config:
+        raise SystemExit(
+            ".github/ISSUE_TEMPLATE/config.yml must point to the current "
+            f"{current_minor} guide"
+        )
+
+    roadmap = (ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+    current_row = re.compile(
+        rf"(?m)^\| Current \| {re.escape(current_minor)} \| [^|]+ "
+        r"\| Gate-ready for tag/publish \|$"
+    )
+    if current_row.search(roadmap) is None:
+        raise SystemExit(
+            "ROADMAP.md must mark the current release gate-ready for tag/publish"
+        )
+
+    planning_hub = (ROOT / "docs/11_DEVELOPMENT/PLAN_INDEX.md").read_text(
+        encoding="utf-8"
+    )
+    if f"ETLantic {current_minor} can do now" not in planning_hub:
+        raise SystemExit(
+            "PLAN_INDEX.md must direct readers to the current release surface"
+        )
+    if f"No {current_minor} capability is shipped" in planning_hub:
+        raise SystemExit(
+            "PLAN_INDEX.md still describes the current release as unshipped"
+        )
+
+    release_claim_paths = (
+        ROOT / "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md",
+        ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+        ROOT / "docs/01_GETTING_STARTED/EVALUATOR.md",
+        ROOT / "docs/06_EXECUTION/PRODUCTION_READINESS.md",
+        ROOT / "docs/11_DEVELOPMENT/RELEASE_PROCESS.md",
+    )
+    premature_claims = (
+        f"CycloneDX SBOM failed for v{package_version}",
+        f"as with **v{package_version}**",
+    )
+    for path in release_claim_paths:
+        text = path.read_text(encoding="utf-8")
+        for claim in premature_claims:
+            if claim in text:
+                raise SystemExit(
+                    f"{path}: predicted release outcome must be verified after publish: "
+                    f"{claim!r}"
+                )
+
+
 def check_observability_doc_consistency() -> None:
     obs_today = (ROOT / "docs/06_EXECUTION/OBSERVABILITY_TODAY.md").read_text(
         encoding="utf-8"
@@ -698,6 +791,7 @@ def main() -> None:
     check_control_plane_plan()
     check_zero_x_roadmap_phases()
     check_residual_table_version_drift(package_version)
+    check_release_surface_version_drift(package_version)
     check_observability_doc_consistency()
     check_quickstart_init_scaffold_sync()
     check_api_reference_curated_root()

@@ -198,7 +198,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.25 plugins, `etlantic>=0.36.0,<0.37`). A core
+0.36 plugins, `etlantic>=0.36.0,<0.37`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 
@@ -272,8 +272,8 @@ After publishing:
 Release CI:
 
 - writes per-artifact SHA-256 digests and `dist/sbom/release-artifacts.json`
-- optionally emits CycloneDX environment SBOM when `cyclonedx-py` is available;
-  on failure uploads `sbom-warning.txt` instead (as with **v0.36.0**)
+- optionally emits a CycloneDX environment SBOM when `cyclonedx-py` is
+  available; on failure it uploads `sbom-warning.txt` instead
 - attests build provenance via GitHub Actions (`actions/attest-build-provenance`)
 - prefers PyPI Trusted Publishing (OIDC); falls back to `UV_PUBLISH_TOKEN` only as bootstrap
 

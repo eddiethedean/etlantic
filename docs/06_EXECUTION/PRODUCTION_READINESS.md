@@ -9,7 +9,7 @@
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilot / reference topology |
 | Support | Community; **no SLA** |
-| Not included in 0.34 | Multi-tenant control plane; capacity SLA; compliance SoR |
+| Not included in 0.36 | Multi-tenant control plane; capacity SLA; compliance SoR |
 
 ETLantic 0.36.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page. The milestone name “production readiness” (M6)
@@ -90,7 +90,7 @@ reference controls are shipped:
   release digests, and GitHub attestations (CycloneDX SBOM is optional and
   failed for v0.36.0)
 
-## Shipped / adopter-owned / residual (0.34)
+## Shipped / adopter-owned / residual (0.36)
 
 | Concern | 0.36 status |
 |---|---|
@@ -100,8 +100,8 @@ reference controls are shipped:
 | Plugin allowlists | **Shipped** (selection, not sandbox) |
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
-| Release SHA-256 digests + GitHub attestations | **Shipped** (CycloneDX SBOM failed for v0.36.0) |
-| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.34 |
+| Release SHA-256 digests + GitHub attestations | **Release-gated** (CycloneDX is optional; verify the published SBOM or `sbom-warning.txt`) |
+| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.36 |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |

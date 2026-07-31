@@ -3,7 +3,7 @@
 > **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); remaining
 > deploy and serve scope is open.
 >
-> **Current 0.35 boundary:** ETLantic core provides local scheduling, the
+> **Current 0.36 boundary:** ETLantic core provides local scheduling, the
 > optional Prefect package provides the Python-native local MVP, and
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.

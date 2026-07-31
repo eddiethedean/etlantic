@@ -39,7 +39,7 @@ Unsupported values are errors.
 
 ## Current claims
 
-| Area | Status in 0.34 |
+| Area | Status in 0.36 |
 |---|---|
 | Native class/builder authoring | Available |
 | Deterministic ETLantic lowering | Available |

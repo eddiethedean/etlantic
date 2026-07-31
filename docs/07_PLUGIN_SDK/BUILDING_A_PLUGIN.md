@@ -45,7 +45,7 @@ Start with the narrowest protocol that owns the behavior:
 | Event consumer | `etlantic.observability` | `etlantic.event_consumers` | `run_event_consumer_conformance_suite` |
 
 Storage and resource extension documents describe integration patterns that are
-**not** backed by package entry-point discovery in **0.34** (many remain Future
+**not** backed by package entry-point discovery in **0.36** (many remain Future
 design / Design Proposals). Observability, run history, and event consumers
 **are** discoverable entry points as of 0.36. Do not publish against a proposed
 discovery group. Use the public runtime/profile registration surface documented

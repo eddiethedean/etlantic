@@ -5,7 +5,7 @@
 > hardening continue through 0.41–0.43; the integrated production claim is
 > gated for 0.44.
 >
-> **Current 0.35 boundary:** The optional `etlantic-fastapi` thin reference
+> **Current 0.36 boundary:** The optional `etlantic-fastapi` thin reference
 > adapter is available. It is not a durable scheduler, persistence layer,
 > authorization boundary, or production multi-tenant control plane.
 >

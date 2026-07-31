@@ -2,7 +2,7 @@
 
 This section contains a mixture of **unshipped** APIs, partially shipped
 programs, historical implementation records, and normative proposals. It is
-deliberately separate from the current ETLantic **0.35** user guide (Beta).
+deliberately separate from the current ETLantic **0.36** user guide (Beta).
 
 !!! danger "Do not start here"
     This section is **not** the user guide. Start with

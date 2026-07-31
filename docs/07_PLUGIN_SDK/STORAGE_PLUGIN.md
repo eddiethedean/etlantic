@@ -1,8 +1,8 @@
 # Storage Plugin
 
-!!! warning "Planned for 0.39—not a shipped 0.34 entry-point protocol"
+!!! warning "Planned for 0.39—not a shipped 0.36 entry-point protocol"
     Storage plugins are not a discoverable entry-point protocol in ETLantic
-    0.34. Prefer shipped dataframe / SQL / Spark / orchestration plugins and
+    0.36. Prefer shipped dataframe / SQL / Spark / orchestration plugins and
     [Storage today](../06_EXECUTION/STORAGE_TODAY.md).
 
 **Do not implement a package against this page.** The 0.39 connectivity program

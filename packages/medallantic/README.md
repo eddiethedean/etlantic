@@ -9,10 +9,11 @@ the portable contracts, graph, validation, planning, execution lifecycle, and
 plugin coordination underneath it. **ETLantic core never gains medallion
 types.**
 
-The current **0.34 (M6)** line includes native authoring, portable quality
+The current **0.36** line includes native authoring, portable quality
 gates, importable transform execution, lifecycle/write semantics, PySpark and
 Delta differential coverage, SQLAlchemy relational parity, observability
-providers, durable run history, event consumers, and production conformance.
+providers, durable run history, event consumers, production conformance, and
+the completed M7 migration plus joint compatibility burn-in.
 Native PySpark Column and Moltres rules remain explicitly capability-gated.
 
 Documentation:

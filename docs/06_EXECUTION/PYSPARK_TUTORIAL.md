@@ -36,7 +36,7 @@ python -c "import pyspark; print(pyspark.__version__)"
 
 Apple Silicon and Windows both work when the JDK and PySpark wheels match the
 architecture; prefer the same Java major your cluster uses. Managed
-Databricks / EMR / Spark Connect providers are **not** included in 0.34.
+Databricks / EMR / Spark Connect providers are **not** included in 0.36.
 
 ## Install and run (clone companion)
 
@@ -82,7 +82,7 @@ python -m pip install 'etlantic-pyspark[delta]==0.36.0'
 # or: python -m pip install 'delta-spark>=3.0,<4'
 ```
 
-Constraints in 0.34:
+Constraints in 0.36:
 
 - Capabilities require an importable `delta.tables.DeltaTable`.
 - Non-Delta MERGE / UPSERT fails closed (no silent overwrite fallback).

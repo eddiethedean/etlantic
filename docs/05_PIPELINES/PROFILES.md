@@ -65,7 +65,7 @@ table):
 
 Profiles never redefine pipeline contracts. Logging configuration, durable
 checkpoint stores, and deployment-topology metadata are **not** first-class
-Profile fields in 0.34 — keep those outside ETLantic or in adopter-owned
+Profile fields in 0.36 — keep those outside ETLantic or in adopter-owned
 orchestration.
 
 Profiles also must not:
@@ -236,7 +236,7 @@ pipeline contracts, plans, or generated [DPCS](DPCS.md) artifacts.
 
 !!! warning "Future design—not shipped"
     Cloud secret managers (AWS Secrets Manager, HashiCorp Vault, and peers)
-    are **not** available in 0.34. Do not configure them yet. See
+    are **not** available in 0.36. Do not configure them yet. See
     [Secrets Management](../06_EXECUTION/SECRETS_MANAGEMENT.md).
 
 ## Environment Overrides

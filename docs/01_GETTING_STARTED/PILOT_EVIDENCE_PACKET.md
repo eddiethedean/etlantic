@@ -1,4 +1,4 @@
-# Pilot evidence packet (0.35)
+# Pilot evidence packet (0.36)
 
 > **Status: Available in ETLantic 0.36.0.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an

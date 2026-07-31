@@ -1,7 +1,7 @@
 # etlantic-keyring
 
 Local workstation secret provider for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.34 using the Python
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.36 using the Python
 [`keyring`](https://keyring.readthedocs.io/) library and OS credential stores.
 
 ## Install

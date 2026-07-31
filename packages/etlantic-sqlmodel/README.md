@@ -1,7 +1,7 @@
 # etlantic-sqlmodel
 
 Optional bridge between ETLantic `Data` contracts and
-[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.34.
+[SQLModel](https://sqlmodel.tiangolo.com/) table models for ETLantic 0.36.
 
 ## Install
 

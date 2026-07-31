@@ -6,7 +6,7 @@
 > durability, policy, and operations gate on this page passes.
 >
 > **Current boundary:** Process-local registries, runtimes, caches, report
-> stores, and reference adapters in 0.34 are not multi-tenant merely because
+> stores, and reference adapters in 0.36 are not multi-tenant merely because
 > they carry identity fields.
 >
 > **Authority:** The
@@ -34,7 +34,7 @@ product surface, not as an indefinitely adopter-owned residual.
 - security, performance, failure-injection, backup, and restore evidence.
 
 This commitment does **not** change the current product boundary. ETLantic
-0.34 is still limited to the documented single-tenant reference deployment.
+0.36 is still limited to the documented single-tenant reference deployment.
 No current process-local registry, runtime, cache, report store, or FastAPI
 reference adapter becomes multi-tenant merely because it carries a tenant
 field.
@@ -624,7 +624,7 @@ This plan is authoritative for multi-tenant control-plane graduation:
   migration, and provider-program gates.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns current controls and the
   threat model.
-- [Deployment](../06_EXECUTION/DEPLOYMENT.md) remains the current 0.34
+- [Deployment](../06_EXECUTION/DEPLOYMENT.md) remains the current 0.36
   single-tenant boundary until CP-GA passes.
 
 If another plan conflicts on release placement, isolation, durability,

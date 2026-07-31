@@ -263,7 +263,7 @@ Dagster compilers are not shipped.
 ## Gate A / Polars ↔ Pandas interchange fails
 
 Gate A (`etlantic.interchange/1`) shipped in **0.18.0** for Polars ↔
-Pandas boundaries and remains available in 0.34.
+Pandas boundaries and remains available in 0.36.
 
 | Symptom | Fix |
 |---|---|

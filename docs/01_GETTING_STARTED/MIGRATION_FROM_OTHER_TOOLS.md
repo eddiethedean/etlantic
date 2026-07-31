@@ -2,7 +2,7 @@
 
 > **Status: Available in ETLantic 0.36.0.** Honest scope for evaluators who
 > already run Airflow, dbt, or Dagster. There is **no automated migrator in
-> 0.34**; bounded brownfield import and compiler bridges are planned for
+> 0.36**; bounded brownfield import and compiler bridges are planned for
 > [0.50](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#brownfield-adoption-bridges).
 
 ETLantic is a typed pipeline modeling and validation layer. It does not replace
@@ -38,14 +38,14 @@ pipelines. Typical coexistence:
 - Keep dbt for warehouse transforms you already trust.
 - Use ETLantic for multi-engine pipelines that need shared contracts, plans, and
   plugin trust before write.
-- In 0.34, do not expect ETLantic to import a dbt project into a
+- In 0.36, do not expect ETLantic to import a dbt project into a
   `PipelinePlan`. The planned 0.50 bridge starts from versioned
   `manifest.json` metadata, reports fidelity explicitly, and does not execute
   arbitrary project code.
 
 ## From Dagster / Prefect
 
-| Tool | ETLantic relationship in 0.34 |
+| Tool | ETLantic relationship in 0.36 |
 |---|---|
 | Dagster | No compiler plugin; a Definitions compiler is planned for 0.50 |
 | Prefect | Optional `etlantic-prefect` local MVP (direct execution); compile/deployment expansion is planned for 0.50 |

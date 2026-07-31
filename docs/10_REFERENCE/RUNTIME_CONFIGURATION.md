@@ -70,7 +70,7 @@ protocol. JSON console logging is available without OTel. See
 
 ## Not shipped
 
-Do not configure these as if they exist in 0.34:
+Do not configure these as if they exist in 0.36:
 
 - `ETLANTIC_CONFIG` / `ETLANTIC_PROFILE` / `ETLANTIC_PROJECT` auto-loading
 - AWS Secrets Manager / Vault providers (OS keyring is optional via

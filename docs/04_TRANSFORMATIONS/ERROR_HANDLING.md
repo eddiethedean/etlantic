@@ -128,7 +128,7 @@ its retry-safety checks. `FailureAction.FAIL`, `.SKIP`, and `.CONTINUE` are
 also available for step-failure callbacks.
 
 !!! warning "Future design—not a shipped API"
-    `RetryAction` is not part of ETLantic 0.34. The following conceptual
+    `RetryAction` is not part of ETLantic 0.36. The following conceptual
     snippet must not be copied into current code:
 
     ```text

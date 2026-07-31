@@ -1,9 +1,8 @@
 # Roadmap Summary
 
-ETLantic **0.36.0** closed **Migration Completion and Joint Freeze (M7)**.
-**0.36** is the next planned milestone (joint compatibility burn-in). Milestones
-describe
-capability order, not release-date commitments.
+ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
+**0.36.0** is the current gate-ready candidate for joint compatibility
+burn-in. Milestones describe capability order, not release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -11,10 +10,10 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.36 | Joint compatibility burn-in | [Gate](EXIT_GATE_0_36.md) |
-| Previous | 0.34 | Operations, evidence, and production readiness (M6) | [Shipped](EXIT_GATE_0_34.md) |
-| Next | 0.36 | Joint compatibility burn-in | Planned |
-| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | Planned |
+| Current | 0.36 | Joint compatibility burn-in | [Gate-ready for tag/publish](EXIT_GATE_0_36.md) |
+| Previous | 0.35 | Migration completion and joint freeze (M7) | [Shipped](EXIT_GATE_0_35.md) |
+| Next | 0.37 | Stable-foundation release candidate | Planned |
+| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | In progress |
 | Post-foundation | 0.39–0.53 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
 
 “Planned” records capability order only. It does not imply a release date or
@@ -264,7 +263,7 @@ than an indefinite residual:
   and release-candidate proof
 - **0.44 / CP-GA:** integrated production graduation after every gate passes
 
-The program remains outside the 0.34 single-tenant envelope and never treats
+The program remains outside the 0.36 single-tenant envelope and never treats
 in-process Python context as a tenant boundary. See the
 [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 

@@ -157,7 +157,7 @@ import or session start, see [Troubleshooting](TROUBLESHOOTING.md).
 
 ### SQL connection URL
 
-SQLite and PostgreSQL are Tier A dialects in 0.34. The PostgreSQL URL below is
+SQLite and PostgreSQL have been Tier A dialects since 0.34. The URL below is
 a **placeholder**—do not commit real credentials:
 
 ```bash

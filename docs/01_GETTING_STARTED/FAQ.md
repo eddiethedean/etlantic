@@ -75,7 +75,7 @@ pilots—not unrestricted enterprise production. See
 
 ## Available vs Experimental?
 
-**Available** means supported inside the documented 0.34 pilot envelope.
+**Available** means supported inside the documented 0.36 pilot envelope.
 **Experimental** (Structured Streaming, `etlantic-datafusion`) may change.
 See [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
@@ -109,7 +109,7 @@ Many root aliases were removed in 0.26/0.27. Import from owning modules
 
 No — those stay in SparkForge / `medallantic`. See
 [Medallantic](../09_MEDALLANTIC/README.md) and
-[Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md).
+[Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md).
 
 ## Can I build a GUI?
 

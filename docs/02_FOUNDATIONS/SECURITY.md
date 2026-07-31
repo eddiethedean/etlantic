@@ -6,7 +6,7 @@ ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
-This chapter covers **controls shipped through 0.34** and the broader
+This chapter covers **controls shipped through 0.36** and the broader
 **proposed threat model**. ETLantic 0.36.0 is a **Beta** (PyPI) release
 suitable for documented single-tenant pilots—not unrestricted enterprise
 production. It does not provide multi-tenant control planes, SLA, compliance
@@ -16,7 +16,7 @@ multi-tenant control plane is a
 [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
 not a current guarantee.
 
-## Implemented through 0.34
+## Implemented through 0.36
 
 - Secret-free plans and reports (`SecretRef` metadata only; resolve at runtime)
 - Explicit `Profile.security_mode` (`development` \| `test` \| `production`);
@@ -783,7 +783,7 @@ configuration.
 
 ## Verification
 
-Before expanding beyond the bounded 0.34 Beta support envelope, automated tests
+Before expanding beyond the bounded 0.36 Beta support envelope, automated tests
 should cover:
 
 - malicious YAML tags and deeply nested inputs
@@ -817,7 +817,7 @@ The repository should publish:
 
 ## Unrestricted Production Security Gate
 
-The documented single-tenant/reference 0.34 Beta deployment is bounded stable
+The documented single-tenant/reference 0.36 Beta deployment is bounded stable
 for pilots. Broader production claims require:
 
 - the threat model is reviewed

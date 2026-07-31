@@ -6,7 +6,7 @@
 
 !!! warning "PyPI classifiers ≠ enterprise readiness"
     Official engine packages declare **Beta** classifiers that match the
-    **ETLantic 0.35 Beta** pilot envelope. Do not treat classifiers as an SLA,
+    **ETLantic 0.36 Beta** pilot envelope. Do not treat classifiers as an SLA,
     multi-tenant guarantee, or unrestricted enterprise production claim. See
     [Capabilities](CAPABILITIES.md) and
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
@@ -53,8 +53,9 @@ Key facts for evaluators:
 - Production profiles require a non-empty `plugin_allowlist` and fail closed.
 - Plugin allowlists are **selection**, not sandboxing—use process isolation.
 - Release CI publishes a per-artifact SHA-256 manifest and GitHub build
-  provenance attestations. CycloneDX SBOM generation is optional and **failed
-  for v0.36.0**—see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
+  provenance attestations. CycloneDX SBOM generation is optional; verify
+  whether the release contains the SBOM or `sbom-warning.txt` in
+  [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
 
 ### 4. Operations and deployment review
 
@@ -75,7 +76,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 |---|---|
 | Version pins | Pin `etlantic==0.36.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
-| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.33 → 0.34](../11_DEVELOPMENT/MIGRATION_0_33_TO_0_34.md) |
+| Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
 | Known limitations | [Known issues](../10_REFERENCE/KNOWN_ISSUES.md) |
 | SBOM / attestations | Release CI digests + GitHub attestations — see [Verify release attestations](#verify-release-attestations) below |
@@ -120,13 +121,13 @@ remains in Medallantic—not core.
 
 ## Explicit non-goals (do not expect these from docs or product)
 
-- Multi-tenant isolation guarantees or a managed control plane **in 0.34**;
+- Multi-tenant isolation guarantees or a managed control plane **in 0.36**;
   these are a
   [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
   not a current capability
 - SOC2, GDPR, HIPAA, or other compliance attestations
 - HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs in
-  0.34; Kubernetes execution proof is planned for 0.48
+  0.36; Kubernetes execution proof is planned for 0.48
 - Cloud secret managers (Vault, AWS Secrets Manager)—OS keyring ships via
   `etlantic-keyring`; optional cloud provider packs are planned for 0.52
 - Formal support SLAs or guaranteed response times

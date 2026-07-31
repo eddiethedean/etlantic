@@ -14,7 +14,7 @@ by the **0.37** release candidate and the **0.38** stable foundation.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.36 | Joint compatibility burn-in | Shipped / In progress burn-in |
+| Current | 0.36 | Joint compatibility burn-in | Gate-ready for tag/publish |
 | Previous | 0.35 | Migration completion and joint freeze (M7) | Shipped |
 | Next | 0.37 | Release candidate | Planned |
 | Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | In progress |
@@ -3340,7 +3340,7 @@ rows.
 
 ## 0.36 — Joint Compatibility Burn-In
 
-**Status:** Planned.
+**Status:** Gate-ready for tag/publish.
 
 **Objective:** accumulate adoption and upgrade evidence for ETLantic and
 Medallantic together after the 0.25–0.27 core slices and the 0.28–0.35
@@ -4284,6 +4284,22 @@ See the
 
 These remain candidates rather than promised release numbers:
 
+- a near-term profile-policy bundle with one typed, versioned configuration
+  surface for:
+  - contract validation, including `unexpected_fields=forbid|ignore`,
+    bounded coercion modes, and `forbid` as the backward-compatible default;
+  - schema-drift actions for additive, breaking, and safe type-widening
+    changes, with observation enabled independently from acceptance;
+  - deterministic validation budgets for row, error, time, and sampling
+    limits, with full validation required whenever contract or production
+    policy does not explicitly permit sampling;
+  - write-safety constraints that may reject unsafe overwrite, schema
+    mutation, or non-transactional publication intents but never silently
+    rewrite pipeline intent;
+  the resolved bundle must be secret-free, included in plan snapshots and
+  fingerprints, emit bounded schema-drift evidence without source rows,
+  behave consistently across local, SQL, Pandas, Polars, and PySpark
+  execution, and fail closed when a backend cannot enforce a required rule;
 - run-history trends, regression detection, and anomaly analysis;
 - schema-drift frequency, recurring-change, and source-stability trends;
 - freshness, completeness, reconciliation, quality, statistical-drift, plan,

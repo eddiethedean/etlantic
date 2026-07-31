@@ -1,19 +1,18 @@
 ---
-status: plan
+status: release-candidate
 since: "0.35.0"
-current_minor: "0.35"
+current_minor: "0.36"
 audience: maintainer
 ---
 
 # ETLantic 0.36 Implementation Plan — Joint Compatibility Burn-In
 
-> **Status: Internal project plan.** ETLantic 0.35 is the current shipped
-> minor; nothing in this document is available merely because it is planned
-> here. The
+> **Status: Gate-ready release candidate.** ETLantic 0.36 is the current
+> in-tree candidate; this document does not claim PyPI publication or live
+> immutable documentation. The
 > [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 > owns release order, [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
-> owns shipped behavior, and the eventual `EXIT_GATE_0_36.md` will own release
-> evidence.
+> owns shipped behavior, and `EXIT_GATE_0_36.md` owns release evidence.
 
 ## Outcome
 

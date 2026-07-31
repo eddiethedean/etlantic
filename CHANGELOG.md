@@ -70,6 +70,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LazyFrame record counts report unknown (`None`) instead of a false zero
 - OPS examples, FastAPI OpenAPI version, and Medallantic ROADMAP release header
   aligned to 0.36.0
+- Package READMEs, optional-API metadata, planning status, and Beta maturity
+  language aligned to 0.36; release-artifact docs no longer predict an SBOM
+  outcome before the tag workflow runs
+- Documentation checks now reject stale `current_minor` / current-boundary
+  markers, contradictory package maturity text, and premature release-asset
+  claims
 - Log redaction covers `auth`/`jwt`/`bearer` keys and JWT-shaped tokens
 
 ## [0.35.0] - 2026-07-30
