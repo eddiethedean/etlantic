@@ -173,4 +173,4 @@ Removed in 0.26 (raise on root import): `RunRequest`, `RunSelection`,
 `generate_contracts`, and other symbols listed in the migration guide.
 
 See [Surface inventory](SURFACE_INVENTORY.md) and
-[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md).
+[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md).

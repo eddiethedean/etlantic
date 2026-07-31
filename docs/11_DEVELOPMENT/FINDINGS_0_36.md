@@ -26,7 +26,7 @@ These answers close the Wave 2 open-decision set for 0.36:
 |---|---|---|
 | `etlantic.scheduler/1` | **Stable MVP** on the foundation path | Prefect-bounded direct-execution evidence; Airflow remains compile-only |
 | `etlantic.quality/1` | **Remains provisional** | Wire schema outside the full stable-foundation claim; ContractModel remains semantic authority |
-| `etlantic.testing` preview | **Minimum contract frozen** for burn-in | Foundation graduation remains **0.38** |
+| `etlantic.testing` preview | **Minimum contract frozen** for burn-in | Foundation graduation remains **0.37** |
 | 0.35 upgrade baseline | **Both `0.35.0` and newest `0.36.x`** | Preserve 0.35.0 known-defect fixtures even if a forward-fix patch ships |
 | SQL portable intersection | **SQLite** evaluation set is portable | PostgreSQL-only behavior stays capability-gated |
 | DataFusion | **No graduation** | Remains experimental Gate B; same applicable gates required before any future claim |
@@ -72,8 +72,8 @@ Maintainers: append rows below as burn-in work proceeds.
 
 1. Every P0 requires a regression test and linked durable evidence before
    severity can move or the finding can close.
-2. Deferred P1 rows must name owner, target phase (usually 0.37/0.38),
-   mitigation, and why they do not block the 0.38 stable foundation.
+2. Deferred P1 rows must name owner, target phase (usually 0.37/0.37),
+   mitigation, and why they do not block the 0.37 stable foundation.
 3. Do not hide 0.35 published defects behind current-tree fixes — preserve
    fixtures under `tests/fixtures/releases/`.
 

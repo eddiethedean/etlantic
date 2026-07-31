@@ -93,7 +93,7 @@ Potential providers include:
 Multiple providers may subscribe to the same event stream.
 
 The optional OpenLineage implementation and its stable identity/facet mapping
-are assigned to the 0.41 metadata-interoperability gate in the
+are assigned to the 0.40 metadata-interoperability gate in the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#metadata-and-catalog-interoperability).
 It is not shipped merely because the general observability protocol is
 available.

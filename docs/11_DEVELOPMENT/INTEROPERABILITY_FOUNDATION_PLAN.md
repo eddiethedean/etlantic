@@ -265,13 +265,13 @@ A working adapter that only duplicates Polars is insufficient.
 
 - Marked **Experimental** in Capabilities and package classifiers
 - Best-effort fixes only; no SLA
-- May change or be removed in a minor without a 0.38 stable-foundation compatibility obligation
+- May change or be removed in a minor without a 0.37 stable-foundation compatibility obligation
 - Must not become the default engine merely because installation works
 
 ### Stop rule
 
 Stop or keep experimental when any stop condition below triggers. Failed
-experiments create **no** 0.38 stable-foundation compatibility obligation.
+experiments create **no** 0.37 stable-foundation compatibility obligation.
 
 ---
 

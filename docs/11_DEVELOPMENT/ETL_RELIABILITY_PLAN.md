@@ -636,11 +636,11 @@ Conformance testing should cover:
 
 ## Roadmap Placement
 
-Rows before 0.40 preserve the plan's original implementation decomposition;
+Rows before 0.39 preserve the plan's original implementation decomposition;
 they do not independently claim that every item in a row is shipped. Use the
 current boundary at the top of this page and
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for availability.
-Rows from 0.40 onward are future sequence.
+Rows from 0.39 onward are future sequence.
 
 | Release | Reliability capabilities |
 |---|---|
@@ -651,14 +651,14 @@ Rows from 0.40 onward are future sequence.
 | 0.7 | Spark and Delta writes, partition completeness, backfill semantics |
 | 0.8 | Orchestrator mapping for retries, repair, backfills, and reports |
 | 0.9 | CLI, provider protocols, conformance suites, drift comparisons |
-| 0.40 | FastAPI inspection, planning, approval, and history routes |
-| 0.41 | Registry and workspace history for plans, environments, and quality |
-| 0.42 | Incremental invalidation, repair, state, and reproducibility |
-| 0.43 | Governance, approvals, budgets, destructive-write policy |
-| 0.44 | Integrated multi-tenant control-plane graduation |
-| 0.45 | IDE and notebook previews, diagnostics, and trend displays |
-| 0.46 | Cost-aware repair, materialization, and implementation selection |
-| 0.49 | Human-governed repair and migration proposals |
+| 0.39 | FastAPI inspection, planning, approval, and history routes |
+| 0.40 | Registry and workspace history for plans, environments, and quality |
+| 0.41 | Incremental invalidation, repair, state, and reproducibility |
+| 0.42 | Governance, approvals, budgets, destructive-write policy |
+| 0.43 | Integrated multi-tenant control-plane graduation |
+| 0.44 | IDE and notebook previews, diagnostics, and trend displays |
+| 0.45 | Cost-aware repair, materialization, and implementation selection |
+| 0.48 | Human-governed repair and migration proposals |
 
 ## Success Criteria
 

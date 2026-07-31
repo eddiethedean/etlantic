@@ -3,7 +3,7 @@
 Thin FastAPI reference adapter for the ETLantic 0.36 authoring and service
 contract. It is not the production control plane; that surface is a
 [planned first-class program](https://etlantic.readthedocs.io/en/v0.36.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/)
-with 0.40–0.43 incubation gates and a 0.44 graduation gate.
+with 0.39–0.42 incubation gates and a 0.43 graduation gate.
 
 ## Install
 

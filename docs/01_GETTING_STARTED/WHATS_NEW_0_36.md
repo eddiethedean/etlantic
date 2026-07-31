@@ -18,7 +18,7 @@
   conformance from clean wheel installs, not monorepo path imports alone
 - **Application-pipeline testing burn-in** — public `etlantic.testing`
   preview minimum contract frozen for burn-in (foundation graduation remains
-  **0.38**)
+  **0.37**)
 - **Medallantic joint burn-in** — definition, migration-IR, semantic, and
   legacy differential corpora across the facade/core boundary
 - **`etlantic.scheduler/1` stable MVP** — promoted onto the foundation path
@@ -44,9 +44,9 @@
 
 ## Not in 0.36
 
-- Application-pipeline testing foundation graduation (**0.38**)
-- Release candidate rehearsal and freeze (**0.37**)
-- Multi-tenant control plane (**0.40+**)
+- Stable foundation, including application-pipeline testing graduation and
+  release rehearsal against exact artifacts (**0.37**)
+- Multi-tenant control plane (**0.39+**)
 - Removal of transitional SparkForge adapters (**major only**)
 
 ## See also

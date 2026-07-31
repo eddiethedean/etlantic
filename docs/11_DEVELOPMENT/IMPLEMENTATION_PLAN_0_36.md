@@ -45,7 +45,7 @@ The phase is complete only when all of the following are true:
 7. There are no unresolved P0 compatibility, security, parity, migration, or
    release-integrity findings.
 8. Every remaining P1 has an owner, target phase, mitigation, and written reason
-   it does not block the 0.38 stable foundation.
+   it does not block the 0.37 stable foundation.
 9. Documentation, migration guidance, release artifacts, and versioned Read the
    Docs pages are verified against the exact wheels users install.
 
@@ -236,8 +236,8 @@ not satisfy `036-C02` by themselves.
 |---|---|---|
 | `036-S01` | `etlantic.scheduler/1` | Promote to stable with conformance and recovery semantics, or move it explicitly off the stable-foundation path with migration guidance |
 | `036-S02` | `etlantic.quality/1` | Promote, revise through a versioned migration, or retain as experimental outside the stable-foundation claim |
-| `036-S03` | `etlantic.testing` preview | Freeze the minimum 0.36 case/result/snapshot contract needed for burn-in; final foundation graduation remains 0.38 |
-| `036-S04` | `DataContractModel` compatibility alias | Confirm 0.38 removal disposition and ensure warnings/docs match the removal inventory |
+| `036-S03` | `etlantic.testing` preview | Freeze the minimum 0.36 case/result/snapshot contract needed for burn-in; final foundation graduation remains 0.37 |
+| `036-S04` | `DataContractModel` compatibility alias | Confirm 0.37 removal disposition and ensure warnings/docs match the removal inventory |
 | `036-S05` | Facade protocol and generated-definition provenance | Declare stable supported range across ETLantic and Medallantic |
 
 Each decision requires:
@@ -284,7 +284,7 @@ close an already-promised stable-foundation abstraction.
 ## Workstream 5 — Application-pipeline testing burn-in
 
 **Owner:** testing and engine maintainers  
-**Purpose:** advance the 0.35 public preview toward the stable 0.38 testing
+**Purpose:** advance the 0.35 public preview toward the stable 0.37 testing
 foundation.
 
 ### Canonical cases
@@ -333,7 +333,7 @@ must not retain arbitrary source rows.
 | `036-T06` | Installed-wheel example | Runs from a clean directory without repository-only imports |
 
 0.36 does not claim final testing-foundation stability. It must record which
-cases and helpers remain provisional for the 0.37 rehearsal and 0.38
+cases and helpers remain provisional for the 0.37 rehearsal and 0.37
 graduation.
 
 ## Workstream 6 — Medallantic joint burn-in
@@ -644,5 +644,5 @@ Review this plan whenever:
 - the supported Python/backend matrix changes;
 - a 0.35 patch changes the upgrade baseline;
 - a first-party plugin changes package role or maturity;
-- the 0.37 release-candidate scope changes;
+- the 0.37 stable-foundation scope changes;
 - a proposed feature would expand 0.36 beyond compatibility burn-in.

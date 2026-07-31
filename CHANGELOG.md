@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tests/fixtures/releases/`
 - Burn-in goldens for `v0_34`–`v0_36` alongside historical `v0_24`–`v0_27`
 - Application-pipeline testing burn-in against the frozen preview minimum
-  contract (`etlantic.testing`; foundation graduation remains 0.38)
+  contract (`etlantic.testing`; foundation graduation remains 0.37)
 - What's New / Migration / Exit Gate / Findings documentation for 0.36
 
 ### Changed
@@ -461,7 +461,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-artifact burn-in matrix: plan, run_report, profile, capabilities, interchange
 - Wire schema ranges and unsupported downgrade documentation
 - Plugin SDK `/1` freeze decision record (remaining blockers published; not frozen)
-- Published 0.38 stable-foundation removal candidates inventory (no removals executed)
+- Published 0.37 stable-foundation removal candidates inventory (no removals executed)
 - Docs: What's New 0.25, Migration 0.24→0.25, Exit Gate 0.25
 - Docs adoption hubs: Learning path, Profiles hub, Portable hub, Security howto,
   Documentation audit 0.25

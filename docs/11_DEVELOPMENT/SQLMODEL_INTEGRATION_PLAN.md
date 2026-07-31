@@ -332,23 +332,23 @@ The integration conformance suite should cover:
 
 ## Roadmap Placement
 
-Rows before 0.40 preserve the plan's original implementation decomposition;
+Rows before 0.39 preserve the plan's original implementation decomposition;
 they do not independently claim that every item in a row is shipped. Use the
 current boundary at the top of this page and the
 [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) for
-availability. Rows from 0.40 onward are future sequence.
+availability. Rows from 0.39 onward are future sequence.
 
 | Release | SQLModel capability |
 |---|---|
 | 0.3 | Adapter and mapping protocols, source-generation design |
 | 0.6 | SQLModel relation descriptors accepted by SQL plugins |
 | 0.9 | Optional package scaffold, generator CLI, conformance suite |
-| 0.40 | Request-scoped control-plane repository foundation |
-| 0.41 | Tenant-aware registry, revision, and history reference providers |
-| 0.42 | State, checkpoint, outbox, lease, and idempotency providers |
-| 0.43 | Policy/audit evidence stores and migration hardening |
-| 0.44 | Graduated multi-tenant reference persistence bundle |
-| 0.45 | IDE generation, navigation, comparison, and migration actions |
+| 0.39 | Request-scoped control-plane repository foundation |
+| 0.40 | Tenant-aware registry, revision, and history reference providers |
+| 0.41 | State, checkpoint, outbox, lease, and idempotency providers |
+| 0.42 | Policy/audit evidence stores and migration hardening |
+| 0.43 | Graduated multi-tenant reference persistence bundle |
+| 0.44 | IDE generation, navigation, comparison, and migration actions |
 | Later 0.x | Mature Alembic integration and provider templates |
 
 ## Graduation Gates

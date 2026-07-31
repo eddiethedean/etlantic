@@ -1,9 +1,9 @@
 # FastAPI Integration Plan
 
 > **Status: first-class planned control-plane integration.** CP1 incubation is
-> sequenced for 0.40; tenant persistence, durable coordination, and policy
-> hardening continue through 0.41–0.43; the integrated production claim is
-> gated for 0.44.
+> sequenced for 0.39; tenant persistence, durable coordination, and policy
+> hardening continue through 0.40–0.42; the integrated production claim is
+> gated for 0.43.
 >
 > **Current 0.36 boundary:** The optional `etlantic-fastapi` thin reference
 > adapter is available. It is not a durable scheduler, persistence layer,

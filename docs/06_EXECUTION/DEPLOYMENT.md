@@ -106,7 +106,7 @@ The adopter owns:
 - observability retention and operational runbooks.
 
 ETLantic 0.36 does not claim a multi-worker or multi-tenant control plane.
-The 0.40–0.44 program makes that a first-class planned feature, but none
+The 0.39–0.43 program makes that a first-class planned feature, but none
 of its future guarantees may be assumed for the reference topology on this
 page.
 

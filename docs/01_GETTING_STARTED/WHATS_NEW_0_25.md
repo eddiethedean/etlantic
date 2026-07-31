@@ -15,7 +15,7 @@
   unsupported downgrade behavior
 - Plugin SDK `/1` freeze decision: **remaining blockers published** (not frozen);
   see [Protocol evolution](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)
-- Published [0.38 stable-foundation removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md)
+- Published [0.37 stable-foundation removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md)
   (inventory only — no removals in 0.25)
 - Runtime trust / diagnostics hygiene: dataframe ownership `info` resolution,
   fail-closed missing manifest digests, validate trust exit `11`, keyed SQL

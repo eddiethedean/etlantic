@@ -2,7 +2,7 @@
 
 Available (preview): typed cases, fakes, plan/report snapshots, and a
 validate → plan → run → normalize path for independently maintained pipelines.
-Full graduation of this foundation is planned for 0.38.
+Full graduation of this foundation is planned for 0.37.
 
 Security invariants:
 

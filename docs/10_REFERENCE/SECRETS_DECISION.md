@@ -35,7 +35,7 @@ Need a secret at runtime?
 ## What is not shipped
 
 AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, Vault, and
-cloud identity providers are planned as optional 0.52 provider packs. They are
+cloud identity providers are planned as optional 0.51 provider packs. They are
 not shipped in 0.36; do not configure them yet.
 
 ## Related

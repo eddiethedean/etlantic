@@ -171,7 +171,7 @@ See [Migration 0.22 → 0.23](../11_DEVELOPMENT/MIGRATION_0_22_TO_0_23.md).
 | Class-only pipeline lifecycle | `PipelineDefinition` / `etlantic.authoring` functional builders and JSON |
 | Plan JSON as authoring round-trip | Use `etlantic.pipeline/1`; keep `etlantic.plan/1` for resolved execution |
 | GUI/service custom encoders | Public catalog, `EditCommand`, `etlantic.service.AuthoringService` |
-| Optional HTTP reference | `pip install etlantic-fastapi` matching the core minor (not the 0.40–0.44 control plane) |
+| Optional HTTP reference | `pip install etlantic-fastapi` matching the core minor (not the 0.39–0.43 control plane) |
 
 See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
 
@@ -181,7 +181,7 @@ See [Migration 0.23 → 0.24](../11_DEVELOPMENT/MIGRATION_0_23_TO_0_24.md).
 |---|---|
 | Assume Plugin SDK `/1` is frozen | Still freeze-eligible; blockers published — see Protocol evolution |
 | Skip codec upgrade tests | Keep `tests/fixtures/burn_in/` green; run `check_pipeline_codec_burn_in.py` |
-| Add new root demoted aliases | Prefer owning modules; see [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md) |
+| Add new root demoted aliases | Prefer owning modules; see [Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md) |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.25 |
 
 See [Migration 0.24 → 0.25](../11_DEVELOPMENT/MIGRATION_0_24_TO_0_25.md) and
@@ -267,7 +267,7 @@ See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 | Expect bare report metadata keys to rewrite to namespaced keys | Leave unresolved secrets or bare secret-like keys in reports |
 | Expect soft-continued runs (`CONTINUE`) to report `PARTIAL` | Treat soft-skips as overall `SUCCEEDED` / exit 0 |
 | Keep transitional adapters until a major | Expect adapter removal in 0.36 |
-| Treat `etlantic.testing` burn-in helpers as a frozen preview contract | Assume 0.38 testing-foundation graduation already shipped |
+| Treat `etlantic.testing` burn-in helpers as a frozen preview contract | Assume 0.37 testing-foundation graduation already shipped |
 
 See [Migration 0.35 → 0.36](../11_DEVELOPMENT/MIGRATION_0_35_TO_0_36.md).
 

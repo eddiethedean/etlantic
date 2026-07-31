@@ -33,7 +33,7 @@ interfaces.
 
 ## Future design / planned 0.x
 
-- [Configuration](CONFIGURATION.md) (**proposed** 0.38 — do not implement for 0.35)
+- [Configuration](CONFIGURATION.md) (**proposed** 0.37 — do not implement for 0.35)
 - [Environment Variables](ENVIRONMENT_VARIABLES.md) (**proposed** names beyond shipped)
 - 0.17 continuation families (`portable-relational-extended/1`,
   `portable-temporal-iana/1`, `portable-nondeterministic/1`,

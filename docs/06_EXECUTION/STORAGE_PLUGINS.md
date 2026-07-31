@@ -1,7 +1,7 @@
 # Storage Plugins (Design Proposal)
 
-> **Status: planned for the first-class 0.39 connectivity program; not
-> shipped.** This page remains a design study until the 0.39 protocol and
+> **Status: planned for the first-class 0.38 connectivity program; not
+> shipped.** This page remains a design study until the 0.38 protocol and
 > reference-connector gates pass. See the
 > [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).
 > Do not treat the catalogs below as installable product.
@@ -20,7 +20,7 @@ storage-specific APIs into pipeline definitions.
 Pipeline Plan
       │
       ▼
- Storage Plugin (planned 0.39)
+ Storage Plugin (planned 0.38)
       │
  ┌────┼─────────────────────────┐
  ▼    ▼            ▼            ▼
@@ -55,5 +55,5 @@ warehouse: Load[Customer] = Load(
 ## Related
 
 - [Storage Today](STORAGE_TODAY.md) — shipped backends
-- [Storage plugin SDK (planned 0.39)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
+- [Storage plugin SDK (planned 0.38)](../07_PLUGIN_SDK/STORAGE_PLUGIN.md)
 - [Resource Providers (future)](RESOURCE_PLUGINS.md)

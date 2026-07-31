@@ -6,7 +6,7 @@
 | Sibling codec matrix (plan, run_report, profile, capabilities, interchange) | Done |
 | Wire schema ranges + unsupported downgrade docs | Done |
 | Plugin SDK `/1` freeze decision (blockers published) | Done |
-| 0.38 stable-foundation removal inventory | Done |
+| 0.37 stable-foundation removal inventory | Done |
 | WP5 fixture-blocking authoring polish | N/A — nested/clone/move fixtures green; residual deferred to 0.26 |
 | Docs: What's New / Migration / this exit gate | Done |
 | Core + plugins bumped to 0.25.0 | Done |
@@ -20,7 +20,7 @@
   (`tests/compatibility/test_codec_burn_in_matrix.py`)
 - [x] Plugin SDK `/1` freeze decision recorded — **remaining blockers published**
   ([PROTOCOL_EVOLUTION.md](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md)); not frozen
-- [x] Published [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md); no new
+- [x] Published [0.37 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_37.md); no new
   indefinite keep-forever aliases in 0.25
 - [x] What's New / Migration 0.24→0.25 / this exit gate pass docs gates
 - [x] No wire-schema reset; control plane and GUI remain out of scope
@@ -42,5 +42,5 @@ Owned by **[0.26 — Compatibility Burn-In (second slice)](https://github.com/ed
 
 - Dual-minor proof (0.24→0.25 and 0.25→0.26)
 - Freeze closure (clear blockers or re-scope)
-- First-wave 0.38 stable-foundation removal execution
+- First-wave 0.37 stable-foundation removal execution
 - Remaining authoring parity / nested-edit polish

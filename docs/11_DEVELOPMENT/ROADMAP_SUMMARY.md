@@ -12,9 +12,9 @@ For the status, current boundary, and owner of every domain plan, use the
 |---|---:|---|---|
 | Current | 0.36 | Joint compatibility burn-in | [Gate-ready for tag/publish](EXIT_GATE_0_36.md) |
 | Previous | 0.35 | Migration completion and joint freeze (M7) | [Shipped](EXIT_GATE_0_35.md) |
-| Next | 0.37 | Stable-foundation release candidate | Planned |
-| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | In progress |
-| Post-foundation | 0.39–0.53 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
+| Next | 0.37 | Stable foundation | Planned |
+| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | In progress |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | Planned |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -29,9 +29,9 @@ outcomes without creating conflicting release numbers:
    self-contained pipeline HTML workspace; the dependency-free static renderer
    remains the portable fallback.
 3. A local run dashboard and visual plan/report comparison.
-4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.45.
-5. A hosted, governed experience after the 0.40–0.44 control-plane gates,
-   culminating in the read-only-first 0.51 Operator Console.
+4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.44.
+5. A hosted, governed experience after the 0.39–0.43 control-plane gates,
+   culminating in the read-only-first 0.50 Operator Console.
 
 All views remain projections of the same public artifacts and must preserve
 redaction, safe-I/O, authorization, accessibility, and bounded rendering.
@@ -113,7 +113,7 @@ facade, and `etlantic-fastapi` reference adapter. See
 
 ETLantic **0.25.0** / **0.25.1** shipped **Compatibility Burn-In (first slice)**:
 `etlantic.pipeline/1` and sibling codec upgrade fixtures, Plugin SDK `/1`
-freeze decision (blockers published), and a published 0.38 removal inventory.
+freeze decision (blockers published), and a published 0.37 removal inventory.
 See [What's New in 0.25](../01_GETTING_STARTED/WHATS_NEW_0_25.md) and
 [Exit gate 0.25](EXIT_GATE_0_25.md).
 
@@ -223,16 +223,14 @@ domain-neutral meaning are promoted into ETLantic. See the
 [full ETLantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) and
 [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md).
 
-## Foundation sequence: 0.36–0.38
+## Foundation sequence: 0.36–0.37
 
 - **0.36:** joint ETLantic/Medallantic compatibility burn-in, including
   cross-engine application-pipeline test cases
-- **0.37:** stable-foundation release-candidate rehearsal with an independent
-  user of the public testing API
-- **0.38:** stable foundation, including deterministic and bounded
-  application-pipeline testing helpers
+- **0.37:** stable foundation, including release rehearsal against exact
+  artifacts and deterministic, bounded application-pipeline testing helpers
 
-## 0.39 — First-class data connectivity
+## 0.38 — First-class data connectivity
 
 The former TransformationModel slot now belongs to the higher-adoption data
 connectivity and connector SDK program:
@@ -246,7 +244,7 @@ connectivity and connector SDK program:
   cleanup semantics;
 - measurable connector maturity and support levels.
 
-TransformationModel incubation moves to 0.53. See the
+TransformationModel incubation moves to 0.52. See the
 [Adoption, Connectivity, and Operations Plan](ADOPTION_ECOSYSTEM_PLAN.md).
 
 ## First-class control-plane program
@@ -254,14 +252,14 @@ TransformationModel incubation moves to 0.53. See the
 The multi-tenant control plane is a planned first-class feature program rather
 than an indefinite residual:
 
-- **0.40 / CP1:** typed API, identity context, authorization, and idempotency
-- **0.41 / CP2:** tenant/workspace registry, persistence isolation, stable
+- **0.39 / CP1:** typed API, identity context, authorization, and idempotency
+- **0.40 / CP2:** tenant/workspace registry, persistence isolation, stable
   metadata identities, and outbound OpenLineage preview
-- **0.42 / CP3:** durable submission, leases, fencing, state, recovery, and
+- **0.41 / CP3:** durable submission, leases, fencing, state, recovery, and
   bounded GitOps preview workspaces
-- **0.43 / CP4:** policy, quotas, audit evidence, preview promotion controls,
+- **0.42 / CP4:** policy, quotas, audit evidence, preview promotion controls,
   and release-candidate proof
-- **0.44 / CP-GA:** integrated production graduation after every gate passes
+- **0.43 / CP-GA:** integrated production graduation after every gate passes
 
 The program remains outside the 0.36 single-tenant envelope and never treats
 in-process Python context as a tenant boundary. See the
@@ -269,16 +267,16 @@ in-process Python context as a tenant boundary. See the
 
 ## Remaining post-foundation 0.x sequence
 
-- **0.45:** developer intelligence, LSP, IDE, and static analysis
-- **0.46:** planner and optimization SDK
-- **0.47:** streaming and event-driven pipelines
-- **0.48:** remote execution federation with Kubernetes and a managed Spark
+- **0.44:** developer intelligence, LSP, IDE, and static analysis
+- **0.45:** planner and optimization SDK
+- **0.46:** streaming and event-driven pipelines
+- **0.47:** remote execution federation with Kubernetes and a managed Spark
   reference provider
-- **0.49:** AI-assisted, human-governed engineering
-- **0.50:** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
-- **0.51:** read-only-first operator console
-- **0.52:** managed runtime and enterprise provider packs
-- **0.53:** TransformationModel incubation
+- **0.48:** AI-assisted, human-governed engineering
+- **0.49:** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **0.50:** read-only-first operator console
+- **0.51:** managed runtime and enterprise provider packs
+- **0.52:** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.
@@ -288,10 +286,10 @@ The roadmap does not reserve a 1.0 or 1.x phase.
 Durable execution hosts remain outside ETLantic core, while ETLantic supplies
 the portable evidence needed to recover safely:
 
-- **0.42 / CP3 Incremental State and Reproducibility** adds a secret-free
+- **0.41 / CP3 Incremental State and Reproducibility** adds a secret-free
   execution-attempt context, checkpoint/resume evidence, and normalized
   known/unknown external-effect outcomes.
-- **0.48 Remote Execution Federation** adds host-neutral recovery negotiation,
+- **0.47 Remote Execution Federation** adds host-neutral recovery negotiation,
   fenced attempt attribution, resumable observation, and conformance semantics
   for retry, replay, repair, reconciliation, and manual review.
 
@@ -299,16 +297,16 @@ The queue, worker claim/lease store, heartbeat service, and scheduler leadership
 remain responsibilities of applications and orchestrator plugins. See
 [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md#durable-host-recovery-integration).
 
-## Stable foundation at 0.38
+## Stable foundation at 0.37
 
-The 0.38 goal is a stable foundation with frozen contracts (0.19), completed
+The 0.37 goal is a stable foundation with frozen contracts (0.19), completed
 trust/isolation gates (**0.20.0**), cohesive CLI (**0.21.0**), Plugin SDK with
 frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 0.24 functional/JSON authoring convergence, followed by core compatibility
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), release
-candidate (**0.37**), and stable foundation (**0.38**).
-TransformationModel incubation is deferred to **0.53** so connectivity,
+candidate (**0.37**), and stable foundation (**0.37**).
+TransformationModel incubation is deferred to **0.52** so connectivity,
 interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference

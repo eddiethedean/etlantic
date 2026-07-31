@@ -34,7 +34,7 @@
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md) · [Exit gate 0.25](EXIT_GATE_0_25.md)
 - [Documentation audit 0.25](DOCUMENTATION_AUDIT_0_25.md)
 - [Documentation adoption audit 0.25](DOCUMENTATION_AUDIT_0_25_ADOPTION.md)
-- [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md)
+- [0.37 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_37.md)
 
 ## Older migrations and exit gates
 

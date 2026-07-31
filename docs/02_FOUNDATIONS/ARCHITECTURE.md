@@ -104,7 +104,7 @@ A FastAPI application may expose a transport-neutral ETLantic service facade,
 but authentication, persistence, durable job submission, and deployment remain
 host-application concerns. The `etlantic-fastapi` reference adapter (shipped
 since 0.24) proves schema and client
-generation; the production control API remains planned across 0.40–0.44.
+generation; the production control API remains planned across 0.39–0.43.
 
 ### Code-first
 
@@ -291,8 +291,8 @@ The core depends on public protocols rather than backend packages.
 
 | Extension | Responsibility |
 |---|---|
-| Storage plugin protocol catalog (planned 0.39) | Pluggable persistent dataset providers beyond built-ins |
-| Managed resource providers (reference proof 0.48; supported packs 0.52) | Acquire managed runtime dependencies |
+| Storage plugin protocol catalog (planned 0.38) | Pluggable persistent dataset providers beyond built-ins |
+| Managed resource providers (reference proof 0.47; supported packs 0.51) | Acquire managed runtime dependencies |
 | Notification provider protocol | Deliver typed outbound events beyond built-in outbound policy |
 
 Plugins advertise capabilities. The planner selects them only when those

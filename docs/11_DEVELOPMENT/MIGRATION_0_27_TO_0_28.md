@@ -52,6 +52,6 @@
 - [What's New 0.28](../01_GETTING_STARTED/WHATS_NEW_0_28.md)
 - [Exit gate 0.28](EXIT_GATE_0_28.md)
 - [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md)
-- [Removal candidates](REMOVAL_CANDIDATES_0_38.md)
+- [Removal candidates](REMOVAL_CANDIDATES_0_37.md)
 - [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
 - [Facade packages](FACADE_PACKAGES.md)

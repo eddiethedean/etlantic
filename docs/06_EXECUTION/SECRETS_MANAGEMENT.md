@@ -5,7 +5,7 @@
 > **Available:** `env` and mounted-file secret providers (0.5+).
 > Optional OS keyring provider via `etlantic-keyring` (0.9+).
 > AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, and Vault
-> are **planned 0.52 optional providers**—they are not shipped, so do not
+> are **planned 0.51 optional providers**—they are not shipped, so do not
 > configure them yet.
 
 ETLantic treats secrets as runtime dependencies that are referenced during
@@ -88,10 +88,10 @@ them are design sketches only. **OS keyring is available today** via
 | Target environment | Status |
 |---|---|
 | Developer workstation (`etlantic-keyring`) | Available (optional package) |
-| AWS Secrets Manager | Planned 0.52 optional provider |
-| Azure Key Vault | Planned 0.52 optional provider |
-| Google Cloud Secret Manager | Planned 0.52 optional provider |
-| HashiCorp Vault | Planned 0.52 optional provider |
+| AWS Secrets Manager | Planned 0.51 optional provider |
+| Azure Key Vault | Planned 0.51 optional provider |
+| Google Cloud Secret Manager | Planned 0.51 optional provider |
+| HashiCorp Vault | Planned 0.51 optional provider |
 | 1Password | Unscheduled candidate |
 
 ### BYO cloud secrets (adapter stub)

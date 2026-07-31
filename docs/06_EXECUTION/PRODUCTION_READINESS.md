@@ -84,7 +84,7 @@ reference controls are shipped:
 - Cross-tenant / multi-tenant isolation guarantees (beyond single-tenant keys)
 - Formal denial-of-service capacity SLAs (partial I/O budgets only)
 - Compliance-grade audit system of record (CLI reports are operational evidence)
-- Stable-foundation compatibility and support windows (planned for 0.38)
+- Stable-foundation compatibility and support windows (planned for 0.37)
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
 - Broader supply-chain programs beyond package allowlists, pins, SHA-256
   release digests, and GitHub attestations (CycloneDX SBOM is optional and
@@ -101,7 +101,7 @@ reference controls are shipped:
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
 | Release SHA-256 digests + GitHub attestations | **Release-gated** (CycloneDX is optional; verify the published SBOM or `sbom-warning.txt`) |
-| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.40–0.43 incubation → 0.44 graduation); absent in 0.36 |
+| Durable multi-worker / multi-tenant control plane | **Planned first-class** (0.39–0.42 incubation → 0.43 graduation); absent in 0.36 |
 | Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |

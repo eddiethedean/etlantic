@@ -1,8 +1,8 @@
-# 0.38 Stable-Foundation Removal Candidates
+# 0.37 Stable-Foundation Removal Candidates
 
 > **Status: Available in ETLantic 0.36.0.** First-wave removals executed in
 > 0.26.0; second-wave removals executed in 0.27.0; third-wave removals executed
-> in 0.28.0; remaining inventory is due by the 0.38 stable foundation. See
+> in 0.28.0; remaining inventory is due by the 0.37 stable foundation. See
 > [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md) and
 > [Migration 0.27 → 0.28](MIGRATION_0_27_TO_0_28.md).
 
@@ -17,8 +17,8 @@
 
 | ID | Candidates | Owning modules | Target | Migration note |
 |---|---|---|---|---|
-| `REM-ROOT-DEMOTED` | warn-once root aliases in `_DEMOTED_ALIASES` | various | first wave 0.26.0; second wave **removed 0.27.0** (schema_drift + registry); third wave **removed 0.28.0** (sql/profile/lifecycle); complete by 0.38 | Prefer owning imports. ~36 remain demoted after 0.28.0. |
-| `REM-DATACONTRACTMODEL` | `DataContractModel` provisional alias | `etlantic.contracts` | hard-error or remove by 0.38 | Use ContractModel / `Data` per current contracts docs. |
+| `REM-ROOT-DEMOTED` | warn-once root aliases in `_DEMOTED_ALIASES` | various | first wave 0.26.0; second wave **removed 0.27.0** (schema_drift + registry); third wave **removed 0.28.0** (sql/profile/lifecycle); complete by 0.37 | Prefer owning imports. ~36 remain demoted after 0.28.0. |
+| `REM-DATACONTRACTMODEL` | `DataContractModel` provisional alias | `etlantic.contracts` | hard-error or remove by 0.37 | Use ContractModel / `Data` per current contracts docs. |
 | `REM-EXCEPTIONS-ROOT` | Exception types on root | `etlantic.exceptions` | **removed 0.26.0** | `from etlantic.exceptions import …` |
 | `REM-PROTOCOL-CONSTS` | `*_PROTOCOL_VERSION`, `STREAMING_STABILITY`, `PLUGIN_MANIFEST_SCHEMA` | dataframe / sql / spark / orchestration / plugin_manifest | **removed 0.26.0** | Import from owning protocol modules. |
 | `REM-STORAGE-ROOT` | `MemoryStorage`, `JsonStorage`, `CsvStorage`, `CallableStorage`, `NullStorage` | `etlantic.storage` | **removed 0.26.0** | `from etlantic.storage import …` |
@@ -26,13 +26,13 @@
 | `REM-RELIABILITY-ROOT` | Reliability declaration types | `etlantic.reliability` | **removed 0.27.0** | Prefer `etlantic.reliability`. |
 | `REM-INTERCHANGE-ROOT` | Interchange / provenance helpers | `etlantic.interchange` | **removed 0.26.0** | Prefer `etlantic.interchange`. |
 | `REM-EXPERIMENTAL` | Structured Streaming APIs; `etlantic-datafusion` | spark / datafusion | graduate in an assigned 0.x phase or remain experimental | See Capabilities / Compatibility. |
-| `REM-PREFECT-MVP` | Prefect scheduler MVP surface | `etlantic-prefect` | expand or freeze protocol by 0.38 | See Deployment / Prefect docs. |
+| `REM-PREFECT-MVP` | Prefect scheduler MVP surface | `etlantic-prefect` | expand or freeze protocol by 0.37 | See Deployment / Prefect docs. |
 
 Ticket placeholders (track in GitHub issues when executing waves):
 
-- `ETLANTIC-0.38-REM-ROOT-DEMOTED`
-- `ETLANTIC-0.38-REM-DATACONTRACTMODEL`
-- `ETLANTIC-0.38-REM-EXPERIMENTAL`
+- `ETLANTIC-0.37-REM-ROOT-DEMOTED`
+- `ETLANTIC-0.37-REM-DATACONTRACTMODEL`
+- `ETLANTIC-0.37-REM-EXPERIMENTAL`
 
 ## Demoted root alias count (0.28 snapshot)
 

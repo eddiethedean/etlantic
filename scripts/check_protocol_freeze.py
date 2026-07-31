@@ -11,7 +11,7 @@ INVENTORY = ROOT / "src" / "etlantic" / "schemas" / "surface-inventory.json"
 PROTOCOL_DOC = ROOT / "docs" / "07_PLUGIN_SDK" / "PROTOCOL_EVOLUTION.md"
 FEEDBACK_DOC = ROOT / "docs" / "11_DEVELOPMENT" / "EXTERNAL_PLUGIN_FEEDBACK.md"
 
-# Shipped /1 families on the 0.38 stable-foundation path — stable once frozen.
+# Shipped /1 families on the 0.37 stable-foundation path — stable once frozen.
 CORE_FROZEN_PROTOCOLS = (
     "etlantic.dataframe/1",
     "etlantic.sql/1",

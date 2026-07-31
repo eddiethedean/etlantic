@@ -45,16 +45,16 @@ adoption and ecosystem gates described below.
 | Phase | First-class outcome | Claim allowed at exit |
 |---|---|---|
 | 0.35 | Application-pipeline testing API and fixtures | Public testing preview |
-| 0.36–0.38 | Cross-engine and upgrade burn-in for pipeline tests | Stable pipeline-testing foundation |
-| 0.39 | Data connectivity and connector SDK | Supported connector protocol and reference set |
-| 0.41 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
-| 0.42–0.44 | GitOps previews, promotion evidence, and graduation | Supported preview-to-production workflow |
-| 0.47 | Incremental and CDC source semantics | Supported change-stream contract |
-| 0.48 | Kubernetes and managed execution reference providers | Conforming remote execution profiles |
-| 0.50 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
-| 0.51 | Operator console | Supported control-plane operations UI |
-| 0.52 | Enterprise provider packs | Supported cloud provider matrix |
-| 0.53 | TransformationModel incubation | Independently useful modeling package |
+| 0.36–0.37 | Cross-engine and upgrade burn-in for pipeline tests | Stable pipeline-testing foundation |
+| 0.38 | Data connectivity and connector SDK | Supported connector protocol and reference set |
+| 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
+| 0.41–0.43 | GitOps previews, promotion evidence, and graduation | Supported preview-to-production workflow |
+| 0.46 | Incremental and CDC source semantics | Supported change-stream contract |
+| 0.47 | Kubernetes and managed execution reference providers | Conforming remote execution profiles |
+| 0.49 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
+| 0.50 | Operator console | Supported control-plane operations UI |
+| 0.51 | Enterprise provider packs | Supported cloud provider matrix |
+| 0.52 | TransformationModel incubation | Independently useful modeling package |
 
 No capability in this table is available merely because its phase is planned.
 Each claim begins only after the corresponding exit gate passes.
@@ -118,7 +118,7 @@ Exact convenience names remain provisional until 0.35 freezes them.
 
 ### Gates
 
-The testing foundation graduates at 0.38 only when:
+The testing foundation graduates at 0.37 only when:
 
 1. A user pipeline can be tested end to end using only public imports.
 2. The same eligible case produces equivalent normalized results on Polars,
@@ -138,7 +138,7 @@ The testing foundation graduates at 0.38 only when:
 Logical extract and load assets can bind to production storage and warehouse
 systems through one capability-driven provider model.
 
-The 0.39 program graduates the storage/source/sink boundary from a design study
+The 0.38 program graduates the storage/source/sink boundary from a design study
 into a supported plugin family. It does not put vendor APIs or credentials into
 pipeline definitions.
 
@@ -163,7 +163,7 @@ pipeline definitions.
 
 ### Reference set
 
-The 0.39 exit candidate must include:
+The 0.38 exit candidate must include:
 
 - one local reference connector suitable for deterministic CI;
 - one S3-compatible object-storage path with Parquet;
@@ -353,7 +353,7 @@ local implementations.
   capability profiles;
 - secret-provider packages for AWS Secrets Manager, Azure Key Vault, Google
   Cloud Secret Manager, and HashiCorp Vault;
-- cloud storage and warehouse providers promoted from the 0.39 connector
+- cloud storage and warehouse providers promoted from the 0.38 connector
   program through live production conformance;
 - short-lived identity and credential flows where supported;
 - Terraform or equivalent deployment recipes only when maintained and tested;
@@ -444,13 +444,13 @@ This program will not:
 
 - [Multi-Tenant Control Plane Plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) owns
   tenant isolation, durable preview state, promotion, authorization, and the
-  0.44 graduation claim.
+  0.43 graduation claim.
 - [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md) owns normalized
   checkpoint, retry, repair, reconciliation, and unknown-outcome semantics.
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) owns observations,
   baselines, acknowledgement, and schema-change impact.
 - [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md) owns the
-  0.53 package boundary and graduation.
+  0.52 package boundary and graduation.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns threat-model changes and
   mandatory controls.
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md) owns package isolation and
@@ -463,13 +463,13 @@ must be reconciled in the same change before implementation proceeds.
 
 | Decision | Owner role | Due |
 |---|---|---|
-| Freeze connector protocol split and capability vocabulary | Core + integration maintainers | Before 0.39 schema freeze |
-| Select the 0.39 local, object, table-format, warehouse, and relational reference set | Integration maintainers | Before 0.39 implementation freeze |
+| Freeze connector protocol split and capability vocabulary | Core + integration maintainers | Before 0.38 schema freeze |
+| Select the 0.38 local, object, table-format, warehouse, and relational reference set | Integration maintainers | Before 0.38 implementation freeze |
 | Freeze OpenLineage namespace, identity, and facet mappings | Observability + registry maintainers | Before CP2 conformance |
 | Define preview workspace lifecycle and untrusted-fork policy | Control-plane + security maintainers | Before CP3 conformance |
-| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.50 preview |
-| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.51 implementation |
-| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.52 preview |
+| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.49 preview |
+| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.50 implementation |
+| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.51 preview |
 
 Every decision requires an ADR or explicit roadmap decision record,
 conformance changes, compatibility impact, and documentation updates.

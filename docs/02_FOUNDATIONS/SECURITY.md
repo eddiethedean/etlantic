@@ -44,8 +44,8 @@ not a current guarantee.
 - Immutable audit evidence suitable for compliance programs (beyond operational reports)
 - Broader supply-chain provenance programs beyond allowlists, pins, and release attestations
 
-The control-plane program owns the first item through explicit 0.40–0.43 gates
-and a 0.44 graduation review. An SLA and formal compliance claims remain
+The control-plane program owns the first item through explicit 0.39–0.42 gates
+and a 0.43 graduation review. An SLA and formal compliance claims remain
 separate decisions.
 
 The sections below describe the full threat model. Where a control is only

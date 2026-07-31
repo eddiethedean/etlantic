@@ -10,15 +10,15 @@
 Milestones **0.25** (burn-in first slice) through **0.35** (migration
 completion and joint freeze / Medallantic M7) are shipped. **0.36** is the
 joint compatibility burn-in milestone (in progress toward publish), followed
-by the **0.37** release candidate and the **0.38** stable foundation.
+by the **0.37** stable foundation.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
 | Current | 0.36 | Joint compatibility burn-in | Gate-ready for tag/publish |
 | Previous | 0.35 | Migration completion and joint freeze (M7) | Shipped |
-| Next | 0.37 | Release candidate | Planned |
-| Foundation | 0.36–0.38 | Joint burn-in → release candidate → stable foundation | In progress |
-| Post-foundation | 0.39–0.53 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
+| Next | 0.37 | Stable foundation | Planned |
+| Foundation | 0.36–0.37 | Joint burn-in → stable foundation | In progress |
+| Post-foundation | 0.37–0.51 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | Planned |
 
 For burn-in evidence, see
 [What's New in 0.36](docs/01_GETTING_STARTED/WHATS_NEW_0_36.md) and the
@@ -183,11 +183,11 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 
 | Phase | Focus | Roadmap alignment |
 |---|---|---|
-| 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.45 |
-| 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.45 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.51 |
-| 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.45 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.40–0.44 control-plane substrate; 0.51 Operator Console |
+| 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
+| 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.50 |
+| 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.50 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2334,7 +2334,7 @@ the other cannot express.
   collaborative editing, durable job scheduling, or hosted execution
 - accepting Python source, arbitrary import paths, resolved secrets, or
   executable objects through API payloads
-- replacing the production FastAPI Control API planned for 0.40–0.44; WP8
+- replacing the production FastAPI Control API planned for 0.39–0.43; WP8
   proves the 0.24 authoring/service contract that the later control API will
   consume
 
@@ -2344,7 +2344,7 @@ the other cannot express.
 - treating DPCS YAML as the lossless authoring codec
 - serializing Python callables, closures, import-time expressions, dataframe
   objects, sessions, connections, scheduler handles, or backend-native plans
-- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44
+- first-class multi-tenant control plane (0.39–0.42 incubation; 0.43
   graduation), LSP, or unrestricted enterprise production claims
 - a framework-specific UI toolkit or requirement that consumers use a
   particular frontend, transport, or application architecture
@@ -2432,11 +2432,11 @@ first named slice of the broader compatibility burn-in band; **0.26** is the
 second slice; **0.27** is the third; **0.28** is the fourth (quadruple-minor
 window plus Plugin `/1` freeze and Medallantic M0 closeout); **0.29–0.35**
 preserve co-evolution discipline while ETLantic and Medallantic advance feature
-parity, followed by joint burn-in in **0.36** toward the 0.37 release candidate.
+parity, followed by joint burn-in in **0.36** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
-connectivity (0.39), FastAPI (0.40), registry/workspaces (0.41), and
-TransformationModel incubation (0.53) remain post-foundation phases.
+connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
+TransformationModel incubation (0.52) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -2514,8 +2514,8 @@ TransformationModel incubation (0.53) remain post-foundation phases.
 
 ### Non-goals
 
-- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
-- tenant/workspace registry and durable submission/state (0.41–0.42)
+- first-class multi-tenant control plane (0.39–0.42 incubation; 0.43 graduation)
+- tenant/workspace registry and durable submission/state (0.40–0.41)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2621,12 +2621,12 @@ candidates with migrations — not a control-plane or GUI milestone.
 
 **Out of scope**
 
-- production GUI, LSP, AI authoring, or the 0.40–0.44 control plane
+- production GUI, LSP, AI authoring, or the 0.39–0.43 control plane
 
 ### Non-goals
 
-- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
-- tenant/workspace registry and durable submission/state (0.41–0.42)
+- first-class multi-tenant control plane (0.39–0.42 incubation; 0.43 graduation)
+- tenant/workspace registry and durable submission/state (0.40–0.41)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2664,7 +2664,7 @@ milestone.
 - Plugin SDK `/1` freeze re-scoped to 0.27 with published external feedback
   blocker ([PROTOCOL_EVOLUTION.md](docs/07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
 - First-wave root alias removals shipped; remaining inventory current
-  ([REMOVAL_CANDIDATES_0_38.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md))
+  ([REMOVAL_CANDIDATES_0_37.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md))
 
 ### Work packages
 
@@ -2742,8 +2742,8 @@ milestone.
 
 ### Non-goals
 
-- first-class multi-tenant control plane (0.40–0.43 incubation; 0.44 graduation)
-- tenant/workspace registry and durable submission/state (0.41–0.42)
+- first-class multi-tenant control plane (0.39–0.42 incubation; 0.43 graduation)
+- tenant/workspace registry and durable submission/state (0.40–0.41)
 - shipping a GUI, LSP, or AI authoring surface
 - new engines/orchestrators, expanded streaming, DataFusion graduation
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -2796,7 +2796,7 @@ control-plane / GUI milestone.
   [EXTERNAL_PLUGIN_FEEDBACK.md](docs/11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md))
 - Second-wave root removals shipped (reliability, schema_drift, registry);
   ~36 demoted root aliases remain after the 0.28 third wave
-  ([REMOVAL_CANDIDATES_0_38.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md))
+  ([REMOVAL_CANDIDATES_0_37.md](docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md))
 
 ### Work packages
 
@@ -2891,9 +2891,9 @@ control-plane / GUI milestone.
 
 - native medallion authoring (**0.29**), portable quality rules (**0.30**),
   execution/materialization parity (**0.31**)
-- first-class multi-tenant control plane (0.40–0.43 incubation; **0.44**
+- first-class multi-tenant control plane (0.39–0.42 incubation; **0.43**
   graduation)
-- tenant/workspace registry and durable submission/state (**0.41–0.42**)
+- tenant/workspace registry and durable submission/state (**0.40–0.41**)
 - GUI, LSP, or AI authoring surfaces
 - new engines/orchestrators, DataFusion graduation, expanded streaming
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
@@ -3099,9 +3099,9 @@ Column / Moltres-only expressions (**0.32 / 0.33**), or quality-trend analytics
 - native PySpark Column / Moltres-only expressions as portable
   (**0.32 / 0.33**)
 - trend, quality, and anomaly analytics consumers (**0.34**)
-- first-class multi-tenant control plane (0.40–0.43 incubation; **0.44**
+- first-class multi-tenant control plane (0.39–0.42 incubation; **0.43**
   graduation)
-- tenant/workspace registry and durable submission/state (**0.41–0.42**)
+- tenant/workspace registry and durable submission/state (**0.40–0.41**)
 - GUI, LSP, or AI authoring surfaces
 - replacing `etlantic.plan/1` or requiring a wire-schema reset
 - a second schema/rule system outside ContractModel authority
@@ -3394,43 +3394,8 @@ No unresolved naming migration, P0 Medallantic parity gap, silent capability
 fallback, schema reset, provisional facade/core protocol, or provisional core
 plugin protocol remains on the stable-foundation path.
 
-## 0.37 — Stable Foundation Release Candidate
 
-**Status:** Planned.
-
-**Objective:** rehearse the final release, upgrade, rollback, security, and
-support process against the exact artifacts intended for the stable foundation.
-
-### Deliver
-
-- freeze public API and schema snapshots and require explicit review for any
-  change
-- run the complete stable-foundation acceptance suite from both source and
-  built wheels on
-  every supported Python version and operating system
-- test every documented extra individually and in supported combinations from
-  isolated wheel installations
-- rehearse upgrades from every supported earlier 0.x line, rejected downgrades,
-  data/schema migrations, and documented rollback paths
-- map every mandatory security control to implementation, automated evidence,
-  owner, and residual risk
-- verify SBOMs, signatures, provenance, trusted publishing, vulnerability
-  response, private reporting, and release reproducibility
-- complete tutorials, reference material, compatibility tables, migration
-  guides, support policy, and deprecation policy against runnable fixtures
-- prove the application-pipeline testing API through a maintained external
-  project, with documented passing and failing output
-- resolve every release-blocking diagnostic, documentation contradiction, and
-  provisional compatibility alias
-
-### Exit gate
-
-The release candidate runs unchanged through the full acceptance, security,
-compatibility, packaging, and rollback rehearsals. Any required semantic,
-schema, or protocol change returns the affected area to the appropriate
-earlier gate.
-
-## 0.38 — Stable Foundation
+## 0.37 — Stable Foundation
 
 **Status:** Planned.
 
@@ -3466,7 +3431,7 @@ earlier gate.
 
 ### Stable-foundation acceptance suite
 
-The release candidate must demonstrate:
+The stable-foundation release must demonstrate:
 
 1. A code-first pipeline that generates ODCS, DTCS, and DPCS.
 2. A contract-first pipeline that normalizes to the same logical model.
@@ -3527,11 +3492,11 @@ ETLantic's stable foundation ships only when:
 ## Defined Post-Foundation Sequence
 
 All planned ETLantic releases remain in the 0.x series. This roadmap has no
-1.0 or 1.x phase: 0.38 is the stable foundation, and later capabilities use
+1.0 or 1.x phase: 0.37 is the stable foundation, and later capabilities use
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.39 through 0.53 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.52 expand ETLantic around the stable-foundation model
 without turning the core into a storage system, server, catalog, scheduler,
 IDE, cloud control plane, or AI platform. Each initiative has one assigned
 phase or a named gate in an integrated multi-phase program; none is an
@@ -3545,10 +3510,10 @@ Each minor release should:
 - ship independently installable integrations for heavyweight concerns;
 - use adoption evidence to adjust ordering without collapsing boundaries.
 
-## 0.39 — Data Connectivity and Connector SDK
+## 0.38 — Data Connectivity and Connector SDK
 
 **Status:** planned first-class connectivity program; begins after ETLantic
-0.38 ships.
+0.37 ships.
 
 **Objective:** graduate logical source, sink, and storage bindings from Future
 design studies into a versioned, capability-driven connector family with
@@ -3614,16 +3579,16 @@ and the [Storage Plugin design](docs/07_PLUGIN_SDK/STORAGE_PLUGIN.md).
 
 ### First-class control-plane program
 
-The 0.40–0.43 sequence is one first-class multi-tenant control-plane program:
+The 0.39–0.42 sequence is one first-class multi-tenant control-plane program:
 API and identity, tenant persistence, durable execution coordination, then
-policy/audit hardening. These are incubation gates for a 0.44 graduation, not
+policy/audit hardening. These are incubation gates for a 0.43 graduation, not
 four unrelated optional experiments. ETLantic core remains a library, and no
 phase claims in-process isolation for mutually untrusted Python.
 
 The authoritative integrated gates are in the
 [Multi-Tenant Control Plane Plan](docs/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
-## 0.40 — Multi-Tenant Control Plane: API and Identity Foundation
+## 0.39 — Multi-Tenant Control Plane: API and Identity Foundation
 
 **Status:** Planned CP1 incubation; not shipped in 0.33.
 
@@ -3680,7 +3645,7 @@ Acceptance:
 
 See [FastAPI Integration Plan](docs/11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md).
 
-## 0.41 — Tenant Registry, Workspaces, and Persistence Isolation
+## 0.40 — Tenant Registry, Workspaces, and Persistence Isolation
 
 **Status:** Planned CP2 incubation.
 
@@ -3734,7 +3699,7 @@ Acceptance:
 - outbound catalog export cannot mutate authoritative contracts, plans,
   baselines, or promotion state.
 
-## 0.42 — Durable Submission, State, and Reproducibility
+## 0.41 — Durable Submission, State, and Reproducibility
 
 **Status:** Planned CP3 incubation.
 
@@ -3796,12 +3761,12 @@ Acceptance:
   target-environment identity changes;
 - multi-worker chaos, disconnect/resume, and recovery tests pass.
 
-## 0.43 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
+## 0.42 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
 
 **Status:** Planned CP4 release-candidate gate.
 
 **Objective:** add the governance, noisy-neighbor controls, integrity evidence,
-and operational proof required before the integrated 0.44 graduation decision.
+and operational proof required before the integrated 0.43 graduation decision.
 
 Deliver:
 
@@ -3841,9 +3806,9 @@ Acceptance:
   promotion revalidates the exact approved revision against current policy and
   environment state.
 
-## 0.44 — First-Class Multi-Tenant Control-Plane Graduation
+## 0.43 — First-Class Multi-Tenant Control-Plane Graduation
 
-The production multi-tenant control-plane claim is a first-class 0.44 feature
+The production multi-tenant control-plane claim is a first-class 0.43 feature
 only after CP1–CP4 pass as an integrated system. Graduation requires a frozen
 supported-isolation-profile matrix, public compatibility/migration policy,
 cross-tenant conformance for every public operation, measured capacity
@@ -3854,7 +3819,7 @@ metadata identity/export, and no unresolved critical/high isolation finding.
 Failure of a mandatory gate keeps the program in release-candidate status. The
 project does not weaken “multi-tenant” to meet a release date.
 
-## 0.45 — Developer Intelligence: LSP, IDE, and Static Analysis
+## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis
 
 Deliver:
 
@@ -3956,7 +3921,7 @@ Acceptance:
 - quick fixes never import untrusted modules or resolve remote references
   implicitly.
 
-## 0.46 — Planner and Optimization SDK
+## 0.45 — Planner and Optimization SDK
 
 Deliver:
 
@@ -3977,18 +3942,18 @@ Acceptance:
 - users can compare baseline and optimized plans before execution;
 - an optimization that cannot prove boundary preservation is rejected.
 
-## 0.47 — Streaming and Event-Driven Pipelines
+## 0.46 — Streaming and Event-Driven Pipelines
 
 Deliver:
 
-- stable streaming semantics beyond the 0.38 foundation;
+- stable streaming semantics beyond the 0.37 foundation;
 - event-time, watermark, trigger, state, late-data, and replay contracts;
 - versioned change-event envelopes with insert, update, delete/tombstone,
   transaction, source-position, ordering, and schema-revision evidence;
 - bounded snapshot-to-change-stream handoff with explicit gap and overlap
   handling;
 - source offset, cursor, checkpoint, deduplication, and idempotent sink
-  semantics shared with the 0.39 connector protocol;
+  semantics shared with the 0.38 connector protocol;
 - Kafka and additional streaming provider integrations;
 - continuous `PipelineRunReport` snapshots and terminal/nonterminal status;
 - event-driven run triggers with deduplication and backpressure;
@@ -4005,7 +3970,7 @@ Acceptance:
 - unsupported delete, ordering, transaction, or schema-evolution semantics fail
   capability negotiation rather than degrading to append-only behavior.
 
-## 0.48 — Remote Execution Federation
+## 0.47 — Remote Execution Federation
 
 Deliver:
 
@@ -4041,7 +4006,7 @@ Acceptance:
   isolated deployments, prefer workload identity, and leave no unscoped
   resources after cancellation or failure.
 
-## 0.49 — AI-Assisted, Human-Governed Engineering
+## 0.48 — AI-Assisted, Human-Governed Engineering
 
 Deliver:
 
@@ -4104,7 +4069,7 @@ Acceptance:
 See [Schema Drift and Evolution Plan](docs/11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md).
 See [ETL Reliability and Recovery Plan](docs/11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md).
 
-## 0.50 — Brownfield Adoption Bridges
+## 0.49 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4140,7 +4105,7 @@ Acceptance:
 - at least one real project adopts ETLantic incrementally without a flag-day
   rewrite.
 
-## 0.51 — Operator Console
+## 0.50 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4171,7 +4136,7 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.52 — Managed Runtime and Enterprise Provider Packs
+## 0.51 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
@@ -4181,12 +4146,12 @@ Deliver:
 
 - reference OCI images and Helm deployment profiles for the control plane and
   execution hosts;
-- production hardening of the 0.48 Kubernetes Job execution provider;
+- production hardening of the 0.47 Kubernetes Job execution provider;
 - managed Spark providers for Databricks, EMR, and Spark Connect with truthful
   capability profiles;
 - optional secret-provider packages for AWS Secrets Manager, Azure Key Vault,
   Google Cloud Secret Manager, and HashiCorp Vault;
-- cloud storage and warehouse providers promoted from the 0.39 connector
+- cloud storage and warehouse providers promoted from the 0.38 connector
   program through live conformance;
 - short-lived workload identity and credential flows where supported;
 - provider-specific compatibility, support, cost, quota, region, deprecation,
@@ -4207,9 +4172,9 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.53 — TransformationModel Incubation
+## 0.52 — TransformationModel Incubation
 
-**Status:** deferred from the 0.20+ and former 0.39 tracks; begins only after
+**Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
 and provider programs have assigned ownership.
 
@@ -4271,7 +4236,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.53, ETLantic may consume TransformationModel from the workspace behind
+During 0.52, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on

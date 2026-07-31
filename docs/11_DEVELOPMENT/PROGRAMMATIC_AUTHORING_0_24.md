@@ -173,7 +173,7 @@ the client request cannot expand that authority.
 
 The 0.24 adapter proves the authoring and service contract. It does not replace
 the production-grade [FastAPI Control API](FASTAPI_INTEGRATION_PLAN.md) planned
-across the 0.40–0.44 control-plane program.
+across the 0.39–0.43 control-plane program.
 
 ## Security invariants
 

@@ -1,8 +1,8 @@
 # TransformationModel Incubation Plan
 
-> **Plan status: proposed post-foundation 0.53 incubation; not shipped.**
+> **Plan status: proposed post-foundation 0.52 incubation; not shipped.**
 >
-> The work is deferred from 0.20+ and the former 0.39 slot. Connectivity,
+> The work is deferred from 0.20+ and the former 0.38 slot. Connectivity,
 > control-plane, interoperability, operations, and provider work now precede
 > this package. Every interface on this page is illustrative until a future
 > release documents it as public API.
@@ -389,4 +389,4 @@ backend or pipeline concern enters its core; ETLantic uses only public APIs;
 and all conformance, security, packaging, performance, and migration gates pass.
 
 Until then, it remains provisional and cannot be the sole implementation behind
-an ETLantic 0.38 stable-foundation compatibility promise.
+an ETLantic 0.37 stable-foundation compatibility promise.

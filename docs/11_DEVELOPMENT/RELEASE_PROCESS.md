@@ -5,7 +5,7 @@ artifacts, compatibility policy, and documentation.
 
 ## Versioning
 
-ETLantic's roadmap contains only 0.x phases. The 0.38 release is the stable
+ETLantic's roadmap contains only 0.x phases. The 0.37 release is the stable
 foundation, and post-foundation capabilities continue in later 0.x minors.
 
 - Patch: compatible fixes and documentation within a minor line
@@ -166,7 +166,7 @@ Release notes should state:
 Major and high-risk minor releases should publish a release candidate:
 
 ```text
-0.38.0rc1
+0.37.0rc1
 ```
 
 Validate installation, end-to-end examples, external plugin compatibility, and
@@ -211,7 +211,7 @@ Official plugin releases should declare:
 
 ## Deprecations
 
-After the 0.38 stable foundation:
+After the 0.37 stable foundation:
 
 - Emit a documented warning.
 - Provide a replacement.

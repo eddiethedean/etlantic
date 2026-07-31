@@ -114,8 +114,7 @@ Medallantic milestones are release-gated with ETLantic's 0.x roadmap:
 | 0.34 | M6 | Operations, evidence, and production readiness |
 | 0.35 | M7 | Migration completion and joint freeze |
 | 0.36 | — | Joint compatibility burn-in |
-| 0.37 | — | Shared release-candidate rehearsal |
-| 0.38 | — | Stable foundation |
+| 0.37 | — | Stable foundation |
 
 The [ETLantic roadmap](../../ROADMAP.md) is authoritative for the core
 capability promoted at each phase and the joint exit gate. This document is

@@ -441,11 +441,11 @@ Spark, Delta, JSON, and nested schemas.
 
 ## Roadmap Placement
 
-Rows before 0.40 preserve the plan's original implementation decomposition;
+Rows before 0.39 preserve the plan's original implementation decomposition;
 they do not independently claim that every item in a row is shipped. Use the
 current boundary at the top of this page and
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for availability.
-Rows from 0.40 onward are future sequence.
+Rows from 0.39 onward are future sequence.
 
 | Release | Schema-drift capability |
 |---|---|
@@ -453,13 +453,13 @@ Rows from 0.40 onward are future sequence.
 | 0.4 | Runtime observations, policy decisions, reports, events |
 | 0.5–0.7 | Dataframe, SQL, Spark, streaming, and storage inspectors |
 | 0.9 | CLI, diagnostics, provider protocols, SARIF, notifications |
-| 0.40 | FastAPI inspection, history, impact, and acknowledgement routes |
-| 0.41 | Registry-backed history, search, promotion, and cross-pipeline impact |
-| 0.42 | Baselines, state linkage, replay, concurrency, reproducibility |
-| 0.43 | Approval, governance, signed observations, retention, policy evidence |
-| 0.44 | Integrated multi-tenant control-plane graduation |
-| 0.45 | IDE and notebook history, impact, proposals, and navigation |
-| 0.49 | Human-governed AI remediation proposals |
+| 0.39 | FastAPI inspection, history, impact, and acknowledgement routes |
+| 0.40 | Registry-backed history, search, promotion, and cross-pipeline impact |
+| 0.41 | Baselines, state linkage, replay, concurrency, reproducibility |
+| 0.42 | Approval, governance, signed observations, retention, policy evidence |
+| 0.43 | Integrated multi-tenant control-plane graduation |
+| 0.44 | IDE and notebook history, impact, proposals, and navigation |
+| 0.48 | Human-governed AI remediation proposals |
 
 ## Success Criteria
 

@@ -63,11 +63,11 @@ pipeline.
 These categories appear in older design pages and are **not** installable
 protocols in **0.36.0**:
 
-- General storage plugins (Snowflake, S3, Iceberg, …) — planned for 0.39; see
+- General storage plugins (Snowflake, S3, Iceberg, …) — planned for 0.38; see
   [Storage today](../06_EXECUTION/STORAGE_TODAY.md).
-- Managed resource providers — Kubernetes/reference proof in 0.48 and
-  supported provider packs in 0.52.
-- Registry plugins / approval workflows — planned through 0.41–0.44.
+- Managed resource providers — Kubernetes/reference proof in 0.47 and
+  supported provider packs in 0.51.
+- Registry plugins / approval workflows — planned through 0.40–0.43.
 
 See [Storage Plugin](STORAGE_PLUGIN.md) and
 [Resource Provider](RESOURCE_PROVIDER.md) for design stubs only.

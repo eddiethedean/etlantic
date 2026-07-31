@@ -16,7 +16,7 @@
 | Secrets | Env / file / keyring providers |
 | Observability / run history / event consumers | Shipped protocols in 0.34 (M6) |
 | Extract / Load I/O | Bind to **assets** and storage providers — **not** SourcePlugin / SinkPlugin APIs |
-| General storage / connector SDK | Planned (0.39+) — not a discoverable protocol today |
+| General storage / connector SDK | Planned (0.38+) — not a discoverable protocol today |
 | Resource providers | Not shipped |
 | Dagster / Kafka / managed registries | Planned — not APIs |
 
@@ -41,7 +41,7 @@ treated as 0.36 APIs:
 - Managed resource providers — see
   [Resource Provider](../07_PLUGIN_SDK/RESOURCE_PROVIDER.md) (Future design)
 - Registry plugins / approval workflows
-- Dagster orchestrator compiler (planned 0.50)
+- Dagster orchestrator compiler (planned 0.49)
 
 ## Next step
 

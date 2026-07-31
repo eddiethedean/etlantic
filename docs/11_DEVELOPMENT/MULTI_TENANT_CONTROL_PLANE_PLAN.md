@@ -1,8 +1,8 @@
 # Multi-Tenant Control Plane Plan
 
 > **Status: planned first-class feature program; not available in ETLantic
-> 0.36.0.** Incubation is sequenced across 0.40–0.43. A production,
-> multi-tenant compatibility claim is gated for 0.44 only after every isolation,
+> 0.36.0.** Incubation is sequenced across 0.39–0.42. A production,
+> multi-tenant compatibility claim is gated for 0.43 only after every isolation,
 > durability, policy, and operations gate on this page passes.
 >
 > **Current boundary:** Process-local registries, runtimes, caches, report
@@ -43,15 +43,15 @@ field.
 
 | Phase | Planned outcome | Claim allowed at exit |
 |---|---|---|
-| 0.38 prerequisite | Stable library foundation and frozen core contracts | Single-tenant stable foundation |
-| 0.40 / CP1 | Typed control API, identity context, authorization envelope | Control API incubation |
-| 0.41 / CP2 | Tenant/workspace registry, persistence isolation, metadata identity, and outbound OpenLineage | Tenant-aware registry and metadata-export preview |
-| 0.42 / CP3 | Durable submission, state, leases, recovery, and GitOps preview workspaces | Multi-worker and preview-workspace preview |
-| 0.43 / CP4 | Policy, quotas, audit, supply-chain, and preview-promotion gates | Multi-tenant release candidate |
-| 0.44 / CP-GA | Operational graduation of the complete program, including preview-to-production evidence | First supported multi-tenant control plane |
+| 0.37 prerequisite | Stable library foundation and frozen core contracts | Single-tenant stable foundation |
+| 0.39 / CP1 | Typed control API, identity context, authorization envelope | Control API incubation |
+| 0.40 / CP2 | Tenant/workspace registry, persistence isolation, metadata identity, and outbound OpenLineage | Tenant-aware registry and metadata-export preview |
+| 0.41 / CP3 | Durable submission, state, leases, recovery, and GitOps preview workspaces | Multi-worker and preview-workspace preview |
+| 0.42 / CP4 | Policy, quotas, audit, supply-chain, and preview-promotion gates | Multi-tenant release candidate |
+| 0.43 / CP-GA | Operational graduation of the complete program, including preview-to-production evidence | First supported multi-tenant control plane |
 
-The 0.40–0.43 releases are implementation and burn-in phases. They do not
-independently authorize an unrestricted production claim. The 0.44 gate is a
+The 0.39–0.42 releases are implementation and burn-in phases. They do not
+independently authorize an unrestricted production claim. The 0.43 gate is a
 graduation decision over the integrated program, not a promise that an HTTP
 router alone is a control plane.
 
@@ -157,7 +157,7 @@ have its own conformance claim and documented residual risk.
 | Dedicated schema | Shared database; schema per tenant | Fixed schema mapping, restricted roles, migration isolation |
 | Shared service | Shared tables and infrastructure | Composite tenant keys, database row policy where available, mandatory repository scope, defense-in-depth tests |
 
-The 0.44 graduation decision must state exactly which profiles are supported.
+The 0.43 graduation decision must state exactly which profiles are supported.
 Passing one profile does not imply the others are safe.
 
 Shared-service support requires both application-layer scope enforcement and a
@@ -410,7 +410,7 @@ The project will not advertise HA, RPO, RTO, or an SLA from architecture alone.
 Each supported deployment profile must publish measured expectations and
 operational ownership.
 
-Before 0.44 graduation:
+Before 0.43 graduation:
 
 - backup and point-in-time recovery are rehearsed for every reference store;
 - restore verifies tenant scope, integrity, migration version, and event
@@ -446,7 +446,7 @@ The conformance program must include at least:
   surface.
 
 At least one external security review and one independent deployment exercise
-are required before 0.44. Findings need owners, remediation evidence, and an
+are required before 0.43. Findings need owners, remediation evidence, and an
 explicit residual-risk decision.
 
 ## Performance and Scale Gates
@@ -463,7 +463,7 @@ Each supported deployment profile publishes reproducible baselines for:
 - worker lease/heartbeat load;
 - backup and restore time.
 
-The 0.44 exit record must name the tested envelope. “Multi-tenant” does not mean
+The 0.43 exit record must name the tested envelope. “Multi-tenant” does not mean
 unbounded tenants, users, pipelines, runs, or artifacts.
 
 ## Package and Ownership Model
@@ -482,7 +482,7 @@ security-domain rules.
 
 ## Delivery Gates
 
-### CP1 — Typed API and identity foundation (0.40)
+### CP1 — Typed API and identity foundation (0.39)
 
 Deliver:
 
@@ -502,7 +502,7 @@ Exit:
 - no heavy execution uses API-process background tasks;
 - no production multi-tenant claim is made yet.
 
-### CP2 — Registry and persistence isolation (0.41)
+### CP2 — Registry and persistence isolation (0.40)
 
 Deliver:
 
@@ -531,7 +531,7 @@ Exit:
 - outbound metadata contains neither resolved secrets nor source rows and
   cannot mutate authoritative registry state.
 
-### CP3 — Durable execution coordination (0.42)
+### CP3 — Durable execution coordination (0.41)
 
 Deliver:
 
@@ -558,7 +558,7 @@ Exit:
   target-environment identity changes;
 - multi-worker chaos and recovery tests pass.
 
-### CP4 — Policy, quota, audit, and release candidate (0.43)
+### CP4 — Policy, quota, audit, and release candidate (0.42)
 
 Deliver:
 
@@ -581,11 +581,11 @@ Exit:
   promotion revalidates the exact approved revision against current policy and
   environment state;
 - security review and independent deployment exercise are complete;
-- remaining risks are documented for the 0.44 graduation decision.
+- remaining risks are documented for the 0.43 graduation decision.
 
-### CP-GA — First-class multi-tenant graduation (0.44)
+### CP-GA — First-class multi-tenant graduation (0.43)
 
-The 0.44 claim requires all CP1–CP4 gates plus:
+The 0.43 claim requires all CP1–CP4 gates plus:
 
 1. A frozen supported-isolation-profile matrix.
 2. Public compatibility and migration policy for control-plane schemas.
@@ -645,7 +645,7 @@ These decisions block the indicated gates and cannot remain implicit:
 | Define preview workspace lifecycle, cleanup, and untrusted-fork policy | Runtime + security maintainers | Before CP3 conformance |
 | Define quota/fairness semantics and outage policy | Operations + security maintainers | Before CP4 release candidate |
 | Define audit integrity, retention, and export profile | Security + operations maintainers | Before CP4 release candidate |
-| Publish support envelope and 0.44 compatibility policy | Release + governance maintainers | Before CP-GA |
+| Publish support envelope and 0.43 compatibility policy | Release + governance maintainers | Before CP-GA |
 
 Every decision requires an ADR or an explicit roadmap decision record,
 conformance updates, migration impact, and documentation changes.

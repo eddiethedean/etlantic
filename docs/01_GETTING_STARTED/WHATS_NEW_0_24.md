@@ -14,7 +14,7 @@ and introduces lossless `etlantic.pipeline/1` JSON.
 - CLI TARGET may be a pipeline JSON file; `etlantic generate --kind definition`
 - Authoring catalog, immutable `EditCommand`s, and plan/validate previews
 - Transport-neutral `etlantic.service.AuthoringService`
-- Optional `etlantic-fastapi` reference adapter (not the 0.40–0.44 control plane)
+- Optional `etlantic-fastapi` reference adapter (not the 0.39–0.43 control plane)
 
 ## Not in 0.24
 

@@ -18,7 +18,7 @@
 - [x] Plugin SDK `/1` freeze decision — **re-scoped to 0.28+** with owners
   ([PROTOCOL_EVOLUTION.md](../07_PLUGIN_SDK/PROTOCOL_EVOLUTION.md))
 - [x] `REM-RELIABILITY-ROOT` and schema_drift + registry demoted wave executed with
-  migration notes ([REMOVAL_CANDIDATES_0_38.md](REMOVAL_CANDIDATES_0_38.md))
+  migration notes ([REMOVAL_CANDIDATES_0_37.md](REMOVAL_CANDIDATES_0_37.md))
 - [x] Wire schema ranges document the triple-minor window
 - [x] What's New / Migration 0.26→0.27 / this exit gate pass docs gates
 - [x] No wire-schema reset; control plane and GUI remain out of scope
@@ -32,7 +32,7 @@
 
 - Protocol `/1` freeze closure — owned by [Exit gate 0.28](EXIT_GATE_0_28.md)
 - Remaining demoted root aliases (`sql`, `profile`, lifecycle, …) — third wave in 0.28
-- Later 0.38 inventory items (`REM-DATACONTRACTMODEL`, experimental surfaces)
+- Later 0.37 inventory items (`REM-DATACONTRACTMODEL`, experimental surfaces)
 
 ## See also
 

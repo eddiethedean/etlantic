@@ -10,7 +10,7 @@ pip install etlantic-sqlmodel
 ```
 
 Sessions, Alembic migrations, and repository helpers are planned across
-0.40–0.44.
+0.39–0.43.
 This package focuses on schema mapping and metadata comparison only.
 
 ## Usage

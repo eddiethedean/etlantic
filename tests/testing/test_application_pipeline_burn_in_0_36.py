@@ -1,7 +1,7 @@
 """0.36 application-pipeline burn-in corpus (preview contract freeze).
 
 Canonical cases use public ``etlantic.testing`` imports. Final testing-foundation
-graduation remains 0.38; this module freezes the minimum 0.36 case/result/snapshot
+graduation remains 0.37; this module freezes the minimum 0.36 case/result/snapshot
 surface needed for burn-in evidence.
 """
 

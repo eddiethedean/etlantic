@@ -120,7 +120,7 @@ is no automatic ETLantic-wide prefix. See the normative
 ETLantic 0.36.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
 `ETLANTIC_PROJECT`, logging overrides, or output-format overrides. Names on
 [Environment Variables](ENVIRONMENT_VARIABLES.md) beyond this page remain
-proposed 0.38 design unless listed here as shipped.
+proposed 0.37 design unless listed here as shipped.
 
 See also [Production Profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) and
 [Runtime Configuration](RUNTIME_CONFIGURATION.md).

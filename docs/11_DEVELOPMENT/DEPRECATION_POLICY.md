@@ -24,16 +24,16 @@ full plan object-graph immutability.
 
 | Surface | Status | Target |
 |---|---|---|
-| `DataContractModel` alias | provisional | remove or hard-error by 0.38 |
+| `DataContractModel` alias | provisional | remove or hard-error by 0.37 |
 | Silent legacy profile `bindings` load | rejected (`PMCFG111`) unless `--accept-legacy-bindings` | done in 0.21 |
 | Name/`security_domain` production heuristics | removed in 0.19 (`security_mode` only) | n/a |
 | Missing wire `schema` defaults | removed in 0.19 | n/a |
-| Ad hoc bare profile names | fail-closed; opt-in flag | keep flag through 0.38 |
-| Structured Streaming | experimental | graduate in 0.47 or remain experimental |
+| Ad hoc bare profile names | fail-closed; opt-in flag | keep flag through 0.37 |
+| Structured Streaming | experimental | graduate in 0.46 or remain experimental |
 | `etlantic-datafusion` | experimental | graduate only with measured advantage |
 | Open plan metadata bare keys | warned (extension namespaces) | strict in production profiles (0.21) |
-| Prefect scheduler MVP | provisional | expand or freeze protocol by 0.38 |
-| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.28.0** | remainder by 0.38; see [Removal candidates](REMOVAL_CANDIDATES_0_38.md) |
+| Prefect scheduler MVP | provisional | expand or freeze protocol by 0.37 |
+| Demoted root aliases (`_DEMOTED_ALIASES`) | first wave removed in 0.26.0; second in 0.27.0; third in **0.28.0** | remainder by 0.37; see [Removal candidates](REMOVAL_CANDIDATES_0_37.md) |
 
 ### 0.x burn-in discipline (0.28 line)
 
@@ -61,7 +61,7 @@ explicit. Persistent plans should normally be regenerated.
 
 When practical, a replacement is documented and a warning is emitted for at
 least one release before removal. Security fixes may shorten that window.
-After the 0.38 stable-foundation freeze, an incompatible public API removal
+After the 0.37 stable-foundation freeze, an incompatible public API removal
 requires an explicitly scheduled 0.x migration phase and documented
 deprecation window unless a security exception applies.
 

@@ -22,7 +22,7 @@
 ## Not in 0.26
 
 - Freezing Plugin SDK `/1` (owned by 0.27 at ship; later re-scoped to 0.28+)
-- Complete 0.38 removal list (later 0.x burn-in)
+- Complete 0.37 removal list (later 0.x burn-in)
 - Production FastAPI control plane / GUI / new engines / DataFusion graduation
 
 ## Try it (pip-only)

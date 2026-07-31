@@ -74,7 +74,7 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 
 - [x] `scheduler/1` promoted to stable MVP (Prefect bounds) — decision locked
 - [x] `quality/1` retained as provisional outside full foundation claim
-- [x] Testing preview minimum contract frozen for burn-in (graduation = 0.38)
+- [x] Testing preview minimum contract frozen for burn-in (graduation = 0.37)
 - [x] All thirteen distributions build from the same candidate commit (CI package job)
 - [x] First-party plugins pass applicable public conformance from clean wheels
 - [x] Production allowlist / digest / incompatible-protocol paths fail closed
@@ -111,8 +111,8 @@ From [IMPLEMENTATION_PLAN_0_36](IMPLEMENTATION_PLAN_0_36.md):
 
 ## Residual / follow-ons
 
-- **0.37** — release-candidate rehearsal and freeze
-- **0.38** — application-pipeline testing foundation graduation; remaining
+- **0.37** — stable foundation: release rehearsal, application-pipeline
+  testing foundation graduation; remaining
   provisional surfaces dispositioned for the stable foundation
-- Multi-tenant control plane — **0.40+**
+- Multi-tenant control plane — **0.39+**
 - Removal of transitional SparkForge adapters — **major only**

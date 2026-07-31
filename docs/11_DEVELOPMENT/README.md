@@ -42,7 +42,7 @@ released.
 - [Exit gate 0.28](EXIT_GATE_0_28.md) (Done)
 - [Migration 0.26 → 0.27](MIGRATION_0_26_TO_0_27.md)
 - [Exit gate 0.27](EXIT_GATE_0_27.md)
-- [0.38 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_38.md)
+- [0.37 stable-foundation removal candidates](REMOVAL_CANDIDATES_0_37.md)
 - [Migration 0.24 → 0.25](MIGRATION_0_24_TO_0_25.md)
 - [Exit gate 0.25](EXIT_GATE_0_25.md)
 - [Migration 0.23 → 0.24](MIGRATION_0_23_TO_0_24.md)

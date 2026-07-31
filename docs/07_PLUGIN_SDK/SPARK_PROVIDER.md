@@ -1,8 +1,8 @@
 # Spark Provider
 
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
-Kubernetes and one managed Spark reference path are planned for 0.48; supported
-Databricks, EMR, and Spark Connect provider packs are assigned to 0.52. See the
+Kubernetes and one managed Spark reference path are planned for 0.47; supported
+Databricks, EMR, and Spark Connect provider packs are assigned to 0.51. See the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
 
 A **Spark Provider** implements the ETLantic Resource Provider API for

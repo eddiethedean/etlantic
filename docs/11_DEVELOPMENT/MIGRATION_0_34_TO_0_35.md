@@ -26,7 +26,7 @@
 2. Re-validate and re-plan pipelines after the pin bump.
 
 3. Optional: adopt `etlantic.testing` pipeline-case helpers for local fixtures
-   (preview API — not the 0.38 graduated foundation).
+   (preview API — not the 0.37 graduated foundation).
 
 4. Optional: run Medallantic inventory against SparkForge projects before
    converting definitions:

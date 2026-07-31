@@ -305,7 +305,7 @@ artifact = plan.compile(target="airflow")
 diagram = CustomerPipeline.to_mermaid()
 ```
 
-Exact convenience methods remain a proposed 0.38 API; the architectural rule is
+Exact convenience methods remain a proposed 0.37 API; the architectural rule is
 that each operation consumes the same resolved plan.
 
 ## Caching

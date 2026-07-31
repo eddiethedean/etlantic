@@ -40,7 +40,7 @@
 
 - Automated SparkForge project inventory (**M7 / 0.35**)
 - First-party SQL/Delta run-history PyPI plugins (extension pattern documented)
-- Multi-tenant control plane (**0.40+**)
+- Multi-tenant control plane (**0.39+**)
 
 ## See also
 

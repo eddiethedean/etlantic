@@ -68,7 +68,7 @@ app = create_reference_app()
 ```
 
 `etlantic-fastapi` publishes OpenAPI from the public schemas. It is a proof
-adapter, **not** the production 0.40–0.44 control API. Runs are **synchronous**:
+adapter, **not** the production 0.39–0.43 control API. Runs are **synchronous**:
 `submit_run` completes before returning; `cancel_run` reports that in-flight
 cancel is unsupported on this reference adapter.
 

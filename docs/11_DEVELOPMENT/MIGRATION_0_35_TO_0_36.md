@@ -48,7 +48,7 @@
 
 4. Optional: continue using `etlantic.testing` pipeline-case helpers. The
    0.36 burn-in freezes the minimum preview contract; full foundation
-   graduation remains **0.38**.
+   graduation remains **0.37**.
 
 5. Scheduler adopters: Prefect-bounded `scheduler/1` is the stable MVP path.
    Airflow remains a compile target via `etlantic-airflow` (no core Airflow
@@ -77,7 +77,7 @@
 |---|---|---|
 | `etlantic.scheduler/1` | Provisional / off freeze path | **Stable MVP** on foundation path (Prefect bounds) |
 | `etlantic.quality/1` | Provisional wire | Remains **provisional** (not a full stable-foundation claim) |
-| `etlantic.testing` preview | Preview | Minimum burn-in contract **frozen**; graduation at **0.38** |
+| `etlantic.testing` preview | Preview | Minimum burn-in contract **frozen**; graduation at **0.37** |
 | Core Plugin SDK `/1` families | Frozen since 0.28 | Unchanged (additive only) |
 
 ## Rollback

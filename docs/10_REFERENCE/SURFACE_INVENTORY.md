@@ -12,8 +12,8 @@ Stability classes:
 | Class | Meaning |
 |---|---|
 | `stable` | Supported within the documented 0.36 reference envelope |
-| `provisional` | Public but may change with migration notes before the 0.38 stable foundation |
-| `experimental` | May change or be removed without a 0.38 stable-foundation obligation |
+| `provisional` | Public but may change with migration notes before the 0.37 stable foundation |
+| `experimental` | May change or be removed without a 0.37 stable-foundation obligation |
 | `compatibility` | 0.x root alias (warn once); prefer the owning namespace |
 | `private` | Underscore modules / internal helpers — do not import |
 
@@ -41,7 +41,7 @@ facade aliases were removed in waves (see
 [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md), and
 [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md)). Remaining
 demoted 0.x root aliases warn once — see
-[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md).
+[Removal candidates](../11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md).
 
 ## Lazy namespaces
 

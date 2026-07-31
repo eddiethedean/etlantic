@@ -35,7 +35,7 @@
    | `diff_pipelines`, `load_bundle`, … | `from etlantic.interchange import …` |
 
    Remaining demoted aliases still warn once; see
-   [Removal candidates](REMOVAL_CANDIDATES_0_38.md).
+   [Removal candidates](REMOVAL_CANDIDATES_0_37.md).
 
 4. Plugin authors: pin `etlantic>=0.26.0,<0.27` and re-run public conformance
    suites. Protocol `/1` is not frozen yet.
@@ -51,4 +51,4 @@ remain loadable (0.24→0.25→0.26 window).
 - [What's New 0.26](../01_GETTING_STARTED/WHATS_NEW_0_26.md)
 - [Exit gate 0.26](EXIT_GATE_0_26.md)
 - [Wire schema ranges](../10_REFERENCE/WIRE_SCHEMA_RANGES.md)
-- [Removal candidates](REMOVAL_CANDIDATES_0_38.md)
+- [Removal candidates](REMOVAL_CANDIDATES_0_37.md)

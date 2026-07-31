@@ -12,7 +12,7 @@
 - **Authoring APIs** — `inspect_definition`, `rewrite_definition`, and
   `definition_provenance` for bounded, secret-free definition work
 - **Testing preview** — `PipelineTestCase` / fixtures / snapshots under
-  `etlantic.testing` (graduates at 0.38)
+  `etlantic.testing` (graduates at 0.37)
 - **Joint freeze prep** — facade protocol/version `1` + generated-definition
   provenance; transitional adapters retained until a documented major
 
@@ -27,8 +27,8 @@
 ## Not in 0.35
 
 - Quantified joint upgrade burn-in (**0.36**)
-- Stable application-pipeline testing foundation (**0.38**)
-- Multi-tenant control plane (**0.40+**)
+- Stable application-pipeline testing foundation (**0.37**)
+- Multi-tenant control plane (**0.39+**)
 - Removal of transitional SparkForge adapters (major only)
 
 ## See also

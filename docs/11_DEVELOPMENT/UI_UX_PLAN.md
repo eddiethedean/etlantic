@@ -45,7 +45,7 @@ acceptance gates pass.
 ## Phase 1 — CLI clarity and guided recovery
 
 **Roadmap alignment:** stable-foundation tooling follow-up and a prerequisite
-for 0.45 developer intelligence.
+for 0.44 developer intelligence.
 
 ### Deliver
 
@@ -76,8 +76,8 @@ for 0.45 developer intelligence.
 
 ## Phase 2 — Interactive self-contained pipeline workspace
 
-**Roadmap alignment:** visualization/tooling work that can begin before 0.45
-and becomes an IDE preview substrate in 0.45.
+**Roadmap alignment:** visualization/tooling work that can begin before 0.44
+and becomes an IDE preview substrate in 0.44.
 
 ### React architecture spike
 
@@ -107,7 +107,7 @@ The spike must:
   interaction latency, memory, and graph-size limits;
 - evaluate keyboard navigation, focus management, reduced motion,
   color-independent status, and screen-reader behavior;
-- propose the component/theme boundary and the reuse contract for the 0.51
+- propose the component/theme boundary and the reuse contract for the 0.50
   Operator Console;
 - prohibit arbitrary user-authored frontend code unless a later isolated
   extension design passes a separate security review.
@@ -159,7 +159,7 @@ dependencies outside ETLantic core.
 
 ## Phase 3 — Run dashboard and visual comparison
 
-**Roadmap alignment:** local read-only precursor to the 0.51 Operator Console.
+**Roadmap alignment:** local read-only precursor to the 0.50 Operator Console.
 
 ### Deliver
 
@@ -184,7 +184,7 @@ dependencies outside ETLantic core.
 
 ## Phase 4 — Fast authoring feedback and editor integration
 
-**Roadmap alignment:** 0.45 Developer Intelligence.
+**Roadmap alignment:** 0.44 Developer Intelligence.
 
 ### Deliver
 
@@ -208,7 +208,7 @@ dependencies outside ETLantic core.
 
 ## Phase 5 — Hosted, governed product experience
 
-**Roadmap alignment:** 0.40–0.44 establish the control-plane substrate; 0.51
+**Roadmap alignment:** 0.39–0.43 establish the control-plane substrate; 0.50
 delivers the read-only-first Operator Console and governed actions.
 
 ### Deliver
@@ -226,7 +226,7 @@ delivers the read-only-first Operator Console and governed actions.
 
 ### Gates
 
-1. No hosted UI is claimed before the applicable 0.40–0.44 isolation,
+1. No hosted UI is claimed before the applicable 0.39–0.43 isolation,
    authorization, idempotency, policy, quota, audit, and recovery gates pass.
 2. Every mutation follows the same typed API and produces the same audit
    evidence as SDK, CLI, and HTTP clients.

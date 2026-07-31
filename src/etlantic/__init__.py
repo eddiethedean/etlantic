@@ -518,7 +518,7 @@ def __getattr__(name: str) -> Any:
                 f"prefer importing from {module_name} "
                 f"(or use the owning lazy namespace). "
                 "See docs/11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md and "
-                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_38.md.",
+                "docs/11_DEVELOPMENT/REMOVAL_CANDIDATES_0_37.md.",
                 DeprecationWarning,
                 stacklevel=2,
             )

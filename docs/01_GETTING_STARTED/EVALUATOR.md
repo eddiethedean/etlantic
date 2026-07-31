@@ -37,7 +37,7 @@ manager.
 | Lossless `etlantic.pipeline/1` JSON TARGET | Yes |
 | Authoring catalog + `EditCommand`s | Yes |
 | Service facade (`etlantic.service`) | Yes |
-| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not the 0.40–0.44 control plane) |
+| FastAPI reference adapter (`etlantic-fastapi`) | Yes (reference only; not the 0.39–0.43 control plane) |
 | Validation and secret-free `PipelinePlan` | Yes |
 | [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange | Yes |
 | Local in-process runtime + run reports | Yes |
@@ -57,10 +57,10 @@ manager.
 | Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14) |
 | Portable SQL compiler (kernel + relational `/1`) | Yes (0.15) |
 | Public portable transform conformance suite | Yes (0.14) |
-| Multi-tenant durable orchestration | No — planned through CP3 / 0.42 |
+| Multi-tenant durable orchestration | No — planned through CP3 / 0.41 |
 | Formal SLA / support response times | No |
-| Production GUI | No in 0.36 — read-only-first operator console planned for 0.51 |
-| Multi-tenant control plane | No in 0.36 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.40–0.43 incubation and 0.44 graduation |
+| Production GUI | No in 0.36 — read-only-first operator console planned for 0.50 |
+| Multi-tenant control plane | No in 0.36 — [planned first-class](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) for 0.39–0.42 incubation and 0.43 graduation |
 
 ## Security posture
 
@@ -130,11 +130,11 @@ How to read status labels in deeper chapters:
   `examples/airflow_compile.py` and `etlantic-airflow` instead
 - Treating Structured Streaming APIs as stable (they are experimental)
 - AWS Secrets Manager / Vault (not shipped; optional provider packs planned for
-  0.52); OS keyring **is** available via `etlantic-keyring`
+  0.51); OS keyring **is** available via `etlantic-keyring`
 - Process-local / durable file reports as an audit system of record
-- Stable-foundation compatibility guarantees (planned for 0.38)
+- Stable-foundation compatibility guarantees (planned for 0.37)
 - Managed Databricks/EMR/Connect Spark providers (reference proof planned for
-  0.48; supported packs planned for 0.52)
+  0.47; supported packs planned for 0.51)
 - **Undocumented advanced portable profiles** — Polars and PySpark ship the
   documented 0.17 Wave 1 / Wave 2 families; Pandas and SQL remain at kernel +
   `portable-relational/1`. Continuation profiles remain outside the advertised

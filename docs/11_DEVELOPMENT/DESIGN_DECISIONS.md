@@ -135,7 +135,7 @@ remain valid wherever ETLantic accepts `Data`.
 
 Prefer a direct alias over subclassing unless a concrete integration hook
 requires a subclass. Deprecate the ETLantic-facing `DataContractModel` name
-before the 0.38 stable foundation.
+before the 0.37 stable foundation.
 
 ## DD-011: SQL and PySpark Are Backends, Not New Models
 

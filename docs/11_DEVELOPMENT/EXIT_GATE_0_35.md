@@ -57,6 +57,6 @@
 ## Residual / follow-ons (0.36+)
 
 - Quantified joint upgrade burn-in (`0.34→0.35`, `0.35→0.36`) — **0.36**
-- Application-pipeline testing foundation graduation — **0.38**
-- Multi-tenant control plane — **0.40+**
+- Application-pipeline testing foundation graduation — **0.37**
+- Multi-tenant control plane — **0.39+**
 - Removal of transitional SparkForge adapters — **major only**

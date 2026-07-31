@@ -19,7 +19,7 @@ After a pipeline has been modeled, validated, and planned, an execution plugin
 realizes the resulting **Pipeline Plan** using a specific runtime such as local
 Python, Polars, Airflow, Prefect (direct scheduler), or another supported
 backend. Dagster and Prefect **orchestrator compilers** are not shipped; their
-first-class brownfield bridges are assigned to 0.50. `etlantic-prefect` ships
+first-class brownfield bridges are assigned to 0.49. `etlantic-prefect` ships
 today as a local MVP direct-execution scheduler.
 
 ETLantic intentionally separates execution from modeling. The core library

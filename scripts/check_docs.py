@@ -374,11 +374,11 @@ def check_control_plane_plan() -> None:
     text = plan.read_text(encoding="utf-8")
     required_plan_markers = (
         "Status: planned first-class feature program",
-        "0.40 / CP1",
-        "0.41 / CP2",
-        "0.42 / CP3",
-        "0.43 / CP4",
-        "0.44 / CP-GA",
+        "0.39 / CP1",
+        "0.40 / CP2",
+        "0.41 / CP3",
+        "0.42 / CP4",
+        "0.43 / CP-GA",
         "deny by default",
         "transactional outbox",
         "leases and fencing tokens",
@@ -421,11 +421,11 @@ def check_control_plane_plan() -> None:
 
     roadmap = (ROOT / "ROADMAP.md").read_text(encoding="utf-8")
     for marker in (
-        "## 0.40 — Multi-Tenant Control Plane: API and Identity Foundation",
-        "## 0.41 — Tenant Registry, Workspaces, and Persistence Isolation",
-        "## 0.42 — Durable Submission, State, and Reproducibility",
-        "## 0.43 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance",
-        "## 0.44 — First-Class Multi-Tenant Control-Plane Graduation",
+        "## 0.39 — Multi-Tenant Control Plane: API and Identity Foundation",
+        "## 0.40 — Tenant Registry, Workspaces, and Persistence Isolation",
+        "## 0.41 — Durable Submission, State, and Reproducibility",
+        "## 0.42 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance",
+        "## 0.43 — First-Class Multi-Tenant Control-Plane Graduation",
     ):
         if marker not in roadmap:
             raise SystemExit(f"ROADMAP.md missing control-plane gate {marker!r}")
@@ -454,18 +454,18 @@ def check_zero_x_roadmap_phases() -> None:
 
     required_markers = (
         "This roadmap has no\n1.0 or 1.x phase",
-        "## 0.38 — Stable Foundation",
-        "## 0.39 — Data Connectivity and Connector SDK",
-        "## 0.44 — First-Class Multi-Tenant Control-Plane Graduation",
-        "## 0.45 — Developer Intelligence: LSP, IDE, and Static Analysis",
-        "## 0.46 — Planner and Optimization SDK",
-        "## 0.47 — Streaming and Event-Driven Pipelines",
-        "## 0.48 — Remote Execution Federation",
-        "## 0.49 — AI-Assisted, Human-Governed Engineering",
-        "## 0.50 — Brownfield Adoption Bridges",
-        "## 0.51 — Operator Console",
-        "## 0.52 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.53 — TransformationModel Incubation",
+        "## 0.37 — Stable Foundation",
+        "## 0.38 — Data Connectivity and Connector SDK",
+        "## 0.43 — First-Class Multi-Tenant Control-Plane Graduation",
+        "## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis",
+        "## 0.45 — Planner and Optimization SDK",
+        "## 0.46 — Streaming and Event-Driven Pipelines",
+        "## 0.47 — Remote Execution Federation",
+        "## 0.48 — AI-Assisted, Human-Governed Engineering",
+        "## 0.49 — Brownfield Adoption Bridges",
+        "## 0.50 — Operator Console",
+        "## 0.51 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.52 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:

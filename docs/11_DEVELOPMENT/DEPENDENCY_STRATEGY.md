@@ -462,7 +462,7 @@ distributions only.
 
 ### FastAPI integration
 
-The 0.40–0.44 control API belongs in a separate `etlantic-fastapi`
+The 0.39–0.43 control API belongs in a separate `etlantic-fastapi`
 distribution.
 
 Recommended dependencies:
@@ -534,7 +534,7 @@ identity rules it owns. The standard library plus small owned algorithms should
 cover the initial DAG requirements.
 
 Use NetworkX as a development oracle in property tests. Re-evaluate it for
-workspace-scale lineage and advanced 0.45–0.48 graph analysis.
+workspace-scale lineage and advanced 0.44–0.47 graph analysis.
 
 ### Msgspec and Orjson
 
@@ -654,7 +654,7 @@ them in the core project's optional-dependency table.
 | hvac | Vault secret-provider plugin | Adopt |
 | onepassword-sdk | Optional secret-provider plugin | Evaluate after provider conformance |
 | Pluggy | Deferred | Re-evaluate if true hook requirements grow |
-| NetworkX | Development/0.45–0.48 | Use as test oracle; avoid core dependency |
+| NetworkX | Development/0.44–0.47 | Use as test oracle; avoid core dependency |
 | Msgspec/orjson | Deferred | Add only after benchmarks |
 
 ## Review Cadence

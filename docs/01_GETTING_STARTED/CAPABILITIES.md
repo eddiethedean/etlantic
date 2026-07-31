@@ -153,20 +153,20 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
 | Capability | Status |
 |---|---|
-| Application-pipeline testing helpers | **Available (preview)** in 0.36 (`etlantic.testing`); graduation planned for 0.38 |
-| Source/sink/storage connector SDK and reference set | Planned first-class for 0.39 |
-| OpenLineage metadata interoperability | Planned as a tenant-aware 0.41 gate |
-| GitOps preview-to-production workflow | Planned across 0.42–0.44 |
+| Application-pipeline testing helpers | **Available (preview)** in 0.36 (`etlantic.testing`); graduation planned for 0.37 |
+| Source/sink/storage connector SDK and reference set | Planned first-class for 0.38 |
+| OpenLineage metadata interoperability | Planned as a tenant-aware 0.40 gate |
+| GitOps preview-to-production workflow | Planned across 0.41–0.43 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.48; optional supported packs planned for 0.52 |
-| Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.50 |
-| Read-only-first operator console | Planned first-class for 0.51 |
-| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.52 |
-| TransformationModel incubation | Deferred to 0.53 |
-| Full LSP server productization | Continues in 0.45 |
-| Registry-backed schema history | Continues in 0.41 |
-| Production multi-tenant control plane | **Planned first-class**: 0.40–0.43 incubation → 0.44 graduation (0.36 ships only the thin reference adapter) |
-| Stable-foundation compatibility guarantees | Planned for 0.38 |
+| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.47; optional supported packs planned for 0.51 |
+| Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.49 |
+| Read-only-first operator console | Planned first-class for 0.50 |
+| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.51 |
+| TransformationModel incubation | Deferred to 0.52 |
+| Full LSP server productization | Continues in 0.44 |
+| Registry-backed schema history | Continues in 0.40 |
+| Production multi-tenant control plane | **Planned first-class**: 0.39–0.42 incubation → 0.43 graduation (0.36 ships only the thin reference adapter) |
+| Stable-foundation compatibility guarantees | Planned for 0.37 |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 
