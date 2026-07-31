@@ -6,6 +6,7 @@ from typing import Any, Protocol
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.plugin_trust import (
+    _normalize_allowlist,
     allowlist_pin_invalid,
     empty_production_allowlist_message,
     is_builtin_allowlist_exempt,
@@ -99,7 +100,7 @@ class BaseAuthorizationPolicy:
                 )
             return authorized, diagnostics, events
 
-        allowlist = dict(profile.plugin_allowlist or {})
+        allowlist = _normalize_allowlist(dict(profile.plugin_allowlist or {}))
         production = is_production_profile(profile)
 
         if not allowlist:
@@ -166,6 +167,30 @@ class BaseAuthorizationPolicy:
             listed_name = next((c for c in candidates if c in allowlist), None)
             if listed_name is not None:
                 pin = allowlist.get(listed_name)
+                if pin in (None, "") and production:
+                    diagnostics.append(
+                        Diagnostic(
+                            code="PMPLUG403",
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Production plugin_allowlist entry for "
+                                f"{item.distribution_name or item.name!r} "
+                                f"requires a non-empty version pin "
+                                f"(for example '==0.36.0')."
+                            ),
+                            path=("plugin", item.distribution_name or item.name),
+                            phase="plugin_authorize",
+                        )
+                    )
+                    events.append(
+                        _plugin_event(
+                            run_id=run_id,
+                            item=_with_auth(item, "denied"),
+                            outcome="denied",
+                            message="Production allowlist pin required.",
+                        )
+                    )
+                    continue
                 if allowlist_pin_invalid(pin if isinstance(pin, str) else None):
                     diagnostics.append(
                         Diagnostic(
@@ -190,7 +215,12 @@ class BaseAuthorizationPolicy:
                     continue
 
             ok = any(
-                plugin_allowed(name=str(c), version=version, allowlist=allowlist)
+                plugin_allowed(
+                    name=str(c),
+                    version=version,
+                    allowlist=allowlist,
+                    require_pin=production,
+                )
                 for c in candidates
             )
             if ok:

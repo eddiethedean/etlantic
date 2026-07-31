@@ -825,8 +825,9 @@ def _contracts_compatible(producer: type[Any], consumer: type[Any]) -> bool:
     """Return True when producer/consumer contracts are the same logical type.
 
     Exact Python identity remains the primary check. Distinct classes that share
-    the same published ODCS/CCM identity must also share a compatible schema
-    fingerprint — published id alone is not enough.
+    the same published ODCS/CCM identity must also share compatible structure
+    (field names + logical types). Full fingerprints may differ after ODCS
+    round-trips due to incidental metadata, so structural equality is the bar.
     """
     if producer is consumer:
         return True
@@ -837,10 +838,17 @@ def _contracts_compatible(producer: type[Any], consumer: type[Any]) -> bool:
     try:
         from etlantic.schema_drift import normalize_schema_from_model
 
-        return (
-            normalize_schema_from_model(producer).fingerprint()
-            == normalize_schema_from_model(consumer).fingerprint()
-        )
+        prod_schema = normalize_schema_from_model(producer)
+        cons_schema = normalize_schema_from_model(consumer)
+        if prod_schema.fingerprint() == cons_schema.fingerprint():
+            return True
+        prod_fields = {
+            (field.name, str(field.logical_type or "")) for field in prod_schema.fields
+        }
+        cons_fields = {
+            (field.name, str(field.logical_type or "")) for field in cons_schema.fields
+        }
+        return prod_fields == cons_fields and bool(prod_fields)
     except Exception:
         # If schema normalization fails, fail closed on published-id-only match.
         return False
