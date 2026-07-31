@@ -445,6 +445,8 @@ async def _execute_portable(
     node: Node,
     context: DataframeExecutionContext,
 ) -> Any:
+    from collections.abc import Mapping
+
     from etlantic.profile import Profile, resolve_profile
     from etlantic.transform.compiler import (
         TransformCompileContext,
@@ -455,8 +457,8 @@ async def _execute_portable(
     )
 
     profile = getattr(plan, "profile_snapshot", None)
-    if isinstance(profile, dict):
-        profile = Profile.from_plan_snapshot(profile)
+    if isinstance(profile, Mapping) and not isinstance(profile, Profile):
+        profile = Profile.from_plan_snapshot(dict(profile))
     elif not isinstance(profile, Profile):
         profile = resolve_profile(getattr(plan, "profile_name", None))
 

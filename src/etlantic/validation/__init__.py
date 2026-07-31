@@ -775,9 +775,7 @@ def _validate_port_compatibility(
                             f"an untyped port; failing closed."
                         ),
                         path=("pipeline", edge.consumer_node, edge.consumer_port),
-                        related=(
-                            ("pipeline", edge.producer_node, edge.producer_port),
-                        ),
+                        related=(("pipeline", edge.producer_node, edge.producer_port),),
                         help=(
                             "Annotate both Extract/Load and Input/Output ports "
                             "with compatible Data contracts."

@@ -364,6 +364,8 @@ async def execute_portable_spark_step(
     session_handle: SparkSessionHandle | None = None,
 ) -> Any:
     """Execute a portable_compiled step on Spark without region UDF fusion."""
+    from collections.abc import Mapping
+
     from etlantic.profile import Profile, resolve_profile
     from etlantic.transform.compiler import (
         TransformCompileContext,
@@ -384,8 +386,8 @@ async def execute_portable_spark_step(
         )
 
     profile = getattr(plan, "profile_snapshot", None)
-    if isinstance(profile, dict):
-        profile = Profile.from_plan_snapshot(profile)
+    if isinstance(profile, Mapping) and not isinstance(profile, Profile):
+        profile = Profile.from_plan_snapshot(dict(profile))
     elif not isinstance(profile, Profile):
         profile = resolve_profile(getattr(plan, "profile_name", None))
 

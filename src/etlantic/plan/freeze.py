@@ -1,36 +1,35 @@
 """Helpers that freeze plan-owned nested mappings, lists, and sets.
 
-Dataclass instances owned by plans have known mapping fields frozen in place
-(``metadata``, ``requirements``, ``support_summary``, ``portable_plan``).
+Not full object-graph immutability: dataclass instances and unknown objects
+pass through unchanged. Nested dataclass fields stay mutable so execution can
+``deepcopy`` portable plans and other descriptor payloads.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import fields, is_dataclass
+from dataclasses import is_dataclass
 from types import MappingProxyType
 from typing import Any
 
-_DATACLASS_MAPPING_FIELDS = frozenset(
-    {
-        "metadata",
-        "requirements",
-        "support_summary",
-        "portable_plan",
-    }
-)
-
 
 def deep_freeze(value: Any) -> Any:
-    """Freeze nested mappings, sequences, sets, and plan dataclass fields.
+    """Freeze nested mappings, sequences, and sets for plan-owned values.
 
     Args:
         value: Arbitrary nested value owned by a plan graph.
 
     Returns:
         A structure where mappings become ``MappingProxyType``, lists/tuples
-        become tuples, and sets become frozensets. Dataclass instances have
-        known mapping fields frozen via ``object.__setattr__``.
+        become tuples, and sets become frozensets. Primitives, dataclass
+        instances, and unknown objects are returned unchanged (fields are
+        not recursively frozen — ``MappingProxyType`` is not picklable, and
+        runtime portable compilation deep-copies descriptor payloads).
+
+    Note:
+        Callers may still observe mutation if they retain references to
+        unfrozen dataclass fields or opaque objects. Top-level plan maps
+        (implementations, metadata, …) are still frozen via this helper.
     """
     if value is None or isinstance(value, (bool, int, float, str, bytes, complex)):
         return value
@@ -45,15 +44,6 @@ def deep_freeze(value: Any) -> Any:
     if isinstance(value, (set, frozenset)):
         return frozenset(deep_freeze(v) for v in value)
     if is_dataclass(value) and not isinstance(value, type):
-        names = {f.name for f in fields(value)}
-        for field_name in _DATACLASS_MAPPING_FIELDS:
-            if field_name not in names:
-                continue
-            field_val = getattr(value, field_name)
-            if field_val is None:
-                continue
-            if isinstance(field_val, (dict, Mapping, list, tuple, set, frozenset)):
-                object.__setattr__(value, field_name, deep_freeze(field_val))
         return value
     return value
 

@@ -654,9 +654,7 @@ def _freeze_built_plan(plan: PipelinePlan) -> PipelinePlan:
     object.__setattr__(plan, "plugin_versions", deep_freeze(plan.plugin_versions))
     object.__setattr__(plan, "intents", deep_freeze(plan.intents))
     object.__setattr__(plan, "profile_snapshot", deep_freeze(plan.profile_snapshot))
-    object.__setattr__(
-        plan, "execution_settings", deep_freeze(plan.execution_settings)
-    )
+    object.__setattr__(plan, "execution_settings", deep_freeze(plan.execution_settings))
     object.__setattr__(plan, "metadata", deep_freeze(plan.metadata))
     return plan
 
@@ -1103,8 +1101,7 @@ def _ambiguous_impls_error(node_name: str, native_impls: dict[str, Any]) -> None
 
 def _missing_implementation_error(node_name: str, requested_engine: str) -> None:
     raise PipelineValidationError(
-        f'Step "{node_name}" has no implementation for engine '
-        f"{requested_engine!r}.",
+        f'Step "{node_name}" has no implementation for engine {requested_engine!r}.',
         report=ValidationReport.from_diagnostics(
             [
                 Diagnostic(

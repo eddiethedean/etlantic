@@ -47,9 +47,7 @@ _SECRET_INLINE_RE = re.compile(
     r"""\s*[=:]\s*['\"]?[^\s'\",;]+"""
 )
 _BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*)?bearer\s+[A-Za-z0-9\-._~+/]+=*")
-_JWT_RE = re.compile(
-    r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"
-)
+_JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
 _JSON_SECRET_RE = re.compile(
     r'(?i)("(?:password|passwd|pwd|secret|token|api[_-]?key|credential|'
     r"authorization|auth|jwt|bearer|"
