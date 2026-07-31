@@ -9,6 +9,7 @@
 |---|---|---|
 | Pipeline author | Author essentials below, [CLI](CLI.md) | [Authoring API](API_AUTHORING.md), [Plan and runtime](API_PLAN_RUNTIME.md) |
 | Plugin author | [Protocols](API_PROTOCOLS.md) | [Plugin SDK](../07_PLUGIN_SDK/README.md), [Testing plugins](../07_PLUGIN_SDK/TESTING_PLUGINS.md) |
+| Control-plane embedder | [Control plane API (CP1)](CONTROL_PLANE_API.md) | [`etlantic-fastapi`](api_optional/etlantic_fastapi.md), [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) |
 | CI / ops | [CLI](CLI.md), [Runtime configuration](RUNTIME_CONFIGURATION.md) | [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) |
 
 ## Recommended imports
@@ -28,6 +29,8 @@ etl.dataframe   # dataframe plugin protocols
 etl.sql         # SQL plugin protocols
 etl.testing     # conformance suites and fault injection
 etl.quality     # provisional portable quality AST / gates
+etl.connectors  # source / sink / storage connector protocols
+etl.control_plane  # CP1 identity, authz, memory stores (provisional)
 ```
 
 You may also import curated symbols directly:
@@ -113,6 +116,7 @@ Optional plugins document factories in package READMEs. See
 - [Plan and runtime](API_PLAN_RUNTIME.md) — validation, profiles, plan, runtime, storage, secrets, contract interchange, **Gate A tabular interchange**
 - [Quality](API_QUALITY.md) — provisional `etlantic.quality/1` AST, gates, codecs
 - [Protocols](API_PROTOCOLS.md) — dataframe, SQL, Spark, orchestration, viz, testing, reliability
+- [Control plane API (CP1)](CONTROL_PLANE_API.md) — `etl.control_plane`, PMCP errors, FastAPI dual surface
 
 !!! note "Core API Reference scope"
     MkDocs API generation covers **core** `src/etlantic` (and Medallantic where

@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const isExperimentalExecution = experimentalExecutionPages.some((name) =>
     path.includes(`/06_EXECUTION/${name}/`)
   );
-  // Only these unshipped provider protocol pages are future in 0.38.
+  // Only these unshipped provider protocol pages are future in 0.39.
   const futurePluginSdkPages = [
     "RESOURCE_PROVIDER",
   ];

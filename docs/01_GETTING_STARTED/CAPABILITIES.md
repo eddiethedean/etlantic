@@ -33,7 +33,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.38 |
+| Topic | ETLantic 0.39 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots |
@@ -42,17 +42,17 @@ Fit check: [Compare](COMPARE.md).
 
 Experimental features remain experimental. Multi-tenant isolation, deployment
 topology, compliance, and advanced control planes remain adopter-owned in
-0.37. Roadmap programs live under Contribute → Maintainers — not day-0 reading
-(see the
+0.39 (CP1 is incubated; production isolation remains **0.43**). Roadmap
+programs live under Contribute → Maintainers — not day-0 reading (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
-## Supported standards policy (0.38)
+## Supported standards policy (0.39)
 
-For the 0.38 foundation envelope, ETLantic supports these standards and
+For the 0.39 foundation envelope, ETLantic supports these standards and
 toolkits at the declared ranges (exact pins and protocol notes:
 [Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
 
-| Standard / surface | 0.38 foundation policy |
+| Standard / surface | 0.39 foundation policy |
 |---|---|
 | Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
 | ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
@@ -192,7 +192,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | TransformationModel incubation | Deferred to 0.52 |
 | Full LSP server productization | Continues in 0.44 |
 | Registry-backed schema history | Continues in 0.40 |
-| Production multi-tenant control plane | **Planned first-class**: 0.39–0.42 incubation → 0.43 graduation (0.38 ships only the thin reference adapter) |
+| Production multi-tenant control plane | **Planned first-class**: CP1 incubated in 0.39 → 0.40–0.42 continue incubation → **0.43** graduation (CP1 ≠ production multi-tenant isolation) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |

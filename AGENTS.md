@@ -13,7 +13,18 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 
-Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`, `etlantic.testing`, `etlantic.quality`
+Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
+`etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`,
+`etlantic.testing`, `etlantic.quality`, `etlantic.connectors`,
+`etlantic.control_plane`
+
+## FastAPI dual surface
+
+- **CP1 control plane:** `ETLanticAPI` / `include_router` / `create_app`
+  (durable accept, authz, `/health` + `/ready`)
+- **Non-CP reference:** `create_reference_app` (thin authoring demo only)
+- Continuous directory watchers are **not** in core; use optional submitters
+  (for example `etlantic_fastapi.landing_sensor`)
 
 ## Security
 

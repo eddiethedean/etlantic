@@ -4,10 +4,11 @@ Prefer pages marked **Available in 0.39** and the Green path on the docs
 home. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer release evidence:
-[Exit gate 0.37](../11_DEVELOPMENT/EXIT_GATE_0_37.md) and
-[Migration 0.36 → 0.37](../11_DEVELOPMENT/MIGRATION_0_36_TO_0_37.md). Latest
+[Exit gate 0.39](../11_DEVELOPMENT/EXIT_GATE_0_39.md) and
+[Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md). Latest
 completed documentation audit:
-[Documentation audit 0.35](../11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_35.md).
+[Documentation audit 0.35](../11_DEVELOPMENT/DOCUMENTATION_AUDIT_0_35.md)
+(use exit-gate / migration above for the current 0.39 gate).
 
 ## How to read a page
 

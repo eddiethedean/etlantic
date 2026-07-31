@@ -31,6 +31,16 @@
 
 ---
 
+Incompatible `Load` wiring fails validate with `PMPIPE210` **before** any
+successful write (`data/out.json` stays untouched until you restore
+`Load[Row]`). Try the
+[Quickstart aha](https://etlantic.readthedocs.io/en/v0.39.0/01_GETTING_STARTED/QUICKSTART/#required-aha):
+
+```bash
+python -m etlantic validate pipeline.py:SamplePipeline --profile development
+# → PMPIPE210: … expects Other … received Row …
+```
+
 ETLantic gives Python data pipelines one portable, typed logical model. It
 coordinates contracts, transformations, and topology without replacing the
 tools that execute them. Before execution reaches a write, ETLantic checks

@@ -746,6 +746,45 @@ def check_api_reference_curated_root() -> None:
             )
 
 
+def check_stale_prior_minor_adopter_banners(package_version: str) -> None:
+    """Fail closed on leftover prior-minor Beta / attestation copy."""
+    parts = package_version.split(".")
+    if len(parts) < 2:
+        return
+    major, minor = int(parts[0]), int(parts[1])
+    if minor <= 0:
+        return
+    prior_minor = f"{major}.{minor - 1}"
+    docs_home = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    banned_home = (
+        f"{prior_minor} · Beta",
+        f"ETLantic {prior_minor} is a **Beta**",
+    )
+    for needle in banned_home:
+        if needle in docs_home:
+            raise SystemExit(
+                f"docs/README.md still contains stale prior-minor banner {needle!r}; "
+                f"expected current {package_version} / {major}.{minor}"
+            )
+
+    wheel_re = re.compile(
+        rf"etlantic-{re.escape(prior_minor)}\.\d+-.*\.whl"
+        r"|etlantic-" + re.escape(prior_minor) + r"\.0-\*\.whl"
+    )
+    # Explicit attestation examples must use the current package wheel, not prior.
+    stale_wheel = f"etlantic-{prior_minor}.0-*.whl"
+    for path in (
+        ROOT / "docs/01_GETTING_STARTED/ENTERPRISE_EVALUATION.md",
+        ROOT / "docs/01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md",
+    ):
+        text = path.read_text(encoding="utf-8")
+        if stale_wheel in text or wheel_re.search(text):
+            raise SystemExit(
+                f"{path.relative_to(ROOT)} still shows prior-minor attestation "
+                f"wheel {stale_wheel!r}; pin to etlantic-{package_version}-*.whl"
+            )
+
+
 def check_mkdocs_nav_adoption_guards() -> None:
     """Keep deprecated Sources/Sinks and residual version stamps out of nav/status."""
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
@@ -831,6 +870,7 @@ def main() -> None:
     check_observability_doc_consistency()
     check_quickstart_init_scaffold_sync()
     check_api_reference_curated_root()
+    check_stale_prior_minor_adopter_banners(package_version)
     check_mkdocs_nav_adoption_guards()
 
     current_markers = [

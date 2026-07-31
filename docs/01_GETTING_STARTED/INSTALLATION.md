@@ -140,7 +140,7 @@ Also available: `[keyring]`, `[sqlmodel]`, `[medallantic]`, `[fastapi]`,
 `[otel]`, `[arrow]`.
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.39.0'   # thin authoring/service HTTP reference (shipped since 0.24; not the 0.39–0.43 control plane)
+python -m pip install 'etlantic-fastapi==0.39.0'   # dual surface: CP1 ETLanticAPI + thin create_reference_app (non-CP); CP1 ≠ multi-tenant GA
 # or: python -m pip install 'etlantic[fastapi]==0.39.0'
 ```
 

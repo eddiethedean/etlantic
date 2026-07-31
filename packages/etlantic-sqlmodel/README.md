@@ -2,14 +2,15 @@
 
 Optional bridge between ETLantic `Data` contracts and
 [SQLModel](https://sqlmodel.tiangolo.com/) table models, plus optional CP1
-control-plane reference stores.
-
-Package version remains **0.39.0** until the 0.39 exit wave.
+control-plane reference stores. Install when you need `contract_to_sqlmodel`
+helpers or SQLModel-backed definition/submission stores for local CP1 demos.
+Package version is **0.39.0** — pin with core.
 
 ## Install
 
 ```bash
-pip install etlantic-sqlmodel
+pip install 'etlantic-sqlmodel==0.39.0'
+# pip install 'etlantic==0.39.0'
 ```
 
 ## Schema bridge

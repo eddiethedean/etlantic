@@ -1,10 +1,9 @@
 # What's New in ETLantic 0.39
 
-> **Status: Gate-ready for tag/publish rehearsal toward ETLantic 0.39.0.**
-> CP1 control-plane incubation: typed identity, embeddable API, durable
-> submission, resumable SSE, and landing-zone submitters outside core. This page
-> describes adopter outcomes; it does not claim PyPI publication yet.
-> **CP1 is not production multi-tenant isolation** (that claim remains **0.43**).
+> **Status: Available in ETLantic 0.39.0.** CP1 control-plane incubation: typed
+> identity, embeddable API, durable submission, resumable SSE, and landing-zone
+> submitters outside core. **Beta** release — **CP1 is not production
+> multi-tenant isolation** (that claim remains **0.43**).
 
 ## Highlights
 
@@ -34,7 +33,7 @@
 
 | Who | Action |
 |---|---|
-| Everyone on 0.39.x | Pin `etlantic==0.39.0` and matching plugins / `medallantic==0.39.0` together when published; see [migration](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
+| Everyone on 0.39.x | Pin `etlantic==0.39.0` and matching plugins / `medallantic==0.39.0` together; see [migration](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
 | FastAPI embedders | Prefer `ETLanticAPI` / `include_router`; keep the thin `create_reference_app` for non-CP demos only |
 | Control-plane authors | Build against frozen identity vocabulary; never treat path/header tenant ids as authority |
 | Landing-zone watch authors | Use `LandingWatchSubmitter` (or equivalent) outside core; submit via durable API |
@@ -57,4 +56,3 @@
 - [Implementation plan 0.39](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_39.md)
 - [ADR-016: Control-Plane Identity](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
 - [Multi-tenant control plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)
-- [What's New in 0.39](WHATS_NEW_0_39.md)

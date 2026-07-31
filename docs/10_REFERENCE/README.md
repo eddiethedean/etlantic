@@ -9,7 +9,8 @@ interfaces.
 
 - [Python API](API_REFERENCE.md) — hub + [Authoring](API_AUTHORING.md) /
   [Plan and runtime](API_PLAN_RUNTIME.md) / [Quality](API_QUALITY.md) /
-  [Protocols](API_PROTOCOLS.md)
+  [Protocols](API_PROTOCOLS.md) /
+  [Control plane API (CP1)](CONTROL_PLANE_API.md)
 - [Command-Line Interface](CLI.md)
 - [Cheatsheet](CHEATSHEET.md)
 - [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)

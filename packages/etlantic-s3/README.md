@@ -1,22 +1,21 @@
 # etlantic-s3 (Experimental / Preview)
 
-S3-compatible object-store connector for [ETLantic](https://github.com/eddiethedean/etlantic).
+S3-compatible object-store connector for
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+pipelines need Experimental `s3` source/sink/storage connectors (fake/CI path
+supported; live AWS is opt-in and not production-ready). Pin with core.
 
-**Current release:** 0.39.0.
-
-**Maturity:** Experimental (Alpha classifier). Fake/stub mode is the supported CI
-path today. Live AWS opt-in lands later behind the `aws` extra and an explicit
-profile allowlist — do not treat this package as production-ready.
-
-Payload format today is **JSON** (not Parquet). Fake multipart staging buffers
-records and serializes once at prepare/commit.
+**Maturity:** Experimental (Alpha classifier). Payload format today is **JSON**
+(not Parquet). Fake multipart staging buffers records and serializes once at
+prepare/commit.
 
 ## Install
 
 ```bash
 pip install 'etlantic-s3==0.39.0'
 # Live AWS (opt-in later; not required for CI):
-# pip install "etlantic-s3[aws]==0.39.0"
+# pip install 'etlantic-s3[aws]==0.39.0'
+# pip install 'etlantic==0.39.0'
 ```
 
 Core dependency: `etlantic>=0.39.0,<0.40`. Optional: `boto3`, `pyarrow`.

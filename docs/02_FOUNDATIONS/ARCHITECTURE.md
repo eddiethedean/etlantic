@@ -102,9 +102,14 @@ Class / functions / JSON / GUI
 
 A FastAPI application may expose a transport-neutral ETLantic service facade,
 but authentication, persistence, durable job submission, and deployment remain
-host-application concerns. The `etlantic-fastapi` reference adapter (shipped
-since 0.24) proves schema and client
-generation; the production control API remains planned across 0.39–0.43.
+host-application concerns. In **0.39**, `etlantic-fastapi` ships a dual
+surface: **CP1** (`ETLanticAPI` / `include_router` / `create_app`) incubates
+the typed control-plane identity, authz, durable accept, and SSE path; the
+thin `create_reference_app` remains a non-CP authoring demo (shipped since
+0.24). CP1 is **not** production multi-tenant isolation — that graduates at
+**0.43** after CP1–CP4. See
+[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) and
+[ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 
 ### Code-first
 
@@ -285,13 +290,13 @@ The core depends on public protocols rather than backend packages.
 | PySpark plugin | Build and submit Spark-native regions |
 | Orchestrator / scheduler plugin | Compile plans (Airflow) or execute plans (Prefect local MVP) |
 | Built-in storage bindings | Memory, callable, JSON, CSV, and no-write asset resolution |
+| Source / sink / storage connectors | `etlantic.connectors` protocols via `etlantic.source_connectors` / `sink_connectors` / `storage_connectors` (core `local-files`; Experimental `etlantic-s3` / `iceberg` / `snowflake` / SQL `postgresql`) |
 | Observability provider and event consumer | Route lifecycle events, normalized history, metrics, traces, logs, and derived analytics |
 
 **Planned or future design** (not shipped as public plugin protocols):
 
 | Extension | Responsibility |
 |---|---|
-| Storage plugin protocol catalog (planned 0.38) | Pluggable persistent dataset providers beyond built-ins |
 | Managed resource providers (reference proof 0.47; supported packs 0.51) | Acquire managed runtime dependencies |
 | Notification provider protocol | Deliver typed outbound events beyond built-in outbound policy |
 

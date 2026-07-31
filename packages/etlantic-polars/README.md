@@ -1,7 +1,9 @@
 # etlantic-polars
 
 Polars dataframe plugin **and** Polars portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.39.
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+you select `Profile(dataframe_engine="polars")` or need portable DTCS
+compilation on Polars. Keep the pin matched to core.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -9,9 +11,10 @@ Polars dataframe plugin **and** Polars portable transform compiler for
 ## Install
 
 ```bash
-pip install etlantic-polars
+pip install 'etlantic-polars==0.39.0'
 # Optional Arrow interchange:
-pip install "etlantic-polars[arrow]"
+pip install 'etlantic-polars[arrow]==0.39.0'
+# pip install 'etlantic==0.39.0'
 ```
 
 ## Dataframe plugin

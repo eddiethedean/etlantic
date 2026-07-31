@@ -43,13 +43,16 @@ Start with the narrowest protocol that owns the behavior:
 | Observability provider | `etlantic.observability` | `etlantic.observability_providers` | `run_observability_conformance_suite` |
 | Run history provider | `etlantic.observability` | `etlantic.run_history_providers` | `run_run_history_conformance_suite` |
 | Event consumer | `etlantic.observability` | `etlantic.event_consumers` | `run_event_consumer_conformance_suite` |
+| Source connector | `etlantic.connectors` | `etlantic.source_connectors` | `run_source_connector_conformance_suite` |
+| Sink connector | `etlantic.connectors` | `etlantic.sink_connectors` | `run_sink_connector_conformance_suite` |
+| Storage connector | `etlantic.connectors` | `etlantic.storage_connectors` | `run_storage_connector_conformance_suite` |
 
-Storage and resource extension documents describe integration patterns that are
-**not** backed by package entry-point discovery in **0.37** (many remain Future
-design / Design Proposals). Observability, run history, and event consumers
-**are** discoverable entry points as of 0.37. Do not publish against a proposed
-discovery group. Use the public runtime/profile registration surface documented
-for other categories.
+Source, sink, and storage connectors share the [Connector SDK](CONNECTOR_SDK.md)
+(`etlantic.source/1`, `etlantic.sink/1`, `etlantic.storage/1`). Observability,
+run history, and event consumers are also discoverable entry points. Managed
+**resource providers** remain Future design — do not invent an entry-point
+group for them. Secret providers use runtime/profile registration, not a
+package discovery group. Do not publish against a proposed discovery group.
 
 Read the relevant protocol page before implementing the package:
 
@@ -59,6 +62,7 @@ Read the relevant protocol page before implementing the package:
 - [Spark Provider](SPARK_PROVIDER.md)
 - [Orchestrator Plugin](ORCHESTRATOR_PLUGIN.md)
 - [Portable Transformation Compiler](PORTABLE_TRANSFORM_COMPILER.md)
+- [Connector SDK](CONNECTOR_SDK.md) (source / sink / storage)
 - [Secret Provider](SECRET_PROVIDER.md)
 - [Observability Provider](OBSERVABILITY_PROVIDER.md) (M6)
 - [Run History Provider](RUN_HISTORY_PROVIDER.md) (M6)

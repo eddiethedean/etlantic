@@ -23,8 +23,9 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 - The current published minor line (`0.39.x`) receives best-effort correctness
   and security fixes. Older 0.x lines are not actively maintained.
-- Multi-tenant isolation remains outside the current **0.38** single-tenant
-  envelope (see [MULTI_TENANT_CONTROL_PLANE_PLAN](MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
+- Multi-tenant isolation remains outside the current **0.39** single-tenant
+  envelope (CP1 incubates identity/API only; see
+  [MULTI_TENANT_CONTROL_PLANE_PLAN](MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 - Experimental APIs (including `etlantic-datafusion`) and Future design pages
   carry no support guarantees.
 

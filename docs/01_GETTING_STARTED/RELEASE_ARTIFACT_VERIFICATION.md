@@ -26,7 +26,7 @@ checksums of published wheels/sdists, not an SBOM document.
 ## Verify attestations
 
 ```bash
-gh attestation verify path/to/etlantic-0.38.0-*.whl \
+gh attestation verify path/to/etlantic-0.39.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```

@@ -1,6 +1,9 @@
 # etlantic-fastapi
 
-Optional FastAPI adapter for ETLantic. Package version is **0.39.0** (CP1 gate-ready).
+Optional FastAPI adapter for ETLantic **0.39.0**. Use **CP1** (`ETLanticAPI`)
+when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
+Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
+not the control plane. CP1 is incubation, **not** multi-tenant GA (0.43).
 
 ## Two surfaces
 
@@ -9,9 +12,8 @@ Optional FastAPI adapter for ETLantic. Package version is **0.39.0** (CP1 gate-r
 | **CP1 control plane** | `ETLanticAPI`, `include_router`, `create_app` | Embeddable, authz’d, durable-accept HTTP API |
 | **Reference (non-CP)** | `create_reference_app` | Sync `AuthoringService` demo only |
 
-CP1 is an incubation foundation. It is **not** a production multi-tenant
-isolation claim (reserved for 0.43). Do not treat path/header tenant strings as
-authority — `ControlPlaneContext` is server-derived.
+Do not treat path/header tenant strings as authority —
+`ControlPlaneContext` is server-derived.
 
 Heavy pipeline work must **never** use FastAPI `BackgroundTasks`. Submit returns
 `202` only after durable acceptance in an injected store. Optional worker
@@ -20,7 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install etlantic-fastapi
+pip install 'etlantic-fastapi==0.39.0'
+# keep core on the same pin:
+# pip install 'etlantic==0.39.0'
 ```
 
 ## Control-plane usage

@@ -1,8 +1,8 @@
-# Application Integration Contract (0.25)
+# Application Integration (0.39)
 
-> **Status: Available in ETLantic 0.39.0.**
-
-Framework-agnostic contract for visual builders and host applications.
+> **Status: Available in ETLantic 0.39.0.** Framework-agnostic authoring contract
+> plus the optional FastAPI package dual surface (CP1 primary; sync reference
+> demo secondary).
 
 ## Artifacts
 
@@ -36,16 +36,14 @@ service = AuthoringService(
     )
 )
 
-# Put a definition document (dict), then validate / plan
 service.put_definition("demo", document)
 service.validate("demo")
 service.plan("demo")
 # submit_run is synchronous on this reference facade — it completes before return
 job = service.submit_run("demo")
-# cancel_run reports that in-flight cancel is unsupported on the sync reference
 ```
 
-## FastAPI reference adapter
+## FastAPI dual surface
 
 Install the optional package (same minor as core):
 
@@ -54,11 +52,52 @@ python -m pip install 'etlantic-fastapi==0.39.0'
 # or: python -m pip install 'etlantic[fastapi]==0.39.0'
 ```
 
-Contributor checkout (editable monorepo):
+| Surface | Entry points | Role |
+|---|---|---|
+| **CP1 (primary)** | `ETLanticAPI`, `include_router`, `create_app` | Embeddable, authz’d, durable-accept HTTP API + SSE |
+| **Reference (non-CP)** | `create_reference_app` | Sync `AuthoringService` demo only |
 
-```bash
-uv sync --extra fastapi
+### CP1 control plane (primary)
+
+Adopter guide: [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md).
+Contracts: [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
+
+```python
+from etlantic.control_plane import (
+    MemoryAuthorizer,
+    MemoryDefinitionRepository,
+    MemoryEventStore,
+    MemorySubmissionStore,
+)
+from etlantic_fastapi import (
+    ETLanticAPI,
+    create_app,
+    membership_context_factory,
+    principal_from_header,
+)
+
+api = ETLanticAPI(
+    authorizer=MemoryAuthorizer(),
+    definitions=MemoryDefinitionRepository(),
+    submissions=MemorySubmissionStore(),
+    events=MemoryEventStore(),
+    context_factory=membership_context_factory(
+        {"alice": ("tenant-a", "ws-1", "development", "default")}
+    ),
+    principal_dependency=principal_from_header,
+)
+app = create_app(api)
+# Or: include_router(host_app, api) when the host owns lifespan/handlers
 ```
+
+CP1 highlights:
+
+- Durable **202** accept; never FastAPI `BackgroundTasks` for heavy work
+- Authz before lookup; cross-tenant → opaque **404**
+- SSE resume; unknown cursor → **410**
+- `GET /health` liveness vs `GET /ready` (**503** when stores missing)
+
+### Reference app (non-CP sync demo)
 
 ```python
 from etlantic_fastapi import create_reference_app
@@ -67,14 +106,14 @@ app = create_reference_app()
 # uvicorn etlantic_fastapi:create_reference_app --factory
 ```
 
-`etlantic-fastapi` publishes OpenAPI from the public schemas. It is a proof
-adapter, **not** the production 0.39–0.43 control API. Runs are **synchronous**:
-`submit_run` completes before returning; `cancel_run` reports that in-flight
-cancel is unsupported on this reference adapter.
+`create_reference_app` is a proof adapter for the sync authoring facade. Runs
+complete before return; `cancel_run` reports in-flight cancel unsupported. It is
+**not** the production control API and must not be confused with CP1.
 
 ## Related
 
+- [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md)
+- [etlantic-fastapi API](../10_REFERENCE/api_optional/etlantic_fastapi.md)
 - [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 - [API — Authoring](../10_REFERENCE/API_AUTHORING.md) (`etlantic.authoring`, `etlantic.service`)
-- Control-plane design and remaining work:
-  [FastAPI Integration Plan](../11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md)
+- [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md)

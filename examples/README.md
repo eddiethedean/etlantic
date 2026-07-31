@@ -95,6 +95,20 @@ uv run python examples/file_storage.py
 Runs tested `json_to_json()` and `csv_to_csv()` workflows using built-in
 storage bindings.
 
+## Landing-zone watch submitter (docs / local)
+
+```bash
+# requires etlantic-fastapi and a running CP1 app that accepts X-Principal
+uv sync --extra fastapi
+uv run python examples/landing_zone_watch_submitter.py \
+  --watch ./inbox --definition landing_pipe --base-url http://127.0.0.1:8000
+```
+
+Continuous directory watching as a durable CP1 submitter (outside core) — not
+an Extract kind. Posts `local-files` binding refs, never file bytes. See
+[Landing zone](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/LANDING_ZONE/)
+and [Control plane (CP1)](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/CONTROL_PLANE/).
+
 ## Dataframe parity (CI)
 
 ```bash

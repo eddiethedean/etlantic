@@ -51,7 +51,7 @@ Prefer another tool (or use ETLantic only as a thin companion) when:
 | Warehouse-only SQL analytics with dbt already owning the project | **dbt** alone |
 | You only need a durable multi-worker scheduler / ops UI | **Airflow / Dagster / Prefect** alone |
 | You only need row-level dataframe checks inside notebooks | **Pandera / Great Expectations** alone |
-| You need a managed multi-tenant control plane or formal SLA today | Wait — **not in 0.37** (Beta single-tenant pilots only) |
+| You need a managed multi-tenant control plane or formal SLA today | Wait — **not in 0.39** (Beta single-tenant pilots only; CP1 ≠ multi-tenant GA) |
 | You need bronze/silver/gold medallion vocabulary as core APIs | **SparkForge / medallantic**, not core ETLantic |
 | You refuse typed Python modeling and only want SQL files on disk | Stick with your SQL toolchain |
 

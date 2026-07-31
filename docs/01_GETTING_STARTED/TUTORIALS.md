@@ -5,7 +5,7 @@
 
 | Tutorial | Time | Environment | CI |
 |---|---|---|---|
-| [End-to-end pilot](END_TO_END_PILOT.md) | ~30–60 min | Clone + optional engines | Partial |
+| [End-to-end pilot](END_TO_END_PILOT.md) | ~30–60 min | PyPI / no clone required | Partial |
 | [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) | ~15 min | Core | Syntax-checked |
 | [Contract-first workflow](../09_EXAMPLES/CONTRACT_FIRST_TUTORIAL.md) | ~20 min | Core | Syntax-checked |
 | [Polars](../06_EXECUTION/POLARS_TUTORIAL.md) | ~20 min | `etlantic[polars]` | `dataframes` job |

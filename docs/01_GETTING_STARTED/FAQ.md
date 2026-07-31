@@ -75,9 +75,43 @@ pilots—not unrestricted enterprise production. See
 
 ## Available vs Experimental?
 
-**Available** means supported inside the documented 0.37 pilot envelope.
-**Experimental** (Structured Streaming, `etlantic-datafusion`) may change.
+**Available** means supported inside the documented **0.39** pilot envelope
+(Beta, single-tenant). **Experimental** (Structured Streaming,
+`etlantic-datafusion`, Experimental connector packages) may change.
 See [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
+
+## What is CP1?
+
+**CP1** is the 0.39 control-plane incubation: typed identity context,
+authorization envelope, durable accept receipts, and resumable SSE via
+`etlantic.control_plane` and optional `etlantic-fastapi` (`ETLanticAPI`).
+It is **not** production multi-tenant isolation (reserved for **0.43**).
+See [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) and
+[What's new in 0.39](WHATS_NEW_0_39.md).
+
+## Thin FastAPI app vs control plane?
+
+`create_reference_app` is a thin, non-CP authoring/service demo (sync
+`AuthoringService`). The control plane is `ETLanticAPI` / `include_router` /
+`create_app` with injected stores and authz. Do not treat the reference app
+as durable multi-tenant isolation. Package README:
+[`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md).
+
+## Landing zone vs `CsvStorage`?
+
+**Landing-zone** extract uses `local-files` bindings (`root_ref`, `glob`,
+snapshot/incremental modes) for directory-shaped inputs — see
+[Landing zone](../06_EXECUTION/LANDING_ZONE.md). **`CsvStorage`** (and JSON
+storage) are built-in asset bindings for named CSV/JSON files under a profile
+— different job. Landing is not a replacement for `CsvStorage`.
+
+## Where is continuous directory watch?
+
+**Not in core.** Continuous watching is an optional **submitter** outside
+`src/etlantic/` (for example
+`etlantic_fastapi.landing_sensor.LandingWatchSubmitter` or
+`examples/landing_zone_watch_submitter.py`). Snapshot/incremental landing
+reads ship; long-lived watch loops do not live under core.
 
 ## How does it compare to dbt / Prefect / Pandera?
 
@@ -113,8 +147,11 @@ No — those stay in SparkForge / `medallantic`. See
 
 ## Can I build a GUI?
 
-Not as a shipped product. Use programmatic authoring + optional
-`etlantic-fastapi` reference adapter. See
+Not as a shipped product. Use programmatic authoring plus optional
+`etlantic-fastapi`: prefer CP1 (`ETLanticAPI`) for embeddable control-plane
+HTTP, or `create_reference_app` for the thin non-CP authoring demo. See
+[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md),
+[Control plane API](../10_REFERENCE/CONTROL_PLANE_API.md), and
 [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md).
 
 ## Where do lineage / Graphviz diagrams come from?

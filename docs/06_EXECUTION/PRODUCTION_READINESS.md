@@ -57,8 +57,11 @@ isolation.
 4. Resolve secrets from env/files/keyring at runtime only.
 5. Persist plans, reports, and compiled DAGs to application-owned storage.
 6. Run `etlantic validate … --format sarif` in CI before deploy.
-7. Health-check the process with your supervisor (ETLantic has no built-in HTTP
-   health endpoint).
+7. Health-check the process with your supervisor. **Core** ETLantic has no
+   built-in HTTP health endpoint. Optional **CP1** FastAPI apps
+   (`etlantic-fastapi` `create_app` / `ETLanticAPI`) expose `GET /health`
+   (liveness) and `GET /ready` (readiness when stores are injected) — use those
+   when you embed CP1; otherwise rely on the host supervisor.
 8. On upgrade: pin forward, re-validate, re-plan, smoke-run one pipeline, keep
    the previous lockfile for rollback. Operator checklist:
    [Rollback and recovery](ROLLBACK_RECOVERY.md).

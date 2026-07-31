@@ -1,7 +1,9 @@
 # etlantic-sql
 
 SQLite and PostgreSQL reference SQL execution plugin for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.39.
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
+`postgresql` source/sink/storage connectors. Keep the pin matched to core.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -9,7 +11,8 @@ SQLite and PostgreSQL reference SQL execution plugin for
 ## Install
 
 ```bash
-pip install etlantic-sql
+pip install 'etlantic-sql==0.39.0'
+# pip install 'etlantic==0.39.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:

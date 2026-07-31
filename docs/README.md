@@ -9,7 +9,7 @@ audience: adopter
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.38 · Beta</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.39 · Beta</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -180,20 +180,20 @@ Prefect. Add only what the pipeline uses.
 
 | Path | Install | Current scope |
 |---|---|---|
-| Local Python + JSON/CSV | `pip install etlantic` | Built-in first-success and test path |
-| Polars | `pip install 'etlantic[polars]'` | Eager/lazy execution and portable compilation |
-| Pandas | `pip install 'etlantic[pandas]'` | Eager execution and portable compilation |
-| SQL | `pip install 'etlantic[sql]'` | SQLite evaluation and PostgreSQL reference execution |
-| PySpark | `pip install 'etlantic[pyspark]'` | Batch Spark execution; compatible JVM required |
-| Airflow | `pip install 'etlantic[airflow]'` | DAG compilation; Apache Airflow installs separately |
-| Prefect | `pip install 'etlantic[prefect]'` | Bounded local direct-execution integration |
+| Local Python + JSON/CSV | `pip install 'etlantic==0.39.0'` | Built-in first-success and test path |
+| Polars | `pip install 'etlantic[polars]==0.39.0'` | Eager/lazy execution and portable compilation |
+| Pandas | `pip install 'etlantic[pandas]==0.39.0'` | Eager execution and portable compilation |
+| SQL | `pip install 'etlantic[sql]==0.39.0'` | SQLite evaluation and PostgreSQL reference execution |
+| PySpark | `pip install 'etlantic[pyspark]==0.39.0'` | Batch Spark execution; compatible JVM required |
+| Airflow | `pip install 'etlantic[airflow]==0.39.0'` | DAG compilation; Apache Airflow installs separately |
+| Prefect | `pip install 'etlantic[prefect]==0.39.0'` | Bounded local direct-execution integration |
 
 See [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) for prerequisites
 and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
 
 ## Know the release boundary
 
-ETLantic 0.38 is a **Beta** release for documented, controlled, single-tenant
+ETLantic 0.39 is a **Beta** release for documented, controlled, single-tenant
 pilots—not unrestricted enterprise production.
 
 <div class="etlantic-release-grid">

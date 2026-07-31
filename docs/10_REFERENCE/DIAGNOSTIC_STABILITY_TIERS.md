@@ -17,9 +17,9 @@ notes. Exhaustive code→source index:
 
 | Tier | Meaning |
 |---|---|
-| `stable` | Part of the 0.38 foundation envelope. Existing codes keep identity; incompatible renumbering or removal needs migration notes. |
+| `stable` | Part of the 0.39 foundation envelope. Existing codes keep identity; incompatible renumbering or removal needs migration notes. |
 | `provisional` | Public and emitted today, but the family may change before a later explicit graduation (aligned with provisional wire surfaces such as `etlantic.quality/1`). |
-| `experimental` | May change or be removed without a 0.38 Beta compatibility obligation. |
+| `experimental` | May change or be removed without a 0.39 Beta compatibility obligation. |
 
 ## Family tiers
 
@@ -64,4 +64,4 @@ Every shipped code family under `src/etlantic` must appear in
 - [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Surface inventory](SURFACE_INVENTORY.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-038)
+- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-039)

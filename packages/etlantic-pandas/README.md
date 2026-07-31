@@ -1,7 +1,9 @@
 # etlantic-pandas
 
 Pandas dataframe plugin **and** portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.39.
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+you select `Profile(dataframe_engine="pandas")` or need portable DTCS
+compilation on Pandas. Keep the pin matched to core.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -9,9 +11,10 @@ Pandas dataframe plugin **and** portable transform compiler for
 ## Install
 
 ```bash
-pip install etlantic-pandas
+pip install 'etlantic-pandas==0.39.0'
 # Optional Arrow interchange:
-pip install "etlantic-pandas[arrow]"
+pip install 'etlantic-pandas[arrow]==0.39.0'
+# pip install 'etlantic==0.39.0'
 ```
 
 ## Dataframe plugin

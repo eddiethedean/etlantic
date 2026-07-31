@@ -1,21 +1,21 @@
 # etlantic-snowflake (Experimental)
 
-Native Snowflake connector for [ETLantic](https://github.com/eddiethedean/etlantic).
+Native Snowflake connector for
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.39**. Install when
+pipelines need Experimental `snowflake` source/sink/storage connectors. CI
+uses an in-memory fake; live Snowflake is optional. Pin with core.
 
-**Current release:** 0.39.0.
-
-**Maturity:** Experimental (Alpha classifier). CI uses an in-memory fake with
+**Maturity:** Experimental (Alpha classifier). Fake path uses
 `autocommit=False` transactional semantics and `query_id` evidence on
-`CommitReceipt`. Live Snowflake is optional:
-
-```bash
-pip install "etlantic-snowflake[snowflake]==0.39.0"
-```
+`CommitReceipt`.
 
 ## Install
 
 ```bash
 pip install 'etlantic-snowflake==0.39.0'
+# Live Snowflake (optional):
+# pip install 'etlantic-snowflake[snowflake]==0.39.0'
+# pip install 'etlantic==0.39.0'
 ```
 
 Core dependency: `etlantic>=0.39.0,<0.40`.

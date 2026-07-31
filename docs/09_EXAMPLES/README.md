@@ -20,6 +20,9 @@ Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
 - [Production sample](PRODUCTION_SAMPLE.md) — allowlist + SARIF + file I/O
 - [Sample multi-file project](SAMPLE_PROJECT.md) — `examples/sample_project/`
 - [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — JSON and CSV
+- [Landing zone](../06_EXECUTION/LANDING_ZONE.md) —
+  `examples/landing_zone_watch_submitter.py` (continuous submitter)
+- [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) — embeddable FastAPI
 - [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) — secrets, schema, SARIF
 - [Polars](../06_EXECUTION/POLARS_TUTORIAL.md)
 - [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md)
@@ -79,6 +82,18 @@ See [Polars ↔ Pandas Interchange](INTERCHANGE_POLARS_PANDAS.md).
 ```bash
 uv run python examples/file_storage.py
 ```
+
+### Landing-zone watch submitter (docs / local)
+
+```bash
+# requires etlantic-fastapi and a running CP1 app
+uv sync --extra fastapi
+uv run python examples/landing_zone_watch_submitter.py \
+  --watch ./inbox --definition landing_pipe --base-url http://127.0.0.1:8000
+```
+
+See [Landing zone](../06_EXECUTION/LANDING_ZONE.md) and
+[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md).
 
 ### Dataframe parity (Polars / Pandas) (CI)
 

@@ -6,7 +6,7 @@ This table describes the declared compatibility of ETLantic 0.39.0.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
 [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) /
 ContractModel / Python):
-[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-038).
+[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-039).
 
 | Surface | Supported range or version |
 |---|---|
@@ -64,7 +64,7 @@ Protocol notes for this minor: `etlantic.scheduler/1` is a **stable MVP**
 
 The core CI matrix runs linting and the core test suite on Ubuntu, Windows, and
 macOS with Python 3.11, 3.12, and 3.13. This is the broadest tested platform
-surface for 0.38.0. Wire codec burn-in covers the historical
+surface for 0.39.0. Wire codec burn-in covers the historical
 0.24→0.25→0.26→0.27→0.28 window **and** the joint 0.34→0.35→0.36 window; see
 [Wire schema ranges](WIRE_SCHEMA_RANGES.md).
 

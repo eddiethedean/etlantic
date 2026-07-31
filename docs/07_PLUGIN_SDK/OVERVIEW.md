@@ -62,14 +62,17 @@ pipeline.
 ## Appendix — planned / not shipped
 
 These categories appear in older design pages and are **not** installable
-protocols in **0.38.0**:
+protocols in **0.39.0**:
 
 - Managed resource providers — Kubernetes/reference proof in 0.47 and
   supported provider packs in 0.51.
 - Registry plugins / approval workflows — planned through 0.40–0.43.
 
-See [Storage Plugin](STORAGE_PLUGIN.md) and
-[Resource Provider](RESOURCE_PROVIDER.md) for design stubs only.
+Source / sink / **storage connectors** ship via
+[Connector SDK](CONNECTOR_SDK.md) (`etlantic.storage_connectors`). The older
+[Storage Plugin](STORAGE_PLUGIN.md) page points at that path; it is not a
+separate unshipped protocol. See
+[Resource Provider](RESOURCE_PROVIDER.md) for the managed-resource design stub.
 Operator how-to: [Observability today](../06_EXECUTION/OBSERVABILITY_TODAY.md)
 and [Reports and history](../06_EXECUTION/REPORTS_AND_HISTORY.md).
 

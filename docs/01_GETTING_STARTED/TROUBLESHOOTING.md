@@ -2,6 +2,18 @@
 
 > **Status: Available in ETLantic 0.39.0.**
 
+## Quickstart stuck?
+
+| Symptom | Fix |
+|---|---|
+| Docs say 0.39.0 but `etlantic --version` is older | `python -m pip install 'etlantic==0.39.0'` (pin plugins to the same version) |
+| `etlantic init` refuses a non-empty directory | Create an **empty** subdirectory, then `cd` into it before `init` |
+| `etlantic: command not found` | Prefer `python -m etlantic …` so the active interpreter is used |
+| Run succeeds but `data/out.json` has no Ada/Grace | Seed files under `data/` are required; re-check the Quickstart JSON seeds and the same `--profile` |
+
+Full install/PATH detail: [Installed version is older](#installed-version-is-older-than-the-docs) and
+[Wrong interpreter](#wrong-interpreter-or-etlantic-command-not-found).
+
 ## `pip install etlantic` rejects my Python version
 
 ETLantic requires Python 3.11 or newer. Check with:
