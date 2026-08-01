@@ -36,11 +36,13 @@ Do not reopen without a written finding and migration plan.
 
 ## Open findings
 
-Open **P0 count is 0**.
+Open **P0 count is 0**. Deferred P1 rows below are non-blocking for the 0.41
+tag/publish rehearsal; they do not reopen ADR-018 locked dispositions.
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | No open rows | — |
+| `041-P1-01` | P1 | Control-plane | Deferred | Fully normalize durable tables out of the versioned snapshot blob | Mitigation: optimistic `payload_version` + `FOR UPDATE` on reference snapshot provider; target **0.42** schema evolution if needed |
+| `041-P1-02` | P1 | Control-plane + FastAPI | Deferred | Full DurableWorkStore HTTP surface (effects / repair / diagnose / shadow) | Mitigation: SDK protocol is authoritative; CONTROL_PLANE_API documents shipped routes only; target **0.42** if adopter demand warrants |
 
 ## Soft-continue from prior phases
 

@@ -52,6 +52,21 @@ def _root_refs(value: Any) -> tuple[str, ...]:
     return refs
 
 
+def _wire_bool(value: Any, *, field_name: str) -> bool:
+    """Decode a JSON boolean without treating non-empty strings as true."""
+    if isinstance(value, bool):
+        return value
+    if value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    raise ValueError(f"{field_name} must be a boolean")
+
+
 @dataclass(frozen=True, slots=True)
 class SafeIoPolicy:
     """Policy for contract/profile/report/history/cache/artifact/viz FS access."""
@@ -108,10 +123,18 @@ class SafeIoPolicy:
             max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
             symlink_policy=symlink_policy,  # type: ignore[arg-type]
             overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
-            require_regular_files=bool(data.get("require_regular_files", True)),
-            enable_locking=bool(data.get("enable_locking", True)),
+            require_regular_files=_wire_bool(
+                data.get("require_regular_files", True),
+                field_name="require_regular_files",
+            ),
+            enable_locking=_wire_bool(
+                data.get("enable_locking", True), field_name="enable_locking"
+            ),
             lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),
-            compute_integrity_digest=bool(data.get("compute_integrity_digest", True)),
+            compute_integrity_digest=_wire_bool(
+                data.get("compute_integrity_digest", True),
+                field_name="compute_integrity_digest",
+            ),
             retention_seconds=data.get("retention_seconds"),
             tenant=str(data.get("tenant") or "default"),
             environment=str(data.get("environment") or "default"),
@@ -209,15 +232,23 @@ class SafeIoPlanPolicy:
             max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
             symlink_policy=symlink_policy,  # type: ignore[arg-type]
             overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
-            require_regular_files=bool(data.get("require_regular_files", True)),
-            enable_locking=bool(data.get("enable_locking", True)),
+            require_regular_files=_wire_bool(
+                data.get("require_regular_files", True),
+                field_name="require_regular_files",
+            ),
+            enable_locking=_wire_bool(
+                data.get("enable_locking", True), field_name="enable_locking"
+            ),
             lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),
-            compute_integrity_digest=bool(data.get("compute_integrity_digest", True)),
+            compute_integrity_digest=_wire_bool(
+                data.get("compute_integrity_digest", True),
+                field_name="compute_integrity_digest",
+            ),
             retention_seconds=data.get("retention_seconds"),
             tenant=str(data.get("tenant") or "default"),
             environment=str(data.get("environment") or "default"),
             security_domain=str(data.get("security_domain") or "default"),
-            fail_on_symlink=bool(fail_on),
+            fail_on_symlink=_wire_bool(fail_on, field_name="fail_on_symlink"),
         )
 
 

@@ -117,3 +117,35 @@ def test_dual_host_lease_fencing(tmp_path: Path) -> None:
             fencing_token=lease1.fencing_token,
             ttl_seconds=30,
         )
+
+
+def test_snapshot_version_conflict_under_concurrent_hosts(tmp_path: Path) -> None:
+    from etlantic_sqlmodel.control_plane.models import DurableSnapshotRow
+    from etlantic_sqlmodel.control_plane.session import session_scope
+    from sqlmodel import select
+
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'race.db'}")
+    apply_migrations(engine)
+    host1 = SQLModelDurableWorkStore(engine)
+    host2 = SQLModelDurableWorkStore(engine)
+    submission, _ = host1.accept(
+        _ctx(),
+        idempotency_key="race",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    with session_scope(engine) as session:
+        row = session.exec(
+            select(DurableSnapshotRow).where(DurableSnapshotRow.store_id == "default")
+        ).first()
+        assert row is not None
+        stale_version = int(row.payload_version)
+
+    host2.acquire_lease(
+        _ctx(), submission.submission_id, owner_id="two", ttl_seconds=60
+    )
+    # host2 bumped version; writing with the pre-lease version must conflict
+    with session_scope(engine) as session:
+        mem, _ = host1._read(session, for_update=True)
+        with pytest.raises(ControlPlaneError, match="version conflict"):
+            host1._write(session, mem, expected_version=stale_version)

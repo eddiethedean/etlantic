@@ -39,6 +39,7 @@ class DurableWorkStore(Protocol):
         input_snapshot: str | None = None,
         schema_observation_fingerprint: str | None = None,
         schema_baseline_id: str | None = None,
+        submission_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]: ...
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100

@@ -417,3 +417,42 @@ def test_release_check_success_path_initializes_network_state(
         f"All packages already present on PyPI at {__version__}"
         in capsys.readouterr().out
     )
+
+
+def test_workspace_directory_requires_ctx_workspace_match() -> None:
+    provider = MemoryRegistryProvider()
+    ctx_a, ctx_b = _ctx("ws-a"), _ctx("ws-b")
+    _seed(provider, ctx_a, ctx_b)
+    assert provider.workspaces.get(ctx_a, "ws-a").workspace_id == "ws-a"
+    with pytest.raises(ControlPlaneError) as exc:
+        provider.workspaces.get(ctx_a, "ws-b")
+    assert exc.value.status == 404
+
+
+def test_tenant_directory_is_own_tenant_only() -> None:
+    provider = MemoryRegistryProvider()
+    owner = ControlPlaneContext(
+        principal=Principal(subject="alice"),
+        tenant=TenantRef(tenant_id="tenant-a"),
+        workspace=WorkspaceRef(tenant_id="tenant-a", workspace_id="ws-a"),
+        environment=EnvironmentRef(name="development"),
+        security_domain=SecurityDomain(domain_id="domain-shared"),
+    )
+    peer = ControlPlaneContext(
+        principal=Principal(subject="bob"),
+        tenant=TenantRef(tenant_id="tenant-b"),
+        workspace=WorkspaceRef(tenant_id="tenant-b", workspace_id="ws-a"),
+        environment=EnvironmentRef(name="development"),
+        security_domain=SecurityDomain(domain_id="domain-shared"),
+    )
+    provider.tenants.put(
+        owner, TenantRecord(tenant_id="tenant-a", security_domain_id="domain-shared")
+    )
+    provider.tenants.put(
+        peer, TenantRecord(tenant_id="tenant-b", security_domain_id="domain-shared")
+    )
+    listed = provider.tenants.list(owner)
+    assert [t.tenant_id for t in listed] == ["tenant-a"]
+    with pytest.raises(ControlPlaneError) as exc:
+        provider.tenants.get(owner, "tenant-b")
+    assert exc.value.status == 404

@@ -28,7 +28,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.39.0
+## What is ready in bounded 0.41.0
 
 | Area | Ready? |
 |---|---|
@@ -58,9 +58,11 @@ manager.
 | Portable SQL compiler (kernel + relational `/1`) | Yes (0.15) |
 | Public portable transform conformance suite | Yes (0.14) |
 | CP1 identity / durable accept / SSE | Yes (incubation; **not** production multi-tenant GA) |
-| Multi-tenant durable orchestration | No — planned through CP3 / 0.41 |
+| CP2 registry / isolation profiles | Yes (incubation) |
+| CP3 durable work store + `/v1/durable/*` host routes | Yes (incubation; dual-write submit) |
+| Multi-tenant durable orchestration GA | No — graduation remains **0.43** |
 | Formal SLA / support response times | No |
-| Production GUI | No in 0.39 — read-only-first operator console planned for 0.50 |
+| Production GUI | No — read-only-first operator console planned for 0.50 |
 | Production multi-tenant GA | No — [planned](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) 0.39–0.42 incubation → **0.43** graduation |
 
 ## Security posture
@@ -87,7 +89,7 @@ manager.
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
 | Release SHA-256 manifest + GitHub attestations | **Release-gated** — verify the published assets with `gh attestation verify`; CycloneDX is optional, so confirm the SBOM or `sbom-warning.txt`. See [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md). |
-| Cross-tenant / multi-tenant isolation guarantees | **Adopter-owned in 0.39; first-class plan published** |
+| Cross-tenant / multi-tenant isolation guarantees | **Incubation through 0.41; production claim remains 0.43** |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
 | HA/DR, SOC2/GDPR certs, identity/RBAC/SSO | **Adopter-owned / out of scope** |
@@ -155,7 +157,7 @@ How to read status labels in deeper chapters:
 | Release digests / provenance | Release workflow emits a SHA-256 manifest + GitHub attestations; CycloneDX is optional — verify the published assets using [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md) |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) and [Upgrade hub](UPGRADE.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
@@ -172,7 +174,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
    with `etlantic-polars` + `etlantic-pandas` at `==0.41.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) if
+8. [Migration 0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

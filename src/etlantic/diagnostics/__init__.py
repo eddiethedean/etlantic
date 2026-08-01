@@ -40,12 +40,18 @@ class DiagnosticAction:
     arguments: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize action for tooling."""
+        """Serialize action for tooling (secret-free)."""
+        from etlantic.runtime.logging import redact_message, redact_value
+
         return {
             "kind": self.kind,
-            "title": self.title,
-            "edit_suggestion": self.edit_suggestion,
-            "arguments": dict(self.arguments),
+            "title": redact_message(self.title),
+            "edit_suggestion": (
+                redact_message(self.edit_suggestion)
+                if self.edit_suggestion is not None
+                else None
+            ),
+            "arguments": dict(redact_value(dict(self.arguments))),
         }
 
 
@@ -66,15 +72,17 @@ class Diagnostic:
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize for JSON/service payloads (secret-free)."""
+        from etlantic.runtime.logging import redact_message, redact_value
+
         payload: dict[str, Any] = {
             "code": self.code,
             "severity": self.severity.value,
-            "message": self.message,
+            "message": redact_message(self.message),
             "path": list(self.path),
             "phase": self.phase,
         }
         if self.help:
-            payload["help"] = self.help
+            payload["help"] = redact_message(self.help)
         if self.related:
             payload["related"] = [list(item) for item in self.related]
         if self.source is not None:
@@ -88,7 +96,7 @@ class Diagnostic:
         if self.actions:
             payload["actions"] = [action.to_dict() for action in self.actions]
         if self.metadata:
-            payload["metadata"] = dict(self.metadata)
+            payload["metadata"] = dict(redact_value(dict(self.metadata)))
         return payload
 
 

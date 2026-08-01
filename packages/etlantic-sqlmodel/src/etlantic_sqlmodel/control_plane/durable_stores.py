@@ -2,8 +2,7 @@
 
 Reference provider: each mutating call loads the durable snapshot inside a
 database transaction, applies MemoryDurableWorkStore semantics, and writes the
-snapshot back before commit. This preserves accept+outbox atomicity and fencing
-CAS concurrency for SQLite/Postgres reference deployments.
+snapshot back with an optimistic ``payload_version`` check before commit.
 
 Production note: apply versioned migrations — do not rely on
 ``create_durable_tables`` as the sole schema path.
@@ -33,6 +32,7 @@ from etlantic.control_plane.durable_models import (
     StateDiagnostic,
     SubmissionRecord,
 )
+from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic_sqlmodel.control_plane.models import DurableSnapshotRow
 from etlantic_sqlmodel.control_plane.session import session_scope
@@ -55,71 +55,82 @@ def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _encode_key(parts: tuple[str, ...]) -> str:
+    return json.dumps(list(parts), separators=(",", ":"))
+
+
+def _decode_key(text: str) -> tuple[str, ...]:
+    raw = json.loads(text)
+    if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
+        raise ValueError("durable snapshot key must be a JSON string array")
+    return tuple(raw)
+
+
 def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
     return {
         "admission_limit": store.admission_limit,
-        "submissions": {"|".join(k): asdict(v) for k, v in store._submissions.items()},
-        "idempotency": {"|".join(k): v for k, v in store._idempotency.items()},
-        "outbox": {"|".join(k): asdict(v) for k, v in store._outbox.items()},
-        "leases": {"|".join(k): asdict(v) for k, v in store._leases.items()},
-        "attempts": {"|".join(k): asdict(v) for k, v in store._attempts.items()},
-        "checkpoints": {"|".join(k): asdict(v) for k, v in store._checkpoints.items()},
-        "effects": {"|".join(k): asdict(v) for k, v in store._effects.items()},
-        "previews": {"|".join(k): asdict(v) for k, v in store._previews.items()},
-        "diffs": {"|".join(k): asdict(v) for k, v in store._diffs.items()},
-        "shadows": {"|".join(k): asdict(v) for k, v in store._shadows.items()},
-        "baselines": {"|".join(k): asdict(v) for k, v in store._baselines.items()},
+        "submissions": {
+            _encode_key(k): asdict(v) for k, v in store._submissions.items()
+        },
+        "idempotency": {_encode_key(k): v for k, v in store._idempotency.items()},
+        "outbox": {_encode_key(k): asdict(v) for k, v in store._outbox.items()},
+        "leases": {_encode_key(k): asdict(v) for k, v in store._leases.items()},
+        "attempts": {_encode_key(k): asdict(v) for k, v in store._attempts.items()},
+        "checkpoints": {
+            _encode_key(k): asdict(v) for k, v in store._checkpoints.items()
+        },
+        "effects": {_encode_key(k): asdict(v) for k, v in store._effects.items()},
+        "previews": {_encode_key(k): asdict(v) for k, v in store._previews.items()},
+        "diffs": {_encode_key(k): asdict(v) for k, v in store._diffs.items()},
+        "shadows": {_encode_key(k): asdict(v) for k, v in store._shadows.items()},
+        "baselines": {_encode_key(k): asdict(v) for k, v in store._baselines.items()},
         "diagnostics": [asdict(d) for d in store._diagnostics],
     }
-
-
-def _key(text: str) -> tuple[str, ...]:
-    return tuple(text.split("|"))
 
 
 def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
     store = MemoryDurableWorkStore(admission_limit=payload.get("admission_limit"))
     store._submissions = {
-        _key(k): SubmissionRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): SubmissionRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("submissions") or {}).items()
     }
     store._idempotency = {
-        _key(k): v for k, v in dict(payload.get("idempotency") or {}).items()
+        _decode_key(k): v for k, v in dict(payload.get("idempotency") or {}).items()
     }
     store._outbox = {
-        _key(k): OutboxRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): OutboxRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("outbox") or {}).items()
     }
     store._leases = {
-        _key(k): LeaseRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): LeaseRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("leases") or {}).items()
     }
     store._attempts = {
-        _key(k): AttemptRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): AttemptRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("attempts") or {}).items()
     }
     store._checkpoints = {
-        _key(k): CheckpointRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): CheckpointRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("checkpoints") or {}).items()
     }
     store._effects = {
-        _key(k): EffectRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): EffectRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("effects") or {}).items()
     }
     store._previews = {
-        _key(k): PreviewWorkspace(**v)  # type: ignore[arg-type]
+        _decode_key(k): PreviewWorkspace(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("previews") or {}).items()
     }
     store._diffs = {
-        _key(k): DiffRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): DiffRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("diffs") or {}).items()
     }
     store._shadows = {
-        _key(k): ShadowRunRecord(**v)  # type: ignore[arg-type]
+        _decode_key(k): ShadowRunRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("shadows") or {}).items()
     }
     store._baselines = {
-        _key(k): BaselineAcknowledgement(**v)  # type: ignore[arg-type]
+        _decode_key(k): BaselineAcknowledgement(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("baselines") or {}).items()
     }
     store._diagnostics = [
@@ -145,48 +156,77 @@ class SQLModelDurableWorkStore:
 
     def _txn(self, fn: Callable[[MemoryDurableWorkStore], T]) -> T:
         with session_scope(self.engine) as session:
-            mem = self._read(session)
+            mem, version = self._read(session, for_update=True)
             if self.admission_limit is not None:
                 mem.admission_limit = self.admission_limit
             result = fn(mem)
-            self._write(session, mem)
+            self._write(session, mem, expected_version=version)
             return result
 
-    def _read(self, session: Session) -> MemoryDurableWorkStore:
-        row = session.exec(
-            select(DurableSnapshotRow).where(
-                DurableSnapshotRow.store_id == self.store_id
-            )
-        ).first()
-        if row is None:
-            return MemoryDurableWorkStore(admission_limit=self.admission_limit)
-        return _load_store(json.loads(row.payload_json or "{}"))
+    def _read_only(self, fn: Callable[[MemoryDurableWorkStore], T]) -> T:
+        with session_scope(self.engine) as session:
+            mem, _version = self._read(session, for_update=False)
+            if self.admission_limit is not None:
+                mem.admission_limit = self.admission_limit
+            return fn(mem)
 
-    def _write(self, session: Session, store: MemoryDurableWorkStore) -> None:
+    def _read(
+        self, session: Session, *, for_update: bool
+    ) -> tuple[MemoryDurableWorkStore, int]:
+        stmt = select(DurableSnapshotRow).where(
+            DurableSnapshotRow.store_id == self.store_id
+        )
+        if for_update:
+            stmt = stmt.with_for_update()
+        row = session.exec(stmt).first()
+        if row is None:
+            return MemoryDurableWorkStore(admission_limit=self.admission_limit), 0
+        return _load_store(json.loads(row.payload_json or "{}")), int(
+            row.payload_version or 0
+        )
+
+    def _write(
+        self,
+        session: Session,
+        store: MemoryDurableWorkStore,
+        *,
+        expected_version: int,
+    ) -> None:
         payload = json.dumps(_dump_store(store), sort_keys=True)
         row = session.exec(
-            select(DurableSnapshotRow).where(
-                DurableSnapshotRow.store_id == self.store_id
-            )
+            select(DurableSnapshotRow)
+            .where(DurableSnapshotRow.store_id == self.store_id)
+            .with_for_update()
         ).first()
         if row is None:
+            if expected_version != 0:
+                raise ControlPlaneError.conflict(
+                    "Durable snapshot version conflict (missing row)"
+                )
             session.add(
                 DurableSnapshotRow(
                     store_id=self.store_id,
                     payload_json=payload,
+                    payload_version=1,
                     updated_at=_utcnow_iso(),
                 )
             )
-        else:
-            row.payload_json = payload
-            row.updated_at = _utcnow_iso()
-            session.add(row)
+            return
+        current = int(row.payload_version or 0)
+        if current != expected_version:
+            raise ControlPlaneError.conflict(
+                "Durable snapshot version conflict (stale write)"
+            )
+        row.payload_json = payload
+        row.payload_version = current + 1
+        row.updated_at = _utcnow_iso()
+        session.add(row)
 
     def accept(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._txn(lambda m: m.accept(ctx, **kwargs))
 
     def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
-        return self._txn(lambda m: m.pending_outbox(ctx, limit=limit))
+        return self._read_only(lambda m: m.pending_outbox(ctx, limit=limit))
 
     def mark_published(self, ctx: ControlPlaneContext, outbox_id: str):
         return self._txn(lambda m: m.mark_published(ctx, outbox_id))

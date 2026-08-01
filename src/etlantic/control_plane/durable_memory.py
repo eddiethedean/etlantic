@@ -16,6 +16,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from etlantic.control_plane.durable_models import (
+    STATE_NAMESPACES,
     AttemptRecord,
     BaselineAcknowledgement,
     CheckpointRecord,
@@ -58,6 +59,14 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
 _NON_TERMINAL = {"accepted", "dispatched", "cancel_requested"}
 
 
+def _require_namespaced_checkpoint_id(checkpoint_id: str) -> None:
+    if not any(checkpoint_id.startswith(prefix) for prefix in STATE_NAMESPACES):
+        raise ValueError(
+            "checkpoint_id must use a namespaced prefix "
+            f"({', '.join(STATE_NAMESPACES)})"
+        )
+
+
 class MemoryDurableWorkStore:
     """Fail-closed in-memory implementation of :class:`DurableWorkStore`."""
 
@@ -90,6 +99,7 @@ class MemoryDurableWorkStore:
         input_snapshot: str | None = None,
         schema_observation_fingerprint: str | None = None,
         schema_baseline_id: str | None = None,
+        submission_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]:
         self._require_nonempty(
             idempotency_key,
@@ -99,6 +109,8 @@ class MemoryDurableWorkStore:
             plan_fingerprint,
             "plan_fingerprint",
         )
+        if submission_id is not None:
+            self._require_nonempty(submission_id, "submission_id")
         idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
@@ -133,6 +145,10 @@ class MemoryDurableWorkStore:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with different immutable inputs"
                     )
+                if submission_id is not None and submission_id != existing_id:
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with different submission_id"
+                    )
                 return deepcopy(prior), False
             if self.admission_limit is not None:
                 in_flight = sum(
@@ -144,7 +160,12 @@ class MemoryDurableWorkStore:
                     raise ControlPlaneError.conflict(
                         "Per-tenant admission limit exceeded"
                     )
-            submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+            if submission_id is None:
+                submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+            elif (*_scope(ctx), submission_id) in self._submissions:
+                raise ControlPlaneError.conflict(
+                    "submission_id already exists for a different accept"
+                )
             record = SubmissionRecord(
                 submission_id,
                 *_scope(ctx),
@@ -205,9 +226,12 @@ class MemoryDurableWorkStore:
                 )
                 self._outbox[key] = row
                 submission_key = (*_scope(ctx), row.submission_id)
-                self._submissions[submission_key] = replace(
-                    self._submissions[submission_key], status="dispatched"
-                )
+                submission = self._submissions[submission_key]
+                # Never revive cancel_requested / terminal work via publish.
+                if submission.status == "accepted":
+                    self._submissions[submission_key] = replace(
+                        submission, status="dispatched"
+                    )
             return deepcopy(row)
 
     def cancel_submission(
@@ -361,7 +385,9 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.conflict(
                     "Submission already has a running attempt"
                 )
-            safe_context = redact_control_plane_payload(
+            # Caller context first, then authoritative submission fields last.
+            merged = dict(context or {})
+            merged.update(
                 {
                     "plan_fingerprint": submission.plan_fingerprint,
                     "revision_id": submission.revision_id,
@@ -369,9 +395,9 @@ class MemoryDurableWorkStore:
                     "schema_observation_fingerprint": (
                         submission.schema_observation_fingerprint
                     ),
-                    **dict(context or {}),
                 }
             )
+            safe_context = redact_control_plane_payload(merged)
             record = AttemptRecord(
                 f"att-{uuid.uuid4().hex[:16]}",
                 submission_id,
@@ -405,13 +431,15 @@ class MemoryDurableWorkStore:
             )
             if attempt.status != "running":
                 return deepcopy(attempt)
-            result = replace(attempt, status=status, completed_at=_iso())
-            self._attempts[key] = result
             submission_key = (*_scope(ctx), attempt.submission_id)
             submission = self._submissions[submission_key]
+            attempt_status = status
             terminal_status = "completed" if status == "completed" else "failed"
             if status == "cancelled" or submission.status == "cancel_requested":
+                attempt_status = "cancelled"
                 terminal_status = "cancelled"
+            result = replace(attempt, status=attempt_status, completed_at=_iso())
+            self._attempts[key] = result
             self._submissions[submission_key] = replace(
                 submission, status=terminal_status
             )
@@ -428,6 +456,7 @@ class MemoryDurableWorkStore:
         fencing_token: int | None = None,
         schema_baseline_id: str | None = None,
     ) -> CheckpointRecord:
+        _require_namespaced_checkpoint_id(checkpoint_id)
         key = (*_scope(ctx), checkpoint_id)
         with self._lock:
             previous = self._checkpoints.get(key)
@@ -472,6 +501,7 @@ class MemoryDurableWorkStore:
         expected_version: int | None,
         value_fingerprint: str,
     ) -> StateTransitionExplanation:
+        _require_namespaced_checkpoint_id(checkpoint_id)
         with self._lock:
             previous = self._checkpoints.get((*_scope(ctx), checkpoint_id))
             current_version = previous.version if previous else None
@@ -504,6 +534,7 @@ class MemoryDurableWorkStore:
     ) -> StateDiagnostic:
         if kind not in {"corruption", "migration", "conflict"}:
             raise ValueError("unsupported diagnostic kind")
+        _require_namespaced_checkpoint_id(checkpoint_id)
         with self._lock:
             previous = self._checkpoints.get((*_scope(ctx), checkpoint_id))
             if previous is None and kind != "migration":
@@ -784,6 +815,14 @@ class MemoryDurableWorkStore:
         if _parse(preview.expires_at) <= _now():
             raise ValueError("Preview expiry must be in the future")
         with self._lock:
+            key = (*_scope(ctx), preview.preview_id)
+            existing = self._previews.get(key)
+            if existing is not None:
+                if existing == preview:
+                    return deepcopy(existing)
+                raise ControlPlaneError.conflict(
+                    "Preview id already exists with different inputs"
+                )
             active = sum(
                 1
                 for (t, w, _), row in self._previews.items()
@@ -791,7 +830,7 @@ class MemoryDurableWorkStore:
             )
             if active >= preview.quota:
                 raise ControlPlaneError.conflict("Preview workspace quota exceeded")
-            self._previews[(*_scope(ctx), preview.preview_id)] = deepcopy(preview)
+            self._previews[key] = deepcopy(preview)
             return deepcopy(preview)
 
     def mark_preview_stale(

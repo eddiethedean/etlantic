@@ -53,19 +53,25 @@ SQLModel imports. Optional SQLModel reference stores live under
 Pin: `pip install 'etlantic-fastapi==0.41.0'` (match `etlantic==0.41.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
-`DurableWorkStore.accept` while preserving the CP1 receipt shape. Host ops use
-`/v1/durable/*` (authz first):
+`DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
+`POST /v1/runs/{id}/cancel` also cancels the correlated durable submission.
+Shipped host routes under `/v1/durable/*` (authz first):
 
-| Route family | Purpose |
+| Route | Purpose |
 |---|---|
-| `GET /v1/durable/outbox` · `POST …/published` | Pending outbox drain / mark published |
-| `POST …/submissions/{id}/cancel` | Cancel accepted work |
-| `POST …/leases` · `…/heartbeat` · `…/release` | Lease acquire / heartbeat / release |
-| `POST …/attempts` · checkpoint / effects / replay | Attempt lifecycle and recovery |
-| Preview / repair routes | TTL preview workspaces and fingerprint-only repair plans |
+| `GET /v1/durable/outbox` | Pending outbox drain |
+| `POST /v1/durable/outbox/{outbox_id}/published` | Mark outbox published |
+| `POST /v1/durable/submissions/{id}/cancel` | Cancel accepted work |
+| `POST …/leases` · `…/leases/heartbeat` · `…/leases/release` | Lease acquire / heartbeat / release |
+| `POST …/attempts` · `POST /v1/durable/attempts/{id}/finish` | Attempt start / finish |
+| `POST /v1/durable/checkpoints/{id}/cas` | Namespaced checkpoint CAS |
+| `POST …/replay` | Replay from optional checkpoint |
+| `POST /v1/durable/previews` | Create TTL preview workspace |
 
-Core does **not** embed a broker or worker supervisor; adopters drain the
-outbox with their own dispatcher.
+Effects, repair plans, diagnose/explain, and shadow authorization remain
+**SDK / DurableWorkStore protocol** surfaces in 0.41 — not separate FastAPI
+routes. Core does **not** embed a broker or worker supervisor; adopters drain
+the outbox with their own dispatcher.
 
 ## PMCP errors
 

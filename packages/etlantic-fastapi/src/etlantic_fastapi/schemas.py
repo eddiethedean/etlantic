@@ -275,6 +275,56 @@ class ReadyResponse(BaseModel):
     detail: str | None = None
 
 
+class DurableLeaseBody(BaseModel):
+    owner_id: str
+    ttl_seconds: int = 30
+
+
+class DurableLeaseTokenBody(BaseModel):
+    owner_id: str
+    fencing_token: int
+    ttl_seconds: int = 30
+
+
+class DurableStartAttemptBody(BaseModel):
+    owner_id: str
+    fencing_token: int
+    context: dict[str, Any] | None = None
+
+
+class DurableFinishAttemptBody(BaseModel):
+    owner_id: str
+    fencing_token: int
+    status: str
+
+
+class DurableCheckpointCasBody(BaseModel):
+    value_fingerprint: str
+    expected_version: int | None = None
+    attempt_id: str | None = None
+    fencing_token: int | None = None
+    schema_baseline_id: str | None = None
+
+
+class DurableReplayBody(BaseModel):
+    checkpoint_id: str | None = None
+
+
+class DurablePreviewBody(BaseModel):
+    preview_id: str
+    base_revision_id: str
+    candidate_revision_id: str
+    created_at: str
+    expires_at: str
+    quota: int
+    code_fingerprint: str
+    plan_fingerprint: str
+    policy_fingerprint: str | None = None
+    environment_fingerprint: str | None = None
+    commit_ref: str | None = None
+    pull_request_ref: str | None = None
+
+
 __all__ = [
     "AcceptReceiptResponse",
     "AliasPutBody",
@@ -284,6 +334,13 @@ __all__ = [
     "DefinitionGetResponse",
     "DefinitionListResponse",
     "DefinitionSummary",
+    "DurableCheckpointCasBody",
+    "DurableFinishAttemptBody",
+    "DurableLeaseBody",
+    "DurableLeaseTokenBody",
+    "DurablePreviewBody",
+    "DurableReplayBody",
+    "DurableStartAttemptBody",
     "HealthResponse",
     "LineageStubResponse",
     "PlanResponse",

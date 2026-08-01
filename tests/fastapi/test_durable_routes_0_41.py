@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     MemoryAuthorizer,
     MemoryDefinitionRepository,
@@ -130,3 +131,62 @@ def test_submit_dual_writes_durable_accept_and_lease_routes() -> None:
     )
     assert preview.status_code == 200
     assert preview.json()["preview_id"] == "pv1"
+
+
+def test_dual_write_reuses_cp1_submission_id_and_cancel_propagates() -> None:
+    authz = MemoryAuthorizer()
+    durable = MemoryDurableWorkStore()
+    defs = MemoryDefinitionRepository()
+    ctx = _ctx()
+    defs.put(ctx, "pipe-1", {"name": "pipe-1"})
+    for action in (*DURABLE_ACTIONS, "run.cancel", "run.read"):
+        authz.grant(ctx, action)
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+        durable_work=durable,
+    )
+    client = TestClient(create_app(api))
+    headers = {"X-Principal": "alice"}
+    resp = client.post(
+        "/v1/definitions/pipe-1/runs",
+        headers={**headers, "Idempotency-Key": "corr-1"},
+        json={"payload": {"plan_fingerprint": "plan-corr"}},
+    )
+    assert resp.status_code == 202, resp.text
+    body = resp.json()
+    cp1_id = body["submission_id"]
+    pending = durable.pending_outbox(_ctx())
+    assert pending and pending[0].submission_id == cp1_id
+    cancel = client.post(f"/v1/runs/{body['resource_id']}/cancel", headers=headers)
+    assert cancel.status_code == 200, cancel.text
+    with pytest.raises(ControlPlaneError):
+        durable.acquire_lease(_ctx(), cp1_id, owner_id="host-1", ttl_seconds=30)
+
+
+def test_missing_durable_store_returns_501() -> None:
+    authz = MemoryAuthorizer()
+    defs = MemoryDefinitionRepository()
+    ctx = _ctx()
+    defs.put(ctx, "pipe-1", {"name": "pipe-1"})
+    authz.grant(ctx, "durable.outbox.read")
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+        durable_work=None,
+    )
+    client = TestClient(create_app(api))
+    resp = client.get("/v1/durable/outbox", headers={"X-Principal": "alice"})
+    assert resp.status_code == 501

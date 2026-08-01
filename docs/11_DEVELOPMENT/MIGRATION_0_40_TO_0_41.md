@@ -18,7 +18,7 @@
 
 ## Upgrade steps
 
-1. Complete CP2 adoption on `0.41.0` first (registry, isolation profiles).
+1. Complete CP2 adoption on `0.40.0` first (registry, isolation profiles).
 
 2. Pin core and official plugins / Medallantic together:
 

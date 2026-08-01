@@ -30,6 +30,13 @@ from etlantic_fastapi.schemas import (
     DefinitionGetResponse,
     DefinitionListResponse,
     DefinitionSummary,
+    DurableCheckpointCasBody,
+    DurableFinishAttemptBody,
+    DurableLeaseBody,
+    DurableLeaseTokenBody,
+    DurablePreviewBody,
+    DurableReplayBody,
+    DurableStartAttemptBody,
     HealthResponse,
     LineageStubResponse,
     PlanResponse,
@@ -443,13 +450,14 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_type="run",
             operation="run.submit",
         )
+        durable_created = False
         if api.durable_work is not None:
             plan_fp = str(
                 payload.get("plan_fingerprint")
                 or payload.get("plan_id")
                 or f"definition:{definition_id}"
             )
-            api.durable_work.accept(
+            _durable_row, durable_created = api.durable_work.accept(
                 ctx,
                 idempotency_key=idem,
                 operation="run.submit",
@@ -474,9 +482,21 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                     if payload.get("input_snapshot") is not None
                     else None
                 ),
+                schema_baseline_id=(
+                    str(payload["schema_baseline_id"])
+                    if payload.get("schema_baseline_id") is not None
+                    else None
+                ),
+                schema_observation_fingerprint=(
+                    str(payload["schema_observation_fingerprint"])
+                    if payload.get("schema_observation_fingerprint") is not None
+                    else None
+                ),
+                submission_id=result.receipt.submission_id,
             )
         receipt = _receipt_with_urls(result.receipt)
-        if result.created and api.events is not None:
+        # Emit on CP1 create or when durable accept first succeeds after a split.
+        if api.events is not None and (result.created or durable_created):
             run_id = receipt.resource_id or receipt.submission_id
             api.events.append(
                 ctx,
@@ -539,6 +559,12 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         else:
             record = cancelled
             changed = True
+        if api.durable_work is not None:
+            submission_id = str(
+                record.get("submission_id") if isinstance(record, Mapping) else run_id
+            )
+            # Fail closed: durable cancel must succeed when dual-write is configured.
+            api.durable_work.cancel_submission(ctx, submission_id)
         if changed and api.events is not None:
             api.events.append(
                 ctx,
@@ -997,15 +1023,14 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             revision_id=body.revision_id,
             metadata=dict(body.metadata),
         )
-        registry.revisions.put_alias(ctx, record)
-        resolved = registry.revisions.resolve_alias(ctx, alias)
+        stored = registry.revisions.put_alias(ctx, record)
         return AliasResponse(
-            tenant_id=ctx.tenant.tenant_id,
-            workspace_id=ctx.workspace.workspace_id,
-            alias=alias,
-            logical_id=resolved.logical_id,
-            revision_id=resolved.revision_id,
-            metadata=dict(body.metadata),
+            tenant_id=stored.tenant_id,
+            workspace_id=stored.workspace_id,
+            alias=stored.alias,
+            logical_id=stored.logical_id,
+            revision_id=stored.revision_id,
+            metadata=dict(stored.metadata),
         )
 
     @router.post(
@@ -1040,7 +1065,12 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     # CP3 durable work host routes under /v1/durable
     def _require_durable():
         if api.durable_work is None:
-            raise ControlPlaneError.not_found("Durable work store is not configured")
+            raise ControlPlaneError(
+                "Durable work store is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
         return api.durable_work
 
     @router.get(
@@ -1105,7 +1135,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_acquire_lease(
         submission_id: str,
-        body: dict[str, Any],
+        body: DurableLeaseBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1120,8 +1150,8 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .acquire_lease(
                 ctx,
                 submission_id,
-                owner_id=str(body["owner_id"]),
-                ttl_seconds=int(body.get("ttl_seconds", 30)),
+                owner_id=body.owner_id,
+                ttl_seconds=body.ttl_seconds,
             )
             .to_dict()
         )
@@ -1133,7 +1163,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_heartbeat(
         submission_id: str,
-        body: dict[str, Any],
+        body: DurableLeaseTokenBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1148,9 +1178,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .heartbeat(
                 ctx,
                 submission_id,
-                owner_id=str(body["owner_id"]),
-                fencing_token=int(body["fencing_token"]),
-                ttl_seconds=int(body.get("ttl_seconds", 30)),
+                owner_id=body.owner_id,
+                fencing_token=body.fencing_token,
+                ttl_seconds=body.ttl_seconds,
             )
             .to_dict()
         )
@@ -1162,7 +1192,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_release_lease(
         submission_id: str,
-        body: dict[str, Any],
+        body: DurableLeaseTokenBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, str]:
         require_authorized(
@@ -1175,8 +1205,8 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         _require_durable().release_lease(
             ctx,
             submission_id,
-            owner_id=str(body["owner_id"]),
-            fencing_token=int(body["fencing_token"]),
+            owner_id=body.owner_id,
+            fencing_token=body.fencing_token,
         )
         return {"status": "released"}
 
@@ -1187,7 +1217,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_start_attempt(
         submission_id: str,
-        body: dict[str, Any],
+        body: DurableStartAttemptBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1202,9 +1232,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .start_attempt(
                 ctx,
                 submission_id,
-                owner_id=str(body["owner_id"]),
-                fencing_token=int(body["fencing_token"]),
-                context=body.get("context"),
+                owner_id=body.owner_id,
+                fencing_token=body.fencing_token,
+                context=body.context,
             )
             .to_dict()
         )
@@ -1216,7 +1246,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_finish_attempt(
         attempt_id: str,
-        body: dict[str, Any],
+        body: DurableFinishAttemptBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1231,9 +1261,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .finish_attempt(
                 ctx,
                 attempt_id,
-                owner_id=str(body["owner_id"]),
-                fencing_token=int(body["fencing_token"]),
-                status=str(body["status"]),
+                owner_id=body.owner_id,
+                fencing_token=body.fencing_token,
+                status=body.status,
             )
             .to_dict()
         )
@@ -1245,7 +1275,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_checkpoint_cas(
         checkpoint_id: str,
-        body: dict[str, Any],
+        body: DurableCheckpointCasBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1260,11 +1290,11 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .compare_and_swap_checkpoint(
                 ctx,
                 checkpoint_id,
-                expected_version=body.get("expected_version"),
-                value_fingerprint=str(body["value_fingerprint"]),
-                attempt_id=body.get("attempt_id"),
-                fencing_token=body.get("fencing_token"),
-                schema_baseline_id=body.get("schema_baseline_id"),
+                expected_version=body.expected_version,
+                value_fingerprint=body.value_fingerprint,
+                attempt_id=body.attempt_id,
+                fencing_token=body.fencing_token,
+                schema_baseline_id=body.schema_baseline_id,
             )
             .to_dict()
         )
@@ -1276,7 +1306,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def durable_replay(
         submission_id: str,
-        body: dict[str, Any] | None = None,
+        body: DurableReplayBody | None = None,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
@@ -1286,10 +1316,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             f"durable:submission:{submission_id}",
             resource_in_caller_scope=False,
         )
-        body = body or {}
+        body = body or DurableReplayBody()
         return (
             _require_durable()
-            .replay(ctx, submission_id, checkpoint_id=body.get("checkpoint_id"))
+            .replay(ctx, submission_id, checkpoint_id=body.checkpoint_id)
             .to_dict()
         )
 
@@ -1299,7 +1329,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         tags=["durable"],
     )
     def durable_create_preview(
-        body: dict[str, Any],
+        body: DurablePreviewBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         from etlantic.control_plane import PreviewWorkspace
@@ -1312,20 +1342,20 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         preview = PreviewWorkspace(
-            str(body["preview_id"]),
+            body.preview_id,
             ctx.tenant.tenant_id,
             ctx.workspace.workspace_id,
-            str(body["base_revision_id"]),
-            str(body["candidate_revision_id"]),
-            str(body["created_at"]),
-            str(body["expires_at"]),
-            int(body["quota"]),
-            str(body["code_fingerprint"]),
-            str(body["plan_fingerprint"]),
-            body.get("policy_fingerprint"),
-            body.get("environment_fingerprint"),
-            body.get("commit_ref"),
-            body.get("pull_request_ref"),
+            body.base_revision_id,
+            body.candidate_revision_id,
+            body.created_at,
+            body.expires_at,
+            body.quota,
+            body.code_fingerprint,
+            body.plan_fingerprint,
+            body.policy_fingerprint,
+            body.environment_fingerprint,
+            body.commit_ref,
+            body.pull_request_ref,
         )
         return _require_durable().create_preview(ctx, preview).to_dict()
 

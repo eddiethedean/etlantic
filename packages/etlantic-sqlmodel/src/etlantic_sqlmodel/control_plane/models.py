@@ -6,7 +6,7 @@ pipeline contracts.
 
 from __future__ import annotations
 
-from sqlalchemy import Column, String, UniqueConstraint
+from sqlalchemy import Column, Integer, String, UniqueConstraint
 
 from sqlmodel import Field, SQLModel
 
@@ -281,6 +281,7 @@ class DurableSnapshotRow(SQLModel, table=True):
         sa_column=Column(String(), index=True, nullable=False), default="default"
     )
     payload_json: str = "{}"
+    payload_version: int = Field(default=0, sa_column=Column(Integer(), nullable=False))
     updated_at: str | None = None
 
 

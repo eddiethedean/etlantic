@@ -116,7 +116,7 @@ def test_fencing_prevents_stale_attempt_from_advancing_checkpoint() -> None:
     )
     checkpoint = store.compare_and_swap_checkpoint(
         ctx(),
-        "cursor",
+        "cursor:main",
         expected_version=None,
         value_fingerprint="v1",
         attempt_id=attempt.attempt_id,
@@ -126,7 +126,7 @@ def test_fencing_prevents_stale_attempt_from_advancing_checkpoint() -> None:
     with pytest.raises(ControlPlaneError):
         store.compare_and_swap_checkpoint(
             ctx(),
-            "cursor",
+            "cursor:main",
             expected_version=1,
             value_fingerprint="v2",
             attempt_id=attempt.attempt_id,
@@ -142,7 +142,7 @@ def test_fencing_prevents_stale_attempt_from_advancing_checkpoint() -> None:
     with pytest.raises(ControlPlaneError):
         store.compare_and_swap_checkpoint(
             ctx(),
-            "cursor",
+            "cursor:main",
             expected_version=1,
             value_fingerprint="v3",
             attempt_id=attempt.attempt_id,
@@ -209,11 +209,11 @@ def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
         input_snapshot="input1",
     )
     checkpoint = store.compare_and_swap_checkpoint(
-        ctx(), "watermark", expected_version=None, value_fingerprint="wm1"
+        ctx(), "watermark:main", expected_version=None, value_fingerprint="wm1"
     )
     with pytest.raises(ControlPlaneError):
         store.compare_and_swap_checkpoint(
-            ctx(), "watermark", expected_version=None, value_fingerprint="wm2"
+            ctx(), "watermark:main", expected_version=None, value_fingerprint="wm2"
         )
     replay = store.replay(
         ctx(), submission.submission_id, checkpoint_id=checkpoint.checkpoint_id
@@ -277,7 +277,7 @@ def test_replay_rejects_another_submission_checkpoint_and_expired_preview() -> N
     )
     checkpoint = store.compare_and_swap_checkpoint(
         ctx(),
-        "owned",
+        "cursor:owned",
         expected_version=None,
         value_fingerprint="v1",
         attempt_id=attempt.attempt_id,
@@ -508,3 +508,101 @@ def test_admission_release_repair_preview_shadow_and_conformance() -> None:
     from etlantic.testing import run_durable_work_conformance_suite
 
     run_durable_work_conformance_suite(MemoryDurableWorkStore())
+
+
+def test_cancel_then_publish_does_not_revive_to_dispatched() -> None:
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(),
+        idempotency_key="cancel-pub",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    cancelled = store.cancel_submission(ctx(), submission.submission_id)
+    assert cancelled.status == "cancel_requested"
+    pending = store.pending_outbox(ctx())
+    assert pending
+    published = store.mark_published(ctx(), pending[0].outbox_id)
+    assert published.published_at is not None
+    # Still not leasable — publish must not revive cancel_requested → dispatched.
+    with pytest.raises(ControlPlaneError):
+        store.acquire_lease(
+            ctx(), submission.submission_id, owner_id="w", ttl_seconds=30
+        )
+
+
+def test_accept_caller_submission_id_and_preview_conflict() -> None:
+    store = MemoryDurableWorkStore()
+    first, created = store.accept(
+        ctx(),
+        idempotency_key="sid-1",
+        operation="run.submit",
+        plan_fingerprint="plan",
+        submission_id="fixed-sub-1",
+    )
+    assert created and first.submission_id == "fixed-sub-1"
+    again, created_again = store.accept(
+        ctx(),
+        idempotency_key="sid-1",
+        operation="run.submit",
+        plan_fingerprint="plan",
+        submission_id="fixed-sub-1",
+    )
+    assert not created_again and again.submission_id == "fixed-sub-1"
+    with pytest.raises(ControlPlaneError):
+        store.accept(
+            ctx(),
+            idempotency_key="sid-2",
+            operation="run.submit",
+            plan_fingerprint="plan-2",
+            submission_id="fixed-sub-1",
+        )
+    expires = (datetime.now(UTC) + timedelta(seconds=60)).isoformat()
+    created_at = datetime.now(UTC).isoformat()
+    preview = PreviewWorkspace(
+        preview_id="pv-fixed",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        base_revision_id="r1",
+        candidate_revision_id="r2",
+        created_at=created_at,
+        expires_at=expires,
+        quota=1,
+        code_fingerprint="code",
+        plan_fingerprint="plan",
+        commit_ref="abc",
+    )
+    store.create_preview(ctx(), preview)
+    with pytest.raises(ControlPlaneError):
+        store.create_preview(
+            ctx(),
+            replace(preview, candidate_revision_id="r3"),
+        )
+
+
+def test_finish_attempt_under_cancel_forces_cancelled_status() -> None:
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(),
+        idempotency_key="fin-cancel",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    lease = store.acquire_lease(
+        ctx(), submission.submission_id, owner_id="w", ttl_seconds=60
+    )
+    attempt = store.start_attempt(
+        ctx(),
+        submission.submission_id,
+        owner_id="w",
+        fencing_token=lease.fencing_token,
+    )
+    store.cancel_submission(ctx(), submission.submission_id)
+    finished = store.finish_attempt(
+        ctx(),
+        attempt.attempt_id,
+        owner_id="w",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+    assert finished.status == "cancelled"

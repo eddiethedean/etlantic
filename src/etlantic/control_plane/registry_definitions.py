@@ -17,7 +17,10 @@ from typing import Any
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.control_plane.registry_memory import content_fingerprint
+from etlantic.control_plane.registry_memory import (
+    content_fingerprint,
+    safe_registry_content,
+)
 from etlantic.control_plane.registry_models import (
     LogicalIdentity,
     RegistryRevision,
@@ -28,7 +31,8 @@ DEFINITION_KIND = "definition"
 
 
 def _document_content(document: Mapping[str, Any]) -> dict[str, Any]:
-    payload = dict(document)
+    """Fingerprint after secret reseal so nested and outer digests stay aligned."""
+    payload = safe_registry_content(dict(document))
     return {
         "document_fingerprint": content_fingerprint(payload),
         "document": payload,

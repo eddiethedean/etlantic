@@ -92,6 +92,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_connector_conformance.py --fake
 
+      - name: Durable work conformance
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_durable_conformance.py
+
+      - name: Durable work chaos
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_durable_chaos.py
+
       - name: Runnable example
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: |

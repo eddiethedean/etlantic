@@ -120,8 +120,8 @@ class RevisionRegistry(Protocol):
         """List revisions for a logical identity inside ``ctx`` scope."""
         ...
 
-    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> None:
-        """Create or replace an alias mapping to a revision."""
+    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> AliasRecord:
+        """Create or replace an alias mapping to a revision; return stored record."""
         ...
 
     def resolve_alias(self, ctx: ControlPlaneContext, alias: str) -> RegistryRevision:

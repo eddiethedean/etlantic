@@ -111,17 +111,7 @@ class MemoryTenantDirectory:
     def get(self, ctx: ControlPlaneContext, tenant_id: str) -> TenantRecord:
         with self._lock:
             record = self._tenants.get(tenant_id)
-            if record is None:
-                raise ControlPlaneError.not_found(
-                    "Tenant not found",
-                    extensions={"tenant_id": tenant_id},
-                )
-            in_scope = ctx.tenant.tenant_id == tenant_id
-            admin_scope = (
-                record.security_domain_id is not None
-                and record.security_domain_id == ctx.security_domain.domain_id
-            )
-            if not in_scope and not admin_scope:
+            if record is None or ctx.tenant.tenant_id != tenant_id:
                 raise ControlPlaneError.not_found(
                     "Tenant not found",
                     extensions={"tenant_id": tenant_id},
@@ -131,36 +121,21 @@ class MemoryTenantDirectory:
 
     def put(self, ctx: ControlPlaneContext, record: TenantRecord) -> None:
         with self._lock:
+            if ctx.tenant.tenant_id != record.tenant_id:
+                raise ControlPlaneError.not_found(
+                    "Tenant not found",
+                    extensions={"tenant_id": record.tenant_id},
+                )
             existing = self._tenants.get(record.tenant_id)
             if existing is not None:
                 _require_active(
                     existing.lifecycle, resource=f"tenant:{record.tenant_id}"
                 )
-                existing_in_scope = ctx.tenant.tenant_id == record.tenant_id
-                existing_admin_scope = (
-                    existing.security_domain_id is not None
-                    and existing.security_domain_id == ctx.security_domain.domain_id
-                )
-                if not existing_in_scope and not existing_admin_scope:
-                    raise ControlPlaneError.not_found(
-                        "Tenant not found",
-                        extensions={"tenant_id": record.tenant_id},
-                    )
                 if existing.security_domain_id != record.security_domain_id:
                     raise ControlPlaneError.conflict(
                         "Tenant security domain is immutable through directory put",
                         extensions={"tenant_id": record.tenant_id},
                     )
-            in_scope = ctx.tenant.tenant_id == record.tenant_id
-            admin_scope = (
-                record.security_domain_id is not None
-                and record.security_domain_id == ctx.security_domain.domain_id
-            )
-            if not in_scope and not admin_scope:
-                raise ControlPlaneError.not_found(
-                    "Tenant not found",
-                    extensions={"tenant_id": record.tenant_id},
-                )
             now = _utcnow_iso()
             stored = replace(
                 record,
@@ -174,14 +149,10 @@ class MemoryTenantDirectory:
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[TenantRecord]:
         with self._lock:
-            out: list[TenantRecord] = []
-            for record in self._tenants.values():
-                if record.tenant_id == ctx.tenant.tenant_id or (
-                    record.security_domain_id is not None
-                    and record.security_domain_id == ctx.security_domain.domain_id
-                ):
-                    out.append(deepcopy(record))
-            return sorted(out, key=lambda r: r.tenant_id)
+            record = self._tenants.get(ctx.tenant.tenant_id)
+            if record is None:
+                return ()
+            return (deepcopy(record),)
 
     def set_lifecycle(
         self,
@@ -191,10 +162,7 @@ class MemoryTenantDirectory:
     ) -> TenantRecord:
         with self._lock:
             record = self._tenants.get(tenant_id)
-            if record is None or (
-                ctx.tenant.tenant_id != tenant_id
-                and record.security_domain_id != ctx.security_domain.domain_id
-            ):
+            if record is None or ctx.tenant.tenant_id != tenant_id:
                 raise ControlPlaneError.not_found(
                     "Tenant not found",
                     extensions={"tenant_id": tenant_id},
@@ -226,6 +194,11 @@ class MemoryWorkspaceDirectory:
             _require_active(tenant.lifecycle, resource=f"tenant:{tenant_id}")
 
     def get(self, ctx: ControlPlaneContext, workspace_id: str) -> WorkspaceRecord:
+        if workspace_id != ctx.workspace.workspace_id:
+            raise ControlPlaneError.not_found(
+                "Workspace not found",
+                extensions={"workspace_id": workspace_id},
+            )
         key = (ctx.tenant.tenant_id, workspace_id)
         with self._lock:
             self._assert_tenant_active(ctx.tenant.tenant_id)
@@ -242,7 +215,10 @@ class MemoryWorkspaceDirectory:
             return deepcopy(record)
 
     def put(self, ctx: ControlPlaneContext, record: WorkspaceRecord) -> None:
-        if record.tenant_id != ctx.tenant.tenant_id:
+        if (
+            record.tenant_id != ctx.tenant.tenant_id
+            or record.workspace_id != ctx.workspace.workspace_id
+        ):
             raise ControlPlaneError.not_found(
                 "Workspace not found",
                 extensions={"workspace_id": record.workspace_id},
@@ -286,6 +262,11 @@ class MemoryWorkspaceDirectory:
         workspace_id: str,
         state: LifecycleState,
     ) -> WorkspaceRecord:
+        if workspace_id != ctx.workspace.workspace_id:
+            raise ControlPlaneError.not_found(
+                "Workspace not found",
+                extensions={"workspace_id": workspace_id},
+            )
         key = (ctx.tenant.tenant_id, workspace_id)
         with self._lock:
             self._assert_tenant_active(ctx.tenant.tenant_id)
@@ -506,7 +487,7 @@ class MemoryRevisionRegistry:
                 key=lambda r: r.revision_id,
             )
 
-    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> None:
+    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> AliasRecord:
         if (
             alias.tenant_id != ctx.tenant.tenant_id
             or alias.workspace_id != ctx.workspace.workspace_id
@@ -540,6 +521,7 @@ class MemoryRevisionRegistry:
                 metadata=_safe_metadata(alias.metadata),
             )
             self._aliases[alias_key] = stored
+            return deepcopy(stored)
 
     def resolve_alias(self, ctx: ControlPlaneContext, alias: str) -> RegistryRevision:
         alias_key = (*ctx.scope_key, alias)

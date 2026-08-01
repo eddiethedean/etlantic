@@ -194,58 +194,33 @@ class SqlModelTenantDirectory:
     def get(self, ctx: ControlPlaneContext, tenant_id: str) -> TenantRecord:
         with session_scope(self.engine) as session:
             row = self._by_id(session, tenant_id)
-            if row is None:
+            if row is None or ctx.tenant.tenant_id != tenant_id:
                 raise ControlPlaneError.not_found(
                     "Tenant not found",
                     extensions={"tenant_id": tenant_id},
                 )
             record = _tenant_from_row(row)
-            in_scope = ctx.tenant.tenant_id == tenant_id
-            admin_scope = (
-                record.security_domain_id is not None
-                and record.security_domain_id == ctx.security_domain.domain_id
-            )
-            if not in_scope and not admin_scope:
-                raise ControlPlaneError.not_found(
-                    "Tenant not found",
-                    extensions={"tenant_id": tenant_id},
-                )
             _require_active(record.lifecycle, resource=f"tenant:{tenant_id}")
             return deepcopy(record)
 
     def put(self, ctx: ControlPlaneContext, record: TenantRecord) -> None:
         with session_scope(self.engine) as session:
+            if ctx.tenant.tenant_id != record.tenant_id:
+                raise ControlPlaneError.not_found(
+                    "Tenant not found",
+                    extensions={"tenant_id": record.tenant_id},
+                )
             existing = self._by_id(session, record.tenant_id)
             if existing is not None:
                 _require_active(
                     LifecycleState(existing.lifecycle),
                     resource=f"tenant:{record.tenant_id}",
                 )
-                existing_in_scope = ctx.tenant.tenant_id == record.tenant_id
-                existing_admin_scope = (
-                    existing.security_domain_id is not None
-                    and existing.security_domain_id == ctx.security_domain.domain_id
-                )
-                if not existing_in_scope and not existing_admin_scope:
-                    raise ControlPlaneError.not_found(
-                        "Tenant not found",
-                        extensions={"tenant_id": record.tenant_id},
-                    )
                 if existing.security_domain_id != record.security_domain_id:
                     raise ControlPlaneError.conflict(
                         "Tenant security domain is immutable through directory put",
                         extensions={"tenant_id": record.tenant_id},
                     )
-            in_scope = ctx.tenant.tenant_id == record.tenant_id
-            admin_scope = (
-                record.security_domain_id is not None
-                and record.security_domain_id == ctx.security_domain.domain_id
-            )
-            if not in_scope and not admin_scope:
-                raise ControlPlaneError.not_found(
-                    "Tenant not found",
-                    extensions={"tenant_id": record.tenant_id},
-                )
             now = _utcnow_iso()
             if existing is None:
                 session.add(
@@ -269,16 +244,10 @@ class SqlModelTenantDirectory:
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[TenantRecord]:
         with session_scope(self.engine) as session:
-            rows = session.exec(select(TenantRow)).all()
-            out: list[TenantRecord] = []
-            for row in rows:
-                record = _tenant_from_row(row)
-                if record.tenant_id == ctx.tenant.tenant_id or (
-                    record.security_domain_id is not None
-                    and record.security_domain_id == ctx.security_domain.domain_id
-                ):
-                    out.append(deepcopy(record))
-            return sorted(out, key=lambda r: r.tenant_id)
+            row = self._by_id(session, ctx.tenant.tenant_id)
+            if row is None:
+                return ()
+            return (deepcopy(_tenant_from_row(row)),)
 
     def set_lifecycle(
         self,
@@ -288,10 +257,7 @@ class SqlModelTenantDirectory:
     ) -> TenantRecord:
         with session_scope(self.engine) as session:
             row = self._by_id(session, tenant_id)
-            if row is None or (
-                ctx.tenant.tenant_id != tenant_id
-                and row.security_domain_id != ctx.security_domain.domain_id
-            ):
+            if row is None or ctx.tenant.tenant_id != tenant_id:
                 raise ControlPlaneError.not_found(
                     "Tenant not found",
                     extensions={"tenant_id": tenant_id},
@@ -329,6 +295,11 @@ class SqlModelWorkspaceDirectory:
             _require_active(tenant.lifecycle, resource=f"tenant:{tenant_id}")
 
     def get(self, ctx: ControlPlaneContext, workspace_id: str) -> WorkspaceRecord:
+        if workspace_id != ctx.workspace.workspace_id:
+            raise ControlPlaneError.not_found(
+                "Workspace not found",
+                extensions={"workspace_id": workspace_id},
+            )
         with session_scope(self.engine) as session:
             self._assert_tenant_active(ctx.tenant.tenant_id)
             row = self._by_key(session, ctx.tenant.tenant_id, workspace_id)
@@ -345,7 +316,10 @@ class SqlModelWorkspaceDirectory:
             return deepcopy(record)
 
     def put(self, ctx: ControlPlaneContext, record: WorkspaceRecord) -> None:
-        if record.tenant_id != ctx.tenant.tenant_id:
+        if (
+            record.tenant_id != ctx.tenant.tenant_id
+            or record.workspace_id != ctx.workspace.workspace_id
+        ):
             raise ControlPlaneError.not_found(
                 "Workspace not found",
                 extensions={"workspace_id": record.workspace_id},
@@ -396,6 +370,11 @@ class SqlModelWorkspaceDirectory:
         workspace_id: str,
         state: LifecycleState,
     ) -> WorkspaceRecord:
+        if workspace_id != ctx.workspace.workspace_id:
+            raise ControlPlaneError.not_found(
+                "Workspace not found",
+                extensions={"workspace_id": workspace_id},
+            )
         with session_scope(self.engine) as session:
             self._assert_tenant_active(ctx.tenant.tenant_id)
             row = self._by_key(session, ctx.tenant.tenant_id, workspace_id)
@@ -658,7 +637,7 @@ class SqlModelRevisionRegistry:
                 key=lambda r: r.revision_id,
             )
 
-    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> None:
+    def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> AliasRecord:
         if (
             alias.tenant_id != ctx.tenant.tenant_id
             or alias.workspace_id != ctx.workspace.workspace_id
@@ -711,6 +690,12 @@ class SqlModelRevisionRegistry:
                 existing.created_at = created
                 existing.metadata_json = _meta(alias.metadata)
                 session.add(existing)
+            session.flush()
+            row = self._alias_row(
+                session, ctx.tenant.tenant_id, ctx.workspace.workspace_id, alias.alias
+            )
+            assert row is not None
+            return deepcopy(_alias_from_row(row))
 
     def resolve_alias(self, ctx: ControlPlaneContext, alias: str) -> RegistryRevision:
         with session_scope(self.engine) as session:

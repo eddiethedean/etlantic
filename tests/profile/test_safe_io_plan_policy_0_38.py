@@ -114,3 +114,18 @@ def test_source_plan_keeps_relative_root() -> None:
         assert plan.listing_intent.get("root") == "inbox"
 
     anyio.run(_run)
+
+
+def test_safe_io_wire_bools_do_not_truthify_false_strings() -> None:
+    policy = SafeIoPolicy.from_dict(
+        {
+            "require_regular_files": "false",
+            "enable_locking": "false",
+            "compute_integrity_digest": "false",
+        }
+    )
+    assert policy.require_regular_files is False
+    assert policy.enable_locking is False
+    assert policy.compute_integrity_digest is False
+    with pytest.raises(ValueError, match="must be a boolean"):
+        SafeIoPolicy.from_dict({"require_regular_files": "yes"})
