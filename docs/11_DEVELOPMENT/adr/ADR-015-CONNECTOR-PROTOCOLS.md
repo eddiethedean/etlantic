@@ -151,6 +151,6 @@ Continuous file-drop watching is a trigger/submitter concern composed in
   Safe I/O plan policy retains root aliases rather than absolute paths.
 - StorageBinding adapters preserve existing local memory/CSV/JSON/callable
   paths without claiming connector capabilities.
-- Plugin floor for 0.38 connectors will be `etlantic>=0.40.0,<0.41` when the
+- Plugin floor for 0.38 connectors will be `etlantic>=0.38.0,<0.39` when the
   package version bumps (not part of this ADR wave).
 - Continuous watch documentation must not claim core availability before 0.39+.

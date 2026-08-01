@@ -32,6 +32,8 @@ from etlantic.control_plane import (
     content_fingerprint,
     redact_control_plane_payload,
 )
+from etlantic.control_plane.redaction import redact_control_plane_text
+from etlantic.control_plane.registry_memory import safe_registry_content
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     EnvironmentRow,
@@ -549,6 +551,7 @@ class SqlModelRevisionRegistry:
                     "recorded": revision.content_fingerprint,
                 },
             )
+        safe_content = safe_registry_content(revision.content)
         try:
             with session_scope(self.engine) as session:
                 self._assert_scope_active(ctx)
@@ -597,15 +600,17 @@ class SqlModelRevisionRegistry:
                         workspace_id=revision.workspace_id,
                         logical_id=revision.logical_id,
                         revision_id=revision.revision_id,
-                        content_fingerprint=revision.content_fingerprint,
-                        content_json=json.dumps(dict(revision.content), sort_keys=True),
+                        content_fingerprint=content_fingerprint(safe_content),
+                        content_json=json.dumps(safe_content, sort_keys=True),
                         created_at=revision.created_at or _utcnow_iso(),
                         kind=revision.kind,
-                        signature_placeholder=revision.signature_placeholder,
+                        signature_placeholder=(
+                            redact_control_plane_text(revision.signature_placeholder)
+                            if revision.signature_placeholder is not None
+                            else None
+                        ),
                         provenance_json=(
-                            json.dumps(
-                                dict(revision.provenance_placeholder), sort_keys=True
-                            )
+                            _meta(revision.provenance_placeholder)
                             if revision.provenance_placeholder is not None
                             else None
                         ),
@@ -757,11 +762,12 @@ class SqlModelRevisionRegistry:
                 )
             source = _revision_from_row(source_row)
             source_snapshot = deepcopy(source)
-            body = (
+            requested_body = (
                 deepcopy(dict(content))
                 if content is not None
                 else deepcopy(dict(source.content))
             )
+            body = safe_registry_content(requested_body)
             new_revision_id = f"rev-{uuid.uuid4().hex[:16]}"
             created = _utcnow_iso()
             new_rev = RegistryRevision(
@@ -819,7 +825,7 @@ class SqlModelRevisionRegistry:
                 from_environment=from_environment,
                 to_environment=to_environment,
                 created_at=created,
-                metadata=dict(metadata or {}),
+                metadata=json.loads(_meta(metadata)),
             )
             session.add(
                 PromotionRow(
@@ -948,6 +954,15 @@ class SqlModelRegistryProvider:
                 _require_active(
                     tenant.lifecycle, resource=f"tenant:{ctx.tenant.tenant_id}"
                 )
+            assert self.workspaces is not None
+            workspace = self.workspaces.peek(
+                ctx.tenant.tenant_id, ctx.workspace.workspace_id
+            )
+            if workspace is not None:
+                _require_active(
+                    workspace.lifecycle,
+                    resource=f"workspace:{ctx.workspace.workspace_id}",
+                )
             now = _utcnow_iso()
             existing = session.exec(
                 select(EnvironmentRow).where(
@@ -955,6 +970,20 @@ class SqlModelRegistryProvider:
                     EnvironmentRow.environment_id == record.environment_id,
                 )
             ).first()
+            if (
+                existing is not None
+                and existing.workspace_id is not None
+                and existing.workspace_id != ctx.workspace.workspace_id
+            ):
+                raise ControlPlaneError.not_found(
+                    "Environment not found",
+                    extensions={"environment_id": record.environment_id},
+                )
+            if existing is not None:
+                _require_active(
+                    LifecycleState(existing.lifecycle),
+                    resource=f"environment:{record.environment_id}",
+                )
             if existing is None:
                 session.add(
                     EnvironmentRow(
@@ -988,29 +1017,44 @@ class SqlModelRegistryProvider:
                 _require_active(
                     tenant.lifecycle, resource=f"tenant:{ctx.tenant.tenant_id}"
                 )
+            assert self.workspaces is not None
+            workspace = self.workspaces.peek(
+                ctx.tenant.tenant_id, ctx.workspace.workspace_id
+            )
+            if workspace is not None:
+                _require_active(
+                    workspace.lifecycle,
+                    resource=f"workspace:{ctx.workspace.workspace_id}",
+                )
             row = session.exec(
                 select(EnvironmentRow).where(
                     EnvironmentRow.tenant_id == ctx.tenant.tenant_id,
                     EnvironmentRow.environment_id == environment_id,
                 )
             ).first()
-            if row is None:
+            if row is None or (
+                row.workspace_id is not None
+                and row.workspace_id != ctx.workspace.workspace_id
+            ):
                 raise ControlPlaneError.not_found(
                     "Environment not found",
                     extensions={"environment_id": environment_id},
                 )
-            return deepcopy(
-                EnvironmentRecord(
-                    tenant_id=row.tenant_id,
-                    environment_id=row.environment_id,
-                    name=row.name,
-                    workspace_id=row.workspace_id,
-                    lifecycle=LifecycleState(row.lifecycle),
-                    created_at=row.created_at,
-                    updated_at=row.updated_at,
-                    metadata=_load_meta(row.metadata_json),
-                )
+            record = EnvironmentRecord(
+                tenant_id=row.tenant_id,
+                environment_id=row.environment_id,
+                name=row.name,
+                workspace_id=row.workspace_id,
+                lifecycle=LifecycleState(row.lifecycle),
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+                metadata=_load_meta(row.metadata_json),
             )
+            _require_active(
+                record.lifecycle,
+                resource=f"environment:{environment_id}",
+            )
+            return deepcopy(record)
 
     def put_security_domain(
         self,

@@ -1,19 +1,21 @@
-# Control plane API (CP1)
+# Control plane API (CP1–CP3)
 
-> **Status: Available in ETLantic 0.40.0** (incubation). **CP1 ≠ production
+> **Status: Available in ETLantic 0.41.0** (incubation). **CP1–CP3 ≠ production
 > multi-tenant isolation** — that claim remains **0.43**.
 
 Short hub for the provisional `etlantic.control_plane` surface and optional
 FastAPI adapter. Prefer this over digging through implementation plans when
-embedding CP1.
+embedding CP1–CP3.
 
 ## Guide
 
 | Topic | Where |
 |---|---|
 | Adopter how-to (embed FastAPI) | [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) |
-| What shipped / non-claims | [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) |
+| Durable work (CP3) | [Durable work](../06_EXECUTION/DURABLE_WORK.md) |
+| What shipped / non-claims | [What's new in 0.41](../01_GETTING_STARTED/WHATS_NEW_0_41.md) |
 | Identity freeze | [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md) |
+| Durable submission / state | [ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) |
 | Wire schema ids | [Wire schema ranges](WIRE_SCHEMA_RANGES.md) |
 | FastAPI dual surface | [`etlantic-fastapi` README](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) · [Optional packages](OPTIONAL_PACKAGES.md) |
 | Program sequencing | [Multi-tenant control plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
@@ -23,7 +25,7 @@ embedding CP1.
 ```python
 import etlantic as etl
 
-# Models / protocols (provisional CP1)
+# Models / protocols (provisional CP1–CP3)
 from etlantic.control_plane import (
     ControlPlaneContext,
     Principal,
@@ -31,6 +33,7 @@ from etlantic.control_plane import (
     MemoryDefinitionRepository,
     MemorySubmissionStore,
     MemoryEventStore,
+    MemoryDurableWorkStore,
 )
 ```
 
@@ -43,9 +46,26 @@ SQLModel imports. Optional SQLModel reference stores live under
 | Surface | Entry | Role |
 |---|---|---|
 | **CP1** | `ETLanticAPI`, `include_router`, `create_app` | Authz’d durable-accept API + `GET /health` / `GET /ready` |
+| **CP2** | optional registry injection | Tenant / workspace / revision routes |
+| **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.40.0'` (match `etlantic==0.40.0`).
+Pin: `pip install 'etlantic-fastapi==0.41.0'` (match `etlantic==0.41.0`).
+
+When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
+`DurableWorkStore.accept` while preserving the CP1 receipt shape. Host ops use
+`/v1/durable/*` (authz first):
+
+| Route family | Purpose |
+|---|---|
+| `GET /v1/durable/outbox` · `POST …/published` | Pending outbox drain / mark published |
+| `POST …/submissions/{id}/cancel` | Cancel accepted work |
+| `POST …/leases` · `…/heartbeat` · `…/release` | Lease acquire / heartbeat / release |
+| `POST …/attempts` · checkpoint / effects / replay | Attempt lifecycle and recovery |
+| Preview / repair routes | TTL preview workspaces and fingerprint-only repair plans |
+
+Core does **not** embed a broker or worker supervisor; adopters drain the
+outbox with their own dispatcher.
 
 ## PMCP errors
 

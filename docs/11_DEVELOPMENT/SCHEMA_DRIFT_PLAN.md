@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.40 boundary:** Schema inspection, comparison, impact analysis,
+> **Current 0.41 boundary:** Schema inspection, comparison, impact analysis,
 > acknowledgement, SARIF diagnostics, and fingerprint-only file-backed history
 > are available. Registry-backed, multi-tenant history and future IDE workflows
 > remain planned. Schema history stores fingerprints and metadata, never

@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.40.0"
-current_minor: "0.40"
+since: "0.41.0"
+current_minor: "0.41"
 audience: developer
 ---
 
 # etlantic-fastapi API
 
-> **Status: Available in ETLantic 0.40.0.** Dual surface: **CP1 control plane**
+> **Status: Available in ETLantic 0.41.0.** Dual surface: **CP1 control plane**
 > (`ETLanticAPI`, `include_router`, `create_app`) is primary; `create_reference_app`
 > is a non-CP sync demo. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 > Adopter guide: [Control plane (CP1)](../../06_EXECUTION/CONTROL_PLANE.md).
@@ -15,7 +15,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-fastapi==0.40.0'
+pip install 'etlantic-fastapi==0.41.0'
 ```
 
 ```python

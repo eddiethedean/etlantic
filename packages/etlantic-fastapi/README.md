@@ -1,6 +1,6 @@
 # etlantic-fastapi
 
-Optional FastAPI adapter for ETLantic **0.40.0**. Use **CP1/CP2** (`ETLanticAPI`)
+Optional FastAPI adapter for ETLantic **0.41.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
 Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
 not the control plane. CP2 is incubation, **not** multi-tenant GA (0.43).
@@ -22,9 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.40.0'
+pip install 'etlantic-fastapi==0.41.0'
 # keep core on the same pin:
-# pip install 'etlantic==0.40.0'
+# pip install 'etlantic==0.41.0'
 ```
 
 ## Control-plane usage

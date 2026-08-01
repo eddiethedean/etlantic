@@ -240,6 +240,9 @@ class AcceptReceipt:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> AcceptReceipt:
+        status = str(data.get("status") or "accepted")
+        if status != "accepted":
+            raise ValueError(f"unsupported acceptance status: {status!r}")
         return cls(
             acceptance_id=str(data["acceptance_id"]),
             submission_id=str(data["submission_id"]),
@@ -247,7 +250,7 @@ class AcceptReceipt:
             workspace_id=str(data["workspace_id"]),
             idempotency_key=str(data["idempotency_key"]),
             created_at=str(data["created_at"]),
-            status=str(data.get("status") or "accepted"),  # type: ignore[arg-type]
+            status="accepted",
             resource_type=str(data.get("resource_type") or "run"),
             resource_id=(
                 str(data["resource_id"])
@@ -316,6 +319,10 @@ class ControlPlaneEvent:
         created_at = data.get("created_at")
         if created_at is None:
             created_at = data.get("occurred_at")
+        if kind is None:
+            raise ValueError("control-plane event requires kind or type")
+        if created_at is None:
+            raise ValueError("control-plane event requires created_at or occurred_at")
         scope = data.get("scope")
         return cls(
             event_id=str(data["event_id"]),

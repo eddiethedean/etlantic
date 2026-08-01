@@ -443,6 +443,38 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_type="run",
             operation="run.submit",
         )
+        if api.durable_work is not None:
+            plan_fp = str(
+                payload.get("plan_fingerprint")
+                or payload.get("plan_id")
+                or f"definition:{definition_id}"
+            )
+            api.durable_work.accept(
+                ctx,
+                idempotency_key=idem,
+                operation="run.submit",
+                plan_fingerprint=plan_fp,
+                revision_id=(
+                    str(payload["revision_id"])
+                    if payload.get("revision_id") is not None
+                    else None
+                ),
+                plugin_fingerprint=(
+                    str(payload["plugin_fingerprint"])
+                    if payload.get("plugin_fingerprint") is not None
+                    else None
+                ),
+                policy_fingerprint=(
+                    str(payload["policy_fingerprint"])
+                    if payload.get("policy_fingerprint") is not None
+                    else None
+                ),
+                input_snapshot=(
+                    str(payload["input_snapshot"])
+                    if payload.get("input_snapshot") is not None
+                    else None
+                ),
+            )
         receipt = _receipt_with_urls(result.receipt)
         if result.created and api.events is not None:
             run_id = receipt.resource_id or receipt.submission_id
@@ -1004,6 +1036,298 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             metadata=body.metadata,
         )
         return PromotionResponse.model_validate(promotion.to_dict())
+
+    # CP3 durable work host routes under /v1/durable
+    def _require_durable():
+        if api.durable_work is None:
+            raise ControlPlaneError.not_found("Durable work store is not configured")
+        return api.durable_work
+
+    @router.get(
+        "/v1/durable/outbox",
+        operation_id="cp_durable_pending_outbox",
+        tags=["durable"],
+    )
+    def durable_pending_outbox(
+        limit: int = 100,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> list[dict[str, Any]]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.outbox.read",
+            "durable:outbox",
+            resource_in_caller_scope=False,
+        )
+        store = _require_durable()
+        return [row.to_dict() for row in store.pending_outbox(ctx, limit=limit)]
+
+    @router.post(
+        "/v1/durable/outbox/{outbox_id}/published",
+        operation_id="cp_durable_mark_published",
+        tags=["durable"],
+    )
+    def durable_mark_published(
+        outbox_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.outbox.write",
+            f"durable:outbox:{outbox_id}",
+            resource_in_caller_scope=False,
+        )
+        return _require_durable().mark_published(ctx, outbox_id).to_dict()
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/cancel",
+        operation_id="cp_durable_cancel",
+        tags=["durable"],
+    )
+    def durable_cancel(
+        submission_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.cancel",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        return _require_durable().cancel_submission(ctx, submission_id).to_dict()
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/leases",
+        operation_id="cp_durable_acquire_lease",
+        tags=["durable"],
+    )
+    def durable_acquire_lease(
+        submission_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.lease.write",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .acquire_lease(
+                ctx,
+                submission_id,
+                owner_id=str(body["owner_id"]),
+                ttl_seconds=int(body.get("ttl_seconds", 30)),
+            )
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/leases/heartbeat",
+        operation_id="cp_durable_heartbeat",
+        tags=["durable"],
+    )
+    def durable_heartbeat(
+        submission_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.lease.write",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .heartbeat(
+                ctx,
+                submission_id,
+                owner_id=str(body["owner_id"]),
+                fencing_token=int(body["fencing_token"]),
+                ttl_seconds=int(body.get("ttl_seconds", 30)),
+            )
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/leases/release",
+        operation_id="cp_durable_release_lease",
+        tags=["durable"],
+    )
+    def durable_release_lease(
+        submission_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, str]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.lease.write",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        _require_durable().release_lease(
+            ctx,
+            submission_id,
+            owner_id=str(body["owner_id"]),
+            fencing_token=int(body["fencing_token"]),
+        )
+        return {"status": "released"}
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/attempts",
+        operation_id="cp_durable_start_attempt",
+        tags=["durable"],
+    )
+    def durable_start_attempt(
+        submission_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.attempt.write",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .start_attempt(
+                ctx,
+                submission_id,
+                owner_id=str(body["owner_id"]),
+                fencing_token=int(body["fencing_token"]),
+                context=body.get("context"),
+            )
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/attempts/{attempt_id}/finish",
+        operation_id="cp_durable_finish_attempt",
+        tags=["durable"],
+    )
+    def durable_finish_attempt(
+        attempt_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.attempt.write",
+            f"durable:attempt:{attempt_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .finish_attempt(
+                ctx,
+                attempt_id,
+                owner_id=str(body["owner_id"]),
+                fencing_token=int(body["fencing_token"]),
+                status=str(body["status"]),
+            )
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/checkpoints/{checkpoint_id}/cas",
+        operation_id="cp_durable_checkpoint_cas",
+        tags=["durable"],
+    )
+    def durable_checkpoint_cas(
+        checkpoint_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.checkpoint.write",
+            f"durable:checkpoint:{checkpoint_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .compare_and_swap_checkpoint(
+                ctx,
+                checkpoint_id,
+                expected_version=body.get("expected_version"),
+                value_fingerprint=str(body["value_fingerprint"]),
+                attempt_id=body.get("attempt_id"),
+                fencing_token=body.get("fencing_token"),
+                schema_baseline_id=body.get("schema_baseline_id"),
+            )
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/replay",
+        operation_id="cp_durable_replay",
+        tags=["durable"],
+    )
+    def durable_replay(
+        submission_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.replay",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        body = body or {}
+        return (
+            _require_durable()
+            .replay(ctx, submission_id, checkpoint_id=body.get("checkpoint_id"))
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/previews",
+        operation_id="cp_durable_create_preview",
+        tags=["durable"],
+    )
+    def durable_create_preview(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        from etlantic.control_plane import PreviewWorkspace
+
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.preview.write",
+            "durable:preview",
+            resource_in_caller_scope=False,
+        )
+        preview = PreviewWorkspace(
+            str(body["preview_id"]),
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            str(body["base_revision_id"]),
+            str(body["candidate_revision_id"]),
+            str(body["created_at"]),
+            str(body["expires_at"]),
+            int(body["quota"]),
+            str(body["code_fingerprint"]),
+            str(body["plan_fingerprint"]),
+            body.get("policy_fingerprint"),
+            body.get("environment_fingerprint"),
+            body.get("commit_ref"),
+            body.get("pull_request_ref"),
+        )
+        return _require_durable().create_preview(ctx, preview).to_dict()
 
     return router
 

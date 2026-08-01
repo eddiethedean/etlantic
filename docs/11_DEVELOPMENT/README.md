@@ -21,21 +21,28 @@ released.
 
 ## Current migrations and exit gates
 
-- [Migration 0.39 → 0.40](MIGRATION_0_39_TO_0_40.md) (Gate-ready — CP2)
-- [Exit gate 0.40](EXIT_GATE_0_40.md) (Gate-ready — CP2)
+- [Migration 0.40 → 0.41](MIGRATION_0_40_TO_0_41.md) (Gate-ready — CP3)
+- [Exit gate 0.41](EXIT_GATE_0_41.md) (Gate-ready — CP3)
+- [Findings ledger 0.41](FINDINGS_0_41.md)
+- [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md)
+- [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md)
+- [What's new in 0.41](../01_GETTING_STARTED/WHATS_NEW_0_41.md) (Gate-ready)
+- [Durable chaos matrix (fake evidence)](durable_chaos_matrix_0_41.json)
+- [Migration 0.39 → 0.40](MIGRATION_0_39_TO_0_40.md) (Done — CP2)
+- [Exit gate 0.40](EXIT_GATE_0_40.md) (Done — CP2)
 - [Findings ledger 0.40](FINDINGS_0_40.md)
 - [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md)
 - [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md)
-- [What's new in 0.40](../01_GETTING_STARTED/WHATS_NEW_0_40.md) (Gate-ready)
+- [What's new in 0.40](../01_GETTING_STARTED/WHATS_NEW_0_40.md) (Done)
 - [Isolation profile matrix (fake evidence)](isolation_profile_matrix_0_40.json)
-- [Migration 0.38 → 0.39](MIGRATION_0_38_TO_0_39.md) (Gate-ready — CP1)
-- [Exit gate 0.39](EXIT_GATE_0_39.md) (Gate-ready — CP1)
+- [Migration 0.38 → 0.39](MIGRATION_0_38_TO_0_39.md) (Done — CP1)
+- [Exit gate 0.39](EXIT_GATE_0_39.md) (Done — CP1)
 - [Findings ledger 0.39](FINDINGS_0_39.md)
 - [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md)
 - [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
-- [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) (Gate-ready)
-- [Migration 0.37 → 0.38](MIGRATION_0_37_TO_0_38.md) (Gate-ready)
-- [Exit gate 0.38](EXIT_GATE_0_38.md) (Gate-ready — connectivity)
+- [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) (Done)
+- [Migration 0.37 → 0.38](MIGRATION_0_37_TO_0_38.md) (Done)
+- [Exit gate 0.38](EXIT_GATE_0_38.md) (Done — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
 - [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.52 delivery contract)
@@ -131,3 +138,5 @@ about the shipped 0.38 package.
 The [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) chapter
 defines how design examples, proposals, and normative requirements should be
 interpreted during implementation.
+
+- [EXIT_GATE_0_41.md](EXIT_GATE_0_41.md)

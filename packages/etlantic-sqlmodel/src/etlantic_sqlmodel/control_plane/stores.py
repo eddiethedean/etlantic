@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from collections.abc import Callable, Mapping, Sequence
+from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any
 
@@ -16,6 +17,7 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     ControlPlaneEvent,
+    redact_control_plane_payload,
 )
 from etlantic_sqlmodel.control_plane.models import (
     DefinitionRow,
@@ -130,6 +132,9 @@ class SQLModelSubmissionStore:
     ) -> AcceptResult:
         from sqlalchemy.exc import IntegrityError
 
+        safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
+        if not isinstance(safe_payload, dict):
+            safe_payload = {}
         try:
             with session_scope(self._engine) as session:
                 existing = self._by_idem(
@@ -137,7 +142,7 @@ class SQLModelSubmissionStore:
                 )
                 if existing is not None:
                     prior = json.loads(existing.payload_json)
-                    if prior != dict(payload):
+                    if prior != safe_payload:
                         raise ControlPlaneError.conflict(
                             "Idempotency key reuse with a different payload",
                             extensions={"idempotency_key": idempotency_key},
@@ -162,12 +167,12 @@ class SQLModelSubmissionStore:
                     status="accepted",
                     resource_type=resource_type,
                     resource_id=run_id,
-                    payload_json=json.dumps(dict(payload), sort_keys=True),
+                    payload_json=json.dumps(safe_payload, sort_keys=True),
                     run_status="accepted",
                     updated_at=created,
                     definition_id=(
-                        str(payload["definition_id"])
-                        if payload.get("definition_id") is not None
+                        str(safe_payload["definition_id"])
+                        if safe_payload.get("definition_id") is not None
                         else None
                     ),
                 )
@@ -185,7 +190,7 @@ class SQLModelSubmissionStore:
                         extensions={"idempotency_key": idempotency_key},
                     ) from exc
                 prior = json.loads(winner.payload_json)
-                if prior != dict(payload):
+                if prior != safe_payload:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
@@ -311,6 +316,9 @@ class SqlModelEventStore:
     ) -> ControlPlaneEvent:
         import hashlib
 
+        safe_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        if not isinstance(safe_payload, dict):
+            safe_payload = {}
         with session_scope(self._engine) as session:
             statement = (
                 select(EventRow)
@@ -339,7 +347,7 @@ class SqlModelEventStore:
                 cursor=cursor,
                 kind=kind,
                 created_at=created,
-                payload_json=json.dumps(dict(payload or {}), sort_keys=True),
+                payload_json=json.dumps(safe_payload, sort_keys=True),
                 correlation_id=correlation_id,
             )
             session.add(row)
@@ -350,7 +358,7 @@ class SqlModelEventStore:
                 cursor=cursor,
                 kind=kind,
                 created_at=created,
-                payload=dict(payload or {}),
+                payload=safe_payload,
                 correlation_id=correlation_id,
                 scope={
                     "tenant_id": ctx.tenant.tenant_id,

@@ -28,7 +28,7 @@ STANDARD_PAGES = {
 }
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/v0.40.0/"
+        "https://etlantic.readthedocs.io/en/v0.41.0/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
@@ -410,7 +410,7 @@ def check_control_plane_plan() -> None:
     plan_urls = {
         f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
         f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
-        f"https://etlantic.readthedocs.io/en/v0.40.0/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/v0.41.0/{plan_rel}/",
     }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")

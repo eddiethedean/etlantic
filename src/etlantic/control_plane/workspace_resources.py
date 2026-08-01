@@ -11,7 +11,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Protocol, runtime_checkable
 
 from etlantic.control_plane.errors import ControlPlaneError
@@ -19,6 +19,11 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.redaction import redact_control_plane_payload
 
 WORKSPACE_RESOURCE_RECORD_SCHEMA = "etlantic.control_plane.workspace_resource_record/1"
+
+
+def _safe_metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    redacted = redact_control_plane_payload(dict(value or {}))
+    return dict(redacted) if isinstance(redacted, dict) else {}
 
 
 def _utcnow_iso() -> str:
@@ -48,7 +53,8 @@ def reject_absolute_root_ref(root_ref: str) -> None:
             "not absolute paths",
             extensions={"root_ref": root_ref},
         )
-    parts = Path(root_ref).parts
+    # Treat both separators as separators even when validation runs on POSIX.
+    parts = PurePosixPath(str(root_ref).replace("\\", "/")).parts
     if ".." in parts:
         raise ControlPlaneError.conflict(
             "Workspace resource safe_root_refs must not contain '..' traversal",
@@ -96,7 +102,7 @@ def reject_symlink_or_traversal(
             )
 
     try:
-        resolved = raw.resolve(strict=False)
+        resolved = raw_absolute.resolve(strict=False)
     except (OSError, RuntimeError) as exc:
         raise ControlPlaneError.conflict(
             "Failed to resolve workspace root path",
@@ -141,11 +147,14 @@ def validate_workspace_resource_record(record: WorkspaceResourceRecord) -> None:
         ("checkpoint_store_ref", record.checkpoint_store_ref),
         ("preview_namespace", record.preview_namespace),
     ):
-        if value is not None and is_absolute_root_ref(value):
-            raise ControlPlaneError.conflict(
-                f"Workspace resource {ref_name} must not be an absolute path",
-                extensions={ref_name: value},
-            )
+        if value is not None:
+            try:
+                reject_absolute_root_ref(value)
+            except ControlPlaneError as exc:
+                raise ControlPlaneError.conflict(
+                    f"Workspace resource {ref_name} must be a relative ref token",
+                    extensions={ref_name: value},
+                ) from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,12 +182,14 @@ class WorkspaceResourceRecord:
             "preview_namespace": self.preview_namespace,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> WorkspaceResourceRecord:
         roots = data.get("safe_root_refs") or ()
+        if isinstance(roots, str):
+            roots = (roots,)
         return cls(
             tenant_id=str(data["tenant_id"]),
             workspace_id=str(data["workspace_id"]),

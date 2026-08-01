@@ -19,7 +19,7 @@ BUILTIN_ALLOWLIST_EXEMPT = frozenset({"local", "null", "env", "env-secrets"})
 
 _EMPTY_ALLOWLIST_REMEDIATION = (
     "Set Profile.plugin_allowlist to a non-empty map of package→pin "
-    "(for example {'etlantic-polars': '==0.40.0'}), or copy "
+    "(for example {'etlantic-polars': '==0.41.0'}), or copy "
     "docs/01_GETTING_STARTED/prod.example.json. The built-in "
     "--profile production template is empty and fail-closed."
 )
@@ -345,7 +345,7 @@ def filter_plugins_by_allowlist(
                         message=(
                             f"Production plugin_allowlist entry for {pname!r} "
                             f"requires a non-empty version pin "
-                            f"(for example '==0.40.0')."
+                            f"(for example '==0.41.0')."
                         ),
                         path=("plugin", str(pname)),
                         phase=phase,

@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.40.0.**
+> **Status: Available in ETLantic 0.41.0.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,11 +13,12 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.40.0** — choose your guide:
+**ETLantic 0.41.0** — choose your guide:
 
-| From version | Ordered path to 0.40 |
+| From version | Ordered path to 0.41 |
 |---|---|
-| 0.40.x | Already current |
+| 0.41.x | Already current |
+| 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) |
 | 0.39.x | [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.38.x | [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.37.x | [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) → [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
@@ -70,6 +71,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.37 → 0.38 | Connectivity / connector SDK; plugin floor `etlantic>=0.38.0,<0.39` |
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
+| 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -78,6 +80,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.40 → 0.41 | [MIGRATION_0_40_TO_0_41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) |
 | 0.39 → 0.40 | [MIGRATION_0_39_TO_0_40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.38 → 0.39 | [MIGRATION_0_38_TO_0_39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
 | 0.37 → 0.38 | [MIGRATION_0_37_TO_0_38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) |
@@ -227,7 +230,7 @@ See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 |---|---|
 | Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
 | `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.40.0`) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.41.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
@@ -268,6 +271,19 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
+
+## 0.41 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.41.0` and matching plugins / `medallantic==0.41.0` | Mix 0.40 plugins with a 0.41 core |
+| Inject optional `DurableWorkStore` for CP3 accept/outbox/leases | Expect core to embed a broker or worker supervisor |
+| Apply SQLModel migrations `001` + `002` when using durable persistence | Rely on `create_all` alone in production |
+| Fail closed on unknown effects and stale fencing tokens | Auto-retry unknown side effects without reconciliation |
+| Treat preview/shadow runs as non-authority | Promote shadow effects as production authority |
+| Read release notes: CP3 ≠ production multi-tenant | Claim production multi-tenant isolation before **0.43** |
+
+See [Migration 0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md).
 
 ## 0.40 configuration cheat sheet
 

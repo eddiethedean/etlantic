@@ -14,7 +14,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-VERSIONS: Sequence[str] = ("001_registry_cp2",)
+VERSIONS: Sequence[str] = ("001_registry_cp2", "002_durable_cp3")
 
 
 def _load(version: str) -> Any:

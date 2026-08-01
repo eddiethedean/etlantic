@@ -154,6 +154,10 @@ def test_symlink_and_traversal_reject_helpers(tmp_path: Path) -> None:
 
     resolved = resolve_safe_root("landing", base=base)
     assert resolved == allowed.resolve()
+    assert (
+        reject_symlink_or_traversal(Path("landing/file.txt"), approved_root=base)
+        == (allowed / "file.txt").resolve()
+    )
 
     with pytest.raises(ControlPlaneError) as exc_trav:
         resolve_safe_root("../outside", base=base)

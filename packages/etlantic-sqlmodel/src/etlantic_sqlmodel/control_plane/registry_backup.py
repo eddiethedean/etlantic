@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,6 +21,7 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRecord,
     EnvironmentRef,
+    LifecycleState,
     LogicalIdentity,
     Principal,
     PromotionRecord,
@@ -32,7 +33,9 @@ from etlantic.control_plane import (
     WorkspaceRecord,
     WorkspaceRef,
     content_fingerprint,
+    redact_control_plane_payload,
 )
+from etlantic.control_plane.registry_memory import safe_registry_content
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     EnvironmentRow,
@@ -147,23 +150,26 @@ def dump_registry_sqlite(engine: Engine) -> BackupTranscript:
             }
             for row in session.exec(select(WorkspaceRow)).all()
         ]
-        revisions = [
-            {
-                "tenant_id": row.tenant_id,
-                "workspace_id": row.workspace_id,
-                "logical_id": row.logical_id,
-                "revision_id": row.revision_id,
-                "content_fingerprint": row.content_fingerprint,
-                "content": json.loads(row.content_json or "{}"),
-                "created_at": row.created_at,
-                "kind": row.kind,
-                "signature_placeholder": row.signature_placeholder,
-                "provenance": (
-                    json.loads(row.provenance_json) if row.provenance_json else {}
-                ),
-            }
-            for row in session.exec(select(RevisionRow)).all()
-        ]
+        revisions = []
+        for row in session.exec(select(RevisionRow)).all():
+            content = safe_registry_content(json.loads(row.content_json or "{}"))
+            provenance = redact_control_plane_payload(
+                json.loads(row.provenance_json) if row.provenance_json else {}
+            )
+            revisions.append(
+                {
+                    "tenant_id": row.tenant_id,
+                    "workspace_id": row.workspace_id,
+                    "logical_id": row.logical_id,
+                    "revision_id": row.revision_id,
+                    "content_fingerprint": content_fingerprint(content),
+                    "content": content,
+                    "created_at": row.created_at,
+                    "kind": row.kind,
+                    "signature_placeholder": row.signature_placeholder,
+                    "provenance": provenance if isinstance(provenance, dict) else {},
+                }
+            )
         logicals = [
             {
                 "tenant_id": row.tenant_id,
@@ -286,7 +292,13 @@ def load_registry_sqlite(
             workspace_id="__backup__",
             domain_id=domain_id,
         )
-        provider.tenants.put(ctx, TenantRecord.from_dict(tenant))
+        provider.tenants.put(
+            ctx,
+            replace(
+                TenantRecord.from_dict(tenant),
+                lifecycle=LifecycleState.ACTIVE,
+            ),
+        )
 
     for workspace in transcript.workspaces:
         tenant_id = str(workspace["tenant_id"])
@@ -304,7 +316,13 @@ def load_registry_sqlite(
             workspace_id=workspace_id,
             domain_id=domain_id,
         )
-        provider.workspaces.put(ctx, WorkspaceRecord.from_dict(workspace))
+        provider.workspaces.put(
+            ctx,
+            replace(
+                WorkspaceRecord.from_dict(workspace),
+                lifecycle=LifecycleState.ACTIVE,
+            ),
+        )
 
     for environment in transcript.environments:
         tenant_id = str(environment["tenant_id"])
@@ -318,13 +336,14 @@ def load_registry_sqlite(
             ),
             "backup-domain",
         )
+        environment_record = EnvironmentRecord.from_dict(environment)
         provider.put_environment(
             _admin_ctx(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 domain_id=domain_id,
             ),
-            EnvironmentRecord.from_dict(environment),
+            replace(environment_record, lifecycle=LifecycleState.ACTIVE),
         )
 
     for logical in transcript.logicals:
@@ -416,8 +435,70 @@ def load_registry_sqlite(
                     from_environment=record.from_environment,
                     to_environment=record.to_environment,
                     created_at=record.created_at,
-                    metadata_json=json.dumps(dict(record.metadata), sort_keys=True),
+                    metadata_json=json.dumps(
+                        redact_control_plane_payload(dict(record.metadata)),
+                        sort_keys=True,
+                    ),
                 )
+            )
+
+    # Apply archived/suspended lifecycle states only after dependent rows exist.
+    for environment in transcript.environments:
+        record = EnvironmentRecord.from_dict(environment)
+        if record.lifecycle == LifecycleState.ACTIVE:
+            continue
+        workspace_id = record.workspace_id or "__backup__"
+        domain_id = next(
+            (
+                str(tenant["security_domain_id"])
+                for tenant in transcript.tenants
+                if tenant.get("tenant_id") == record.tenant_id
+                and tenant.get("security_domain_id")
+            ),
+            "backup-domain",
+        )
+        provider.put_environment(
+            _admin_ctx(
+                tenant_id=record.tenant_id,
+                workspace_id=workspace_id,
+                domain_id=domain_id,
+            ),
+            record,
+        )
+
+    for workspace in transcript.workspaces:
+        record = WorkspaceRecord.from_dict(workspace)
+        if record.lifecycle != LifecycleState.ACTIVE:
+            domain_id = next(
+                (
+                    str(tenant["security_domain_id"])
+                    for tenant in transcript.tenants
+                    if tenant.get("tenant_id") == record.tenant_id
+                    and tenant.get("security_domain_id")
+                ),
+                "backup-domain",
+            )
+            provider.workspaces.set_lifecycle(
+                _admin_ctx(
+                    tenant_id=record.tenant_id,
+                    workspace_id=record.workspace_id,
+                    domain_id=domain_id,
+                ),
+                record.workspace_id,
+                record.lifecycle,
+            )
+
+    for tenant in transcript.tenants:
+        record = TenantRecord.from_dict(tenant)
+        if record.lifecycle != LifecycleState.ACTIVE:
+            provider.tenants.set_lifecycle(
+                _admin_ctx(
+                    tenant_id=record.tenant_id,
+                    workspace_id="__backup__",
+                    domain_id=record.security_domain_id or "backup-domain",
+                ),
+                record.tenant_id,
+                record.lifecycle,
             )
 
     return provider

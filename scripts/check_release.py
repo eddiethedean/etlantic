@@ -231,8 +231,16 @@ def main() -> int:
         *REFERENCE_PACKAGES,
         *EXPERIMENTAL_PACKAGES,
     )
-    missing_version = [name for name in names if not pypi_exists(name, version)]
-    brand_new = [name for name in names if not pypi_project_exists(name)]
+    pypi_checked = True
+    try:
+        missing_version = [name for name in names if not pypi_exists(name, version)]
+        brand_new = [name for name in names if not pypi_project_exists(name)]
+    except (urllib.error.URLError, TimeoutError) as exc:
+        pypi_checked = False
+        missing_version = []
+        brand_new = []
+        reason = getattr(exc, "reason", exc)
+        errors.append(f"PyPI availability check unavailable: {reason}")
     print(f"Release readiness for {version}")
     if brand_new:
         print(
@@ -269,7 +277,7 @@ def main() -> int:
                 elif name in REFERENCE_PACKAGES:
                     note = " (reference adapter)"
                 print(f"  - {name}=={version}{note}")
-    if not missing_version:
+    if pypi_checked and not missing_version:
         print(f"All packages already present on PyPI at {version}.")
 
     # Fail closed when tests/examples still import 0.26-removed root symbols.

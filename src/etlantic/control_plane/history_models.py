@@ -7,9 +7,12 @@ and must not mutate registry revision authority (ADR-017).
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
+
+from etlantic.control_plane.redaction import redact_control_plane_payload
 
 SCHEMA_OBSERVATION_RECORD_SCHEMA = "etlantic.control_plane.schema_observation_record/1"
 RELIABILITY_OBSERVATION_RECORD_SCHEMA = (
@@ -56,6 +59,17 @@ def _looks_like_row_payload(metadata: Mapping[str, Any] | None) -> bool:
                 return True
         if isinstance(value, dict) and _looks_like_row_payload(value):
             return True
+        if isinstance(value, str):
+            text = value.strip()
+            if text.startswith(("[", "{")):
+                try:
+                    decoded = json.loads(text)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    decoded = None
+                if isinstance(decoded, list) and decoded:
+                    return True
+                if isinstance(decoded, dict) and _looks_like_row_payload(decoded):
+                    return True
     return False
 
 
@@ -65,6 +79,27 @@ def assert_history_metadata_only(metadata: Mapping[str, Any] | None) -> None:
         raise ValueError(
             "Control-plane history must not store source rows; failing closed."
         )
+
+
+def _safe_metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    assert_history_metadata_only(value)
+    redacted = redact_control_plane_payload(dict(value or {}))
+    return dict(redacted) if isinstance(redacted, dict) else {}
+
+
+def _wire_bool(value: Any, *, field_name: str) -> bool:
+    """Decode a JSON boolean without treating non-empty strings as true."""
+    if isinstance(value, bool):
+        return value
+    if value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    raise ValueError(f"{field_name} must be a boolean")
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +133,7 @@ class SchemaObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -119,7 +154,9 @@ class SchemaObservationRecord:
             inspector=(
                 str(data["inspector"]) if data.get("inspector") is not None else None
             ),
-            acknowledged=bool(data.get("acknowledged", False)),
+            acknowledged=_wire_bool(
+                data.get("acknowledged", False), field_name="acknowledged"
+            ),
             acknowledged_at=(
                 str(data["acknowledged_at"])
                 if data.get("acknowledged_at") is not None
@@ -159,7 +196,7 @@ class ReliabilityObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -176,7 +213,9 @@ class ReliabilityObservationRecord:
                 if data.get("observed_at") is not None
                 else None
             ),
-            acknowledged=bool(data.get("acknowledged", False)),
+            acknowledged=_wire_bool(
+                data.get("acknowledged", False), field_name="acknowledged"
+            ),
             acknowledged_at=(
                 str(data["acknowledged_at"])
                 if data.get("acknowledged_at") is not None
@@ -214,7 +253,7 @@ class PlanObservationRecord:
             "acknowledged": self.acknowledged,
             "acknowledged_at": self.acknowledged_at,
             "note": self.note,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -230,7 +269,9 @@ class PlanObservationRecord:
                 if data.get("observed_at") is not None
                 else None
             ),
-            acknowledged=bool(data.get("acknowledged", False)),
+            acknowledged=_wire_bool(
+                data.get("acknowledged", False), field_name="acknowledged"
+            ),
             acknowledged_at=(
                 str(data["acknowledged_at"])
                 if data.get("acknowledged_at") is not None
@@ -264,7 +305,7 @@ class ImpactEdge:
             "source_fingerprint": self.source_fingerprint,
             "target_kind": self.target_kind,
             "target_logical_id": self.target_logical_id,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
@@ -302,12 +343,14 @@ class CacheInvalidationEvent:
             "reason": self.reason,
             "target_fingerprints": list(self.target_fingerprints),
             "created_at": self.created_at,
-            "metadata": dict(self.metadata),
+            "metadata": _safe_metadata(self.metadata),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> CacheInvalidationEvent:
         targets = data.get("target_fingerprints") or ()
+        if isinstance(targets, str):
+            targets = (targets,)
         return cls(
             event_id=str(data["event_id"]),
             tenant_id=str(data["tenant_id"]),
