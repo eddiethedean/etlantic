@@ -9,9 +9,15 @@ tests/demos — production must apply versioned migrations under
 
 from __future__ import annotations
 
+from etlantic_sqlmodel.control_plane.durable_stores import (
+    DURABLE_TABLES,
+    SQLModelDurableWorkStore,
+    create_durable_tables,
+)
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     DefinitionRow,
+    DurableSnapshotRow,
     EnvironmentRow,
     EventRow,
     LogicalIdentityRow,
@@ -55,16 +61,19 @@ from etlantic_sqlmodel.control_plane.stores import (
 
 __all__ = [
     "BACKUP_SCHEMA",
+    "DURABLE_TABLES",
     "REGISTRY_TABLES",
     "AliasRow",
     "BackupTranscript",
     "DefinitionRow",
+    "DurableSnapshotRow",
     "EnvironmentRow",
     "EventRow",
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
     "SQLModelDefinitionRepository",
+    "SQLModelDurableWorkStore",
     "SQLModelSubmissionStore",
     "SecurityDomainRow",
     "SqlModelEventStore",
@@ -78,6 +87,7 @@ __all__ = [
     "backup_round_trip",
     "collect_revision_hits",
     "create_control_plane_tables",
+    "create_durable_tables",
     "create_registry_tables",
     "create_sqlite_engine",
     "dump_registry_sqlite",

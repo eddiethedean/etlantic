@@ -1,6 +1,6 @@
 # 0.37 Stable-Foundation Removal Candidates
 
-> **Status: Executed in ETLantic 0.40.0.** First-wave removals executed in
+> **Status: Executed in ETLantic 0.41.0.** First-wave removals executed in
 > 0.26.0; second-wave removals executed in 0.27.0; third-wave removals executed
 > in 0.28.0; remaining demoted-root and `DataContractModel` inventory
 > **removed in 0.37.0**. See

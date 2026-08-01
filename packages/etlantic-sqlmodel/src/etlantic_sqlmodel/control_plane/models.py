@@ -266,9 +266,28 @@ class SecurityDomainRow(SQLModel, table=True):
     metadata_json: str = "{}"
 
 
+class DurableSnapshotRow(SQLModel, table=True):
+    """Transactional CP3 durable-work snapshot (reference provider).
+
+    One logical store per engine; mutations load/save under a DB transaction so
+    accept+outbox and fencing CAS share commit boundaries.
+    """
+
+    __tablename__ = "cp_durable_snapshot"
+    __table_args__ = (UniqueConstraint("store_id", name="uq_cp_durable_snapshot"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="default"
+    )
+    payload_json: str = "{}"
+    updated_at: str | None = None
+
+
 __all__ = [
     "AliasRow",
     "DefinitionRow",
+    "DurableSnapshotRow",
     "EnvironmentRow",
     "EventRow",
     "LogicalIdentityRow",

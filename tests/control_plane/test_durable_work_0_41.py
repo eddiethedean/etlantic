@@ -16,6 +16,7 @@ from etlantic.control_plane import (
     PreviewWorkspace,
     Principal,
     SecurityDomain,
+    ShadowRunRecord,
     TenantRef,
     WorkspaceRef,
 )
@@ -334,3 +335,176 @@ def test_unknown_effect_cannot_be_retried_without_reconciliation() -> None:
         ).status
         == "committed"
     )
+
+
+def test_admission_release_repair_preview_shadow_and_conformance() -> None:
+    limited = MemoryDurableWorkStore(admission_limit=1)
+    first, _ = limited.accept(
+        ctx(), idempotency_key="a", operation="run.submit", plan_fingerprint="plan"
+    )
+    with pytest.raises(ControlPlaneError, match="admission"):
+        limited.accept(
+            ctx(), idempotency_key="b", operation="run.submit", plan_fingerprint="plan"
+        )
+    lease = limited.acquire_lease(
+        ctx(), first.submission_id, owner_id="one", ttl_seconds=30
+    )
+    attempt = limited.start_attempt(
+        ctx(),
+        first.submission_id,
+        owner_id="one",
+        fencing_token=lease.fencing_token,
+        context={"deadline": "soon"},
+    )
+    assert attempt.context["plan_fingerprint"] == "plan"
+    limited.release_lease(
+        ctx(),
+        first.submission_id,
+        owner_id="one",
+        fencing_token=lease.fencing_token,
+    )
+    with pytest.raises(ControlPlaneError, match="Stale"):
+        limited.heartbeat(
+            ctx(),
+            first.submission_id,
+            owner_id="one",
+            fencing_token=lease.fencing_token,
+            ttl_seconds=30,
+        )
+
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(),
+        idempotency_key="repair",
+        operation="run.submit",
+        plan_fingerprint="plan",
+        schema_baseline_id="base",
+        schema_observation_fingerprint="obs",
+    )
+    resume = store.plan_resume(ctx(), submission.submission_id)
+    assert resume.kind == "resume"
+    repair = store.plan_repair(
+        ctx(),
+        submission.submission_id,
+        invalidated_partition_ids=("p1",),
+        reusable_artifact_ids=("art",),
+    )
+    assert repair.minimum_safe_closure == ("p1",)
+    backfill = store.plan_backfill(
+        ctx(), submission.submission_id, partition_ids=("p1", "p2")
+    )
+    assert backfill.kind == "backfill"
+    explained = store.explain_transition(
+        ctx(), "cursor:orders", expected_version=None, value_fingerprint="v1"
+    )
+    assert explained.would_succeed
+    checkpoint = store.compare_and_swap_checkpoint(
+        ctx(),
+        "cursor:orders",
+        expected_version=None,
+        value_fingerprint="v1",
+        schema_baseline_id="base",
+    )
+    assert checkpoint.schema_baseline_id == "base"
+    diag = store.diagnose_checkpoint(
+        ctx(), "cursor:orders", kind="corruption", detail="bad"
+    )
+    assert diag.kind == "corruption"
+    ack = store.acknowledge_baseline(
+        ctx(),
+        schema_baseline_id="base",
+        observation_fingerprint="obs",
+        expected_version=None,
+        submission_id=submission.submission_id,
+    )
+    with pytest.raises(ControlPlaneError, match="Baseline"):
+        store.acknowledge_baseline(
+            ctx(),
+            schema_baseline_id="base",
+            observation_fingerprint="obs2",
+            expected_version=None,
+        )
+    assert ack.version == 1
+    replay = store.replay(ctx(), submission.submission_id)
+    assert replay.schema_observation_fingerprint == "obs"
+
+    preview = PreviewWorkspace(
+        "pv",
+        "tenant-a",
+        "workspace-a",
+        "r1",
+        "r2",
+        datetime.now(UTC).isoformat(),
+        (datetime.now(UTC) + timedelta(seconds=60)).isoformat(),
+        1,
+        "code",
+        "plan",
+        pull_request_ref="42",
+    )
+    store.create_preview(ctx(), preview)
+    with pytest.raises(ControlPlaneError, match="quota"):
+        store.create_preview(ctx(), replace(preview, preview_id="pv2"))
+    stale = store.mark_preview_stale(ctx(), "pv", plan_fingerprint="other")
+    assert stale.stale and "plan_fingerprint" in (stale.stale_reason or "")
+    effect = store.record_effect(
+        ctx(),
+        EffectRecord(
+            "shadow-effect",
+            submission.submission_id,
+            "tenant-a",
+            "workspace-a",
+            "committed",
+            datetime.now(UTC).isoformat(),
+            authoritative=False,
+        ),
+    )
+    with pytest.raises(ControlPlaneError, match="Stale preview"):
+        store.authorize_shadow_run(
+            ctx(),
+            ShadowRunRecord(
+                "shadow",
+                "pv",
+                submission.submission_id,
+                "tenant-a",
+                "workspace-a",
+                "reviewer",
+                datetime.now(UTC).isoformat(),
+                effect_ids=(effect.effect_id,),
+            ),
+        )
+    # refresh non-stale preview for shadow
+    store._previews[(*ctx().scope_key, "pv")] = replace(
+        preview, stale=False, stale_reason=None
+    )
+    shadow = store.authorize_shadow_run(
+        ctx(),
+        ShadowRunRecord(
+            "shadow",
+            "pv",
+            submission.submission_id,
+            "tenant-a",
+            "workspace-a",
+            "reviewer",
+            datetime.now(UTC).isoformat(),
+            effect_ids=(effect.effect_id,),
+        ),
+    )
+    assert shadow.production_authority is False
+    with pytest.raises(ControlPlaneError, match="production authority"):
+        store.authorize_shadow_run(
+            ctx(),
+            ShadowRunRecord(
+                "shadow2",
+                "pv",
+                submission.submission_id,
+                "tenant-a",
+                "workspace-a",
+                "reviewer",
+                datetime.now(UTC).isoformat(),
+                production_authority=True,
+            ),
+        )
+
+    from etlantic.testing import run_durable_work_conformance_suite
+
+    run_durable_work_conformance_suite(MemoryDurableWorkStore())

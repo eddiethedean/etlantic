@@ -1,6 +1,6 @@
 # Testing Plugins
 
-> **Status: Available in ETLantic 0.40.0** via `etlantic.testing`.
+> **Status: Available in ETLantic 0.41.0** via `etlantic.testing`.
 
 Testing helpers provide conformance suites so third-party plugins can prove
 they implement the public protocols correctly.
@@ -92,7 +92,7 @@ ETLantic planning and runtime.
 ## Compatibility policy
 
 - Claim only capabilities your compiler passes in the public suite.
-- Pin `etlantic` (and this suite) to the minor you certified against (`==0.40.0`).
+- Pin `etlantic` (and this suite) to the minor you certified against (`==0.41.0`).
 - Fail closed at `analyze()` for unsupported modes; do not degrade silently.
 - Keep plans, explain payloads, and diagnostics secret-free.
 

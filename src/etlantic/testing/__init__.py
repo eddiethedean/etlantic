@@ -17,6 +17,9 @@ from etlantic.testing.dataframe import (
     assert_roundtrip_records,
     run_conformance_suite,
 )
+from etlantic.testing.durable_work_conformance import (
+    run_durable_work_conformance_suite,
+)
 from etlantic.testing.event_consumer_conformance import (
     run_event_consumer_conformance_suite,
 )
@@ -147,6 +150,7 @@ __all__ = [
     "register_faults",
     "reset_fault_counts",
     "run_conformance_suite",
+    "run_durable_work_conformance_suite",
     "run_event_consumer_conformance_suite",
     "run_facade_conformance_suite",
     "run_lifecycle_conformance_suite",

@@ -1,6 +1,6 @@
 # Portable transforms hub
 
-> **Status: Available in ETLantic 0.40.0.** Ranked path for portable
+> **Status: Available in ETLantic 0.41.0.** Ranked path for portable
 > authoring and compilers. Prefer this spine over jumping into Plugin SDK
 > first.
 

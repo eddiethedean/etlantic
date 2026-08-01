@@ -10,6 +10,7 @@ from typing import Any
 from etlantic.control_plane import (
     Authorizer,
     DefinitionRepository,
+    DurableWorkStore,
     EventStore,
     HistoryStore,
     RegistryDefinitionRepository,
@@ -41,6 +42,9 @@ class ETLanticAPI:
     :meth:`with_registry_definitions` or ``definitions_backend="registry"`` so
     ``/v1/definitions*`` read/write through registry revisions without changing
     route paths or operationIds.
+
+    Optional ``durable_work`` enables ``/v1/durable/*`` host routes (CP3) and
+    dual-writes durable accept on submit when fingerprints are present.
     """
 
     authorizer: Authorizer
@@ -58,6 +62,8 @@ class ETLanticAPI:
     known_observation_ids: set[str] = field(default_factory=set)
     # Optional CP2 registry provider for /v1/registry admin routes.
     registry: RegistryProvider | None = None
+    # Optional CP3 durable work store for /v1/durable/* host routes.
+    durable_work: DurableWorkStore | None = None
     title: str = "ETLantic Control Plane"
     version: str = __version__
     _router: APIRouter | None = field(default=None, init=False, repr=False)
@@ -140,6 +146,7 @@ def create_app(
     context_factory: ContextFactory | None = None,
     principal_dependency: PrincipalDependency | None = None,
     registry: RegistryProvider | None = None,
+    durable_work: DurableWorkStore | None = None,
     definitions_backend: str | None = None,
     title: str | None = None,
     version: str | None = None,
@@ -191,6 +198,7 @@ def create_app(
             or static_context_factory(tenant_id="default", workspace_id="default"),
             principal_dependency=principal_dependency or principal_from_header,
             registry=registry,
+            durable_work=durable_work,
             title=title or "ETLantic Control Plane",
             version=version or __version__,
         )
@@ -205,6 +213,8 @@ def create_app(
             api.context_factory = context_factory
         if registry is not None:
             api.registry = registry
+        if durable_work is not None:
+            api.durable_work = durable_work
         if definitions_backend == "registry":
             if api.registry is None:
                 raise TypeError(
@@ -223,6 +233,7 @@ def create_app(
             app.state.submissions = api.submissions
             app.state.events = api.events
             app.state.registry = api.registry
+            app.state.durable_work = api.durable_work
             # Ready signal only — no BackgroundTasks worker started here.
             app.state.control_plane_ready = api.stores_ready()
             yield

@@ -1,5 +1,5 @@
 ---
-status: Experimental — 0.41 CP3 foundation
+status: Available — 0.41 CP3
 ---
 
 # Durable Submission and State (CP3)
@@ -61,3 +61,7 @@ for message in store.pending_outbox(ctx):
 ```
 
 The provider, not the API process, owns dispatcher and execution-host lifetime.
+Optional FastAPI hosts may inject ``DurableWorkStore`` and expose
+``/v1/durable/*`` routes; CP1 ``SubmissionStore`` receipts remain unchanged.
+Optional SQLModel persistence applies migration ``002_durable_cp3``.
+**CP3 ≠ production multi-tenant** (**0.43**).

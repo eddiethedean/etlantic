@@ -1,18 +1,21 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.40.0; CP2 is gate-ready /
-> released incubation. CP1/CP2 ≠ production multi-tenant (**0.43**).**
+> **Status: Shipped product docs describe ETLantic 0.41.0; CP3 is gate-ready /
+> released incubation. CP1/CP2/CP3 ≠ production multi-tenant (**0.43**).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.40 can do now**, use
+    - To learn what **ETLantic 0.41 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
+    - To evaluate **CP3 gate evidence**, use the
+      [0.41 exit gate](EXIT_GATE_0_41.md), [ADR-018](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md),
+      release notes, and tests.
     - To evaluate **CP2 gate evidence**, use the
       [0.40 exit gate](EXIT_GATE_0_40.md), [ADR-017](adr/ADR-017-REGISTRY-AND-ISOLATION.md),
       release notes, and tests.
@@ -29,24 +32,27 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.40** CP2 gate-ready line. Prior CP1 evidence
-remains in **0.39**; connectivity evidence remains in **0.38**.
+Status is relative to the **0.41** CP3 gate-ready line. Prior CP2 evidence
+remains in **0.40**; CP1 evidence remains in **0.39**; connectivity evidence
+remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.40 CP2 gate-ready; 0.39 CP1 prior | [EXIT_GATE_0_40](EXIT_GATE_0_40.md); next CP3 at 0.41 |
-| [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Gate-ready milestone | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.41 CP3 gate-ready; 0.40 CP2 prior | [EXIT_GATE_0_41](EXIT_GATE_0_41.md); next CP4 at 0.42 |
+| [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md) | Gate-ready milestone | Durable submission, leases, state, replay, previews | [EXIT_GATE_0_41](EXIT_GATE_0_41.md) |
+| [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Previous / gate-ready | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
 | [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md) | Previous / gate-ready | Identity, API, durable submit, SSE, landing submitter, optional SQLModel | [EXIT_GATE_0_39](EXIT_GATE_0_39.md) |
 | [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md) | Previous / gate-ready | Connector protocols, landing-zone modes, reference providers, conformance | [EXIT_GATE_0_38](EXIT_GATE_0_38.md) |
-| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.52 | 0.40 CP2 gate-ready |
+| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.52 | 0.41 CP3 gate-ready |
 | [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | Previous milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | [EXIT_GATE_0_37](EXIT_GATE_0_37.md) gate-ready |
 | [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
 | [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Connectivity gate-ready in 0.38; testing graduated in 0.37 | Continues through 0.52 |
 | [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Gate-ready (0.38 + 0.39 composition) | Snapshot + incremental in 0.38 Preview; continuous submitters in 0.39 (outside core) | CP1 submitter bridge landed |
 | [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Accepted | Protocol ids, entry points, capabilities, plan/runtime split, reference set | Maintenance |
 | [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) | Accepted | Identity vocabulary, non-enumeration, durable accept, SSE cursor shapes | CP1 prior |
-| [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md) | Accepted | Directory records, revisions, isolation profiles, metadata-only histories | CP2 gate-ready |
-| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program; CP2 gate-ready | 0.38 thin reference ≠ control plane; CP1 prior; CP2 under 0.40 | Incubation 0.39–0.42; graduation gate 0.43 |
+| [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md) | Accepted | Directory records, revisions, isolation profiles, metadata-only histories | CP2 prior |
+| [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) | Accepted | Outbox, leases/fencing, effects, preview non-authority | CP3 gate-ready |
+| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program; CP3 gate-ready | 0.38 thin reference ≠ control plane; CP1–CP3 incubation | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |

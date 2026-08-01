@@ -1,6 +1,6 @@
 # Tutorials
 
-> **Status: Available in ETLantic 0.40.0.** Guided paths with expected time,
+> **Status: Available in ETLantic 0.41.0.** Guided paths with expected time,
 > environment, and CI coverage.
 
 | Tutorial | Time | Environment | CI |

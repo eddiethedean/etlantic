@@ -1,7 +1,7 @@
 # etlantic-openlineage (Experimental / CP2)
 
 Outbound OpenLineage-compatible event export for
-[ETLantic](https://github.com/eddiethedean/etlantic) **0.40** CP2. Maps plan
+[ETLantic](https://github.com/eddiethedean/etlantic) **0.41** CP2. Maps plan
 identity and run events to OL-like JSON. **Outbound only** — export failures
 must never mutate registry authority.
 
@@ -11,13 +11,13 @@ must never mutate registry authority.
 ## Install
 
 ```bash
-pip install 'etlantic-openlineage==0.40.0'
+pip install 'etlantic-openlineage==0.41.0'
 # Optional vendor client (not required for fake/CI):
-# pip install 'etlantic-openlineage[openlineage]==0.40.0'
-# pip install 'etlantic==0.40.0'
+# pip install 'etlantic-openlineage[openlineage]==0.41.0'
+# pip install 'etlantic==0.41.0'
 ```
 
-Core dependency: `etlantic>=0.40.0,<0.41`.
+Core dependency: `etlantic>=0.41.0,<0.42`.
 
 ## Behavior
 

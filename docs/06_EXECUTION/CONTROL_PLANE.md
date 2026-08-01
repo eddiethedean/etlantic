@@ -1,6 +1,6 @@
 # Control plane (CP1)
 
-> **Status: Available in ETLantic 0.40.0 (incubation).** Embeddable HTTP control
+> **Status: Available in ETLantic 0.41.0 (incubation).** Embeddable HTTP control
 > plane via `etlantic-fastapi`. CP1 is **not** production multi-tenant isolation
 > (reserved for **0.43**).
 
@@ -20,11 +20,11 @@ mapping. See [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 ## Install
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.40.0'
-# or: python -m pip install 'etlantic[fastapi]==0.40.0'
+python -m pip install 'etlantic-fastapi==0.41.0'
+# or: python -m pip install 'etlantic[fastapi]==0.41.0'
 ```
 
-Pin the same minor as core (`etlantic==0.40.0`). Package README:
+Pin the same minor as core (`etlantic==0.41.0`). Package README:
 [`packages/etlantic-fastapi`](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-fastapi).
 
 ## Embed: `include_router` vs `create_app`
@@ -66,6 +66,35 @@ app = create_app(api)
 
 Use durable SQLModel-backed stores (`etlantic-sqlmodel`) when you need
 process-restart survival; memory stores are for local evaluation only.
+
+## Durable work (CP3)
+
+Inject an optional `DurableWorkStore` for accept/outbox, leases/fencing, and
+host recovery routes. Memory is for local evaluation; use
+`SQLModelDurableWorkStore` (`etlantic-sqlmodel`, migration `002_durable_cp3`)
+when you need process-restart survival.
+
+```python
+from etlantic.control_plane import MemoryDurableWorkStore
+
+api = ETLanticAPI(
+    authorizer=MemoryAuthorizer(),
+    definitions=MemoryDefinitionRepository(),
+    submissions=MemorySubmissionStore(),
+    events=MemoryEventStore(),
+    durable_work=MemoryDurableWorkStore(),
+    context_factory=membership_context_factory(
+        {"alice": ("tenant-a", "ws-1", "development", "default")}
+    ),
+    principal_dependency=principal_from_header,
+)
+```
+
+CP1 submit paths stay stable. With `durable_work` present, submit dual-writes a
+durable accept (plan/revision fingerprints only). Host ops use `/v1/durable/*`
+(authz before lookup). See [Durable work](DURABLE_WORK.md) and
+[ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md).
+**CP3 ≠ production multi-tenant** (**0.43**).
 
 ## Authz before lookup (non-enumeration)
 
@@ -121,7 +150,9 @@ dual-surface split; API symbols:
 
 ## Related
 
-- [Control plane API (CP1)](../10_REFERENCE/CONTROL_PLANE_API.md) — models, PMCP errors
+- [Control plane API (CP1–CP3)](../10_REFERENCE/CONTROL_PLANE_API.md) — models, PMCP errors, `/v1/durable/*`
+- [Durable work (CP3)](DURABLE_WORK.md)
 - [ADR-016: Control-plane identity](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
+- [ADR-018: Durable submission and state](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md)
 - [Deployment](DEPLOYMENT.md)
 - [etlantic-fastapi package README](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md)

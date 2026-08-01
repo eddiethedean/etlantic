@@ -34,7 +34,7 @@
 
 | Who | Action |
 |---|---|
-| Everyone on 0.40.x | Upgrade to `etlantic==0.40.0` with matching plugins; see [migration](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
+| Everyone on 0.39.x | Upgrade to `etlantic==0.40.0` with matching plugins; see [migration](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | Control-plane authors | Prefer `RegistryProvider` for directory/revision access; do not mutate revisions in place |
 | Multi-tenant operators | Do **not** claim production isolation until **0.43** |
 | Lineage adopters | Optional `pip install 'etlantic[openlineage]==0.40.0'`; treat export as non-authority |

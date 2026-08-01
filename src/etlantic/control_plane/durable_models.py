@@ -24,6 +24,16 @@ CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
 REPLAY_RECORD_SCHEMA = "etlantic.control_plane.replay_record/1"
 PREVIEW_WORKSPACE_SCHEMA = "etlantic.control_plane.preview_workspace/1"
+REPAIR_PLAN_SCHEMA = "etlantic.control_plane.repair_plan/1"
+DIFF_RECORD_SCHEMA = "etlantic.control_plane.diff_record/1"
+SHADOW_RUN_RECORD_SCHEMA = "etlantic.control_plane.shadow_run_record/1"
+STATE_TRANSITION_EXPLANATION_SCHEMA = (
+    "etlantic.control_plane.state_transition_explanation/1"
+)
+STATE_DIAGNOSTIC_SCHEMA = "etlantic.control_plane.state_diagnostic/1"
+BASELINE_ACK_SCHEMA = "etlantic.control_plane.baseline_acknowledgement/1"
+
+STATE_NAMESPACES = ("cursor:", "watermark:", "partition:", "snapshot:", "checkpoint:")
 
 SubmissionStatus = Literal[
     "accepted", "dispatched", "cancel_requested", "cancelled", "completed", "failed"
@@ -32,11 +42,23 @@ AttemptStatus = Literal["running", "cancelled", "completed", "failed", "lost"]
 EffectStatus = Literal[
     "none", "pending", "committed", "not_committed", "failed", "unknown"
 ]
+RepairPlanKind = Literal["resume", "repair", "backfill"]
 
 
 def _metadata(value: Mapping[str, Any] | None) -> Mapping[str, Any]:
     result = redact_control_plane_payload(dict(value or {}))
     return dict(result) if isinstance(result, dict) else {}
+
+
+def namespaced_checkpoint_id(kind: str, identity: str) -> str:
+    """Build a namespaced checkpoint id (`cursor:…`, `watermark:…`, …)."""
+    prefix = kind if kind.endswith(":") else f"{kind}:"
+    if prefix not in STATE_NAMESPACES:
+        raise ValueError(f"unsupported state namespace: {kind}")
+    text = identity.strip()
+    if not text:
+        raise ValueError("state identity must not be empty")
+    return f"{prefix}{text}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +78,8 @@ class SubmissionRecord:
     principal_issuer: str | None = None
     principal_kind: str = "human"
     status: SubmissionStatus = "accepted"
+    schema_observation_fingerprint: str | None = None
+    schema_baseline_id: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -153,6 +177,9 @@ class EffectRecord:
     recorded_at: str
     idempotency_evidence: str | None = None
     reconciliation_evidence: str | None = None
+    publication_evidence: str | None = None
+    compensation_evidence: str | None = None
+    authoritative: bool = True
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -167,6 +194,16 @@ class EffectRecord:
             "reconciliation_evidence": (
                 redact_control_plane_text(self.reconciliation_evidence)
                 if self.reconciliation_evidence is not None
+                else None
+            ),
+            "publication_evidence": (
+                redact_control_plane_text(self.publication_evidence)
+                if self.publication_evidence is not None
+                else None
+            ),
+            "compensation_evidence": (
+                redact_control_plane_text(self.compensation_evidence)
+                if self.compensation_evidence is not None
                 else None
             ),
             "metadata": _metadata(self.metadata),
@@ -187,6 +224,8 @@ class ReplayRecord:
     checkpoint_id: str | None
     created_at: str
     differences: tuple[str, ...] = ()
+    schema_observation_fingerprint: str | None = None
+    schema_baseline_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -210,14 +249,170 @@ class PreviewWorkspace:
     plan_fingerprint: str
     policy_fingerprint: str | None = None
     environment_fingerprint: str | None = None
+    commit_ref: str | None = None
+    pull_request_ref: str | None = None
     cleaned_at: str | None = None
+    stale: bool = False
+    stale_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {"schema": PREVIEW_WORKSPACE_SCHEMA, **asdict(self)}
 
 
+@dataclass(frozen=True, slots=True)
+class RepairPlan:
+    plan_id: str
+    kind: RepairPlanKind
+    submission_id: str
+    tenant_id: str
+    workspace_id: str
+    created_at: str
+    source_plan_fingerprint: str
+    checkpoint_id: str | None = None
+    partition_ids: tuple[str, ...] = ()
+    reusable_artifact_ids: tuple[str, ...] = ()
+    invalidated_partition_ids: tuple[str, ...] = ()
+    minimum_safe_closure: tuple[str, ...] = ()
+    schema_baseline_id: str | None = None
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": REPAIR_PLAN_SCHEMA,
+            **asdict(self),
+            "partition_ids": list(self.partition_ids),
+            "reusable_artifact_ids": list(self.reusable_artifact_ids),
+            "invalidated_partition_ids": list(self.invalidated_partition_ids),
+            "minimum_safe_closure": list(self.minimum_safe_closure),
+            "notes": list(self.notes),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class DiffRecord:
+    diff_id: str
+    preview_id: str
+    tenant_id: str
+    workspace_id: str
+    created_at: str
+    contract_diff_fingerprint: str | None = None
+    graph_diff_fingerprint: str | None = None
+    plan_diff_fingerprint: str | None = None
+    schema_diff_fingerprint: str | None = None
+    policy_diff_fingerprint: str | None = None
+    cost_diff_fingerprint: str | None = None
+    environment_diff_fingerprint: str | None = None
+    impacted_subgraph_fingerprint: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": DIFF_RECORD_SCHEMA, **asdict(self)}
+
+
+@dataclass(frozen=True, slots=True)
+class ShadowRunRecord:
+    shadow_run_id: str
+    preview_id: str
+    submission_id: str
+    tenant_id: str
+    workspace_id: str
+    authorized_by: str
+    created_at: str
+    effect_ids: tuple[str, ...] = ()
+    production_authority: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": SHADOW_RUN_RECORD_SCHEMA,
+            **asdict(self),
+            "effect_ids": list(self.effect_ids),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class StateTransitionExplanation:
+    explanation_id: str
+    tenant_id: str
+    workspace_id: str
+    checkpoint_id: str
+    expected_version: int | None
+    proposed_fingerprint: str
+    current_version: int | None
+    current_fingerprint: str | None
+    would_succeed: bool
+    reason: str
+    created_at: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": STATE_TRANSITION_EXPLANATION_SCHEMA, **asdict(self)}
+
+
+@dataclass(frozen=True, slots=True)
+class StateDiagnostic:
+    diagnostic_id: str
+    tenant_id: str
+    workspace_id: str
+    checkpoint_id: str
+    kind: Literal["corruption", "migration", "conflict"]
+    detail: str
+    created_at: str
+    recoverable: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": STATE_DIAGNOSTIC_SCHEMA,
+            **asdict(self),
+            "detail": redact_control_plane_text(self.detail) or "",
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class BaselineAcknowledgement:
+    acknowledgement_id: str
+    tenant_id: str
+    workspace_id: str
+    schema_baseline_id: str
+    observation_fingerprint: str
+    version: int
+    created_at: str
+    submission_id: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": BASELINE_ACK_SCHEMA, **asdict(self)}
+
+
 __all__ = [
-    name
-    for name in globals()
-    if name.endswith(("_SCHEMA", "Record", "Workspace", "Status"))
+    "ATTEMPT_RECORD_SCHEMA",
+    "BASELINE_ACK_SCHEMA",
+    "CHECKPOINT_RECORD_SCHEMA",
+    "DIFF_RECORD_SCHEMA",
+    "EFFECT_RECORD_SCHEMA",
+    "LEASE_RECORD_SCHEMA",
+    "OUTBOX_RECORD_SCHEMA",
+    "PREVIEW_WORKSPACE_SCHEMA",
+    "REPAIR_PLAN_SCHEMA",
+    "REPLAY_RECORD_SCHEMA",
+    "SHADOW_RUN_RECORD_SCHEMA",
+    "STATE_DIAGNOSTIC_SCHEMA",
+    "STATE_NAMESPACES",
+    "STATE_TRANSITION_EXPLANATION_SCHEMA",
+    "SUBMISSION_RECORD_SCHEMA",
+    "AttemptRecord",
+    "AttemptStatus",
+    "BaselineAcknowledgement",
+    "CheckpointRecord",
+    "DiffRecord",
+    "EffectRecord",
+    "EffectStatus",
+    "LeaseRecord",
+    "OutboxRecord",
+    "PreviewWorkspace",
+    "RepairPlan",
+    "RepairPlanKind",
+    "ReplayRecord",
+    "ShadowRunRecord",
+    "StateDiagnostic",
+    "StateTransitionExplanation",
+    "SubmissionRecord",
+    "SubmissionStatus",
+    "namespaced_checkpoint_id",
 ]

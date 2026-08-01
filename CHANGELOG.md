@@ -7,11 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-07-31
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.40.x` or plugins with `<0.41` |
+| Breaking | Dependency floor becomes `etlantic>=0.41.0,<0.42` (CP3 durable-work line) |
+| Upgrade | `pip install 'etlantic==0.41.0'` and matching plugins / `medallantic==0.41.0`. See [Migration 0.40 → 0.41](docs/11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) |
+| Rollback | Re-pin 0.40.0 minors together; re-validate |
+| Security | CP3 durable coordination + fencing/outbox evidence; **not** a production multi-tenant isolation claim (**0.43**) |
+
+### Added
+- CP3 `DurableWorkStore` / `MemoryDurableWorkStore`: accept/outbox, cancel,
+  leases/fencing/heartbeat/release, attempts, checkpoint CAS, effects,
+  replay/repair/backfill plans, preview TTL/staleness/shadow, admission
+- Optional SQLModel durable provider + migration `002_durable_cp3`
+- FastAPI optional `durable_work` injection, dual-write submit, `/v1/durable/*`
+- Durable conformance/chaos scripts and chaos matrix evidence
+- What's New / Migration / Exit Gate / Findings for 0.41; ADR-018 Accepted
+
 ### Changed
+- Official package versions align at 0.41.0; plugins require
+  `etlantic>=0.41.0,<0.42`
+- Supported security release line is 0.41.x
 - GitHub Actions use the current checkout, uv (setup-uv@v9.0.0), Java,
   provenance, SARIF, and artifact action majors; CI runs on uv 0.12.0 and
   covers Airflow 2.11.1 and 3.2.1 (the resolvable final 2.x line and current
   3.x line)
+
+### Security
+- Stale fencing tokens cannot publish terminal state or advance checkpoints
+- Unknown external effects fail closed without reconciliation evidence
+- Explicit docs boundary: CP3 ≠ production multi-tenant
 
 ## [0.40.0] - 2026-07-31
 
@@ -1570,6 +1599,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.41.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.41.0
 [0.40.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.40.0
 [0.39.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.39.0
 [0.38.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.38.0

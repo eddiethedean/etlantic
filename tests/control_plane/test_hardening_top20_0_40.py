@@ -411,4 +411,9 @@ def test_release_check_success_path_initializes_network_state(
     monkeypatch.setattr(check_release, "pypi_exists", lambda _n, _v: True)
     monkeypatch.setattr(check_release, "pypi_project_exists", lambda _n: True)
     assert check_release.main() == 0
-    assert "All packages already present on PyPI at 0.40.0" in capsys.readouterr().out
+    from etlantic._version import __version__
+
+    assert (
+        f"All packages already present on PyPI at {__version__}"
+        in capsys.readouterr().out
+    )

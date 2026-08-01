@@ -64,6 +64,33 @@ class Diagnostic:
     phase: str | None = None
     actions: tuple[DiagnosticAction, ...] = ()
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize for JSON/service payloads (secret-free)."""
+        payload: dict[str, Any] = {
+            "code": self.code,
+            "severity": self.severity.value,
+            "message": self.message,
+            "path": list(self.path),
+            "phase": self.phase,
+        }
+        if self.help:
+            payload["help"] = self.help
+        if self.related:
+            payload["related"] = [list(item) for item in self.related]
+        if self.source is not None:
+            payload["source"] = {
+                "path": self.source.path,
+                "line": self.source.line,
+                "column": self.source.column,
+                "object_ref": self.source.object_ref,
+                "symbol": self.source.symbol,
+            }
+        if self.actions:
+            payload["actions"] = [action.to_dict() for action in self.actions]
+        if self.metadata:
+            payload["metadata"] = dict(self.metadata)
+        return payload
+
 
 @dataclass(frozen=True, slots=True)
 class ValidationReport:

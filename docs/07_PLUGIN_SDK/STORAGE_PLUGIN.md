@@ -1,6 +1,6 @@
 # Storage Plugin
 
-> **Status: Partially available in ETLantic 0.40.0.** Public storage connector
+> **Status: Partially available in ETLantic 0.41.0.** Public storage connector
 > protocol is `etlantic.storage/1` under `etlantic.connectors` (entry point
 > `etlantic.storage_connectors`). Prefer
 > [Connector SDK](CONNECTOR_SDK.md) for new work. Built-in memory/CSV/JSON

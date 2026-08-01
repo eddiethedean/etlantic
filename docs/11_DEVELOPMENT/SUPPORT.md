@@ -1,12 +1,12 @@
 # Support Policy (maintainers)
 
-> **Status: Available in ETLantic 0.40.0.**
+> **Status: Available in ETLantic 0.41.0.**
 
 > **Canonical adopter policy:** root
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).
 > Keep this page as maintainer extras only; do not duplicate pin/envelope text.
 
-ETLantic **0.40.x** is a **Beta** (PyPI) release. Community support is
+ETLantic **0.41.x** is a **Beta** (PyPI) release. Community support is
 best-effort with **no formal SLA**.
 
 ## Where to ask
@@ -21,7 +21,7 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Maintainer notes
 
-- The current published minor line (`0.40.x`) receives best-effort correctness
+- The current published minor line (`0.41.x`) receives best-effort correctness
   and security fixes. Older 0.x lines are not actively maintained.
 - Multi-tenant isolation remains outside the current **0.39** single-tenant
   envelope (CP1 incubates identity/API only; see
