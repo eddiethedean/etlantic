@@ -100,8 +100,8 @@ class DurableWorkStore(Protocol):
         *,
         expected_version: int | None,
         value_fingerprint: str,
-        attempt_id: str | None = None,
-        fencing_token: int | None = None,
+        attempt_id: str,
+        fencing_token: int,
         schema_baseline_id: str | None = None,
     ) -> CheckpointRecord: ...
     def explain_transition(

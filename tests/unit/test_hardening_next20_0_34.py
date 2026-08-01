@@ -196,6 +196,42 @@ def test_pmexec353_is_security_hard_failure() -> None:
     assert LocalOrchestrator._is_security_hard_failure(err)
 
 
+def test_secret_and_safe_io_codes_are_security_hard_failures() -> None:
+    from etlantic.interchange.security import UnsafeLoadError
+    from etlantic.runtime.orchestrator import LocalOrchestrator
+
+    assert LocalOrchestrator._is_security_hard_failure(
+        PipelineExecutionError("missing provider", code="PMEXEC400")
+    )
+    assert LocalOrchestrator._is_security_hard_failure(
+        PipelineExecutionError("env secret missing", code="PMEXEC401")
+    )
+    assert LocalOrchestrator._is_security_hard_failure(
+        PipelineExecutionError("file secret denied", code="PMEXEC402")
+    )
+    assert LocalOrchestrator._is_security_hard_failure(
+        PipelineExecutionError("path escape", code="PMSRC101")
+    )
+    assert LocalOrchestrator._is_security_hard_failure(
+        UnsafeLoadError("symlink rejected")
+    )
+
+
+def test_cli_human_diagnostic_redacts_inline_secrets() -> None:
+    from etlantic.cli.output import diagnostic_to_dict, render_diagnostic_human
+    from etlantic.diagnostics import Diagnostic, Severity
+
+    diag = Diagnostic(
+        code="PMTEST",
+        severity=Severity.ERROR,
+        message="password=super-secret-token failed",
+    )
+    human = render_diagnostic_human(diag)
+    assert "super-secret-token" not in human
+    assert "password=***" in human
+    assert "super-secret-token" not in diagnostic_to_dict(diag)["message"]
+
+
 def test_run_maps_raised_pmplug_to_trust_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

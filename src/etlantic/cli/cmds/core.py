@@ -370,7 +370,7 @@ def register_core_commands(
                     if plan is None:
                         raise typer.BadParameter(
                             f"Planning failed for {ref}: "
-                            + "; ".join(d.message for d in report.errors)
+                            + "; ".join(d.to_dict()["message"] for d in report.errors)
                         )
                     return plan
                 # Legacy plan JSON without schema: attempt plan decode.
@@ -397,7 +397,7 @@ def register_core_commands(
                     if plan is None:
                         raise typer.BadParameter(
                             f"Planning failed for {ref}: "
-                            + "; ".join(d.message for d in report.errors)
+                            + "; ".join(d.to_dict()["message"] for d in report.errors)
                         ) from None
                     return plan
             resolved, _ = cli.resolve_profile(
@@ -415,7 +415,7 @@ def register_core_commands(
             if plan is None:
                 raise typer.BadParameter(
                     f"Planning failed for {ref}: "
-                    + "; ".join(d.message for d in report.errors)
+                    + "; ".join(d.to_dict()["message"] for d in report.errors)
                 )
             return plan
 

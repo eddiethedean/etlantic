@@ -50,6 +50,21 @@ tag/publish rehearsal; they do not reopen ADR-018 locked dispositions.
 |---|---|---|---|---|---|
 | `038-X-01` | P1 | Ecosystem + echo maintainer | Soft-continue | Independent echo connector on PyPI | Non-blocking for CP3; see [FINDINGS_0_40](FINDINGS_0_40.md) |
 
+## Closed in post-0.41.0 hardening (version remains 0.41.0; no tag yet)
+
+| ID | Severity | Owner | State | Summary | Evidence / disposition |
+|---|---|---|---|---|---|
+| `041-H-01` | P1 | Control-plane | Closed | Checkpoint CAS required fencing (`attempt_id` + `fencing_token`) | `durable_memory.compare_and_swap_checkpoint`; FastAPI `DurableCheckpointCasBody`; ADR-018 |
+| `041-H-02` | P1 | Control-plane | Closed | Cancel expires leases; heartbeat/CAS fail under `cancel_requested` | `cancel_submission` / `heartbeat` / CAS guards |
+| `041-H-03` | P1 | FastAPI | Closed | Dual-write cancel is durable-first; invalid `submission_id` fails closed | `routes.cancel_run` + `_resolve_run_submission_id` |
+| `041-H-04` | P1 | FastAPI | Closed | Dual-write submit compensates CP1 when durable accept fails after create | `routes.submit_run` |
+| `041-H-05` | P1 | Control-plane | Closed | `input_snapshot` / replay diffs / preview `stale_reason` redacted on wire | `durable_models.to_dict` + accept-time redact |
+| `041-H-06` | P1 | Runtime | Closed | Secret / Safe I/O failures cannot CONTINUE/SKIP | `orchestrator._is_security_hard_failure` |
+| `041-H-07` | P1 | CLI | Closed | Human/JSON diagnostic paths use secret-safe serialization | `cli/output.py`, doctor/core/compile |
+| `041-H-08` | P2 | Safe I/O | Closed | Wire `0` for max_read_bytes / lock_timeout is honored | `io_policy._wire_nonneg_*` |
+| `041-H-09` | P2 | SQLModel | Closed | Pure durable reads use `_read_only` (no false `payload_version` bumps) | `durable_stores.explain/replay/plan_*` |
+| `041-H-10` | P2 | FastAPI | Closed | Validate/plan profile resolution fail-closed (`allow_adhoc_profile=False`) | `_profile_meta` |
+
 ## Closure rules
 
 1. Every P0 requires a regression test and linked durable evidence before

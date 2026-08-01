@@ -305,24 +305,33 @@ class LocalOrchestrator:
     @staticmethod
     def _is_security_hard_failure(exc: BaseException) -> bool:
         """True for schema/trust/security failures that must not CONTINUE/SKIP."""
+        from etlantic.interchange.security import UnsafeLoadError
+
+        if isinstance(exc, UnsafeLoadError):
+            return True
         code = str(getattr(exc, "code", None) or "")
         stage = str(getattr(exc, "stage", None) or "")
         if code in {
             "PMEXEC340",
             "PMEXEC353",
+            "PMEXEC400",
+            "PMEXEC401",
+            "PMEXEC402",
             "PMPLUG401",
             "PMPLUG402",
             "PMPLUG404",
         }:
             return True
-        if stage in {
+        if code.startswith("PMSRC") or code.startswith("PMPLUG"):
+            return True
+        return stage in {
             FailureStage.SCHEMA_DRIFT.value,
             "schema_drift",
             "plugin_trust",
             "security",
-        }:
-            return True
-        return bool(code.startswith("PMPLUG"))
+            "safe_io",
+            "secret_resolution",
+        }
 
     def _effective_allow_trusted_sql(self) -> bool:
         """Intersect plan snapshot with live runtime profile (fail closed)."""

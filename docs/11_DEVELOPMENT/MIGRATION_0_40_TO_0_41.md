@@ -39,7 +39,9 @@
    `mark_published`.
 
 5. Execution hosts must present the current fencing token on attempt finish and
-   checkpoint CAS. Treat `unknown` external effects as fail-closed.
+   every checkpoint CAS (`attempt_id` + `fencing_token` are required). Cancel
+   expires leases; heartbeat/CAS refuse `cancel_requested`. Treat `unknown`
+   external effects as fail-closed.
 
 6. Re-validate and re-plan existing pipelines after upgrade:
 

@@ -97,7 +97,9 @@ def register_doctor_command(app: typer.Typer) -> None:
                     not errors,
                     "Plugin authorization ok"
                     if not errors
-                    else "; ".join(f"{d.code}: {d.message}" for d in errors),
+                    else "; ".join(
+                        f"{d.code}: {d.to_dict()['message']}" for d in errors
+                    ),
                     severity="error" if errors else "info",
                 )
             )

@@ -67,6 +67,32 @@ def _wire_bool(value: Any, *, field_name: str) -> bool:
     raise ValueError(f"{field_name} must be a boolean")
 
 
+def _wire_nonneg_int(value: Any, *, field_name: str, default: int) -> int:
+    """Decode an int; treat missing as default, but honor explicit zero."""
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+    if parsed < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    return parsed
+
+
+def _wire_nonneg_float(value: Any, *, field_name: str, default: float) -> float:
+    """Decode a float; treat missing as default, but honor explicit zero."""
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a number") from exc
+    if parsed < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    return parsed
+
+
 @dataclass(frozen=True, slots=True)
 class SafeIoPolicy:
     """Policy for contract/profile/report/history/cache/artifact/viz FS access."""
@@ -120,7 +146,11 @@ class SafeIoPolicy:
             )
         return cls(
             approved_roots=roots,
-            max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
+            max_read_bytes=_wire_nonneg_int(
+                data.get("max_read_bytes"),
+                field_name="max_read_bytes",
+                default=DEFAULT_MAX_BYTES,
+            ),
             symlink_policy=symlink_policy,  # type: ignore[arg-type]
             overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
             require_regular_files=_wire_bool(
@@ -130,7 +160,11 @@ class SafeIoPolicy:
             enable_locking=_wire_bool(
                 data.get("enable_locking", True), field_name="enable_locking"
             ),
-            lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),
+            lock_timeout_seconds=_wire_nonneg_float(
+                data.get("lock_timeout_seconds"),
+                field_name="lock_timeout_seconds",
+                default=30.0,
+            ),
             compute_integrity_digest=_wire_bool(
                 data.get("compute_integrity_digest", True),
                 field_name="compute_integrity_digest",
@@ -229,7 +263,11 @@ class SafeIoPlanPolicy:
         return cls(
             version=str(data.get("version") or "safe_io_plan/1"),
             root_refs=_root_refs(data.get("root_refs")),
-            max_read_bytes=int(data.get("max_read_bytes") or DEFAULT_MAX_BYTES),
+            max_read_bytes=_wire_nonneg_int(
+                data.get("max_read_bytes"),
+                field_name="max_read_bytes",
+                default=DEFAULT_MAX_BYTES,
+            ),
             symlink_policy=symlink_policy,  # type: ignore[arg-type]
             overwrite_policy=overwrite_policy,  # type: ignore[arg-type]
             require_regular_files=_wire_bool(
@@ -239,7 +277,11 @@ class SafeIoPlanPolicy:
             enable_locking=_wire_bool(
                 data.get("enable_locking", True), field_name="enable_locking"
             ),
-            lock_timeout_seconds=float(data.get("lock_timeout_seconds") or 30.0),
+            lock_timeout_seconds=_wire_nonneg_float(
+                data.get("lock_timeout_seconds"),
+                field_name="lock_timeout_seconds",
+                default=30.0,
+            ),
             compute_integrity_digest=_wire_bool(
                 data.get("compute_integrity_digest", True),
                 field_name="compute_integrity_digest",

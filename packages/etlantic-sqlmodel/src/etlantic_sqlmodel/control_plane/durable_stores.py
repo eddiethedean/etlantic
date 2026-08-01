@@ -265,7 +265,9 @@ class SQLModelDurableWorkStore:
     def explain_transition(
         self, ctx: ControlPlaneContext, checkpoint_id: str, **kwargs: Any
     ):
-        return self._txn(lambda m: m.explain_transition(ctx, checkpoint_id, **kwargs))
+        return self._read_only(
+            lambda m: m.explain_transition(ctx, checkpoint_id, **kwargs)
+        )
 
     def diagnose_checkpoint(
         self, ctx: ControlPlaneContext, checkpoint_id: str, **kwargs: Any
@@ -279,18 +281,18 @@ class SQLModelDurableWorkStore:
         return self._txn(lambda m: m.record_effect(ctx, effect))
 
     def replay(self, ctx: ControlPlaneContext, submission_id: str, **kwargs: Any):
-        return self._txn(lambda m: m.replay(ctx, submission_id, **kwargs))
+        return self._read_only(lambda m: m.replay(ctx, submission_id, **kwargs))
 
     def plan_resume(self, ctx: ControlPlaneContext, submission_id: str, **kwargs: Any):
-        return self._txn(lambda m: m.plan_resume(ctx, submission_id, **kwargs))
+        return self._read_only(lambda m: m.plan_resume(ctx, submission_id, **kwargs))
 
     def plan_repair(self, ctx: ControlPlaneContext, submission_id: str, **kwargs: Any):
-        return self._txn(lambda m: m.plan_repair(ctx, submission_id, **kwargs))
+        return self._read_only(lambda m: m.plan_repair(ctx, submission_id, **kwargs))
 
     def plan_backfill(
         self, ctx: ControlPlaneContext, submission_id: str, **kwargs: Any
     ):
-        return self._txn(lambda m: m.plan_backfill(ctx, submission_id, **kwargs))
+        return self._read_only(lambda m: m.plan_backfill(ctx, submission_id, **kwargs))
 
     def create_preview(self, ctx: ControlPlaneContext, preview: PreviewWorkspace):
         return self._txn(lambda m: m.create_preview(ctx, preview))

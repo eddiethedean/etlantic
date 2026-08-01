@@ -31,56 +31,31 @@ def emit_payload(data: Any, *, fmt: str, quiet: bool = False) -> None:
 
 
 def diagnostic_to_dict(d: Diagnostic) -> dict[str, Any]:
-    """Serialize a diagnostic for JSON/SARIF parity."""
-    payload: dict[str, Any] = {
-        "code": d.code,
-        "severity": d.severity.value,
-        "message": d.message,
-        "path": list(d.path),
-        "phase": d.phase,
-    }
-    if d.help:
-        payload["help"] = d.help
-    if d.related:
-        payload["related"] = list(d.related)
-    if d.source is not None:
-        payload["source"] = {
-            "path": d.source.path,
-            "line": d.source.line,
-            "column": d.source.column,
-            "object_ref": d.source.object_ref,
-            "symbol": d.source.symbol,
-        }
-    if d.actions:
-        payload["actions"] = [
-            {
-                "kind": a.kind,
-                "title": a.title,
-                "edit_suggestion": a.edit_suggestion,
-                "arguments": dict(a.arguments or {}),
-            }
-            for a in d.actions
-        ]
-    if d.metadata:
-        payload["metadata"] = dict(d.metadata)
-    return payload
+    """Serialize a diagnostic for JSON/SARIF parity (secret-safe)."""
+    return d.to_dict()
 
 
 def render_diagnostic_human(d: Diagnostic, *, verbose: bool = False) -> str:
     """Format one diagnostic for human-readable CLI output."""
-    parts = [f"[{d.severity.value}] {d.code}: {d.message}"]
-    if d.phase:
-        parts.append(f"  phase: {d.phase}")
-    if verbose and d.help:
-        parts.append(f"  help: {d.help}")
-    if verbose and d.source is not None and d.source.path:
-        loc = d.source.path
-        if d.source.line is not None:
-            loc = f"{loc}:{d.source.line}"
+    from etlantic.runtime.logging import redact_message
+
+    safe = d.to_dict()
+    parts = [f"[{safe['severity']}] {safe['code']}: {safe['message']}"]
+    if safe.get("phase"):
+        parts.append(f"  phase: {safe['phase']}")
+    if verbose and safe.get("help"):
+        parts.append(f"  help: {safe['help']}")
+    source = safe.get("source")
+    if verbose and isinstance(source, dict) and source.get("path"):
+        loc = source["path"]
+        if source.get("line") is not None:
+            loc = f"{loc}:{source['line']}"
         parts.append(f"  at: {loc}")
-    if verbose and d.actions:
-        for action in d.actions:
-            parts.append(f"  action: {action.title} ({action.kind})")
+    if verbose and safe.get("actions"):
+        for action in safe["actions"]:
+            title = redact_message(str(action.get("title") or ""))
+            kind = action.get("kind")
+            parts.append(f"  action: {title} ({kind})")
     return "\n".join(parts)
 
 

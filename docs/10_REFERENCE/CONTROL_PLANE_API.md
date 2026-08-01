@@ -54,7 +54,12 @@ Pin: `pip install 'etlantic-fastapi==0.41.0'` (match `etlantic==0.41.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
-`POST /v1/runs/{id}/cancel` also cancels the correlated durable submission.
+If durable accept fails after a newly created CP1 receipt, the API compensates
+by cancelling the CP1 run so hosts are not left with accepted work and no
+outbox. `POST /v1/runs/{id}/cancel` cancels the durable submission **first**,
+then the CP1 run observation (durable 404/409 are treated as continue so CP1
+can still converge). Cancel expires any live durable lease; heartbeat and
+checkpoint CAS fail closed under `cancel_requested`.
 Shipped host routes under `/v1/durable/*` (authz first):
 
 | Route | Purpose |
@@ -64,7 +69,7 @@ Shipped host routes under `/v1/durable/*` (authz first):
 | `POST /v1/durable/submissions/{id}/cancel` | Cancel accepted work |
 | `POST …/leases` · `…/leases/heartbeat` · `…/leases/release` | Lease acquire / heartbeat / release |
 | `POST …/attempts` · `POST /v1/durable/attempts/{id}/finish` | Attempt start / finish |
-| `POST /v1/durable/checkpoints/{id}/cas` | Namespaced checkpoint CAS |
+| `POST /v1/durable/checkpoints/{id}/cas` | Namespaced checkpoint CAS (**requires** `attempt_id` + `fencing_token`) |
 | `POST …/replay` | Replay from optional checkpoint |
 | `POST /v1/durable/previews` | Create TTL preview workspace |
 

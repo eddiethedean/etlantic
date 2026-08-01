@@ -149,3 +149,39 @@ def test_snapshot_version_conflict_under_concurrent_hosts(tmp_path: Path) -> Non
         mem, _ = host1._read(session, for_update=True)
         with pytest.raises(ControlPlaneError, match="version conflict"):
             host1._write(session, mem, expected_version=stale_version)
+
+
+def test_read_only_durable_ops_do_not_bump_payload_version(tmp_path: Path) -> None:
+    from etlantic_sqlmodel.control_plane.models import DurableSnapshotRow
+    from etlantic_sqlmodel.control_plane.session import session_scope
+    from sqlmodel import select
+
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'ro.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    submission, _ = store.accept(
+        _ctx(),
+        idempotency_key="ro",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+
+    def _version() -> int:
+        with session_scope(engine) as session:
+            row = session.exec(
+                select(DurableSnapshotRow).where(
+                    DurableSnapshotRow.store_id == "default"
+                )
+            ).first()
+            assert row is not None
+            return int(row.payload_version)
+
+    before = _version()
+    store.explain_transition(
+        _ctx(), "cursor:x", expected_version=None, value_fingerprint="v1"
+    )
+    store.replay(_ctx(), submission.submission_id)
+    store.plan_resume(_ctx(), submission.submission_id)
+    store.plan_repair(_ctx(), submission.submission_id)
+    store.plan_backfill(_ctx(), submission.submission_id, partition_ids=("p1",))
+    assert _version() == before

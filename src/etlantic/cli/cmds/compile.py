@@ -74,14 +74,7 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             emit_payload(
                 {
                     "ok": False,
-                    "diagnostics": [
-                        {
-                            "code": d.code,
-                            "severity": d.severity.value,
-                            "message": d.message,
-                        }
-                        for d in errors
-                    ],
+                    "diagnostics": [d.to_dict() for d in errors],
                 },
                 fmt=fmt,
             )

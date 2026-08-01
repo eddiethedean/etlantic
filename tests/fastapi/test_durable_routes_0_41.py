@@ -190,3 +190,110 @@ def test_missing_durable_store_returns_501() -> None:
     client = TestClient(create_app(api))
     resp = client.get("/v1/durable/outbox", headers={"X-Principal": "alice"})
     assert resp.status_code == 501
+
+
+def test_durable_accept_failure_compensates_cp1_create() -> None:
+    class _BoomDurable(MemoryDurableWorkStore):
+        def accept(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            raise RuntimeError("durable unavailable")
+
+    authz = MemoryAuthorizer()
+    defs = MemoryDefinitionRepository()
+    submissions = MemorySubmissionStore()
+    ctx = _ctx()
+    defs.put(ctx, "pipe-1", {"name": "pipe-1"})
+    for action in (*DURABLE_ACTIONS, "run.read"):
+        authz.grant(ctx, action)
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=submissions,
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+        durable_work=_BoomDurable(),
+    )
+    client = TestClient(create_app(api))
+    resp = client.post(
+        "/v1/definitions/pipe-1/runs",
+        headers={"X-Principal": "alice", "Idempotency-Key": "boom-1"},
+        json={"payload": {"plan_fingerprint": "plan"}},
+    )
+    assert resp.status_code == 503, resp.text
+    assert submissions._runs == {} or all(
+        row.get("status") == "cancel_requested" for row in submissions._runs.values()
+    )
+
+
+def test_checkpoint_cas_requires_fencing_on_wire() -> None:
+    client, durable = _client()
+    headers = {"X-Principal": "alice"}
+    resp = client.post(
+        "/v1/definitions/pipe-1/runs",
+        headers={**headers, "Idempotency-Key": "cas-1"},
+        json={"payload": {"plan_fingerprint": "plan"}},
+    )
+    assert resp.status_code == 202
+    submission_id = resp.json()["submission_id"]
+    lease = client.post(
+        f"/v1/durable/submissions/{submission_id}/leases",
+        headers=headers,
+        json={"owner_id": "host-1", "ttl_seconds": 30},
+    )
+    token = lease.json()["fencing_token"]
+    attempt = client.post(
+        f"/v1/durable/submissions/{submission_id}/attempts",
+        headers=headers,
+        json={"owner_id": "host-1", "fencing_token": token},
+    )
+    missing = client.post(
+        "/v1/durable/checkpoints/cursor:main/cas",
+        headers=headers,
+        json={"value_fingerprint": "v1", "expected_version": None},
+    )
+    assert missing.status_code == 422
+    ok = client.post(
+        "/v1/durable/checkpoints/cursor:main/cas",
+        headers=headers,
+        json={
+            "value_fingerprint": "v1",
+            "expected_version": None,
+            "attempt_id": attempt.json()["attempt_id"],
+            "fencing_token": token,
+        },
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["version"] == 1
+    assert durable  # keep reference live for GC clarity
+
+
+def test_unknown_profile_fails_closed_on_validate() -> None:
+    authz = MemoryAuthorizer()
+    defs = MemoryDefinitionRepository()
+    ctx = _ctx()
+    defs.put(
+        ctx,
+        "pipe-1",
+        {"schema": "etlantic.pipeline/1", "name": "pipe-1", "nodes": []},
+    )
+    authz.grant(ctx, "definition.read")
+    authz.grant(ctx, "definition.validate")
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        profile="definitely-not-a-real-profile-name",
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    client = TestClient(create_app(api))
+    resp = client.post(
+        "/v1/definitions/pipe-1/validate",
+        headers={"X-Principal": "alice"},
+    )
+    assert resp.status_code == 400, resp.text

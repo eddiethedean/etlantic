@@ -97,6 +97,33 @@ def _run_exists_probe(api: ETLanticAPI, ctx: ControlPlaneContext, run_id: str) -
     return _probe()
 
 
+def _resolve_run_submission_id(record: Any, run_id: str) -> str:
+    """Resolve durable submission_id from a CP1 run record (fail closed)."""
+    if isinstance(record, Mapping):
+        raw = record.get("submission_id")
+        if raw is None:
+            raise ControlPlaneError(
+                "Run record is missing submission_id",
+                code="PMCP500",
+                status=500,
+                title="Internal Server Error",
+                type="etlantic.control_plane/error",
+                extensions={"run_id": run_id},
+            )
+        submission_id = str(raw).strip()
+        if not submission_id or submission_id == "None":
+            raise ControlPlaneError(
+                "Run record has an invalid submission_id",
+                code="PMCP500",
+                status=500,
+                title="Internal Server Error",
+                type="etlantic.control_plane/error",
+                extensions={"run_id": run_id},
+            )
+        return submission_id
+    return run_id
+
+
 def _profile_meta(api: ETLanticAPI) -> tuple[Any, bool, dict[str, Any]]:
     """Resolve injected profile and Experimental vs production-capable metadata."""
     from etlantic.plugin_trust import is_production_profile
@@ -104,9 +131,15 @@ def _profile_meta(api: ETLanticAPI) -> tuple[Any, bool, dict[str, Any]]:
 
     raw = getattr(api, "profile", "development")
     try:
-        profile = resolve_profile(raw, allow_adhoc_profile=True)
-    except Exception:
-        profile = raw
+        profile = resolve_profile(raw, allow_adhoc_profile=False)
+    except Exception as exc:
+        raise ControlPlaneError(
+            redact_control_plane_text(str(exc)) or "Profile resolution failed",
+            code="PMCP400",
+            status=400,
+            title="Bad Request",
+            type="etlantic.control_plane/bad_request",
+        ) from exc
     production_like = False
     try:
         production_like = is_production_profile(profile)
@@ -457,43 +490,68 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 or payload.get("plan_id")
                 or f"definition:{definition_id}"
             )
-            _durable_row, durable_created = api.durable_work.accept(
-                ctx,
-                idempotency_key=idem,
-                operation="run.submit",
-                plan_fingerprint=plan_fp,
-                revision_id=(
-                    str(payload["revision_id"])
-                    if payload.get("revision_id") is not None
-                    else None
-                ),
-                plugin_fingerprint=(
-                    str(payload["plugin_fingerprint"])
-                    if payload.get("plugin_fingerprint") is not None
-                    else None
-                ),
-                policy_fingerprint=(
-                    str(payload["policy_fingerprint"])
-                    if payload.get("policy_fingerprint") is not None
-                    else None
-                ),
-                input_snapshot=(
-                    str(payload["input_snapshot"])
-                    if payload.get("input_snapshot") is not None
-                    else None
-                ),
-                schema_baseline_id=(
-                    str(payload["schema_baseline_id"])
-                    if payload.get("schema_baseline_id") is not None
-                    else None
-                ),
-                schema_observation_fingerprint=(
-                    str(payload["schema_observation_fingerprint"])
-                    if payload.get("schema_observation_fingerprint") is not None
-                    else None
-                ),
-                submission_id=result.receipt.submission_id,
-            )
+            try:
+                _durable_row, durable_created = api.durable_work.accept(
+                    ctx,
+                    idempotency_key=idem,
+                    operation="run.submit",
+                    plan_fingerprint=plan_fp,
+                    revision_id=(
+                        str(payload["revision_id"])
+                        if payload.get("revision_id") is not None
+                        else None
+                    ),
+                    plugin_fingerprint=(
+                        str(payload["plugin_fingerprint"])
+                        if payload.get("plugin_fingerprint") is not None
+                        else None
+                    ),
+                    policy_fingerprint=(
+                        str(payload["policy_fingerprint"])
+                        if payload.get("policy_fingerprint") is not None
+                        else None
+                    ),
+                    input_snapshot=(
+                        str(payload["input_snapshot"])
+                        if payload.get("input_snapshot") is not None
+                        else None
+                    ),
+                    schema_baseline_id=(
+                        str(payload["schema_baseline_id"])
+                        if payload.get("schema_baseline_id") is not None
+                        else None
+                    ),
+                    schema_observation_fingerprint=(
+                        str(payload["schema_observation_fingerprint"])
+                        if payload.get("schema_observation_fingerprint") is not None
+                        else None
+                    ),
+                    submission_id=result.receipt.submission_id,
+                )
+            except Exception as exc:
+                # Compensate a freshly created CP1 accept so dual-write hosts do
+                # not leave accepted runs without durable outbox coordination.
+                if result.created:
+                    run_id = result.receipt.resource_id or result.receipt.submission_id
+                    try:
+                        _, cancel_fn = _run_store_methods(api)
+                        cancel_fn(ctx, run_id)
+                    except Exception:
+                        pass
+                if isinstance(exc, ControlPlaneError):
+                    raise
+                raise ControlPlaneError(
+                    "Durable accept failed after CP1 accept; "
+                    "CP1 run was compensated when newly created",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": result.receipt.submission_id,
+                        "compensated": bool(result.created),
+                    },
+                ) from exc
         receipt = _receipt_with_urls(result.receipt)
         # Emit on CP1 create or when durable accept first succeeds after a split.
         if api.events is not None and (result.created or durable_created):
@@ -549,7 +607,21 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> RunStatusResponse:
         _authorize_run(ctx, "run.cancel", run_id)
-        _, cancel_fn = _run_store_methods(api)
+        get_run_fn, cancel_fn = _run_store_methods(api)
+        try:
+            existing = get_run_fn(ctx, run_id)
+        except KeyError as exc:
+            raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
+        submission_id = _resolve_run_submission_id(existing, run_id)
+        # Durable cancel first so CP1 is not flipped when durable coordination fails.
+        if api.durable_work is not None:
+            try:
+                api.durable_work.cancel_submission(ctx, submission_id)
+            except ControlPlaneError as exc:
+                # Missing durable row (CP1-only) or already-terminal durable:
+                # continue so CP1 observation can still converge.
+                if int(getattr(exc, "status", 500)) not in {404, 409}:
+                    raise
         try:
             cancelled = cancel_fn(ctx, run_id)
         except KeyError as exc:
@@ -559,12 +631,6 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         else:
             record = cancelled
             changed = True
-        if api.durable_work is not None:
-            submission_id = str(
-                record.get("submission_id") if isinstance(record, Mapping) else run_id
-            )
-            # Fail closed: durable cancel must succeed when dual-write is configured.
-            api.durable_work.cancel_submission(ctx, submission_id)
         if changed and api.events is not None:
             api.events.append(
                 ctx,

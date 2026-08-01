@@ -206,19 +206,46 @@ def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
         revision_id="r1",
         plugin_fingerprint="p1",
         policy_fingerprint="policy1",
-        input_snapshot="input1",
+        input_snapshot="password=super-secret-token",
+    )
+    assert "super-secret-token" not in (submission.input_snapshot or "")
+    assert "super-secret-token" not in submission.to_dict()["input_snapshot"]
+    lease = store.acquire_lease(
+        ctx(), submission.submission_id, owner_id="one", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx(),
+        submission.submission_id,
+        owner_id="one",
+        fencing_token=lease.fencing_token,
     )
     checkpoint = store.compare_and_swap_checkpoint(
-        ctx(), "watermark:main", expected_version=None, value_fingerprint="wm1"
+        ctx(),
+        "watermark:main",
+        expected_version=None,
+        value_fingerprint="wm1",
+        attempt_id=attempt.attempt_id,
+        fencing_token=lease.fencing_token,
     )
     with pytest.raises(ControlPlaneError):
         store.compare_and_swap_checkpoint(
-            ctx(), "watermark:main", expected_version=None, value_fingerprint="wm2"
+            ctx(),
+            "watermark:main",
+            expected_version=None,
+            value_fingerprint="wm2",
+            attempt_id=attempt.attempt_id,
+            fencing_token=lease.fencing_token,
+        )
+    with pytest.raises(TypeError):
+        store.compare_and_swap_checkpoint(  # type: ignore[call-arg]
+            ctx(), "watermark:main", expected_version=1, value_fingerprint="wm3"
         )
     replay = store.replay(
         ctx(), submission.submission_id, checkpoint_id=checkpoint.checkpoint_id
     )
-    assert replay.plan_fingerprint == "plan" and replay.input_snapshot == "input1"
+    assert replay.plan_fingerprint == "plan"
+    assert replay.input_snapshot == submission.input_snapshot
+    assert "super-secret-token" not in replay.to_dict()["input_snapshot"]
     unknown = EffectRecord(
         "effect",
         submission.submission_id,
@@ -252,6 +279,9 @@ def test_checkpoint_cas_replay_effect_and_preview_cleanup_fail_closed() -> None:
         "code",
         "plan",
     )
+    leaky = replace(preview, stale=True, stale_reason="password=super-secret-token")
+    assert "super-secret-token" not in (leaky.to_dict().get("stale_reason") or "")
+
     store.create_preview(ctx(), preview)
     store._previews[(*ctx().scope_key, preview.preview_id)] = replace(
         preview, expires_at=(datetime.now(UTC) - timedelta(seconds=1)).isoformat()
@@ -398,11 +428,22 @@ def test_admission_release_repair_preview_shadow_and_conformance() -> None:
         ctx(), "cursor:orders", expected_version=None, value_fingerprint="v1"
     )
     assert explained.would_succeed
+    lease = store.acquire_lease(
+        ctx(), submission.submission_id, owner_id="cas", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx(),
+        submission.submission_id,
+        owner_id="cas",
+        fencing_token=lease.fencing_token,
+    )
     checkpoint = store.compare_and_swap_checkpoint(
         ctx(),
         "cursor:orders",
         expected_version=None,
         value_fingerprint="v1",
+        attempt_id=attempt.attempt_id,
+        fencing_token=lease.fencing_token,
         schema_baseline_id="base",
     )
     assert checkpoint.schema_baseline_id == "base"
@@ -598,6 +639,23 @@ def test_finish_attempt_under_cancel_forces_cancelled_status() -> None:
         fencing_token=lease.fencing_token,
     )
     store.cancel_submission(ctx(), submission.submission_id)
+    with pytest.raises(ControlPlaneError, match="heartbeat"):
+        store.heartbeat(
+            ctx(),
+            submission.submission_id,
+            owner_id="w",
+            fencing_token=lease.fencing_token,
+            ttl_seconds=30,
+        )
+    with pytest.raises(ControlPlaneError, match="Checkpoint CAS refused"):
+        store.compare_and_swap_checkpoint(
+            ctx(),
+            "cursor:after-cancel",
+            expected_version=None,
+            value_fingerprint="nope",
+            attempt_id=attempt.attempt_id,
+            fencing_token=lease.fencing_token,
+        )
     finished = store.finish_attempt(
         ctx(),
         attempt.attempt_id,
@@ -606,3 +664,26 @@ def test_finish_attempt_under_cancel_forces_cancelled_status() -> None:
         status="completed",
     )
     assert finished.status == "cancelled"
+    with pytest.raises(ControlPlaneError, match="not eligible"):
+        store.acquire_lease(
+            ctx(), submission.submission_id, owner_id="other", ttl_seconds=30
+        )
+
+
+def test_cancel_expires_live_lease_for_takeover() -> None:
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx(),
+        idempotency_key="lease-expire",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    lease = store.acquire_lease(
+        ctx(), submission.submission_id, owner_id="holder", ttl_seconds=3600
+    )
+    store.cancel_submission(ctx(), submission.submission_id)
+    tombstone = store._leases[(*ctx().scope_key, submission.submission_id)]
+    assert tombstone.fencing_token == lease.fencing_token
+    from datetime import datetime as dt
+
+    assert dt.fromisoformat(tombstone.expires_at.replace("Z", "+00:00")) <= dt.now(UTC)

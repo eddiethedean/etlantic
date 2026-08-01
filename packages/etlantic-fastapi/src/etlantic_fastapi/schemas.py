@@ -300,9 +300,9 @@ class DurableFinishAttemptBody(BaseModel):
 
 class DurableCheckpointCasBody(BaseModel):
     value_fingerprint: str
+    attempt_id: str
+    fencing_token: int
     expected_version: int | None = None
-    attempt_id: str | None = None
-    fencing_token: int | None = None
     schema_baseline_id: str | None = None
 
 

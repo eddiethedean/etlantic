@@ -83,9 +83,15 @@ class SubmissionRecord:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["input_snapshot"] = (
+            redact_control_plane_text(self.input_snapshot)
+            if self.input_snapshot is not None
+            else None
+        )
         return {
             "schema": SUBMISSION_RECORD_SCHEMA,
-            **asdict(self),
+            **payload,
             "metadata": _metadata(self.metadata),
         }
 
@@ -228,10 +234,18 @@ class ReplayRecord:
     schema_baseline_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["input_snapshot"] = (
+            redact_control_plane_text(self.input_snapshot)
+            if self.input_snapshot is not None
+            else None
+        )
         return {
             "schema": REPLAY_RECORD_SCHEMA,
-            **asdict(self),
-            "differences": list(self.differences),
+            **payload,
+            "differences": [
+                redact_control_plane_text(item) or "" for item in self.differences
+            ],
         }
 
 
@@ -256,7 +270,13 @@ class PreviewWorkspace:
     stale_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {"schema": PREVIEW_WORKSPACE_SCHEMA, **asdict(self)}
+        payload = asdict(self)
+        payload["stale_reason"] = (
+            redact_control_plane_text(self.stale_reason)
+            if self.stale_reason is not None
+            else None
+        )
+        return {"schema": PREVIEW_WORKSPACE_SCHEMA, **payload}
 
 
 @dataclass(frozen=True, slots=True)

@@ -119,12 +119,17 @@ class MemoryDurableWorkStore:
             operation,
             idempotency_key,
         )
+        safe_input_snapshot = (
+            redact_control_plane_text(input_snapshot)
+            if input_snapshot is not None
+            else None
+        )
         requested = (
             plan_fingerprint,
             revision_id,
             plugin_fingerprint,
             policy_fingerprint,
-            input_snapshot,
+            safe_input_snapshot,
             schema_observation_fingerprint,
             schema_baseline_id,
         )
@@ -177,7 +182,7 @@ class MemoryDurableWorkStore:
                 revision_id,
                 plugin_fingerprint,
                 policy_fingerprint,
-                input_snapshot,
+                safe_input_snapshot,
                 ctx.principal.issuer,
                 ctx.principal.kind,
                 schema_observation_fingerprint=schema_observation_fingerprint,
@@ -249,6 +254,15 @@ class MemoryDurableWorkStore:
             if submission.status != "cancel_requested":
                 submission = replace(submission, status="cancel_requested")
                 self._submissions[key] = submission
+            # Expire any live lease so holders cannot heartbeat forever and
+            # block takeover after cancel.
+            lease = self._leases.get(key)
+            if lease is not None and _parse(lease.expires_at) > _now():
+                self._leases[key] = replace(
+                    lease,
+                    expires_at=_iso(_now() - timedelta(seconds=1)),
+                    heartbeat_at=_iso(),
+                )
             return deepcopy(submission)
 
     def acquire_lease(
@@ -315,6 +329,18 @@ class MemoryDurableWorkStore:
             raise ValueError("ttl_seconds must be positive")
         key = (*_scope(ctx), submission_id)
         with self._lock:
+            submission = self._submissions.get(key)
+            if submission is None:
+                raise ControlPlaneError.not_found("Submission not found")
+            if submission.status in {
+                "cancel_requested",
+                "cancelled",
+                "completed",
+                "failed",
+            }:
+                raise ControlPlaneError.conflict(
+                    "Submission is not eligible for heartbeat"
+                )
             old = self._require_lease(key, owner_id, fencing_token)
             now = _now()
             lease = replace(
@@ -426,13 +452,22 @@ class MemoryDurableWorkStore:
             attempt = self._attempts.get(key)
             if attempt is None:
                 raise ControlPlaneError.not_found("Attempt not found")
-            self._require_lease(
-                (*_scope(ctx), attempt.submission_id), owner_id, fencing_token
-            )
-            if attempt.status != "running":
-                return deepcopy(attempt)
             submission_key = (*_scope(ctx), attempt.submission_id)
             submission = self._submissions[submission_key]
+            # After cancel expires the lease, still allow the holder to
+            # acknowledge cancel with the matching fencing token.
+            if submission.status == "cancel_requested":
+                lease = self._leases.get(submission_key)
+                if (
+                    lease is None
+                    or lease.owner_id != owner_id
+                    or lease.fencing_token != fencing_token
+                ):
+                    raise ControlPlaneError.conflict("Stale or invalid execution lease")
+            else:
+                self._require_lease(submission_key, owner_id, fencing_token)
+            if attempt.status != "running":
+                return deepcopy(attempt)
             attempt_status = status
             terminal_status = "completed" if status == "completed" else "failed"
             if status == "cancelled" or submission.status == "cancel_requested":
@@ -452,8 +487,8 @@ class MemoryDurableWorkStore:
         *,
         expected_version: int | None,
         value_fingerprint: str,
-        attempt_id: str | None = None,
-        fencing_token: int | None = None,
+        attempt_id: str,
+        fencing_token: int,
         schema_baseline_id: str | None = None,
     ) -> CheckpointRecord:
         _require_namespaced_checkpoint_id(checkpoint_id)
@@ -463,29 +498,33 @@ class MemoryDurableWorkStore:
             version = previous.version if previous else None
             if version != expected_version:
                 raise ControlPlaneError.conflict("Checkpoint compare-and-swap conflict")
-            attempt = None
-            if attempt_id is not None:
-                attempt = self._attempts.get((*_scope(ctx), attempt_id))
-                if (
-                    attempt is None
-                    or attempt.status != "running"
-                    or fencing_token is None
-                ):
-                    raise ControlPlaneError.conflict(
-                        "Checkpoint requires a current running attempt and fencing token"
-                    )
-                self._require_lease(
-                    (*_scope(ctx), attempt.submission_id),
-                    attempt.owner_id,
-                    fencing_token,
+            attempt = self._attempts.get((*_scope(ctx), attempt_id))
+            if attempt is None or attempt.status != "running":
+                raise ControlPlaneError.conflict(
+                    "Checkpoint requires a current running attempt and fencing token"
                 )
+            submission = self._submissions.get((*_scope(ctx), attempt.submission_id))
+            if submission is None or submission.status in {
+                "cancel_requested",
+                "cancelled",
+                "completed",
+                "failed",
+            }:
+                raise ControlPlaneError.conflict(
+                    "Checkpoint CAS refused for cancelled or terminal submission"
+                )
+            self._require_lease(
+                (*_scope(ctx), attempt.submission_id),
+                attempt.owner_id,
+                fencing_token,
+            )
             record = CheckpointRecord(
                 checkpoint_id,
                 *_scope(ctx),
                 (version or 0) + 1,
                 value_fingerprint,
                 _iso(),
-                submission_id=attempt.submission_id if attempt is not None else None,
+                submission_id=attempt.submission_id,
                 attempt_id=attempt_id,
                 schema_baseline_id=schema_baseline_id
                 or (previous.schema_baseline_id if previous else None),

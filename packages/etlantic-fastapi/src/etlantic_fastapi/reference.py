@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from etlantic.runtime.logging import redact_message
 from etlantic.service import AuthoringService, PolicyContext
 from etlantic_fastapi._version import __version__
 from fastapi import FastAPI, HTTPException
@@ -29,6 +30,11 @@ class EditRequest(BaseModel):
 
 class RunSubmitRequest(BaseModel):
     idempotency_key: str | None = None
+
+
+def _client_error_detail(exc: BaseException) -> str:
+    """Opaque, redacted client detail for the non-CP reference surface."""
+    return redact_message(str(exc)) or "request failed"
 
 
 def create_reference_app(
@@ -63,7 +69,9 @@ def create_reference_app(
                 idempotency_key=body.idempotency_key,
             )
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=400, detail=_client_error_detail(exc)
+            ) from exc
 
     @app.get("/pipelines/{definition_id}")
     def get_pipeline(definition_id: str) -> dict[str, Any]:
@@ -79,7 +87,9 @@ def create_reference_app(
                 definition_id, body.command, expected_token=body.expected_token
             )
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=400, detail=_client_error_detail(exc)
+            ) from exc
 
     @app.post("/pipelines/{definition_id}/validate")
     def validate_pipeline(definition_id: str) -> dict[str, Any]:

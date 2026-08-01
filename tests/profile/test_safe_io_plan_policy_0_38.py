@@ -129,3 +129,16 @@ def test_safe_io_wire_bools_do_not_truthify_false_strings() -> None:
     assert policy.compute_integrity_digest is False
     with pytest.raises(ValueError, match="must be a boolean"):
         SafeIoPolicy.from_dict({"require_regular_files": "yes"})
+
+
+def test_safe_io_wire_numeric_zero_is_honored() -> None:
+    policy = SafeIoPolicy.from_dict({"max_read_bytes": 0, "lock_timeout_seconds": 0})
+    assert policy.max_read_bytes == 0
+    assert policy.lock_timeout_seconds == 0.0
+    plan = SafeIoPlanPolicy.from_safe_io(
+        {"max_read_bytes": 0, "lock_timeout_seconds": 0}
+    )
+    assert plan.max_read_bytes == 0
+    assert plan.lock_timeout_seconds == 0.0
+    with pytest.raises(ValueError, match="non-negative"):
+        SafeIoPolicy.from_dict({"max_read_bytes": -1})
