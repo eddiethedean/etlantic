@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Post-0.41.0 hardening on the **0.41.0** line (no version bump; **no tag yet**):
-  required fenced checkpoint CAS; cancel expires leases and blocks heartbeat/CAS;
-  durable-first cancel and CP1 compensate on durable accept failure; redacted
-  durable `input_snapshot` / replay diffs / preview reasons; SQLModel read-only
-  durable plan/explain/replay paths; fail-closed FastAPI profile resolution;
-  secret/Safe I/O hard-fail under CONTINUE/SKIP; CLI human diagnostic redaction;
-  Safe I/O wire honors numeric zero for read budget and lock timeout.
-
 ## [0.41.0] - 2026-07-31
 
 ### Adopter summary
@@ -41,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Official package versions align at 0.41.0; plugins require
   `etlantic>=0.41.0,<0.42`
+- Durable-work hardening requires fenced checkpoint CAS; cancellation expires
+  leases and blocks heartbeat/CAS; control-plane cancellation is durable-first,
+  and CP1 compensates when durable acceptance fails
+- SQLModel durable storage now covers read-only plan/explain/replay paths;
+  FastAPI profile resolution fails closed; Safe I/O preserves numeric zero for
+  read budgets and lock timeouts
 - Supported security release line is 0.41.x
 - GitHub Actions use the current checkout, uv (setup-uv@v9.0.0), Java,
   provenance, SARIF, and artifact action majors; CI runs on uv 0.12.0 and
@@ -50,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Stale fencing tokens cannot publish terminal state or advance checkpoints
 - Unknown external effects fail closed without reconciliation evidence
+- Durable input snapshots, replay diffs, preview reasons, and CLI diagnostics
+  are redacted; secret and Safe I/O failures cannot be bypassed by
+  `CONTINUE`/`SKIP` policies
 - Explicit docs boundary: CP3 ≠ production multi-tenant
 
 ## [0.40.0] - 2026-07-31
