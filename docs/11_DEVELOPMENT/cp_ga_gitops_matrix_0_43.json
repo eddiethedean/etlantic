@@ -1,0 +1,30 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-M",
+  "cases": [
+    {
+      "id": "preview_create",
+      "status": "pass"
+    },
+    {
+      "id": "sod_self_approve_blocked",
+      "status": "pass"
+    },
+    {
+      "id": "promote_with_approval",
+      "status": "pass"
+    },
+    {
+      "id": "stale_plan_rejected",
+      "status": "pass"
+    },
+    {
+      "id": "metadata_identity",
+      "status": "pass",
+      "plan_fingerprint": "plan",
+      "revision_id": "cand"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

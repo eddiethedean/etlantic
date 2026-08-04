@@ -1,0 +1,28 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-S",
+  "cases": [
+    {
+      "id": "promote_policy_deny",
+      "status": "pass"
+    },
+    {
+      "id": "erasure_no_subject_leak",
+      "status": "pass"
+    },
+    {
+      "id": "non_enumeration_404",
+      "status": "pass"
+    },
+    {
+      "id": "threat_model_closure",
+      "status": "pass"
+    },
+    {
+      "id": "sbom_review_checklist",
+      "status": "pass"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

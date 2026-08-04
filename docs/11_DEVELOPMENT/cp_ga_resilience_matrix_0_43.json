@@ -1,0 +1,24 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-R",
+  "cases": [
+    {
+      "id": "dual_host_isolated_stores",
+      "status": "pass"
+    },
+    {
+      "id": "lease_fencing",
+      "status": "pass"
+    },
+    {
+      "id": "cancel_blocks_heartbeat",
+      "status": "pass"
+    },
+    {
+      "id": "idempotent_accept",
+      "status": "pass"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.42.0.**
+> **Status: Available in ETLantic 0.43.0.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,13 +13,14 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.42.0** — choose your guide:
+**ETLantic 0.43.0** — choose your guide:
 
-| From version | Ordered path to 0.42 |
+| From version | Ordered path to 0.43 |
 |---|---|
-| 0.42.x | Already current |
-| 0.41.x | [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
-| 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) → [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
+| 0.43.x | Already current |
+| 0.42.x | [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) |
+| 0.41.x | [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) → [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) |
+| 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) → [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) → [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) |
 | 0.39.x | [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.38.x | [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.37.x | [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) → [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
@@ -73,6 +74,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
 | 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
+| 0.42 → 0.43 | [MIGRATION_0_42_TO_0_43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) |
 | 0.41 → 0.42 | CP4 policy / quotas / audit (published Beta; multi-tenant RC capability); plugin floor `etlantic>=0.42.0,<0.43` |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
@@ -274,6 +276,19 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
+
+## 0.43 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.43.0` and matching plugins / `medallantic==0.43.0` | Mix 0.42 plugins with a 0.43 core |
+| Use Supported isolation profiles (`isolated-deployment`, `dedicated-schema`) for production multi-tenant | Claim production isolation for `shared-service` without real RLS / credentials |
+| Treat capacity numbers as measured envelopes (community **non-SLA**) | Invent enterprise SLA or unbounded scale claims |
+| Keep report/lineage/reliability FastAPI stubs Experimental | Treat stub empty payloads as authority |
+| Apply SQLModel migrations through `003_cp4_governance`; treat snapshots as canonical restore | Skip migrations or treat entity mirrors as sole authority |
+| Run CP-GA campaigns / matrices before claiming GA cells | Soft-allow cross-tenant misses or provider outages |
+
+See [Migration 0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md).
 
 ## 0.42 configuration cheat sheet
 

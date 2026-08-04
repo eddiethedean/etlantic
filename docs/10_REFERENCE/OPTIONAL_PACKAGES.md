@@ -1,6 +1,6 @@
 # Optional Packages
 
-> **Status: Available in ETLantic 0.42.0.** Core `etlantic` does not install
+> **Status: Available in ETLantic 0.43.0.** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 !!! warning "Maturity vs PyPI classifiers"
@@ -15,33 +15,33 @@
 Prefer exact pins for a controlled pilot:
 
 ```bash
-pip install 'etlantic==0.42.0'
-pip install 'etlantic-polars==0.42.0'
-pip install 'etlantic-pandas==0.42.0'
-pip install 'etlantic-sql==0.42.0'
-pip install 'etlantic-pyspark==0.42.0'
-pip install 'etlantic-airflow==0.42.0'
-pip install 'etlantic-prefect==0.42.0'
-pip install 'etlantic-keyring==0.42.0'
-pip install 'etlantic-sqlmodel==0.42.0'
-pip install 'medallantic==0.42.0'
+pip install 'etlantic==0.43.0'
+pip install 'etlantic-polars==0.43.0'
+pip install 'etlantic-pandas==0.43.0'
+pip install 'etlantic-sql==0.43.0'
+pip install 'etlantic-pyspark==0.43.0'
+pip install 'etlantic-airflow==0.43.0'
+pip install 'etlantic-prefect==0.43.0'
+pip install 'etlantic-keyring==0.43.0'
+pip install 'etlantic-sqlmodel==0.43.0'
+pip install 'medallantic==0.43.0'
 # optional compatibility redirect (deprecated):
-pip install 'etlantic-sparkforge==0.42.0'
+pip install 'etlantic-sparkforge==0.43.0'
 # experimental connectors (fake/CI; Alpha — not Supported):
-pip install 'etlantic-s3==0.42.0'
-pip install 'etlantic-iceberg==0.42.0'
-pip install 'etlantic-snowflake==0.42.0'
+pip install 'etlantic-s3==0.43.0'
+pip install 'etlantic-iceberg==0.43.0'
+pip install 'etlantic-snowflake==0.43.0'
 ```
 
-Official first-party plugins declare `etlantic>=0.42.0,<0.43`.
-Keep core and plugins on the same minor (pin all to `0.42.0` for pilots).
+Official first-party plugins declare `etlantic>=0.43.0,<0.44`.
+Keep core and plugins on the same minor (pin all to `0.43.0` for pilots).
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 
-Experimental (not recommended): `pip install 'etlantic[datafusion]==0.42.0'`
-or `etlantic-datafusion==0.42.0` — Gate B stub; no graduated claims.
+Experimental (not recommended): `pip install 'etlantic[datafusion]==0.43.0'`
+or `etlantic-datafusion==0.43.0` — Gate B stub; no graduated claims.
 
-Optional FastAPI package: `pip install 'etlantic-fastapi==0.42.0'` or
-`etlantic[fastapi]==0.42.0` — **dual surface**: CP1 (`ETLanticAPI` /
+Optional FastAPI package: `pip install 'etlantic-fastapi==0.43.0'` or
+`etlantic[fastapi]==0.43.0` — **dual surface**: CP1 (`ETLanticAPI` /
 `include_router` / `create_app`) plus thin non-CP `create_reference_app`
 (authoring demo since 0.24). CP1 is control-plane incubation, **not**
 production multi-tenant GA
@@ -64,7 +64,7 @@ production multi-tenant GA
 | [`etlantic-snowflake`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-snowflake/README.md) | `etlantic_snowflake` | **Experimental** Snowflake connector (fake/CI; Alpha) |
 | [`medallantic`](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md) | `medallantic` | **Facade** — medallion vocabulary and SparkForge migration adapter |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | **Redirect** (deprecated) — re-exports `medallantic` |
-| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.42.0`; CP1 ≠ multi-tenant GA) |
+| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.43.0`; CP1 ≠ multi-tenant GA) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 MkDocs API generation includes core `src/` and first-party plugin package

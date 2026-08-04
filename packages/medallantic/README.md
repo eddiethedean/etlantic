@@ -9,7 +9,7 @@ the portable contracts, graph, validation, planning, execution lifecycle, and
 plugin coordination underneath it. **ETLantic core never gains medallion
 types.**
 
-The current **0.42** line includes native authoring, portable quality
+The current **0.43** line includes native authoring, portable quality
 gates, importable transform execution, lifecycle/write semantics, PySpark and
 Delta differential coverage, SQLAlchemy relational parity, observability
 providers, durable run history, event consumers, production conformance, and

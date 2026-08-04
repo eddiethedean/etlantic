@@ -1,0 +1,20 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-B",
+  "cases": [
+    {
+      "id": "audit_export_restore",
+      "status": "pass"
+    },
+    {
+      "id": "attestation_key_rotation",
+      "status": "pass"
+    },
+    {
+      "id": "sqlmodel_audit_persist",
+      "status": "skip"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

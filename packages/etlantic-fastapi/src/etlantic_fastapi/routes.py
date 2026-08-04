@@ -752,7 +752,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                     "acceptance_id": record.get("acceptance_id"),
                     "definition_id": record.get("definition_id"),
                     "note": (
-                        "Minimal report metadata stub; "
+                        "Experimental stub (not CP-GA): minimal report metadata; "
                         "full reports arrive with execution hosts."
                     ),
                 }

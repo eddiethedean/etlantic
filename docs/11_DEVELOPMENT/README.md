@@ -21,6 +21,13 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.42 → 0.43](MIGRATION_0_42_TO_0_43.md) (Gate-ready — CP-GA)
+- [Exit gate 0.43](EXIT_GATE_0_43.md) (Gate-ready — CP-GA)
+- [Findings ledger 0.43](FINDINGS_0_43.md)
+- [0.43 implementation plan](IMPLEMENTATION_PLAN_0_43.md)
+- [What's new in 0.43](../01_GETTING_STARTED/WHATS_NEW_0_43.md) (Gate-ready)
+- [CP-GA operator runbook](CP_GA_OPERATOR_RUNBOOK_0_43.md)
+- [CP-GA support matrix](cp_ga_support_matrix_0_43.json)
 - [Migration 0.41 → 0.42](MIGRATION_0_41_TO_0_42.md) (Gate-ready — CP4)
 - [Exit gate 0.42](EXIT_GATE_0_42.md) (Gate-ready — CP4)
 - [Findings ledger 0.42](FINDINGS_0_42.md)
@@ -34,7 +41,7 @@ released.
 - [Findings ledger 0.41](FINDINGS_0_41.md)
 - [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md)
 - [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md)
-- [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) (Gate-ready)
+- [What's new in 0.41](../01_GETTING_STARTED/WHATS_NEW_0_41.md) (Gate-ready)
 - [Durable chaos matrix (fake evidence)](durable_chaos_matrix_0_41.json)
 - [Migration 0.39 → 0.40](MIGRATION_0_39_TO_0_40.md) (Done — CP2)
 - [Exit gate 0.40](EXIT_GATE_0_40.md) (Done — CP2)

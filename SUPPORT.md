@@ -1,25 +1,26 @@
 # Support
 
-ETLantic **0.42.0** is a **Beta** (PyPI) release suitable for documented single-tenant reference
-deployments (not unrestricted enterprise production). Community support has
-**no formal SLA** or guaranteed response time.
+ETLantic **0.43.0** is a **Beta** (PyPI) release suitable for documented single-tenant
+pilots and production multi-tenant for Supported isolation profiles only.
+Community support has **no formal SLA** or guaranteed response time.
 
 ## What we support
 
-- Bug reports against the **current published minor** (`0.42.x`)
+- Bug reports against the **current published minor** (`0.43.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 
 ## Adopter-owned and unsupported areas
 
 - Production incident response or on-call coverage
-- Multi-tenant isolation and deployment topology
+- Isolation topologies outside the Supported CP-GA profiles
 - Compliance attestations (SOC2, GDPR certification, etc.)
 - Advanced supply-chain programs beyond shipped SHA-256 digests, attestations,
   OIDC publish, documented package pins, and plugin allowlists (CycloneDX SBOM
-  optional; failed for v0.35.0 — verify the current release notes for 0.42.x)
-- Guarantees for Experimental APIs (for example Structured Streaming)
+  optional; failed for v0.35.0 — verify the current release notes for 0.43.x)
+- Guarantees for Experimental APIs (for example Structured Streaming, shared-service)
 - Guarantees for Future design / Design Proposal pages
+- Formal enterprise SLA or unbounded scale claims
 
 ## Before opening an issue
 

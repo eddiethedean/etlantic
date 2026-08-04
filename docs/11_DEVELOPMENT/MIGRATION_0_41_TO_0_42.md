@@ -66,7 +66,7 @@
 
 - Additive relative to ADR-016 / ADR-017 / ADR-018; CP4 wire shapes use `/1`.
 - FastAPI and SQLModel remain optional extras.
-- Plugin floors move to `etlantic>=0.42.0,<0.43`.
+- Plugin floors move to `etlantic>=0.43.0,<0.44`.
 - Soft-continues `041-P1-01` and `041-P1-02` are closed in this release.
 
 ## See also

@@ -1,6 +1,6 @@
 # Landing-Zone File Connector Plan
 
-> **Status: Shipped in ETLantic 0.42.0 for snapshot and incremental modes;
+> **Status: Shipped in ETLantic 0.43.0 for snapshot and incremental modes;
 > continuous trigger and control-plane composition are in progress for 0.39
 > (submitters outside core — thin reference vs CP1 durable API).** See the
 > [0.38 exit gate](EXIT_GATE_0_38.md) for connectivity acceptance evidence and

@@ -1,6 +1,6 @@
 # Control plane (CP1)
 
-> **Status: Available in ETLantic 0.42.0 (incubation).** Embeddable HTTP control
+> **Status: Available in ETLantic 0.43.0 (incubation).** Embeddable HTTP control
 > plane via `etlantic-fastapi`. CP1 is **not** production multi-tenant isolation
 > (reserved for **0.43**).
 
@@ -20,11 +20,11 @@ mapping. See [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 ## Install
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.42.0'
-# or: python -m pip install 'etlantic[fastapi]==0.42.0'
+python -m pip install 'etlantic-fastapi==0.43.0'
+# or: python -m pip install 'etlantic[fastapi]==0.43.0'
 ```
 
-Pin the same minor as core (`etlantic==0.42.0`). Package README:
+Pin the same minor as core (`etlantic==0.43.0`). Package README:
 [`packages/etlantic-fastapi`](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-fastapi).
 
 ## Embed: `include_router` vs `create_app`

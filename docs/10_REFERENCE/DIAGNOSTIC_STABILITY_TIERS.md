@@ -1,6 +1,6 @@
 # Diagnostic-code stability tiers (0.37)
 
-> **Status: Available in ETLantic 0.42.0.** Foundation freeze inventory for
+> **Status: Available in ETLantic 0.43.0.** Foundation freeze inventory for
 > diagnostic **code families** (alphabetic prefix before the numeric suffix).
 > Machine-readable companion:
 > [`diagnostic-stability-tiers.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/diagnostic-stability-tiers.json)

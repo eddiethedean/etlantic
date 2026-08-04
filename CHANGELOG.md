@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-08-04
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.42.x` or plugins with `<0.43` |
+| Breaking | Dependency floor becomes `etlantic>=0.43.0,<0.44` (CP-GA line) |
+| Upgrade | `pip install 'etlantic==0.43.0'` and matching plugins / `medallantic==0.43.0`. See [Migration 0.42 → 0.43](docs/11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) |
+| Rollback | Re-pin 0.42.0 minors together; re-validate SQLModel migrations |
+| Security | Production multi-tenant **only** for Supported isolation profiles; community **non-SLA** |
+
+### Added
+- CP-GA qualification evidence packs and `scripts/check_cp_ga_*.py` campaigns
+- Frozen support / isolation matrices and gate traceability index
+- EXIT_GATE_0_43, FINDINGS_0_43, WHATS_NEW_0_43, MIGRATION_0_42_TO_0_43
+- CP-GA operator runbook and drill templates
+- FastAPI OpenAPI CP-GA operationId snapshot and two-tenant isolation tests
+
+### Changed
+- Official package versions align at 0.43.0; plugins require
+  `etlantic>=0.43.0,<0.44`
+- Supported security release line is 0.43.x
+- Production multi-tenant claim published for `isolated-deployment` and
+  `dedicated-schema`; `shared-service` remains Experimental
+- FastAPI report/lineage/reliability stubs marked Experimental (not CP-GA)
+- Capacity envelopes document overload fail-closed + WRR under shared pressure
+
+### Fixed
+- Host honesty for experimental stub routes and CP-GA claim boundaries
+
 ## [0.42.0] - 2026-08-04
 
 ### Adopter summary
@@ -1650,6 +1681,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.43.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.43.0
 [0.42.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.42.0
 [0.41.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.41.0
 [0.40.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.40.0

@@ -1,6 +1,6 @@
 # API — Plan and Runtime
 
-> **Status: Available in ETLantic 0.42.0.**
+> **Status: Available in ETLantic 0.43.0.**
 
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 
@@ -118,7 +118,7 @@ See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) and
 
 ## Gate A tabular interchange (`etlantic.interchange/1`)
 
-> **Available in ETLantic 0.42.0.** Versioned, capability-driven tabular
+> **Available in ETLantic 0.43.0.** Versioned, capability-driven tabular
 > interchange for **Polars ↔ Pandas** boundaries. PySpark/SQL Gate A pairs are
 > not in scope yet. Legacy Arrow-assisted helpers (when PyArrow is installed)
 > are **not** the Gate A contract.

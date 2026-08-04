@@ -226,7 +226,7 @@ def test_connector_package_version_matches_release() -> None:
     from etlantic import __version__
     from etlantic_sql.connectors import PACKAGE_VERSION as sql_v
 
-    assert sql_v == __version__ == "0.42.0"
+    assert sql_v == __version__ == "0.43.0"
     try:
         from etlantic_s3.connectors import PACKAGE_VERSION as s3_v
 

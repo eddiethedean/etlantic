@@ -1,0 +1,24 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-O",
+  "cases": [
+    {
+      "id": "objective_breach",
+      "status": "pass"
+    },
+    {
+      "id": "objective_recovery",
+      "status": "pass"
+    },
+    {
+      "id": "erasure_legal_hold",
+      "status": "pass"
+    },
+    {
+      "id": "erasure_no_false_completion",
+      "status": "pass"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

@@ -1,0 +1,114 @@
+{
+  "schema": "etlantic.cp_ga_traceability/1",
+  "phase": "0.43",
+  "gates": {
+    "1": {
+      "measure": "isolation_matrix",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/isolation_profile_matrix_0_43.json",
+        "docs/11_DEVELOPMENT/cp_ga_isolation_matrix_0_43.json",
+        "scripts/check_cp_ga_isolation.py",
+        "tests/control_plane/ga/test_cp_ga_campaigns.py"
+      ]
+    },
+    "2": {
+      "measure": "schema_compat_migrations",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_compat_matrix_0_43.json",
+        "scripts/check_cp_ga_compat.py",
+        "docs/11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md"
+      ]
+    },
+    "3": {
+      "measure": "install_upgrade_backup_restore",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_recovery_matrix_0_43.json",
+        "scripts/check_cp_ga_recovery.py",
+        "docs/11_DEVELOPMENT/CP_GA_OPERATOR_DRILLS_0_43.md"
+      ]
+    },
+    "4": {
+      "measure": "multi_replica_faults",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_resilience_matrix_0_43.json",
+        "scripts/check_cp_ga_resilience.py"
+      ]
+    },
+    "5": {
+      "measure": "cross_tenant_public_ops",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_isolation_matrix_0_43.json",
+        "tests/control_plane/ga/test_cp_ga_campaigns.py",
+        "tests/fastapi/test_cp_ga_isolation_0_43.py"
+      ]
+    },
+    "6": {
+      "measure": "capacity_envelope",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_capacity_envelope_0_43.json",
+        "docs/01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md",
+        "scripts/check_cp_ga_capacity.py"
+      ]
+    },
+    "7": {
+      "measure": "diagnostics_redaction",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_security_matrix_0_43.json",
+        "scripts/check_cp_ga_security.py"
+      ]
+    },
+    "8": {
+      "measure": "operator_docs",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/CP_GA_OPERATOR_RUNBOOK_0_43.md",
+        "docs/11_DEVELOPMENT/CP_GA_OPERATOR_DRILLS_0_43.md"
+      ]
+    },
+    "9": {
+      "measure": "security_findings",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/FINDINGS_0_43.md",
+        "docs/11_DEVELOPMENT/cp_ga_security_matrix_0_43.json"
+      ]
+    },
+    "10": {
+      "measure": "supported_vs_experimental",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_support_matrix_0_43.json",
+        "docs/11_DEVELOPMENT/EXIT_GATE_0_43.md"
+      ]
+    },
+    "11": {
+      "measure": "metadata_identity",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_gitops_matrix_0_43.json",
+        "scripts/check_cp_ga_gitops.py"
+      ]
+    },
+    "12": {
+      "measure": "preview_promote_rollback",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_gitops_matrix_0_43.json",
+        "scripts/check_cp_ga_gitops.py"
+      ]
+    },
+    "13": {
+      "measure": "objectives_erasure",
+      "artifacts": [
+        "docs/11_DEVELOPMENT/cp_ga_ops_matrix_0_43.json",
+        "scripts/check_cp_ga_ops.py"
+      ]
+    }
+  },
+  "campaigns": {
+    "043-C": "scripts/check_cp_ga_compat.py",
+    "043-I": "scripts/check_cp_ga_isolation.py",
+    "043-R": "scripts/check_cp_ga_resilience.py",
+    "043-B": "scripts/check_cp_ga_recovery.py",
+    "043-P": "scripts/check_cp_ga_capacity.py",
+    "043-S": "scripts/check_cp_ga_security.py",
+    "043-O": "scripts/check_cp_ga_ops.py",
+    "043-M": "scripts/check_cp_ga_gitops.py",
+    "043-D": "docs/11_DEVELOPMENT/EXIT_GATE_0_43.md"
+  }
+}

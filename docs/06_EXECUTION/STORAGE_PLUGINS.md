@@ -1,12 +1,12 @@
 # Storage Plugins
 
-> **Status: Partially available in ETLantic 0.42.0.** Structured connector
+> **Status: Partially available in ETLantic 0.43.0.** Structured connector
 > protocols ship under `etlantic.connectors`. Built-in memory/CSV/JSON/callable
 > storage remains; cloud connectors are Experimental optional packages.
 > See [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) and
 > [Landing zone](LANDING_ZONE.md).
 
-## What ships in 0.42
+## What ships in 0.43
 
 | Surface | Status |
 |---|---|

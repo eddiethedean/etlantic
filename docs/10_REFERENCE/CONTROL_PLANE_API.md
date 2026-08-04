@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP3)
 
-> **Status: Available in ETLantic 0.42.0** (incubation). **CP1–CP3 ≠ production
+> **Status: Available in ETLantic 0.43.0** (incubation). **CP1–CP3 ≠ production
 > multi-tenant isolation** — that claim remains **0.43**.
 
 Short hub for the provisional `etlantic.control_plane` surface and optional
@@ -50,7 +50,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.42.0'` (match `etlantic==0.42.0`).
+Pin: `pip install 'etlantic-fastapi==0.43.0'` (match `etlantic==0.43.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.

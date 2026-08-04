@@ -698,7 +698,7 @@ These decisions block the indicated gates and cannot remain implicit:
 | Define preview workspace lifecycle, cleanup, and untrusted-fork policy | Runtime + security maintainers | Before CP3 conformance |
 | Define quota/fairness semantics and outage policy | Operations + security maintainers | Before CP4 release candidate |
 | Define audit integrity, retention, and export profile | Security + operations maintainers | Before CP4 release candidate |
-| Publish support envelope and 0.43 compatibility policy | Release + governance maintainers | Before CP-GA |
+| Publish support envelope and 0.43 compatibility policy | Release + governance maintainers | **Closed** — [cp_ga_support_matrix_0_43.json](cp_ga_support_matrix_0_43.json), [MIGRATION_0_42_TO_0_43](MIGRATION_0_42_TO_0_43.md), [EXIT_GATE_0_43](EXIT_GATE_0_43.md) |
 
 Every decision requires an ADR or an explicit roadmap decision record,
 conformance updates, migration impact, and documentation changes.

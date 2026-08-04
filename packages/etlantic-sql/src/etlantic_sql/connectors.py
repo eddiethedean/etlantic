@@ -40,7 +40,7 @@ from etlantic.connectors.models import (
 )
 
 PROVIDER = "postgresql"
-PACKAGE_VERSION = "0.42.0"
+PACKAGE_VERSION = "0.43.0"
 
 SOURCE_CAPS = frozenset(
     {

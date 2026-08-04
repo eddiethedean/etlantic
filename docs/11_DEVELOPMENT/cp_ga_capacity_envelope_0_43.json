@@ -1,0 +1,29 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-P",
+  "cases": [
+    {
+      "id": "overload_deny",
+      "status": "pass",
+      "limit": 2
+    },
+    {
+      "id": "wrr_shared_pressure",
+      "status": "pass",
+      "allowed_a": 24,
+      "allowed_b": 12,
+      "deferred": 12
+    },
+    {
+      "id": "support_terms",
+      "status": "pass",
+      "terms": "community_non_sla",
+      "envelope": {
+        "concurrency_limit_reference": 2,
+        "overload_behavior": "deny"
+      }
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

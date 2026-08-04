@@ -1,0 +1,38 @@
+{
+  "matrix_version": "0.43.0",
+  "campaign": "043-I",
+  "cases": [
+    {
+      "id": "definition_cross_tenant",
+      "status": "pass",
+      "http_status": 404
+    },
+    {
+      "id": "durable_separate_stores",
+      "status": "pass"
+    },
+    {
+      "id": "durable_cancel_cross_tenant",
+      "status": "pass",
+      "http_status": 404
+    },
+    {
+      "id": "audit_not_visible_cross_tenant",
+      "status": "pass"
+    },
+    {
+      "id": "erasure_cross_tenant",
+      "status": "pass"
+    },
+    {
+      "id": "quota_per_workspace",
+      "status": "pass"
+    },
+    {
+      "id": "registry_get_cross_tenant",
+      "status": "pass"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

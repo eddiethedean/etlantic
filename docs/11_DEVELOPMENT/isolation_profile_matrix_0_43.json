@@ -1,0 +1,58 @@
+{
+  "schema": "etlantic.isolation_profile_matrix/1",
+  "phase": "0.43",
+  "cp_ga_production_multi_tenant_claim": true,
+  "claim_profiles": ["isolated-deployment", "dedicated-schema"],
+  "notes": "GA authority matrix. shared-service remains Experimental until a real RLS / per-tenant credential pack ships.",
+  "profiles": [
+    {
+      "profile": "isolated-deployment",
+      "primary_control": "Separate deployment / database per tenant",
+      "second_control_required": false,
+      "status": "supported",
+      "evidence": "two-tenant matrix with separate in-memory/SQLModel engines"
+    },
+    {
+      "profile": "dedicated-schema",
+      "primary_control": "Dedicated database or schema per tenant",
+      "second_control_required": false,
+      "status": "supported",
+      "evidence": "compound scope keys + per-tenant SQLModel engines"
+    },
+    {
+      "profile": "shared-service",
+      "primary_control": "Compound scope keys + application filters",
+      "second_control_required": true,
+      "second_control": "RLS or per-tenant credentials (not yet a supported pack)",
+      "status": "experimental",
+      "evidence": "WHERE-only is insufficient; second control required"
+    }
+  ],
+  "matrix": {
+    "tenants": ["tenant-a", "tenant-b"],
+    "workspaces": ["ws-1", "ws-2"],
+    "operations": [
+      "tenants.get",
+      "workspaces.get",
+      "revisions.get_revision",
+      "revisions.list_revisions",
+      "search_revisions",
+      "definitions.get",
+      "runs.submit",
+      "runs.cancel",
+      "durable.accept",
+      "durable.outbox",
+      "durable.lease",
+      "durable.checkpoint",
+      "durable.preview",
+      "policy.decide",
+      "approvals.create",
+      "quotas.admit",
+      "erasure.request",
+      "audit.list",
+      "objectives.evaluate",
+      "attestations.verify",
+      "http.cross_tenant_404"
+    ]
+  }
+}

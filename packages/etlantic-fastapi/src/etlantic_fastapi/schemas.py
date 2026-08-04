@@ -87,6 +87,7 @@ class ReportStubResponse(BaseModel):
     )
     run_id: str
     status: str
+    experimental: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"populate_by_name": True}
@@ -108,6 +109,8 @@ class LineageStubResponse(BaseModel):
         alias="schema", default="etlantic.control_plane.lineage_stub/1"
     )
     run_id: str
+    experimental: bool = True
+    note: str = "Experimental stub (not CP-GA); not a lineage authority."
     nodes: list[dict[str, Any]] = Field(default_factory=list)
     edges: list[dict[str, Any]] = Field(default_factory=list)
 
@@ -144,6 +147,11 @@ class SchemaObservationAckResponse(BaseModel):
 class ReliabilityListResponse(BaseModel):
     schema_: str = Field(
         alias="schema", default="etlantic.control_plane.reliability_stub/1"
+    )
+    experimental: bool = True
+    note: str = (
+        "Experimental stub (not CP-GA) unless a history_store is injected; "
+        "empty list is not an authority claim."
     )
     items: list[dict[str, Any]] = Field(default_factory=list)
 

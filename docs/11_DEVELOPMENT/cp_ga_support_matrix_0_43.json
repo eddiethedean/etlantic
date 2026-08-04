@@ -1,0 +1,53 @@
+{
+  "schema": "etlantic.cp_ga_support_matrix/1",
+  "phase": "0.43",
+  "compatibility_policy": "etlantic>=0.43.0,<0.44",
+  "support_terms": "community_non_sla",
+  "capacity": "measured_envelopes_only",
+  "supported_isolation_profiles": [
+    "isolated-deployment",
+    "dedicated-schema"
+  ],
+  "experimental_isolation_profiles": [
+    "shared-service"
+  ],
+  "supported_packages": [
+    "etlantic",
+    "etlantic-fastapi",
+    "etlantic-sqlmodel",
+    "etlantic-polars",
+    "etlantic-pandas",
+    "etlantic-sql",
+    "etlantic-pyspark",
+    "etlantic-airflow",
+    "etlantic-prefect",
+    "etlantic-keyring",
+    "medallantic"
+  ],
+  "experimental_packages": [
+    "etlantic-datafusion",
+    "etlantic-s3",
+    "etlantic-iceberg",
+    "etlantic-snowflake",
+    "etlantic-openlineage"
+  ],
+  "supported_persistence": {
+    "profile": "sqlmodel_snapshot_dual_path",
+    "canonical": "snapshot",
+    "entity_rows": "denormalized_mirrors"
+  },
+  "supported_auth": {
+    "model": "principal_injection",
+    "oidc": "claim_mapping_hook_only",
+    "embedded_idp": false
+  },
+  "policy_engines": {
+    "supported": ["MemoryPolicyProvider", "adopter_injected_PolicyProvider"],
+    "experimental": ["OpaPolicyProvider_stub_fallback"]
+  },
+  "open_decision_closed": {
+    "id": "publish_support_envelope_and_0_43_compatibility_policy",
+    "status": "closed",
+    "record": "This matrix + MIGRATION_0_42_TO_0_43 + EXIT_GATE_0_43"
+  }
+}

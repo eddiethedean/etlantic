@@ -1,23 +1,24 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.42.0.** What ships now for controlled
-> single-tenant pilots.
+> **Status: Available in ETLantic 0.43.0.** What ships now for controlled
+> single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.42)
+## What works today (0.43)
 
-ETLantic 0.42.0 is a Beta release for documented, controlled,
-single-tenant pilots (install `etlantic==0.42.0` from PyPI). It validates and
+ETLantic 0.43.0 is a Beta release for documented, controlled,
+single-tenant pilots (install `etlantic==0.43.0` from PyPI). It validates and
 plans typed pipelines, runs them locally or through supported engine plugins,
-compiles valid plans to supported orchestration targets, and ships CP4 policy /
-quotas / audit as a multi-tenant **release-candidate** surface (**not**
-production multi-tenant isolation — **0.43**).
+compiles valid plans to supported orchestration targets, and graduates the
+integrated control plane to **production multi-tenant** for Supported isolation
+profiles (`isolated-deployment`, `dedicated-schema`). `shared-service` remains
+Experimental. Support is community **non-SLA**.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.42.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.43.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -80,7 +81,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.42
+## Available in 0.43
 
 ### Control-plane policy, quotas, and audit (CP4)
 
@@ -218,7 +219,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | TransformationModel incubation | Deferred to 0.52 |
 | Full LSP server productization | Continues in 0.44 |
 | Registry-backed schema history | **Available** (CP2 metadata-only histories) |
-| Production multi-tenant control plane | **Planned first-class**: CP1 in 0.39 → CP2 incubated in 0.40 → 0.41–0.42 continue → **0.43** graduation (CP2 ≠ production multi-tenant isolation) |
+| Production multi-tenant control plane | **Available** for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` remains Experimental (see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json)) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
 | Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
@@ -238,7 +239,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.42.0` first).
+(the sample uses Polars — install `etlantic-polars==0.43.0` first).
 
 ```json
 {
@@ -251,7 +252,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.42.0"
+    "etlantic-polars": "==0.43.0"
   },
   "assets": {},
   "secrets": {},
@@ -267,16 +268,16 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.42.0'
-pip install 'etlantic-polars==0.42.0'          # optional
-pip install 'etlantic-pandas==0.42.0'          # optional
-pip install 'etlantic-sql==0.42.0'             # optional
-pip install 'etlantic-pyspark==0.42.0'         # optional
-pip install 'etlantic-airflow==0.42.0'         # optional
-pip install 'etlantic-prefect==0.42.0'         # optional
-pip install 'etlantic-keyring==0.42.0'         # optional
-pip install 'etlantic-sqlmodel==0.42.0'        # optional
-pip install 'medallantic==0.42.0'              # optional
+pip install 'etlantic==0.43.0'
+pip install 'etlantic-polars==0.43.0'          # optional
+pip install 'etlantic-pandas==0.43.0'          # optional
+pip install 'etlantic-sql==0.43.0'             # optional
+pip install 'etlantic-pyspark==0.43.0'         # optional
+pip install 'etlantic-airflow==0.43.0'         # optional
+pip install 'etlantic-prefect==0.43.0'         # optional
+pip install 'etlantic-keyring==0.43.0'         # optional
+pip install 'etlantic-sqlmodel==0.43.0'        # optional
+pip install 'medallantic==0.43.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

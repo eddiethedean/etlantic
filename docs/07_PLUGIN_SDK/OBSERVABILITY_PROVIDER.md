@@ -1,6 +1,6 @@
 # Observability Provider
 
-> **Status: Available in ETLantic 0.42.0.** Async `/1` protocol with entry-point
+> **Status: Available in ETLantic 0.43.0.** Async `/1` protocol with entry-point
 > group `etlantic.observability_providers` and in-core reference providers.
 
 An observability provider receives ETLantic lifecycle events, structured

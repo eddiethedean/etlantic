@@ -108,6 +108,38 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_cp4_chaos.py --fake
 
+      - name: CP-GA compat
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_compat.py --fake
+
+      - name: CP-GA isolation
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_isolation.py --fake
+
+      - name: CP-GA resilience
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_resilience.py --fake
+
+      - name: CP-GA recovery
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_recovery.py --fake
+
+      - name: CP-GA capacity
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_capacity.py --fake
+
+      - name: CP-GA security
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_security.py --fake
+
+      - name: CP-GA ops
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_ops.py --fake
+
+      - name: CP-GA gitops
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp_ga_gitops.py --fake
+
       - name: Objective conformance
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_objective_conformance.py --fake

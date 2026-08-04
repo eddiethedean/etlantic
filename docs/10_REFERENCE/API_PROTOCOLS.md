@@ -1,6 +1,6 @@
 # API — Protocols
 
-> **Status: Available in ETLantic 0.42.0.**
+> **Status: Available in ETLantic 0.43.0.**
 
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 

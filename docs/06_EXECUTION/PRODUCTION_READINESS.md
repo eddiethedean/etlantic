@@ -1,29 +1,27 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.42.0.**
+> **Status: Available in ETLantic 0.43.0.**
 
 ## Residual evaluation lead
 
-| Topic | 0.42 |
+| Topic | 0.43 |
 |---|---|
 | Maturity | **Beta** |
-| Suitable for | Documented single-tenant pilot / reference topology |
+| Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no SLA** |
-| Not included as GA | Production multi-tenant isolation; capacity SLA; compliance SoR |
+| Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
-ETLantic 0.42.0 is a **Beta** release suitable for the documented single-tenant
-pilot deployment on this page. The milestone name “production readiness” (M6)
+ETLantic 0.43.0 is a **Beta** release suitable for the documented single-tenant
+pilot deployment on this page plus production multi-tenant for Supported
+isolation profiles. The milestone name “production readiness” (M6)
 means the observability / run-history *pilot* slice—it does
-**not** mean unrestricted enterprise production. **CP1** ships embeddable
-identity, durable accept, and SSE via `ETLanticAPI` (plus thin
-`create_reference_app` for non-CP demos) but is **not** multi-tenant GA
-(graduation remains **0.43**). CP4 adds policy / quotas / audit as a
-multi-tenant **release-candidate** capability on the published `0.42.0` line
-without changing the production-isolation non-claim.
+**not** mean unrestricted enterprise production or a formal SLA. **CP-GA**
+graduates the integrated control plane for `isolated-deployment` and
+`dedicated-schema`. `shared-service` remains Experimental.
 
 Experimental features remain experimental. Broader deployment topology,
-multi-tenancy, and compliance attestations remain adopter-owned today. Supply
-chain for v0.42.0 publishes as a SHA-256 artifact manifest and GitHub
+compliance attestations, and HA remain adopter-owned today. Supply
+chain for v0.43.0 publishes as a SHA-256 artifact manifest and GitHub
 provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
@@ -51,7 +49,7 @@ isolation.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.42.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.43.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -101,7 +99,7 @@ reference controls are shipped:
 
 ## Shipped / adopter-owned / residual (0.39)
 
-| Concern | 0.42 status |
+| Concern | 0.43 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

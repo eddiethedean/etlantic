@@ -1,6 +1,6 @@
 # etlantic-datafusion (Experimental)
 
-Gate B experimental DataFusion plugin stub for ETLantic 0.42.
+Gate B experimental DataFusion plugin stub for ETLantic 0.43.
 
 **Not recommended for production.** Does not replace Polars as the reference
 dataframe engine. Advertises no graduated dataframe/Arrow/lazy capabilities
@@ -19,6 +19,6 @@ dataframe execution.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.42.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.43.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)
