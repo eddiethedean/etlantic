@@ -19,6 +19,7 @@ PUBLIC_CLI_COMMANDS = (
     "plugin",
     "schema",
     "reliability",
+    "erasure",
     "viz",
     "report",
 )
@@ -115,7 +116,7 @@ description: Validate, plan, compile, and generate ETLantic pipelines safely.
 
 Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
 `profile`, `run`, `compile`, `generate`, `diff`, `plugin`, `schema`,
-`reliability`, `viz`, `report`) and
+`reliability`, `erasure`, `viz`, `report`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
 `.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`).

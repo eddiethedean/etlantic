@@ -11,7 +11,13 @@ from __future__ import annotations
 
 from etlantic_sqlmodel.control_plane.cp4_stores import (
     CP4_TABLES,
+    SQLModelApprovalStore,
+    SQLModelAttestationStore,
     SQLModelAuditEvidenceStore,
+    SQLModelErasureStore,
+    SQLModelObjectiveStore,
+    SQLModelPolicyProvider,
+    SQLModelQuotaProvider,
     create_cp4_tables,
 )
 from etlantic_sqlmodel.control_plane.durable_stores import (
@@ -84,9 +90,15 @@ __all__ = [
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
+    "SQLModelApprovalStore",
+    "SQLModelAttestationStore",
     "SQLModelAuditEvidenceStore",
     "SQLModelDefinitionRepository",
     "SQLModelDurableWorkStore",
+    "SQLModelErasureStore",
+    "SQLModelObjectiveStore",
+    "SQLModelPolicyProvider",
+    "SQLModelQuotaProvider",
     "SQLModelSubmissionStore",
     "SecurityDomainRow",
     "SqlModelEventStore",

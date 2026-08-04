@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,13 @@ from etlantic.control_plane import (
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
+)
+from etlantic.control_plane.erasure_models import (
+    ErasurePlan,
+    ErasurePlanStep,
+    ErasureReport,
+    ErasureRequest,
+    ErasureStepResult,
 )
 
 
@@ -37,27 +45,124 @@ def _ctx_from_options(
     )
 
 
+def _dump_store(store: MemoryErasureStore) -> dict[str, Any]:
+    return {
+        "schema": "etlantic.cli.erasure_store/1",
+        "requests": [r.to_dict() for r in store._requests.values()],
+        "plans": [p.to_dict() for p in store._plans.values()],
+        "reports": [r.to_dict() for r in store._reports.values()],
+        "plan_by_request": {
+            f"{t}|{w}|{rid}": pid for (t, w, rid), pid in store._plan_by_request.items()
+        },
+        "idempotency": {
+            f"{t}|{w}|{k}": rid for (t, w, k), rid in store._idempotency.items()
+        },
+    }
+
+
+def _parse_dt(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    return datetime.fromisoformat(str(value))
+
+
 def _store_from_path(path: Path | None) -> MemoryErasureStore:
     store = MemoryErasureStore()
     if path is None or not path.exists():
         return store
     payload = json.loads(path.read_text(encoding="utf-8"))
-    # Minimal reload: requests only (local CLI scratch).
     for item in payload.get("requests") or []:
-        ctx = _ctx_from_options(
-            tenant=item["tenant_id"],
-            workspace=item["workspace_id"],
-            subject="cli",
-            environment="dev",
+        key = (
+            str(item["tenant_id"]),
+            str(item["workspace_id"]),
+            str(item["request_id"]),
         )
-        store.create_request(
-            ctx,
-            subject_key_fingerprint=item["subject_key_fingerprint"],
-            field_paths=item.get("field_paths") or (),
+        store._requests[key] = ErasureRequest(
+            request_id=str(item["request_id"]),
+            tenant_id=str(item["tenant_id"]),
+            workspace_id=str(item["workspace_id"]),
+            subject_key_fingerprint=str(item["subject_key_fingerprint"]),
+            field_paths=tuple(item.get("field_paths") or ()),
             legal_hold=bool(item.get("legal_hold")),
-            request_id=item["request_id"],
+            status=item.get("status") or "pending",
+            created_at=_parse_dt(item["created_at"])
+            if item.get("created_at")
+            else datetime.now(),
+            metadata=dict(item.get("metadata") or {}),
         )
+    for item in payload.get("plans") or []:
+        steps = tuple(
+            ErasurePlanStep(
+                step_id=str(s["step_id"]),
+                provider_id=str(s["provider_id"]),
+                action=s["action"],
+                field_paths=tuple(s.get("field_paths") or ()),
+                supported=bool(s.get("supported")),
+                reason=s.get("reason"),
+            )
+            for s in item.get("steps") or ()
+        )
+        plan = ErasurePlan(
+            plan_id=str(item["plan_id"]),
+            request_id=str(item["request_id"]),
+            steps=steps,
+            created_at=_parse_dt(item["created_at"])
+            if item.get("created_at")
+            else datetime.now(),
+        )
+        # Plans are scoped by request tenant/workspace from matching request.
+        req = next(
+            (r for r in store._requests.values() if r.request_id == plan.request_id),
+            None,
+        )
+        tenant = req.tenant_id if req else "default"
+        workspace = req.workspace_id if req else "default"
+        store._plans[(tenant, workspace, plan.plan_id)] = plan
+    for item in payload.get("reports") or []:
+        results = tuple(
+            ErasureStepResult(
+                step_id=str(r["step_id"]),
+                provider_id=str(r["provider_id"]),
+                status=r["status"],
+                proof_fingerprint=r.get("proof_fingerprint"),
+                reason=r.get("reason"),
+            )
+            for r in item.get("results") or ()
+        )
+        report = ErasureReport(
+            report_id=str(item["report_id"]),
+            request_id=str(item["request_id"]),
+            plan_id=str(item["plan_id"]),
+            status=item["status"],
+            results=results,
+            reconciled=bool(item.get("reconciled")),
+            created_at=_parse_dt(item["created_at"])
+            if item.get("created_at")
+            else datetime.now(),
+            metadata=dict(item.get("metadata") or {}),
+        )
+        req = next(
+            (r for r in store._requests.values() if r.request_id == report.request_id),
+            None,
+        )
+        tenant = req.tenant_id if req else "default"
+        workspace = req.workspace_id if req else "default"
+        store._reports[(tenant, workspace, report.report_id)] = report
+    for key, pid in dict(payload.get("plan_by_request") or {}).items():
+        t, w, rid = str(key).split("|", 2)
+        store._plan_by_request[(t, w, rid)] = str(pid)
+    for key, rid in dict(payload.get("idempotency") or {}).items():
+        t, w, k = str(key).split("|", 2)
+        store._idempotency[(t, w, k)] = str(rid)
     return store
+
+
+def _write_store(path: Path, store: MemoryErasureStore) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(_dump_store(store), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def register_erasure_commands(app: typer.Typer) -> None:
@@ -87,6 +192,11 @@ def register_erasure_commands(app: typer.Typer) -> None:
             "--provider",
             help="Erasure provider ids (memory reference).",
         ),
+        store_path: Path | None = typer.Option(
+            None,
+            "--store",
+            help="Optional JSON scratch store path (written for status reload).",
+        ),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         """Create an erasure request and lineage-derived plan."""
@@ -96,7 +206,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
             subject="cli",
             environment=environment,
         )
-        store = MemoryErasureStore()
+        store = _store_from_path(store_path)
         req = store.create_request(
             ctx,
             subject_key_fingerprint=subject_key_fingerprint,
@@ -109,6 +219,10 @@ def register_erasure_commands(app: typer.Typer) -> None:
         except Exception as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(ec.VALIDATION_FAILED) from exc
+        # Reload request (status may have advanced to planned/blocked).
+        req = store.get_request(ctx, request_id=req.request_id)
+        if store_path is not None:
+            _write_store(store_path, store)
         payload: dict[str, Any] = {
             "request": req.to_dict(),
             "plan": plan.to_dict(),
@@ -129,7 +243,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
         store_path: Path | None = typer.Option(
             None,
             "--store",
-            help="Optional JSON scratch store from a prior plan export.",
+            help="JSON scratch store written by a prior ``erasure plan --store``.",
         ),
         tenant: str = typer.Option("default", "--tenant"),
         workspace: str = typer.Option("default", "--workspace"),

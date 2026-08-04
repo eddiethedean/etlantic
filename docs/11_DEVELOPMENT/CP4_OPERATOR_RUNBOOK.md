@@ -7,7 +7,7 @@
 
 Wire optional providers on `ETLanticAPI` / `create_app`:
 
-- `policy` — `MemoryPolicyProvider` or OPA adapter
+- `policy` — `MemoryPolicyProvider` (or OPA stub/fallback adapter; no embedded evaluate)
 - `approvals` — `MemoryApprovalStore`
 - `quotas` — `MemoryQuotaProvider`
 - `erasure` — `MemoryErasureStore`

@@ -173,11 +173,12 @@ def gate_pre_submit(
 def gate_pre_promote(
     ctx: ControlPlaneContext,
     *,
-    policy: PolicyProvider,
-    approvals: ApprovalStore,
+    policy: PolicyProvider | None,
+    approvals: ApprovalStore | None = None,
     audit: AuditEvidenceStore | None = None,
     plan_fingerprint: str,
     revision_id: str,
+    require_policy: bool = True,
 ) -> PolicyDecision:
     """Promotion requires current policy allow or satisfied SoD approval."""
     decision = evaluate_policy(
@@ -186,7 +187,7 @@ def gate_pre_promote(
         hook="pre_promote",
         plan_fingerprint=plan_fingerprint,
         revision_id=revision_id,
-        required=True,
+        required=require_policy,
     )
     assert decision is not None
     if decision_allows(decision):

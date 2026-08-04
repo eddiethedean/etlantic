@@ -22,14 +22,30 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.tenant.tenant_id, ctx.workspace.workspace_id
 
 
+_TEST_SIGNING_SECRET = b"etlantic-cp4-test-secret"
+
+
 class MemoryAttestationStore:
-    def __init__(self, *, signing_secret: bytes = b"etlantic-cp4-test-secret") -> None:
+    def __init__(self, *, signing_secret: bytes) -> None:
+        if not signing_secret:
+            raise ControlPlaneError(
+                "attestation signing_secret is required",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
         self.signing_secret = signing_secret
         self._attestations: dict[tuple[str, str, str], Attestation] = {}
         self._by_subject: dict[tuple[str, str, str, str], str] = {}
         self._observations: dict[tuple[str, str, str], SignedSchemaObservation] = {}
         self._revoked: set[str] = set()
         self._lock = threading.RLock()
+
+    @classmethod
+    def for_tests(cls) -> MemoryAttestationStore:
+        """Insecure fixed secret for unit/conformance tests only."""
+        return cls(signing_secret=_TEST_SIGNING_SECRET)
 
     def sign(self, attestation: Attestation) -> Attestation:
         from dataclasses import replace

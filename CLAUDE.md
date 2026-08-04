@@ -8,7 +8,7 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 ## Public CLI
 
-`etlantic init`, `etlantic doctor`, `etlantic validate`, `etlantic inspect`, `etlantic plan`, `etlantic profile`, `etlantic run`, `etlantic compile`, `etlantic generate`, `etlantic diff`, `etlantic plugin`, `etlantic schema`, `etlantic reliability`, `etlantic viz`, `etlantic report`
+`etlantic init`, `etlantic doctor`, `etlantic validate`, `etlantic inspect`, `etlantic plan`, `etlantic profile`, `etlantic run`, `etlantic compile`, `etlantic generate`, `etlantic diff`, `etlantic plugin`, `etlantic schema`, `etlantic reliability`, `etlantic erasure`, `etlantic viz`, `etlantic report`
 
 ## Public SDK imports
 

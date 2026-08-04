@@ -1,4 +1,4 @@
-"""Optional OPA adapter skeleton behind PolicyProvider (lazy import)."""
+"""OPA stub / fallback adapter behind PolicyProvider (no embedded evaluate)."""
 
 from __future__ import annotations
 
@@ -16,12 +16,13 @@ from etlantic.control_plane.policy_models import (
 
 
 class OpaPolicyProvider:
-    """Thin optional adapter.
+    """Stub / fallback adapter seam for hosts that later wire a real OPA client.
 
-    When the ``opa`` package is not installed, construction fails closed.
-    Hosts that need OPA should inject a fully configured adapter; this class
-    documents the seam and delegates to ``MemoryPolicyProvider`` only when an
-    explicit ``fallback`` is provided for tests.
+    This class does **not** evaluate OPA policies. With ``require_opa=True`` and
+    no ``opa`` package installed, construction fails closed unless an explicit
+    ``fallback`` ``MemoryPolicyProvider`` is supplied (tests / local demos).
+    All decide/get_bundle/require_available calls either delegate to that
+    fallback or raise unavailable — never pretend OPA evaluation succeeded.
     """
 
     def __init__(

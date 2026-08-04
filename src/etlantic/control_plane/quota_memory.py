@@ -1,4 +1,4 @@
-"""In-memory quota provider with fairness weights (CP4)."""
+"""In-memory quota provider with weighted RR under shared pressure (CP4)."""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ def _now() -> datetime:
 @dataclass
 class MemoryQuotaProvider:
     unavailable: bool = False
+    shared_pressure: bool = False
     default_limits: dict[str, int] = field(
         default_factory=lambda: {
             "concurrency": 10,
@@ -54,6 +55,11 @@ class MemoryQuotaProvider:
         self.require_available(ctx)
         with self._lock:
             return deepcopy(self._ensure(ctx))
+
+    def set_shared_pressure(self, enabled: bool) -> None:
+        """Host mark that shared capacity is contended (enables weighted RR)."""
+        with self._lock:
+            self.shared_pressure = bool(enabled)
 
     def admit(
         self,
@@ -93,19 +99,79 @@ class MemoryQuotaProvider:
                     used=used,
                     reason="quota exceeded",
                 )
-            # Fairness: under contention prefer higher weight (simple RR tie-break).
-            self._rr_cursor += 1
+            scope = _scope(ctx)
+            if self.shared_pressure and not self._wrr_allows(
+                scope, resource=resource, units=units
+            ):
+                return QuotaDecision(
+                    effect="deny",
+                    resource=resource,
+                    limit=budget.limit,
+                    used=used,
+                    reason="fairness deferred",
+                    metadata={
+                        "rr_cursor": self._rr_cursor,
+                        "weight": budget.weight,
+                        "shared_pressure": True,
+                    },
+                )
             usage = dict(state.usage)
             usage[resource] = used + units
-            self._states[_scope(ctx)] = replace(state, usage=usage, updated_at=_now())
+            self._states[scope] = replace(state, usage=usage, updated_at=_now())
             return QuotaDecision(
                 effect="allow",
                 resource=resource,
                 limit=budget.limit,
                 used=used + units,
                 reason="admitted",
-                metadata={"rr_cursor": self._rr_cursor, "weight": budget.weight},
+                metadata={
+                    "rr_cursor": self._rr_cursor,
+                    "weight": budget.weight,
+                    "shared_pressure": self.shared_pressure,
+                },
             )
+
+    def _wrr_allows(
+        self,
+        scope: tuple[str, str],
+        *,
+        resource: QuotaResource,
+        units: int,
+    ) -> bool:
+        """Weighted round-robin among eligible tenants under shared pressure.
+
+        Builds a ring expanded by each scope's weight and advances ``_rr_cursor``
+        to the next eligible scope. Only the scope that owns the current turn
+        may admit; others receive ``fairness deferred``.
+        """
+        limit = int(self.default_limits.get(resource, 0))
+        # Active competitors: requesting scope plus any scope already using the
+        # resource (idle tenants with unused headroom are not in the ring so they
+        # cannot starve requesters when shared_pressure is on).
+        eligible: list[tuple[str, str]] = []
+        for key, state in sorted(self._states.items()):
+            if state.suspended or state.contained:
+                continue
+            used = int(state.usage.get(resource, 0))
+            need = units if key == scope else 1
+            if used + need > limit:
+                continue
+            if key == scope or used > 0:
+                eligible.append(key)
+        if not eligible:
+            return False
+        if len(eligible) == 1:
+            return eligible[0] == scope
+        ring: list[tuple[str, str]] = []
+        for key in eligible:
+            weight = max(1, int(self.weights.get(key, 1)))
+            ring.extend([key] * weight)
+        n = len(ring)
+        idx = self._rr_cursor % n
+        if ring[idx] != scope:
+            return False
+        self._rr_cursor = (idx + 1) % n
+        return True
 
     def release(
         self,

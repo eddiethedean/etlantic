@@ -1,7 +1,7 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.42.0; CP3 is gate-ready /
-> released incubation. CP1/CP2/CP3 ≠ production multi-tenant (**0.43**).**
+> **Status: Shipped product docs describe ETLantic 0.42.0; CP4 is the current
+> release-candidate line. CP1/CP2/CP3/CP4 ≠ production multi-tenant (**0.43**).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
@@ -13,6 +13,9 @@ release gates. They are **not** a substitute for current product documentation.
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
+    - To evaluate **CP4 gate evidence**, use the
+      [0.42 exit gate](EXIT_GATE_0_42.md), [ADR-019](adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md),
+      release notes, and tests.
     - To evaluate **CP3 gate evidence**, use the
       [0.41 exit gate](EXIT_GATE_0_41.md), [ADR-018](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md),
       release notes, and tests.
@@ -32,9 +35,9 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.42** CP3 gate-ready line. Prior CP2 evidence
-remains in **0.40**; CP1 evidence remains in **0.39**; connectivity evidence
-remains in **0.38**.
+Status is relative to the **0.42** CP4 release-candidate line. Prior CP3 evidence
+remains in **0.41**; CP2 evidence remains in **0.40**; CP1 evidence remains in
+**0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|

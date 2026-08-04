@@ -80,6 +80,20 @@ Public surface classes:
 
 ## Available in 0.42
 
+### Control-plane policy, quotas, and audit (CP4)
+
+| Capability | Status |
+|---|---|
+| `PolicyProvider` + `MemoryPolicyProvider` + gates | Available (`etlantic.control_plane`) |
+| Approvals / SoD + quota admission / suspension | Available |
+| Delivery objectives + notification routing | Available |
+| Governed erasure (request → plan → execute → report) | Available; CLI `etlantic erasure` |
+| Attestations + signed schema observations | Available |
+| `AuditEvidenceStore` hash chain | Available |
+| FastAPI `/v1/policy|approvals|quotas|erasure|audit|attestations|objectives` | Available (`etlantic-fastapi`) |
+| SQLModel CP4 snapshot stores + migration `003_cp4_governance` | Available (`etlantic-sqlmodel`) |
+| CP4 conformance + outage matrix evidence | Available (`etlantic.testing` / `check_cp4_chaos.py`) |
+
 ### Control-plane durable work (CP3)
 
 | Capability | Status |
@@ -89,6 +103,7 @@ Public surface classes:
 | FastAPI `/v1/durable/*` + optional submit dual-write | Available (`etlantic-fastapi`) |
 | Leases / fencing / heartbeat / release | Available |
 | Checkpoint CAS, replay, repair/backfill plans, preview TTL | Available |
+| Effects / diagnose / shadow HTTP routes | Available |
 | Durable-work conformance + chaos evidence | Available (`etlantic.testing`) |
 
 ### Migration and testing foundation
@@ -160,7 +175,7 @@ Public surface classes:
 
 | Capability | Status |
 |---|---|
-| CLI compile / generate / diff / plugin / schema / reliability / viz | Available |
+| CLI compile / generate / diff / plugin / schema / reliability / erasure / viz | Available |
 | Observability providers (`etlantic.observability/1`) | Available |
 | Run history providers (`etlantic.run_history/1`) | Available (file + in-memory reference) |
 | Event consumers + `etlantic report query` | Available |
@@ -191,8 +206,6 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Directory / CSV landing-zone connector (batch + incremental; continuous trigger in 0.39+) | **Available** (Preview) — [Landing zone](../06_EXECUTION/LANDING_ZONE.md) |
 | OpenLineage metadata interoperability | **Experimental** outbound via `etlantic-openlineage` (non-authority; not production multi-tenant) |
 | GitOps preview-to-production workflow | Planned across 0.41–0.43 |
-| Pipeline/step delivery objectives, deadline evaluation, and escalation routing | Planned first-class for 0.42 |
-| Governed data-subject erasure planning, execution coordination, and proof | Planned first-class for 0.42; operator workflows in 0.50 |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.47; optional supported packs planned for 0.51 |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | Planned first-class for 0.46 |

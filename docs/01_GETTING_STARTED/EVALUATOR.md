@@ -157,7 +157,7 @@ How to read status labels in deeper chapters:
 | Release digests / provenance | Release workflow emits a SHA-256 manifest + GitHub attestations; CycloneDX is optional — verify the published assets using [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md) |
 | Audit system of record | Gap — durable/file reports are operational evidence only |
 | Tested scale | Local/pilot workloads; no published capacity guarantees |
-| Upgrade / rollback | Pin exact versions; see [Migration 0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) and [Upgrade hub](UPGRADE.md) |
+| Upgrade / rollback | Pin exact versions; see [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) and [Upgrade hub](UPGRADE.md) |
 
 ## Recommended evaluation path
 
@@ -174,7 +174,7 @@ Follow this path **after** the green path (Install → Quickstart → First Pipe
    with `etlantic-polars` + `etlantic-pandas` at `==0.42.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
-8. [Migration 0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) if
+8. [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) if
    upgrading; otherwise [Upgrade hub](UPGRADE.md)
 9. [Roadmap summary](../11_DEVELOPMENT/ROADMAP_SUMMARY.md) for sequencing
 10. Production path: create `profiles/prod.json` from

@@ -297,3 +297,129 @@ def test_unknown_profile_fails_closed_on_validate() -> None:
         headers={"X-Principal": "alice"},
     )
     assert resp.status_code == 400, resp.text
+
+
+def test_durable_effects_repair_diagnose_shadow_routes() -> None:
+    headers = {"X-Principal": "alice"}
+    ctx = _ctx()
+    authz = MemoryAuthorizer()
+    durable = MemoryDurableWorkStore()
+    defs = MemoryDefinitionRepository()
+    for action in (
+        *DURABLE_ACTIONS,
+        "durable.effect.write",
+        "durable.repair",
+        "durable.checkpoint.write",
+        "durable.shadow.write",
+    ):
+        authz.grant(ctx, action)
+    defs.put(ctx, "pipe-1", {"name": "pipe-1"})
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+        durable_work=durable,
+    )
+    client = TestClient(create_app(api))
+    resp = client.post(
+        "/v1/definitions/pipe-1/runs",
+        headers={**headers, "Idempotency-Key": "fx-1"},
+        json={"payload": {"plan_fingerprint": "plan-fx"}},
+    )
+    assert resp.status_code == 202, resp.text
+    submission_id = resp.json()["submission_id"]
+    pending = durable.pending_outbox(ctx)
+    assert pending
+    client.post(
+        f"/v1/durable/outbox/{pending[0].outbox_id}/published",
+        headers=headers,
+    )
+    lease = client.post(
+        f"/v1/durable/submissions/{submission_id}/leases",
+        headers=headers,
+        json={"owner_id": "host-1", "ttl_seconds": 30},
+    )
+    token = lease.json()["fencing_token"]
+    attempt = client.post(
+        f"/v1/durable/submissions/{submission_id}/attempts",
+        headers=headers,
+        json={"owner_id": "host-1", "fencing_token": token},
+    )
+    attempt_id = attempt.json()["attempt_id"]
+    checkpoint_id = "checkpoint:main"
+    cas = client.post(
+        f"/v1/durable/checkpoints/{checkpoint_id}/cas",
+        headers=headers,
+        json={
+            "attempt_id": attempt_id,
+            "fencing_token": token,
+            "expected_version": None,
+            "value_fingerprint": "v1",
+        },
+    )
+    assert cas.status_code == 200, cas.text
+
+    effect = client.post(
+        "/v1/durable/effects",
+        headers=headers,
+        json={
+            "effect_id": "eff-1",
+            "submission_id": submission_id,
+            "status": "pending",
+        },
+    )
+    assert effect.status_code == 200, effect.text
+
+    repair = client.post(
+        f"/v1/durable/submissions/{submission_id}/repair",
+        headers=headers,
+        json={},
+    )
+    assert repair.status_code == 200, repair.text
+
+    diagnose = client.post(
+        f"/v1/durable/checkpoints/{checkpoint_id}/diagnose",
+        headers=headers,
+        json={"kind": "corruption", "detail": "test"},
+    )
+    assert diagnose.status_code == 200, diagnose.text
+    assert diagnose.json()["checkpoint_id"] == checkpoint_id
+
+    get_diag = client.get(
+        f"/v1/durable/checkpoints/{checkpoint_id}/diagnose",
+        headers=headers,
+    )
+    assert get_diag.status_code == 405
+
+    preview = client.post(
+        "/v1/durable/previews",
+        headers=headers,
+        json={
+            "preview_id": "pv-shadow",
+            "base_revision_id": "r1",
+            "candidate_revision_id": "r2",
+            "created_at": datetime.now(UTC).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(seconds=60)).isoformat(),
+            "quota": 2,
+            "code_fingerprint": "code",
+            "plan_fingerprint": "plan",
+            "commit_ref": "abc",
+        },
+    )
+    assert preview.status_code == 200
+    shadow = client.post(
+        "/v1/durable/shadow",
+        headers=headers,
+        json={
+            "shadow_run_id": "sh-1",
+            "preview_id": "pv-shadow",
+            "submission_id": submission_id,
+        },
+    )
+    assert shadow.status_code == 200, shadow.text
+    assert shadow.json()["shadow_run_id"] == "sh-1"

@@ -72,11 +72,31 @@ Shipped host routes under `/v1/durable/*` (authz first):
 | `POST /v1/durable/checkpoints/{id}/cas` | Namespaced checkpoint CAS (**requires** `attempt_id` + `fencing_token`) |
 | `POST …/replay` | Replay from optional checkpoint |
 | `POST /v1/durable/previews` | Create TTL preview workspace |
+| `POST /v1/durable/effects` | Record effect evidence |
+| `POST /v1/durable/submissions/{id}/repair` | Plan repair / backfill |
+| `POST /v1/durable/checkpoints/{id}/diagnose` | Diagnose checkpoint (mutating; POST only) |
+| `POST /v1/durable/shadow` | Authorize shadow run |
 
-Effects, repair plans, diagnose/explain, and shadow authorization remain
-**SDK / DurableWorkStore protocol** surfaces in 0.42 — not separate FastAPI
-routes. Core does **not** embed a broker or worker supervisor; adopters drain
-the outbox with their own dispatcher.
+Core does **not** embed a broker or worker supervisor; adopters drain the
+outbox with their own dispatcher.
+
+### CP4 governance routes
+
+When the matching provider is injected on `ETLanticAPI`, hosts expose:
+
+| Route | Purpose |
+|---|---|
+| `POST /v1/policy/decide` | Policy decision |
+| `POST /v1/approvals` · `GET …/{id}` · `POST …/decide` · `POST …/revoke` | Approvals / SoD |
+| `POST /v1/quotas/admit` · `POST …/release` · `POST …/suspend` · `POST …/contain` | Quotas |
+| `POST /v1/erasure/requests` · `…/plan` · `…/plans/{id}/execute` · `GET …/reports/{id}` | Erasure lifecycle |
+| `GET /v1/audit` · `GET /v1/audit/export` | Audit evidence |
+| `POST /v1/attestations` · `POST …/verify-plan` · `POST …/schema-observations/verify` | Attestations |
+| `POST /v1/objectives` · `GET …/{id}` · `POST …/evaluate` · `POST …/notify` | Delivery objectives |
+
+Missing CP4 providers on a mounted route return Problem Details `PMCP501`.
+Policy/quota/approval/attestation gates run on submit/promote when those
+providers are configured.
 
 ## PMCP errors
 
@@ -89,7 +109,8 @@ Control-plane failures use Problem Details with `PMCP*` codes (not pipeline
 | `PMCP403` | In-scope forbid (authorization deny) |
 | `PMCP404` | Not found **or** cross-scope non-enumeration |
 | `PMCP409` | Conflict (for example idempotency) |
-| `PMCP410` | Gone (unknown/expired SSE cursor — reconnect without cursor) |
+| `PMCP501` | Provider not configured on a mounted CP route |
+| `PMCP503` | Provider unavailable / fail-closed outage |
 
 Wire schema: `etlantic.control_plane.error/1`. Authorization runs before
 existence lookup; cross-tenant misses stay opaque **404**.

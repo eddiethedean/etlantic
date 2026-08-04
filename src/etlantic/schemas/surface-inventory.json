@@ -83,6 +83,7 @@
     "plugin",
     "schema",
     "reliability",
+    "erasure",
     "viz",
     "report"
   ],

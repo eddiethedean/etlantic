@@ -36,8 +36,8 @@ Do not reopen without a written finding and migration plan.
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| `041-P1-01` | P1 | Control-plane | **Closed** | Normalize durable SQL entity tables | Dual-write `DurableSubmissionEntityRow` / `DurableOutboxEntityRow` in `003_cp4_governance` |
-| `041-P1-02` | P1 | Control-plane + FastAPI | **Closed** | Full DurableWorkStore HTTP surface | `/v1/durable/effects`, repair, diagnose, shadow routes |
+| `041-P1-01` | P1 | Control-plane | **Closed (honest scope)** | Durable SQL entity dual-write | Denormalized `DurableSubmissionEntityRow` / `DurableOutboxEntityRow` mirrors keyed by tenant/workspace/id with `payload_json`; **snapshot remains canonical** (not column-normalized) |
+| `041-P1-02` | P1 | Control-plane + FastAPI | **Closed** | Full DurableWorkStore HTTP surface | `/v1/durable/effects`, repair, **POST** diagnose, shadow routes + FastAPI tests |
 
 ## Open findings
 

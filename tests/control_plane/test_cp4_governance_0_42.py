@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -129,7 +130,7 @@ def test_objective_recovery() -> None:
 
 
 def test_forged_schema_observation_rejected() -> None:
-    store = MemoryAttestationStore()
+    store = MemoryAttestationStore.for_tests()
     c = ctx()
     obs = store.make_schema_observation(c, schema_fingerprint="s1")
     from dataclasses import replace
@@ -137,3 +138,98 @@ def test_forged_schema_observation_rejected() -> None:
     forged = replace(obs, signature="0" * 64)
     with pytest.raises(ControlPlaneError):
         store.put_schema_observation(c, observation=forged)
+
+
+def test_quota_weighted_rr_under_shared_pressure() -> None:
+    quotas = MemoryQuotaProvider()
+    quotas.default_limits["concurrency"] = 100
+    a = ctx()
+    b = ControlPlaneContext(
+        principal=Principal("bob", issuer="tests"),
+        tenant=TenantRef("tenant-b"),
+        workspace=WorkspaceRef("tenant-b", "workspace-b"),
+        environment=EnvironmentRef("dev"),
+        security_domain=SecurityDomain("internal"),
+    )
+    quotas.weights[("tenant-a", "workspace-a")] = 2
+    quotas.weights[("tenant-b", "workspace-b")] = 1
+    # Seed both as active competitors before enabling shared pressure.
+    assert quotas.admit(a, resource="concurrency").effect == "allow"
+    assert quotas.admit(b, resource="concurrency").effect == "allow"
+    quotas.shared_pressure = True
+    quotas._rr_cursor = 0
+    allowed_a = 0
+    allowed_b = 0
+    deferred = 0
+    for _ in range(30):
+        da = quotas.admit(a, resource="concurrency")
+        if da.effect == "allow":
+            allowed_a += 1
+        elif da.reason == "fairness deferred":
+            deferred += 1
+        db = quotas.admit(b, resource="concurrency")
+        if db.effect == "allow":
+            allowed_b += 1
+        elif db.reason == "fairness deferred":
+            deferred += 1
+    assert deferred > 0
+    assert allowed_a > allowed_b
+
+
+def test_erasure_cli_store_round_trip(tmp_path: Path) -> None:
+    from typer.testing import CliRunner
+
+    from etlantic.cli import app
+
+    store_path = tmp_path / "erasure.json"
+    runner = CliRunner()
+    planned = runner.invoke(
+        app,
+        [
+            "erasure",
+            "plan",
+            "--subject-key-fingerprint",
+            "fp-cli",
+            "--field",
+            "email",
+            "--store",
+            str(store_path),
+            "--format",
+            "json",
+        ],
+    )
+    assert planned.exit_code == 0, planned.output
+    assert store_path.exists()
+    import json
+
+    payload = json.loads(planned.output)
+    request_id = payload["request"]["request_id"]
+    status = runner.invoke(
+        app,
+        [
+            "erasure",
+            "status",
+            request_id,
+            "--store",
+            str(store_path),
+            "--format",
+            "json",
+        ],
+    )
+    assert status.exit_code == 0, status.output
+    body = json.loads(status.output)
+    assert body["request_id"] == request_id
+    assert body["status"] in ("pending", "planned", "blocked")
+
+
+def test_connector_package_version_matches_release() -> None:
+    from etlantic import __version__
+    from etlantic_sql.connectors import PACKAGE_VERSION as sql_v
+
+    assert sql_v == __version__ == "0.42.0"
+    try:
+        from etlantic_s3.connectors import PACKAGE_VERSION as s3_v
+
+        assert s3_v == __version__
+    except ImportError:
+        pass

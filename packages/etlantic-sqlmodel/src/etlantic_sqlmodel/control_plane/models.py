@@ -286,7 +286,7 @@ class DurableSnapshotRow(SQLModel, table=True):
 
 
 class DurableSubmissionEntityRow(SQLModel, table=True):
-    """Normalized CP3 submission entity (041-P1-01) dual-written from snapshot."""
+    """Denormalized CP3 submission entity mirror (041-P1-01); snapshot canonical."""
 
     __tablename__ = "cp_durable_submission_entity"
     __table_args__ = (
@@ -310,7 +310,7 @@ class DurableSubmissionEntityRow(SQLModel, table=True):
 
 
 class DurableOutboxEntityRow(SQLModel, table=True):
-    """Normalized CP3 outbox entity (041-P1-01) dual-written from snapshot."""
+    """Denormalized CP3 outbox entity mirror (041-P1-01); snapshot canonical."""
 
     __tablename__ = "cp_durable_outbox_entity"
     __table_args__ = (

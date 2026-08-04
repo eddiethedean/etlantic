@@ -16,6 +16,8 @@ from etlantic.control_plane import (
     TenantRecord,
     WorkspaceRecord,
     authorized_get_definition,
+    gate_pre_promote,
+    gate_pre_submit,
     redact_control_plane_payload,
     redact_control_plane_text,
     require_authorized,
@@ -63,7 +65,7 @@ from etlantic_fastapi.sse import (
     resolve_resume_cursor,
     sse_streaming_response,
 )
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 if TYPE_CHECKING:
     from etlantic_fastapi.api import ETLanticAPI
@@ -476,6 +478,47 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 },
             )
         payload["definition_id"] = definition_id
+        plan_fp = str(
+            payload.get("plan_fingerprint")
+            or payload.get("plan_id")
+            or f"definition:{definition_id}"
+        )
+        revision_id = (
+            str(payload["revision_id"])
+            if payload.get("revision_id") is not None
+            else None
+        )
+        if (
+            api.policy is not None
+            or api.quotas is not None
+            or api.approvals is not None
+            or api.attestations is not None
+        ):
+            gate_pre_submit(
+                ctx,
+                policy=api.policy,
+                approvals=api.approvals,
+                quotas=api.quotas,
+                audit=api.audit,
+                attestations=api.attestations,
+                plan_fingerprint=plan_fp,
+                revision_id=revision_id,
+                plugin_fingerprints=(
+                    [str(payload["plugin_fingerprint"])]
+                    if payload.get("plugin_fingerprint") is not None
+                    else None
+                ),
+                sbom_digest=(
+                    str(payload["sbom_digest"])
+                    if payload.get("sbom_digest") is not None
+                    else None
+                ),
+                require_policy=api.policy is not None,
+                require_attestations=bool(
+                    payload.get("require_attestations")
+                    or (api.attestations is not None and payload.get("sbom_digest"))
+                ),
+            )
         result = api.submissions.accept(
             ctx,
             idempotency_key=idem,
@@ -485,22 +528,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         )
         durable_created = False
         if api.durable_work is not None:
-            plan_fp = str(
-                payload.get("plan_fingerprint")
-                or payload.get("plan_id")
-                or f"definition:{definition_id}"
-            )
             try:
                 _durable_row, durable_created = api.durable_work.accept(
                     ctx,
                     idempotency_key=idem,
                     operation="run.submit",
                     plan_fingerprint=plan_fp,
-                    revision_id=(
-                        str(payload["revision_id"])
-                        if payload.get("revision_id") is not None
-                        else None
-                    ),
+                    revision_id=revision_id,
                     plugin_fingerprint=(
                         str(payload["plugin_fingerprint"])
                         if payload.get("plugin_fingerprint") is not None
@@ -1117,6 +1151,19 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         registry = _require_registry()
+        if api.policy is not None:
+            plan_fp = str(
+                (body.metadata or {}).get("plan_fingerprint") or body.from_revision_id
+            )
+            gate_pre_promote(
+                ctx,
+                policy=api.policy,
+                approvals=api.approvals,
+                audit=api.audit,
+                plan_fingerprint=plan_fp,
+                revision_id=body.from_revision_id,
+                require_policy=True,
+            )
         promotion = registry.revisions.promote(
             ctx,
             logical_id=body.logical_id,
@@ -1497,24 +1544,26 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             .to_dict()
         )
 
-    @router.get(
+    @router.post(
         "/v1/durable/checkpoints/{checkpoint_id}/diagnose",
         operation_id="cp_durable_diagnose_checkpoint",
         tags=["durable"],
     )
     def durable_diagnose_checkpoint(
         checkpoint_id: str,
-        kind: str = Query("corruption"),
-        detail: str = Query(""),
+        body: dict[str, Any] | None = None,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         require_authorized(
             api.authorizer,
             ctx,
-            "durable.checkpoint.read",
+            "durable.checkpoint.write",
             f"durable:checkpoint:{checkpoint_id}",
             resource_in_caller_scope=False,
         )
+        payload = body or {}
+        kind = str(payload.get("kind") or "corruption")
+        detail = str(payload.get("detail") or "")
         return (
             _require_durable()
             .diagnose_checkpoint(ctx, checkpoint_id, kind=kind, detail=detail)
@@ -1558,6 +1607,16 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         return _require_durable().authorize_shadow_run(ctx, record).to_dict()
 
     # CP4 governance routes
+    def _require_cp4(provider: Any, *, name: str) -> Any:
+        if provider is None:
+            raise ControlPlaneError(
+                f"{name} is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return provider
+
     @router.post(
         "/v1/policy/decide",
         operation_id="cp_policy_decide",
@@ -1574,19 +1633,25 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "policy:decide",
             resource_in_caller_scope=False,
         )
-        if api.policy is None:
-            raise HTTPException(
-                status_code=503, detail="policy provider not configured"
+        policy = _require_cp4(api.policy, name="policy provider")
+        try:
+            decision = policy.decide(
+                ctx,
+                hook=body.get("hook", "privileged_op"),
+                plan_fingerprint=body.get("plan_fingerprint"),
+                revision_id=body.get("revision_id"),
+                resource=body.get("resource"),
+                attributes=body.get("attributes"),
+                bundle_id=body.get("bundle_id"),
             )
-        decision = api.policy.decide(
-            ctx,
-            hook=body.get("hook", "privileged_op"),
-            plan_fingerprint=body.get("plan_fingerprint"),
-            revision_id=body.get("revision_id"),
-            resource=body.get("resource"),
-            attributes=body.get("attributes"),
-            bundle_id=body.get("bundle_id"),
-        )
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
         if api.audit is not None:
             api.audit.append(
                 ctx,
@@ -1612,21 +1677,50 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "approval:create",
             resource_in_caller_scope=False,
         )
-        if api.approvals is None:
-            raise HTTPException(status_code=503, detail="approval store not configured")
+        approvals = _require_cp4(api.approvals, name="approval store")
         from datetime import datetime
 
+        try:
+            plan_fingerprint = str(body["plan_fingerprint"])
+            policy_fingerprint = str(body["policy_fingerprint"])
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
         expires = body.get("expires_at")
         expires_at = datetime.fromisoformat(expires) if expires else None
-        return api.approvals.create(
+        return approvals.create(
             ctx,
             hook=str(body.get("hook") or "pre_promote"),
-            plan_fingerprint=str(body["plan_fingerprint"]),
-            policy_fingerprint=str(body["policy_fingerprint"]),
+            plan_fingerprint=plan_fingerprint,
+            policy_fingerprint=policy_fingerprint,
             revision_id=body.get("revision_id"),
             expires_at=expires_at,
             approval_id=body.get("approval_id"),
         ).to_dict()
+
+    @router.get(
+        "/v1/approvals/{approval_id}",
+        operation_id="cp_approval_get",
+        tags=["approvals"],
+    )
+    def approval_get(
+        approval_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "approval.read",
+            f"approval:{approval_id}",
+            resource_in_caller_scope=False,
+        )
+        approvals = _require_cp4(api.approvals, name="approval store")
+        return approvals.get(ctx, approval_id=approval_id).to_dict()
 
     @router.post(
         "/v1/approvals/{approval_id}/decide",
@@ -1645,9 +1739,8 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             f"approval:{approval_id}",
             resource_in_caller_scope=False,
         )
-        if api.approvals is None:
-            raise HTTPException(status_code=503, detail="approval store not configured")
-        result = api.approvals.decide(
+        approvals = _require_cp4(api.approvals, name="approval store")
+        result = approvals.decide(
             ctx,
             approval_id=approval_id,
             approve=bool(body.get("approve", False)),
@@ -1665,6 +1758,29 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         return result.to_dict()
 
     @router.post(
+        "/v1/approvals/{approval_id}/revoke",
+        operation_id="cp_approval_revoke",
+        tags=["approvals"],
+    )
+    def approval_revoke(
+        approval_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "approval.write",
+            f"approval:{approval_id}",
+            resource_in_caller_scope=False,
+        )
+        approvals = _require_cp4(api.approvals, name="approval store")
+        payload = body or {}
+        return approvals.revoke(
+            ctx, approval_id=approval_id, reason=payload.get("reason")
+        ).to_dict()
+
+    @router.post(
         "/v1/quotas/admit",
         operation_id="cp_quota_admit",
         tags=["quotas"],
@@ -1680,12 +1796,76 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "quota:admit",
             resource_in_caller_scope=False,
         )
-        if api.quotas is None:
-            raise HTTPException(status_code=503, detail="quota provider not configured")
-        return api.quotas.admit(
+        quotas = _require_cp4(api.quotas, name="quota provider")
+        return quotas.admit(
             ctx,
             resource=body.get("resource", "concurrency"),
             units=int(body.get("units") or 1),
+        ).to_dict()
+
+    @router.post(
+        "/v1/quotas/release",
+        operation_id="cp_quota_release",
+        tags=["quotas"],
+    )
+    def quota_release(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "quota.release",
+            "quota:release",
+            resource_in_caller_scope=False,
+        )
+        quotas = _require_cp4(api.quotas, name="quota provider")
+        return quotas.release(
+            ctx,
+            resource=body.get("resource", "concurrency"),
+            units=int(body.get("units") or 1),
+        ).to_dict()
+
+    @router.post(
+        "/v1/quotas/suspend",
+        operation_id="cp_quota_suspend",
+        tags=["quotas"],
+    )
+    def quota_suspend(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "quota.admin",
+            "quota:suspend",
+            resource_in_caller_scope=False,
+        )
+        quotas = _require_cp4(api.quotas, name="quota provider")
+        return quotas.set_suspended(
+            ctx, suspended=bool(body.get("suspended", True))
+        ).to_dict()
+
+    @router.post(
+        "/v1/quotas/contain",
+        operation_id="cp_quota_contain",
+        tags=["quotas"],
+    )
+    def quota_contain(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "quota.admin",
+            "quota:contain",
+            resource_in_caller_scope=False,
+        )
+        quotas = _require_cp4(api.quotas, name="quota provider")
+        return quotas.set_contained(
+            ctx, contained=bool(body.get("contained", True))
         ).to_dict()
 
     @router.post(
@@ -1704,15 +1884,102 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "erasure:request",
             resource_in_caller_scope=False,
         )
-        if api.erasure is None:
-            raise HTTPException(status_code=503, detail="erasure store not configured")
-        return api.erasure.create_request(
+        erasure = _require_cp4(api.erasure, name="erasure store")
+        try:
+            subject_key_fingerprint = str(body["subject_key_fingerprint"])
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        return erasure.create_request(
             ctx,
-            subject_key_fingerprint=str(body["subject_key_fingerprint"]),
+            subject_key_fingerprint=subject_key_fingerprint,
             field_paths=list(body.get("field_paths") or ()),
             legal_hold=bool(body.get("legal_hold")),
             request_id=body.get("request_id"),
         ).to_dict()
+
+    @router.post(
+        "/v1/erasure/requests/{request_id}/plan",
+        operation_id="cp_erasure_plan",
+        tags=["erasure"],
+    )
+    def erasure_plan(
+        request_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "erasure.write",
+            f"erasure:{request_id}",
+            resource_in_caller_scope=False,
+        )
+        erasure = _require_cp4(api.erasure, name="erasure store")
+        payload = body or {}
+        from etlantic.control_plane import MemoryErasureProvider
+
+        provider_ids = list(payload.get("providers") or ["default"])
+        providers = [MemoryErasureProvider(provider_id=str(p)) for p in provider_ids]
+        return erasure.plan(
+            ctx,
+            request_id=request_id,
+            providers=providers,
+            actions=payload.get("actions"),
+        ).to_dict()
+
+    @router.post(
+        "/v1/erasure/plans/{plan_id}/execute",
+        operation_id="cp_erasure_execute",
+        tags=["erasure"],
+    )
+    def erasure_execute(
+        plan_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "erasure.execute",
+            f"erasure:plan:{plan_id}",
+            resource_in_caller_scope=False,
+        )
+        erasure = _require_cp4(api.erasure, name="erasure store")
+        payload = body or {}
+        from etlantic.control_plane import MemoryErasureProvider
+
+        provider_ids = list(payload.get("providers") or ["default"])
+        providers = [MemoryErasureProvider(provider_id=str(p)) for p in provider_ids]
+        return erasure.execute(
+            ctx,
+            plan_id=plan_id,
+            providers=providers,
+        ).to_dict()
+
+    @router.get(
+        "/v1/erasure/reports/{report_id}",
+        operation_id="cp_erasure_report",
+        tags=["erasure"],
+    )
+    def erasure_report(
+        report_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "erasure.read",
+            f"erasure:report:{report_id}",
+            resource_in_caller_scope=False,
+        )
+        erasure = _require_cp4(api.erasure, name="erasure store")
+        return erasure.get_report(ctx, report_id=report_id).to_dict()
 
     @router.get(
         "/v1/audit",
@@ -1730,9 +1997,8 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "audit:list",
             resource_in_caller_scope=False,
         )
-        if api.audit is None:
-            raise HTTPException(status_code=503, detail="audit store not configured")
-        records = api.audit.list(ctx, limit=limit)
+        audit = _require_cp4(api.audit, name="audit store")
+        records = audit.list(ctx, limit=limit)
         return {"records": [r.to_dict() for r in records]}
 
     @router.get(
@@ -1750,9 +2016,57 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "audit:export",
             resource_in_caller_scope=False,
         )
-        if api.audit is None:
-            raise HTTPException(status_code=503, detail="audit store not configured")
-        return api.audit.export(ctx).to_dict()
+        audit = _require_cp4(api.audit, name="audit store")
+        return audit.export(ctx).to_dict()
+
+    @router.post(
+        "/v1/attestations",
+        operation_id="cp_attestation_put",
+        tags=["attestations"],
+    )
+    def attestation_put(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "attestation.write",
+            "attestation:put",
+            resource_in_caller_scope=False,
+        )
+        store = _require_cp4(api.attestations, name="attestation store")
+        from datetime import datetime
+
+        from etlantic.control_plane import Attestation
+
+        try:
+            raw = body.get("attestation", body)
+            created = raw.get("created_at")
+            attestation = Attestation(
+                attestation_id=str(raw["attestation_id"]),
+                kind=raw["kind"],
+                subject_fingerprint=str(raw["subject_fingerprint"]),
+                signature=str(raw["signature"]),
+                signer_id=str(raw["signer_id"]),
+                tenant_id=raw.get("tenant_id"),
+                workspace_id=raw.get("workspace_id"),
+                environment=raw.get("environment"),
+                sbom_digest=raw.get("sbom_digest"),
+                created_at=(
+                    datetime.fromisoformat(created) if created else datetime.now()
+                ),
+                metadata=dict(raw.get("metadata") or {}),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ControlPlaneError(
+                "invalid attestation payload",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        return store.put(ctx, attestation=attestation).to_dict()
 
     @router.post(
         "/v1/attestations/verify-plan",
@@ -1770,19 +2084,209 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "attestation:verify",
             resource_in_caller_scope=False,
         )
-        if api.attestations is None:
-            raise HTTPException(
-                status_code=503, detail="attestation store not configured"
+        store = _require_cp4(api.attestations, name="attestation store")
+        try:
+            results = store.verify_plan(
+                ctx,
+                plan_fingerprint=str(body["plan_fingerprint"]),
+                revision_id=str(body["revision_id"]),
+                policy_fingerprint=str(body["policy_fingerprint"]),
+                plugin_fingerprints=list(body.get("plugin_fingerprints") or ()),
+                sbom_digest=body.get("sbom_digest"),
             )
-        results = api.attestations.verify_plan(
-            ctx,
-            plan_fingerprint=str(body["plan_fingerprint"]),
-            revision_id=str(body["revision_id"]),
-            policy_fingerprint=str(body["policy_fingerprint"]),
-            plugin_fingerprints=list(body.get("plugin_fingerprints") or ()),
-            sbom_digest=body.get("sbom_digest"),
-        )
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
         return {"results": [r.to_dict() for r in results]}
+
+    @router.post(
+        "/v1/attestations/schema-observations/verify",
+        operation_id="cp_attestation_verify_schema_observation",
+        tags=["attestations"],
+    )
+    def attestation_verify_schema_observation(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "attestation.verify",
+            "attestation:schema",
+            resource_in_caller_scope=False,
+        )
+        store = _require_cp4(api.attestations, name="attestation store")
+        try:
+            observation_id = str(body["observation_id"])
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        return store.verify_schema_observation(
+            ctx, observation_id=observation_id
+        ).to_dict()
+
+    @router.post(
+        "/v1/objectives",
+        operation_id="cp_objective_put",
+        tags=["objectives"],
+    )
+    def objective_put(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "objective.write",
+            "objective:put",
+            resource_in_caller_scope=False,
+        )
+        objectives = _require_cp4(api.objectives, name="objective store")
+        from datetime import datetime
+
+        from etlantic.control_plane import DeliveryObjective
+
+        try:
+            raw = body.get("objective", body)
+            fixed = raw.get("fixed_time")
+            objective = DeliveryObjective(
+                objective_id=str(raw["objective_id"]),
+                tenant_id=str(raw.get("tenant_id") or ctx.tenant.tenant_id),
+                workspace_id=str(raw.get("workspace_id") or ctx.workspace.workspace_id),
+                pipeline_id=str(raw["pipeline_id"]),
+                step_id=raw.get("step_id"),
+                version=str(raw.get("version") or "1"),
+                reference=raw.get("reference") or "scheduled",
+                warning_after_seconds=int(raw["warning_after_seconds"]),
+                hard_after_seconds=int(raw["hard_after_seconds"]),
+                grace_seconds=int(raw.get("grace_seconds") or 0),
+                calendar=str(raw.get("calendar") or "UTC"),
+                owner=raw.get("owner"),
+                severity=raw.get("severity") or "warning",
+                fixed_time=datetime.fromisoformat(fixed) if fixed else None,
+                metadata=dict(raw.get("metadata") or {}),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ControlPlaneError(
+                "invalid objective payload",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        return objectives.upsert_objective(ctx, objective=objective).to_dict()
+
+    @router.get(
+        "/v1/objectives/{objective_id}",
+        operation_id="cp_objective_get",
+        tags=["objectives"],
+    )
+    def objective_get(
+        objective_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "objective.read",
+            f"objective:{objective_id}",
+            resource_in_caller_scope=False,
+        )
+        objectives = _require_cp4(api.objectives, name="objective store")
+        return objectives.get_objective(ctx, objective_id=objective_id).to_dict()
+
+    @router.post(
+        "/v1/objectives/{objective_id}/evaluate",
+        operation_id="cp_objective_evaluate",
+        tags=["objectives"],
+    )
+    def objective_evaluate(
+        objective_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "objective.evaluate",
+            f"objective:{objective_id}",
+            resource_in_caller_scope=False,
+        )
+        objectives = _require_cp4(api.objectives, name="objective store")
+        payload = body or {}
+        from datetime import datetime
+
+        reference_at = payload.get("reference_at")
+        if not reference_at:
+            raise ControlPlaneError(
+                "missing required field: 'reference_at'",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        ref_dt = datetime.fromisoformat(str(reference_at))
+        return objectives.evaluate(
+            ctx,
+            objective_id=objective_id,
+            reference_at=ref_dt,
+            completed=bool(payload.get("completed", False)),
+            submission_id=payload.get("submission_id"),
+        ).to_dict()
+
+    @router.post(
+        "/v1/objectives/{objective_id}/notify",
+        operation_id="cp_objective_notify",
+        tags=["objectives"],
+    )
+    def objective_notify(
+        objective_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "objective.notify",
+            f"objective:{objective_id}",
+            resource_in_caller_scope=False,
+        )
+        objectives = _require_cp4(api.objectives, name="objective store")
+        from etlantic.control_plane import MemoryNotificationProvider
+
+        try:
+            evaluation_id = str(body["evaluation_id"])
+            channel = str(body.get("channel") or "webhook")
+            destination = str(body["destination"])
+        except KeyError as exc:
+            raise ControlPlaneError(
+                f"missing required field: {exc.args[0]!r}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        provider = MemoryNotificationProvider(channel=channel)
+        return objectives.route_notification(
+            ctx,
+            evaluation_id=evaluation_id,
+            channel=channel,
+            destination_ref=destination,
+            authorized_destinations=list(
+                body.get("authorized_destinations") or [destination]
+            ),
+            provider=provider,
+        ).to_dict()
 
     return router
 

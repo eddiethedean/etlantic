@@ -44,7 +44,7 @@
        quotas=MemoryQuotaProvider(),
        audit=MemoryAuditEvidenceStore(),
        erasure=MemoryErasureStore(),
-       attestations=MemoryAttestationStore(),
+       attestations=MemoryAttestationStore.for_tests(),
    )
    ```
 

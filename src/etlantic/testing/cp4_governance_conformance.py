@@ -47,7 +47,7 @@ def run_cp4_governance_conformance_suite(
     erasure = erasure or MemoryErasureStore()
     audit = audit or MemoryAuditEvidenceStore()
     objectives = objectives or MemoryObjectiveStore()
-    attestations = attestations or MemoryAttestationStore()
+    attestations = attestations or MemoryAttestationStore.for_tests()
     ctx = _ctx()
 
     # Erasure — legal hold and no false completion.

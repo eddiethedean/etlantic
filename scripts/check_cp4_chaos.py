@@ -122,6 +122,17 @@ def main(argv: list[str] | None = None) -> int:
     result = _run_matrix()
     if args.write_matrix:
         MATRIX_PATH.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    elif MATRIX_PATH.exists():
+        committed = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+        # Compare stable fields (ignore ordering noise by canonical JSON).
+        if json.dumps(committed, sort_keys=True) != json.dumps(result, sort_keys=True):
+            print(
+                "fail: committed matrix drift; re-run with --write-matrix and commit",
+                flush=True,
+            )
+            if args.json:
+                print(json.dumps({"committed": committed, "actual": result}, indent=2))
+            return 1
     if args.json or args.write_matrix:
         print(json.dumps(result, indent=2))
     else:

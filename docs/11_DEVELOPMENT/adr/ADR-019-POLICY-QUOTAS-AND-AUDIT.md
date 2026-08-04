@@ -38,8 +38,11 @@ Hooks are explicit: `pre_plan`, `post_plan`, `pre_submit`, `post_execution`,
 reproducibility (including durable `policy_fingerprint`), never ambient
 process state. A missing policy provider on a protected profile fails closed.
 
-OPA is an optional adapter behind the same `PolicyProvider` protocol. The
-conformance reference is deterministic `MemoryPolicyProvider`.
+OPA is an optional **stub / fallback adapter** behind the same
+`PolicyProvider` protocol. It does **not** embed or evaluate OPA policies;
+hosts must inject a real client or an explicit `MemoryPolicyProvider`
+fallback for tests. The conformance reference remains deterministic
+`MemoryPolicyProvider`.
 
 ### Approvals and separation of duties
 
@@ -54,7 +57,8 @@ Tenant+workspace budgets cover in-flight durable concurrency, preview
 count/TTL, event emission rate, repair/backfill concurrency, and storage
 bytes (metadata only). Over-limit denies admission. Provider outage fails
 closed for protected mutations; read-only status may use a documented
-degraded mode. Fairness uses weighted round-robin under shared pressure.
+degraded mode. Fairness uses weighted round-robin when the host marks
+`shared_pressure` on the quota provider (active competitors only).
 Suspension and emergency containment are durable scoped flags.
 
 Per-tenant `admission_limit` from CP3 remains a lower-level guard; full
