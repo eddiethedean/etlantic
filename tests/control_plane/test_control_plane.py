@@ -190,19 +190,19 @@ def test_two_tenant_two_workspace_isolation() -> None:
     assert repo.get(b1, "pipe")["name"] == "b1"
     assert list(repo.list(a1)) == ["pipe"]
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ControlPlaneError):
         repo.get(a1, "missing")
 
     # Cross-tenant: a1 must not see b1's exclusive definition id.
     repo.put(b1, "secret-pipe", {"name": "secret"})
-    with pytest.raises(KeyError):
+    with pytest.raises(ControlPlaneError):
         repo.get(a1, "secret-pipe")
     assert "secret-pipe" not in repo.list(a1)
     assert "secret-pipe" not in repo.list(a2)
 
     # Same tenant, different workspace isolation.
     repo.put(a1, "only-a1", {"name": "only"})
-    with pytest.raises(KeyError):
+    with pytest.raises(ControlPlaneError):
         repo.get(a2, "only-a1")
     assert "only-a1" not in repo.list(a2)
 

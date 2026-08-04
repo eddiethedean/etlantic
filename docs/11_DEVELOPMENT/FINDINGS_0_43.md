@@ -33,6 +33,13 @@ Open **P0 count is 0**.
 |---|---|---|---|---|---|
 | — | — | — | — | No open P0 | — |
 
+## Deferred P1 (non-blocking for gate-ready)
+
+| ID | Severity | Owner | State | Summary | Evidence / disposition |
+|---|---|---|---|---|---|
+| `043-R-01` | P1 | Control-plane | Deferred | True multi-process dual-API / dual-host product drill | Mitigated by in-process dual-store campaigns; target post-0.43 harden wave |
+| `043-M-01` | P1 | Control-plane | Deferred | OpenLineage design/runtime reconciliation product drill | Mitigated by preview fingerprint identity in GitOps campaign; not claimed Met |
+
 ## Soft-continue from prior phases
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |

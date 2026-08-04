@@ -102,7 +102,9 @@ class MemoryDefinitionRepository:
             try:
                 return deepcopy(self._docs[key])
             except KeyError as exc:
-                raise KeyError(definition_id) from exc
+                raise ControlPlaneError.not_found(
+                    f"Definition {definition_id!r} not found"
+                ) from exc
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         tenant_id, workspace_id = _scope(ctx)

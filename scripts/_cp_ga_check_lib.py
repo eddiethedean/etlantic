@@ -25,6 +25,11 @@ def run_campaign_check(
     parser.add_argument("--fake", action="store_true", default=True)
     parser.add_argument("--write-matrix", action="store_true")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--fail-skip",
+        action="store_true",
+        help="Treat campaign case status=skip as failure (release honesty).",
+    )
     args = parser.parse_args(argv)
     result = campaign()
     path = matrix_path(matrix_filename)
@@ -40,6 +45,10 @@ def run_campaign_check(
             if args.json:
                 print(json.dumps({"committed": committed, "actual": result}, indent=2))
             return 1
+    skipped = [c["id"] for c in result.get("cases", []) if c.get("status") == "skip"]
+    if args.fail_skip and skipped:
+        print(f"fail: skipped cases (install sqlmodel): {skipped}", flush=True)
+        return 1
     if args.json or args.write_matrix:
         print(json.dumps(result, indent=2))
     else:

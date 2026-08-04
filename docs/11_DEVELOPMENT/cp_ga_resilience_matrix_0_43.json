@@ -4,7 +4,8 @@
   "cases": [
     {
       "id": "dual_host_isolated_stores",
-      "status": "pass"
+      "status": "pass",
+      "http_status": 404
     },
     {
       "id": "lease_fencing",

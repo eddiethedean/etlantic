@@ -12,7 +12,7 @@
     },
     {
       "id": "sqlmodel_audit_persist",
-      "status": "skip"
+      "status": "pass"
     }
   ],
   "pass": true,

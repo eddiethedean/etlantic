@@ -8,14 +8,14 @@ cross-cutting architectural constraint, not a feature delegated to one plugin.
 
 This chapter covers **controls shipped through the 0.38 stable-foundation
 claim** and the broader **proposed threat model**. ETLantic 0.43.0 is a
-**Beta** (PyPI) release suitable for documented single-tenant pilots—not
-unrestricted enterprise production. It does not provide multi-tenant control
-planes, SLA, compliance attestations, deployment-topology guarantees, or
-advanced supply-chain guarantees; those controls remain adopter-owned. A
-hardened multi-tenant control plane is a
-[planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
-not a current guarantee. Control ownership and automated verification live in
-the
+**Beta** (PyPI) release suitable for documented single-tenant pilots and
+Supported multi-tenant profiles (`isolated-deployment`, `dedicated-schema`).
+It does not provide a formal SLA, compliance attestations, unrestricted
+shared-service isolation, or advanced supply-chain guarantees beyond published
+digests/attestations; those remain adopter-owned or Experimental.
+`shared-service` remains Experimental. The multi-tenant control plane
+[graduated Supported profiles in 0.43](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+Control ownership and automated verification live in the
 [Security Verification Matrix](SECURITY_VERIFICATION_MATRIX.md).
 
 ## Implemented through 0.37
@@ -712,19 +712,20 @@ Core and plugin releases should use:
 
 ## Multi-Tenancy
 
-ETLantic must not claim in-process tenant isolation.
+ETLantic must not claim unrestricted in-process shared-service tenant isolation.
 
 Strong isolation requires separate identities, artifact namespaces, cache
 namespaces, secret scopes, quotas, and execution environments. Context
-variables help correctness but are not a security boundary.
+variables help correctness but are not a security boundary alone.
 
-The planned first-class control plane adds authenticated tenant/workspace
-scope, deny-by-default authorization, independently enforced persistence
-isolation, durable submission, leases and fencing, quotas, audit evidence, and
-profile-specific conformance. See the
+The control plane adds authenticated tenant/workspace scope, deny-by-default
+authorization, independently enforced persistence isolation, durable
+submission, leases and fencing, quotas, audit evidence, and profile-specific
+conformance. See the
 [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
-Until its CP-GA gate passes, deploy mutually untrusted tenants in separate
-processes or containers and treat all multi-tenant controls as adopter-owned.
+**Available** for `isolated-deployment` / `dedicated-schema`; `shared-service`
+remains Experimental. For mutually untrusted tenants without a Supported
+profile, deploy separate processes or containers.
 
 ## Configuration
 

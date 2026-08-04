@@ -88,7 +88,7 @@ def test_openapi_cp_ga_operation_ids_stable() -> None:
             op_ids.add(op_id)
     dump = {"openapi": schema.get("openapi"), "operationIds": sorted(op_ids)}
     if not SNAPSHOT.exists():
-        SNAPSHOT.write_text(json.dumps(dump, indent=2) + "\n", encoding="utf-8")
+        pytest.fail(f"missing OpenAPI GA snapshot (fail-closed): {SNAPSHOT}")
     expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     assert dump["operationIds"] == expected["operationIds"]
     missing = REQUIRED_GA_OPERATION_IDS - op_ids

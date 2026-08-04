@@ -201,33 +201,40 @@ class MemoryErasureStore:
                     else result
                 )
             statuses = {r.status for r in results}
-            reconciled = (
-                all(r.status in ("completed",) for r in results)
-                and "unsupported" not in statuses
-            )
-            if "unsupported" in statuses or "failed" in statuses:
-                # Cannot claim completion while required providers unresolved.
-                if all(
-                    r.status == "completed"
-                    for r in results
-                    if r.status != "unsupported"
-                ):
-                    status = "partial"
-                elif all(r.status == "unsupported" for r in results):
-                    status = "unsupported"
-                else:
-                    status = "partial"
-                reconciled = False
-            elif all(r.status == "completed" for r in results):
-                status = "completed"
-            else:
+            # Empty result sets must never vacuous-complete (no steps executed).
+            if not results:
                 status = "partial"
                 reconciled = False
-            # Hard rule: never report completed if any unsupported/unknown.
-            if any(r.status in ("unsupported", "failed", "blocked") for r in results):
-                if status == "completed":
+            else:
+                reconciled = (
+                    all(r.status in ("completed",) for r in results)
+                    and "unsupported" not in statuses
+                )
+                if "unsupported" in statuses or "failed" in statuses:
+                    # Cannot claim completion while required providers unresolved.
+                    if all(
+                        r.status == "completed"
+                        for r in results
+                        if r.status != "unsupported"
+                    ):
+                        status = "partial"
+                    elif all(r.status == "unsupported" for r in results):
+                        status = "unsupported"
+                    else:
+                        status = "partial"
+                    reconciled = False
+                elif all(r.status == "completed" for r in results):
+                    status = "completed"
+                else:
                     status = "partial"
-                reconciled = False
+                    reconciled = False
+                # Hard rule: never report completed if any unsupported/unknown.
+                if any(
+                    r.status in ("unsupported", "failed", "blocked") for r in results
+                ):
+                    if status == "completed":
+                        status = "partial"
+                    reconciled = False
             report = ErasureReport(
                 report_id=str(uuid.uuid4()),
                 request_id=plan.request_id,

@@ -11,7 +11,7 @@
 | Frozen support envelope + compatibility policy | **Complete** ([cp_ga_support_matrix_0_43.json](cp_ga_support_matrix_0_43.json)) |
 | Isolation matrix (043-I) | **Complete** |
 | Compatibility / migrations (043-C) | **Complete** |
-| Resilience / dual-host (043-R) | **Complete** |
+| Resilience / dual-store (043-R) | **Complete** |
 | Backup / recovery (043-B) | **Complete** |
 | Capacity / fairness (043-P) | **Complete** |
 | Security / redaction (043-S) | **Complete** |
@@ -35,21 +35,25 @@ Support terms: measured capacity envelopes + overload fail-closed behavior;
 
 From [IMPLEMENTATION_PLAN_0_43](IMPLEMENTATION_PLAN_0_43.md):
 
+Evidence language: gates are **Met** against **in-process Memory campaigns**,
+optional **SQLModel** when installed, and **FastAPI** opaque-404 tests — not
+multi-process dual-API product drills or OpenLineage reconciliation.
+
 | # | Measure | Required | Current |
 |---|---|---:|---|
-| 1 | Documented and fully tested isolation matrix | Pass | **Met** — [isolation_profile_matrix_0_43.json](isolation_profile_matrix_0_43.json) + [cp_ga_isolation_matrix_0_43.json](cp_ga_isolation_matrix_0_43.json) |
+| 1 | Documented and fully tested isolation matrix | Pass | **Met** — [isolation_profile_matrix_0_43.json](isolation_profile_matrix_0_43.json) + [cp_ga_isolation_matrix_0_43.json](cp_ga_isolation_matrix_0_43.json) (sampled matrix ops + FastAPI) |
 | 2 | Public schema compatibility + migration policy | Pass | **Met** — [cp_ga_compat_matrix_0_43.json](cp_ga_compat_matrix_0_43.json) |
-| 3 | Install / upgrade / rollback / backup / restore | Pass | **Met** — [cp_ga_recovery_matrix_0_43.json](cp_ga_recovery_matrix_0_43.json) |
-| 4 | Multi-replica API + execution-host fault results | Pass | **Met** — [cp_ga_resilience_matrix_0_43.json](cp_ga_resilience_matrix_0_43.json) |
-| 5 | Cross-tenant tests for every public operation | Pass | **Met** — isolation campaign + FastAPI GA tests |
+| 3 | Install / upgrade / rollback / backup / restore | Pass | **Met** — audit export/restore + SQLModel persist campaigns (not clean-install smoke) |
+| 4 | Multi-replica API + execution-host fault results | Pass | **Met** — in-process dual durable stores + lease fencing ([cp_ga_resilience_matrix_0_43.json](cp_ga_resilience_matrix_0_43.json)); true multi-process residual P1 |
+| 5 | Cross-tenant tests for covered public operations | Pass | **Met** — isolation campaign coverage of matrix ops + FastAPI GA tests (not literally every route) |
 | 6 | Capacity envelope, overload, support terms | Pass | **Met** — [cp_ga_capacity_envelope_0_43.json](cp_ga_capacity_envelope_0_43.json) |
 | 7 | Stable diagnostics + verified redaction | Pass | **Met** — security campaign |
 | 8 | Complete operator + recovery documentation | Pass | **Met** — [CP_GA_OPERATOR_RUNBOOK_0_43](CP_GA_OPERATOR_RUNBOOK_0_43.md) |
 | 9 | No unresolved critical/high security finding | 0 | **Met** — [FINDINGS_0_43](FINDINGS_0_43.md) P0=0 |
 | 10 | Release record: supported vs experimental | Pass | **Met** — support matrix |
-| 11 | Reconciled design-time / runtime metadata identity | Pass | **Met** — GitOps campaign |
-| 12 | Preview→production promote / rollback / cleanup | Pass | **Met** — GitOps campaign |
-| 13 | Objectives + erasure restart / authz / false-completion | Pass | **Met** — ops campaign |
+| 11 | Reconciled design-time / runtime metadata identity | Pass | **Met** — preview plan_fingerprint matches SoD / promote gate (in-process) |
+| 12 | Preview→production promote / rollback / cleanup | Pass | **Met** — GitOps campaign stale/cleanup/revoke denial |
+| 13 | Objectives + erasure restart / authz / false-completion | Pass | **Met** — ops campaign including empty-provider fail-closed |
 
 ## Evidence map
 
@@ -67,7 +71,7 @@ From [IMPLEMENTATION_PLAN_0_43](IMPLEMENTATION_PLAN_0_43.md):
 
 **Go** for tag/publish of `0.43.0` once CI is green on the release commit
 (separate explicit publish request). All thirteen gates are **Met** against the
-frozen Supported profiles.
+frozen Supported profiles under the evidence language above.
 
 ## Explicit non-claims
 
@@ -75,3 +79,4 @@ frozen Supported profiles.
 - No formal enterprise SLA
 - No `shared-service` production isolation without a real second control
 - No embedded IdP or embedded OPA evaluate path
+- No multi-process dual-API / OpenLineage reconciliation as Met evidence

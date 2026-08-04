@@ -64,4 +64,4 @@ Every shipped code family under `src/etlantic` must appear in
 - [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Surface inventory](SURFACE_INVENTORY.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-040)
+- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-043)

@@ -1,23 +1,22 @@
 # Multi-Tenant Control Plane Plan
 
-> **Status: planned first-class feature program; not available in ETLantic
-> 0.37.0.** Incubation is sequenced across 0.39–0.42. **CP1 (0.39) is
-> gate-ready** ([ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md),
-> [EXIT_GATE_0_39](EXIT_GATE_0_39.md)). **CP2 (0.40) registry and isolation
-> incubation is in progress** ([ADR-017](adr/ADR-017-REGISTRY-AND-ISOLATION.md),
-> [EXIT_GATE_0_40](EXIT_GATE_0_40.md)). A production, multi-tenant compatibility
-> claim is gated for 0.43 only after every isolation, durability, policy, and
-> operations gate on this page passes.
+> **Status: graduated Supported profiles in ETLantic 0.43 (CP-GA);
+> planned first-class feature program complete for
+> `isolated-deployment` / `dedicated-schema`.** Incubation ran 0.39–0.42.
+> **CP1 (0.39)** through **CP4 (0.42)** remain foundations (**CPn alone ≠ GA**).
+> `shared-service` remains Experimental until a real RLS / per-tenant
+> credential pack ships. Community support is **non-SLA**.
 >
-> **Current boundary:** Process-local registries, runtimes, caches, report
-> stores, and the 0.38 thin FastAPI reference adapter are not multi-tenant
-> merely because they carry identity fields. CP1 incubates typed context and
-> durable contracts; CP2 incubates directory/revision mechanisms and isolation
-> evidence. Neither claims production isolation.
+> **Current boundary:** Production multi-tenant is Available only for Supported
+> isolation profiles. Process-local registries alone are not a claim; deploy
+> with `isolated-deployment` or `dedicated-schema` evidence.
 >
 > **Authority:** The
 > [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 > owns release order; this plan owns control-plane scope and graduation. Use
+> [EXIT_GATE_0_43](EXIT_GATE_0_43.md) and
+> [cp_ga_support_matrix_0_43.json](cp_ga_support_matrix_0_43.json) for the
+> frozen claim. See
 > [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) for shipped behavior
 > and the [Planning Hub](PLAN_INDEX.md) for portfolio status.
 >

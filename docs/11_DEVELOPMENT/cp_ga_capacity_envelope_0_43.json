@@ -10,9 +10,14 @@
     {
       "id": "wrr_shared_pressure",
       "status": "pass",
-      "allowed_a": 24,
-      "allowed_b": 12,
-      "deferred": 12
+      "allowed_a": 16,
+      "allowed_b": 8,
+      "deferred": 24
+    },
+    {
+      "id": "wrr_idle_owner_no_starve",
+      "status": "pass",
+      "allowed_b": 4
     },
     {
       "id": "support_terms",

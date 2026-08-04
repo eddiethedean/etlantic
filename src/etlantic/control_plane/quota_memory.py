@@ -169,6 +169,9 @@ class MemoryQuotaProvider:
         n = len(ring)
         idx = self._rr_cursor % n
         if ring[idx] != scope:
+            # Advance on miss so an idle cursor owner cannot permanently starve
+            # other eligible requesters under shared pressure.
+            self._rr_cursor = (idx + 1) % n
             return False
         self._rr_cursor = (idx + 1) % n
         return True

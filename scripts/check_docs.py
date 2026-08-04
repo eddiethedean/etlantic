@@ -386,7 +386,8 @@ def check_control_plane_plan() -> None:
 
     text = plan.read_text(encoding="utf-8")
     required_plan_markers = (
-        "Status: planned first-class feature program",
+        "Status: graduated Supported profiles in ETLantic 0.43",
+        "planned first-class feature program",
         "0.39 / CP1",
         "0.40 / CP2",
         "0.41 / CP3",

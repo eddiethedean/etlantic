@@ -45,6 +45,7 @@ ACTIONS = (
     "audit.read",
     "erasure.write",
     "erasure.read",
+    "reliability.list",
 )
 
 
@@ -58,7 +59,7 @@ def _ctx(tenant: str, subject: str) -> ControlPlaneContext:
     )
 
 
-def _client() -> TestClient:
+def _client(*, bob_has_pipe: bool = True) -> TestClient:
     authz = MemoryAuthorizer()
     alice = _ctx("tenant-a", "alice")
     bob = _ctx("tenant-b", "bob")
@@ -66,8 +67,9 @@ def _client() -> TestClient:
         authz.grant(alice, action)
         authz.grant(bob, action)
     defs = MemoryDefinitionRepository()
-    defs.put(alice, "pipe", {"name": "pipe-a"})
-    defs.put(bob, "pipe", {"name": "pipe-b"})
+    defs.put(alice, "pipe", {"name": "pipe-a", "owner": "alice"})
+    if bob_has_pipe:
+        defs.put(bob, "pipe", {"name": "pipe-b", "owner": "bob"})
     api = ETLanticAPI(
         authorizer=authz,
         definitions=defs,
@@ -108,11 +110,23 @@ def test_cross_tenant_run_is_opaque_404() -> None:
 
 
 def test_cross_tenant_definition_is_opaque_404() -> None:
+    # Alice owns "pipe"; Bob has no definition with that id → opaque 404.
+    client = _client(bob_has_pipe=False)
+    alice_doc = client.get("/v1/definitions/pipe", headers={"X-Principal": "alice"})
+    assert alice_doc.status_code == 200
+    assert alice_doc.json()["document"]["owner"] == "alice"
+
+    leaked = client.get("/v1/definitions/pipe", headers={"X-Principal": "bob"})
+    assert leaked.status_code == 404
+    body = str(leaked.json()).lower()
+    assert "pipe-a" not in body
+    assert "alice" not in body
+    assert "tenant-a" not in body
+
+
+def test_reliability_stub_exposes_experimental() -> None:
     client = _client()
-    # Bob's scope has "pipe" but content differs; Alice's exclusive id is not used.
-    # Forged path: Bob requests Alice-only definition id that does not exist in Bob.
-    authz_check = client.get(
-        "/v1/definitions/missing-for-bob",
-        headers={"X-Principal": "bob"},
-    )
-    assert authz_check.status_code == 404
+    resp = client.get("/v1/reliability", headers={"X-Principal": "alice"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body.get("experimental") is True

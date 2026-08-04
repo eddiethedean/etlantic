@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from importlib.metadata import version as pkg_version
+from pathlib import Path
 from typing import Any
 
 from etlantic.control_plane import (
@@ -91,7 +93,16 @@ def run_compat_campaign() -> dict[str, Any]:
             }
         )
 
-    cases.append({"id": "compat_floor", "status": "pass", "policy": ">=0.43.0,<0.44"})
+    installed = pkg_version("etlantic")
+    major_minor = ".".join(installed.split(".")[:2])
+    cases.append(
+        {
+            "id": "compat_floor",
+            "status": "pass" if major_minor == "0.43" else "fail",
+            "policy": ">=0.43.0,<0.44",
+            "installed": installed,
+        }
+    )
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
         "matrix_version": "0.43.0",
@@ -225,6 +236,120 @@ def run_isolation_campaign() -> dict[str, Any]:
             }
         )
 
+    # Same-store multi-tenant / multi-workspace negatives (matrix ops)
+    a2 = _ctx("tenant-a", "ws-2", subject="alice", domain="dom-a")
+    shared_defs = MemoryDefinitionRepository()
+    shared_defs.put(a, "pipe-shared", {"ws": "1"})
+    shared_defs.put(a2, "pipe-ws2", {"ws": "2"})
+    shared_defs.put(b, "pipe-b", {"ws": "b"})
+    try:
+        shared_defs.get(a, "pipe-ws2")
+        cases.append({"id": "definition_cross_workspace", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "definition_cross_workspace",
+                "status": "pass" if exc.status == 404 else "fail",
+            }
+        )
+    try:
+        shared_defs.get(a, "pipe-b")
+        cases.append({"id": "definition_same_store_cross_tenant", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "definition_same_store_cross_tenant",
+                "status": "pass" if exc.status == 404 else "fail",
+            }
+        )
+
+    approvals = MemoryApprovalStore()
+    approval = approvals.create(
+        a,
+        hook="pre_promote",
+        plan_fingerprint="iso-plan",
+        policy_fingerprint="iso-pol",
+    )
+    try:
+        approvals.get(b, approval_id=approval.approval_id)
+        cases.append({"id": "approval_cross_tenant", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "approval_cross_tenant",
+                "status": "pass" if exc.status == 404 else "fail",
+            }
+        )
+
+    objectives = MemoryObjectiveStore()
+    objectives.upsert_objective(
+        a,
+        objective=DeliveryObjective(
+            objective_id="obj-a",
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            pipeline_id="pipe",
+            step_id=None,
+            version="1",
+            reference="started",
+            warning_after_seconds=5,
+            hard_after_seconds=10,
+        ),
+    )
+    try:
+        objectives.get_objective(b, objective_id="obj-a")
+        cases.append({"id": "objective_cross_tenant", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "objective_cross_tenant",
+                "status": "pass" if exc.status == 404 else "fail",
+            }
+        )
+
+    attestations = MemoryAttestationStore.for_tests()
+    att = attestations.make_attestation(a, kind="plan", subject_fingerprint="iso-fp")
+    attestations.put(a, attestation=att)
+    try:
+        attestations.put(b, attestation=att)
+        cases.append({"id": "attestation_cross_tenant_put", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "attestation_cross_tenant_put",
+                "status": "pass" if exc.status == 403 else "fail",
+            }
+        )
+
+    now = datetime.now(UTC)
+    from etlantic.control_plane import PreviewWorkspace
+
+    preview_store = MemoryDurableWorkStore()
+    preview = PreviewWorkspace(
+        preview_id="iso-pv",
+        tenant_id="tenant-a",
+        workspace_id="ws-1",
+        base_revision_id="base",
+        candidate_revision_id="cand",
+        created_at=now.isoformat(),
+        expires_at=(now + timedelta(seconds=120)).isoformat(),
+        quota=2,
+        code_fingerprint="code",
+        plan_fingerprint="iso-plan",
+        commit_ref="abc",
+    )
+    preview_store.create_preview(a, preview)
+    try:
+        preview_store.mark_preview_stale(b, "iso-pv", plan_fingerprint="other")
+        cases.append({"id": "preview_cross_tenant", "status": "fail"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "preview_cross_tenant",
+                "status": "pass" if exc.status == 404 else "fail",
+            }
+        )
+
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
         "matrix_version": "0.43.0",
@@ -249,9 +374,26 @@ def run_resilience_campaign() -> dict[str, Any]:
     lease = host1.acquire_lease(ctx, sub.submission_id, owner_id="h1", ttl_seconds=60)
     try:
         host2.acquire_lease(ctx, sub.submission_id, owner_id="h2", ttl_seconds=60)
-        cases.append({"id": "dual_host_isolated_stores", "status": "pass"})
-    except ControlPlaneError:
-        cases.append({"id": "dual_host_isolated_stores", "status": "pass"})
+        cases.append(
+            {
+                "id": "dual_host_isolated_stores",
+                "status": "fail",
+                "detail": "host2 leased host1 submission",
+            }
+        )
+    except ControlPlaneError as exc:
+        isolated = (
+            exc.status == 404
+            and not host2.pending_outbox(ctx)
+            and lease.owner_id == "h1"
+        )
+        cases.append(
+            {
+                "id": "dual_host_isolated_stores",
+                "status": "pass" if isolated else "fail",
+                "http_status": exc.status,
+            }
+        )
 
     # Same-store fencing: second owner cannot steal live lease
     shared = MemoryDurableWorkStore()
@@ -294,7 +436,6 @@ def run_resilience_campaign() -> dict[str, Any]:
             else "fail",
         }
     )
-    _ = lease  # silence unused in isolated path
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
         "matrix_version": "0.43.0",
@@ -431,6 +572,24 @@ def run_capacity_campaign() -> dict[str, Any]:
             "deferred": deferred,
         }
     )
+    # Idle cursor owner must not permanently starve the only requester.
+    starve = MemoryQuotaProvider()
+    starve.default_limits["concurrency"] = 100
+    starve.admit(a, resource="concurrency")
+    starve.admit(b, resource="concurrency")
+    starve.shared_pressure = True
+    starve._rr_cursor = 0
+    allowed_only_b = 0
+    for _ in range(8):
+        if starve.admit(b, resource="concurrency").effect == "allow":
+            allowed_only_b += 1
+    cases.append(
+        {
+            "id": "wrr_idle_owner_no_starve",
+            "status": "pass" if allowed_only_b >= 1 else "fail",
+            "allowed_b": allowed_only_b,
+        }
+    )
     cases.append(
         {
             "id": "support_terms",
@@ -518,8 +677,32 @@ def run_security_campaign() -> dict[str, Any]:
             }
         )
 
-    cases.append({"id": "threat_model_closure", "status": "pass"})
-    cases.append({"id": "sbom_review_checklist", "status": "pass"})
+    docs = Path(__file__).resolve().parents[3] / "docs" / "11_DEVELOPMENT"
+    findings = docs / "FINDINGS_0_43.md"
+    exit_gate = docs / "EXIT_GATE_0_43.md"
+    impl_plan = docs / "IMPLEMENTATION_PLAN_0_43.md"
+    findings_text = findings.read_text(encoding="utf-8") if findings.is_file() else ""
+    exit_text = exit_gate.read_text(encoding="utf-8") if exit_gate.is_file() else ""
+    plan_text = impl_plan.read_text(encoding="utf-8") if impl_plan.is_file() else ""
+    cases.append(
+        {
+            "id": "threat_model_closure",
+            "status": "pass"
+            if findings.is_file()
+            and exit_gate.is_file()
+            and "Open **P0 count is 0**" in findings_text
+            and "043-S" in exit_text
+            else "fail",
+        }
+    )
+    cases.append(
+        {
+            "id": "sbom_review_checklist",
+            "status": "pass"
+            if impl_plan.is_file() and "SBOM" in plan_text and findings.is_file()
+            else "fail",
+        }
+    )
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
         "matrix_version": "0.43.0",
@@ -595,6 +778,19 @@ def run_ops_campaign() -> dict[str, Any]:
         {
             "id": "erasure_no_false_completion",
             "status": "pass" if report.status != "completed" else "fail",
+        }
+    )
+    req3 = erasure.create_request(
+        ctx, subject_key_fingerprint="fp3", field_paths=("email",)
+    )
+    empty_plan = erasure.plan(ctx, request_id=req3.request_id, providers=[])
+    empty_report = erasure.execute(ctx, plan_id=empty_plan.plan_id, providers=[])
+    cases.append(
+        {
+            "id": "erasure_empty_providers_fail_closed",
+            "status": "pass"
+            if empty_report.status != "completed" and not empty_report.reconciled
+            else "fail",
         }
     )
     failed = [c["id"] for c in cases if c["status"] == "fail"]
@@ -694,11 +890,78 @@ def run_gitops_campaign() -> dict[str, Any]:
     cases.append(
         {
             "id": "metadata_identity",
-            "status": "pass",
-            "plan_fingerprint": "plan",
-            "revision_id": "cand",
+            "status": "pass"
+            if created.plan_fingerprint == "plan"
+            and req.plan_fingerprint == created.plan_fingerprint
+            else "fail",
+            "plan_fingerprint": created.plan_fingerprint,
+            "revision_id": created.candidate_revision_id,
         }
     )
+
+    stale = durable.mark_preview_stale(ctx, "pv1", plan_fingerprint="plan-changed")
+    cases.append(
+        {
+            "id": "preview_stale_path",
+            "status": "pass" if stale.stale else "fail",
+        }
+    )
+
+    expired = PreviewWorkspace(
+        preview_id="pv-expired",
+        tenant_id="tenant-a",
+        workspace_id="ws-1",
+        base_revision_id="base",
+        candidate_revision_id="cand2",
+        created_at=now.isoformat(),
+        expires_at=(now + timedelta(seconds=1)).isoformat(),
+        quota=4,
+        code_fingerprint="code",
+        plan_fingerprint="plan",
+        commit_ref="def",
+    )
+    durable.create_preview(ctx, expired)
+    # Force expiry for cleanup without sleeping.
+    key = ("tenant-a", "ws-1", "pv-expired")
+    row = durable._previews[key]
+    from dataclasses import replace as _replace
+
+    durable._previews[key] = _replace(
+        row, expires_at=(now - timedelta(seconds=1)).isoformat()
+    )
+    cleaned = durable.cleanup_expired_previews(ctx)
+    cases.append(
+        {
+            "id": "preview_cleanup",
+            "status": "pass"
+            if any(p.preview_id == "pv-expired" and p.cleaned_at for p in cleaned)
+            else "fail",
+        }
+    )
+
+    # Promote denied after approval revoke
+    req2 = approvals.create(
+        ctx,
+        hook="pre_promote",
+        plan_fingerprint="plan-revoke",
+        policy_fingerprint=pending_decision.policy_fingerprint,
+        revision_id="cand",
+    )
+    approvals.decide(approver, approval_id=req2.approval_id, approve=True)
+    approvals.revoke(ctx, approval_id=req2.approval_id, reason="rollback")
+    try:
+        gate_pre_promote(
+            ctx,
+            policy=policy,
+            approvals=approvals,
+            plan_fingerprint="plan-revoke",
+            revision_id="cand",
+            require_policy=True,
+        )
+        cases.append({"id": "promote_denied_after_revoke", "status": "fail"})
+    except ControlPlaneError:
+        cases.append({"id": "promote_denied_after_revoke", "status": "pass"})
+
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
         "matrix_version": "0.43.0",

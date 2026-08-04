@@ -40,12 +40,13 @@ Version-pinned application process / container
   └─ External orchestrator or supervised local process
 ```
 
-Supported deployments are single-team or single-tenant, process-isolated, and
-reproducible. Adopters own data-classification controls. ETLantic does not
-provide production multi-tenant process isolation, a distributed scheduler,
-or an SLA. Optional CP1 durable accept / event stores are incubation surfaces
-(`etlantic.control_plane` / `etlantic-fastapi` `ETLanticAPI`) — **not** GA
-isolation.
+Supported deployments are single-team or Supported-profile multi-tenant,
+process-isolated (or dedicated-schema), and reproducible. Adopters own
+data-classification controls. ETLantic does not provide a formal SLA or a
+distributed scheduler. Optional CP1–CP4 surfaces
+(`etlantic.control_plane` / `etlantic-fastapi` `ETLanticAPI`) are foundations;
+**CPn alone ≠ GA** — use Supported isolation profiles for production
+multi-tenant claims.
 
 ## Reference single-process topology
 
@@ -108,9 +109,9 @@ reference controls are shipped:
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant) | **Shipped** |
 | Release SHA-256 digests + GitHub attestations | **Release-gated** (CycloneDX is optional; verify the published SBOM or `sbom-warning.txt`) |
-| CP1 identity / durable accept / SSE (`ETLanticAPI`) | **Shipped (incubation)** — dual surface with thin `create_reference_app`; **≠ multi-tenant GA** |
-| Durable multi-worker / multi-tenant control plane GA | **Planned** (0.40–0.42 → **0.43** graduation) |
-| Cross-tenant isolation guarantees | **Planned first-class; adopter-owned until CP-GA** |
+| CP1 identity / durable accept / SSE (`ETLanticAPI`) | **Shipped** — dual surface with thin `create_reference_app`; CPn alone ≠ GA |
+| Durable multi-worker / multi-tenant control plane GA | **Available** for Supported profiles (`isolated-deployment`, `dedicated-schema`) |
+| Cross-tenant isolation guarantees | **Available** for Supported profiles; `shared-service` Experimental |
 | Capacity / performance SLA | **Gap** — local baselines only |
 | Compliance audit SoR | **Adopter-owned** |
 

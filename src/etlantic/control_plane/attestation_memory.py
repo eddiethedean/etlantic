@@ -65,6 +65,11 @@ class MemoryAttestationStore:
                     workspace_id=ctx.workspace.workspace_id,
                     environment=ctx.environment.name,
                 )
+            elif (
+                scoped.tenant_id != ctx.tenant.tenant_id
+                or scoped.workspace_id != ctx.workspace.workspace_id
+            ):
+                raise ControlPlaneError.forbidden("attestation scope mismatch")
             if not verify_signature(
                 self.signing_secret, scoped.signing_payload(), scoped.signature
             ):

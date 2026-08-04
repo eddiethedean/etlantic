@@ -5,9 +5,10 @@
 
 !!! warning "Maturity vs PyPI classifiers"
     Official engine packages declare **Beta** PyPI classifiers that match the
-    **ETLantic 0.40 Beta** pilot envelope (single-tenant, no SLA). Treat that
-    envelope as authoritative for readiness claims. **CP1 ≠ production
-    multi-tenant GA** (graduation remains **0.43**). See
+    **ETLantic 0.43 Beta** envelope (community non-SLA). Treat that envelope as
+    authoritative for readiness claims. **CP1–CP4 alone ≠ GA**; Supported
+    profiles graduated in **0.43** (`isolated-deployment`, `dedicated-schema`;
+    `shared-service` Experimental). See
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
 ## Install pins
@@ -43,9 +44,9 @@ or `etlantic-datafusion==0.43.0` — Gate B stub; no graduated claims.
 Optional FastAPI package: `pip install 'etlantic-fastapi==0.43.0'` or
 `etlantic[fastapi]==0.43.0` — **dual surface**: CP1 (`ETLanticAPI` /
 `include_router` / `create_app`) plus thin non-CP `create_reference_app`
-(authoring demo since 0.24). CP1 is control-plane incubation, **not**
-production multi-tenant GA
-([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
+(authoring demo since 0.24). CP1–CP4 alone ≠ GA; Supported profiles graduated
+in 0.43 (`isolated-deployment`, `dedicated-schema`; `shared-service`
+Experimental)([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
 ## Package API index
 
@@ -64,7 +65,7 @@ production multi-tenant GA
 | [`etlantic-snowflake`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-snowflake/README.md) | `etlantic_snowflake` | **Experimental** Snowflake connector (fake/CI; Alpha) |
 | [`medallantic`](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md) | `medallantic` | **Facade** — medallion vocabulary and SparkForge migration adapter |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | **Redirect** (deprecated) — re-exports `medallantic` |
-| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.43.0`; CP1 ≠ multi-tenant GA) |
+| [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.43.0`; CPn alone ≠ GA) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 MkDocs API generation includes core `src/` and first-party plugin package

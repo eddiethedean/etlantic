@@ -31,6 +31,30 @@
     {
       "id": "registry_get_cross_tenant",
       "status": "pass"
+    },
+    {
+      "id": "definition_cross_workspace",
+      "status": "pass"
+    },
+    {
+      "id": "definition_same_store_cross_tenant",
+      "status": "pass"
+    },
+    {
+      "id": "approval_cross_tenant",
+      "status": "pass"
+    },
+    {
+      "id": "objective_cross_tenant",
+      "status": "pass"
+    },
+    {
+      "id": "attestation_cross_tenant_put",
+      "status": "pass"
+    },
+    {
+      "id": "preview_cross_tenant",
+      "status": "pass"
     }
   ],
   "pass": true,

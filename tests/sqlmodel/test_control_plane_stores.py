@@ -12,6 +12,7 @@ pytest.importorskip("etlantic_sqlmodel")
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     Principal,
     SecurityDomain,
@@ -118,5 +119,5 @@ def test_definition_repo_scoped(tmp_path: Path) -> None:
     assert repo.get(a, "pipe")["owner"] == "a"
     assert repo.get(b, "pipe")["owner"] == "b"
     assert list(repo.list(a)) == ["pipe"]
-    with pytest.raises(KeyError):
+    with pytest.raises(ControlPlaneError):
         repo.get(a, "missing")

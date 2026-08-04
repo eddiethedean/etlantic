@@ -8,13 +8,14 @@
     },
     {
       "id": "sqlmodel_migrations_fresh",
-      "status": "skip",
-      "detail": "etlantic_sqlmodel not installed"
+      "status": "pass",
+      "version": "003_cp4_governance"
     },
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.43.0,<0.44"
+      "policy": ">=0.43.0,<0.44",
+      "installed": "0.43.0"
     }
   ],
   "pass": true,

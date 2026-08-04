@@ -1,23 +1,22 @@
 # FastAPI Integration Plan
 
-> **Status: first-class planned control-plane integration; CP1 work in
-> progress under 0.39.** Tenant persistence, durable coordination, and policy
-> hardening continue through 0.40–0.42; the integrated production claim is
-> gated for 0.43.
+> **Status: graduated control-plane FastAPI host in ETLantic 0.43 (CP-GA);
+> first-class planned control-plane integration delivered for Supported
+> profiles.** CP1–CP4 remain foundations (**CPn alone ≠ GA**). Production
+> multi-tenant is Available for `isolated-deployment` / `dedicated-schema`;
+> `shared-service` remains Experimental; community **non-SLA**.
 >
-> **Current 0.43 boundary:** The optional `etlantic-fastapi` thin reference
-> adapter is available. It is not a durable scheduler, persistence layer,
-> authorization boundary, or production multi-tenant control plane. CP1 grows
-> this package into an embeddable control-plane API; until that exit gate
-> closes, treat the thin adapter as a sync demo / reference only.
+> **Current 0.43 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
+> (control-plane host) plus thin `create_reference_app` (authoring demo only).
+> Continuous directory watchers are not in core. Reliability stubs remain
+> `experimental: true` unless a history store is injected.
 >
 > **Authority:** The
 > [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines
-> the shipped thin adapter. This plan and the
-> [control-plane plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) own future
-> graduation gates. The [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md)
-> and [ADR-016](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) own CP1 delivery
-> evidence. See the [Planning Hub](PLAN_INDEX.md).
+> the shipped adapter. This plan and the
+> [control-plane plan](MULTI_TENANT_CONTROL_PLANE_PLAN.md) own graduation
+> evidence. See [EXIT_GATE_0_43](EXIT_GATE_0_43.md) and the
+> [Planning Hub](PLAN_INDEX.md).
 >
 > **Review trigger:** Update when the shipped adapter gains durable service
 > scope or any CP1–CP-GA gate changes state.

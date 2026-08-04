@@ -202,7 +202,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-0.41 plugins, `etlantic>=0.43.0,<0.44`). A core
+**0.43** plugins, `etlantic>=0.43.0,<0.44`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

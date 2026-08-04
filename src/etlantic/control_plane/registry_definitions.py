@@ -49,7 +49,9 @@ class RegistryDefinitionRepository:
     def get(self, ctx: ControlPlaneContext, definition_id: str) -> Mapping[str, Any]:
         revisions = self.registry.revisions.list_revisions(ctx, definition_id)
         if not revisions:
-            raise KeyError(definition_id)
+            raise ControlPlaneError.not_found(
+                f"Definition {definition_id!r} not found"
+            )
         # Prefer newest created_at; revision_id sort alone is not chronological
         # when ids are UUID-based.
         latest = max(
@@ -58,7 +60,9 @@ class RegistryDefinitionRepository:
         )
         document = latest.content.get("document")
         if not isinstance(document, Mapping):
-            raise KeyError(definition_id)
+            raise ControlPlaneError.not_found(
+                f"Definition {definition_id!r} not found"
+            )
         return deepcopy(dict(document))
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:

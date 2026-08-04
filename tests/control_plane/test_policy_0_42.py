@@ -44,8 +44,45 @@ def test_self_approval_rejected() -> None:
         plan_fingerprint="p1",
         policy_fingerprint="pol1",
     )
-    with pytest.raises(ControlPlaneError):
+    with pytest.raises(ControlPlaneError, match="requester cannot decide"):
         store.decide(c, approval_id=req.approval_id, approve=True)
+
+
+def test_sod_issuer_mismatch_still_blocked() -> None:
+    store = MemoryApprovalStore()
+    requester = ctx("alice")
+    req = store.create(
+        requester,
+        hook="pre_promote",
+        plan_fingerprint="p1",
+        policy_fingerprint="pol1",
+    )
+    same_subject_other_issuer = ControlPlaneContext(
+        principal=Principal("alice", issuer="other-issuer"),
+        tenant=TenantRef("tenant-a"),
+        workspace=WorkspaceRef("tenant-a", "workspace-a"),
+        environment=EnvironmentRef("dev"),
+        security_domain=SecurityDomain("internal"),
+    )
+    with pytest.raises(ControlPlaneError, match="requester cannot decide"):
+        store.decide(
+            same_subject_other_issuer,
+            approval_id=req.approval_id,
+            approve=True,
+        )
+
+
+def test_sod_self_deny_blocked() -> None:
+    store = MemoryApprovalStore()
+    c = ctx()
+    req = store.create(
+        c,
+        hook="pre_promote",
+        plan_fingerprint="p1",
+        policy_fingerprint="pol1",
+    )
+    with pytest.raises(ControlPlaneError, match="requester cannot decide"):
+        store.decide(c, approval_id=req.approval_id, approve=False)
 
 
 def test_expired_approval() -> None:

@@ -1,11 +1,13 @@
-# Control plane API (CP1–CP3)
+# Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: Available in ETLantic 0.43.0** (incubation). **CP1–CP3 ≠ production
-> multi-tenant isolation** — that claim remains **0.43**.
+> **Status: Available in ETLantic 0.43.0.** CP1–CP4 are foundations;
+> **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
+> profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
+> remains Experimental; community **non-SLA**.
 
 Short hub for the provisional `etlantic.control_plane` surface and optional
 FastAPI adapter. Prefer this over digging through implementation plans when
-embedding CP1–CP3.
+embedding the control plane.
 
 ## Guide
 
@@ -13,7 +15,8 @@ embedding CP1–CP3.
 |---|---|
 | Adopter how-to (embed FastAPI) | [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) |
 | Durable work (CP3) | [Durable work](../06_EXECUTION/DURABLE_WORK.md) |
-| What shipped / non-claims | [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) |
+| CP-GA claim / evidence | [What's new in 0.43](../01_GETTING_STARTED/WHATS_NEW_0_43.md) · [Exit gate 0.43](../11_DEVELOPMENT/EXIT_GATE_0_43.md) |
+| What shipped in CP4 | [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) |
 | Identity freeze | [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md) |
 | Durable submission / state | [ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) |
 | Wire schema ids | [Wire schema ranges](WIRE_SCHEMA_RANGES.md) |

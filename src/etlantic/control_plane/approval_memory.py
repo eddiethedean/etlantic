@@ -88,12 +88,10 @@ class MemoryApprovalStore:
                     f"approval is {record.status}",
                     extensions={"approval_id": approval_id},
                 )
-            # Separation of duties: requester cannot be sole approver.
-            if record.requester_subject == ctx.principal.subject and (
-                record.requester_issuer or ""
-            ) == (ctx.principal.issuer or ""):
+            # Separation of duties: requester subject cannot decide (issuer-agnostic).
+            if record.requester_subject == ctx.principal.subject:
                 raise ControlPlaneError.forbidden(
-                    "separation of duties: requester cannot approve",
+                    "separation of duties: requester cannot decide",
                     extensions={"approval_id": approval_id},
                 )
             if (

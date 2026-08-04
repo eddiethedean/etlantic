@@ -7,7 +7,8 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 !!! note "Plans ≠ product"
     Maintainer roadmap / multi-tenant plans under Contribute are **not**
     shipped product claims. Judge the product from this brief, [Capabilities](CAPABILITIES.md),
-    and the green path — not from future gate documents. **CP1 ≠ multi-tenant GA.**
+    and the green path — not from future gate documents.
+    **CP1–CP4 alone ≠ GA**; **0.43** graduated Supported profiles.
 
 ## Residual evaluation lead
 
@@ -37,7 +38,7 @@ manager.
 | Lossless `etlantic.pipeline/1` JSON TARGET | Yes |
 | Authoring catalog + `EditCommand`s | Yes |
 | Service facade (`etlantic.service`) | Yes |
-| FastAPI dual surface (`etlantic-fastapi`) | Yes — CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
+| FastAPI dual surface (`etlantic-fastapi`) | Yes — CP1 `ETLanticAPI` + thin `create_reference_app` (CPn alone ≠ GA; use Supported profiles) |
 | Validation and secret-free `PipelinePlan` | Yes |
 | [ODCS](../03_DATA_CONTRACTS/ODCS.md) / [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) interchange | Yes |
 | Local in-process runtime + run reports | Yes |
@@ -57,13 +58,13 @@ manager.
 | Portable Pandas compiler (kernel + relational `/1`, eager) | Yes (0.14) |
 | Portable SQL compiler (kernel + relational `/1`) | Yes (0.15) |
 | Public portable transform conformance suite | Yes (0.14) |
-| CP1 identity / durable accept / SSE | Yes (incubation; **not** production multi-tenant GA) |
-| CP2 registry / isolation profiles | Yes (incubation) |
-| CP3 durable work store + `/v1/durable/*` host routes | Yes (incubation; dual-write submit) |
-| Multi-tenant durable orchestration GA | No — graduation remains **0.43** |
+| CP1 identity / durable accept / SSE | Yes (foundation; CPn alone ≠ GA) |
+| CP2 registry / isolation profiles | Yes (foundation) |
+| CP3 durable work store + `/v1/durable/*` host routes | Yes (foundation; dual-write submit) |
+| Multi-tenant durable orchestration GA | Yes — Supported profiles only (`isolated-deployment`, `dedicated-schema`); `shared-service` Experimental |
 | Formal SLA / support response times | No |
 | Production GUI | No — read-only-first operator console planned for 0.50 |
-| Production multi-tenant GA | No — [planned](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) 0.39–0.42 incubation → **0.43** graduation |
+| Production multi-tenant GA | Yes — Supported profiles; see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json) |
 
 ## Security posture
 
@@ -89,11 +90,11 @@ manager.
 | Safe I/O, outbound default-deny, serialization ban | **Shipped** |
 | Artifact/cache isolation keys (single-tenant reference) | **Shipped** |
 | Release SHA-256 manifest + GitHub attestations | **Release-gated** — verify the published assets with `gh attestation verify`; CycloneDX is optional, so confirm the SBOM or `sbom-warning.txt`. See [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md). |
-| Cross-tenant / multi-tenant isolation guarantees | **Incubation through 0.41; production claim remains 0.43** |
+| Cross-tenant / multi-tenant isolation guarantees | **Available** for Supported profiles; `shared-service` Experimental; community non-SLA |
 | Formal DoS capacity SLA | **Residual** (partial I/O budgets only) |
 | Compliance-grade audit system of record | **Adopter-owned** (CLI reports are operational evidence) |
 | HA/DR, SOC2/GDPR certs, identity/RBAC/SSO | **Adopter-owned / out of scope** |
-| In-process multi-tenancy | **Out of scope** — use process isolation |
+| In-process multi-tenancy without Supported profile | **Out of scope** — use `isolated-deployment` / `dedicated-schema` |
 
 Read [Security](../02_FOUNDATIONS/SECURITY.md) and the repository
 [security policy](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md).
@@ -103,12 +104,12 @@ For the bounded reference topology and required controls, read
 ## Bounded production support (do not skip)
 
 ETLantic **0.43.0** is a **Beta** (PyPI) release suitable for documented
-single-tenant pilot deployments. Shipped trust controls do not make an
-arbitrary multi-tenant topology safe.
+single-tenant pilots and Supported multi-tenant profiles. Shipped trust
+controls do not make an arbitrary shared-service topology safe.
 
 The [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)
-defines the identity, isolation, persistence, durability, quota, audit, and
-graduation evidence required before that statement can change.
+records the identity, isolation, persistence, durability, quota, audit, and
+CP-GA graduation evidence for Supported profiles.
 
 Residual items that block **unrestricted** enterprise-wide production claims:
 

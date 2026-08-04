@@ -78,6 +78,55 @@ def test_erasure_no_false_completion() -> None:
     assert report.status != "completed"
 
 
+def test_erasure_empty_providers_not_completed() -> None:
+    store = MemoryErasureStore()
+    c = ctx()
+    req = store.create_request(c, subject_key_fingerprint="fp", field_paths=("email",))
+    plan = store.plan(c, request_id=req.request_id, providers=[])
+    report = store.execute(c, plan_id=plan.plan_id, providers=[])
+    assert report.status != "completed"
+    assert report.reconciled is False
+    assert report.results == ()
+
+
+def test_quota_wrr_idle_owner_does_not_starve() -> None:
+    quotas = MemoryQuotaProvider()
+    quotas.default_limits["concurrency"] = 100
+    a = ctx()
+    b = ControlPlaneContext(
+        principal=Principal("bob", issuer="tests"),
+        tenant=TenantRef("tenant-b"),
+        workspace=WorkspaceRef("tenant-b", "workspace-b"),
+        environment=EnvironmentRef("dev"),
+        security_domain=SecurityDomain("internal"),
+    )
+    # Seed A as ring member (used > 0) then only B admits under pressure.
+    assert quotas.admit(a, resource="concurrency").effect == "allow"
+    assert quotas.admit(b, resource="concurrency").effect == "allow"
+    quotas.shared_pressure = True
+    quotas._rr_cursor = 0  # A owns first slot when A weight default 1
+    allowed_b = 0
+    for _ in range(8):
+        if quotas.admit(b, resource="concurrency").effect == "allow":
+            allowed_b += 1
+    assert allowed_b >= 1
+
+
+def test_attestation_put_scope_mismatch() -> None:
+    store = MemoryAttestationStore.for_tests()
+    c = ctx()
+    other = ControlPlaneContext(
+        principal=Principal("alice", issuer="tests"),
+        tenant=TenantRef("tenant-b"),
+        workspace=WorkspaceRef("tenant-b", "workspace-b"),
+        environment=EnvironmentRef("dev"),
+        security_domain=SecurityDomain("internal"),
+    )
+    att = store.make_attestation(c, kind="plan", subject_fingerprint="fp")
+    with pytest.raises(ControlPlaneError, match="scope mismatch"):
+        store.put(other, attestation=att)
+
+
 def test_audit_tamper_detected() -> None:
     audit = MemoryAuditEvidenceStore()
     c = ctx()

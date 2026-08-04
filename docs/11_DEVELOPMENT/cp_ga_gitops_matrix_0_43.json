@@ -23,6 +23,18 @@
       "status": "pass",
       "plan_fingerprint": "plan",
       "revision_id": "cand"
+    },
+    {
+      "id": "preview_stale_path",
+      "status": "pass"
+    },
+    {
+      "id": "preview_cleanup",
+      "status": "pass"
+    },
+    {
+      "id": "promote_denied_after_revoke",
+      "status": "pass"
     }
   ],
   "pass": true,

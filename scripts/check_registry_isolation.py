@@ -5,7 +5,7 @@ Extends conformance with an isolation matrix over memory (and SQLModel when
 installed). Fake evidence lives at
 docs/11_DEVELOPMENT/isolation_profile_matrix_0_40.json.
 
-CP2 ≠ production multi-tenant (0.43).
+CP2 alone ≠ GA; Supported profiles graduated in 0.43.
 """
 
 from __future__ import annotations

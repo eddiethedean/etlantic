@@ -36,26 +36,27 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.40 |
+| Topic | ETLantic 0.43 |
 |---|---|
 | Maturity | Beta |
-| Suitable for | Controlled single-tenant pilots |
+| Suitable for | Controlled single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; no SLA |
-| Not included | Managed multi-tenant control plane; unrestricted enterprise production |
+| Not included | Formal enterprise SLA; `shared-service` production isolation; unbounded scale |
 
-Experimental features remain experimental. Multi-tenant isolation, deployment
-topology, compliance, and advanced control planes remain adopter-owned in
-0.40 (CP2 is incubated; production isolation remains **0.43**). Roadmap
-programs live under Contribute → Maintainers — not day-0 reading (see the
+Experimental features remain experimental. Production multi-tenant is
+**Available** only for Supported isolation profiles
+(`isolated-deployment`, `dedicated-schema`); `shared-service` remains
+Experimental. Pattern: community **non-SLA**. Roadmap programs live under
+Contribute → Maintainers (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
-## Supported standards policy (0.40)
+## Supported standards policy (0.43)
 
-For the 0.40 foundation envelope, ETLantic supports these standards and
+For the 0.43 envelope, ETLantic supports these standards and
 toolkits at the declared ranges (exact pins and protocol notes:
 [Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
 
-| Standard / surface | 0.40 foundation policy |
+| Standard / surface | 0.43 policy |
 |---|---|
 | Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
 | ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
@@ -208,7 +209,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Source/sink/storage connector SDK and reference set | **Available** in 0.38 — see [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md); cloud packages Experimental |
 | Directory / CSV landing-zone connector (batch + incremental; continuous trigger in 0.39+) | **Available** (Preview) — [Landing zone](../06_EXECUTION/LANDING_ZONE.md) |
 | OpenLineage metadata interoperability | **Experimental** outbound via `etlantic-openlineage` (non-authority; not production multi-tenant) |
-| GitOps preview-to-production workflow | Planned across 0.41–0.43 |
+| GitOps preview-to-production workflow | **Available** (CP-GA in-process evidence; see [WHATS_NEW_0_43](WHATS_NEW_0_43.md)) |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.47; optional supported packs planned for 0.51 |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | Planned first-class for 0.46 |
@@ -222,7 +223,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Production multi-tenant control plane | **Available** for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` remains Experimental (see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json)) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
-| Dedicated multi-worker / multi-tenant ops control plane | Not shipped; [first-class plan and hard gates](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
+| Dedicated multi-worker / multi-tenant ops control plane | Partial — Supported profiles via CP-GA; Operator Console remains 0.50 ([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
 
 **Already shipped (0.28–0.34):** Plugin SDK `/1` freeze; quality; materialization;
 PySpark/Delta parity; SQL builder parity; M6 observability, run history, and

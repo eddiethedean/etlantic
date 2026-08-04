@@ -17,7 +17,7 @@
 
 ## Upgrade steps
 
-1. Complete CP4 adoption on `0.43.0` (policy/quotas/audit as needed).
+1. Complete CP4 adoption on **0.42.x** (policy/quotas/audit as needed).
 
 2. Pin core and official plugins / Medallantic together:
 

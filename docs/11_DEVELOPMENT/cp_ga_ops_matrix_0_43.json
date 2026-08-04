@@ -17,6 +17,10 @@
     {
       "id": "erasure_no_false_completion",
       "status": "pass"
+    },
+    {
+      "id": "erasure_empty_providers_fail_closed",
+      "status": "pass"
     }
   ],
   "pass": true,

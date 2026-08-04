@@ -6,9 +6,10 @@
 
 !!! warning "PyPI classifiers ≠ enterprise readiness"
     Official engine packages declare **Beta** classifiers that match the
-    **ETLantic 0.42 Beta** pilot envelope. Do not treat classifiers as an SLA,
-    multi-tenant guarantee, or unrestricted enterprise production claim. See
-    [Capabilities](CAPABILITIES.md) and
+    **ETLantic 0.43 Beta** envelope. Do not treat classifiers as an SLA,
+    unrestricted shared-service guarantee, or unbounded enterprise production
+    claim. Supported multi-tenant profiles are Available; community **non-SLA**.
+    See [Capabilities](CAPABILITIES.md) and
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
 ## How to use this packet
@@ -121,10 +122,10 @@ remains in Medallantic—not core.
 
 ## Explicit non-goals (do not expect these from docs or product)
 
-- Multi-tenant isolation guarantees or a managed control plane **in 0.39**
-  (CP1 is incubated; production isolation remains **0.43**); these are a
-  [planned first-class program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md),
-  not a current GA capability
+- Unrestricted `shared-service` multi-tenant isolation or a formal SLA
+  (Supported profiles Available for `isolated-deployment` /
+  `dedicated-schema`; see
+  [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md))
 - SOC2, GDPR, HIPAA, or other compliance attestations
 - HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs in
   this Beta line; Kubernetes execution proof is planned for 0.47
@@ -134,12 +135,14 @@ remains in Medallantic—not core.
 
 ## Decision summary
 
-**Adopt ETLantic when** you need a typed control layer for single-tenant Python
-pipelines, secret-free plans, SARIF-friendly CI validation, and honest plugin
-boundaries—and you own deployment topology, compliance, and operational runbooks.
+**Adopt ETLantic when** you need a typed control layer for Python pipelines
+(single-tenant or Supported multi-tenant profiles), secret-free plans,
+SARIF-friendly CI validation, and honest plugin boundaries—and you own
+deployment topology, compliance, and operational runbooks.
 
-**Defer or supplement when** you require multi-tenant SaaS, enterprise compliance
-certifications, or a turnkey managed runtime without adopter-owned ops.
+**Defer or supplement when** you require unrestricted shared-service SaaS,
+enterprise compliance certifications, or a turnkey managed runtime without
+adopter-owned ops.
 
 ## Next steps
 

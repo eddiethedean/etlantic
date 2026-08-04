@@ -155,6 +155,8 @@ def authorized_get_definition(
         raise_for_deny(decision, resource_in_caller_scope=in_scope)
     try:
         return repository.get(ctx, definition_id)
+    except ControlPlaneError:
+        raise
     except KeyError as exc:
         raise ControlPlaneError.not_found(
             f"Definition {definition_id!r} not found"

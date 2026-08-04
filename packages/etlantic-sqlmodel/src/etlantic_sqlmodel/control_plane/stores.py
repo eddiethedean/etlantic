@@ -57,7 +57,9 @@ class SQLModelDefinitionRepository:
         with session_scope(self._engine) as session:
             row = self._get_row(session, ctx, definition_id)
             if row is None:
-                raise KeyError(definition_id)
+                raise ControlPlaneError.not_found(
+                    f"Definition {definition_id!r} not found"
+                )
             return json.loads(row.document_json)
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
