@@ -168,6 +168,109 @@ from etlantic.control_plane.workspace_resources import (
     validate_workspace_resource_record,
 )
 
+# CP4 — policy, approvals, quotas, objectives, erasure, attestation, audit
+from etlantic.control_plane.approval_memory import MemoryApprovalStore
+from etlantic.control_plane.approval_models import (
+    APPROVAL_DECISION_SCHEMA,
+    APPROVAL_REQUEST_SCHEMA,
+    ApprovalDecisionRecord,
+    ApprovalRequest,
+)
+from etlantic.control_plane.approval_protocols import ApprovalStore
+from etlantic.control_plane.attestation_memory import MemoryAttestationStore
+from etlantic.control_plane.attestation_models import (
+    ATTESTATION_SCHEMA,
+    SIGNED_SCHEMA_OBSERVATION_SCHEMA,
+    VERIFICATION_RESULT_SCHEMA,
+    Attestation,
+    SignedSchemaObservation,
+    VerificationResult,
+    require_verified,
+    sign_payload,
+    verify_signature,
+)
+from etlantic.control_plane.attestation_protocols import AttestationStore
+from etlantic.control_plane.audit_memory import MemoryAuditEvidenceStore
+from etlantic.control_plane.audit_models import (
+    AUDIT_EXPORT_SCHEMA,
+    AUDIT_RECORD_SCHEMA,
+    GENESIS_HASH,
+    AuditExport,
+    AuditRecord,
+    compute_record_hash,
+)
+from etlantic.control_plane.audit_protocols import AuditEvidenceStore
+from etlantic.control_plane.erasure_memory import (
+    MemoryErasureProvider,
+    MemoryErasureStore,
+)
+from etlantic.control_plane.erasure_models import (
+    ERASURE_PLAN_SCHEMA,
+    ERASURE_REPORT_SCHEMA,
+    ERASURE_REQUEST_SCHEMA,
+    ErasurePlan,
+    ErasurePlanStep,
+    ErasureReport,
+    ErasureRequest,
+    ErasureStepResult,
+    assert_no_subject_values,
+)
+from etlantic.control_plane.erasure_protocols import ErasureProvider, ErasureStore
+from etlantic.control_plane.governance_models import (
+    GOVERNANCE_CONSTRAINTS_SCHEMA,
+    GovernanceConstraints,
+    merge_constraints,
+)
+from etlantic.control_plane.objective_memory import (
+    MemoryNotificationProvider,
+    MemoryObjectiveStore,
+    memory_email_provider,
+    memory_incident_provider,
+    memory_slack_provider,
+    memory_webhook_provider,
+)
+from etlantic.control_plane.objective_models import (
+    DELIVERY_OBJECTIVE_SCHEMA,
+    OBJECTIVE_EVALUATION_SCHEMA,
+    OBJECTIVE_NOTIFICATION_SCHEMA,
+    DeliveryObjective,
+    ObjectiveEvaluation,
+    ObjectiveNotification,
+)
+from etlantic.control_plane.objective_protocols import (
+    NotificationProvider,
+    ObjectiveStore,
+)
+from etlantic.control_plane.policy_gates import (
+    enforce_policy_decision,
+    evaluate_policy,
+    gate_pre_plan,
+    gate_pre_promote,
+    gate_pre_submit,
+)
+from etlantic.control_plane.policy_memory import MemoryPolicyProvider
+from etlantic.control_plane.policy_models import (
+    POLICY_BUNDLE_SCHEMA,
+    POLICY_DECISION_SCHEMA,
+    PolicyBundle,
+    PolicyDecision,
+    compute_policy_fingerprint,
+    decision_allows,
+    decision_requires_approval,
+)
+from etlantic.control_plane.policy_opa import OpaPolicyProvider
+from etlantic.control_plane.policy_protocols import PolicyProvider
+from etlantic.control_plane.quota_memory import MemoryQuotaProvider
+from etlantic.control_plane.quota_models import (
+    QUOTA_BUDGET_SCHEMA,
+    QUOTA_DECISION_SCHEMA,
+    QUOTA_STATE_SCHEMA,
+    QuotaBudget,
+    QuotaDecision,
+    QuotaState,
+)
+from etlantic.control_plane.quota_protocols import QuotaProvider
+
 __all__ = [
     "ACCEPT_RECEIPT_SCHEMA",
     "ALIAS_RECORD_SCHEMA",
@@ -297,4 +400,83 @@ __all__ = [
     "resolve_safe_root",
     "search_revisions",
     "validate_workspace_resource_record",
+    # CP4
+    "APPROVAL_DECISION_SCHEMA",
+    "APPROVAL_REQUEST_SCHEMA",
+    "ATTESTATION_SCHEMA",
+    "AUDIT_EXPORT_SCHEMA",
+    "AUDIT_RECORD_SCHEMA",
+    "ApprovalDecisionRecord",
+    "ApprovalRequest",
+    "ApprovalStore",
+    "Attestation",
+    "AttestationStore",
+    "AuditEvidenceStore",
+    "AuditExport",
+    "AuditRecord",
+    "DELIVERY_OBJECTIVE_SCHEMA",
+    "DeliveryObjective",
+    "ERASURE_PLAN_SCHEMA",
+    "ERASURE_REPORT_SCHEMA",
+    "ERASURE_REQUEST_SCHEMA",
+    "ErasurePlan",
+    "ErasurePlanStep",
+    "ErasureProvider",
+    "ErasureReport",
+    "ErasureRequest",
+    "ErasureStepResult",
+    "ErasureStore",
+    "GENESIS_HASH",
+    "GOVERNANCE_CONSTRAINTS_SCHEMA",
+    "GovernanceConstraints",
+    "MemoryApprovalStore",
+    "MemoryAttestationStore",
+    "MemoryAuditEvidenceStore",
+    "MemoryErasureProvider",
+    "MemoryErasureStore",
+    "MemoryNotificationProvider",
+    "MemoryObjectiveStore",
+    "MemoryPolicyProvider",
+    "MemoryQuotaProvider",
+    "NotificationProvider",
+    "OBJECTIVE_EVALUATION_SCHEMA",
+    "OBJECTIVE_NOTIFICATION_SCHEMA",
+    "ObjectiveEvaluation",
+    "ObjectiveNotification",
+    "ObjectiveStore",
+    "OpaPolicyProvider",
+    "POLICY_BUNDLE_SCHEMA",
+    "POLICY_DECISION_SCHEMA",
+    "PolicyBundle",
+    "PolicyDecision",
+    "PolicyProvider",
+    "QUOTA_BUDGET_SCHEMA",
+    "QUOTA_DECISION_SCHEMA",
+    "QUOTA_STATE_SCHEMA",
+    "QuotaBudget",
+    "QuotaDecision",
+    "QuotaProvider",
+    "QuotaState",
+    "SIGNED_SCHEMA_OBSERVATION_SCHEMA",
+    "SignedSchemaObservation",
+    "VERIFICATION_RESULT_SCHEMA",
+    "VerificationResult",
+    "assert_no_subject_values",
+    "compute_policy_fingerprint",
+    "compute_record_hash",
+    "decision_allows",
+    "decision_requires_approval",
+    "enforce_policy_decision",
+    "evaluate_policy",
+    "gate_pre_plan",
+    "gate_pre_promote",
+    "gate_pre_submit",
+    "memory_email_provider",
+    "memory_incident_provider",
+    "memory_slack_provider",
+    "memory_webhook_provider",
+    "merge_constraints",
+    "require_verified",
+    "sign_payload",
+    "verify_signature",
 ]

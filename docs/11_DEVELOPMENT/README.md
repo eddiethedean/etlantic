@@ -21,12 +21,20 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.41 → 0.42](MIGRATION_0_41_TO_0_42.md) (Gate-ready — CP4)
+- [Exit gate 0.42](EXIT_GATE_0_42.md) (Gate-ready — CP4)
+- [Findings ledger 0.42](FINDINGS_0_42.md)
+- [0.42 implementation plan](IMPLEMENTATION_PLAN_0_42.md)
+- [ADR-019: Policy, quotas, and audit](adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md)
+- [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) (Gate-ready)
+- [CP4 operator runbook](CP4_OPERATOR_RUNBOOK.md)
+- [CP4 outage matrix](cp4_outage_matrix_0_42.json)
 - [Migration 0.40 → 0.41](MIGRATION_0_40_TO_0_41.md) (Gate-ready — CP3)
 - [Exit gate 0.41](EXIT_GATE_0_41.md) (Gate-ready — CP3)
 - [Findings ledger 0.41](FINDINGS_0_41.md)
 - [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md)
 - [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md)
-- [What's new in 0.41](../01_GETTING_STARTED/WHATS_NEW_0_41.md) (Gate-ready)
+- [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) (Gate-ready)
 - [Durable chaos matrix (fake evidence)](durable_chaos_matrix_0_41.json)
 - [Migration 0.39 → 0.40](MIGRATION_0_39_TO_0_40.md) (Done — CP2)
 - [Exit gate 0.40](EXIT_GATE_0_40.md) (Done — CP2)

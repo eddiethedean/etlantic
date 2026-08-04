@@ -34,13 +34,21 @@ from etlantic.control_plane.durable_models import (
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic_sqlmodel.control_plane.models import DurableSnapshotRow
+from etlantic_sqlmodel.control_plane.models import (
+    DurableOutboxEntityRow,
+    DurableSnapshotRow,
+    DurableSubmissionEntityRow,
+)
 from etlantic_sqlmodel.control_plane.session import session_scope
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, SQLModel, delete, select
 
 T = TypeVar("T")
 
-DURABLE_TABLES = (DurableSnapshotRow,)
+DURABLE_TABLES = (
+    DurableSnapshotRow,
+    DurableSubmissionEntityRow,
+    DurableOutboxEntityRow,
+)
 
 
 def create_durable_tables(engine: Engine) -> None:
@@ -211,6 +219,7 @@ class SQLModelDurableWorkStore:
                     updated_at=_utcnow_iso(),
                 )
             )
+            self._sync_entity_tables(session, store)
             return
         current = int(row.payload_version or 0)
         if current != expected_version:
@@ -221,6 +230,44 @@ class SQLModelDurableWorkStore:
         row.payload_version = current + 1
         row.updated_at = _utcnow_iso()
         session.add(row)
+        self._sync_entity_tables(session, store)
+
+    def _sync_entity_tables(
+        self, session: Session, store: MemoryDurableWorkStore
+    ) -> None:
+        """Dual-write normalized submission/outbox rows (041-P1-01)."""
+        session.exec(
+            delete(DurableSubmissionEntityRow).where(
+                DurableSubmissionEntityRow.store_id == self.store_id
+            )
+        )
+        session.exec(
+            delete(DurableOutboxEntityRow).where(
+                DurableOutboxEntityRow.store_id == self.store_id
+            )
+        )
+        for key, submission in store._submissions.items():
+            tenant_id, workspace_id, submission_id = key
+            session.add(
+                DurableSubmissionEntityRow(
+                    store_id=self.store_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    submission_id=submission_id,
+                    payload_json=json.dumps(asdict(submission), sort_keys=True),
+                )
+            )
+        for key, outbox in store._outbox.items():
+            tenant_id, workspace_id, outbox_id = key
+            session.add(
+                DurableOutboxEntityRow(
+                    store_id=self.store_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    outbox_id=outbox_id,
+                    payload_json=json.dumps(asdict(outbox), sort_keys=True),
+                )
+            )
 
     def accept(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._txn(lambda m: m.accept(ctx, **kwargs))

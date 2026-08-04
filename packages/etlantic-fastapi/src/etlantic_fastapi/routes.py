@@ -63,7 +63,7 @@ from etlantic_fastapi.sse import (
     resolve_resume_cursor,
     sse_streaming_response,
 )
-from fastapi import APIRouter, Depends, Header, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 
 if TYPE_CHECKING:
     from etlantic_fastapi.api import ETLanticAPI
@@ -1424,6 +1424,361 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             body.pull_request_ref,
         )
         return _require_durable().create_preview(ctx, preview).to_dict()
+
+    # 041-P1-02 — complete DurableWorkStore HTTP surface
+    @router.post(
+        "/v1/durable/effects",
+        operation_id="cp_durable_record_effect",
+        tags=["durable"],
+    )
+    def durable_record_effect(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        from datetime import UTC, datetime
+
+        from etlantic.control_plane import EffectRecord
+
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.effect.write",
+            "durable:effect",
+            resource_in_caller_scope=False,
+        )
+        effect = EffectRecord(
+            effect_id=str(body["effect_id"]),
+            submission_id=str(body["submission_id"]),
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            status=str(body.get("status") or "pending"),  # type: ignore[arg-type]
+            recorded_at=str(
+                body.get("recorded_at")
+                or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            ),
+            idempotency_evidence=body.get("idempotency_evidence"),
+            reconciliation_evidence=body.get("reconciliation_evidence"),
+            publication_evidence=body.get("publication_evidence"),
+            compensation_evidence=body.get("compensation_evidence"),
+            authoritative=bool(body.get("authoritative", True)),
+            metadata=dict(body.get("metadata") or {}),
+        )
+        return _require_durable().record_effect(ctx, effect).to_dict()
+
+    @router.post(
+        "/v1/durable/submissions/{submission_id}/repair",
+        operation_id="cp_durable_plan_repair",
+        tags=["durable"],
+    )
+    def durable_plan_repair(
+        submission_id: str,
+        body: dict[str, Any] | None = None,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.repair",
+            f"durable:submission:{submission_id}",
+            resource_in_caller_scope=False,
+        )
+        payload = body or {}
+        return _require_durable().plan_repair(
+            ctx,
+            submission_id,
+            checkpoint_id=payload.get("checkpoint_id"),
+            invalidated_partition_ids=tuple(
+                payload.get("invalidated_partition_ids") or ()
+            ),
+            reusable_artifact_ids=tuple(payload.get("reusable_artifact_ids") or ()),
+        ).to_dict()
+
+    @router.get(
+        "/v1/durable/checkpoints/{checkpoint_id}/diagnose",
+        operation_id="cp_durable_diagnose_checkpoint",
+        tags=["durable"],
+    )
+    def durable_diagnose_checkpoint(
+        checkpoint_id: str,
+        kind: str = Query("corruption"),
+        detail: str = Query(""),
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.checkpoint.read",
+            f"durable:checkpoint:{checkpoint_id}",
+            resource_in_caller_scope=False,
+        )
+        return (
+            _require_durable()
+            .diagnose_checkpoint(ctx, checkpoint_id, kind=kind, detail=detail)
+            .to_dict()
+        )
+
+    @router.post(
+        "/v1/durable/shadow",
+        operation_id="cp_durable_authorize_shadow",
+        tags=["durable"],
+    )
+    def durable_authorize_shadow(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        from datetime import UTC, datetime
+
+        from etlantic.control_plane import ShadowRunRecord
+
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "durable.shadow.write",
+            "durable:shadow",
+            resource_in_caller_scope=False,
+        )
+        record = ShadowRunRecord(
+            shadow_run_id=str(body.get("shadow_run_id") or body["shadow_id"]),
+            preview_id=str(body["preview_id"]),
+            submission_id=str(body.get("submission_id") or ""),
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            authorized_by=str(
+                body.get("authorized_by") or ctx.principal.subject
+            ),
+            created_at=str(
+                body.get("created_at")
+                or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            ),
+            effect_ids=tuple(body.get("effect_ids") or ()),
+            production_authority=bool(body.get("production_authority", False)),
+        )
+        return _require_durable().authorize_shadow_run(ctx, record).to_dict()
+
+    # CP4 governance routes
+    @router.post(
+        "/v1/policy/decide",
+        operation_id="cp_policy_decide",
+        tags=["policy"],
+    )
+    def policy_decide(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "policy.decide",
+            "policy:decide",
+            resource_in_caller_scope=False,
+        )
+        if api.policy is None:
+            raise HTTPException(status_code=503, detail="policy provider not configured")
+        decision = api.policy.decide(
+            ctx,
+            hook=body.get("hook", "privileged_op"),
+            plan_fingerprint=body.get("plan_fingerprint"),
+            revision_id=body.get("revision_id"),
+            resource=body.get("resource"),
+            attributes=body.get("attributes"),
+            bundle_id=body.get("bundle_id"),
+        )
+        if api.audit is not None:
+            api.audit.append(
+                ctx,
+                action="policy.decide",
+                resource=str(body.get("resource") or decision.hook),
+                decision_refs=[decision.decision_id],
+            )
+        return decision.to_dict()
+
+    @router.post(
+        "/v1/approvals",
+        operation_id="cp_approval_create",
+        tags=["approvals"],
+    )
+    def approval_create(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "approval.write",
+            "approval:create",
+            resource_in_caller_scope=False,
+        )
+        if api.approvals is None:
+            raise HTTPException(status_code=503, detail="approval store not configured")
+        from datetime import datetime
+
+        expires = body.get("expires_at")
+        expires_at = datetime.fromisoformat(expires) if expires else None
+        return api.approvals.create(
+            ctx,
+            hook=str(body.get("hook") or "pre_promote"),
+            plan_fingerprint=str(body["plan_fingerprint"]),
+            policy_fingerprint=str(body["policy_fingerprint"]),
+            revision_id=body.get("revision_id"),
+            expires_at=expires_at,
+            approval_id=body.get("approval_id"),
+        ).to_dict()
+
+    @router.post(
+        "/v1/approvals/{approval_id}/decide",
+        operation_id="cp_approval_decide",
+        tags=["approvals"],
+    )
+    def approval_decide(
+        approval_id: str,
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "approval.decide",
+            f"approval:{approval_id}",
+            resource_in_caller_scope=False,
+        )
+        if api.approvals is None:
+            raise HTTPException(status_code=503, detail="approval store not configured")
+        result = api.approvals.decide(
+            ctx,
+            approval_id=approval_id,
+            approve=bool(body.get("approve", False)),
+            reason=body.get("reason"),
+            plan_fingerprint=body.get("plan_fingerprint"),
+            policy_fingerprint=body.get("policy_fingerprint"),
+        )
+        if api.audit is not None:
+            api.audit.append(
+                ctx,
+                action="approval.decide",
+                resource=approval_id,
+                decision_refs=[d.decision_id for d in result.decisions],
+            )
+        return result.to_dict()
+
+    @router.post(
+        "/v1/quotas/admit",
+        operation_id="cp_quota_admit",
+        tags=["quotas"],
+    )
+    def quota_admit(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "quota.admit",
+            "quota:admit",
+            resource_in_caller_scope=False,
+        )
+        if api.quotas is None:
+            raise HTTPException(status_code=503, detail="quota provider not configured")
+        return api.quotas.admit(
+            ctx,
+            resource=body.get("resource", "concurrency"),
+            units=int(body.get("units") or 1),
+        ).to_dict()
+
+    @router.post(
+        "/v1/erasure/requests",
+        operation_id="cp_erasure_create",
+        tags=["erasure"],
+    )
+    def erasure_create(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "erasure.write",
+            "erasure:request",
+            resource_in_caller_scope=False,
+        )
+        if api.erasure is None:
+            raise HTTPException(status_code=503, detail="erasure store not configured")
+        return api.erasure.create_request(
+            ctx,
+            subject_key_fingerprint=str(body["subject_key_fingerprint"]),
+            field_paths=list(body.get("field_paths") or ()),
+            legal_hold=bool(body.get("legal_hold")),
+            request_id=body.get("request_id"),
+        ).to_dict()
+
+    @router.get(
+        "/v1/audit",
+        operation_id="cp_audit_list",
+        tags=["audit"],
+    )
+    def audit_list(
+        limit: int = 100,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "audit.read",
+            "audit:list",
+            resource_in_caller_scope=False,
+        )
+        if api.audit is None:
+            raise HTTPException(status_code=503, detail="audit store not configured")
+        records = api.audit.list(ctx, limit=limit)
+        return {"records": [r.to_dict() for r in records]}
+
+    @router.get(
+        "/v1/audit/export",
+        operation_id="cp_audit_export",
+        tags=["audit"],
+    )
+    def audit_export(
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "audit.export",
+            "audit:export",
+            resource_in_caller_scope=False,
+        )
+        if api.audit is None:
+            raise HTTPException(status_code=503, detail="audit store not configured")
+        return api.audit.export(ctx).to_dict()
+
+    @router.post(
+        "/v1/attestations/verify-plan",
+        operation_id="cp_attestation_verify_plan",
+        tags=["attestations"],
+    )
+    def attestation_verify_plan(
+        body: dict[str, Any],
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "attestation.verify",
+            "attestation:verify",
+            resource_in_caller_scope=False,
+        )
+        if api.attestations is None:
+            raise HTTPException(
+                status_code=503, detail="attestation store not configured"
+            )
+        results = api.attestations.verify_plan(
+            ctx,
+            plan_fingerprint=str(body["plan_fingerprint"]),
+            revision_id=str(body["revision_id"]),
+            policy_fingerprint=str(body["policy_fingerprint"]),
+            plugin_fingerprints=list(body.get("plugin_fingerprints") or ()),
+            sbom_digest=body.get("sbom_digest"),
+        )
+        return {"results": [r.to_dict() for r in results]}
 
     return router
 

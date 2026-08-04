@@ -100,6 +100,18 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_durable_chaos.py
 
+      - name: CP4 conformance
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp4_conformance.py --fake
+
+      - name: CP4 chaos matrix
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_cp4_chaos.py --fake
+
+      - name: Objective conformance
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_objective_conformance.py --fake
+
       - name: Runnable example
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: |

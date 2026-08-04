@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP3)
 
-> **Status: Available in ETLantic 0.41.0** (incubation). **CP1–CP3 ≠ production
+> **Status: Available in ETLantic 0.42.0** (incubation). **CP1–CP3 ≠ production
 > multi-tenant isolation** — that claim remains **0.43**.
 
 Short hub for the provisional `etlantic.control_plane` surface and optional
@@ -13,7 +13,7 @@ embedding CP1–CP3.
 |---|---|
 | Adopter how-to (embed FastAPI) | [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) |
 | Durable work (CP3) | [Durable work](../06_EXECUTION/DURABLE_WORK.md) |
-| What shipped / non-claims | [What's new in 0.41](../01_GETTING_STARTED/WHATS_NEW_0_41.md) |
+| What shipped / non-claims | [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) |
 | Identity freeze | [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md) |
 | Durable submission / state | [ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) |
 | Wire schema ids | [Wire schema ranges](WIRE_SCHEMA_RANGES.md) |
@@ -50,7 +50,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.41.0'` (match `etlantic==0.41.0`).
+Pin: `pip install 'etlantic-fastapi==0.42.0'` (match `etlantic==0.42.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
@@ -74,7 +74,7 @@ Shipped host routes under `/v1/durable/*` (authz first):
 | `POST /v1/durable/previews` | Create TTL preview workspace |
 
 Effects, repair plans, diagnose/explain, and shadow authorization remain
-**SDK / DurableWorkStore protocol** surfaces in 0.41 — not separate FastAPI
+**SDK / DurableWorkStore protocol** surfaces in 0.42 — not separate FastAPI
 routes. Core does **not** embed a broker or worker supervisor; adopters drain
 the outbox with their own dispatcher.
 

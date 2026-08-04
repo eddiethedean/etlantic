@@ -9,6 +9,11 @@ tests/demos — production must apply versioned migrations under
 
 from __future__ import annotations
 
+from etlantic_sqlmodel.control_plane.cp4_stores import (
+    CP4_TABLES,
+    SQLModelAuditEvidenceStore,
+    create_cp4_tables,
+)
 from etlantic_sqlmodel.control_plane.durable_stores import (
     DURABLE_TABLES,
     SQLModelDurableWorkStore,
@@ -16,8 +21,11 @@ from etlantic_sqlmodel.control_plane.durable_stores import (
 )
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
+    Cp4GovernanceSnapshotRow,
     DefinitionRow,
+    DurableOutboxEntityRow,
     DurableSnapshotRow,
+    DurableSubmissionEntityRow,
     EnvironmentRow,
     EventRow,
     LogicalIdentityRow,
@@ -61,17 +69,22 @@ from etlantic_sqlmodel.control_plane.stores import (
 
 __all__ = [
     "BACKUP_SCHEMA",
+    "CP4_TABLES",
     "DURABLE_TABLES",
     "REGISTRY_TABLES",
     "AliasRow",
     "BackupTranscript",
+    "Cp4GovernanceSnapshotRow",
     "DefinitionRow",
+    "DurableOutboxEntityRow",
     "DurableSnapshotRow",
+    "DurableSubmissionEntityRow",
     "EnvironmentRow",
     "EventRow",
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
+    "SQLModelAuditEvidenceStore",
     "SQLModelDefinitionRepository",
     "SQLModelDurableWorkStore",
     "SQLModelSubmissionStore",
@@ -87,6 +100,7 @@ __all__ = [
     "backup_round_trip",
     "collect_revision_hits",
     "create_control_plane_tables",
+    "create_cp4_tables",
     "create_durable_tables",
     "create_registry_tables",
     "create_sqlite_engine",

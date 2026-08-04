@@ -26,9 +26,22 @@ STANDARD_PAGES = {
     "DTCS": ROOT / "docs/04_TRANSFORMATIONS/DTCS.md",
     "DPCS": ROOT / "docs/05_PIPELINES/DPCS.md",
 }
+
+
+def _docs_version_slug() -> str:
+    facts_path = ROOT / "docs" / "release-facts.json"
+    if facts_path.exists():
+        facts = json.loads(facts_path.read_text(encoding="utf-8"))
+        slug = facts.get("docs_version_slug")
+        if isinstance(slug, str) and slug:
+            return slug
+    return "v0.42.0"
+
+
+_DOCS_SLUG = _docs_version_slug()
 STANDARD_URLS = {
     acronym: (
-        "https://etlantic.readthedocs.io/en/v0.41.0/"
+        f"https://etlantic.readthedocs.io/en/{_DOCS_SLUG}/"
         f"{page.relative_to(ROOT / 'docs').with_suffix('')}/"
     )
     for acronym, page in STANDARD_PAGES.items()
@@ -410,7 +423,7 @@ def check_control_plane_plan() -> None:
     plan_urls = {
         f"https://etlantic.readthedocs.io/en/latest/{plan_rel}/",
         f"https://etlantic.readthedocs.io/en/stable/{plan_rel}/",
-        f"https://etlantic.readthedocs.io/en/v0.41.0/{plan_rel}/",
+        f"https://etlantic.readthedocs.io/en/{_DOCS_SLUG}/{plan_rel}/",
     }
     for path in linked_surfaces:
         surface = path.read_text(encoding="utf-8")

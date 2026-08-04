@@ -1,13 +1,13 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.41.0; CP3 is gate-ready /
+> **Status: Shipped product docs describe ETLantic 0.42.0; CP3 is gate-ready /
 > released incubation. CP1/CP2/CP3 ≠ production multi-tenant (**0.43**).**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.41 can do now**, use
+    - To learn what **ETLantic 0.42 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -32,13 +32,14 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.41** CP3 gate-ready line. Prior CP2 evidence
+Status is relative to the **0.42** CP3 gate-ready line. Prior CP2 evidence
 remains in **0.40**; CP1 evidence remains in **0.39**; connectivity evidence
 remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.41 CP3 gate-ready; 0.40 CP2 prior | [EXIT_GATE_0_41](EXIT_GATE_0_41.md); next CP4 at 0.42 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.42 CP4 gate-ready; 0.41 CP3 prior | [EXIT_GATE_0_42](EXIT_GATE_0_42.md); next CP-GA at 0.43 |
+| [0.42 implementation plan](IMPLEMENTATION_PLAN_0_42.md) | Gate-ready milestone | Policy, quotas, audit, objectives, erasure | [EXIT_GATE_0_42](EXIT_GATE_0_42.md) |
 | [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md) | Gate-ready milestone | Durable submission, leases, state, replay, previews | [EXIT_GATE_0_41](EXIT_GATE_0_41.md) |
 | [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Previous / gate-ready | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
 | [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md) | Previous / gate-ready | Identity, API, durable submit, SSE, landing submitter, optional SQLModel | [EXIT_GATE_0_39](EXIT_GATE_0_39.md) |
@@ -51,6 +52,7 @@ remains in **0.38**.
 | [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Accepted | Protocol ids, entry points, capabilities, plan/runtime split, reference set | Maintenance |
 | [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) | Accepted | Identity vocabulary, non-enumeration, durable accept, SSE cursor shapes | CP1 prior |
 | [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md) | Accepted | Directory records, revisions, isolation profiles, metadata-only histories | CP2 prior |
+| [ADR-019: Policy, quotas, and audit](adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md) | Accepted | Policy envelope, quotas, SoD, audit chain | CP4 in progress |
 | [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) | Accepted | Outbox, leases/fencing, effects, preview non-authority | CP3 gate-ready |
 | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Planned program; CP3 gate-ready | 0.38 thin reference ≠ control plane; CP1–CP3 incubation | Incubation 0.39–0.42; graduation gate 0.43 |
 | [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI and generated read-only artifacts exist; interactive, IDE, and hosted phases remain planned | Incremental; hosted work follows control-plane gates |

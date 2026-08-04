@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.41.0.**
+> **Status: Available in ETLantic 0.42.0.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,12 +13,13 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.41.0** — choose your guide:
+**ETLantic 0.42.0** — choose your guide:
 
-| From version | Ordered path to 0.41 |
+| From version | Ordered path to 0.42 |
 |---|---|
-| 0.41.x | Already current |
-| 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) |
+| 0.42.x | Already current |
+| 0.41.x | [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
+| 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) → [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
 | 0.39.x | [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.38.x | [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.37.x | [0.37 → 0.38](../11_DEVELOPMENT/MIGRATION_0_37_TO_0_38.md) → [0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) → [0.39 → 0.40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
@@ -72,6 +73,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
 | 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
+| 0.41 → 0.42 | CP4 policy / quotas / audit RC; plugin floor `etlantic>=0.42.0,<0.43` |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
@@ -80,6 +82,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.41 → 0.42 | [MIGRATION_0_41_TO_0_42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
 | 0.40 → 0.41 | [MIGRATION_0_40_TO_0_41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) |
 | 0.39 → 0.40 | [MIGRATION_0_39_TO_0_40](../11_DEVELOPMENT/MIGRATION_0_39_TO_0_40.md) |
 | 0.38 → 0.39 | [MIGRATION_0_38_TO_0_39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
@@ -230,7 +233,7 @@ See [Migration 0.26 → 0.27](../11_DEVELOPMENT/MIGRATION_0_26_TO_0_27.md).
 |---|---|
 | Plugin SDK `/1` | **Frozen** in 0.28 — only additive optional evolution within `/1` |
 | `from etlantic import col`, `load_profile`, `Inject`, … | Owning modules — see [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md) |
-| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.41.0`) |
+| `etlantic-sparkforge` | `medallantic` (optional redirect wheel `etlantic-sparkforge==0.42.0`) |
 | Skip quadruple-minor burn-in gates | Keep `v0_24/` through `v0_27/` fixtures green |
 | Expect wire-schema reset | Stay on `/1` ids; no `pipeline/2` in 0.28 |
 
@@ -271,6 +274,19 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
+
+## 0.42 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.42.0` and matching plugins / `medallantic==0.42.0` | Mix 0.41 plugins with a 0.42 core |
+| Inject CP4 providers (`policy`, `approvals`, `quotas`, `audit`, …) when hosting protected ops | Rely on ambient process state for policy decisions |
+| Apply SQLModel migration `003_cp4_governance` with prior durable migrations | Skip migration when using SQLModel CP4 stores |
+| Fail closed on policy/quota/identity outage for protected ops | Soft-allow on provider outage |
+| Keep subject values out of erasure plans, reports, and audit | Embed PII or secret values in durable/audit records |
+| Read release notes: CP4 ≠ production multi-tenant | Claim production multi-tenant isolation before **0.43** |
+
+See [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md).
 
 ## 0.41 configuration cheat sheet
 

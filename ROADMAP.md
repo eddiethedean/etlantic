@@ -6,21 +6,22 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.41.0** (Beta) — CP3 durable submission /
-state / leases / preview incubation (gate-ready for tag/publish rehearsal;
-**not** production multi-tenant — **0.43**). Prior **0.40** CP2 registry and
-**0.39** CP1 remain prior baselines. Milestones **0.25**
-(burn-in first slice) through **0.37** (stable foundation) are shipped.
+**Current release:** ETLantic **0.42.0** (Beta) — CP4 policy / quotas / audit
+(**Gate-ready** for tag/publish rehearsal; **not** production multi-tenant —
+**0.43**). Prior **0.41** CP3 durable work, **0.40** CP2 registry, and
+**0.39** CP1 remain prior baselines. Milestones **0.25** (burn-in first slice)
+through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.41 | Durable submission / state (CP3) | Gate-ready for tag/publish |
+| Current | 0.42 | Tenant policy / quotas / audit (CP4) | Gate-ready for tag/publish |
+| Previous | 0.41 | Durable submission / state (CP3) | Gate-ready / shipped evidence |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.42 | Tenant policy / quotas / audit (CP4) | Planned |
+| Next | 0.43 | First-class multi-tenant graduation (CP-GA) | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.41 CP3 gate-ready; 0.40 CP2 prior; 0.39 CP1 prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.42 CP4 gate-ready; 0.41 CP3 prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -3806,7 +3807,10 @@ Acceptance:
 
 ## 0.42 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
 
-**Status:** Planned CP4 release-candidate gate.
+**Status:** Gate-ready CP4 release-candidate gate (package **0.42.0**).
+**CP4 is not a production multi-tenant isolation claim** (reserved for
+**0.43**). See [ADR-019](docs/11_DEVELOPMENT/adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md)
+and [EXIT_GATE_0_42](docs/11_DEVELOPMENT/EXIT_GATE_0_42.md).
 
 **Objective:** add the governance, noisy-neighbor controls, portable delivery
 objectives, privacy-operation coordination, integrity evidence, and operational

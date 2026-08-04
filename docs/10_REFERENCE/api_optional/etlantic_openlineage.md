@@ -1,13 +1,13 @@
 ---
 status: available
-since: "0.41.0"
-current_minor: "0.41"
+since: "0.42.0"
+current_minor: "0.42"
 audience: developer
 ---
 
 # etlantic-openlineage API
 
-> **Status: Experimental in ETLantic 0.41.0.** Outbound OpenLineage-compatible
+> **Status: Experimental in ETLantic 0.42.0.** Outbound OpenLineage-compatible
 > export for CP2. Install narrative: package README. Hub:
 > [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 > **CP2 ≠ production multi-tenant** (**0.43**).
@@ -15,7 +15,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-openlineage==0.41.0'
+pip install 'etlantic-openlineage==0.42.0'
 ```
 
 ```python

@@ -1,16 +1,16 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.41.0.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.42.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
-| Topic | 0.41 |
+| Topic | 0.42 |
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime (reference) |
-| Multi-worker / multi-tenant control plane | CP3 durable coordination incubation; **not** production multi-tenant (**0.43**) |
+| Multi-worker / multi-tenant control plane | CP4 policy/audit RC incubation; **not** production multi-tenant (**0.43**) |
 | SLA | None (community support) |
 
 ## Process model
@@ -22,14 +22,14 @@ worker, and use durable backend storage for data or reports that must cross
 process boundaries.
 
 This reference model is suitable for one trusted application or worker per
-runtime. ETLantic 0.41 does not replace adopter-owned brokers or worker
-supervisors; optional CP3 durable stores coordinate accepted work across hosts.
+runtime. ETLantic 0.42 does not replace adopter-owned brokers or worker
+supervisors; optional CP3/CP4 control-plane stores coordinate accepted work across hosts.
 
 ## Reference topologies
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.41.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.42.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -53,7 +53,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.41.0`.
+1. Install `etlantic-prefect==0.42.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.
@@ -106,7 +106,7 @@ The adopter owns:
   generation;
 - observability retention and operational runbooks.
 
-ETLantic 0.41 does not claim a production multi-tenant control plane. CP3
+ETLantic 0.42 does not claim a production multi-tenant control plane. CP4
 incubates durable submission, leases, fencing, and preview workspaces, but the
 production multi-tenant claim remains gated to **0.43**. None of those future
 guarantees may be assumed for the reference topology on this page.

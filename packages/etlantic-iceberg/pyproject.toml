@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-iceberg"
-version = "0.41.0"
+version = "0.42.0"
 description = "Experimental Apache Iceberg connector for ETLantic (PyIceberg)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.41.0,<0.42",
+    "etlantic>=0.42.0,<0.43",
 ]
 
 [project.optional-dependencies]

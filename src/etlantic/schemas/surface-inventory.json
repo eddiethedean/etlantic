@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.41.0",
+  "version": "0.42.0",
   "classes": [
     "stable",
     "provisional",

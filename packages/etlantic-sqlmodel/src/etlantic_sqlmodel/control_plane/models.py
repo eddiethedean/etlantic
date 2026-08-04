@@ -285,10 +285,81 @@ class DurableSnapshotRow(SQLModel, table=True):
     updated_at: str | None = None
 
 
+class DurableSubmissionEntityRow(SQLModel, table=True):
+    """Normalized CP3 submission entity (041-P1-01) dual-written from snapshot."""
+
+    __tablename__ = "cp_durable_submission_entity"
+    __table_args__ = (
+        UniqueConstraint(
+            "store_id",
+            "tenant_id",
+            "workspace_id",
+            "submission_id",
+            name="uq_cp_durable_submission_entity",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="default"
+    )
+    tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    submission_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    payload_json: str = "{}"
+
+
+class DurableOutboxEntityRow(SQLModel, table=True):
+    """Normalized CP3 outbox entity (041-P1-01) dual-written from snapshot."""
+
+    __tablename__ = "cp_durable_outbox_entity"
+    __table_args__ = (
+        UniqueConstraint(
+            "store_id",
+            "tenant_id",
+            "workspace_id",
+            "outbox_id",
+            name="uq_cp_durable_outbox_entity",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="default"
+    )
+    tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    outbox_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    payload_json: str = "{}"
+
+
+class Cp4GovernanceSnapshotRow(SQLModel, table=True):
+    """Transactional CP4 governance snapshot (audit/policy/approvals/quotas)."""
+
+    __tablename__ = "cp_cp4_governance_snapshot"
+    __table_args__ = (
+        UniqueConstraint("store_id", "kind", name="uq_cp_cp4_governance_snapshot"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="default"
+    )
+    kind: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="audit"
+    )
+    payload_json: str = "{}"
+    payload_version: int = Field(default=0, sa_column=Column(Integer(), nullable=False))
+    updated_at: str | None = None
+
+
 __all__ = [
     "AliasRow",
+    "Cp4GovernanceSnapshotRow",
     "DefinitionRow",
+    "DurableOutboxEntityRow",
     "DurableSnapshotRow",
+    "DurableSubmissionEntityRow",
     "EnvironmentRow",
     "EventRow",
     "LogicalIdentityRow",

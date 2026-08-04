@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.41.0.** This page documents the commands
+> **Status: Available in ETLantic 0.42.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -293,6 +293,23 @@ python -m etlantic reliability env-diff LEFT.json RIGHT.json
 ```
 
 `reliability plan-diff` is deprecated; prefer `etlantic plan diff`.
+
+## `erasure`
+
+Governed data-subject erasure helpers (CP4). Plans and status reports use
+**subject-key fingerprints** only — never raw subject values.
+
+```bash
+python -m etlantic erasure plan \
+  --subject-key-fingerprint sha256:… \
+  --field email --field phone \
+  --tenant acme --workspace analytics
+python -m etlantic erasure status REQUEST_ID \
+  --tenant acme --workspace analytics
+```
+
+Outputs are local ops helpers for erasure planning/status — not a managed
+erasure product. Subject values must never appear in plans, reports, or audit.
 
 ## `viz`
 

@@ -20,6 +20,10 @@ from etlantic.testing.dataframe import (
 from etlantic.testing.durable_work_conformance import (
     run_durable_work_conformance_suite,
 )
+from etlantic.testing.cp4_governance_conformance import (
+    run_cp4_governance_conformance_suite,
+)
+from etlantic.testing.policy_conformance import run_policy_conformance_suite
 from etlantic.testing.event_consumer_conformance import (
     run_event_consumer_conformance_suite,
 )
@@ -150,6 +154,7 @@ __all__ = [
     "register_faults",
     "reset_fault_counts",
     "run_conformance_suite",
+    "run_cp4_governance_conformance_suite",
     "run_durable_work_conformance_suite",
     "run_event_consumer_conformance_suite",
     "run_facade_conformance_suite",
@@ -157,6 +162,7 @@ __all__ = [
     "run_observability_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_pipeline_case",
+    "run_policy_conformance_suite",
     "run_portable_transform_conformance_suite",
     "run_production_conformance_suite",
     "run_quality_conformance_suite",

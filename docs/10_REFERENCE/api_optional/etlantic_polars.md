@@ -1,19 +1,19 @@
 ---
 status: available
-since: "0.41.0"
-current_minor: "0.41"
+since: "0.42.0"
+current_minor: "0.42"
 audience: developer
 ---
 
 # etlantic-polars API
 
-> **Status: Available in ETLantic 0.41.0.** Polars dataframe plugin + portable compiler.
+> **Status: Available in ETLantic 0.42.0.** Polars dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-polars==0.41.0'
+pip install 'etlantic-polars==0.42.0'
 ```
 
 ```python

@@ -1,6 +1,6 @@
 # Migration from other tools
 
-> **Status: Available in ETLantic 0.41.0.** Honest scope for evaluators who
+> **Status: Available in ETLantic 0.42.0.** Honest scope for evaluators who
 > already run Airflow, dbt, or Dagster. There is **no automated migrator in
 > 0.36**; bounded brownfield import and compiler bridges are planned for
 > [0.49](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#brownfield-adoption-bridges).
@@ -63,5 +63,5 @@ or keep the existing orchestrator and call ETLantic validate/plan from CI.
 ## Next
 
 - [Compare](COMPARE.md) — positioning vs dbt / Airflow / Pandera
-- [Capabilities](CAPABILITIES.md) — what ships in 0.41
+- [Capabilities](CAPABILITIES.md) — what ships in 0.42
 - [Evaluator brief](EVALUATOR.md) — diligence packet

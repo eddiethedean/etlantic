@@ -4,7 +4,7 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.41.0** is the current CP3 durable-work incubation line
+**0.42.0** is the current CP3 durable-work incubation line
 (gate-ready for tag/publish rehearsal). **CP3 ≠ production multi-tenant**
 (**0.43**). Milestones describe capability order, not release-date commitments.
 
@@ -14,7 +14,7 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.41 | Durable submission / state (CP3) | [Gate-ready for tag/publish](EXIT_GATE_0_41.md) |
+| Current | 0.42 | Durable submission / state (CP3) | [Gate-ready for tag/publish](EXIT_GATE_0_41.md) |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |

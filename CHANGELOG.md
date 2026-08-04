@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-08-04
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.41.x` or plugins with `<0.42` |
+| Breaking | Dependency floor becomes `etlantic>=0.42.0,<0.43` (CP4 policy/audit line) |
+| Upgrade | `pip install 'etlantic==0.42.0'` and matching plugins / `medallantic==0.42.0`. See [Migration 0.41 → 0.42](docs/11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
+| Rollback | Re-pin 0.41.0 minors together; re-validate |
+| Security | CP4 policy/quota/audit/erasure/attestations; **not** a production multi-tenant isolation claim (**0.43**) |
+
+### Added
+- CP4 `PolicyProvider` / `MemoryPolicyProvider`, approvals/SoD, quotas,
+  delivery objectives, governed erasure, attestations, `AuditEvidenceStore`
+- FastAPI optional CP4 injection and `/v1/policy|approvals|quotas|erasure|audit|attestations`
+- Completed `/v1/durable` effects/repair/diagnose/shadow routes
+- SQLModel migration `003_cp4_governance` + normalized durable entity dual-write
+- CLI `etlantic erasure plan|status`
+- ADR-019, EXIT_GATE_0_42, FINDINGS_0_42, WHATS_NEW_0_42, MIGRATION_0_41_TO_0_42
+- CP4 conformance/chaos/objective check scripts and outage matrix
+
+### Changed
+- Official package versions align at 0.42.0; plugins require
+  `etlantic>=0.42.0,<0.43`
+- Supported security release line is 0.42.x
+
 ## [0.41.0] - 2026-07-31
 
 ### Adopter summary
@@ -26,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional SQLModel durable provider + migration `002_durable_cp3`
 - FastAPI optional `durable_work` injection, dual-write submit, `/v1/durable/*`
 - Durable conformance/chaos scripts and chaos matrix evidence
-- What's New / Migration / Exit Gate / Findings for 0.41; ADR-018 Accepted
+- What's New / Migration / Exit Gate / Findings for 0.42; ADR-018 Accepted
 
 ### Changed
 - Official package versions align at 0.41.0; plugins require
@@ -1608,6 +1635,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.42.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.42.0
 [0.41.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.41.0
 [0.40.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.40.0
 [0.39.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.39.0

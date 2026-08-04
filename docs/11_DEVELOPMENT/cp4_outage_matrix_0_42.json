@@ -1,0 +1,26 @@
+{
+  "matrix_version": "0.42.0",
+  "cases": [
+    {
+      "id": "policy_outage",
+      "status": "pass",
+      "http_status": 503
+    },
+    {
+      "id": "quota_outage",
+      "status": "pass",
+      "http_status": 503
+    },
+    {
+      "id": "policy_deny",
+      "status": "pass",
+      "http_status": 403
+    },
+    {
+      "id": "audit_integrity",
+      "status": "pass"
+    }
+  ],
+  "pass": true,
+  "failed": []
+}

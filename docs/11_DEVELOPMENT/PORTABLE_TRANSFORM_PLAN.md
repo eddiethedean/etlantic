@@ -3,7 +3,7 @@
 > **Plan status: shipped implementation record with living compatibility
 > follow-up.**
 >
-> **Current 0.41 boundary:** Portable authoring, deterministic planning,
+> **Current 0.42 boundary:** Portable authoring, deterministic planning,
 > public compiler conformance, and first-party Polars, Pandas, SQL, and PySpark
 > compilers are available. Support remains specific to each operation and
 > backend; the

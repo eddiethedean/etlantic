@@ -8,11 +8,18 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from etlantic.control_plane import (
+    ApprovalStore,
+    AttestationStore,
+    AuditEvidenceStore,
     Authorizer,
     DefinitionRepository,
     DurableWorkStore,
+    ErasureStore,
     EventStore,
     HistoryStore,
+    ObjectiveStore,
+    PolicyProvider,
+    QuotaProvider,
     RegistryDefinitionRepository,
     RegistryProvider,
     SubmissionStore,
@@ -64,6 +71,14 @@ class ETLanticAPI:
     registry: RegistryProvider | None = None
     # Optional CP3 durable work store for /v1/durable/* host routes.
     durable_work: DurableWorkStore | None = None
+    # Optional CP4 governance providers.
+    policy: PolicyProvider | None = None
+    approvals: ApprovalStore | None = None
+    quotas: QuotaProvider | None = None
+    erasure: ErasureStore | None = None
+    audit: AuditEvidenceStore | None = None
+    attestations: AttestationStore | None = None
+    objectives: ObjectiveStore | None = None
     title: str = "ETLantic Control Plane"
     version: str = __version__
     _router: APIRouter | None = field(default=None, init=False, repr=False)
@@ -147,6 +162,13 @@ def create_app(
     principal_dependency: PrincipalDependency | None = None,
     registry: RegistryProvider | None = None,
     durable_work: DurableWorkStore | None = None,
+    policy: PolicyProvider | None = None,
+    approvals: ApprovalStore | None = None,
+    quotas: QuotaProvider | None = None,
+    erasure: ErasureStore | None = None,
+    audit: AuditEvidenceStore | None = None,
+    attestations: AttestationStore | None = None,
+    objectives: ObjectiveStore | None = None,
     definitions_backend: str | None = None,
     title: str | None = None,
     version: str | None = None,
@@ -199,6 +221,13 @@ def create_app(
             principal_dependency=principal_dependency or principal_from_header,
             registry=registry,
             durable_work=durable_work,
+            policy=policy,
+            approvals=approvals,
+            quotas=quotas,
+            erasure=erasure,
+            audit=audit,
+            attestations=attestations,
+            objectives=objectives,
             title=title or "ETLantic Control Plane",
             version=version or __version__,
         )
@@ -215,6 +244,20 @@ def create_app(
             api.registry = registry
         if durable_work is not None:
             api.durable_work = durable_work
+        if policy is not None:
+            api.policy = policy
+        if approvals is not None:
+            api.approvals = approvals
+        if quotas is not None:
+            api.quotas = quotas
+        if erasure is not None:
+            api.erasure = erasure
+        if audit is not None:
+            api.audit = audit
+        if attestations is not None:
+            api.attestations = attestations
+        if objectives is not None:
+            api.objectives = objectives
         if definitions_backend == "registry":
             if api.registry is None:
                 raise TypeError(
@@ -234,6 +277,13 @@ def create_app(
             app.state.events = api.events
             app.state.registry = api.registry
             app.state.durable_work = api.durable_work
+            app.state.policy = api.policy
+            app.state.approvals = api.approvals
+            app.state.quotas = api.quotas
+            app.state.erasure = api.erasure
+            app.state.audit = api.audit
+            app.state.attestations = api.attestations
+            app.state.objectives = api.objectives
             # Ready signal only — no BackgroundTasks worker started here.
             app.state.control_plane_ready = api.stores_ready()
             yield
