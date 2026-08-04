@@ -1,7 +1,7 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.43.0.** What ships now for controlled
-> single-tenant pilots and Supported multi-tenant profiles.
+> **Status: Available in ETLantic 0.43.0 (published Beta).** What ships now for
+> controlled single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI

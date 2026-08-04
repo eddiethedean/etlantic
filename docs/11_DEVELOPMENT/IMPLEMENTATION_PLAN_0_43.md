@@ -1,11 +1,13 @@
 ---
 title: ETLantic 0.43 Implementation Plan
 description: Implementation-grade qualification plan for production multi-tenant control-plane support.
-plan_status: current
-plan_last_reviewed: 0.37.0
+plan_status: released
+plan_last_reviewed: 0.43.0
 ---
 
 # ETLantic 0.43 Implementation Plan
+
+> **Status: Released with ETLantic 0.43.0.** See [EXIT_GATE_0_43](EXIT_GATE_0_43.md).
 
 Phase 0.43 is a graduation release. It does not create a production claim by
 adding a thin feature layer; it qualifies the integrated 0.39–0.42 system against

@@ -89,8 +89,9 @@ cross-tenant/cross-environment evidence cannot satisfy a gate.
 
 ### CP4 is not production multi-tenant
 
-0.42 publishes the multi-tenant **release candidate** capability set on PyPI.
-Production multi-tenant isolation remains gated to **0.43**.
+0.42 published the multi-tenant **release candidate** capability set on PyPI.
+Production multi-tenant for Supported isolation profiles graduated in
+**0.43** (CP-GA); `shared-service` remains Experimental.
 
 ## Consequences
 
@@ -99,7 +100,8 @@ Production multi-tenant isolation remains gated to **0.43**.
 - FastAPI and SQLModel remain optional adapters with additive routes and
   migrations (`003_cp4_*`).
 - Soft-continues `041-P1-01` and `041-P1-02` are closed in this phase.
-- Docs and exit evidence must state **CP4 ≠ production multi-tenant (0.43)**.
+- Docs and exit evidence must state **CP4 ≠ production multi-tenant**; see
+  **0.43** CP-GA for Supported-profile graduation.
 
 ## Alternatives
 
@@ -109,7 +111,7 @@ Production multi-tenant isolation remains gated to **0.43**.
 | Ambient process policy | Breaks plan reproducibility and fingerprinting |
 | Soft-fail on policy outage | Violates fail-closed protected-op requirement |
 | Embed OPA as required dependency | Vendor lock-in; protocol stays vendor-neutral |
-| Claim production multi-tenant at CP4 | Graduation remains **0.43** |
+| Claim production multi-tenant at CP4 | Graduation requires CP-GA (**0.43**) |
 
 ## Compatibility
 

@@ -166,8 +166,9 @@ under the non-enumeration policy.
 
 0.39 (CP1) is an incubation foundation: typed API, identity, authorization
 hooks, durable acceptance contracts, and resumable events. It does **not**
-claim production multi-tenant isolation. That claim remains gated to **0.43**
-after CP1–CP4 pass as an integrated system.
+claim production multi-tenant isolation. That claim graduated in **0.43**
+(CP-GA) for Supported isolation profiles only, after CP1–CP4 passed as an
+integrated system.
 
 Release notes and exit evidence must state this boundary explicitly.
 

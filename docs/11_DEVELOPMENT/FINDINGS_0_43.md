@@ -1,7 +1,7 @@
 # Findings Ledger 0.43 — CP-GA Multi-Tenant Graduation
 
-> **Status: Closed for gate-ready 0.43.0** — CP-GA qualification complete.
-> Open **P0 count is 0**. Campaign findings are recorded here.
+> **Status: Released** — ETLantic **0.43.0** CP-GA exit. Open **P0 count is 0**.
+> Campaign findings are recorded here.
 
 ## Severity policy
 
@@ -33,7 +33,7 @@ Open **P0 count is 0**.
 |---|---|---|---|---|---|
 | — | — | — | — | No open P0 | — |
 
-## Deferred P1 (non-blocking for gate-ready)
+## Deferred P1 (non-blocking for published 0.43.0)
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|

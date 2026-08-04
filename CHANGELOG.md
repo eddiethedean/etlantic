@@ -37,6 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Host honesty for experimental stub routes and CP-GA claim boundaries
+- Erasure empty-provider vacuous completion; WRR idle-owner starvation;
+  attestation scope mismatch on put; SoD issuer-mismatch self-decide bypass;
+  definition miss raises `ControlPlaneError.not_found`
+- CP-GA campaign evidence honesty (dual-store isolation, fingerprint identity,
+  FastAPI opaque definition 404, SQLModel matrices without skip)
+- Active docs/roadmap/exit-gate voice for the published 0.43.0 line
 
 ## [0.42.0] - 2026-08-04
 

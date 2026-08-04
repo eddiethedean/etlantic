@@ -1,8 +1,8 @@
 # What's New in ETLantic 0.43
 
-> **Status: Available in ETLantic 0.43.0.** CP-GA graduation: production
-> multi-tenant support for **frozen** isolation profiles only.
-> **Beta** maturity retained; support remains community **non-SLA**.
+> **Status: Available in ETLantic 0.43.0 (published Beta).** CP-GA graduation:
+> production multi-tenant support for **frozen** isolation profiles only.
+> Support remains community **non-SLA**.
 
 ## Highlights
 

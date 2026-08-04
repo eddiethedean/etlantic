@@ -133,8 +133,9 @@ mutate registry records, revisions, aliases, promotions, or baselines.
 ### CP2 is not production multi-tenant
 
 0.40 (CP2) incubates registry mechanisms, isolation profiles, and evidence.
-It does **not** claim production multi-tenant isolation. That claim remains
-gated to **0.43** after CP1–CP4 pass as an integrated system.
+It does **not** claim production multi-tenant isolation by itself. **0.43**
+graduated Supported profiles (`isolated-deployment`, `dedicated-schema`);
+`shared-service` remains Experimental.
 
 Release notes and exit evidence must state this boundary explicitly.
 
@@ -158,7 +159,7 @@ Release notes and exit evidence must state this boundary explicitly.
 | Shared DB with only `WHERE tenant_id` | Insufficient second control for shared-service evidence |
 | History stores that retain sample rows | Violates fail-closed metadata policy |
 | OpenLineage webhook mutates promotions | External systems must not become registry authority |
-| Claim production multi-tenant at CP2 | Graduation remains **0.43** |
+| Claim production multi-tenant at CP2 | Graduation requires CP-GA (**0.43**) |
 
 ## Compatibility
 

@@ -104,8 +104,9 @@ hardening remains **0.42**.
 ### CP3 is not production multi-tenant
 
 0.41 incubates durable coordination, multi-worker recovery evidence, and
-preview workspaces. It does **not** claim production multi-tenant isolation.
-That claim remains gated to **0.43**.
+preview workspaces. It does **not** claim production multi-tenant isolation by
+itself. **0.43** graduated Supported profiles; `shared-service` remains
+Experimental.
 
 ## Consequences
 
@@ -116,7 +117,8 @@ That claim remains gated to **0.43**.
   CAS with compound tenant/workspace keys.
 - FastAPI may inject `DurableWorkStore` optionally; CP1 operationIds stay
   stable.
-- Docs and exit evidence must state **CP3 ≠ production multi-tenant (0.43)**.
+- Docs and exit evidence must state **CP3 ≠ production multi-tenant**; see
+  **0.43** CP-GA for Supported-profile graduation.
 
 ## Alternatives
 
@@ -127,7 +129,7 @@ That claim remains gated to **0.43**.
 | Separate tables/protocols per cursor/watermark/partition | Unnecessary persistence sprawl |
 | Auto-retry unknown external effects | Unsafe duplication; fails closed required |
 | Implicit production authority for shadow/preview | Violates untrusted-fork policy |
-| Claim production multi-tenant at CP3 | Graduation remains **0.43** |
+| Claim production multi-tenant at CP3 | Graduation requires CP-GA (**0.43**) |
 
 ## Compatibility
 

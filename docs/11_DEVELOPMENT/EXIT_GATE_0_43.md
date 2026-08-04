@@ -1,9 +1,10 @@
 # Exit Gate 0.43 — First-Class Multi-Tenant Control-Plane Graduation (CP-GA)
 
-> **Status: Gate-ready for tag/publish — package target 0.43.0.** Graduation of
-> the integrated 0.39–0.42 control-plane stack against the frozen support
-> matrix. A production multi-tenant claim is published **only** for Supported
-> isolation profiles below; Experimental profiles remain non-claims.
+> **Status: Released — ETLantic 0.43.0.** CP-GA graduation of the integrated
+> 0.39–0.42 control-plane stack against the frozen support matrix. A production
+> multi-tenant claim is published **only** for Supported isolation profiles
+> below; Experimental profiles remain non-claims. Community support is
+> **non-SLA**.
 
 | Deliverable | Status |
 |---|---|
@@ -69,9 +70,10 @@ multi-process dual-API product drills or OpenLineage reconciliation.
 
 ## Go / no-go
 
-**Go** for tag/publish of `0.43.0` once CI is green on the release commit
-(separate explicit publish request). All thirteen gates are **Met** against the
-frozen Supported profiles under the evidence language above.
+**Released** as `0.43.0` (tag `v0.43.0` / PyPI / RTD). ROADMAP current row
+remains **Gate-ready for tag/publish** vocabulary until the next minor. All
+thirteen gates are **Met** against the frozen Supported profiles under the
+evidence language above.
 
 ## Explicit non-claims
 

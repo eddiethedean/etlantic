@@ -1,7 +1,7 @@
 # Migration 0.42 → 0.43
 
 > **Status: Available for ETLantic 0.43.0.** Upgrade notes for adopters moving
-> from the 0.42 CP4 release-candidate line to the 0.43 CP-GA graduated line.
+> from the published 0.42 CP4 line to the published 0.43 CP-GA graduated line.
 
 ## Summary
 

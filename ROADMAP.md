@@ -6,12 +6,13 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.43.0** (Beta) — CP-GA graduation: production
-multi-tenant for **Supported** isolation profiles only (`isolated-deployment`,
-`dedicated-schema`); `shared-service` remains Experimental; community **non-SLA**.
-ROADMAP current row stays **Gate-ready for tag/publish**. Prior **0.42** CP4,
-**0.41** CP3, **0.40** CP2, and **0.39** CP1 remain prior baselines. Milestones
-**0.25** (burn-in first slice) through **0.37** (stable foundation) are shipped.
+**Current release:** ETLantic **0.43.0** (Beta) — published CP-GA graduation:
+production multi-tenant for **Supported** isolation profiles only
+(`isolated-deployment`, `dedicated-schema`); `shared-service` remains
+Experimental; community **non-SLA**. ROADMAP current row stays **Gate-ready for
+tag/publish**. Prior **0.42** CP4, **0.41** CP3, **0.40** CP2, and **0.39** CP1
+remain prior baselines. Milestones **0.25** (burn-in first slice) through
+**0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
@@ -23,7 +24,7 @@ ROADMAP current row stays **Gate-ready for tag/publish**. Prior **0.42** CP4,
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Next | 0.44 | Post-CP-GA control-plane hardening | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.43 CP-GA; 0.42 CP4 prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.43 CP-GA published; 0.42 CP4 prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -3809,9 +3810,9 @@ Acceptance:
 
 ## 0.42 — Tenant Policy, Quotas, Audit, and Supply-Chain Assurance
 
-**Status:** Gate-ready CP4 release-candidate gate (package **0.43.0**).
-**CP4 is not a production multi-tenant isolation claim** (reserved for
-**0.43**). See [ADR-019](docs/11_DEVELOPMENT/adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md)
+**Status:** Released CP4 (package **0.42.0**). **CP4 is not a production
+multi-tenant isolation claim** — graduated Supported profiles arrive in
+**0.43**. See [ADR-019](docs/11_DEVELOPMENT/adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md)
 and [EXIT_GATE_0_42](docs/11_DEVELOPMENT/EXIT_GATE_0_42.md).
 
 **Objective:** add the governance, noisy-neighbor controls, portable delivery
@@ -3877,15 +3878,19 @@ Acceptance:
 
 ## 0.43 — First-Class Multi-Tenant Control-Plane Graduation
 
+**Status:** Released — ETLantic **0.43.0** (CP-GA). See
+[EXIT_GATE_0_43](docs/11_DEVELOPMENT/EXIT_GATE_0_43.md) and
+[cp_ga_support_matrix_0_43.json](docs/11_DEVELOPMENT/cp_ga_support_matrix_0_43.json).
+
 The production multi-tenant control-plane claim is a first-class 0.43 feature
 only after CP1–CP4 pass as an integrated system. Graduation requires a frozen
 supported-isolation-profile matrix, public compatibility/migration policy,
-cross-tenant conformance for every public operation, measured capacity
-envelopes, multi-replica failure injection, operator runbooks, backup/restore
-evidence, a supported preview-to-production GitOps workflow, stable outbound
-metadata identity/export, delivery-objective and escalation recovery proof,
-lineage-complete governed-erasure proof, and no unresolved critical/high
-isolation finding.
+cross-tenant conformance for covered public operations, measured capacity
+envelopes, dual-store failure injection evidence, operator runbooks,
+backup/restore evidence, a supported preview-to-production GitOps workflow,
+stable outbound metadata identity/export, delivery-objective and escalation
+recovery proof, lineage-complete governed-erasure proof, and no unresolved
+critical/high isolation finding.
 
 Failure of a mandatory gate keeps the program in release-candidate status. The
 project does not weaken “multi-tenant” to meet a release date.
