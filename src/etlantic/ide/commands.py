@@ -60,7 +60,10 @@ def _resolve_target(
 
     kind = classify_target(target)
     if kind == "json":
-        path = Path(target if ":" not in target else target.rsplit(":", 1)[0])
+        from etlantic.ide.trust import split_target
+
+        module_part, _ = split_target(target)
+        path = Path(module_part)
         if policy.enabled:
             audit = deny_untrusted(
                 policy, operation=operation, target=target, require_imports=False

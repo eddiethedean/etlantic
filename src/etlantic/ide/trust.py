@@ -108,11 +108,20 @@ class TrustAuditRecord:
 
 
 def split_target(target: str) -> tuple[str, str | None]:
-    """Return ``(module_or_path, class_name_or_None)``."""
-    if ":" in target:
-        left, right = target.rsplit(":", 1)
-        return left, right
-    return target, None
+    """Return ``(module_or_path, class_name_or_None)``.
+
+    Windows drive letters (``C:\\...`` / ``C:/...``) are not treated as
+    ``module:Class`` separators. Only the final ``:ClassName`` suffix splits.
+    """
+    if ":" not in target:
+        return target, None
+    left, right = target.rsplit(":", 1)
+    # Bare Windows absolute path: ``C:\path`` or ``C:/path``.
+    if len(left) == 1 and left.isalpha() and right[:1] in {"\\", "/"}:
+        return target, None
+    if not right:
+        return target, None
+    return left, right
 
 
 def classify_target(target: str) -> TargetKind:

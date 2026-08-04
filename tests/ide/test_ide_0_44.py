@@ -171,6 +171,26 @@ def test_trusted_host_execute_denies_secret_flags(tmp_path: Path) -> None:
     assert result.error and "secret" in result.error.lower()
 
 
+def test_split_target_preserves_windows_drive_paths() -> None:
+    from etlantic.ide.trust import classify_target, split_target
+
+    bare_json = r"C:\Users\runner\AppData\Local\Temp\pipeline.json"
+    left, cls = split_target(bare_json)
+    assert cls is None
+    assert left == bare_json
+    assert classify_target(bare_json) == "json"
+
+    bare_fwd = "C:/Users/runner/pipeline.json"
+    assert split_target(bare_fwd) == (bare_fwd, None)
+    assert classify_target(bare_fwd) == "json"
+
+    with_class = r"C:\Users\runner\pipe.py:MyPipe"
+    left, cls = split_target(with_class)
+    assert left == r"C:\Users\runner\pipe.py"
+    assert cls == "MyPipe"
+    assert classify_target(with_class) == "py_path"
+
+
 def test_trusted_host_execute_denies_json_outside_roots(tmp_path: Path) -> None:
     allowed = tmp_path / "allowed"
     allowed.mkdir()
