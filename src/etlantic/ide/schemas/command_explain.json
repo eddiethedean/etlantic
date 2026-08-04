@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "profile": {
-      "default": "local",
+      "default": "development",
       "type": "string"
     },
     "target": {
@@ -12,6 +12,6 @@
   "required": [
     "target"
   ],
-  "title": "etlantic.plan.explain",
+  "title": "etlantic.explain",
   "type": "object"
 }

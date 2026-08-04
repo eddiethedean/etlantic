@@ -1,9 +1,9 @@
-# Installing ETLantic 0.43.0
+# Installing ETLantic 0.44.0
 
 > **Status: Available in ETLantic 0.44.0.**
 
-ETLantic **0.43.0** supports Python 3.11–3.13 and is published on
-[PyPI](https://pypi.org/project/etlantic/0.43.0/).
+ETLantic **0.44.0** supports Python 3.11–3.13 and is published on
+[PyPI](https://pypi.org/project/etlantic/0.44.0/).
 
 !!! tip "PyPI user vs contributor clone"
     | Audience | Path |
@@ -19,7 +19,7 @@ ETLantic **0.43.0** supports Python 3.11–3.13 and is published on
 ## Install core (Day-0 — 2 minutes)
 
 Use a virtual environment. Prefer `python -m pip` and `python -m etlantic` so
-the interpreter you intend is the one that runs. Pin **0.43.0** for
+the interpreter you intend is the one that runs. Pin **0.44.0** for
 reproducible evaluation.
 
 ### pip (recommended)
@@ -35,7 +35,7 @@ python -m etlantic --version
 Expected output:
 
 ```text
-0.43.0
+0.44.0
 ```
 
 ### uv (no existing project)

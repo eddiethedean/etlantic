@@ -2,11 +2,11 @@
 
 > **Status: Available in ETLantic 0.44.0.**
 
-This table describes the declared compatibility of ETLantic 0.43.0.
+This table describes the declared compatibility of ETLantic 0.44.0.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
 [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) /
 ContractModel / Python):
-[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-043).
+[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-044).
 
 | Surface | Supported range or version |
 |---|---|
@@ -41,7 +41,7 @@ ContractModel / Python):
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.43.0,<0.44` and re-run conformance |
+| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.44.0,<0.45` and re-run conformance |
 
 ## Joint burn-in (0.37)
 
@@ -100,7 +100,7 @@ For a controlled deployment, test the exact resolved environment and pin
 
 Core extras already enforce exact official plugin versions, for example
 `etlantic[polars]==0.44.0` depends on `etlantic-polars==0.44.0`. Official
-plugin source metadata accepts core `etlantic>=0.43.0,<0.44`, which is
+plugin source metadata accepts core `etlantic>=0.44.0,<0.45`, which is
 minor-matched but less exact. Published, older, or third-party plugin metadata
 may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
 specifier as evidence of tested cross-minor compatibility. Match the core and

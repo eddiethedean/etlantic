@@ -1,16 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
-    "format": {
-      "default": "json",
-      "enum": [
-        "human",
-        "json",
-        "sarif"
-      ]
-    },
     "profile": {
-      "default": "local",
+      "default": "development",
       "type": "string"
     },
     "target": {

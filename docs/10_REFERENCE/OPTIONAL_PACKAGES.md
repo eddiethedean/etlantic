@@ -5,7 +5,7 @@
 
 !!! warning "Maturity vs PyPI classifiers"
     Official engine packages declare **Beta** PyPI classifiers that match the
-    **ETLantic 0.43 Beta** envelope (community non-SLA). Treat that envelope as
+    **ETLantic 0.44 Beta** envelope (community non-SLA). Treat that envelope as
     authoritative for readiness claims. **CP1–CP4 alone ≠ GA**; Supported
     profiles graduated in **0.43** (`isolated-deployment`, `dedicated-schema`;
     `shared-service` Experimental). See
@@ -66,6 +66,7 @@ Experimental)([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 | [`medallantic`](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/README.md) | `medallantic` | **Facade** — medallion vocabulary and SparkForge migration adapter |
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | **Redirect** (deprecated) — re-exports `medallantic` |
 | [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.44.0`; CPn alone ≠ GA) |
+| [`etlantic-lsp`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-lsp/README.md) | `etlantic_lsp` | Editor-neutral language server (`etlantic[lsp]` / pin `==0.44.0`) |
 | [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 MkDocs API generation includes core `src/` and first-party plugin package

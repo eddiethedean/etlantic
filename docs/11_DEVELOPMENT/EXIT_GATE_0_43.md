@@ -70,7 +70,7 @@ multi-process dual-API product drills or OpenLineage reconciliation.
 
 ## Go / no-go
 
-**Released** as `0.44.0` (tag `v0.43.0` / PyPI / RTD). ROADMAP current row
+**Released** as `0.43.0` (tag `v0.43.0` / PyPI / RTD). ROADMAP current row
 remains **Gate-ready for tag/publish** vocabulary until the next minor. All
 thirteen gates are **Met** against the frozen Supported profiles under the
 evidence language above.

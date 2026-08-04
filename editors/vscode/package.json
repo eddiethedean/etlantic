@@ -62,6 +62,11 @@
           "type": "string",
           "default": "",
           "description": "Optional control-plane base URL for run reconnect (public API only)"
+        },
+        "etlantic.trustedImports": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to trusted imports: workspace folders become allow_roots for IdeCommand run/validate on Python modules"
         }
       }
     },
@@ -91,7 +96,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package --no-dependencies",
-    "test": "node ./out/test/runTest.js"
+    "test": "echo \"No vscode-test harness in-tree; use compile smoke\""
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

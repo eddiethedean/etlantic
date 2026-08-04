@@ -1,6 +1,6 @@
 ---
 status: available
-since: "0.43.0"
+since: "0.44.0"
 current_minor: "0.44"
 audience: developer
 ---
@@ -32,6 +32,7 @@ install and narrative home.
 - [etlantic-snowflake](api_optional/etlantic_snowflake.md) — Experimental Snowflake connectors
 - [etlantic-openlineage](api_optional/etlantic_openlineage.md) — Experimental outbound OpenLineage (CP2)
 - [etlantic-fastapi](api_optional/etlantic_fastapi.md) — FastAPI reference adapter
+- [etlantic-lsp](api_optional/etlantic_lsp.md) — Editor-neutral language server
 - [medallantic](api_optional/medallantic.md) — Medallion facade + SparkForge migrate
 
 ## Quick module stubs (roots)
@@ -149,6 +150,15 @@ The directives below keep root-level coverage discoverable from this hub:
 ## etlantic-fastapi
 
 ::: etlantic_fastapi
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-lsp
+
+::: etlantic_lsp
     options:
       show_source: false
       members_order: source

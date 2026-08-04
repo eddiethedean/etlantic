@@ -228,6 +228,7 @@ pythonpath = [
     "packages/etlantic-iceberg/src",
     "packages/etlantic-snowflake/src",
     "packages/etlantic-openlineage/src",
+    "packages/etlantic-lsp/src",
 ]
 markers = [
     "polars: tests requiring the Polars plugin",
@@ -292,6 +293,7 @@ known-first-party = [
     "etlantic_datafusion",
     "etlantic_fastapi",
     "etlantic_openlineage",
+    "etlantic_lsp",
 ]
 
 [tool.ruff.lint.per-file-ignores]

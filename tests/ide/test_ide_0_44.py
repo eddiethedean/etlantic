@@ -142,6 +142,56 @@ def test_trusted_host_denies_secret_flags(tmp_path: Path) -> None:
         host.load_target(f"{target}:P")
 
 
+def test_trusted_host_denies_dotted_module_outside_roots(tmp_path: Path) -> None:
+    policy = TrustedWorkspacePolicy(
+        enabled=True,
+        allow_roots=(str(tmp_path / "allowed"),),
+        allow_imports=True,
+    )
+    (tmp_path / "allowed").mkdir()
+    host = TrustedAnalysisHost(policy)
+    with pytest.raises(PermissionError, match=r"outside allow_roots|unresolved"):
+        host.load_target("json:loads")
+
+
+def test_trusted_host_execute_denies_secret_flags(tmp_path: Path) -> None:
+    policy = TrustedWorkspacePolicy(
+        enabled=True,
+        allow_roots=(str(tmp_path),),
+        allow_imports=True,
+        allow_secret_resolution=True,
+    )
+    host = TrustedAnalysisHost(policy)
+    pipe = tmp_path / "p.py"
+    pipe.write_text("class P: pass\n", encoding="utf-8")
+    result = host.execute(
+        IdeCommand(name="validate", arguments={"target": f"{pipe}:P"})
+    )
+    assert result.ok is False
+    assert result.error and "secret" in result.error.lower()
+
+
+def test_trusted_host_execute_denies_json_outside_roots(tmp_path: Path) -> None:
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text(
+        '{"schema": "etlantic.pipeline/1", "name": "x"}', encoding="utf-8"
+    )
+    policy = TrustedWorkspacePolicy(
+        enabled=True,
+        allow_roots=(str(allowed),),
+        allow_imports=True,
+    )
+    host = TrustedAnalysisHost(policy)
+    result = host.execute(
+        IdeCommand(name="validate", arguments={"target": str(outside)})
+    )
+    assert result.ok is False
+    assert result.error and "allow_roots" in result.error
+    assert host.audit_log and host.audit_log[-1].allowed is False
+
+
 def test_diagnostic_payload_roundtrip() -> None:
     payload = DiagnosticPayload(
         code="PMPIPE302",
@@ -159,16 +209,42 @@ def test_diagnostic_payload_roundtrip() -> None:
 
 def test_rename_preview_no_unrelated(tmp_path: Path) -> None:
     pipe = tmp_path / "pipe.py"
-    pipe.write_text(
-        "from etlantic import Pipeline\nclass Alpha(Pipeline):\n    pass\n",
-        encoding="utf-8",
-    )
+    source = "from etlantic import Pipeline\nclass Alpha(Pipeline):\n    pass\n"
+    pipe.write_text(source, encoding="utf-8")
     index = WorkspaceIndex(root=tmp_path)
     index.refresh()
     preview = index.rename_preview("Alpha", "Beta")
     assert preview["unrelated_rewrite_count"] == 0
     assert preview["requires_revalidation"] is True
     assert any(e["old"] == "Alpha" for e in preview["edits"])
+    # Identifier column must point at Alpha, not the class keyword.
+    edit = next(e for e in preview["edits"] if e["old"] == "Alpha")
+    line = source.splitlines()[edit["line"] - 1]
+    start = int(edit["column"])
+    assert line[start : start + len("Alpha")] == "Alpha"
+
+
+def test_pmid001_invalid_json(tmp_path: Path) -> None:
+    bad = tmp_path / "broken.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    index = WorkspaceIndex(root=tmp_path)
+    index.refresh()
+    codes = {d.code for d in index.diagnostics_for(bad)}
+    assert "PMID001" in codes
+
+
+def test_pmid002_invalid_pipeline_json(tmp_path: Path) -> None:
+    bad = tmp_path / "pipe.json"
+    bad.write_text(
+        '{"$schema": "etlantic.pipeline/1", "kind": "pipeline", "name": "x"}',
+        encoding="utf-8",
+    )
+    index = WorkspaceIndex(root=tmp_path)
+    index.refresh()
+    diags = index.diagnostics_for(bad)
+    # Either structural validate diagnostics or PMID002 on loader failure.
+    assert diags
+    assert all("Failed to validate pipeline JSON:" not in d.message for d in diags)
 
 
 def test_protocol_version_constant() -> None:

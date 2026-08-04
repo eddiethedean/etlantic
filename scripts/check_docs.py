@@ -35,7 +35,7 @@ def _docs_version_slug() -> str:
         slug = facts.get("docs_version_slug")
         if isinstance(slug, str) and slug:
             return slug
-    return "v0.43.0"
+    return "v0.44.0"
 
 
 _DOCS_SLUG = _docs_version_slug()

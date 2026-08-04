@@ -5,6 +5,15 @@
       "default": false,
       "type": "boolean"
     },
+    "nodes": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "profile": {
       "default": "development",
       "type": "string"

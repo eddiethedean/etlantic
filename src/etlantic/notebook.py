@@ -167,7 +167,7 @@ class ArtifactPreview:
             keys = list(row.keys())[:column_limit]
             if len(row) > column_limit:
                 self.truncated = True
-            cleaned.append({k: redact_value(row[k]) for k in keys})
+            cleaned.append(redact_value({k: row[k] for k in keys}))
         encoded = json.dumps(cleaned, default=str)
         if len(encoded.encode("utf-8")) > byte_limit:
             encoded = encoded[:byte_limit] + "…"
@@ -229,15 +229,23 @@ class NotebookSession:
 
     def bind_pipeline(self, pipeline_cls: type[Any]) -> None:
         identity = _identity_fingerprint(pipeline_cls)
-        if self._model_identity and self._model_identity != identity:
-            # Mark prior plan/report stale when cell redefines the model.
-            pass
+        prior = self._model_identity
+        prior_clean = prior[6:] if prior and prior.startswith("stale:") else prior
+        if prior_clean and prior_clean != identity:
+            self._plan = None
+            self._report = None
+            self._model_identity = f"stale:{identity}"
+        else:
+            self._model_identity = identity
         self._pipeline = pipeline_cls
-        self._model_identity = identity
 
     @property
     def stale(self) -> bool:
-        if self._pipeline is None or self._model_identity is None:
+        if self._model_identity is None:
+            return False
+        if self._model_identity.startswith("stale:"):
+            return True
+        if self._pipeline is None:
             return False
         return _identity_fingerprint(self._pipeline) != self._model_identity
 

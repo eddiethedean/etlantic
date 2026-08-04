@@ -19,9 +19,18 @@
   "golden_diagnostics": [
     {
       "fixture": "tests/ide/test_ide_0_44.py",
-      "codes_exercised": ["PMID001", "PMID002", "PMTEST001"]
+      "codes_exercised": ["PMID001", "PMID002", "PMTEST001"],
+      "tests": [
+        "test_pmid001_invalid_json",
+        "test_pmid002_invalid_pipeline_json",
+        "test_sarif_prefers_source_location"
+      ]
     }
   ],
+  "ci": {
+    "job": "Checks / IDE and LSP",
+    "requires_extra": "lsp"
+  },
   "tests": [
     "tests/ide/test_lsp_0_44.py",
     "tests/ide/test_ide_0_44.py"

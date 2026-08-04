@@ -407,6 +407,7 @@ plugins:
             - packages/etlantic-snowflake/src
             - packages/etlantic-openlineage/src
             - packages/etlantic-fastapi/src
+            - packages/etlantic-lsp/src
             - packages/medallantic/src
           options:
             docstring_style: google
@@ -528,6 +529,7 @@ nav:
           - etlantic-snowflake: 10_REFERENCE/api_optional/etlantic_snowflake.md
           - etlantic-openlineage: 10_REFERENCE/api_optional/etlantic_openlineage.md
           - etlantic-fastapi: 10_REFERENCE/api_optional/etlantic_fastapi.md
+          - etlantic-lsp: 10_REFERENCE/api_optional/etlantic_lsp.md
           - medallantic: 10_REFERENCE/api_optional/medallantic.md
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md

@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.43.0 etlantic-pyspark==0.43.0
+    pip install etlantic==0.44.0 etlantic-pyspark==0.43.0
 
 Run with:
 

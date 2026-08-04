@@ -753,6 +753,29 @@ jobs:
         run: |
           uv run pytest -q tests/fastapi packages/etlantic-fastapi/tests
 
+  ide-lsp:
+    name: IDE and LSP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with lsp extra
+        run: uv sync --locked --extra lsp
+
+      - name: Require pygls
+        run: uv run python -c "import pygls, etlantic_lsp; print(etlantic_lsp.__version__)"
+
+      - name: Pytest IDE / LSP suite
+        run: uv run pytest -q tests/ide
+
   real-pyspark:
     name: Real PySpark (JVM)
     runs-on: ubuntu-latest

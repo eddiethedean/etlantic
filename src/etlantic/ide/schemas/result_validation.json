@@ -1,7 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
-    "diagnostics": {
+    "phases": {
+      "items": {
+        "type": "string"
+      },
       "type": "array"
     },
     "valid": {
@@ -9,9 +12,9 @@
     }
   },
   "required": [
-    "valid",
-    "diagnostics"
+    "valid"
   ],
   "title": "etlantic.validation_result",
-  "type": "object"
+  "type": "object",
+  "description": "IdeResult.payload for validate; diagnostics live on the IdeResult envelope"
 }

@@ -220,11 +220,12 @@ class WorkspaceIndex:
                 out.append(payload)
             return out
         except Exception as exc:
+            exc_type = type(exc).__name__
             return [
                 DiagnosticPayload(
                     code="PMID002",
                     severity="error",
-                    message=f"Failed to validate pipeline JSON: {exc}",
+                    message=f"Failed to validate pipeline JSON ({exc_type})",
                     location=LocationLink(uri=str(path), line=1, column=0),
                 )
             ]

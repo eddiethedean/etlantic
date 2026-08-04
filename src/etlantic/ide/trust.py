@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+TargetKind = Literal["json", "py_path", "module", "unknown"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +107,61 @@ class TrustAuditRecord:
         }
 
 
+def split_target(target: str) -> tuple[str, str | None]:
+    """Return ``(module_or_path, class_name_or_None)``."""
+    if ":" in target:
+        left, right = target.rsplit(":", 1)
+        return left, right
+    return target, None
+
+
+def classify_target(target: str) -> TargetKind:
+    """Classify an IDE/CLI pipeline target form."""
+    module_part, _ = split_target(target)
+    path = Path(module_part)
+    if path.suffix.lower() == ".json":
+        return "json"
+    if path.suffix == ".py" or "/" in module_part or "\\" in module_part:
+        return "py_path"
+    if module_part and all(part.isidentifier() for part in module_part.split(".")):
+        return "module"
+    return "unknown"
+
+
+def resolve_module_origin(module_name: str) -> Path | None:
+    """Locate a module's origin path without importing it.
+
+    Returns ``None`` for unresolved, builtin, or namespace-only modules without
+    a filesystem location.
+    """
+    try:
+        spec = importlib.util.find_spec(module_name)
+    except (ImportError, ModuleNotFoundError, ValueError):
+        return None
+    if spec is None:
+        return None
+    origin = getattr(spec, "origin", None)
+    if origin and origin not in {"built-in", "frozen"}:
+        return Path(origin)
+    locations = getattr(spec, "submodule_search_locations", None)
+    if locations:
+        return Path(next(iter(locations)))
+    return None
+
+
+def target_filesystem_path(target: str) -> Path | None:
+    """Filesystem path that must fall under ``allow_roots`` for trusted ops."""
+    kind = classify_target(target)
+    module_part, _ = split_target(target)
+    if kind == "json":
+        return Path(module_part)
+    if kind == "py_path":
+        return Path(module_part)
+    if kind == "module":
+        return resolve_module_origin(module_part)
+    return None
+
+
 def deny_untrusted(
     policy: TrustedWorkspacePolicy,
     *,
@@ -111,7 +169,7 @@ def deny_untrusted(
     target: str,
     require_imports: bool = False,
 ) -> TrustAuditRecord:
-    """Return an audit record denying an operation under default policy."""
+    """Return an audit record allowing or denying an operation under policy."""
     if not policy.enabled:
         return TrustAuditRecord(
             operation=operation,
@@ -120,7 +178,9 @@ def deny_untrusted(
             reason="trusted workspace not enabled",
             policy=policy.to_dict(),
         )
-    if require_imports and not policy.allow_imports:
+
+    kind = classify_target(target)
+    if (kind in {"py_path", "module"} or require_imports) and not policy.allow_imports:
         return TrustAuditRecord(
             operation=operation,
             target=target,
@@ -128,12 +188,25 @@ def deny_untrusted(
             reason="imports not permitted by policy",
             policy=policy.to_dict(),
         )
-    if (
-        not policy.permits_path(target)
-        and not target.startswith("module:")
-        and (Path(target).suffix in {".py", ".json"} or "/" in target or "\\" in target)
-    ):
-        # module: targets checked separately by allow_imports
+
+    fs_path = target_filesystem_path(target)
+    if kind == "module" and fs_path is None:
+        return TrustAuditRecord(
+            operation=operation,
+            target=target,
+            allowed=False,
+            reason="module origin unresolved or outside workspace",
+            policy=policy.to_dict(),
+        )
+    if kind == "unknown":
+        return TrustAuditRecord(
+            operation=operation,
+            target=target,
+            allowed=False,
+            reason="unsupported target form",
+            policy=policy.to_dict(),
+        )
+    if fs_path is not None and not policy.permits_path(fs_path):
         return TrustAuditRecord(
             operation=operation,
             target=target,
@@ -148,3 +221,23 @@ def deny_untrusted(
         reason="permitted by trusted policy",
         policy=policy.to_dict(),
     )
+
+
+def deny_analysis_secret_flags(
+    policy: TrustedWorkspacePolicy,
+    *,
+    operation: str,
+    target: str,
+) -> TrustAuditRecord | None:
+    """Fail closed when analysis hosts enable secret or live-schema flags."""
+    if policy.allow_secret_resolution or policy.allow_live_schema_query:
+        return TrustAuditRecord(
+            operation=operation,
+            target=target,
+            allowed=False,
+            reason=(
+                "analysis hosts fail closed on secret resolution and live schema queries"
+            ),
+            policy=policy.to_dict(),
+        )
+    return None

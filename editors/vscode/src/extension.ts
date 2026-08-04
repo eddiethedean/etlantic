@@ -1,4 +1,3 @@
-import * as path from "path";
 import * as vscode from "vscode";
 import {
   LanguageClient,
@@ -14,6 +13,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const config = vscode.workspace.getConfiguration("etlantic");
   const lspPath = config.get<string>("lspPath") || "etlantic-lsp";
   const pythonPath = config.get<string>("pythonPath") || "";
+  const trustedImports = config.get<boolean>("trustedImports") === true;
 
   const serverOptions: ServerOptions = {
     run: {
@@ -35,6 +35,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{py,json}"),
+      configurationSection: "etlantic",
+    },
+    initializationOptions: {
+      trustedImports,
     },
   };
 
@@ -49,6 +53,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("etlantic.run", () => runIdeCommand("run_selected")),
     vscode.commands.registerCommand("etlantic.showGraph", showGraph),
     vscode.commands.registerCommand("etlantic.reconnectRun", reconnectRun),
+    vscode.commands.registerCommand("etlantic.reviewAction", (action) => {
+      vscode.window.showInformationMessage(
+        `Review diagnostic action: ${JSON.stringify(action)}`
+      );
+    }),
     vscode.languages.registerCodeLensProvider(
       [{ language: "python" }, { pattern: "**/*.json" }],
       new EtlanticCodeLensProvider()
@@ -77,6 +86,15 @@ async function activeTarget(): Promise<string | undefined> {
 async function runIdeCommand(name: string): Promise<void> {
   if (!client) {
     return;
+  }
+  if (name === "run_selected") {
+    const trusted = vscode.workspace.getConfiguration("etlantic").get<boolean>("trustedImports");
+    if (!trusted) {
+      vscode.window.showWarningMessage(
+        "Run requires etlantic.trustedImports=true (workspace folders become allow_roots)."
+      );
+      return;
+    }
   }
   const target = await activeTarget();
   if (!target) {
@@ -133,7 +151,6 @@ async function reconnectRun(): Promise<void> {
     return;
   }
   seenAttemptIds.add(runId);
-  // Public CP surface only — host opens events URL; no local authz bypass.
   const url = `${base.replace(/\/$/, "")}/v1/runs/${encodeURIComponent(runId)}/events`;
   vscode.env.openExternal(vscode.Uri.parse(url));
 }
@@ -149,13 +166,22 @@ function escapeHtml(value: string): string {
 class EtlanticCodeLensProvider implements vscode.CodeLensProvider {
   provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
     const top = new vscode.Range(0, 0, 0, 0);
-    return [
+    const trusted =
+      vscode.workspace.getConfiguration("etlantic").get<boolean>("trustedImports") === true;
+    const lenses = [
       new vscode.CodeLens(top, { title: "Validate", command: "etlantic.validate" }),
       new vscode.CodeLens(top, { title: "Plan", command: "etlantic.plan" }),
       new vscode.CodeLens(top, { title: "Explain", command: "etlantic.explain" }),
-      new vscode.CodeLens(top, { title: "Run", command: "etlantic.run" }),
       new vscode.CodeLens(top, { title: "Graph", command: "etlantic.showGraph" }),
     ];
+    if (trusted) {
+      lenses.splice(
+        3,
+        0,
+        new vscode.CodeLens(top, { title: "Run", command: "etlantic.run" })
+      );
+    }
+    return lenses;
   }
 }
 
@@ -166,6 +192,7 @@ class RunPanelProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   getChildren(): vscode.TreeItem[] {
     return [
       new vscode.TreeItem("Local runs use IdeCommand → public SDK"),
+      new vscode.TreeItem("Run CodeLens requires etlantic.trustedImports"),
       new vscode.TreeItem("Reconnect via control-plane events (no duplicate attempts)"),
     ];
   }
@@ -177,11 +204,8 @@ class PreviewPanelProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   }
   getChildren(): vscode.TreeItem[] {
     return [
-      new vscode.TreeItem("Graph / lineage / plan / impact previews"),
-      new vscode.TreeItem("Objective / erasure metadata previews (no subject values)"),
+      new vscode.TreeItem("Graph / plan / impact previews (via LSP custom requests)"),
+      new vscode.TreeItem("Lineage / objective / erasure panels are metadata stubs"),
     ];
   }
 }
-
-// Keep path import referenced for packaging clarity.
-void path;

@@ -27,6 +27,42 @@ class EtlanticLanguageServer(LanguageServer):
         super().__init__(*args, **kwargs)
         self.workspace_index: WorkspaceIndex | None = None
         self.policy = TrustedWorkspacePolicy.disabled()
+        self.trusted_imports = False
+
+    def configure_trust(
+        self,
+        *,
+        trusted_imports: bool,
+        allow_roots: tuple[str, ...] | list[str],
+    ) -> None:
+        self.trusted_imports = trusted_imports
+        roots = tuple(str(r) for r in allow_roots if r)
+        if trusted_imports and roots:
+            self.policy = TrustedWorkspacePolicy(
+                enabled=True,
+                allow_roots=roots,
+                allow_imports=True,
+            )
+        else:
+            self.policy = TrustedWorkspacePolicy.disabled()
+
+
+def _workspace_roots(params: lsp.InitializeParams) -> list[str]:
+    roots: list[str] = []
+    for folder in params.workspace_folders or []:
+        uri = getattr(folder, "uri", None) or ""
+        if uri.startswith("file://"):
+            roots.append(uri[len("file://") :])
+    if not roots and params.root_uri and params.root_uri.startswith("file://"):
+        roots.append(params.root_uri[len("file://") :])
+    if not roots and params.root_path:
+        roots.append(str(params.root_path))
+    return roots
+
+
+def _init_options(params: lsp.InitializeParams) -> dict[str, Any]:
+    options = params.initialization_options
+    return dict(options) if isinstance(options, dict) else {}
 
 
 def create_server() -> EtlanticLanguageServer:
@@ -34,14 +70,31 @@ def create_server() -> EtlanticLanguageServer:
 
     @server.feature(lsp.INITIALIZE)
     def initialize(params: lsp.InitializeParams) -> None:  # type: ignore[misc]
-        root = None
-        if params.root_uri:
-            root = Path(params.root_uri.replace("file://", ""))
-        elif params.root_path:
-            root = Path(params.root_path)
+        roots = _workspace_roots(params)
+        root = Path(roots[0]) if roots else None
         if root is not None:
             server.workspace_index = WorkspaceIndex(root=root)
             server.workspace_index.refresh()
+        options = _init_options(params)
+        server.configure_trust(
+            trusted_imports=bool(options.get("trustedImports", False)),
+            allow_roots=roots,
+        )
+
+    @server.feature(lsp.WORKSPACE_DID_CHANGE_CONFIGURATION)
+    def on_config_change(params: lsp.DidChangeConfigurationParams) -> None:  # type: ignore[misc]
+        settings = params.settings
+        payload = settings if isinstance(settings, dict) else {}
+        etlantic = payload.get("etlantic") if isinstance(payload, dict) else {}
+        if not isinstance(etlantic, dict):
+            etlantic = {}
+        roots: list[str] = []
+        if server.workspace_index is not None:
+            roots = [str(server.workspace_index.root)]
+        server.configure_trust(
+            trusted_imports=bool(etlantic.get("trustedImports", False)),
+            allow_roots=roots,
+        )
 
     @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
     @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
@@ -210,8 +263,8 @@ def create_server() -> EtlanticLanguageServer:
                         diagnostics=[diagnostic],
                         edit=None,
                         command=lsp.Command(
-                            title=str(action.get("title") or "apply"),
-                            command="etlantic.applyAction",
+                            title=str(action.get("title") or "review"),
+                            command="etlantic.reviewAction",
                             arguments=[action],
                         ),
                     )

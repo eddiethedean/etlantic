@@ -17,7 +17,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
 | Current | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
-| Previous | 0.44 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
+| Previous | 0.43 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
 | Previous | 0.42 | Policy / quotas / audit (CP4) | [Released](EXIT_GATE_0_42.md) |
 | Previous | 0.41 | Durable submission / state (CP3) | [Gate-ready / shipped evidence](EXIT_GATE_0_41.md) |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |

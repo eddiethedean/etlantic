@@ -1,7 +1,7 @@
 {
   "schema": "etlantic.cp_ga_support_matrix/1",
   "phase": "0.43",
-  "compatibility_policy": "etlantic>=0.43.0,<0.44",
+  "compatibility_policy": "etlantic>=0.44.0,<0.45",
   "support_terms": "community_non_sla",
   "capacity": "measured_envelopes_only",
   "supported_isolation_profiles": [

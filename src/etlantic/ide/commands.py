@@ -56,8 +56,22 @@ def _resolve_target(
     policy: TrustedWorkspacePolicy,
     operation: str,
 ) -> Any:
-    path = Path(target)
-    if path.suffix.lower() == ".json" and path.exists():
+    from etlantic.ide.trust import classify_target
+
+    kind = classify_target(target)
+    if kind == "json":
+        path = Path(target if ":" not in target else target.rsplit(":", 1)[0])
+        if policy.enabled:
+            audit = deny_untrusted(
+                policy, operation=operation, target=target, require_imports=False
+            )
+            if not audit.allowed:
+                raise PermissionError(
+                    f"JSON target {target!r} requires trusted allow_roots "
+                    f"({audit.reason})"
+                )
+        if not path.exists():
+            raise PermissionError(f"JSON target not found: {path}")
         from etlantic.authoring.serialize import read_pipeline_json
 
         return read_pipeline_json(path)
@@ -70,14 +84,7 @@ def _resolve_target(
             f"Import-based target {target!r} requires trusted workspace "
             f"({audit.reason})"
         )
-    if path.suffix == ".py" or ":" in target:
-        # Path component of path.py:Class must be under allow_roots
-        module_part = target.rsplit(":", 1)[0]
-        module_path = Path(module_part)
-        if module_path.suffix == ".py" and not policy.permits_path(module_path):
-            raise PermissionError(
-                f"Target path {module_path} outside trusted allow_roots"
-            )
+    if kind in {"py_path", "module"}:
         from etlantic.cli.target import load_target
 
         return load_target(target)
@@ -175,18 +182,25 @@ def _cmd_explain(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Ide
 
 
 def _cmd_generate(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> IdeResult:
-    # Generation is a thin pointer to CLI generate semantics; hosts may shell out.
-    # Keep IDE path non-executing for contracts listing only.
-    target = str(args["target"])
-    _resolve_target(target, policy=policy, operation="generate")
+    # Contract generation is CLI/SDK territory; IDE hosts must not fake success.
+    target = str(args.get("target", ""))
+    if target:
+        try:
+            _resolve_target(target, policy=policy, operation="generate")
+        except PermissionError as exc:
+            return IdeResult(name="generate", ok=False, error=str(exc))
     return IdeResult(
         name="generate",
-        ok=True,
+        ok=False,
+        error=(
+            "generate is not executed by the IDE command host; "
+            "use `etlantic generate` or public authoring/interchange helpers"
+        ),
         payload={
             "target": target,
             "output": args.get("output", "contracts"),
             "sqlmodel": bool(args.get("sqlmodel", False)),
-            "note": "Use etlantic generate CLI or SDK interchange helpers to emit artifacts",
+            "supported": False,
         },
     )
 

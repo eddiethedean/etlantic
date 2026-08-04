@@ -7,7 +7,7 @@ artifacts, and external execution systems. Security is therefore a
 cross-cutting architectural constraint, not a feature delegated to one plugin.
 
 This chapter covers **controls shipped through the 0.38 stable-foundation
-claim** and the broader **proposed threat model**. ETLantic 0.43.0 is a
+claim** and the broader **proposed threat model**. ETLantic 0.44.0 is a
 **Beta** (PyPI) release suitable for documented single-tenant pilots and
 Supported multi-tenant profiles (`isolated-deployment`, `dedicated-schema`).
 It does not provide a formal SLA, compliance attestations, unrestricted

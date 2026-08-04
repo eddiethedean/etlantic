@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,16 @@ def _kind_for_bases(bases: tuple[str, ...]) -> str | None:
     return None
 
 
+def _identifier_column(line_text: str, col_offset: int, name: str, keyword: str) -> int:
+    """Return 0-based column of ``name`` after ``class``/``def``, not the keyword."""
+    rest = line_text[col_offset:]
+    match = re.match(rf"{keyword}\s+", rest)
+    if match:
+        return col_offset + match.end()
+    idx = line_text.find(name, col_offset)
+    return idx if idx >= 0 else col_offset
+
+
 def extract_symbols_from_source(
     source: str,
     *,
@@ -77,6 +88,7 @@ def extract_symbols_from_source(
         tree = ast.parse(source)
     except SyntaxError:
         return []
+    lines = source.splitlines()
     symbols: list[ExtractedSymbol] = []
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
@@ -85,16 +97,17 @@ def extract_symbols_from_source(
         kind = _kind_for_bases(bases)
         if kind is None:
             continue
+        line_text = lines[node.lineno - 1] if node.lineno <= len(lines) else ""
+        name_col = _identifier_column(line_text, node.col_offset, node.name, "class")
         end_line = getattr(node, "end_lineno", None)
-        end_col = getattr(node, "end_col_offset", None)
         symbols.append(
             ExtractedSymbol(
                 name=node.name,
                 kind=kind,
                 line=node.lineno,
-                column=node.col_offset,
+                column=name_col,
                 end_line=end_line,
-                end_column=end_col,
+                end_column=name_col + len(node.name),
                 bases=bases,
             )
         )
@@ -109,9 +122,9 @@ def extract_symbols_from_source(
                             name=child.target.id,
                             kind="port",
                             line=child.lineno,
-                            column=child.col_offset,
+                            column=child.target.col_offset,
                             end_line=getattr(child, "end_lineno", None),
-                            end_column=getattr(child, "end_col_offset", None),
+                            end_column=child.target.col_offset + len(child.target.id),
                             detail=node.name,
                         )
                     )
@@ -123,9 +136,9 @@ def extract_symbols_from_source(
                                     name=target.id,
                                     kind="binding",
                                     line=child.lineno,
-                                    column=child.col_offset,
+                                    column=target.col_offset,
                                     end_line=getattr(child, "end_lineno", None),
-                                    end_column=getattr(child, "end_col_offset", None),
+                                    end_column=target.col_offset + len(target.id),
                                     detail=node.name,
                                 )
                             )

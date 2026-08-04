@@ -37,7 +37,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.43 |
+| Topic | ETLantic 0.44 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots; Supported multi-tenant profiles |
@@ -51,13 +51,13 @@ Experimental. Pattern: community **non-SLA**. Roadmap programs live under
 Contribute → Maintainers (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
-## Supported standards policy (0.43)
+## Supported standards policy (0.44)
 
-For the 0.43 envelope, ETLantic supports these standards and
+For the 0.44 envelope, ETLantic supports these standards and
 toolkits at the declared ranges (exact pins and protocol notes:
 [Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
 
-| Standard / surface | 0.43 policy |
+| Standard / surface | 0.44 policy |
 |---|---|
 | Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
 | ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
@@ -276,6 +276,7 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 
 ```bash
 pip install 'etlantic==0.44.0'
+pip install 'etlantic[lsp]==0.44.0'            # optional language server
 pip install 'etlantic-polars==0.44.0'          # optional
 pip install 'etlantic-pandas==0.44.0'          # optional
 pip install 'etlantic-sql==0.44.0'             # optional

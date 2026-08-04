@@ -11,13 +11,19 @@
     "requires_explicit_policy": true,
     "allow_roots_required": true,
     "timeouts": true,
+    "timeout_kills_worker": false,
+    "timeout_note": "ThreadPool waiter aborts on timeout; worker thread is not killed",
     "audit_records": true,
     "secret_resolution": "denied_by_host",
-    "live_schema_query": "denied_by_host"
+    "live_schema_query": "denied_by_host",
+    "module_imports_require_origin_under_allow_roots": true
   },
   "cases": [
     {"id": "deny_untrusted_import", "result": "pass", "test": "test_execute_command_json_pipeline_no_trust"},
     {"id": "deny_outside_roots", "result": "pass", "test": "test_trusted_host_denies_outside_roots"},
-    {"id": "deny_secret_flags", "result": "pass", "test": "test_trusted_host_denies_secret_flags"}
+    {"id": "deny_secret_flags", "result": "pass", "test": "test_trusted_host_denies_secret_flags"},
+    {"id": "deny_dotted_module_escape", "result": "pass", "test": "test_trusted_host_denies_dotted_module_outside_roots"},
+    {"id": "deny_secret_on_execute", "result": "pass", "test": "test_trusted_host_execute_denies_secret_flags"},
+    {"id": "deny_json_outside_roots", "result": "pass", "test": "test_trusted_host_execute_denies_json_outside_roots"}
   ]
 }

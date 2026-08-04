@@ -23,6 +23,7 @@ REQUIRED_MODULES = (
     "etlantic_snowflake",
     "etlantic_openlineage",
     "etlantic_fastapi",
+    "etlantic_lsp",
     "medallantic",
 )
 

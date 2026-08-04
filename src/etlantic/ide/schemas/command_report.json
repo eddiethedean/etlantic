@@ -1,16 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
-    "format": {
-      "default": "json",
-      "enum": [
-        "text",
-        "json",
-        "html"
-      ]
-    },
     "run_id": {
       "type": "string"
+    },
+    "store_dir": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [

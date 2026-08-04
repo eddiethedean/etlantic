@@ -151,6 +151,7 @@ Pin to the same minor as core (`==0.44.0`). Details:
 | `etlantic-sqlmodel` | SQLModel ↔ contract bridge |
 | `medallantic` | Engine-agnostic medallion facade and SparkForge migration adapter |
 | `etlantic-fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
+| `etlantic-lsp` | Editor-neutral language server (`etlantic[lsp]`) |
 | `etlantic-datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
 
 ## See also

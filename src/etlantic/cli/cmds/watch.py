@@ -26,7 +26,6 @@ def register_watch_command(app: typer.Typer) -> None:
             dir_okay=True,
             help="Workspace root to watch",
         ),
-        profile: str = typer.Option("development", "--profile", "-p"),
         interval: float = typer.Option(
             1.0, "--interval", help="Polling interval in seconds"
         ),
@@ -36,8 +35,9 @@ def register_watch_command(app: typer.Typer) -> None:
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         """Revalidate workspace pipelines on change. Never executes pipelines."""
-        del profile  # reserved for future profile-scoped watch
         cli = get_cli_context(ctx)
+        from etlantic.diagnostics import Diagnostic, Severity, SourceLocation
+        from etlantic.diagnostics.sarif import diagnostics_to_sarif
         from etlantic.ide.analysis import WorkspaceIndex
 
         index = WorkspaceIndex(root=path.resolve())
@@ -45,7 +45,8 @@ def register_watch_command(app: typer.Typer) -> None:
 
         def _cycle() -> dict[str, Any]:
             stats = index.refresh()
-            diagnostics = [d.to_dict() for d in index.diagnostics_for()]
+            payloads = list(index.diagnostics_for())
+            diagnostics = [d.to_dict() for d in payloads]
             fingerprint = {
                 str(p): item.content_hash for p, item in index._files.items()
             }
@@ -56,13 +57,49 @@ def register_watch_command(app: typer.Typer) -> None:
                 "stats": stats,
                 "changed": changed,
                 "diagnostics": diagnostics,
+                "diagnostic_payloads": payloads,
                 "symbols": len(index.symbols()),
                 "executed": False,
             }
 
+        def _emit(payload: dict[str, Any]) -> None:
+            if fmt == "sarif":
+                diags: list[Diagnostic] = []
+                for item in payload.get("diagnostic_payloads") or []:
+                    loc = item.location
+                    source = None
+                    if loc is not None:
+                        source = SourceLocation(
+                            path=str(loc.uri),
+                            line=loc.line or 1,
+                            column=loc.column or 0,
+                        )
+                    severity = {
+                        "error": Severity.ERROR,
+                        "warning": Severity.WARNING,
+                        "info": Severity.INFO,
+                        "hint": Severity.HINT,
+                    }.get(str(item.severity), Severity.ERROR)
+                    diags.append(
+                        Diagnostic(
+                            code=item.code,
+                            severity=severity,
+                            message=item.message,
+                            source=source,
+                        )
+                    )
+                emit_payload(
+                    diagnostics_to_sarif(diags),
+                    fmt="sarif",
+                    quiet=cli.globals.quiet,
+                )
+                return
+            slim = {k: v for k, v in payload.items() if k != "diagnostic_payloads"}
+            emit_payload(slim, fmt=fmt, quiet=cli.globals.quiet)
+
         if once:
             payload = _cycle()
-            emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
+            _emit(payload)
             errors = [d for d in payload["diagnostics"] if d.get("severity") == "error"]
             raise typer.Exit(ec.SUCCESS if not errors else ec.INVALID_MODEL)
 
@@ -73,8 +110,8 @@ def register_watch_command(app: typer.Typer) -> None:
         try:
             while True:
                 payload = _cycle()
-                if payload["changed"] or once:
-                    emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
+                if payload["changed"]:
+                    _emit(payload)
                 time.sleep(max(interval, 0.2))
         except KeyboardInterrupt:
             raise typer.Exit(ec.SUCCESS) from None

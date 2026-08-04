@@ -9,6 +9,9 @@ import pytest
 pytest.importorskip("pygls")
 pytest.importorskip("lsprotocol")
 
+from lsprotocol import types as lsp
+
+from etlantic.ide.protocol import LocationLink
 from etlantic_lsp import __version__, create_server
 from etlantic_lsp.server import (
     CUSTOM_COMMAND,
@@ -20,9 +23,6 @@ from etlantic_lsp.server import (
     _symbol_kind,
     _to_location,
 )
-from lsprotocol import types as lsp
-
-from etlantic.ide.protocol import LocationLink
 
 
 def test_package_version() -> None:

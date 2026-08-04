@@ -373,7 +373,7 @@ Revalidate a workspace on file changes using the no-import static index.
 Never executes pipelines.
 
 ```bash
-python -m etlantic watch PATH [--interval 1.0] [--once] [--format json]
+python -m etlantic watch PATH [--interval 1.0] [--once] [--format json|sarif]
 ```
 
 | Option | Purpose |
@@ -381,11 +381,12 @@ python -m etlantic watch PATH [--interval 1.0] [--once] [--format json]
 | `PATH` | Workspace root directory to index |
 | `--interval` | Polling interval in seconds (default `1.0`) |
 | `--once` | Index and emit diagnostics once, then exit |
-| `--format` | Output format (default `json`) |
+| `--format` | `json` (default) or `sarif` |
 
 Use `--once` in CI smoke checks. Continuous watch is for local authoring;
 Ctrl+C stops the loop. Diagnostics share the same `PMID*` / validation codes
-as `etlantic-lsp`.
+as `etlantic-lsp`. `--format sarif` maps workspace diagnostics through the
+shared SARIF renderer.
 
 ## Exit codes
 

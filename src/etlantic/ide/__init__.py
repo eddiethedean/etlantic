@@ -35,8 +35,7 @@ COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
         "required": ["target"],
         "properties": {
             "target": {"type": "string"},
-            "profile": {"type": "string", "default": "local"},
-            "format": {"enum": ["human", "json", "sarif"], "default": "json"},
+            "profile": {"type": "string", "default": "development"},
         },
     },
     "plan": {
@@ -46,10 +45,7 @@ COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
         "required": ["target"],
         "properties": {
             "target": {"type": "string"},
-            "profile": {"type": "string", "default": "local"},
-            "run_one": {"type": ["string", "null"]},
-            "run_until": {"type": ["string", "null"]},
-            "nodes": {"type": ["array", "null"], "items": {"type": "string"}},
+            "profile": {"type": "string", "default": "development"},
         },
     },
     "explain": {
@@ -59,7 +55,7 @@ COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
         "required": ["target"],
         "properties": {
             "target": {"type": "string"},
-            "profile": {"type": "string", "default": "local"},
+            "profile": {"type": "string", "default": "development"},
         },
     },
     "generate": {
@@ -83,6 +79,7 @@ COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
             "profile": {"type": "string", "default": "development"},
             "run_one": {"type": ["string", "null"]},
             "run_until": {"type": ["string", "null"]},
+            "nodes": {"type": ["array", "null"], "items": {"type": "string"}},
             "no_write": {"type": "boolean", "default": False},
         },
     },
@@ -93,7 +90,7 @@ COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
         "required": ["run_id"],
         "properties": {
             "run_id": {"type": "string"},
-            "format": {"enum": ["text", "json", "html"], "default": "json"},
+            "store_dir": {"type": ["string", "null"]},
         },
     },
 }
@@ -103,10 +100,10 @@ RESULT_SCHEMAS: dict[str, dict[str, Any]] = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "etlantic.validation_result",
         "type": "object",
-        "required": ["valid", "diagnostics"],
+        "required": ["valid"],
         "properties": {
             "valid": {"type": "boolean"},
-            "diagnostics": {"type": "array"},
+            "phases": {"type": "array", "items": {"type": "string"}},
         },
     },
     "plan": {

@@ -2,7 +2,7 @@
 
 > **Status: Available in ETLantic 0.44.0.**
 
-Practical questions for ETLantic **0.43.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.44.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -68,7 +68,7 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic 0.44 production-supported?
 
-ETLantic **0.43.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.44.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots—not unrestricted enterprise production. See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).

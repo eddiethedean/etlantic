@@ -33,6 +33,20 @@ Open **P0 count is 0**.
 |---|---|---|---|---|---|
 | — | — | — | — | No open P0 | — |
 
+## Closed in post-ship residual pass (still 0.44.0)
+
+| ID | Severity | Summary | Disposition |
+|---|---|---|---|
+| `044-T-01` | P0 | Dotted-module `allow_roots` bypass | Closed — origin must resolve under allow_roots |
+| `044-T-02` | P0 | `execute()` skipped secret/schema fail-closed | Closed — host denies on execute |
+| `044-T-03` | P0 | JSON outside roots skipped audit | Closed — audited under allow_roots |
+| `044-N-01` | P1 | ArtifactPreview secret-key leak | Closed — redact_value on row dicts |
+| `044-L-01` | P1 | Rename used class-keyword column | Closed — identifier column |
+| `044-C-01` | P1 | LSP tests skipped in default CI | Closed — Checks / IDE and LSP job |
+
+Timeout honesty: waiter aborts; worker thread is not killed
+([ide_trust_matrix_0_44.json](ide_trust_matrix_0_44.json)).
+
 ## Soft-continue from prior phases
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |

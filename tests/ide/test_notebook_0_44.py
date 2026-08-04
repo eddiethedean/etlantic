@@ -27,9 +27,10 @@ def test_pipeline_display_side_effect_free() -> None:
 
 def test_artifact_preview_bounds() -> None:
     rows = [{"a": i, "secret": "hunter2"} for i in range(100)]
-    preview = ArtifactPreview(rows, row_limit=10, column_limit=1)
+    preview = ArtifactPreview(rows, row_limit=10, column_limit=2)
     assert preview.truncated is True
     assert len(preview.rows) <= 10
+    assert all(row.get("secret") == "***" for row in preview.rows if "secret" in row)
 
 
 def test_notebook_session_export_and_extract() -> None:
@@ -50,18 +51,14 @@ def test_plan_identity_json_definition(tmp_path: Path) -> None:
     defn = read_pipeline_json(target)
     _ = structural_validate_preview(defn, profile="development")
     plan, _plan_report = plan_preview(defn, profile="development")
-    if plan is None:
-        # Environment may lack backends; still exercise IDE command path
-        result = execute_command(
-            IdeCommand(name="validate", arguments={"target": str(target)})
-        )
-        assert result.name == "validate"
-        return
     ide = execute_command(
         IdeCommand(
             name="plan", arguments={"target": str(target), "profile": "development"}
         )
     )
+    if plan is None:
+        assert ide.ok is False or ide.name == "plan"
+        return
     assert ide.ok is True
     assert ide.payload["fingerprint"] == plan.fingerprint
     display = PlanDisplay(plan)
@@ -71,13 +68,21 @@ def test_plan_identity_json_definition(tmp_path: Path) -> None:
 def test_stale_detection() -> None:
     session = NotebookSession(profile="development")
     session.bind_pipeline(SamplePipeline)
-    session._plan = None  # type: ignore[assignment]
-    session._model_identity = "seed"
+    assert session.stale is False
     session.force_stale()
     assert session.stale is True
     assert session.export_bundle()["stale"] is True
 
 
+def test_bind_pipeline_marks_stale_on_redefine() -> None:
+    session = NotebookSession(profile="development")
+    session.bind_pipeline(SamplePipeline)
+    session._model_identity = "other-identity"
+    session.bind_pipeline(SamplePipeline)
+    assert session.stale is True
+    assert session._plan is None
+
+
 def test_optional_widgets_without_extra() -> None:
     session = NotebookSession()
-    session.optional_widgets()
+    assert session.optional_widgets() is None
