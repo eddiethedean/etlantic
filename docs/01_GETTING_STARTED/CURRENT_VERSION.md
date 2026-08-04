@@ -1,17 +1,17 @@
 # ETLantic 0.44 User Guide
 
-> **Status: Available in ETLantic 0.44.0.**
+> **Status: Available in ETLantic 0.44.0 (published Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.44.0** is a **Beta** (PyPI) release for documented single-tenant
-pilots, developer intelligence (LSP / IDE / notebooks), and **production
-multi-tenant** for frozen Supported isolation profiles graduated in **0.43**
-(`isolated-deployment`, `dedicated-schema`). `shared-service` remains
-Experimental. Support is community **non-SLA**. Linked reference and design
-pages may describe Experimental, partial, or future work and retain their own
-status labels.
+ETLantic **0.44.0** is a published **Beta** (PyPI) release for documented
+single-tenant pilots, developer intelligence (LSP / IDE / notebooks), and
+**production multi-tenant** for frozen Supported isolation profiles graduated
+in **0.43** (`isolated-deployment`, `dedicated-schema`). `shared-service`
+remains Experimental. Support is community **non-SLA**. Linked reference and
+design pages may describe Experimental, partial, or future work and retain
+their own status labels.
 
 ## After first success
 

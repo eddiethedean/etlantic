@@ -1,14 +1,15 @@
 # ADR-020: Developer Intelligence Protocol and Safe Analysis Boundary
 
 Date: 2026-08-04  
-Status: Accepted
+Status: Accepted (shipped with ETLantic **0.44.0**)
 
 ## Context
 
 ETLantic 0.43 froze production multi-tenant control-plane contracts. Phase 0.44
-must expose contracts, diagnostics, plans, graphs, and runs through
-editor-neutral protocols and notebooks without inventing a second execution or
-authorization path, and without importing untrusted project code by default.
+(published Developer Intelligence) must expose contracts, diagnostics, plans,
+graphs, and runs through editor-neutral protocols and notebooks without
+inventing a second execution or authorization path, and without importing
+untrusted project code by default.
 
 Authoritative sequencing:
 [IMPLEMENTATION_PLAN_0_44](../IMPLEMENTATION_PLAN_0_44.md),

@@ -24,7 +24,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence published; 0.43 CP-GA prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

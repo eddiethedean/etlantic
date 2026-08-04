@@ -1,12 +1,17 @@
 # Earlier release notes
 
 > **Status: Available in ETLantic 0.44.0.** Historical “What's new” pages for
-> prior minors. Start with [What's new in 0.39](WHATS_NEW_0_39.md) and the
-> [Changelog](../CHANGELOG.md).
+> prior minors. Current line: [What's new in 0.44](WHATS_NEW_0_44.md). Full
+> history: [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
 |---|---|
-| 0.38 | [What's new in 0.39](WHATS_NEW_0_39.md) |
+| 0.43 | [What's new in 0.43](WHATS_NEW_0_43.md) |
+| 0.42 | [What's new in 0.42](WHATS_NEW_0_42.md) |
+| 0.41 | [What's new in 0.41](WHATS_NEW_0_41.md) |
+| 0.40 | [What's new in 0.40](WHATS_NEW_0_40.md) |
+| 0.39 | [What's new in 0.39](WHATS_NEW_0_39.md) |
+| 0.38 | [What's new in 0.38](WHATS_NEW_0_38.md) |
 | 0.37 | [What's new in 0.37](WHATS_NEW_0_37.md) |
 | 0.36 | [What's new in 0.36](WHATS_NEW_0_36.md) |
 | 0.35 | [What's new in 0.35](WHATS_NEW_0_35.md) |

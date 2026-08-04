@@ -9,14 +9,15 @@
 
 ## What works today (0.44)
 
-ETLantic 0.44.0 is a Beta release for documented, controlled,
+ETLantic 0.44.0 is a published Beta release for documented, controlled,
 single-tenant pilots (install `etlantic==0.44.0` from PyPI). It validates and
 plans typed pipelines, runs them locally or through supported engine plugins,
 compiles valid plans to supported orchestration targets, and ships developer
-intelligence (static analysis, `etlantic-lsp`, notebook surfaces). Control-plane
-production multi-tenant remains as graduated in 0.43 for Supported isolation
-profiles (`isolated-deployment`, `dedicated-schema`). `shared-service` remains
-Experimental. Support is community **non-SLA**.
+intelligence (static analysis, `etlantic-lsp`, notebook surfaces) for the same
+contracts and plans. Control-plane production multi-tenant remains as graduated
+in 0.43 for Supported isolation profiles (`isolated-deployment`,
+`dedicated-schema`). `shared-service` remains Experimental. Support is
+community **non-SLA**.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
 (install `etlantic==0.44.0` from PyPI → `python -m etlantic init` → validate →

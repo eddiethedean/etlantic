@@ -1,7 +1,8 @@
 # etlantic-lsp
 
-Editor-neutral language server for ETLantic pipelines. Built on
-`etlantic.ide` analysis and [pygls](https://pygls.readthedocs.io/).
+Editor-neutral language server for ETLantic pipelines (**0.44.0** published
+Beta). Built on `etlantic.ide` analysis and
+[pygls](https://pygls.readthedocs.io/).
 
 ```bash
 python -m pip install 'etlantic[lsp]==0.44.0'

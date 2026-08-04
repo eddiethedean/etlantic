@@ -2,9 +2,11 @@
 
 > **Plan status: partially shipped, cross-cutting plan.**
 >
-> **Current 0.44 boundary:** The local CLI and generated read-only HTML and
-> diagram artifacts are available. Interactive workspace, dashboard, IDE, and
-> hosted operator phases remain planned and must pass their own accessibility,
+> **Current 0.44 boundary:** The local CLI, generated read-only HTML/diagram
+> artifacts, and Phase 4 developer intelligence (watch, `etlantic-lsp`, VS Code
+> reference client, notebooks) are available in published **0.44.0**. Interactive
+> HTML workspace (Phase 2), run dashboard (Phase 3), and hosted Operator Console
+> (Phase 5 / 0.50) remain planned and must pass their own accessibility,
 > security, and operational gates.
 >
 > **Authority:** Current CLI and visualization guides define shipped behavior.
@@ -189,7 +191,8 @@ dependencies outside ETLantic core.
 
 ## Phase 4 — Fast authoring feedback and editor integration
 
-**Roadmap alignment:** 0.44 Developer Intelligence.
+**Roadmap alignment:** 0.44 Developer Intelligence (**Released** with
+ETLantic 0.44.0 — see [EXIT_GATE_0_44](EXIT_GATE_0_44.md)).
 
 ### Deliver
 

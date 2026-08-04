@@ -1,8 +1,8 @@
 # What's New in ETLantic 0.44
 
-> **Status: Available in ETLantic 0.44.0 (Beta).** Developer intelligence:
-> editor-neutral LSP, static analysis, notebook displays, and safe
-> trusted-workspace analysis. CP-GA claims remain those of 0.43.
+> **Status: Available in ETLantic 0.44.0 (published Beta).** Developer
+> intelligence: editor-neutral LSP, static analysis, notebook displays, and
+> safe trusted-workspace analysis. CP-GA claims remain those of 0.43.
 
 ## Highlights
 

@@ -1,7 +1,8 @@
 # Migration 0.43 → 0.44
 
 > **Status: Available for ETLantic 0.44.0.** Upgrade notes for adopters moving
-> from the published 0.43 CP-GA line to the 0.44 developer-intelligence line.
+> from the published 0.43 CP-GA line to the published 0.44 developer-intelligence
+> line.
 
 ## Summary
 

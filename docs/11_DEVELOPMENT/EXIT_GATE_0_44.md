@@ -62,8 +62,10 @@ From [IMPLEMENTATION_PLAN_0_44](IMPLEMENTATION_PLAN_0_44.md):
 
 ## Go / no-go
 
-**Released** as `0.44.0`. All scorecard rows are **Met** under the evidence
-language above (in-process analysis + LSP smoke + notebook unit tests).
+**Released** as `0.44.0` (tag `v0.44.0` / PyPI / RTD). ROADMAP current row
+remains **Gate-ready for tag/publish** vocabulary until the next minor. All
+scorecard rows are **Met** under the evidence language above (in-process
+analysis + LSP smoke + notebook unit tests).
 
 ## Explicit non-claims
 

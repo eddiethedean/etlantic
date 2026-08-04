@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.44.0 is a **Beta** (PyPI) release suitable for documented single-tenant
+ETLantic 0.44.0 is a published **Beta** (PyPI) release suitable for documented single-tenant
 pilots and production multi-tenant for **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). Security reports
 concerning the published package, contract loading, planning, local runtime,

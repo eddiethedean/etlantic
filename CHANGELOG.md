@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Lockstep package versions `0.44.0`; plugin floor `etlantic>=0.44.0,<0.45`
 
+### Fixed
+
+- Trusted-workspace `allow_roots` for dotted modules; secret/live-schema deny on
+  `execute()`; JSON targets audited outside roots; Windows drive-letter
+  `module:Class` splitting for absolute paths
+- IDE generate honesty, watch SARIF mapping, notebook redaction/stale markers,
+  LSP trusted-imports wiring, and CI `tests/ide` job
+- Active docs/roadmap/exit-gate voice for the published 0.44.0 line
+
 ## [0.43.0] - 2026-08-04
 
 ### Adopter summary

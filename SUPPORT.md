@@ -1,6 +1,6 @@
 # Support
 
-ETLantic **0.44.0** is a **Beta** (PyPI) release suitable for documented single-tenant
+ETLantic **0.44.0** is a published **Beta** (PyPI) release suitable for documented single-tenant
 pilots and production multi-tenant for Supported isolation profiles only.
 Community support has **no formal SLA** or guaranteed response time.
 

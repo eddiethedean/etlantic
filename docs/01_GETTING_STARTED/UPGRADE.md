@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.44.0.**
+> **Status: Available in ETLantic 0.44.0 (published Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,7 +13,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.44.0** — choose your guide:
+**ETLantic 0.44.0** (published Beta) — choose your guide:
 
 | From version | Ordered path to 0.44 |
 |---|---|

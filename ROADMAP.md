@@ -6,11 +6,12 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.44.0** (Beta) — Developer Intelligence:
-editor-neutral LSP, static analysis, notebook surfaces, and trusted-workspace
-boundary. Prior **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2, and
-**0.39** CP1 remain prior baselines. Milestones **0.25** (burn-in first slice)
-through **0.37** (stable foundation) are shipped.
+**Current release:** ETLantic **0.44.0** (Beta) — published Developer
+Intelligence: editor-neutral LSP, static analysis, notebook surfaces, and
+trusted-workspace boundary. ROADMAP current row stays **Gate-ready for
+tag/publish**. Prior **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2,
+and **0.39** CP1 remain prior baselines. Milestones **0.25** (burn-in first
+slice) through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
@@ -23,7 +24,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Next | 0.45 | Planner and optimization SDK | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence published; 0.43 CP-GA prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -3895,6 +3896,10 @@ Failure of a mandatory gate keeps the program in release-candidate status. The
 project does not weaken “multi-tenant” to meet a release date.
 
 ## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis
+
+**Status:** Released — ETLantic **0.44.0** (Developer Intelligence). See
+[EXIT_GATE_0_44](docs/11_DEVELOPMENT/EXIT_GATE_0_44.md) and
+[ADR-020](docs/11_DEVELOPMENT/adr/ADR-020-DEVELOPER-INTELLIGENCE.md).
 
 Deliver:
 

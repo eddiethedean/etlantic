@@ -33,7 +33,7 @@ Open **P0 count is 0**.
 |---|---|---|---|---|---|
 | — | — | — | — | No open P0 | — |
 
-## Closed in post-ship residual pass (still 0.44.0)
+## Closed in post-ship residual pass (still published 0.44.0)
 
 | ID | Severity | Summary | Disposition |
 |---|---|---|---|
