@@ -1,6 +1,6 @@
 # Findings Ledger 0.42 — Policy, Quotas, Audit, and Supply-Chain (CP4)
 
-> **Status: Gate-ready** — ETLantic **0.42.0** CP4 exit. Open **P0 count is 0**.
+> **Status: Released** — ETLantic **0.42.0** CP4 exit. Open **P0 count is 0**.
 > **CP4 ≠ production multi-tenant** (**0.43**).
 
 ## Severity policy

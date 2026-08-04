@@ -73,7 +73,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
 | 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
-| 0.41 → 0.42 | CP4 policy / quotas / audit RC; plugin floor `etlantic>=0.42.0,<0.43` |
+| 0.41 → 0.42 | CP4 policy / quotas / audit (published Beta; multi-tenant RC capability); plugin floor `etlantic>=0.42.0,<0.43` |
 
 Regenerate reviewed plans after upgrades that change plan fingerprints or
 interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).

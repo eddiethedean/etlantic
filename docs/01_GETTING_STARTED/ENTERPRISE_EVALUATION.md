@@ -6,7 +6,7 @@
 
 !!! warning "PyPI classifiers ≠ enterprise readiness"
     Official engine packages declare **Beta** classifiers that match the
-    **ETLantic 0.40 Beta** pilot envelope. Do not treat classifiers as an SLA,
+    **ETLantic 0.42 Beta** pilot envelope. Do not treat classifiers as an SLA,
     multi-tenant guarantee, or unrestricted enterprise production claim. See
     [Capabilities](CAPABILITIES.md) and
     [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
@@ -92,8 +92,9 @@ gh attestation verify path/to/etlantic-0.42.0-*.whl \
   --repo etlantic
 ```
 
-After the v0.42.0 tag workflow succeeds, expect a per-artifact SHA-256
-manifest (`release-artifacts.json`) and GitHub build provenance attestations.
+Verify the published SHA-256 manifest (`release-artifacts.json`) and GitHub
+build provenance attestations from the
+[v0.42.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.42.0).
 CycloneDX SBOM generation is optional: the release may include
 `etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published
 asset before recording supply-chain evidence. Full checklist:

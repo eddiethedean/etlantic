@@ -17,14 +17,14 @@ means the observability / run-history *pilot* slice—it does
 **not** mean unrestricted enterprise production. **CP1** ships embeddable
 identity, durable accept, and SSE via `ETLanticAPI` (plus thin
 `create_reference_app` for non-CP demos) but is **not** multi-tenant GA
-(graduation remains **0.43**). See the Beta envelope above
-and CHANGELOG `[Unreleased]` for post-cut hardening that may land in a later
-0.42.x patch without changing the documented pilot claims.
+(graduation remains **0.43**). CP4 adds policy / quotas / audit as a
+multi-tenant **release-candidate** capability on the published `0.42.0` line
+without changing the production-isolation non-claim.
 
 Experimental features remain experimental. Broader deployment topology,
 multi-tenancy, and compliance attestations remain adopter-owned today. Supply
-chain for v0.42.0 is expected at tag time as a SHA-256 artifact manifest and
-GitHub provenance attestations; CycloneDX SBOM generation is optional (SBOM or
+chain for v0.42.0 publishes as a SHA-256 artifact manifest and GitHub
+provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
 Multi-tenancy has a

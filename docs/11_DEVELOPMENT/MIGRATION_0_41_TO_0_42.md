@@ -1,8 +1,8 @@
 # Migration 0.41 → 0.42
 
 > **Status: Available for ETLantic 0.42.0.** Upgrade notes for adopters moving
-> from the 0.41 CP3 durable-work line to the 0.42 CP4 policy/audit release
-> candidate. **CP4 ≠ production multi-tenant** (**0.43**).
+> from the 0.41 CP3 durable-work line to the published 0.42 CP4 policy/audit
+> line. **CP4 ≠ production multi-tenant** (**0.43**).
 
 ## Summary
 
@@ -11,9 +11,9 @@
 | Package pin | `etlantic==0.42.0` (do not mix 0.41 and 0.42 minors) |
 | Control plane | CP4: policy, approvals/SoD, quotas, objectives, erasure, attestations, audit |
 | CP1–CP3 APIs | Stable and additive; durable wire shapes unchanged |
-| Host ops | New `/v1/policy|approvals|quotas|erasure|audit|attestations` routes |
+| Host ops | New `/v1/policy|approvals|quotas|erasure|audit|attestations|objectives` routes |
 | Durable HTTP | Effects / repair / diagnose / shadow routes completed (`041-P1-02`) |
-| Persistence | SQLModel migration `003_cp4_governance`; normalized durable entity dual-write |
+| Persistence | SQLModel migration `003_cp4_governance`; durable entity dual-write mirrors (snapshot canonical) |
 | Production multi-tenant | **Not** claimed in 0.42 — reserved for **0.43** |
 
 ## Upgrade steps

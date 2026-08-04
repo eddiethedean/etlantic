@@ -22,10 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CP4 `PolicyProvider` / `MemoryPolicyProvider`, approvals/SoD, quotas,
   delivery objectives, governed erasure, attestations, `AuditEvidenceStore`
-- FastAPI optional CP4 injection and `/v1/policy|approvals|quotas|erasure|audit|attestations`
-- Completed `/v1/durable` effects/repair/diagnose/shadow routes
-- SQLModel migration `003_cp4_governance` + normalized durable entity dual-write
-- CLI `etlantic erasure plan|status`
+- FastAPI optional CP4 injection and
+  `/v1/policy|approvals|quotas|erasure|audit|attestations|objectives`
+- Completed `/v1/durable` effects/repair/diagnose/shadow routes (diagnose is
+  POST-only)
+- SQLModel migration `003_cp4_governance` + durable submission/outbox entity
+  dual-write mirrors (snapshot remains canonical)
+- CLI `etlantic erasure plan|status` with `--store` scratch round-trip
 - ADR-019, EXIT_GATE_0_42, FINDINGS_0_42, WHATS_NEW_0_42, MIGRATION_0_41_TO_0_42
 - CP4 conformance/chaos/objective check scripts and outage matrix
 
@@ -33,6 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Official package versions align at 0.42.0; plugins require
   `etlantic>=0.42.0,<0.43`
 - Supported security release line is 0.42.x
+- FastAPI submit/promote run CP4 policy/quota/approval/attestation gates when
+  providers are configured; missing CP4 providers return Problem Details
+  `PMCP501`
+- Quota fairness uses weighted round-robin under host-marked `shared_pressure`
+- Attestation stores require an explicit signing secret (`for_tests()` only in
+  unit suites)
+- OPA adapter documented as stub/fallback (no embedded evaluate path)
+
+### Fixed
+- SQLModel audit list/verify/export no longer bump snapshot `payload_version`
+- Connector `PACKAGE_VERSION` and example pins aligned to 0.42.0
+- Active docs/roadmap/exit-gate voice for the published 0.42.0 line
 
 ## [0.41.0] - 2026-07-31
 

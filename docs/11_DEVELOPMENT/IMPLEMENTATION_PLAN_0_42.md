@@ -1,11 +1,13 @@
 ---
 title: ETLantic 0.42 Implementation Plan
 description: Implementation-grade plan for policy, delivery objectives, privacy operations, quotas, audit, approvals, and supply-chain security.
-plan_status: current
+plan_status: released
 plan_last_reviewed: 0.42.0
 ---
 
 # ETLantic 0.42 Implementation Plan
+
+> **Status: Released with ETLantic 0.42.0.** See [EXIT_GATE_0_42](EXIT_GATE_0_42.md).
 
 Phase 0.42 places policy and evidence around every control-plane transition. It
 adds enforceable admission, execution, delivery-objective, notification,

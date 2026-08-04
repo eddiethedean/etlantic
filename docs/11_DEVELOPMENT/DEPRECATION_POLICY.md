@@ -2,8 +2,8 @@
 
 ETLantic 0.42.0 is a Beta (PyPI) release suitable for documented single-tenant
 pilots—not unrestricted enterprise production. The roadmap remains entirely
-within the 0.x series; **0.37** is the stable-foundation gate (in-tree
-gate-ready; tag/publish separate). Breaking
+within the 0.x series; **0.37** closed the stable-foundation gate and later
+minors continue post-foundation incubation. Breaking
 changes remain possible, but they must not be silent. See
 [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
 

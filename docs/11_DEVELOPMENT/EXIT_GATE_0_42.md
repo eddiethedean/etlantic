@@ -1,8 +1,8 @@
 # Exit Gate 0.42 — Tenant Policy, Quotas, Audit, and Supply-Chain (CP4)
 
-> **Status: Gate-ready for tag/publish rehearsal.** Package version **0.42.0**.
-> **CP4 is not a production multi-tenant isolation claim** — that remains gated
-> to **0.43**. Close only against exact candidate wheels when publishing.
+> **Status: Released — ETLantic 0.42.0.** CP4 policy / quotas / audit line is
+> published for documented pilots. **CP4 is not a production multi-tenant
+> isolation claim** — that remains gated to **0.43**.
 
 | Deliverable | Status |
 |---|---|
@@ -65,7 +65,8 @@ From [IMPLEMENTATION_PLAN_0_42](IMPLEMENTATION_PLAN_0_42.md) exit gates:
 - [x] [FINDINGS_0_42](FINDINGS_0_42.md) ledger (P0 = 0)
 - [x] [WHATS_NEW_0_42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) completed at exit
 - [x] [MIGRATION_0_41_TO_0_42](MIGRATION_0_41_TO_0_42.md) completed at exit
-- [x] Indexes / roadmap mark 0.42 CP4 **Gate-ready**
+- [x] Indexes / roadmap mark 0.42 CP4 **Released** (ROADMAP current row remains
+  gate-ready-for-tag vocabulary until the next minor)
 
 ### CP4 coordination (Waves 1–7)
 
@@ -73,7 +74,7 @@ From [IMPLEMENTATION_PLAN_0_42](IMPLEMENTATION_PLAN_0_42.md) exit gates:
 - [x] SQLModel providers + migrations
 - [x] FastAPI CP4 routes
 - [x] Chaos / outage / conformance matrices green
-- [x] Version bump to 0.42.0 (no git tag from this gate alone)
+- [x] Version bump to 0.42.0 and publish path (`v0.42.0` tag / PyPI / RTD)
 
 ## Explicit non-claim
 

@@ -10,9 +10,11 @@
 ## What works today (0.42)
 
 ETLantic 0.42.0 is a Beta release for documented, controlled,
-single-tenant pilots. It validates and plans typed pipelines, runs them
-locally or through supported engine plugins, and compiles valid plans to
-supported orchestration targets.
+single-tenant pilots (install `etlantic==0.42.0` from PyPI). It validates and
+plans typed pipelines, runs them locally or through supported engine plugins,
+compiles valid plans to supported orchestration targets, and ships CP4 policy /
+quotas / audit as a multi-tenant **release-candidate** surface (**not**
+production multi-tenant isolation — **0.43**).
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
 (install `etlantic==0.42.0` from PyPI → `python -m etlantic init` → validate →

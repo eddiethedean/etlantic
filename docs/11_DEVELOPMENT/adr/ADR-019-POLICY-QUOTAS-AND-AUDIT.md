@@ -89,8 +89,8 @@ cross-tenant/cross-environment evidence cannot satisfy a gate.
 
 ### CP4 is not production multi-tenant
 
-0.42 is the multi-tenant **release candidate** gate. Production multi-tenant
-isolation remains gated to **0.43**.
+0.42 publishes the multi-tenant **release candidate** capability set on PyPI.
+Production multi-tenant isolation remains gated to **0.43**.
 
 ## Consequences
 

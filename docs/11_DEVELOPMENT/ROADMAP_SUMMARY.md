@@ -4,9 +4,9 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.42.0** is the current CP4 policy / quotas / audit release-candidate line
-(hardening on package version 0.42.0). **CP4 ≠ production multi-tenant**
-(**0.43**). Milestones describe capability order, not release-date commitments.
+**0.42.0** is the current published CP4 policy / quotas / audit line
+(**Beta**). **CP4 ≠ production multi-tenant** (**0.43**). Milestones describe
+capability order, not release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -14,13 +14,13 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.42 | Policy / quotas / audit (CP4) | [Gate-ready](EXIT_GATE_0_42.md) |
+| Current | 0.42 | Policy / quotas / audit (CP4) | [Released](EXIT_GATE_0_42.md) |
 | Previous | 0.41 | Durable submission / state (CP3) | [Gate-ready / shipped evidence](EXIT_GATE_0_41.md) |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.42 CP4 RC; 0.41 CP3 prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.42 CP4 published; 0.41 CP3 prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
