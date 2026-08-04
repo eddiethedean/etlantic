@@ -108,9 +108,7 @@ class MemoryAuditEvidenceStore:
                 prev = rec.record_hash
             return True
 
-    def export(
-        self, ctx: ControlPlaneContext, *, limit: int = 1000
-    ) -> AuditExport:
+    def export(self, ctx: ControlPlaneContext, *, limit: int = 1000) -> AuditExport:
         with self._lock:
             chain = self._chains.get(_scope(ctx), [])[:limit]
             tip = chain[-1].record_hash if chain else GENESIS_HASH

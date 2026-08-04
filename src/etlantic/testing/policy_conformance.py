@@ -94,9 +94,7 @@ def run_policy_conformance_suite(
         assert exc.status == 403
 
     approver = _ctx(subject="approver-b")
-    approved = approvals.decide(
-        approver, approval_id=req.approval_id, approve=True
-    )
+    approved = approvals.decide(approver, approval_id=req.approval_id, approve=True)
     assert approved.status == "approved"
 
     # Stale fingerprint.

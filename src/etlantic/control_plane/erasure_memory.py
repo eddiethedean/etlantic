@@ -158,9 +158,7 @@ class MemoryErasureStore:
             )
             self._plans[(*_scope(ctx), plan.plan_id)] = plan
             self._plan_by_request[(*_scope(ctx), request_id)] = plan.plan_id
-            self._requests[(*_scope(ctx), request_id)] = replace(
-                req, status="planned"
-            )
+            self._requests[(*_scope(ctx), request_id)] = replace(req, status="planned")
             return deepcopy(plan)
 
     def execute(
@@ -203,12 +201,17 @@ class MemoryErasureStore:
                     else result
                 )
             statuses = {r.status for r in results}
-            reconciled = all(
-                r.status in ("completed",) for r in results
-            ) and "unsupported" not in statuses
+            reconciled = (
+                all(r.status in ("completed",) for r in results)
+                and "unsupported" not in statuses
+            )
             if "unsupported" in statuses or "failed" in statuses:
                 # Cannot claim completion while required providers unresolved.
-                if all(r.status == "completed" for r in results if r.status != "unsupported"):
+                if all(
+                    r.status == "completed"
+                    for r in results
+                    if r.status != "unsupported"
+                ):
                     status = "partial"
                 elif all(r.status == "unsupported" for r in results):
                     status = "unsupported"
@@ -235,13 +238,12 @@ class MemoryErasureStore:
             )
             self._reports[(*_scope(ctx), report.report_id)] = report
             self._requests[(*_scope(ctx), plan.request_id)] = replace(
-                req, status=status  # type: ignore[arg-type]
+                req,
+                status=status,  # type: ignore[arg-type]
             )
             return deepcopy(report)
 
-    def get_report(
-        self, ctx: ControlPlaneContext, *, report_id: str
-    ) -> ErasureReport:
+    def get_report(self, ctx: ControlPlaneContext, *, report_id: str) -> ErasureReport:
         with self._lock:
             report = self._reports.get((*_scope(ctx), report_id))
             if report is None:

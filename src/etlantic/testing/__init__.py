@@ -12,6 +12,9 @@ from etlantic.testing.connectors import (
     run_source_connector_conformance_suite,
     run_storage_connector_conformance_suite,
 )
+from etlantic.testing.cp4_governance_conformance import (
+    run_cp4_governance_conformance_suite,
+)
 from etlantic.testing.dataframe import (
     assert_plugin_info,
     assert_roundtrip_records,
@@ -20,10 +23,6 @@ from etlantic.testing.dataframe import (
 from etlantic.testing.durable_work_conformance import (
     run_durable_work_conformance_suite,
 )
-from etlantic.testing.cp4_governance_conformance import (
-    run_cp4_governance_conformance_suite,
-)
-from etlantic.testing.policy_conformance import run_policy_conformance_suite
 from etlantic.testing.event_consumer_conformance import (
     run_event_consumer_conformance_suite,
 )
@@ -69,6 +68,7 @@ from etlantic.testing.pipeline_case import (
     snapshot_plan,
     snapshot_report,
 )
+from etlantic.testing.policy_conformance import run_policy_conformance_suite
 from etlantic.testing.portable_transform_conformance import (
     normalize_rows,
     run_portable_transform_conformance_suite,

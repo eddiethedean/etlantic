@@ -295,6 +295,8 @@ known-first-party = [
 "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/deps.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py" = ["B008"]
+# Typer Option()/Argument() defaults are the CLI framework idiom.
+"src/etlantic/cli/cmds/erasure.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

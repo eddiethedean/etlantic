@@ -159,16 +159,12 @@ def gate_pre_submit(
             ctx,
             action="pre_submit",
             resource=plan_fingerprint,
-            decision_refs=(
-                [decision.decision_id] if decision is not None else []
-            ),
+            decision_refs=([decision.decision_id] if decision is not None else []),
             metadata={
                 "policy_fingerprint": (
                     decision.policy_fingerprint if decision else None
                 ),
-                "quota_effect": (
-                    quota_decision.effect if quota_decision else None
-                ),
+                "quota_effect": (quota_decision.effect if quota_decision else None),
             },
         )
     return decision, quota_decision
@@ -230,8 +226,10 @@ def gate_pre_plan(
         required=required,
     )
     enforce_policy_decision(decision)
-    if decision is not None and attributes:
-        if decision.constraints.crosses_boundary(
+    if (
+        decision is not None
+        and attributes
+        and decision.constraints.crosses_boundary(
             target_region=(
                 str(attributes["target_region"])
                 if attributes.get("target_region")
@@ -242,11 +240,12 @@ def gate_pre_plan(
                 if attributes.get("egress_destination")
                 else None
             ),
-        ):
-            raise ControlPlaneError.forbidden(
-                "plan would cross governance boundary",
-                extensions={"hook": "pre_plan"},
-            )
+        )
+    ):
+        raise ControlPlaneError.forbidden(
+            "plan would cross governance boundary",
+            extensions={"hook": "pre_plan"},
+        )
     return decision
 
 

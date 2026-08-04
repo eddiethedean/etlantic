@@ -37,9 +37,7 @@ class MemoryAttestationStore:
         sig = sign_payload(self.signing_secret, attestation.signing_payload())
         return replace(attestation, signature=sig)
 
-    def put(
-        self, ctx: ControlPlaneContext, *, attestation: Attestation
-    ) -> Attestation:
+    def put(self, ctx: ControlPlaneContext, *, attestation: Attestation) -> Attestation:
         with self._lock:
             scoped = attestation
             if attestation.tenant_id is None:
@@ -152,9 +150,7 @@ class MemoryAttestationStore:
             obs = self._observations.get((*_scope(ctx), observation_id))
             if obs is None:
                 # Cross-tenant lookup must not enumerate.
-                return VerificationResult(
-                    ok=False, reasons=("observation not found",)
-                )
+                return VerificationResult(ok=False, reasons=("observation not found",))
             if not verify_signature(
                 self.signing_secret, obs.signing_payload(), obs.signature
             ):

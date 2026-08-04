@@ -79,13 +79,11 @@ class GovernanceConstraints:
             and target_region not in self.residency_regions
         ):
             return True
-        if (
+        return (
             egress_destination is not None
-            and self.egress_allowlist
+            and bool(self.egress_allowlist)
             and egress_destination not in self.egress_allowlist
-        ):
-            return True
-        return False
+        )
 
 
 def merge_constraints(

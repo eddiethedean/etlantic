@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime
-from typing import Any
 
 from etlantic.control_plane.approval_models import (
     ApprovalDecisionRecord,
@@ -90,10 +89,9 @@ class MemoryApprovalStore:
                     extensions={"approval_id": approval_id},
                 )
             # Separation of duties: requester cannot be sole approver.
-            if (
-                record.requester_subject == ctx.principal.subject
-                and (record.requester_issuer or "") == (ctx.principal.issuer or "")
-            ):
+            if record.requester_subject == ctx.principal.subject and (
+                record.requester_issuer or ""
+            ) == (ctx.principal.issuer or ""):
                 raise ControlPlaneError.forbidden(
                     "separation of duties: requester cannot approve",
                     extensions={"approval_id": approval_id},
@@ -196,12 +194,15 @@ class MemoryApprovalStore:
             return False
 
     def _refresh(self, record: ApprovalRequest) -> ApprovalRequest:
-        if record.status == "pending" and record.expires_at is not None:
-            if record.expires_at <= _now():
-                expired = replace(record, status="expired", decided_at=_now())
-                key = (record.tenant_id, record.workspace_id, record.approval_id)
-                self._approvals[key] = expired
-                return expired
+        if (
+            record.status == "pending"
+            and record.expires_at is not None
+            and record.expires_at <= _now()
+        ):
+            expired = replace(record, status="expired", decided_at=_now())
+            key = (record.tenant_id, record.workspace_id, record.approval_id)
+            self._approvals[key] = expired
+            return expired
         return record
 
 

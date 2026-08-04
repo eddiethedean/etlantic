@@ -21,8 +21,7 @@ class ErasureProvider(Protocol):
 
     provider_id: str
 
-    def supports(self, action: ErasureAction) -> bool:
-        ...
+    def supports(self, action: ErasureAction) -> bool: ...
 
     def execute(
         self,
@@ -31,8 +30,7 @@ class ErasureProvider(Protocol):
         action: ErasureAction,
         subject_key_fingerprint: str,
         field_paths: Sequence[str],
-    ) -> ErasureStepResult:
-        ...
+    ) -> ErasureStepResult: ...
 
 
 @runtime_checkable
@@ -47,13 +45,11 @@ class ErasureStore(Protocol):
         field_paths: Sequence[str],
         legal_hold: bool = False,
         request_id: str | None = None,
-    ) -> ErasureRequest:
-        ...
+    ) -> ErasureRequest: ...
 
     def get_request(
         self, ctx: ControlPlaneContext, *, request_id: str
-    ) -> ErasureRequest:
-        ...
+    ) -> ErasureRequest: ...
 
     def plan(
         self,
@@ -62,8 +58,7 @@ class ErasureStore(Protocol):
         request_id: str,
         providers: Sequence[ErasureProvider],
         actions: Sequence[ErasureAction] | None = None,
-    ) -> ErasurePlan:
-        ...
+    ) -> ErasurePlan: ...
 
     def execute(
         self,
@@ -71,13 +66,11 @@ class ErasureStore(Protocol):
         *,
         plan_id: str,
         providers: Sequence[ErasureProvider],
-    ) -> ErasureReport:
-        ...
+    ) -> ErasureReport: ...
 
     def get_report(
         self, ctx: ControlPlaneContext, *, report_id: str
-    ) -> ErasureReport:
-        ...
+    ) -> ErasureReport: ...
 
 
 __all__ = ["ErasureProvider", "ErasureStore"]

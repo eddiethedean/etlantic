@@ -13,9 +13,7 @@ from etlantic.control_plane.redaction import redact_control_plane_payload
 
 ATTESTATION_SCHEMA = "etlantic.control_plane.attestation/1"
 VERIFICATION_RESULT_SCHEMA = "etlantic.control_plane.verification_result/1"
-SIGNED_SCHEMA_OBSERVATION_SCHEMA = (
-    "etlantic.control_plane.signed_schema_observation/1"
-)
+SIGNED_SCHEMA_OBSERVATION_SCHEMA = "etlantic.control_plane.signed_schema_observation/1"
 
 AttestationKind = Literal[
     "plan", "revision", "plugin", "policy_bundle", "sbom", "schema_observation"
@@ -143,11 +141,11 @@ def require_verified(results: Sequence[VerificationResult]) -> None:
 
 __all__ = [
     "ATTESTATION_SCHEMA",
+    "SIGNED_SCHEMA_OBSERVATION_SCHEMA",
+    "VERIFICATION_RESULT_SCHEMA",
     "Attestation",
     "AttestationKind",
-    "SIGNED_SCHEMA_OBSERVATION_SCHEMA",
     "SignedSchemaObservation",
-    "VERIFICATION_RESULT_SCHEMA",
     "VerificationResult",
     "require_verified",
     "sign_payload",

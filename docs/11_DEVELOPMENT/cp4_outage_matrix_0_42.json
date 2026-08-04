@@ -19,6 +19,11 @@
     {
       "id": "audit_integrity",
       "status": "pass"
+    },
+    {
+      "id": "approval_sod",
+      "status": "pass",
+      "http_status": 403
     }
   ],
   "pass": true,

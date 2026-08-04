@@ -104,8 +104,8 @@ class AuditExport:
 __all__ = [
     "AUDIT_EXPORT_SCHEMA",
     "AUDIT_RECORD_SCHEMA",
+    "GENESIS_HASH",
     "AuditExport",
     "AuditRecord",
-    "GENESIS_HASH",
     "compute_record_hash",
 ]

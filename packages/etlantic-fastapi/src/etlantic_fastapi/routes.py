@@ -1483,15 +1483,19 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         payload = body or {}
-        return _require_durable().plan_repair(
-            ctx,
-            submission_id,
-            checkpoint_id=payload.get("checkpoint_id"),
-            invalidated_partition_ids=tuple(
-                payload.get("invalidated_partition_ids") or ()
-            ),
-            reusable_artifact_ids=tuple(payload.get("reusable_artifact_ids") or ()),
-        ).to_dict()
+        return (
+            _require_durable()
+            .plan_repair(
+                ctx,
+                submission_id,
+                checkpoint_id=payload.get("checkpoint_id"),
+                invalidated_partition_ids=tuple(
+                    payload.get("invalidated_partition_ids") or ()
+                ),
+                reusable_artifact_ids=tuple(payload.get("reusable_artifact_ids") or ()),
+            )
+            .to_dict()
+        )
 
     @router.get(
         "/v1/durable/checkpoints/{checkpoint_id}/diagnose",
@@ -1543,9 +1547,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             submission_id=str(body.get("submission_id") or ""),
             tenant_id=ctx.tenant.tenant_id,
             workspace_id=ctx.workspace.workspace_id,
-            authorized_by=str(
-                body.get("authorized_by") or ctx.principal.subject
-            ),
+            authorized_by=str(body.get("authorized_by") or ctx.principal.subject),
             created_at=str(
                 body.get("created_at")
                 or datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -1573,7 +1575,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         if api.policy is None:
-            raise HTTPException(status_code=503, detail="policy provider not configured")
+            raise HTTPException(
+                status_code=503, detail="policy provider not configured"
+            )
         decision = api.policy.decide(
             ctx,
             hook=body.get("hook", "privileged_op"),

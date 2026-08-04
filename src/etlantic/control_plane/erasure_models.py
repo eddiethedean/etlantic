@@ -78,9 +78,7 @@ class ErasurePlanStep:
             "action": self.action,
             "field_paths": list(self.field_paths),
             "supported": self.supported,
-            "reason": (
-                redact_control_plane_text(self.reason) if self.reason else None
-            ),
+            "reason": (redact_control_plane_text(self.reason) if self.reason else None),
         }
 
 
@@ -115,9 +113,7 @@ class ErasureStepResult:
             "provider_id": self.provider_id,
             "status": self.status,
             "proof_fingerprint": self.proof_fingerprint,
-            "reason": (
-                redact_control_plane_text(self.reason) if self.reason else None
-            ),
+            "reason": (redact_control_plane_text(self.reason) if self.reason else None),
         }
 
 

@@ -42,9 +42,7 @@ def _run_matrix() -> dict[str, object]:
 
     policy = MemoryPolicyProvider(unavailable=True)
     try:
-        gate_pre_submit(
-            ctx, policy=policy, plan_fingerprint="p", require_policy=True
-        )
+        gate_pre_submit(ctx, policy=policy, plan_fingerprint="p", require_policy=True)
         cases.append({"id": "policy_outage", "status": "fail", "detail": "no raise"})
     except ControlPlaneError as exc:
         cases.append(
@@ -71,9 +69,7 @@ def _run_matrix() -> dict[str, object]:
     policy2 = MemoryPolicyProvider()
     policy2.set_rule("pre_submit", "deny")
     try:
-        gate_pre_submit(
-            ctx, policy=policy2, plan_fingerprint="p", require_policy=True
-        )
+        gate_pre_submit(ctx, policy=policy2, plan_fingerprint="p", require_policy=True)
         cases.append({"id": "policy_deny", "status": "fail"})
     except ControlPlaneError as exc:
         cases.append(
@@ -84,11 +80,29 @@ def _run_matrix() -> dict[str, object]:
             }
         )
 
-    approvals = MemoryApprovalStore()
     audit = MemoryAuditEvidenceStore()
     audit.append(ctx, action="chaos", resource="r1")
     ok = audit.verify_chain(ctx)
     cases.append({"id": "audit_integrity", "status": "pass" if ok else "fail"})
+
+    approvals = MemoryApprovalStore()
+    req = approvals.create(
+        ctx,
+        hook="pre_promote",
+        plan_fingerprint="plan-fp",
+        policy_fingerprint="pol-fp",
+    )
+    try:
+        approvals.decide(ctx, approval_id=req.approval_id, approve=True)
+        cases.append({"id": "approval_sod", "status": "fail", "detail": "no raise"})
+    except ControlPlaneError as exc:
+        cases.append(
+            {
+                "id": "approval_sod",
+                "status": "pass" if exc.status == 403 else "fail",
+                "http_status": exc.status,
+            }
+        )
 
     failed = [c for c in cases if c["status"] != "pass"]
     return {

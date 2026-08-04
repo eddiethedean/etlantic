@@ -43,14 +43,10 @@ class QuotaProvider(Protocol):
     ) -> QuotaState:
         """Release previously admitted units."""
 
-    def set_suspended(
-        self, ctx: ControlPlaneContext, *, suspended: bool
-    ) -> QuotaState:
+    def set_suspended(self, ctx: ControlPlaneContext, *, suspended: bool) -> QuotaState:
         """Toggle tenant/workspace suspension."""
 
-    def set_contained(
-        self, ctx: ControlPlaneContext, *, contained: bool
-    ) -> QuotaState:
+    def set_contained(self, ctx: ControlPlaneContext, *, contained: bool) -> QuotaState:
         """Toggle emergency containment."""
 
     def require_available(self, ctx: ControlPlaneContext) -> None:

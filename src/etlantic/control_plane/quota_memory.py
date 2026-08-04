@@ -97,9 +97,7 @@ class MemoryQuotaProvider:
             self._rr_cursor += 1
             usage = dict(state.usage)
             usage[resource] = used + units
-            self._states[_scope(ctx)] = replace(
-                state, usage=usage, updated_at=_now()
-            )
+            self._states[_scope(ctx)] = replace(state, usage=usage, updated_at=_now())
             return QuotaDecision(
                 effect="allow",
                 resource=resource,
@@ -125,9 +123,7 @@ class MemoryQuotaProvider:
             self._states[_scope(ctx)] = updated
             return deepcopy(updated)
 
-    def set_suspended(
-        self, ctx: ControlPlaneContext, *, suspended: bool
-    ) -> QuotaState:
+    def set_suspended(self, ctx: ControlPlaneContext, *, suspended: bool) -> QuotaState:
         self.require_available(ctx)
         with self._lock:
             state = self._ensure(ctx)
@@ -135,9 +131,7 @@ class MemoryQuotaProvider:
             self._states[_scope(ctx)] = updated
             return deepcopy(updated)
 
-    def set_contained(
-        self, ctx: ControlPlaneContext, *, contained: bool
-    ) -> QuotaState:
+    def set_contained(self, ctx: ControlPlaneContext, *, contained: bool) -> QuotaState:
         self.require_available(ctx)
         with self._lock:
             state = self._ensure(ctx)

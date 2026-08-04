@@ -37,13 +37,11 @@ class ObjectiveStore(Protocol):
 
     def upsert_objective(
         self, ctx: ControlPlaneContext, *, objective: DeliveryObjective
-    ) -> DeliveryObjective:
-        ...
+    ) -> DeliveryObjective: ...
 
     def get_objective(
         self, ctx: ControlPlaneContext, *, objective_id: str
-    ) -> DeliveryObjective:
-        ...
+    ) -> DeliveryObjective: ...
 
     def evaluate(
         self,
@@ -62,8 +60,7 @@ class ObjectiveStore(Protocol):
         ctx: ControlPlaneContext,
         *,
         evaluation_id: str,
-    ) -> ObjectiveEvaluation:
-        ...
+    ) -> ObjectiveEvaluation: ...
 
     def route_notification(
         self,
@@ -79,8 +76,7 @@ class ObjectiveStore(Protocol):
 
     def list_evaluations(
         self, ctx: ControlPlaneContext, *, objective_id: str, limit: int = 100
-    ) -> Sequence[ObjectiveEvaluation]:
-        ...
+    ) -> Sequence[ObjectiveEvaluation]: ...
 
 
 __all__ = ["NotificationProvider", "ObjectiveStore"]

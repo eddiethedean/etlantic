@@ -106,7 +106,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
         providers = [MemoryErasureProvider(provider_id=p) for p in provider]
         try:
             plan = store.plan(ctx, request_id=req.request_id, providers=providers)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(ec.VALIDATION_FAILED) from exc
         payload: dict[str, Any] = {
@@ -146,7 +146,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
         store = _store_from_path(store_path)
         try:
             req = store.get_request(ctx, request_id=request_id)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(ec.VALIDATION_FAILED) from exc
         if fmt != "json":

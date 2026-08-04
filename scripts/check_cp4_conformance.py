@@ -24,12 +24,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         run_policy_conformance_suite()
         results.append({"suite": "policy", "status": "pass"})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         results.append({"suite": "policy", "status": "fail", "error": str(exc)})
     try:
         run_cp4_governance_conformance_suite()
         results.append({"suite": "governance", "status": "pass"})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         results.append({"suite": "governance", "status": "fail", "error": str(exc)})
 
     failed = any(r["status"] != "pass" for r in results)

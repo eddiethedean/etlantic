@@ -20,9 +20,7 @@ ObjectiveReference = Literal[
     "scheduled", "queued", "started", "source_ready", "fixed_time"
 ]
 ObjectiveSeverity = Literal["info", "warning", "critical"]
-ObjectiveState = Literal[
-    "on_track", "warning", "breached", "recovered", "acknowledged"
-]
+ObjectiveState = Literal["on_track", "warning", "breached", "recovered", "acknowledged"]
 
 
 def _now() -> datetime:
@@ -67,11 +65,13 @@ class DeliveryObjective:
             "metadata": redact_control_plane_payload(dict(self.metadata)),
         }
 
-    def deadline(
-        self, reference_at: datetime, *, hard: bool = True
-    ) -> datetime:
+    def deadline(self, reference_at: datetime, *, hard: bool = True) -> datetime:
         seconds = self.hard_after_seconds if hard else self.warning_after_seconds
-        base = self.fixed_time if self.reference == "fixed_time" and self.fixed_time else reference_at
+        base = (
+            self.fixed_time
+            if self.reference == "fixed_time" and self.fixed_time
+            else reference_at
+        )
         return base + timedelta(seconds=seconds + self.grace_seconds)
 
 
@@ -97,9 +97,7 @@ class ObjectiveEvaluation:
             "evaluated_at": self.evaluated_at.isoformat(),
             "dedupe_key": self.dedupe_key,
             "submission_id": self.submission_id,
-            "reason": (
-                redact_control_plane_text(self.reason) if self.reason else None
-            ),
+            "reason": (redact_control_plane_text(self.reason) if self.reason else None),
             "metadata": redact_control_plane_payload(dict(self.metadata)),
         }
 
@@ -129,9 +127,9 @@ class ObjectiveNotification:
 
 __all__ = [
     "DELIVERY_OBJECTIVE_SCHEMA",
-    "DeliveryObjective",
     "OBJECTIVE_EVALUATION_SCHEMA",
     "OBJECTIVE_NOTIFICATION_SCHEMA",
+    "DeliveryObjective",
     "ObjectiveEvaluation",
     "ObjectiveNotification",
     "ObjectiveReference",

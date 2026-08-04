@@ -17,8 +17,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 class AttestationStore(Protocol):
     def put(
         self, ctx: ControlPlaneContext, *, attestation: Attestation
-    ) -> Attestation:
-        ...
+    ) -> Attestation: ...
 
     def verify_plan(
         self,
@@ -29,13 +28,11 @@ class AttestationStore(Protocol):
         policy_fingerprint: str,
         plugin_fingerprints: Sequence[str],
         sbom_digest: str | None = None,
-    ) -> Sequence[VerificationResult]:
-        ...
+    ) -> Sequence[VerificationResult]: ...
 
     def put_schema_observation(
         self, ctx: ControlPlaneContext, *, observation: SignedSchemaObservation
-    ) -> SignedSchemaObservation:
-        ...
+    ) -> SignedSchemaObservation: ...
 
     def verify_schema_observation(
         self,
@@ -43,8 +40,7 @@ class AttestationStore(Protocol):
         *,
         observation_id: str,
         expected_environment: str | None = None,
-    ) -> VerificationResult:
-        ...
+    ) -> VerificationResult: ...
 
 
 __all__ = ["AttestationStore"]

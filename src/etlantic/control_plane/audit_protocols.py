@@ -25,16 +25,12 @@ class AuditEvidenceStore(Protocol):
 
     def list(
         self, ctx: ControlPlaneContext, *, limit: int = 100, after_id: str | None = None
-    ) -> Sequence[AuditRecord]:
-        ...
+    ) -> Sequence[AuditRecord]: ...
 
     def verify_chain(self, ctx: ControlPlaneContext) -> bool:
         """Return True when the scoped chain hashes are intact."""
 
-    def export(
-        self, ctx: ControlPlaneContext, *, limit: int = 1000
-    ) -> AuditExport:
-        ...
+    def export(self, ctx: ControlPlaneContext, *, limit: int = 1000) -> AuditExport: ...
 
     def restore(self, ctx: ControlPlaneContext, *, export: AuditExport) -> int:
         """Restore an export into an empty scoped chain; fail if tip mismatch."""

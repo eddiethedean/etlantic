@@ -67,9 +67,7 @@ def test_governance_boundary_blocks_plan() -> None:
 def test_erasure_no_false_completion() -> None:
     store = MemoryErasureStore()
     c = ctx()
-    req = store.create_request(
-        c, subject_key_fingerprint="fp", field_paths=("email",)
-    )
+    req = store.create_request(c, subject_key_fingerprint="fp", field_paths=("email",))
     providers = [
         MemoryErasureProvider(provider_id="a"),
         MemoryErasureProvider(provider_id="b", supported=set()),

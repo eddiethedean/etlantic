@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -131,7 +131,9 @@ class PolicyDecision:
                 else None
             ),
             revision_id=(
-                str(data["revision_id"]) if data.get("revision_id") is not None else None
+                str(data["revision_id"])
+                if data.get("revision_id") is not None
+                else None
             ),
             created_at=created_at,
             metadata=dict(data.get("metadata") or {}),

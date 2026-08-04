@@ -15,9 +15,7 @@ from etlantic.control_plane.redaction import (
 APPROVAL_REQUEST_SCHEMA = "etlantic.control_plane.approval_request/1"
 APPROVAL_DECISION_SCHEMA = "etlantic.control_plane.approval_decision/1"
 
-ApprovalStatus = Literal[
-    "pending", "approved", "denied", "expired", "revoked", "stale"
-]
+ApprovalStatus = Literal["pending", "approved", "denied", "expired", "revoked", "stale"]
 
 
 def _now() -> datetime:
@@ -44,9 +42,7 @@ class ApprovalDecisionRecord:
             "actor_subject": self.actor_subject,
             "actor_issuer": self.actor_issuer,
             "created_at": self.created_at.isoformat(),
-            "reason": (
-                redact_control_plane_text(self.reason) if self.reason else None
-            ),
+            "reason": (redact_control_plane_text(self.reason) if self.reason else None),
             "metadata": redact_control_plane_payload(dict(self.metadata)),
         }
 
