@@ -25,12 +25,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync dependencies
-        run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.python-version }}" = "3.11" ]; then
-            uv sync --locked --group sqlmodel
-          else
-            uv sync --locked
-          fi
+        run: uv sync --locked ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '--group sqlmodel' || '' }}
 
       - name: Plugin manifest check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
