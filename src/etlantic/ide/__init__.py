@@ -1,10 +1,31 @@
-"""IDE foundations: editor-neutral command/result JSON schemas (0.9)."""
+"""IDE foundations: editor-neutral protocols, analysis, and trusted policy (0.44)."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
+
+from etlantic.ide.commands import execute_command
+from etlantic.ide.protocol import (
+    PROTOCOL_VERSION,
+    DiagnosticPayload,
+    ExplainPreview,
+    GraphPreview,
+    IdeCommand,
+    IdeResult,
+    ImpactPreview,
+    LineagePreview,
+    LocationLink,
+    PlanPreview,
+    SemanticDiff,
+    SymbolPayload,
+)
+from etlantic.ide.trust import (
+    TrustAuditRecord,
+    TrustedWorkspacePolicy,
+    deny_untrusted,
+)
 
 COMMAND_SCHEMAS: dict[str, dict[str, Any]] = {
     "validate": {
@@ -146,7 +167,10 @@ def write_schemas(directory: str | Path) -> dict[str, Path]:
 
 
 class WorkspaceSymbolIndex:
-    """Minimal workspace symbol index foundation (not a full LSP)."""
+    """Minimal workspace symbol index foundation (compat with 0.9).
+
+    Prefer :class:`etlantic.ide.analysis.WorkspaceIndex` for full analysis.
+    """
 
     def __init__(self) -> None:
         self._symbols: dict[str, dict[str, Any]] = {}
@@ -160,3 +184,30 @@ class WorkspaceSymbolIndex:
 
     def to_dict(self) -> dict[str, Any]:
         return {"symbols": list(self._symbols.values())}
+
+
+__all__ = [
+    "COMMAND_SCHEMAS",
+    "PROTOCOL_VERSION",
+    "RESULT_SCHEMAS",
+    "DiagnosticPayload",
+    "ExplainPreview",
+    "GraphPreview",
+    "IdeCommand",
+    "IdeResult",
+    "ImpactPreview",
+    "LineagePreview",
+    "LocationLink",
+    "PlanPreview",
+    "SemanticDiff",
+    "SymbolPayload",
+    "TrustAuditRecord",
+    "TrustedWorkspacePolicy",
+    "WorkspaceSymbolIndex",
+    "deny_untrusted",
+    "execute_command",
+    "get_command_schema",
+    "get_result_schema",
+    "list_commands",
+    "write_schemas",
+]

@@ -14,6 +14,31 @@ _SARIF_LEVEL = {
 }
 
 
+def _physical_location(diagnostic: Diagnostic) -> dict[str, Any] | None:
+    """Prefer SourceLocation file/line/column; fall back to logical path."""
+    source = diagnostic.source
+    if source is not None and source.path:
+        region: dict[str, Any] = {}
+        if source.line is not None:
+            region["startLine"] = source.line
+        if source.column is not None:
+            region["startColumn"] = source.column
+        location: dict[str, Any] = {
+            "artifactLocation": {"uri": source.path},
+        }
+        if region:
+            location["region"] = region
+        return {"physicalLocation": location}
+    path = "/".join(str(p) for p in diagnostic.path if p is not None)
+    if path:
+        return {
+            "physicalLocation": {
+                "artifactLocation": {"uri": path or "pipeline"},
+            }
+        }
+    return None
+
+
 def diagnostics_to_sarif(
     diagnostics: list[Diagnostic] | tuple[Diagnostic, ...],
     *,
@@ -26,25 +51,23 @@ def diagnostics_to_sarif(
     version = tool_version or __version__
     results: list[dict[str, Any]] = []
     for diagnostic in diagnostics:
-        path = "/".join(str(p) for p in diagnostic.path if p is not None)
         result: dict[str, Any] = {
             "ruleId": diagnostic.code,
             "level": _SARIF_LEVEL.get(diagnostic.severity, "note"),
             "message": {"text": diagnostic.message},
         }
-        if path:
-            result["locations"] = [
-                {
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": path or "pipeline"},
-                    }
-                }
-            ]
+        physical = _physical_location(diagnostic)
+        if physical is not None:
+            result["locations"] = [physical]
         properties: dict[str, Any] = {}
         if diagnostic.phase:
             properties["phase"] = diagnostic.phase
         if diagnostic.help:
             properties["help"] = diagnostic.help
+        if diagnostic.path:
+            properties["logicalPath"] = [
+                str(p) for p in diagnostic.path if p is not None
+            ]
         if diagnostic.actions:
             properties["actions"] = [
                 {

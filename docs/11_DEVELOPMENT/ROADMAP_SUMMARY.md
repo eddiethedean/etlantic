@@ -4,10 +4,11 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.43.0** is the current published CP-GA multi-tenant graduation line
-(**Beta**). Production multi-tenant is claimed only for Supported isolation
-profiles. Prior **0.42** closed CP4. Milestones describe
-capability order, not release-date commitments.
+**0.44.0** is the current published Developer Intelligence line (**Beta**):
+editor-neutral LSP, static analysis, and notebook surfaces. Prior **0.43**
+closed CP-GA multi-tenant graduation (Supported isolation profiles only).
+Prior **0.42** closed CP4. Milestones describe capability order, not
+release-date commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -15,14 +16,15 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.43 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
+| Current | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
+| Previous | 0.44 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
 | Previous | 0.42 | Policy / quotas / audit (CP4) | [Released](EXIT_GATE_0_42.md) |
 | Previous | 0.41 | Durable submission / state (CP3) | [Gate-ready / shipped evidence](EXIT_GATE_0_41.md) |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.43 CP-GA published; 0.42 CP4 prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence; 0.43 CP-GA prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -301,7 +303,7 @@ shared entry, evidence, and completion rules for all later phases.
 
 ## Remaining post-foundation 0.x sequence
 
-- **[0.44](IMPLEMENTATION_PLAN_0_44.md):** developer intelligence, LSP, IDE, and static analysis
+- **[0.44](IMPLEMENTATION_PLAN_0_44.md):** developer intelligence, LSP, IDE, and static analysis — [Released](EXIT_GATE_0_44.md)
 - **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK
 - **[0.46](IMPLEMENTATION_PLAN_0_46.md):** bounded dynamic mapping and control flow,
   streaming and event-driven pipelines, poison-record/DLQ policy, and

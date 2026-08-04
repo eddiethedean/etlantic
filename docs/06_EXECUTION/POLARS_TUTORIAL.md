@@ -1,6 +1,6 @@
 # Execute with Polars
 
-> **Status: Available in ETLantic 0.43.0.** Prefer the **PyPI path** after
+> **Status: Available in ETLantic 0.44.0.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 !!! tip "PyPI vs clone"
@@ -16,7 +16,7 @@ Polars implementation and select the engine.
 ### 1. Install
 
 ```bash
-python -m pip install 'etlantic[polars]==0.43.0'
+python -m pip install 'etlantic[polars]==0.44.0'
 ```
 
 ### 2. Register a Polars implementation
@@ -67,8 +67,8 @@ Repository scripts under `examples/` are **not** in the PyPI wheel. Use them
 from a matching checkout when you want the CI-tested NormalizeCustomers demo.
 
 ```bash
-python -m pip install 'etlantic==0.43.0' 'etlantic-polars==0.43.0'
-git clone --branch v0.43.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.44.0' 'etlantic-polars==0.44.0'
+git clone --branch v0.44.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py polars
 ```

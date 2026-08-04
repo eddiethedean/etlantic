@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.43.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.44.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -9,16 +9,85 @@
 > ```
 >
 > Prefer the curated tables in [Diagnostics](DIAGNOSTICS.md) for human-oriented
-> meanings. This page is the exhaustive code→source index. Family stability
-> tiers (`stable` / `provisional` / `experimental`):
+> meanings. This page is the exhaustive code→source index. Family
+> stability tiers (`stable` / `provisional` / `experimental`):
 > [Diagnostic-code stability tiers](DIAGNOSTIC_STABILITY_TIERS.md).
 
 | Code | Example source paths |
 |---|---|
 | `PMAUTH201` | `src/etlantic/authoring/lifecycle.py` |
 | `PMAUTH410` | `src/etlantic/authoring/resolve.py` |
+| `PMCAT100` | `src/etlantic/catalog_policy.py` |
 | `PMCFG200` | `src/etlantic/cli/cmds/profile.py` |
 | `PMCFG201` | `src/etlantic/cli/cmds/profile.py` |
+| `PMCONN501` | `src/etlantic/connectors/compatibility.py` |
+| `PMCONN502` | `src/etlantic/connectors/compatibility.py` |
+| `PMCONN601` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN602` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN603` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN604` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN606` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN607` | `src/etlantic/connectors/checkpoint.py` |
+| `PMCONN701` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN702` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN703` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN710` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN720` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN721` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN722` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN730` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN740` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN741` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN750` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN751` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN752` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN753` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN760` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN761` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN762` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN763` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN764` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN765` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN766` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN770` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN771` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN772` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN773` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN774` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN775` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN776` | `src/etlantic/connectors/local_files.py` |
+| `PMCONN801` | `src/etlantic/connectors/session.py` |
+| `PMCONN850` | `src/etlantic/connectors/negotiate.py` |
+| `PMCONN901` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN902` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN903` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN904` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN905` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN906` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN907` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN908` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN909` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN910` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN911` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN912` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN913` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN914` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN915` | `src/etlantic/connectors/cdk/config.py` |
+| `PMCONN920` | `src/etlantic/connectors/cdk/context.py` |
+| `PMCONN921` | `src/etlantic/connectors/cdk/context.py` |
+| `PMCONN922` | `src/etlantic/connectors/cdk/context.py` |
+| `PMCONN930` | `src/etlantic/connectors/cdk/batching.py` |
+| `PMCONN931` | `src/etlantic/connectors/cdk/batching.py` |
+| `PMCONN932` | `src/etlantic/connectors/cdk/batching.py` |
+| `PMCONN933` | `src/etlantic/connectors/cdk/batching.py` |
+| `PMCONN940` | `src/etlantic/connectors/cdk/publication.py`, `src/etlantic/connectors/local_files.py` |
+| `PMCP400` | `src/etlantic/control_plane/attestation_memory.py`, `src/etlantic/control_plane/registry_ops.py` |
+| `PMCP401` | `src/etlantic/control_plane/errors.py` |
+| `PMCP403` | `src/etlantic/control_plane/errors.py` |
+| `PMCP404` | `src/etlantic/control_plane/errors.py` |
+| `PMCP409` | `src/etlantic/control_plane/errors.py` |
+| `PMCP410` | `src/etlantic/control_plane/errors.py` |
+| `PMCP503` | `src/etlantic/control_plane/policy_gates.py`, `src/etlantic/control_plane/policy_memory.py`, `src/etlantic/control_plane/policy_opa.py` |
 | `PMDATA101` | `src/etlantic/interchange/odcs.py`, `src/etlantic/validation/__init__.py` |
 | `PMDATA102` | `src/etlantic/validation/__init__.py` |
 | `PMDATA103` | `src/etlantic/validation/__init__.py` |
@@ -38,9 +107,10 @@
 | `PMEXEC340` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC350` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC351` | `src/etlantic/runtime/orchestrator.py` |
+| `PMEXEC353` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC400` | `src/etlantic/runtime/orchestrator.py` |
-| `PMEXEC401` | `src/etlantic/secrets/env.py` |
-| `PMEXEC402` | `src/etlantic/secrets/file.py` |
+| `PMEXEC401` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/secrets/env.py` |
+| `PMEXEC402` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/secrets/file.py` |
 | `PMEXEC408` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC409` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC410` | `src/etlantic/runtime/orchestrator.py` |
@@ -56,8 +126,8 @@
 | `PMEXEC423` | `src/etlantic/runtime/dataframe_exec.py` |
 | `PMEXEC430` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC431` | `src/etlantic/runtime/orchestrator.py` |
-| `PMEXEC432` | `src/etlantic/runtime/sql_exec.py` |
-| `PMEXEC433` | `src/etlantic/runtime/sql_exec.py` |
+| `PMEXEC432` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py` |
+| `PMEXEC433` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py` |
 | `PMEXEC434` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/runtime/sql_exec.py` |
 | `PMEXEC436` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC437` | `src/etlantic/runtime/orchestrator.py` |
@@ -65,11 +135,11 @@
 | `PMEXEC441` | `src/etlantic/runtime/spark_exec.py` |
 | `PMEXEC450` | `src/etlantic/storage/json_binding.py` |
 | `PMEXEC451` | `src/etlantic/storage/json_binding.py` |
-| `PMEXEC452` | `src/etlantic/runtime/orchestrator.py` |
+| `PMEXEC452` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/storage/json_binding.py` |
 | `PMEXEC453` | `src/etlantic/storage/csv_binding.py` |
 | `PMEXEC454` | `src/etlantic/storage/csv_binding.py` |
-| `PMEXEC455` | `src/etlantic/runtime/sql_exec.py` |
-| `PMEXEC456` | `src/etlantic/runtime/sql_exec.py` |
+| `PMEXEC455` | `src/etlantic/runtime/sql_exec.py`, `src/etlantic/storage/csv_binding.py` |
+| `PMEXEC456` | `src/etlantic/runtime/sql_exec.py`, `src/etlantic/storage/memory.py` |
 | `PMEXEC500` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC501` | `src/etlantic/reliability_runtime.py` |
 | `PMEXEC502` | `src/etlantic/reliability_runtime.py` |
@@ -94,6 +164,8 @@
 | `PMGEN233` | `src/etlantic/interchange/bundle.py` |
 | `PMGEN301` | `src/etlantic/interchange/diff.py` |
 | `PMGEN311` | `src/etlantic/interchange/diff.py` |
+| `PMID001` | `src/etlantic/ide/analysis/index.py` |
+| `PMID002` | `src/etlantic/ide/analysis/index.py` |
 | `PMORCH300` | `src/etlantic/orchestration/compile.py` |
 | `PMORCH301` | `src/etlantic/orchestration/compile.py` |
 | `PMORCH310` | `src/etlantic/orchestration/reliability.py` |
@@ -109,7 +181,7 @@
 | `PMPIPE302` | `src/etlantic/validation/__init__.py` |
 | `PMPLAN201` | `src/etlantic/authoring/lifecycle.py`, `src/etlantic/validation/__init__.py` |
 | `PMPLAN202` | `src/etlantic/validation/__init__.py` |
-| `PMPLAN301` | `src/etlantic/authoring/lifecycle.py`, `src/etlantic/validation/__init__.py` |
+| `PMPLAN301` | `src/etlantic/authoring/lifecycle.py`, `src/etlantic/plan/planner.py`, `src/etlantic/validation/__init__.py` |
 | `PMPLAN302` | `src/etlantic/plan/planner.py` |
 | `PMPLAN401` | `src/etlantic/validation/phases/capability.py` |
 | `PMPLAN402` | `src/etlantic/validation/phases/capability.py` |
@@ -122,10 +194,15 @@
 | `PMPLAN415` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN420` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN421` | `src/etlantic/planning/capabilities.py` |
+| `PMPLAN430` | `src/etlantic/planning/capabilities.py` |
+| `PMPLAN431` | `src/etlantic/planning/capabilities.py`, `src/etlantic/runtime/orchestrator.py` |
+| `PMPLAN440` | `src/etlantic/planning/capabilities.py` |
+| `PMPLAN441` | `src/etlantic/planning/capabilities.py` |
 | `PMPLAN501` | `src/etlantic/plan/planner.py` |
-| `PMPLUG401` | `src/etlantic/cli/cmds/profile.py`, `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
-| `PMPLUG402` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py`, `src/etlantic/runtime/dataframe_exec.py` |
-| `PMPLUG403` | `src/etlantic/plugin_trust.py` |
+| `PMPLUG401` | `src/etlantic/cli/cmds/profile.py`, `src/etlantic/lifecycle/runtime.py`, `src/etlantic/plugin_lifecycle/policies.py` |
+| `PMPLUG402` | `src/etlantic/lifecycle/runtime.py`, `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
+| `PMPLUG403` | `src/etlantic/plugin_lifecycle/policies.py`, `src/etlantic/plugin_trust.py` |
+| `PMPLUG404` | `src/etlantic/runtime/orchestrator.py`, `src/etlantic/validation/phases/plugin_trust.py` |
 | `PMPLUG410` | `src/etlantic/plugin_manifest.py` |
 | `PMPLUG411` | `src/etlantic/plugin_manifest.py` |
 | `PMPLUG412` | `src/etlantic/plugin_compatibility.py`, `src/etlantic/plugin_manifest.py` |

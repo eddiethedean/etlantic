@@ -1,0 +1,30 @@
+{
+  "phase": "0.44.0",
+  "surface": "clients",
+  "status": "met",
+  "python": ["3.11", "3.12", "3.13"],
+  "editors": {
+    "etlantic-lsp": "Supported",
+    "vscode_reference": "Experimental",
+    "neovim_via_lsp": "Supported_via_protocol",
+    "pycharm_via_lsp": "Supported_via_protocol",
+    "zed_via_lsp": "Supported_via_protocol"
+  },
+  "version_skew": {
+    "rule": "etlantic-lsp minor must match etlantic minor",
+    "matrix": [
+      {"etlantic": "0.44.x", "etlantic-lsp": "0.44.x", "result": "supported"},
+      {"etlantic": "0.43.x", "etlantic-lsp": "0.44.x", "result": "unsupported"}
+    ]
+  },
+  "reconnect": {
+    "duplicate_attempt_guard": true,
+    "authz_bypass": false,
+    "mechanism": "editors/vscode reconnectRun opens public CP events URL; seenAttemptIds set"
+  },
+  "accessibility": {
+    "graph_webview_role_img": true,
+    "command_palette": true,
+    "color_only_status": false
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "format": {
+      "default": "json",
+      "enum": [
+        "text",
+        "json",
+        "html"
+      ]
+    },
+    "run_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id"
+  ],
+  "title": "etlantic.report",
+  "type": "object"
+}

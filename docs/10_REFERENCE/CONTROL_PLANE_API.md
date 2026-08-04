@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: Available in ETLantic 0.43.0.** CP1–CP4 are foundations;
+> **Status: Available in ETLantic 0.44.0.** CP1–CP4 are foundations;
 > **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
 > profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
 > remains Experimental; community **non-SLA**.
@@ -15,7 +15,7 @@ embedding the control plane.
 |---|---|
 | Adopter how-to (embed FastAPI) | [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) |
 | Durable work (CP3) | [Durable work](../06_EXECUTION/DURABLE_WORK.md) |
-| CP-GA claim / evidence | [What's new in 0.43](../01_GETTING_STARTED/WHATS_NEW_0_43.md) · [Exit gate 0.43](../11_DEVELOPMENT/EXIT_GATE_0_43.md) |
+| CP-GA claim / evidence | [What's new in 0.44](../01_GETTING_STARTED/WHATS_NEW_0_43.md) · [Exit gate 0.43](../11_DEVELOPMENT/EXIT_GATE_0_43.md) |
 | What shipped in CP4 | [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) |
 | Identity freeze | [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md) |
 | Durable submission / state | [ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) |
@@ -53,7 +53,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.43.0'` (match `etlantic==0.43.0`).
+Pin: `pip install 'etlantic-fastapi==0.44.0'` (match `etlantic==0.44.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.

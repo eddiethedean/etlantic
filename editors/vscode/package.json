@@ -1,0 +1,105 @@
+{
+  "name": "etlantic",
+  "displayName": "ETLantic",
+  "description": "ETLantic developer intelligence — LSP, graph/plan previews, and run controls.",
+  "version": "0.44.0",
+  "publisher": "etlantic",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "workspaceContains:**/pyproject.toml",
+    "workspaceContains:**/.etlantic/**"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "etlantic.validate",
+        "title": "ETLantic: Validate"
+      },
+      {
+        "command": "etlantic.plan",
+        "title": "ETLantic: Plan"
+      },
+      {
+        "command": "etlantic.explain",
+        "title": "ETLantic: Explain Plan"
+      },
+      {
+        "command": "etlantic.run",
+        "title": "ETLantic: Run"
+      },
+      {
+        "command": "etlantic.showGraph",
+        "title": "ETLantic: Show Pipeline Graph"
+      },
+      {
+        "command": "etlantic.reconnectRun",
+        "title": "ETLantic: Reconnect Run Events"
+      }
+    ],
+    "configuration": {
+      "title": "ETLantic",
+      "properties": {
+        "etlantic.lspPath": {
+          "type": "string",
+          "default": "etlantic-lsp",
+          "description": "Path to the etlantic-lsp executable"
+        },
+        "etlantic.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Python interpreter used to launch etlantic-lsp"
+        },
+        "etlantic.controlPlaneBaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional control-plane base URL for run reconnect (public API only)"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "etlantic",
+          "title": "ETLantic",
+          "icon": "media/etlantic.svg"
+        }
+      ]
+    },
+    "views": {
+      "etlantic": [
+        {
+          "id": "etlantic.runPanel",
+          "name": "Runs"
+        },
+        {
+          "id": "etlantic.previews",
+          "name": "Previews"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

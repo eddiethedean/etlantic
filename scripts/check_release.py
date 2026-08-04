@@ -25,7 +25,7 @@ PACKAGES = (
 FACADE_PACKAGES = ("medallantic",)
 REDIRECT_PACKAGES = ("etlantic-sparkforge",)
 # Thin reference adapters align with core Beta maturity.
-REFERENCE_PACKAGES = ("etlantic-fastapi",)
+REFERENCE_PACKAGES = ("etlantic-fastapi", "etlantic-lsp")
 # Experimental packages may use Alpha classifiers and are optional in release CI.
 EXPERIMENTAL_PACKAGES = (
     "etlantic-datafusion",

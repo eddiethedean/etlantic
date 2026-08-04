@@ -98,14 +98,14 @@ def run_compat_campaign() -> dict[str, Any]:
     cases.append(
         {
             "id": "compat_floor",
-            "status": "pass" if major_minor == "0.43" else "fail",
-            "policy": ">=0.43.0,<0.44",
+            "status": "pass" if major_minor == "0.44" else "fail",
+            "policy": ">=0.44.0,<0.45",
             "installed": installed,
         }
     )
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
-        "matrix_version": "0.43.0",
+        "matrix_version": "0.44.0",
         "campaign": "043-C",
         "cases": cases,
         "pass": not failed,

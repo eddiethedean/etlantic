@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.43.0 is a **Beta** (PyPI) release suitable for documented single-tenant
+ETLantic 0.44.0 is a **Beta** (PyPI) release suitable for documented single-tenant
 pilots and production multi-tenant for **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). Security reports
 concerning the published package, contract loading, planning, local runtime,
@@ -11,20 +11,21 @@ documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.43.x | Current supported Beta line; security fixes are released on this line |
-| 0.42.x | Not actively maintained; upgrade to 0.43.x |
-| 0.41.x | Not actively maintained; upgrade to 0.43.x |
-| 0.40.x | Not actively maintained; upgrade to 0.43.x |
-| 0.38.x | Not actively maintained; upgrade to 0.43.x |
-| 0.37.x | Not actively maintained; upgrade to 0.43.x |
-| 0.36.x | Not actively maintained; upgrade to 0.43.x |
-| 0.35.x | Not actively maintained; upgrade to 0.43.x |
-| 0.34.x | Not actively maintained; upgrade to 0.43.x |
-| 0.33.x | Not actively maintained; upgrade to 0.43.x |
-| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.43.x |
-| 0.27.x and earlier | Not actively maintained; upgrade to 0.43.x |
+| 0.44.x | Current supported Beta line; security fixes are released on this line |
+| 0.43.x | Not actively maintained; upgrade to 0.44.x |
+| 0.42.x | Not actively maintained; upgrade to 0.44.x |
+| 0.41.x | Not actively maintained; upgrade to 0.44.x |
+| 0.40.x | Not actively maintained; upgrade to 0.44.x |
+| 0.38.x | Not actively maintained; upgrade to 0.44.x |
+| 0.37.x | Not actively maintained; upgrade to 0.44.x |
+| 0.36.x | Not actively maintained; upgrade to 0.44.x |
+| 0.35.x | Not actively maintained; upgrade to 0.44.x |
+| 0.34.x | Not actively maintained; upgrade to 0.44.x |
+| 0.33.x | Not actively maintained; upgrade to 0.44.x |
+| 0.28.x–0.32.x | Not actively maintained; upgrade to 0.44.x |
+| 0.27.x and earlier | Not actively maintained; upgrade to 0.44.x |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.43.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.44.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability

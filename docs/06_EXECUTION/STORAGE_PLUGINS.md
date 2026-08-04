@@ -6,7 +6,7 @@
 > See [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) and
 > [Landing zone](LANDING_ZONE.md).
 
-## What ships in 0.43
+## What ships in 0.44
 
 | Surface | Status |
 |---|---|

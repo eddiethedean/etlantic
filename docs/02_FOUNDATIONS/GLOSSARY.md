@@ -1,6 +1,6 @@
 # Glossary
 
-> **Status: Available in ETLantic 0.43.0.**
+> **Status: Available in ETLantic 0.44.0.**
 
 This glossary defines the core terminology used throughout the
 ETLantic documentation. Unless otherwise noted, these definitions

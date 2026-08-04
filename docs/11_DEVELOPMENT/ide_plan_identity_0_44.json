@@ -1,0 +1,27 @@
+{
+  "phase": "0.44.0",
+  "surface": "plan_identity",
+  "status": "met",
+  "invariant": "IDE IdeCommand plan, NotebookSession.plan, and CLI/SDK plan_pipeline_like share public authoring/lifecycle paths and produce identical fingerprints for equivalent inputs",
+  "trace": [
+    {
+      "path": "sdk",
+      "entry": "etlantic.authoring.lifecycle.plan_pipeline_like"
+    },
+    {
+      "path": "ide",
+      "entry": "etlantic.ide.commands.execute_command(name=plan)"
+    },
+    {
+      "path": "notebook",
+      "entry": "etlantic.notebook.NotebookSession.plan"
+    },
+    {
+      "path": "cli",
+      "entry": "etlantic plan → plan_pipeline_with_report / lifecycle"
+    }
+  ],
+  "tests": [
+    "tests/ide/test_notebook_0_44.py::test_notebook_session_validate_plan_identity"
+  ]
+}

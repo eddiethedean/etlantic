@@ -1,0 +1,29 @@
+{
+  "phase": "0.44.0",
+  "surface": "etlantic-lsp",
+  "status": "met",
+  "methods": {
+    "textDocument/completion": true,
+    "textDocument/hover": true,
+    "textDocument/definition": true,
+    "textDocument/references": true,
+    "textDocument/documentSymbol": true,
+    "textDocument/rename": true,
+    "textDocument/codeAction": true,
+    "workspace/symbol": true,
+    "etlantic/graphPreview": true,
+    "etlantic/planPreview": true,
+    "etlantic/impactPreview": true,
+    "etlantic/executeCommand": true
+  },
+  "golden_diagnostics": [
+    {
+      "fixture": "tests/ide/test_ide_0_44.py",
+      "codes_exercised": ["PMID001", "PMID002", "PMTEST001"]
+    }
+  ],
+  "tests": [
+    "tests/ide/test_lsp_0_44.py",
+    "tests/ide/test_ide_0_44.py"
+  ]
+}

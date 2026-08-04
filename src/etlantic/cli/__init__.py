@@ -10,6 +10,7 @@ from etlantic.cli.cmds.core import register_core_commands
 from etlantic.cli.cmds.doctor import register_doctor_command
 from etlantic.cli.cmds.init import register_init_command
 from etlantic.cli.cmds.profile import register_profile_commands
+from etlantic.cli.cmds.watch import register_watch_command
 from etlantic.cli.commands import register_commands
 from etlantic.cli.context import CliContext
 from etlantic.cli.globals import register_global_callback
@@ -49,6 +50,7 @@ register_core_commands(app, plan_app, report_app)
 register_init_command(app)
 register_doctor_command(app)
 register_profile_commands(app)
+register_watch_command(app)
 
 
 def _default_cli_context() -> CliContext:

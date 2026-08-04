@@ -1,5 +1,7 @@
 # etlantic-datafusion (Experimental)
 
+
+Version **0.44.0** (lockstep with ETLantic core).
 Gate B experimental DataFusion plugin stub for ETLantic 0.43.
 
 **Not recommended for production.** Does not replace Polars as the reference
@@ -19,6 +21,6 @@ dataframe execution.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.43.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.44.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

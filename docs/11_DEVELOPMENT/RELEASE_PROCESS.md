@@ -26,6 +26,7 @@ Official plugins declare `etlantic>=0.43.0,<0.44`.
 | Facade | `medallantic` | Beta (IR/migration adapter; not a full runtime) | Beta |
 | Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) | Deprecated redirect |
 | Reference adapter | `etlantic-fastapi` | Beta | Beta |
+| Reference adapter | `etlantic-lsp` | Beta | Beta |
 | Experimental | `etlantic-datafusion` | Alpha | Experimental |
 
 See [Facade packages](FACADE_PACKAGES.md). Evaluators should treat narrative
@@ -34,7 +35,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes seventeen distributions:
+Tag `vX.Y.Z` publishes eighteen distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -50,11 +51,15 @@ Tag `vX.Y.Z` publishes seventeen distributions:
 | `medallantic` | `packages/medallantic` | **facade** |
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | **compatibility redirect** → medallantic |
 | `etlantic-fastapi` | `packages/etlantic-fastapi` | thin reference adapter (since 0.24) |
+| `etlantic-lsp` | `packages/etlantic-lsp` | language server host (since 0.44) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 | `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
 | `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
 | `etlantic-openlineage` | `packages/etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
+
+VS Code reference extension lives at `editors/vscode` (VSIX; not a PyPI
+wheel). Build with `npm run package` after `npm install`.
 
 ## Pre-Release Checklist
 
@@ -133,7 +138,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all seventeen wheels/sdists.
+3. Builds all eighteen wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (thirteen established

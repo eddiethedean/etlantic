@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "no_write": {
+      "default": false,
+      "type": "boolean"
+    },
+    "profile": {
+      "default": "development",
+      "type": "string"
+    },
+    "run_one": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_until": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "target"
+  ],
+  "title": "etlantic.run_selected",
+  "type": "object"
+}

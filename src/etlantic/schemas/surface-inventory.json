@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.43.0",
+  "version": "0.44.0",
   "classes": [
     "stable",
     "provisional",
@@ -85,7 +85,8 @@
     "reliability",
     "erasure",
     "viz",
-    "report"
+    "report",
+    "watch"
   ],
   "wire_schemas": {
     "etlantic.plan/1": "stable",

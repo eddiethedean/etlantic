@@ -78,7 +78,7 @@ execution-host protocol, policy engine, quotas, or GA control-plane operations.
 - Optional SQLModel stores use request-scoped sessions and separate request,
   persistence, and response models.
 - Release notes state clearly that CP1 is a foundation, not the production
-  multi-tenant support claim reserved for 0.43.
+  multi-tenant support claim reserved for 0.44.
 
 ## Required Release Evidence
 

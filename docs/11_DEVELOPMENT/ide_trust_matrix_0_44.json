@@ -1,0 +1,23 @@
+{
+  "phase": "0.44.0",
+  "surface": "trusted_workspace",
+  "status": "met",
+  "default_mode": {
+    "imports_user_modules": false,
+    "resolves_secrets": false,
+    "queries_live_production_schema": false
+  },
+  "trusted_mode": {
+    "requires_explicit_policy": true,
+    "allow_roots_required": true,
+    "timeouts": true,
+    "audit_records": true,
+    "secret_resolution": "denied_by_host",
+    "live_schema_query": "denied_by_host"
+  },
+  "cases": [
+    {"id": "deny_untrusted_import", "result": "pass", "test": "test_execute_command_json_pipeline_no_trust"},
+    {"id": "deny_outside_roots", "result": "pass", "test": "test_trusted_host_denies_outside_roots"},
+    {"id": "deny_secret_flags", "result": "pass", "test": "test_trusted_host_denies_secret_flags"}
+  ]
+}

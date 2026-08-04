@@ -1,11 +1,14 @@
 ---
 title: ETLantic 0.44 Implementation Plan
 description: Implementation-grade plan for language-server, editor, notebook, and developer-intelligence surfaces.
-plan_status: current
-plan_last_reviewed: 0.37.0
+plan_status: released
+plan_last_reviewed: 0.44.0
 ---
 
 # ETLantic 0.44 Implementation Plan
+
+> **Status: Released with ETLantic 0.44.0.** See [EXIT_GATE_0_44](EXIT_GATE_0_44.md)
+> and [ADR-020](adr/ADR-020-DEVELOPER-INTELLIGENCE.md).
 
 Phase 0.44 makes ETLantic's contracts, diagnostics, plans, graphs, runs, schema
 observations, and reliability evidence available through editor-neutral protocols

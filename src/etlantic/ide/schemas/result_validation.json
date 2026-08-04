@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "diagnostics": {
+      "type": "array"
+    },
+    "valid": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "valid",
+    "diagnostics"
+  ],
+  "title": "etlantic.validation_result",
+  "type": "object"
+}

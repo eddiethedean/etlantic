@@ -19,9 +19,17 @@ def diagnostics_to_github_annotations(
             Severity.INFO: "notice",
             Severity.HINT: "notice",
         }.get(diagnostic.severity, "notice")
-        path = "/".join(str(p) for p in diagnostic.path if p) or "pipeline"
-        # ::error file=...,title=CODE::message
-        lines.append(
-            f"::{level} file={path},title={diagnostic.code}::{diagnostic.message}"
-        )
+        source = diagnostic.source
+        if source is not None and source.path:
+            path = source.path
+            loc_bits = [f"file={path}"]
+            if source.line is not None:
+                loc_bits.append(f"line={source.line}")
+            if source.column is not None:
+                loc_bits.append(f"col={source.column}")
+            loc = ",".join(loc_bits)
+        else:
+            path = "/".join(str(p) for p in diagnostic.path if p) or "pipeline"
+            loc = f"file={path}"
+        lines.append(f"::{level} {loc},title={diagnostic.code}::{diagnostic.message}")
     return lines

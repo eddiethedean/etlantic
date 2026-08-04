@@ -3,7 +3,7 @@
 > **Plan status: partially shipped; reference persistence remains planned;
 > CP1 optional stores are in progress under 0.39.**
 >
-> **Current 0.43 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.44 boundary:** The optional `etlantic-sqlmodel` package provides
 > the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
 > repository helpers, and durable multi-tenant control-plane providers remain
 > future work relative to production graduation. CP1 may add thin,

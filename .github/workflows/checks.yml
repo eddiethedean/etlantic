@@ -535,7 +535,7 @@ jobs:
         run: |
           for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
-            medallantic etlantic-sparkforge etlantic-fastapi etlantic-datafusion \
+            medallantic etlantic-sparkforge etlantic-fastapi etlantic-lsp etlantic-datafusion \
             etlantic-s3 etlantic-iceberg etlantic-snowflake \
             etlantic-openlineage; do
             uv build --package "$pkg" --out-dir dist

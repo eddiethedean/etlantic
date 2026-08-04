@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.43.0.** This page documents the commands
+> **Status: Available in ETLantic 0.44.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -367,6 +367,26 @@ the same runs. Pass `--ephemeral` on `run` (and later `report` commands) only
 when you intentionally want process-local storage. `report compare --store`
 reads an explicit file-store root.
 
+## `watch`
+
+Revalidate a workspace on file changes using the no-import static index.
+Never executes pipelines.
+
+```bash
+python -m etlantic watch PATH [--interval 1.0] [--once] [--format json]
+```
+
+| Option | Purpose |
+|---|---|
+| `PATH` | Workspace root directory to index |
+| `--interval` | Polling interval in seconds (default `1.0`) |
+| `--once` | Index and emit diagnostics once, then exit |
+| `--format` | Output format (default `json`) |
+
+Use `--once` in CI smoke checks. Continuous watch is for local authoring;
+Ctrl+C stops the loop. Diagnostics share the same `PMID*` / validation codes
+as `etlantic-lsp`.
+
 ## Exit codes
 
 Documented in `etlantic.cli.exit_codes`:
@@ -391,7 +411,7 @@ in addition to exit codes.
 
 | Command | Mutates workspace? |
 |---|---|
-| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor` | No (read-only analysis) |
+| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor`, `watch` | No (read-only analysis) |
 | `viz lineage` | No (read-only; prints to stdout) |
 | `viz dot` | Writes only when `-o` / `--output` is set; otherwise stdout |
 | `viz html` | Writes `lineage.html` by default (`-o` overrides the path) |

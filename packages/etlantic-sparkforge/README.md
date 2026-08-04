@@ -1,5 +1,7 @@
 # etlantic-sparkforge (compatibility redirect)
 
+
+Version **0.44.0** (lockstep with ETLantic core).
 **Final release.** The SparkForge adapter was renamed to
 [**medallantic**](https://pypi.org/project/medallantic/) in ETLantic 0.27.
 

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.43.0"
+version = "0.44.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,30 +30,32 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.43.0"]
-pandas = ["etlantic-pandas==0.43.0"]
-sql = ["etlantic-sql==0.43.0"]
-postgresql = ["etlantic-sql==0.43.0"]
-pyspark = ["etlantic-pyspark==0.43.0"]
-spark = ["etlantic-pyspark==0.43.0"]
-airflow = ["etlantic-airflow==0.43.0"]
-prefect = ["etlantic-prefect==0.43.0"]
-keyring = ["etlantic-keyring==0.43.0"]
-sqlmodel = ["etlantic-sqlmodel==0.43.0"]
-medallantic = ["medallantic==0.43.0"]
-sparkforge = ["etlantic-sparkforge==0.43.0"]
-fastapi = ["etlantic-fastapi==0.43.0"]
-datafusion = ["etlantic-datafusion==0.43.0"]
-s3 = ["etlantic-s3==0.43.0"]
-iceberg = ["etlantic-iceberg==0.43.0"]
-snowflake = ["etlantic-snowflake==0.43.0"]
-openlineage = ["etlantic-openlineage==0.43.0"]
+polars = ["etlantic-polars==0.44.0"]
+pandas = ["etlantic-pandas==0.44.0"]
+sql = ["etlantic-sql==0.44.0"]
+postgresql = ["etlantic-sql==0.44.0"]
+pyspark = ["etlantic-pyspark==0.44.0"]
+spark = ["etlantic-pyspark==0.44.0"]
+airflow = ["etlantic-airflow==0.44.0"]
+prefect = ["etlantic-prefect==0.44.0"]
+keyring = ["etlantic-keyring==0.44.0"]
+sqlmodel = ["etlantic-sqlmodel==0.44.0"]
+medallantic = ["medallantic==0.44.0"]
+sparkforge = ["etlantic-sparkforge==0.44.0"]
+fastapi = ["etlantic-fastapi==0.44.0"]
+datafusion = ["etlantic-datafusion==0.44.0"]
+s3 = ["etlantic-s3==0.44.0"]
+iceberg = ["etlantic-iceberg==0.44.0"]
+snowflake = ["etlantic-snowflake==0.44.0"]
+openlineage = ["etlantic-openlineage==0.44.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
+notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
+lsp = ["etlantic-lsp==0.44.0"]
 dataframes = [
-    "etlantic-polars==0.43.0",
-    "etlantic-pandas==0.43.0",
+    "etlantic-polars==0.44.0",
+    "etlantic-pandas==0.44.0",
 ]
 
 [project.scripts]
@@ -183,6 +185,7 @@ members = [
     "packages/etlantic-iceberg",
     "packages/etlantic-snowflake",
     "packages/etlantic-openlineage",
+    "packages/etlantic-lsp",
 ]
 
 [tool.uv.sources]
@@ -203,6 +206,7 @@ etlantic-s3 = { workspace = true }
 etlantic-iceberg = { workspace = true }
 etlantic-snowflake = { workspace = true }
 etlantic-openlineage = { workspace = true }
+etlantic-lsp = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -297,6 +301,7 @@ known-first-party = [
 "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py" = ["B008"]
 # Typer Option()/Argument() defaults are the CLI framework idiom.
 "src/etlantic/cli/cmds/erasure.py" = ["B008"]
+"src/etlantic/cli/cmds/watch.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

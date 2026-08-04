@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "output": {
+      "default": "contracts",
+      "type": "string"
+    },
+    "sqlmodel": {
+      "default": false,
+      "type": "boolean"
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "target"
+  ],
+  "title": "etlantic.generate",
+  "type": "object"
+}

@@ -672,9 +672,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes seventeen distributions" not in release_process:
+    if "publishes eighteen distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 17-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 18-package "
             "release inventory"
         )
 

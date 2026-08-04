@@ -1,6 +1,6 @@
 # Governance
 
-> **Status: Available in ETLantic 0.43.0.**
+> **Status: Available in ETLantic 0.44.0.**
 
 ETLantic currently uses a maintainer-led governance model. See
 [MAINTAINERS.md](https://github.com/eddiethedean/etlantic/blob/main/MAINTAINERS.md)

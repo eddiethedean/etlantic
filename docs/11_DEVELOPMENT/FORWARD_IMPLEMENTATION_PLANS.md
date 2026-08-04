@@ -20,7 +20,7 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.40 | Tenant registry, workspaces, and persistence | [0.40](IMPLEMENTATION_PLAN_0_40.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 | 0.41 | Durable submission, state, and reproducibility | [0.41](IMPLEMENTATION_PLAN_0_41.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 | 0.42 | Policy, delivery objectives, privacy operations, quotas, audit, and supply-chain security | [0.42](IMPLEMENTATION_PLAN_0_42.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) + [reliability](ETL_RELIABILITY_PLAN.md) |
-| 0.43 | Control-plane graduation | [0.43](IMPLEMENTATION_PLAN_0_43.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
+| 0.44 | Control-plane graduation | [0.43](IMPLEMENTATION_PLAN_0_43.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 | 0.44 | Developer intelligence, LSP, and IDE surfaces | [0.44](IMPLEMENTATION_PLAN_0_44.md) | [UI/UX](UI_UX_PLAN.md) |
 | 0.45 | Planner and optimization SDK | [0.45](IMPLEMENTATION_PLAN_0_45.md) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
 | 0.46 | Bounded dynamic control flow, streaming, and event pipelines | [0.46](IMPLEMENTATION_PLAN_0_46.md) | [Reliability](ETL_RELIABILITY_PLAN.md) |

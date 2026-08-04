@@ -32,7 +32,7 @@ from etlantic_sql.lowering.actions import (
     apply_action_to_query,
 )
 
-__version__ = "0.43.0"
+__version__ = "0.44.0"
 
 KERNEL_FUNCTIONS = frozenset(
     {

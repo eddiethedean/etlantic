@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-08-04
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.43.x` or plugins with `<0.44` |
+| Breaking | Dependency floor becomes `etlantic>=0.44.0,<0.45` (developer-intelligence line) |
+| Upgrade | `pip install 'etlantic==0.44.0'` and matching plugins / `medallantic==0.44.0`. Optional `etlantic[lsp]` / `etlantic[notebook]`. See [Migration 0.43 → 0.44](docs/11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) |
+| Rollback | Re-pin 0.43.0 minors together |
+| Security | Default analysis is no-import; trusted workspace is explicit and audited; CP-GA claims unchanged from 0.43 |
+
+### Added
+
+- Editor-neutral `etlantic.ide` protocol payloads, command executor, and trusted-workspace policy ([ADR-020](docs/11_DEVELOPMENT/adr/ADR-020-DEVELOPER-INTELLIGENCE.md))
+- No-import workspace index, AST extraction, plan/graph/impact previews, and `etlantic watch`
+- `etlantic-lsp` language server (pygls) with navigation, rename, diagnostics, code actions, and custom preview requests
+- VS Code reference extension under `editors/vscode` (Experimental)
+- `etlantic[notebook]` extra; richer notebook session controls, stale markers, bounded artifact previews
+- SARIF / GitHub annotations prefer physical `SourceLocation` when present
+
+### Changed
+
+- Lockstep package versions `0.44.0`; plugin floor `etlantic>=0.44.0,<0.45`
+
 ## [0.43.0] - 2026-08-04
 
 ### Adopter summary
@@ -1687,6 +1712,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.44.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.44.0
 [0.43.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.43.0
 [0.42.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.42.0
 [0.41.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.41.0

@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.43.0.**
+> **Status: Available in ETLantic 0.44.0.**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
@@ -55,6 +55,7 @@ PMEXECxxx  Execution lifecycle
 PMCFGxxx   Configuration and profiles
 PMSECxxx   Security policy (I/O, serialization, outbound)
 PMGENxxx   Contract and documentation generation
+PMIDxxx    IDE / static-analysis workspace (experimental in 0.44)
 PMINTxxx   Internal framework invariants
 ```
 
@@ -63,8 +64,8 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.43.0** /
-0.43.x).
+These codes are emitted by the installed ETLantic package (currently **0.44.0** /
+0.44.x).
 The message, path, metadata, and severity provide the case-specific detail.
 
 **Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
@@ -117,6 +118,13 @@ The curated tables below remain the human-oriented index.
 | `PMXFORM810` | Portable plan exceeds the document-size budget |
 | `PMXFORM811` | Portable plan exceeds the node-count budget |
 | `PMXFORM812` | Portable plan exceeds the depth budget |
+
+### IDE and static analysis (experimental)
+
+| Code | Meaning |
+|---|---|
+| `PMID001` | Workspace JSON file is not valid JSON |
+| `PMID002` | Pipeline JSON failed structural validation in the no-import index |
 
 ### Configuration and profiles
 

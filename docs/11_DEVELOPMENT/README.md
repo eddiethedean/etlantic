@@ -21,6 +21,12 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.43 → 0.44](MIGRATION_0_43_TO_0_44.md) (Released — Developer Intelligence)
+- [Exit gate 0.44](EXIT_GATE_0_44.md) (Released — Developer Intelligence)
+- [Findings ledger 0.44](FINDINGS_0_44.md)
+- [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md)
+- [ADR-020: Developer intelligence](adr/ADR-020-DEVELOPER-INTELLIGENCE.md)
+- [What's new in 0.44](../01_GETTING_STARTED/WHATS_NEW_0_44.md) (Released)
 - [Migration 0.42 → 0.43](MIGRATION_0_42_TO_0_43.md) (Gate-ready — CP-GA)
 - [Exit gate 0.43](EXIT_GATE_0_43.md) (Gate-ready — CP-GA)
 - [Findings ledger 0.43](FINDINGS_0_43.md)

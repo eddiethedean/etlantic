@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "profile": {
+      "default": "local",
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "target"
+  ],
+  "title": "etlantic.plan.explain",
+  "type": "object"
+}

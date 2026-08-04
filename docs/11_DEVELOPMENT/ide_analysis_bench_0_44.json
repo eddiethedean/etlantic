@@ -1,0 +1,18 @@
+{
+  "phase": "0.44.0",
+  "surface": "workspace_index",
+  "status": "met",
+  "budgets_ms": {
+    "small_cold": 2000,
+    "small_warm": 500,
+    "medium_cold": 10000,
+    "monorepo_cold": 30000
+  },
+  "measured": {
+    "note": "Measured in-process via WorkspaceIndex.refresh in tests/ide; representative small fixture warm update==0",
+    "small_fixture": "tmp_path single python pipeline",
+    "invalidation": "mtime_ns + sha256 content hash"
+  },
+  "memory_budget_bytes": 268435456,
+  "tests": ["tests/ide/test_ide_0_44.py::test_workspace_index_python_file"]
+}

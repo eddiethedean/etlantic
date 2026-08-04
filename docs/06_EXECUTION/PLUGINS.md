@@ -7,7 +7,7 @@
     [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md). For storage
     that exists today, see [Storage today](STORAGE_TODAY.md).
 
-## What ships in 0.43 (start here)
+## What ships in 0.44 (start here)
 
 | Category | Reality in 0.38 |
 |---|---|

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-s3"
-version = "0.43.0"
+version = "0.44.0"
 description = "Experimental S3-compatible JSON connector for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.43.0,<0.44",
+    "etlantic>=0.44.0,<0.45",
 ]
 
 [project.optional-dependencies]

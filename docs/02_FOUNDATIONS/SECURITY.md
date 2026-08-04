@@ -1,6 +1,6 @@
 # Security Model
 
-> **Status: Available in ETLantic 0.43.0.**
+> **Status: Available in ETLantic 0.44.0.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
@@ -14,7 +14,7 @@ It does not provide a formal SLA, compliance attestations, unrestricted
 shared-service isolation, or advanced supply-chain guarantees beyond published
 digests/attestations; those remain adopter-owned or Experimental.
 `shared-service` remains Experimental. The multi-tenant control plane
-[graduated Supported profiles in 0.43](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
+[graduated Supported profiles in 0.44](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 Control ownership and automated verification live in the
 [Security Verification Matrix](SECURITY_VERIFICATION_MATRIX.md).
 
@@ -317,8 +317,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.43.0",
-        "etlantic-airflow": "==0.43.0",
+        "etlantic-polars": "==0.44.0",
+        "etlantic-airflow": "==0.44.0",
     },
 )
 ```
@@ -742,8 +742,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.43.0",
-        "etlantic-sql": "==0.43.0",
+        "etlantic-polars": "==0.44.0",
+        "etlantic-sql": "==0.44.0",
     },
 )
 ```

@@ -41,7 +41,7 @@ from etlantic.connectors.models import (
 from etlantic_s3.fake import InMemoryS3Fake, boto3_available
 
 PROVIDER = "s3"
-PACKAGE_VERSION = "0.43.0"
+PACKAGE_VERSION = "0.44.0"
 
 S3_SOURCE_CAPS = frozenset(
     {

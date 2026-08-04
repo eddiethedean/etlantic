@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "format": {
+      "default": "json",
+      "enum": [
+        "human",
+        "json",
+        "sarif"
+      ]
+    },
+    "profile": {
+      "default": "local",
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "target"
+  ],
+  "title": "etlantic.validate",
+  "type": "object"
+}

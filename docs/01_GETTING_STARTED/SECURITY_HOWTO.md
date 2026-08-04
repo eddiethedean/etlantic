@@ -1,6 +1,6 @@
 # Security howto (day-2 ops)
 
-> **Status: Available in ETLantic 0.43.0.** Operational checklist for pilots.
+> **Status: Available in ETLantic 0.44.0.** Operational checklist for pilots.
 > Full threat model: [Security](../02_FOUNDATIONS/SECURITY.md).
 
 ## 1. Prefer `python -m etlantic`
@@ -21,8 +21,8 @@ production = Profile(
     security_mode="production",
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.43.0",
-        "etlantic-sql": "==0.43.0",
+        "etlantic-polars": "==0.44.0",
+        "etlantic-sql": "==0.44.0",
     },
 )
 ```
@@ -65,13 +65,13 @@ Example starter (trim allowlist to packages you install):
   "validation_policy": "strict",
   "portable_transform_policy": "require",
   "plugin_allowlist": {
-    "etlantic-polars": "==0.43.0"
+    "etlantic-polars": "==0.44.0"
   },
   "assets": {}
 }
 ```
 
-Pin core and plugins to the same minor (`==0.43.0`).
+Pin core and plugins to the same minor (`==0.44.0`).
 
 ## 5. Know the shipped security diagnostics
 
