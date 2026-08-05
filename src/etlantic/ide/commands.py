@@ -32,6 +32,7 @@ def execute_command(
         "validate": _cmd_validate,
         "plan": _cmd_plan,
         "explain": _cmd_explain,
+        "optimize": _cmd_optimize,
         "generate": _cmd_generate,
         "run_selected": _cmd_run_selected,
         "report": _cmd_report,
@@ -181,6 +182,58 @@ def _cmd_explain(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Ide
             else {"text": str(explanation)},
             "steps": steps,
         },
+    )
+
+
+def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> IdeResult:
+    """Advisory optimization preview using the same explanation schema as CLI."""
+    from etlantic.authoring.definition import PipelineDefinition
+    from etlantic.authoring.lifecycle import plan_pipeline_like
+    from etlantic.authoring.preview import plan_preview
+    from etlantic.optimization.engine import optimize_plan
+    from etlantic.optimization.explanation import explain_optimization
+    from etlantic.optimization.registry import builtin_passes
+    from etlantic.optimization.shadow import compare_shadow
+    from etlantic.plan.explain import explain_plan
+    from etlantic.profile import development_profile
+
+    target = str(args["target"])
+    profile_name = args.get("profile", "development")
+    opt_policy = str(args.get("optimization_policy") or "shadow")
+    pipeline = _resolve_target(target, policy=policy, operation="optimize")
+    if isinstance(pipeline, PipelineDefinition):
+        plan, report = plan_preview(pipeline, profile=profile_name)
+        if plan is None:
+            return IdeResult(
+                name="optimize",
+                ok=False,
+                diagnostics=_diagnostics_from_report(report),
+                error="optimize requires a valid plan",
+            )
+    else:
+        plan = plan_pipeline_like(pipeline, profile=profile_name)
+
+    allowlist = {p.metadata.pass_id: p.metadata.version for p in builtin_passes()}
+    opt_profile = development_profile(
+        name=str(profile_name),
+        optimization_policy=opt_policy,  # type: ignore[arg-type]
+        optimization_pass_allowlist=allowlist,
+    )
+    result = optimize_plan(plan, profile=opt_profile, policy=opt_policy)  # type: ignore[arg-type]
+    explanation = explain_optimization(result)
+    shadow = compare_shadow(plan, result.optimized_plan, result=result)
+    return IdeResult(
+        name="optimize",
+        ok=shadow.passed,
+        payload={
+            "plan_id": plan.plan_id,
+            "fingerprint": plan.fingerprint,
+            "baseline_explain": explain_plan(plan),
+            "optimization": result.to_dict(),
+            "explanation": explanation.to_dict(),
+            "shadow": shadow.to_dict(),
+        },
+        error=None if shadow.passed else "shadow comparison regressions",
     )
 
 

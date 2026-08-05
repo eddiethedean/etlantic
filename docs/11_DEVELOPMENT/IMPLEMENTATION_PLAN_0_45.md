@@ -1,11 +1,14 @@
 ---
 title: ETLantic 0.45 Implementation Plan
 description: Implementation-grade plan for the planner and optimization SDK.
-plan_status: current
-plan_last_reviewed: 0.37.0
+plan_status: released
+plan_last_reviewed: 0.45.0
 ---
 
 # ETLantic 0.45 Implementation Plan
+
+> **Status: Released with ETLantic 0.45.0.** See [EXIT_GATE_0_45](EXIT_GATE_0_45.md)
+> and [ADR-021](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md).
 
 Phase 0.45 opens a stable optimization-pass SDK while preserving the logical
 plan, policy, schema, reliability, and backend-capability boundaries established

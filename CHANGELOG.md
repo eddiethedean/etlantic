@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-08-05
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.44.x` or plugins with `<0.45` |
+| Breaking | Dependency floor becomes `etlantic>=0.45.0,<0.46` (optimization SDK line) |
+| Upgrade | `pip install 'etlantic==0.45.0'` and matching plugins / `medallantic==0.45.0`. See [Migration 0.44 → 0.45](docs/11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
+| Rollback | Re-pin 0.44.0 minors together |
+| Security | Optimization remains advisory; production `optimization_pass_allowlist` fail-closed; passes cannot access data or secrets |
+
+### Added
+
+- `etlantic.optimization` advisory pass SDK (`etlantic.optimization/1`) with evidence, cost providers, explanation, and shadow compare ([ADR-021](docs/11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md))
+- Reference passes: pushdown, pruning, fusion, materialization, reuse, repair/backfill, implementation selection, cross-backend
+- `Profile.optimization_pass_allowlist` and `optimization_policy` (`off` \| `shadow` \| `apply_accepted`)
+- CLI `etlantic plan optimize` and `plan explain --optimization`
+- IDE `optimize` command sharing the explanation schema
+- `etlantic.testing.run_optimizer_conformance_suite` and example `examples/optimization_pass_echo`
+- Public export of `etlantic.plan.diff_plans` / `PlanDiff`
+
+### Changed
+
+- Lockstep official plugins and Medallantic to `0.45.0` (`etlantic>=0.45.0,<0.46`)
+
 ## [0.44.0] - 2026-08-04
 
 ### Adopter summary
@@ -1721,6 +1747,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.45.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.45.0
 [0.44.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.44.0
 [0.43.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.43.0
 [0.42.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.42.0

@@ -21,6 +21,12 @@ released.
 
 ## Current migrations and exit gates
 
+- [Migration 0.44 → 0.45](MIGRATION_0_44_TO_0_45.md) (Released — Planner and Optimization SDK)
+- [Exit gate 0.45](EXIT_GATE_0_45.md) (Released — Planner and Optimization SDK)
+- [Findings ledger 0.45](FINDINGS_0_45.md)
+- [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md)
+- [ADR-021: Optimizer pass protocol](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md)
+- [What's new in 0.45](../01_GETTING_STARTED/WHATS_NEW_0_45.md) (Released)
 - [Migration 0.43 → 0.44](MIGRATION_0_43_TO_0_44.md) (Released — Developer Intelligence)
 - [Exit gate 0.44](EXIT_GATE_0_44.md) (Released — Developer Intelligence)
 - [Findings ledger 0.44](FINDINGS_0_44.md)

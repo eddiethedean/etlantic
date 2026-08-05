@@ -36,6 +36,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.quality",
     "etlantic.connectors",
     "etlantic.control_plane",
+    "etlantic.optimization",
 )
 
 SECURITY_RULES = (
@@ -120,7 +121,8 @@ Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
 `reliability`, `erasure`, `viz`, `report`, `watch`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`).
+`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`,
+`.optimization`).
 
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.
@@ -143,7 +145,7 @@ globs:
 
 # ETLantic
 
-- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane.
+- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.

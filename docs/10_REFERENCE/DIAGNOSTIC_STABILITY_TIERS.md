@@ -1,6 +1,6 @@
 # Diagnostic-code stability tiers (0.37)
 
-> **Status: Available in ETLantic 0.44.0.** Foundation freeze inventory for
+> **Status: Available in ETLantic 0.45.0.** Foundation freeze inventory for
 > diagnostic **code families** (alphabetic prefix before the numeric suffix).
 > Machine-readable companion:
 > [`diagnostic-stability-tiers.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/diagnostic-stability-tiers.json)
@@ -33,7 +33,7 @@ notes. Exhaustive code→source index:
 | `PMDF` | stable | Dataframe plugin diagnostics |
 | `PMEXEC` | stable | Execution lifecycle |
 | `PMGEN` | stable | Contract / documentation generation |
-| `PMID` | experimental | IDE / static-analysis workspace diagnostics (0.44) |
+| `PMID` | experimental | IDE / static-analysis workspace diagnostics (0.45) |
 | `PMORCH` | stable | Orchestration / compile |
 | `PMPIPE` | stable | Pipeline topology and wiring |
 | `PMPLAN` | stable | Planning and capability resolution |

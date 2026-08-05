@@ -10,7 +10,8 @@ Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
 `reliability`, `erasure`, `viz`, `report`, `watch`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`).
+`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`,
+`.optimization`).
 
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.

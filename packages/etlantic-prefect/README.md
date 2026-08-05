@@ -1,7 +1,7 @@
 # etlantic-prefect
 
 
-Version **0.44.0** (lockstep with ETLantic core).
+Version **0.45.0** (lockstep with ETLantic core).
 Optional Prefect **ExecutionScheduler** for ETLantic (`etlantic.scheduler/1`).
 The local MVP is shipped in ETLantic 0.20.
 
@@ -38,6 +38,6 @@ default development path.
 
 ## Links
 
-[Prefect example](https://etlantic.readthedocs.io/en/v0.44.0/09_EXAMPLES/PREFECT_RUN/) ·
+[Prefect example](https://etlantic.readthedocs.io/en/v0.45.0/09_EXAMPLES/PREFECT_RUN/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-prefect) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

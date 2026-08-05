@@ -22,6 +22,7 @@
     "PMEXEC": "stable",
     "PMGEN": "stable",
     "PMID": "experimental",
+    "PMOPT": "stable",
     "PMORCH": "stable",
     "PMPIPE": "stable",
     "PMPLAN": "stable",
@@ -41,6 +42,7 @@
     "PMCP covers control-plane identity, authorization, and submission diagnostics incubating in 0.39 CP1 (provisional until CP1 exit).",
     "PMID covers IDE/static-analysis workspace diagnostics introduced in 0.44 (experimental while Developer Intelligence incubates).",
     "PMQTY is provisional while etlantic.quality/1 remains provisional.",
-    "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families."
+    "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families.",
+    "PMOPT covers optimization-pass diagnostics introduced in 0.45 (stable with etlantic.optimization/1)."
   ]
 }

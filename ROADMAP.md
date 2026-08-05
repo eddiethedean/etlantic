@@ -6,25 +6,26 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.44.0** (Beta) — published Developer
-Intelligence: editor-neutral LSP, static analysis, notebook surfaces, and
-trusted-workspace boundary. ROADMAP current row stays **Gate-ready for
-tag/publish**. Prior **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2,
+**Current release:** ETLantic **0.45.0** (Beta) — published Planner and
+Optimization SDK: advisory optimization passes, evidence/cost selection,
+explanation and shadow compare, and optimizer conformance. Prior **0.44**
+Developer Intelligence, **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2,
 and **0.39** CP1 remain prior baselines. Milestones **0.25** (burn-in first
 slice) through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | Gate-ready for tag/publish |
+| Current | 0.45 | Planner and optimization SDK | Gate-ready for tag/publish |
+| Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | Gate-ready / shipped evidence |
 | Previous | 0.43 | First-class multi-tenant graduation (CP-GA) | Gate-ready / shipped evidence |
 | Previous | 0.42 | Tenant policy / quotas / audit (CP4) | Gate-ready / shipped evidence |
 | Previous | 0.41 | Durable submission / state (CP3) | Gate-ready / shipped evidence |
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.45 | Planner and optimization SDK | Planned |
+| Next | 0.46 | Streaming and event-driven pipelines | Planned |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.44 Developer Intelligence published; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → optimization → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.45 Optimization SDK published; 0.44 Developer Intelligence prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

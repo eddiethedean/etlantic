@@ -10,7 +10,7 @@
     "cleanup",
     "idempotency"
   ],
-  "digest": "sha256:721fdbebfafb18d1260b47a7ee9c1cb79404141bae84dd5c2b56ac4e90107288",
+  "digest": "sha256:43e3d3e8851d10cb8412eb5e4be67c2fcb42d4e1baeb078fa5347bd9ec99ed44",
   "entries": [
     {
       "capabilities": [
@@ -60,5 +60,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.44.0"
+  "version": "0.45.0"
 }

@@ -17,7 +17,7 @@ Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`,
 `etlantic.testing`, `etlantic.quality`, `etlantic.connectors`,
-`etlantic.control_plane`
+`etlantic.control_plane`, `etlantic.optimization`
 
 ## FastAPI dual surface
 

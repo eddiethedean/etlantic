@@ -283,6 +283,85 @@ def register_core_commands(
             typer.echo(f"profile={plan.profile_name}")
             typer.echo(f"nodes={len(plan.logical_graph.nodes)}")
 
+    def _plan_optimize_and_emit(
+        cli: CliContext,
+        target: str,
+        *,
+        profile: str | None,
+        fmt: str,
+        policy: str | None = None,
+        explain_only: bool = False,
+        allow_adhoc_profile: bool = False,
+    ) -> None:
+        from etlantic.optimization.engine import optimize_plan
+        from etlantic.optimization.explanation import explain_optimization
+        from etlantic.optimization.shadow import compare_shadow
+
+        resolved, _source = cli.resolve_profile(
+            profile, allow_adhoc_profile=allow_adhoc_profile
+        )
+        cli.ensure_plugins(resolved, fmt=fmt)
+        pipeline_cls = cli.load_target(target)
+        context = PlanningContext.create(
+            profile=resolved,
+            registry=cli.runtime.registry,
+            allow_adhoc_profile=allow_adhoc_profile,
+        )
+        plan, report = plan_pipeline_with_report(pipeline_cls, context=context)
+        if plan is None:
+            emit_validation_report(
+                report,
+                fmt=fmt,
+                prefix="Planning failed",
+                verbose=cli.globals.verbose,
+                quiet=cli.globals.quiet,
+            )
+            trust_exit = trust_exit_from_report(report)
+            if trust_exit is not None:
+                raise typer.Exit(trust_exit)
+            raise typer.Exit(ec.PLANNING_FAILURE)
+
+        opt_policy = (
+            policy or getattr(resolved, "optimization_policy", None) or "shadow"
+        )
+        if opt_policy == "off" and policy is None:
+            opt_policy = "shadow"
+        # Ensure allowlisted reference passes in non-production when empty.
+        opt_profile = resolved
+        if str(getattr(resolved, "security_mode", "")) != "production" and not getattr(
+            resolved, "optimization_pass_allowlist", None
+        ):
+            from etlantic.optimization.registry import builtin_passes
+
+            opt_profile = resolved.with_updates(
+                optimization_pass_allowlist={
+                    p.metadata.pass_id: p.metadata.version for p in builtin_passes()
+                },
+                optimization_policy=opt_policy,
+            )
+        elif policy is not None:
+            opt_profile = resolved.with_updates(optimization_policy=opt_policy)
+
+        result = optimize_plan(plan, profile=opt_profile, policy=opt_policy)  # type: ignore[arg-type]
+        explanation = explain_optimization(result)
+        shadow = compare_shadow(plan, result.optimized_plan, result=result)
+        payload = {
+            "baseline": {
+                "plan_id": plan.plan_id,
+                "fingerprint": plan.fingerprint,
+            },
+            "optimization": result.to_dict(),
+            "explanation": explanation.to_dict(),
+            "shadow": shadow.to_dict(),
+            "plan_explain": explain_plan(plan) if explain_only else None,
+        }
+        if result.optimized_plan is not None and result.applied:
+            payload["optimized_plan"] = json.loads(plan_to_json(result.optimized_plan))
+        emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
+        if not shadow.passed:
+            raise typer.Exit(ec.BREAKING_CHANGE)
+        raise typer.Exit(ec.SUCCESS)
+
     @plan_app.command("_default", hidden=True)
     def plan_default_cmd(
         ctx: typer.Context,
@@ -317,9 +396,24 @@ def register_core_commands(
         run_one: str | None = typer.Option(None, "--run-one"),
         run_until: str | None = typer.Option(None, "--run-until"),
         nodes: str | None = typer.Option(None, "--nodes"),
+        optimization: bool = typer.Option(
+            False,
+            "--optimization",
+            help="Include advisory optimization explanation (0.45).",
+        ),
         allow_adhoc_profile: bool = typer.Option(False, "--allow-adhoc-profile"),
     ) -> None:
         """Emit a structured explanation of a resolved PipelinePlan."""
+        if optimization:
+            _plan_optimize_and_emit(
+                get_cli_context(ctx),
+                target,
+                profile=profile,
+                fmt=fmt,
+                explain_only=True,
+                allow_adhoc_profile=allow_adhoc_profile,
+            )
+            return
         _plan_and_emit(
             get_cli_context(ctx),
             target,
@@ -329,6 +423,29 @@ def register_core_commands(
             run_until=run_until,
             nodes=nodes,
             explain=True,
+            allow_adhoc_profile=allow_adhoc_profile,
+        )
+
+    @plan_app.command("optimize")
+    def plan_optimize_cmd(
+        ctx: typer.Context,
+        target: str = typer.Argument(..., help="module:Class or path.py:Class"),
+        profile: str | None = typer.Option(None, "--profile", "-p"),
+        fmt: str = typer.Option("json", "--format"),
+        policy: str | None = typer.Option(
+            None,
+            "--policy",
+            help="off|shadow|apply_accepted (default: profile or shadow)",
+        ),
+        allow_adhoc_profile: bool = typer.Option(False, "--allow-adhoc-profile"),
+    ) -> None:
+        """Run advisory optimization passes and emit explanation artifacts."""
+        _plan_optimize_and_emit(
+            get_cli_context(ctx),
+            target,
+            profile=profile,
+            fmt=fmt,
+            policy=policy,
             allow_adhoc_profile=allow_adhoc_profile,
         )
 

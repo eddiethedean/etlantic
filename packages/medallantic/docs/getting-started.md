@@ -9,8 +9,8 @@ Install the current release:
 
 ```bash
 python -m pip install \
-  'etlantic==0.44.0' \
-  'medallantic==0.44.0'
+  'etlantic==0.45.0' \
+  'medallantic==0.45.0'
 ```
 
 The equivalent ETLantic extra is:

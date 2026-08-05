@@ -58,6 +58,7 @@ from etlantic.testing.lifecycle_conformance import run_lifecycle_conformance_sui
 from etlantic.testing.observability_conformance import (
     run_observability_conformance_suite,
 )
+from etlantic.testing.optimizer_conformance import run_optimizer_conformance_suite
 from etlantic.testing.orchestrator import (
     assert_orchestrator_plugin_info,
     run_orchestrator_conformance_suite,
@@ -177,6 +178,7 @@ __all__ = [
     "run_lifecycle_conformance_suite",
     "run_observability_conformance_suite",
     "run_ops_campaign",
+    "run_optimizer_conformance_suite",
     "run_orchestrator_conformance_suite",
     "run_pipeline_case",
     "run_policy_conformance_suite",

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/optimization-result.json",
+  "title": "ETLantic OptimizationResult",
+  "description": "Wire document for optimization explanations and results (schema const etlantic.optimization/1).",
+  "type": "object",
+  "required": ["schema", "baseline_fingerprint", "result_fingerprint", "policy", "candidates"],
+  "$defs": {
+    "jsonValue": {
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    },
+    "evidenceRef": {
+      "type": "object",
+      "required": ["evidence_id"],
+      "properties": {
+        "evidence_id": { "type": "string" },
+        "freshness": { "type": ["string", "null"] },
+        "confidence": { "type": ["number", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "proofObligation": {
+      "type": "object",
+      "required": ["kind", "status"],
+      "properties": {
+        "kind": { "type": "string" },
+        "status": { "type": "string", "enum": ["proven", "rejected", "deferred"] },
+        "detail": { "type": "string" },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "candidate_id",
+        "pass_id",
+        "rewrite_kind",
+        "decision",
+        "expected_benefit",
+        "proofs",
+        "evidence_refs",
+        "policy_result",
+        "capability_result",
+        "reason"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "pass_id": { "type": "string" },
+        "rewrite_kind": { "type": "string" },
+        "decision": {
+          "type": "string",
+          "enum": ["chosen", "rejected", "shadow"]
+        },
+        "expected_benefit": { "$ref": "#/$defs/jsonValue" },
+        "proofs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/proofObligation" }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        },
+        "policy_result": { "type": "string" },
+        "capability_result": { "type": "string" },
+        "reason": { "type": "string" },
+        "cost_scores": { "type": "object", "additionalProperties": { "type": "number" } },
+        "hints": { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "properties": {
+    "schema": { "const": "etlantic.optimization/1" },
+    "baseline_fingerprint": { "type": "string" },
+    "optimized_fingerprint": { "type": ["string", "null"] },
+    "result_fingerprint": { "type": "string" },
+    "evidence_fingerprint": { "type": "string" },
+    "policy": {
+      "type": "string",
+      "enum": ["off", "shadow", "apply_accepted"]
+    },
+    "applied": { "type": "boolean" },
+    "pass_order": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "plan_diff": { "type": ["object", "null"] },
+    "shadow": { "type": ["object", "null"] },
+    "metadata": { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }
+  },
+  "additionalProperties": true
+}

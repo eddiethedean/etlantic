@@ -13,6 +13,7 @@ from etlantic.secrets import SecretRef
 PortableTransformPolicy = Literal["require", "prefer", "native"]
 SecurityMode = Literal["development", "test", "production"]
 ObservabilityDelivery = Literal["best_effort", "durable_audit"]
+OptimizationPolicy = Literal["off", "shadow", "apply_accepted"]
 
 _BINDINGS_REMOVED = (
     "Profile(bindings=...) was removed in ETLantic 0.16. Use assets= instead. "
@@ -130,6 +131,9 @@ class Profile:
     # Empty allowlist means unrestricted in non-production profiles; production
     # profiles fail closed when allowlist is empty or a discovered plugin is absent.
     plugin_allowlist: dict[str, str | None] = field(default_factory=dict)
+    # 0.45: optimization pass trust + advisory apply policy.
+    optimization_pass_allowlist: dict[str, str | None] = field(default_factory=dict)
+    optimization_policy: OptimizationPolicy = "off"
     # 0.12: portable vs native selection (no silent fallback).
     portable_transform_policy: PortableTransformPolicy = "prefer"
     # 0.20: safe I/O, outbound, isolation, optional capability probe.
@@ -172,6 +176,8 @@ class Profile:
         required_spark_capabilities: tuple[str, ...] = (),
         required_orchestrator_capabilities: tuple[str, ...] = (),
         plugin_allowlist: dict[str, str | None] | None = None,
+        optimization_pass_allowlist: dict[str, str | None] | None = None,
+        optimization_policy: OptimizationPolicy = "off",
         portable_transform_policy: PortableTransformPolicy = "prefer",
         tenant: str = "default",
         environment: str = "default",
@@ -214,6 +220,10 @@ class Profile:
             required_orchestrator_capabilities: Required orchestrator tokens.
             plugin_allowlist: Plugin name → optional version pin (production
                 fail-closed when empty under ``security_mode="production"``).
+            optimization_pass_allowlist: Optimization pass id → optional
+                version pin (production fail-closed when undeclared).
+            optimization_policy: ``"off"``, ``"shadow"``, or
+                ``"apply_accepted"`` (advisory until accept).
             portable_transform_policy: ``"prefer"``, ``"require"``, or
                 ``"native"``.
             tenant: Tenant label for safe I/O / outbound policy.
@@ -281,6 +291,16 @@ class Profile:
             tuple(required_orchestrator_capabilities),
         )
         object.__setattr__(self, "plugin_allowlist", dict(plugin_allowlist or {}))
+        object.__setattr__(
+            self,
+            "optimization_pass_allowlist",
+            dict(optimization_pass_allowlist or {}),
+        )
+        object.__setattr__(
+            self,
+            "optimization_policy",
+            _parse_optimization_policy(optimization_policy),
+        )
         object.__setattr__(self, "portable_transform_policy", portable_transform_policy)
         object.__setattr__(self, "tenant", str(tenant or "default"))
         object.__setattr__(self, "environment", str(environment or "default"))
@@ -551,6 +571,13 @@ class Profile:
                 str(k): (None if v in (None, "") else str(v))
                 for k, v in dict(data.get("plugin_allowlist") or {}).items()
             },
+            optimization_pass_allowlist={
+                str(k): (None if v in (None, "") else str(v))
+                for k, v in dict(data.get("optimization_pass_allowlist") or {}).items()
+            },
+            optimization_policy=_parse_optimization_policy(
+                data.get("optimization_policy")
+            ),
             portable_transform_policy=_parse_portable_policy(
                 data.get("portable_transform_policy")
             ),
@@ -637,6 +664,15 @@ def _parse_portable_policy(value: Any) -> PortableTransformPolicy:
     if policy not in {"require", "prefer", "native"}:
         raise ValueError(
             f"portable_transform_policy must be require|prefer|native, got {policy!r}"
+        )
+    return policy  # type: ignore[return-value]
+
+
+def _parse_optimization_policy(value: Any) -> OptimizationPolicy:
+    policy = str(value or "off").strip().lower()
+    if policy not in {"off", "shadow", "apply_accepted"}:
+        raise ValueError(
+            f"optimization_policy must be off|shadow|apply_accepted, got {value!r}"
         )
     return policy  # type: ignore[return-value]
 

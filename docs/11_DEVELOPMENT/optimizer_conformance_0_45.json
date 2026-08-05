@@ -1,0 +1,29 @@
+{
+  "schema": "etlantic.optimization.conformance-report/1",
+  "release": "0.45.0",
+  "protocol": "etlantic.optimization-pass/1",
+  "wire_schema": "etlantic.optimization/1",
+  "passes": [
+    "etlantic.pass.pushdown",
+    "etlantic.pass.pruning",
+    "etlantic.pass.fusion",
+    "etlantic.pass.materialization",
+    "etlantic.pass.reuse",
+    "etlantic.pass.repair_backfill",
+    "etlantic.pass.implementation_selection",
+    "etlantic.pass.cross_backend",
+    "example.pass.echo"
+  ],
+  "checks": {
+    "determinism": "pass",
+    "proof_gated_accept": "pass",
+    "production_allowlist_fail_closed": "pass",
+    "no_baseline_mutation": "pass",
+    "shadow_compare": "pass"
+  },
+  "evidence": [
+    "tests/optimization/test_optimization_0_45.py",
+    "src/etlantic/testing/optimizer_conformance.py",
+    "examples/optimization_pass_echo/"
+  ]
+}

@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.44.0,<0.45`.
+Official plugins declare `etlantic>=0.45.0,<0.46`.
 
 ## Package categories
 
@@ -207,7 +207,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.44** plugins, `etlantic>=0.44.0,<0.45`). A core
+**0.45** plugins, `etlantic>=0.45.0,<0.46`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

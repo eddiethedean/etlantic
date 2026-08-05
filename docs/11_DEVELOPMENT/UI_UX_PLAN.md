@@ -2,9 +2,9 @@
 
 > **Plan status: partially shipped, cross-cutting plan.**
 >
-> **Current 0.44 boundary:** The local CLI, generated read-only HTML/diagram
+> **Current 0.45 boundary:** The local CLI, generated read-only HTML/diagram
 > artifacts, and Phase 4 developer intelligence (watch, `etlantic-lsp`, VS Code
-> reference client, notebooks) are available in published **0.44.0**. Interactive
+> reference client, notebooks) are available in published **0.45.0**. Interactive
 > HTML workspace (Phase 2), run dashboard (Phase 3), and hosted Operator Console
 > (Phase 5 / 0.50) remain planned and must pass their own accessibility,
 > security, and operational gates.
@@ -28,7 +28,7 @@ onto existing roadmap milestones and may ship incrementally when their
 acceptance gates pass.
 
 Release-specific delivery and evidence are defined by the
-[0.44 developer-intelligence plan](IMPLEMENTATION_PLAN_0_44.md) and the
+[0.45 developer-intelligence plan](IMPLEMENTATION_PLAN_0_44.md) and the
 [0.50 operator-console plan](IMPLEMENTATION_PLAN_0_50.md). This domain plan
 continues to own shared interaction, accessibility, and artifact semantics.
 
@@ -52,7 +52,7 @@ continues to own shared interaction, accessibility, and artifact semantics.
 ## Phase 1 — CLI clarity and guided recovery
 
 **Roadmap alignment:** stable-foundation tooling follow-up and a prerequisite
-for 0.44 developer intelligence.
+for 0.45 developer intelligence.
 
 ### Deliver
 
@@ -83,7 +83,7 @@ for 0.44 developer intelligence.
 
 ## Phase 2 — Interactive self-contained pipeline workspace
 
-**Roadmap alignment:** visualization/tooling work that can begin before 0.44
+**Roadmap alignment:** visualization/tooling work that can begin before 0.45
 and becomes an IDE preview substrate in 0.44.
 
 ### React architecture spike
@@ -191,8 +191,8 @@ dependencies outside ETLantic core.
 
 ## Phase 4 — Fast authoring feedback and editor integration
 
-**Roadmap alignment:** 0.44 Developer Intelligence (**Released** with
-ETLantic 0.44.0 — see [EXIT_GATE_0_44](EXIT_GATE_0_44.md)).
+**Roadmap alignment:** 0.45 Developer Intelligence (**Released** with
+ETLantic 0.45.0 — see [EXIT_GATE_0_44](EXIT_GATE_0_44.md)).
 
 ### Deliver
 

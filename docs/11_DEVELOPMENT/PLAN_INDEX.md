@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.44.0 (published Beta).
+> **Status: Shipped product docs describe ETLantic 0.45.0 (published Beta).
 > Developer Intelligence (LSP / IDE / notebooks) is Available; CP-GA production
 > multi-tenant remains Supported only for isolation profiles graduated in 0.43.
 > `shared-service` remains Experimental.**
@@ -9,14 +9,14 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.44 can do now**, use
+    - To learn what **ETLantic 0.45 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
-    - To evaluate **0.44 developer-intelligence evidence**, use the
-      [0.44 exit gate](EXIT_GATE_0_44.md), [ADR-020](adr/ADR-020-DEVELOPER-INTELLIGENCE.md),
+    - To evaluate **0.45 planner/optimization evidence**, use the
+      [0.45 exit gate](EXIT_GATE_0_45.md), [ADR-021](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md),
       release notes, and tests.
     - To evaluate **CP-GA gate evidence**, use the
       [0.43 exit gate](EXIT_GATE_0_43.md), [support matrix](cp_ga_support_matrix_0_43.json),
@@ -43,17 +43,19 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.44** Developer Intelligence published line.
+Status is relative to the **0.45** Planner and Optimization SDK published line.
 Prior CP-GA evidence remains in **0.43**; CP4 evidence remains in **0.42**;
 CP3 evidence remains in **0.41**; CP2 evidence remains in **0.40**; CP1 evidence
 remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.44 Developer Intelligence released; next 0.45+ | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
+| [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md) | Released milestone | Optimization-pass SDK | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
 | [0.43 implementation plan](IMPLEMENTATION_PLAN_0_43.md) | Released milestone | CP-GA qualification / graduation | [EXIT_GATE_0_43](EXIT_GATE_0_43.md) |
 | [ADR-020: Developer intelligence](adr/ADR-020-DEVELOPER-INTELLIGENCE.md) | Accepted | Editor-neutral protocol + safe analysis | 0.44 |
+| [ADR-021: Optimizer pass protocol](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md) | Accepted | Advisory optimization-pass SDK | 0.45 |
 | [0.42 implementation plan](IMPLEMENTATION_PLAN_0_42.md) | Previous / released | Policy, quotas, audit, objectives, erasure | [EXIT_GATE_0_42](EXIT_GATE_0_42.md) |
 | [0.41 implementation plan](IMPLEMENTATION_PLAN_0_41.md) | Gate-ready milestone | Durable submission, leases, state, replay, previews | [EXIT_GATE_0_41](EXIT_GATE_0_41.md) |
 | [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Previous / gate-ready | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
@@ -70,7 +72,7 @@ remains in **0.39**; connectivity evidence remains in **0.38**.
 | [ADR-019: Policy, quotas, and audit](adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md) | Accepted | Policy envelope, quotas, SoD, audit chain | CP4 prior; CP-GA in 0.43 |
 | [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) | Accepted | Outbox, leases/fencing, effects, preview non-authority | CP3 prior |
 | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Graduated Supported profiles in 0.43 | CPn alone ≠ GA; `shared-service` Experimental | Post-CP-GA hardening / Operator Console 0.50 |
-| [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI + 0.44 LSP/IDE/notebooks released; interactive HTML and hosted Operator Console remain planned | Hosted work follows control-plane gates; Operator Console 0.50 |
+| [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI + 0.44 LSP/IDE + 0.45 optimization SDK released; interactive HTML and hosted Operator Console remain planned | Hosted work follows control-plane gates; Operator Console 0.50 |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
 | [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped; CP2 persistence open | The optional contract-to-SQLModel bridge exists; reference registry stores incubate with 0.40 | Request-scoped CP stores |

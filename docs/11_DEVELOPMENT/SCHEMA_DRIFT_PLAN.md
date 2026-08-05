@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.44 boundary:** Schema inspection, comparison, impact analysis,
+> **Current 0.45 boundary:** Schema inspection, comparison, impact analysis,
 > acknowledgement, SARIF diagnostics, and fingerprint-only file-backed history
 > are available. Registry-backed, multi-tenant history and future IDE workflows
 > remain planned. Schema history stores fingerprints and metadata, never
@@ -458,7 +458,7 @@ Rows from 0.39 onward are future sequence.
 | [0.41](IMPLEMENTATION_PLAN_0_41.md) | Baselines, state linkage, replay, concurrency, reproducibility |
 | [0.42](IMPLEMENTATION_PLAN_0_42.md) | Approval, governance, signed observations, retention, policy evidence |
 | [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
-| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook history, impact, proposals, and navigation |
+| [0.45](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook history, impact, proposals, and navigation |
 | [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed AI remediation proposals |
 
 ## Success Criteria

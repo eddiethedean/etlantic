@@ -1,5 +1,5 @@
 {
-  "matrix_version": "0.44.0",
+  "matrix_version": "0.45.0",
   "campaign": "043-C",
   "cases": [
     {
@@ -8,14 +8,14 @@
     },
     {
       "id": "sqlmodel_migrations_fresh",
-      "status": "pass",
-      "version": "003_cp4_governance"
+      "status": "skip",
+      "detail": "etlantic_sqlmodel not installed"
     },
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.44.0,<0.45",
-      "installed": "0.44.0"
+      "policy": ">=0.45.0,<0.46",
+      "installed": "0.45.0"
     }
   ],
   "pass": true,

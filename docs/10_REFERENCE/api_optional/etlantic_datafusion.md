@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.44"
+current_minor: "0.45"
 audience: developer
 ---
 
 # etlantic-datafusion API
 
-> **Status: Available in ETLantic 0.44.0.** Experimental DataFusion stub.
+> **Status: Available in ETLantic 0.45.0.** Experimental DataFusion stub.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-datafusion==0.44.0'
+pip install 'etlantic-datafusion==0.45.0'
 ```
 
 ```python

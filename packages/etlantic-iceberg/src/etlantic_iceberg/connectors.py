@@ -39,7 +39,7 @@ from etlantic.connectors.models import (
 from etlantic_iceberg.fake import FakeIcebergCatalog, pyiceberg_available
 
 PROVIDER = "iceberg"
-PACKAGE_VERSION = "0.44.0"
+PACKAGE_VERSION = "0.45.0"
 
 SOURCE_CAPS = frozenset(
     {

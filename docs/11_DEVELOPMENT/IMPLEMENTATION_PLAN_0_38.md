@@ -1,7 +1,7 @@
 ---
 status: gate_ready
 since: "0.39.0"
-current_minor: "0.44"
+current_minor: "0.45"
 target_minor: "0.38"
 audience: maintainer
 ---

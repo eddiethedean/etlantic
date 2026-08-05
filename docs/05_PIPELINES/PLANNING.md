@@ -1,10 +1,11 @@
 # Planning
 
-> **Status: Available in ETLantic 0.44.0** for deterministic
-> `PipelinePlan` production via `etlantic plan` / the planner APIs. Plans are
-> secret-free and do not execute transforms. Some advanced analysis surfaces
-> described later on this page may still be design-forward—prefer CLI JSON
-> output and CAPABILITIES.md when unsure.
+> **Status: Available in ETLantic 0.45.0** for deterministic
+> `PipelinePlan` production via `etlantic plan` / the planner APIs, plus
+> advisory optimization via `etlantic plan optimize` / `etl.optimization`.
+> Plans are secret-free and do not execute transforms. Some advanced analysis
+> surfaces described later on this page may still be design-forward—prefer CLI
+> JSON output and CAPABILITIES.md when unsure.
 
 
 Planning converts a validated logical pipeline and selected profile into an
@@ -358,3 +359,23 @@ Planning does not:
 
 Continue with [Profiles](PROFILES.md) to learn how environment-specific choices
 feed the planner without changing the logical pipeline.
+
+## Optimization (0.45)
+
+Advisory optimization is available after a baseline plan is produced:
+
+```bash
+etlantic plan optimize TARGET --profile development
+etlantic plan explain TARGET --optimization
+```
+
+```python
+import etlantic as etl
+
+result = etl.optimization.optimize_plan(plan, profile=profile)
+explanation = etl.optimization.explain_optimization(result)
+```
+
+Optimization does not run by default. See
+[Optimization Passes](../07_PLUGIN_SDK/OPTIMIZATION_PASSES.md) and
+[ADR-021](../11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md).

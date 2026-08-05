@@ -78,6 +78,16 @@
       "type": "object",
       "additionalProperties": { "type": ["string", "null"] }
     },
+    "optimization_pass_allowlist": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] },
+      "description": "Optimization pass name → optional version pin (production fail-closed when undeclared)."
+    },
+    "optimization_policy": {
+      "type": "string",
+      "enum": ["off", "shadow", "apply_accepted"],
+      "description": "Whether optimization is off, shadow-compared, or applied after accept (0.45)."
+    },
     "tenant": {
       "type": "string",
       "description": "Isolation tenant label for artifact/cache identity (0.20)."

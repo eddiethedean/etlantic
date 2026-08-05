@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.44.0",
+  "version": "0.45.0",
   "classes": [
     "stable",
     "provisional",
@@ -96,6 +96,7 @@
     "etlantic.capabilities/1": "stable",
     "etlantic.authoring-catalog/1": "stable",
     "etlantic.quality/1": "provisional",
+    "etlantic.optimization/1": "stable",
     "etlantic.landing_checkpoint/1": "provisional",
     "etlantic.control_plane.context/1": "provisional",
     "etlantic.control_plane.accept_receipt/1": "provisional",
@@ -126,7 +127,8 @@
     "etlantic.transform-compiler/1": "stable",
     "etlantic.source/1": "provisional",
     "etlantic.sink/1": "provisional",
-    "etlantic.storage/1": "provisional"
+    "etlantic.storage/1": "provisional",
+    "etlantic.optimization-pass/1": "stable"
   },
   "foundations": {
     "etlantic.testing": "stable"

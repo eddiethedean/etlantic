@@ -9,7 +9,7 @@
 | Area | Change |
 |---|---|
 | Package pin | `etlantic==0.44.0` (do not mix 0.43 and 0.44 minors) |
-| Plugin floor | `etlantic>=0.44.0,<0.45` |
+| Plugin floor | `etlantic>=0.45.0,<0.46` |
 | New optional package | `etlantic-lsp` language server (`etlantic[lsp]`) |
 | New optional extra | `etlantic[notebook]` (IPython / ipywidgets) |
 | New surface | `etlantic.ide` protocol + static analysis APIs |

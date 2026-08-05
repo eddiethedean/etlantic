@@ -6,7 +6,7 @@
 > multi-tenant is Available for `isolated-deployment` / `dedicated-schema`;
 > `shared-service` remains Experimental; community **non-SLA**.
 >
-> **Current 0.44 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
+> **Current 0.45 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
 > Continuous directory watchers are not in core. Reliability stubs remain
 > `experimental: true` unless a history store is injected.

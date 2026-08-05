@@ -3,7 +3,7 @@
 > **Plan status: partially shipped; reference persistence remains planned;
 > CP1 optional stores are in progress under 0.39.**
 >
-> **Current 0.44 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.45 boundary:** The optional `etlantic-sqlmodel` package provides
 > the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
 > repository helpers, and durable multi-tenant control-plane providers remain
 > future work relative to production graduation. CP1 may add thin,
@@ -360,7 +360,7 @@ availability. Rows from 0.39 onward are future sequence.
 | [0.41](IMPLEMENTATION_PLAN_0_41.md) | State, checkpoint, outbox, lease, and idempotency providers |
 | [0.42](IMPLEMENTATION_PLAN_0_42.md) | Policy/audit, delivery-objective/notification, and governed-erasure evidence stores plus migration hardening |
 | [0.43](IMPLEMENTATION_PLAN_0_43.md) | Graduated multi-tenant reference persistence bundle |
-| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE generation, navigation, comparison, and migration actions |
+| [0.45](IMPLEMENTATION_PLAN_0_44.md) | IDE generation, navigation, comparison, and migration actions |
 | Later 0.x | Mature Alembic integration and provider templates |
 
 ## Graduation Gates
