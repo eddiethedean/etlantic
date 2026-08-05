@@ -321,11 +321,11 @@ def register_core_commands(
                 raise typer.Exit(trust_exit)
             raise typer.Exit(ec.PLANNING_FAILURE)
 
-        opt_policy = (
-            policy or getattr(resolved, "optimization_policy", None) or "shadow"
-        )
-        if opt_policy == "off" and policy is None:
-            opt_policy = "shadow"
+        opt_policy = policy
+        if opt_policy is None:
+            opt_policy = getattr(resolved, "optimization_policy", None) or "shadow"
+        # Respect explicit profile policy=off; only default to shadow when unset.
+        # --apply-optimizations is handled by callers as policy=apply_accepted.
         # Ensure allowlisted reference passes in non-production when empty.
         opt_profile = resolved
         if str(getattr(resolved, "security_mode", "")) != "production" and not getattr(
@@ -358,6 +358,21 @@ def register_core_commands(
         if result.optimized_plan is not None and result.applied:
             payload["optimized_plan"] = json.loads(plan_to_json(result.optimized_plan))
         emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
+        trust_errors = [
+            d
+            for d in result.diagnostics
+            if getattr(d, "severity", None) is not None
+            and str(getattr(d.severity, "value", d.severity)) == "error"
+            and str(getattr(d, "code", "")).startswith("PMOPT14")
+        ]
+        if trust_errors:
+            raise typer.Exit(ec.TRUST_FAILURE)
+        if any(
+            getattr(d, "severity", None) is not None
+            and str(getattr(d.severity, "value", d.severity)) == "error"
+            for d in result.diagnostics
+        ):
+            raise typer.Exit(ec.TRUST_FAILURE)
         if not shadow.passed:
             raise typer.Exit(ec.BREAKING_CHANGE)
         raise typer.Exit(ec.SUCCESS)
@@ -437,15 +452,21 @@ def register_core_commands(
             "--policy",
             help="off|shadow|apply_accepted (default: profile or shadow)",
         ),
+        apply_optimizations: bool = typer.Option(
+            False,
+            "--apply-optimizations",
+            help="Alias for --policy apply_accepted (advisory annotations only)",
+        ),
         allow_adhoc_profile: bool = typer.Option(False, "--allow-adhoc-profile"),
     ) -> None:
         """Run advisory optimization passes and emit explanation artifacts."""
+        resolved_policy = "apply_accepted" if apply_optimizations else policy
         _plan_optimize_and_emit(
             get_cli_context(ctx),
             target,
             profile=profile,
             fmt=fmt,
-            policy=policy,
+            policy=resolved_policy,
             allow_adhoc_profile=allow_adhoc_profile,
         )
 

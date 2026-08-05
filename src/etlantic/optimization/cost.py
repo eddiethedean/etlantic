@@ -160,6 +160,81 @@ class StatisticalCostProvider:
         )
 
 
+def _reject_candidate(
+    candidate: OptimizationCandidate,
+    *,
+    reason: str,
+    policy: str = "rejected",
+    cost_scores: dict[str, float] | None = None,
+) -> OptimizationCandidate:
+    return OptimizationCandidate(
+        candidate_id=candidate.candidate_id,
+        pass_id=candidate.pass_id,
+        rewrite_kind=candidate.rewrite_kind,
+        decision="rejected",
+        expected_benefit=dict(candidate.expected_benefit),
+        proofs=candidate.proofs,
+        evidence_refs=candidate.evidence_refs,
+        policy_result=policy,  # type: ignore[arg-type]
+        capability_result=candidate.capability_result,
+        reason=reason,
+        cost_scores=dict(
+            cost_scores if cost_scores is not None else candidate.cost_scores
+        ),
+        hints=dict(candidate.hints),
+    )
+
+
+def _candidate_evidence_issues(
+    candidate: OptimizationCandidate,
+    *,
+    evidence: EvidenceStore,
+    stale_ids: set[str],
+) -> tuple[str | None, str]:
+    """Return (diagnostic_key, reason) when evidence does not justify accept."""
+    if not candidate.evidence_refs:
+        return None, ""
+    missing_ids: list[str] = []
+    missing_kinds: list[str] = []
+    stale_for_candidate: list[str] = []
+    for ref in candidate.evidence_refs:
+        eid = str(ref.get("evidence_id") or "")
+        kind = str(ref.get("kind") or "")
+        if not eid:
+            continue
+        record = evidence.get(eid)
+        if record is None:
+            missing_ids.append(eid)
+            if kind:
+                missing_kinds.append(kind)
+            continue
+        if eid in stale_ids or record.is_stale():
+            stale_for_candidate.append(eid)
+        if (
+            kind
+            and record.kind != kind
+            and kind not in {r.kind for r in evidence.by_kind(kind)}
+            and not evidence.by_kind(kind)
+        ):
+            missing_kinds.append(kind)
+    if missing_ids:
+        return (
+            "missing_evidence",
+            f"unresolved evidence ids: {', '.join(sorted(set(missing_ids)))}",
+        )
+    if missing_kinds:
+        return (
+            "missing_evidence",
+            f"missing evidence kinds: {', '.join(sorted(set(missing_kinds)))}",
+        )
+    if stale_for_candidate:
+        return (
+            "stale_evidence",
+            f"stale evidence ids: {', '.join(sorted(set(stale_for_candidate)))}",
+        )
+    return None, ""
+
+
 def select_candidates(
     candidates: tuple[OptimizationCandidate, ...],
     *,
@@ -171,7 +246,7 @@ def select_candidates(
 ) -> tuple[tuple[OptimizationCandidate, ...], tuple[Any, ...]]:
     """Attach cost scores and choose among policy/capability-accepted candidates.
 
-    Missing/stale evidence never forces an accept; budget breaches reject.
+    Missing, stale, or unresolved evidence rejects; budget breaches reject.
     """
     cost_provider: CostProvider = provider or RuleCostProvider()
     budget = budget or CostBudget()
@@ -189,11 +264,12 @@ def select_candidates(
             }
         )
     )
+    stale_ids = set(stats.stale_ids)
     if stats.missing_kinds:
         diagnostics.append(
             optimization_diagnostic(
                 "missing_evidence",
-                f"Missing evidence kinds: {', '.join(stats.missing_kinds)}; degrading to safe choice",
+                f"Missing evidence kinds: {', '.join(stats.missing_kinds)}; rejecting unjustified rewrites",
                 path=("optimization", "evidence"),
             )
         )
@@ -201,7 +277,7 @@ def select_candidates(
         diagnostics.append(
             optimization_diagnostic(
                 "stale_evidence",
-                f"Stale evidence ids: {', '.join(stats.stale_ids)}; degrading to safe choice",
+                f"Stale evidence ids: {', '.join(stats.stale_ids)}; rejecting unjustified rewrites",
                 path=("optimization", "evidence"),
             )
         )
@@ -218,19 +294,26 @@ def select_candidates(
     for candidate in candidates:
         if stats.conflicting_subjects and candidate.decision != "rejected":
             scored.append(
-                OptimizationCandidate(
-                    candidate_id=candidate.candidate_id,
-                    pass_id=candidate.pass_id,
-                    rewrite_kind=candidate.rewrite_kind,
-                    decision="rejected",
-                    expected_benefit=dict(candidate.expected_benefit),
-                    proofs=candidate.proofs,
-                    evidence_refs=candidate.evidence_refs,
-                    policy_result="rejected",
-                    capability_result=candidate.capability_result,
-                    reason="rejected due to conflicting evidence",
-                    cost_scores=dict(candidate.cost_scores),
-                    hints=dict(candidate.hints),
+                _reject_candidate(
+                    candidate, reason="rejected due to conflicting evidence"
+                )
+            )
+            continue
+
+        evidence_key, evidence_reason = _candidate_evidence_issues(
+            candidate, evidence=evidence, stale_ids=stale_ids
+        )
+        if evidence_key and candidate.decision == "chosen":
+            diagnostics.append(
+                optimization_diagnostic(
+                    evidence_key,
+                    f"Candidate {candidate.candidate_id}: {evidence_reason}",
+                    path=("optimization", "evidence", candidate.candidate_id),
+                )
+            )
+            scored.append(
+                _reject_candidate(
+                    candidate, reason=f"rejected due to {evidence_reason}"
                 )
             )
             continue
@@ -281,9 +364,13 @@ def select_candidates(
                         path=("optimization", "proof", candidate.candidate_id),
                     )
                 )
-        if candidate.capability_result == "unsupported":
+        if candidate.capability_result != "supported" and decision == "chosen":
             decision = "rejected"
-            reason = "backend capability unsupported"
+            reason = (
+                "backend capability unsupported"
+                if candidate.capability_result == "unsupported"
+                else f"capability not confirmed ({candidate.capability_result})"
+            )
             diagnostics.append(
                 optimization_diagnostic(
                     "capability_rejected",
@@ -292,9 +379,14 @@ def select_candidates(
                     path=("optimization", "capability", candidate.candidate_id),
                 )
             )
-        if candidate.policy_result == "rejected" and decision != "rejected":
+        if candidate.policy_result != "accepted" and decision == "chosen":
             decision = "rejected"
-            reason = "policy rejected"
+            policy = "rejected"
+            reason = (
+                "policy rejected"
+                if candidate.policy_result == "rejected"
+                else f"policy not accepted ({candidate.policy_result})"
+            )
             diagnostics.append(
                 optimization_diagnostic(
                     "policy_rejected",
@@ -321,7 +413,7 @@ def select_candidates(
             )
         )
 
-    # Multi-objective: pick lowest objective among chosen; leave others as-is.
+    # Multi-objective: pick lowest objective among chosen; mark others dominated.
     chosen = [c for c in scored if c.decision == "chosen"]
     if len(chosen) > 1:
         key = "benefit" if objective == "benefit" else objective
@@ -345,7 +437,11 @@ def select_candidates(
                         capability_result=candidate.capability_result,
                         reason=f"dominated by {best.candidate_id} on {key}",
                         cost_scores=dict(candidate.cost_scores),
-                        hints=dict(candidate.hints),
+                        hints={
+                            **dict(candidate.hints),
+                            "dominated": True,
+                            "dominated_by": best.candidate_id,
+                        },
                     )
                 )
             else:

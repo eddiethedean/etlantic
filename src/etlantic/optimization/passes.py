@@ -51,6 +51,26 @@ def _reject(
     )
 
 
+def _resolved_evidence_refs(
+    context: OptimizationContext,
+    *specs: tuple[str, str, float],
+) -> tuple[dict[str, Any], ...]:
+    """Include only evidence refs that resolve in the store."""
+    refs: list[dict[str, Any]] = []
+    for evidence_id, kind, confidence in specs:
+        record = context.evidence.get(evidence_id)
+        if record is None:
+            continue
+        refs.append(
+            {
+                "evidence_id": evidence_id,
+                "kind": kind or record.kind,
+                "confidence": confidence,
+            }
+        )
+    return tuple(refs)
+
+
 class _BasePass:
     metadata: PassMetadata
 
@@ -117,13 +137,7 @@ class PushdownPass(_BasePass):
                     decision="chosen",
                     expected_benefit={"relative": 0.4, "kind": "io"},
                     proofs=_base_proofs("schema", "ordering", "side_effect"),
-                    evidence_refs=(
-                        {
-                            "evidence_id": f"capability:{node}",
-                            "kind": "locality",
-                            "confidence": 0.9,
-                        },
-                    ),
+                    evidence_refs=(),  # justified by plan capability_decisions
                     policy_result="accepted",
                     capability_result="supported",
                     reason="connector advertises pushdown",
@@ -186,13 +200,7 @@ class PruningPass(_BasePass):
                 decision="chosen",
                 expected_benefit={"relative": 0.3, "nodes_removed": len(unused)},
                 proofs=_base_proofs("dependency", "schema"),
-                evidence_refs=(
-                    {
-                        "evidence_id": "selection",
-                        "kind": "ordering",
-                        "confidence": 1.0,
-                    },
-                ),
+                evidence_refs=(),  # justified by plan.selected_nodes
                 policy_result="accepted",
                 capability_result="supported",
                 reason=f"prune {len(unused)} nodes outside selection",
@@ -260,12 +268,8 @@ class FusionPass(_BasePass):
                 decision="chosen",
                 expected_benefit={"relative": 0.25},
                 proofs=_base_proofs("ordering", "schema", "side_effect"),
-                evidence_refs=(
-                    {
-                        "evidence_id": "plan-fusion",
-                        "kind": "ordering",
-                        "confidence": 0.7,
-                    },
+                evidence_refs=_resolved_evidence_refs(
+                    context, ("plan-fusion", "ordering", 0.7)
                 ),
                 policy_result="accepted",
                 capability_result="supported",
@@ -320,12 +324,11 @@ class MaterializationPass(_BasePass):
                 expected_benefit={"relative": 0.35, "boundaries": len(ids)},
                 proofs=_base_proofs("idempotency", "side_effect", "ordering"),
                 evidence_refs=tuple(
-                    {
-                        "evidence_id": f"boundary:{i}",
-                        "kind": "reuse",
-                        "confidence": 0.8,
-                    }
-                    for i in ids
+                    ref
+                    for identity in ids
+                    for ref in _resolved_evidence_refs(
+                        context, (f"boundary:{identity}", "reuse", 0.8)
+                    )
                 ),
                 policy_result="accepted",
                 capability_result="supported",
@@ -375,12 +378,11 @@ class ReusePass(_BasePass):
                 expected_benefit={"relative": 0.45},
                 proofs=_base_proofs("freshness", "identity", "side_effect"),
                 evidence_refs=tuple(
-                    {
-                        "evidence_id": f"boundary:{b.identity}",
-                        "kind": "reuse",
-                        "confidence": 0.8,
-                    }
+                    ref
                     for b in fanout
+                    for ref in _resolved_evidence_refs(
+                        context, (f"boundary:{b.identity}", "reuse", 0.8)
+                    )
                 ),
                 policy_result="accepted",
                 capability_result="supported",
@@ -455,12 +457,8 @@ class RepairBackfillPass(_BasePass):
                 decision="chosen",
                 expected_benefit={"relative": 0.2, "estimated_cost": estimated},
                 proofs=_base_proofs("idempotency", "side_effect", "ordering"),
-                evidence_refs=(
-                    {
-                        "evidence_id": "prior-report",
-                        "kind": "freshness",
-                        "confidence": 0.6,
-                    },
+                evidence_refs=_resolved_evidence_refs(
+                    context, ("prior-report", "freshness", 0.6)
                 ),
                 policy_result="accepted",
                 capability_result="supported",
@@ -582,12 +580,11 @@ class CrossBackendPass(_BasePass):
                     "classification",
                 ),
                 evidence_refs=tuple(
-                    {
-                        "evidence_id": f"boundary:{b.identity}",
-                        "kind": "locality",
-                        "confidence": 0.85,
-                    }
+                    ref
                     for b in cross
+                    for ref in _resolved_evidence_refs(
+                        context, (f"boundary:{b.identity}", "locality", 0.85)
+                    )
                 ),
                 policy_result="accepted",
                 capability_result="supported",

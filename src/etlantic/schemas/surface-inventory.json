@@ -40,7 +40,8 @@
     "service",
     "quality",
     "connectors",
-    "control_plane"
+    "control_plane",
+    "optimization"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -55,7 +56,8 @@
     "service": "etlantic.service",
     "quality": "etlantic.quality",
     "connectors": "etlantic.connectors",
-    "control_plane": "etlantic.control_plane"
+    "control_plane": "etlantic.control_plane",
+    "optimization": "etlantic.optimization"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",

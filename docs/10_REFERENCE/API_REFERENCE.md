@@ -31,6 +31,7 @@ etl.testing     # conformance suites and fault injection
 etl.quality     # provisional portable quality AST / gates
 etl.connectors  # source / sink / storage connector protocols
 etl.control_plane  # CP1 identity, authz, memory stores (provisional)
+etl.optimization   # advisory optimize_plan / EvidenceStore / explain_optimization
 ```
 
 You may also import curated symbols directly:

@@ -47,6 +47,7 @@ etl.service     # AuthoringService, PolicyContext
 etl.transform   # portable authoring helpers
 etl.dataframe / etl.sql / etl.spark
 etl.orchestration / etl.viz / etl.secrets / etl.testing / etl.quality
+etl.optimization  # optimize_plan, EvidenceStore, explain_optimization
 ```
 
 Minimal definition path:

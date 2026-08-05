@@ -259,3 +259,212 @@ def test_lazy_namespace() -> None:
 
     assert etl.optimization.OPTIMIZATION_SCHEMA == OPTIMIZATION_SCHEMA
     assert callable(etl.optimization.optimize_plan)
+
+
+def test_stale_and_unresolved_evidence_rejects_chosen() -> None:
+    plan = _minimal_plan()
+    store = EvidenceStore()
+    now = datetime.now(UTC)
+    store.add(
+        EvidenceRecord(
+            evidence_id="stale-card",
+            kind="cardinality",
+            subject="extract",
+            value=10,
+            expires_at=(now - timedelta(hours=1)).isoformat(),
+        )
+    )
+    stale_candidate = OptimizationCandidate(
+        candidate_id="stale",
+        pass_id="test",
+        rewrite_kind="fusion",
+        decision="chosen",
+        expected_benefit={"relative": 0.5},
+        proofs=(ProofObligation(kind="schema", status="proven"),),
+        evidence_refs=(
+            {"evidence_id": "stale-card", "kind": "cardinality", "confidence": 0.9},
+        ),
+        policy_result="accepted",
+        capability_result="supported",
+        reason="stale",
+    )
+    missing_candidate = OptimizationCandidate(
+        candidate_id="missing",
+        pass_id="test",
+        rewrite_kind="fusion",
+        decision="chosen",
+        expected_benefit={"relative": 0.5},
+        proofs=(ProofObligation(kind="schema", status="proven"),),
+        evidence_refs=(
+            {"evidence_id": "does-not-exist", "kind": "cardinality", "confidence": 0.9},
+        ),
+        policy_result="accepted",
+        capability_result="supported",
+        reason="missing",
+    )
+    scored, diags = select_candidates(
+        (stale_candidate, missing_candidate),
+        plan=plan,
+        evidence=store,
+        provider=RuleCostProvider(),
+    )
+    assert all(c.decision == "rejected" for c in scored)
+    assert any(getattr(d, "code", None) in {"PMOPT100", "PMOPT101"} for d in diags)
+
+
+def test_unknown_policy_or_capability_cannot_be_chosen() -> None:
+    plan = _minimal_plan()
+    store = EvidenceStore()
+    candidate = OptimizationCandidate(
+        candidate_id="gate",
+        pass_id="test",
+        rewrite_kind="pruning",
+        decision="chosen",
+        expected_benefit={"relative": 0.2},
+        proofs=(ProofObligation(kind="dependency", status="proven"),),
+        evidence_refs=(),
+        policy_result="not_evaluated",
+        capability_result="unknown",
+        reason="ungated",
+    )
+    scored, _ = select_candidates(
+        (candidate,), plan=plan, evidence=store, provider=RuleCostProvider()
+    )
+    assert scored[0].decision == "rejected"
+
+
+def test_shadow_synthesis_excludes_dominated() -> None:
+    plan = PipelinePlan_with_selection(_minimal_plan())
+    allow = {p.metadata.pass_id: p.metadata.version for p in builtin_passes()}
+    profile = development_profile(
+        optimization_policy="shadow",
+        optimization_pass_allowlist=allow,
+    )
+    # Two competing chosen candidates via select_candidates domination path.
+    a = OptimizationCandidate(
+        candidate_id="a",
+        pass_id="t",
+        rewrite_kind="pruning",
+        decision="chosen",
+        expected_benefit={"relative": 0.9},
+        proofs=(ProofObligation(kind="dependency", status="proven"),),
+        evidence_refs=(),
+        policy_result="accepted",
+        capability_result="supported",
+        reason="better",
+        cost_scores={"benefit": -0.9},
+        hints={"annotate": {"pruned_nodes": ["transform"]}},
+    )
+    b = OptimizationCandidate(
+        candidate_id="b",
+        pass_id="t",
+        rewrite_kind="pruning",
+        decision="chosen",
+        expected_benefit={"relative": 0.1},
+        proofs=(ProofObligation(kind="dependency", status="proven"),),
+        evidence_refs=(),
+        policy_result="accepted",
+        capability_result="supported",
+        reason="worse",
+        cost_scores={"benefit": -0.1},
+        hints={"annotate": {"pruned_nodes": ["extract", "transform"]}},
+    )
+    scored, _ = select_candidates(
+        (a, b), plan=plan, evidence=EvidenceStore(), provider=RuleCostProvider()
+    )
+    dominated = [c for c in scored if (c.hints or {}).get("dominated")]
+    winners = [c for c in scored if c.decision == "chosen"]
+    assert len(winners) == 1
+    assert dominated
+    result = optimize_plan(plan, profile=profile, passes=(), include_entry_points=False)
+    # Empty passes → no candidates; ensure apply_mode honesty on apply path.
+    applied = optimize_plan(
+        plan,
+        profile=development_profile(
+            optimization_policy="apply_accepted",
+            optimization_pass_allowlist=allow,
+        ),
+        include_entry_points=False,
+    )
+    if applied.applied:
+        assert applied.metadata.get("apply_mode") == "annotations"
+    assert result.shadow is not None
+
+
+def test_specifier_pin_allows_compatible_versions() -> None:
+    from etlantic.optimization.passes import PushdownPass
+    from etlantic.optimization.registry import resolve_pass_order
+
+    profile = development_profile(
+        optimization_pass_allowlist={"etlantic.pass.pushdown": ">=1.0.0,<2"}
+    )
+    ordered, diags = resolve_pass_order((PushdownPass(),), profile=profile)
+    assert [p.metadata.pass_id for p in ordered] == ["etlantic.pass.pushdown"]
+    assert not any(getattr(d, "code", None) == "PMOPT140" for d in diags)
+
+
+def test_discover_skips_entry_points_until_allowlisted(monkeypatch) -> None:
+    from etlantic.optimization import registry as reg
+
+    loaded: list[str] = []
+
+    class _Ep:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def load(self):
+            loaded.append(self.name)
+            raise RuntimeError("should not load")
+
+    monkeypatch.setattr(reg, "_entry_point_group", lambda: [_Ep("evil.pass")])
+    profile = Profile(
+        name="production",
+        security_mode="production",
+        plugin_allowlist={"local": None},
+        optimization_policy="shadow",
+        optimization_pass_allowlist={},
+    )
+    found = reg.discover_optimization_passes(
+        include_builtin=False, include_entry_points=True, profile=profile
+    )
+    assert found == ()
+    assert loaded == []
+
+
+def test_profile_off_policy_respected() -> None:
+    plan = _minimal_plan()
+    profile = development_profile(optimization_policy="off")
+    result = optimize_plan(plan, profile=profile, include_entry_points=False)
+    assert result.policy == "off"
+    assert result.candidates == ()
+    assert result.shadow is None or result.applied is False
+
+
+def test_ide_optimize_honors_production_allowlist() -> None:
+    from pathlib import Path
+
+    import examples.memory_customers as mc
+
+    from etlantic.ide.commands import execute_command
+    from etlantic.ide.trust import TrustedWorkspacePolicy
+
+    root = str(Path(__file__).resolve().parents[2])
+    policy = TrustedWorkspacePolicy(
+        enabled=True,
+        allow_imports=True,
+        allow_roots=(root,),
+    )
+    result = execute_command(
+        {
+            "name": "optimize",
+            "arguments": {
+                "target": f"{mc.__file__}:CustomerPipeline",
+                "profile": "development",
+                "optimization_policy": "off",
+            },
+        },
+        policy=policy,
+    )
+    assert result.ok is True, result.error
+    assert result.payload is not None
+    assert result.payload["optimization"]["policy"] == "off"

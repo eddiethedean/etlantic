@@ -195,11 +195,11 @@ def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Id
     from etlantic.optimization.registry import builtin_passes
     from etlantic.optimization.shadow import compare_shadow
     from etlantic.plan.explain import explain_plan
-    from etlantic.profile import development_profile
+    from etlantic.profile import Profile, development_profile, load_profile
 
     target = str(args["target"])
-    profile_name = args.get("profile", "development")
-    opt_policy = str(args.get("optimization_policy") or "shadow")
+    profile_name = str(args.get("profile", "development"))
+    explicit_policy = args.get("optimization_policy")
     pipeline = _resolve_target(target, policy=policy, operation="optimize")
     if isinstance(pipeline, PipelineDefinition):
         plan, report = plan_preview(pipeline, profile=profile_name)
@@ -213,18 +213,51 @@ def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Id
     else:
         plan = plan_pipeline_like(pipeline, profile=profile_name)
 
-    allowlist = {p.metadata.pass_id: p.metadata.version for p in builtin_passes()}
-    opt_profile = development_profile(
-        name=str(profile_name),
-        optimization_policy=opt_policy,  # type: ignore[arg-type]
-        optimization_pass_allowlist=allowlist,
+    try:
+        opt_profile = load_profile(profile_name)
+    except Exception:
+        snap = dict(plan.profile_snapshot or {})
+        if snap:
+            opt_profile = Profile.from_plan_snapshot(snap)
+        else:
+            opt_profile = development_profile(name=profile_name)
+
+    opt_policy = (
+        str(explicit_policy)
+        if explicit_policy is not None
+        else (getattr(opt_profile, "optimization_policy", None) or "shadow")
     )
+    if str(getattr(opt_profile, "security_mode", "")) != "production" and not getattr(
+        opt_profile, "optimization_pass_allowlist", None
+    ):
+        opt_profile = opt_profile.with_updates(
+            optimization_pass_allowlist={
+                p.metadata.pass_id: p.metadata.version for p in builtin_passes()
+            },
+            optimization_policy=opt_policy,  # type: ignore[arg-type]
+        )
+    elif explicit_policy is not None:
+        opt_profile = opt_profile.with_updates(
+            optimization_policy=opt_policy  # type: ignore[arg-type]
+        )
+
     result = optimize_plan(plan, profile=opt_profile, policy=opt_policy)  # type: ignore[arg-type]
     explanation = explain_optimization(result)
     shadow = compare_shadow(plan, result.optimized_plan, result=result)
+    trust_error = any(
+        str(getattr(getattr(d, "severity", None), "value", getattr(d, "severity", "")))
+        == "error"
+        for d in result.diagnostics
+    )
+    ok = shadow.passed and not trust_error
+    error = None
+    if trust_error:
+        error = "optimization trust/policy diagnostics failed"
+    elif not shadow.passed:
+        error = "shadow comparison regressions"
     return IdeResult(
         name="optimize",
-        ok=shadow.passed,
+        ok=ok,
         payload={
             "plan_id": plan.plan_id,
             "fingerprint": plan.fingerprint,
@@ -233,7 +266,10 @@ def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Id
             "explanation": explanation.to_dict(),
             "shadow": shadow.to_dict(),
         },
-        error=None if shadow.passed else "shadow comparison regressions",
+        error=error,
+        diagnostics=tuple(
+            DiagnosticPayload.from_diagnostic(d) for d in result.diagnostics
+        ),
     )
 
 

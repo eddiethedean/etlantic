@@ -1307,6 +1307,35 @@ def main() -> None:
         )
         if not current_migration.exists():
             raise SystemExit(f"Missing {current_migration.relative_to(ROOT)}")
+        migration_text = current_migration.read_text(encoding="utf-8")
+        expected_floor = (
+            f"etlantic>={major_minor_for_notes}.0,<{major}.{int(minor) + 1}"
+        )
+        dest_floor_ok = expected_floor in migration_text or (
+            f">={major_minor_for_notes}.0,<{major}.{int(minor) + 1}" in migration_text
+        )
+        if not dest_floor_ok:
+            raise SystemExit(
+                f"{current_migration.name} plugin floor must include {expected_floor}"
+            )
+        # Historical prior migration must not claim the current floor.
+        if int(minor) >= 2:
+            prior_prior = f"{major}.{int(minor) - 2}"
+            hist = (
+                ROOT
+                / "docs/11_DEVELOPMENT"
+                / (
+                    f"MIGRATION_{prior_prior.replace('.', '_')}"
+                    f"_TO_{previous_minor.replace('.', '_')}.md"
+                )
+            )
+            if hist.exists():
+                hist_text = hist.read_text(encoding="utf-8")
+                if expected_floor in hist_text:
+                    raise SystemExit(
+                        f"{hist.name} must not use current floor {expected_floor}; "
+                        f"destination is {previous_minor}"
+                    )
         current_exit_gate = (
             ROOT
             / "docs/11_DEVELOPMENT"
@@ -2231,6 +2260,9 @@ def main() -> None:
     prior_pin_paths = [
         ROOT / "examples/README.md",
         ROOT / "examples/interchange_polars_pandas.py",
+        ROOT / "examples/airflow_compile.py",
+        ROOT / "examples/dataframe_parity.py",
+        ROOT / "examples/pyspark_local.py",
         ROOT / "profiles/prod.example.json",
         ROOT / "docs/01_GETTING_STARTED/prod.example.json",
         ROOT / "docs/01_GETTING_STARTED/ENGINE_SELECTION.md",
@@ -2341,7 +2373,7 @@ def main() -> None:
                 continue
             text = path.read_text(encoding="utf-8")
             stale_package_pin = re.search(
-                rf"(?:etlantic(?:-[a-z0-9]+)*|medallantic)=={re.escape(prior_minor)}\.0",
+                rf"(?:etlantic(?:\[[^\]]+\])?(?:-[a-z0-9]+)*|medallantic)=={re.escape(prior_minor)}\.0",
                 text,
             )
             if stale_package_pin is not None:

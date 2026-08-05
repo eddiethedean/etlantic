@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from etlantic.optimization.engine import OptimizationResult
+from etlantic.optimization.engine import OptimizationResult, sanitize_hints
 from etlantic.plan.freeze import mutable_copy
 
 
@@ -53,6 +53,8 @@ def explain_optimization(result: OptimizationResult) -> OptimizationExplanation:
     benefit_acc: dict[str, float] = {}
     for candidate in result.candidates:
         payload = candidate.to_dict()
+        if isinstance(payload.get("hints"), dict):
+            payload["hints"] = sanitize_hints(payload["hints"])
         if candidate.decision == "chosen":
             chosen.append(payload)
             for key, value in (candidate.expected_benefit or {}).items():

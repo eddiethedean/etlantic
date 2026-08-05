@@ -30,6 +30,7 @@ Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 
 - Never embed secret values in plans, reports, contracts, or agent guidance.
 - Production profiles require Profile.plugin_allowlist and fail closed.
+- Production profiles that enable optimization require Profile.optimization_pass_allowlist and fail closed.
 - Schema history stores fingerprints/metadata only — never source rows.
 - Prefer public SDK imports; do not rely on private underscore modules.
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.

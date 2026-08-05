@@ -35,6 +35,38 @@ from etlantic.profile import Profile
 
 OptimizationPolicy = Literal["off", "shadow", "apply_accepted"]
 
+_SECRET_HINT_KEYS = frozenset(
+    {
+        "password",
+        "secret",
+        "token",
+        "api_key",
+        "apikey",
+        "authorization",
+        "credential",
+        "credentials",
+        "private_key",
+        "access_key",
+        "secret_key",
+    }
+)
+
+
+def sanitize_hints(hints: dict[str, Any] | None) -> dict[str, Any]:
+    """Drop secret-like keys from rewrite hints before explain/emit."""
+    if not hints:
+        return {}
+    cleaned: dict[str, Any] = {}
+    for key, value in hints.items():
+        key_l = str(key).lower()
+        if key_l in _SECRET_HINT_KEYS or any(s in key_l for s in _SECRET_HINT_KEYS):
+            continue
+        if isinstance(value, dict):
+            cleaned[key] = sanitize_hints(value)
+        else:
+            cleaned[key] = copy.deepcopy(value)
+    return cleaned
+
 
 @dataclass(frozen=True, slots=True)
 class OptimizationResult:
@@ -102,6 +134,7 @@ def derive_optimized_plan(
     """Derive an optimized plan by annotating accepted rewrite hints.
 
     Does not mutate the baseline. Recomputes fingerprint after metadata merge.
+    Annotations are advisory for host consumption — not a physical rewrite.
     """
     annotations: dict[str, Any] = {"etlantic.optimization": {"rewrites": []}}
     for candidate in candidates:
@@ -112,7 +145,7 @@ def derive_optimized_plan(
                 "candidate_id": candidate.candidate_id,
                 "pass_id": candidate.pass_id,
                 "rewrite_kind": candidate.rewrite_kind,
-                "hints": mutable_copy(candidate.hints),
+                "hints": sanitize_hints(dict(candidate.hints or {})),
                 "reason": candidate.reason,
             }
         )
@@ -132,6 +165,13 @@ def derive_optimized_plan(
     # Ensure nested freeze
     object.__setattr__(plan, "metadata", deep_freeze(dict(plan.metadata)))
     return plan
+
+
+def _is_dominated(candidate: OptimizationCandidate) -> bool:
+    hints = candidate.hints or {}
+    return bool(hints.get("dominated")) or str(candidate.reason or "").startswith(
+        "dominated by "
+    )
 
 
 def optimize_plan(
@@ -196,11 +236,13 @@ def optimize_plan(
         else discover_optimization_passes(
             include_entry_points=include_entry_points,
             include_builtin=True,
+            profile=profile,
         )
         or builtin_passes()
     )
     ordered, allow_diags = resolve_pass_order(discovered, profile=profile)
     diagnostics: list[Any] = list(allow_diags)
+    production = str(getattr(profile, "security_mode", "development")) == "production"
 
     context = OptimizationContext(
         baseline=baseline,
@@ -223,7 +265,19 @@ def optimize_plan(
                     )
                 )
                 continue
-        proposed = pass_obj.propose(context)
+        try:
+            proposed = pass_obj.propose(context)
+        except Exception as exc:
+            diagnostics.append(
+                optimization_diagnostic(
+                    "pass_prereq_unmet",
+                    f"Pass {pass_obj.metadata.pass_id} propose failed: {exc}",
+                    severity="error" if production else "warning",
+                    path=("optimization", "pass", pass_obj.metadata.pass_id),
+                    metadata={"exception_type": type(exc).__name__},
+                )
+            )
+            continue
         raw_candidates.extend(proposed)
 
     scored, cost_diags = select_candidates(
@@ -234,6 +288,11 @@ def optimize_plan(
         budget=budget or CostBudget(limits=dict(budgets or {})),
     )
     diagnostics.extend(cost_diags)
+
+    # Capture would-apply set before shadow-policy demotion (excludes dominated).
+    would_apply = tuple(
+        c for c in scored if c.decision == "chosen" and not _is_dominated(c)
+    )
 
     # In shadow policy, demote chosen → shadow (do not apply).
     final_candidates: list[OptimizationCandidate] = []
@@ -252,7 +311,10 @@ def optimize_plan(
                     capability_result=candidate.capability_result,
                     reason=f"shadow: {candidate.reason}",
                     cost_scores=dict(candidate.cost_scores),
-                    hints=dict(candidate.hints),
+                    hints={
+                        **dict(candidate.hints),
+                        "would_apply": True,
+                    },
                 )
             )
         else:
@@ -273,17 +335,17 @@ def optimize_plan(
     plan_diff_dict: dict[str, Any] | None = None
     applied = False
     optimized_fp: str | None = None
+    metadata: dict[str, Any] = {}
 
     if chosen and resolved_policy == "apply_accepted":
         optimized = derive_optimized_plan(baseline, chosen)
         optimized_fp = optimized.fingerprint
         applied = True
+        metadata["apply_mode"] = "annotations"
         diff: PlanDiff = diff_plans(baseline, optimized)
         plan_diff_dict = diff.to_dict()
-    elif chosen or any(c.decision == "shadow" for c in candidates_t):
-        # Always materialize a candidate plan for comparison in shadow mode.
-        shadow_src = chosen or tuple(c for c in candidates_t if c.decision == "shadow")
-        # Treat shadow decisions as apply-for-diff only.
+    elif would_apply:
+        # Materialize only would-apply candidates for shadow comparison.
         synthetic = tuple(
             OptimizationCandidate(
                 candidate_id=c.candidate_id,
@@ -297,9 +359,9 @@ def optimize_plan(
                 capability_result=c.capability_result,
                 reason=c.reason,
                 cost_scores=dict(c.cost_scores),
-                hints=dict(c.hints),
+                hints=sanitize_hints(dict(c.hints)),
             )
-            for c in shadow_src
+            for c in would_apply
             if c.policy_result == "accepted"
             and c.capability_result == "supported"
             and all(p.status == "proven" for p in c.proofs)
@@ -308,6 +370,29 @@ def optimize_plan(
             optimized = derive_optimized_plan(baseline, synthetic)
             optimized_fp = optimized.fingerprint
             plan_diff_dict = diff_plans(baseline, optimized).to_dict()
+
+    # Determinism check + shadow attachment (lazy import avoids cycle).
+    from etlantic.optimization.shadow import compare_shadow
+
+    shadow_compare = compare_shadow(baseline, optimized)
+    shadow_dict = shadow_compare.to_dict()
+    # Re-run fingerprint stability for the same inputs.
+    rerun = _result_fingerprint(
+        baseline_fp=baseline.fingerprint,
+        evidence_fp=ev_fp,
+        pass_order=pass_order,
+        candidates=candidates_t,
+        policy=resolved_policy,
+    )
+    if rerun != result_fp:
+        diagnostics.append(
+            optimization_diagnostic(
+                "determinism_mismatch",
+                "Optimization result fingerprint diverged on recompute",
+                severity="error",
+                path=("optimization", "determinism"),
+            )
+        )
 
     return OptimizationResult(
         schema=OPTIMIZATION_SCHEMA,
@@ -321,6 +406,7 @@ def optimize_plan(
         candidates=candidates_t,
         diagnostics=tuple(diagnostics),
         plan_diff=plan_diff_dict,
+        shadow=shadow_dict,
         optimized_plan=optimized,
-        metadata={},
+        metadata=metadata,
     )

@@ -137,6 +137,26 @@ Explain output includes bindings, implementations, capability decisions, and
 (when selected) portable `implementation_kind`, `ir_fingerprint`, and compiler
 identity for Polars kernel compilation.
 
+### `plan optimize`
+
+Run advisory optimization passes and emit an explanation / shadow comparison
+(does not change default `plan` / `run` behavior):
+
+```bash
+python -m etlantic plan optimize pipeline.py:SamplePipeline --profile development
+python -m etlantic plan optimize pipeline.py:SamplePipeline --policy shadow
+python -m etlantic plan optimize pipeline.py:SamplePipeline --apply-optimizations
+```
+
+`--policy` is `off|shadow|apply_accepted` (default: profile policy, else
+`shadow`). `--apply-optimizations` is an alias for `--policy apply_accepted`
+and attaches **host-consumable annotations** only (not a physical rewrite).
+Production profiles fail closed on empty `optimization_pass_allowlist`
+(`PMOPT140` → exit `11` / `TRUST_FAILURE`).
+
+Also: `python -m etlantic plan explain … --optimization` includes the same
+optimization artifact in the explain payload.
+
 ### `plan diff`
 
 Compare two resolved plans structurally (targets or plan JSON paths):

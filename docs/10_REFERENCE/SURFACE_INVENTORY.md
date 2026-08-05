@@ -59,6 +59,7 @@ root facade alias waves:
 | `etl.quality` | `etlantic.quality` | provisional |
 | `etl.connectors` | `etlantic.connectors` | provisional (0.38 burn-in) |
 | `etl.control_plane` | `etlantic.control_plane` | provisional (CP1 / 0.39 identity incubation) |
+| `etl.optimization` | `etlantic.optimization` | stable (0.45 advisory optimization-pass SDK) |
 
 ## Plan helpers (stable)
 
@@ -107,6 +108,8 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.control_plane.event/1` | provisional (CP1 / ADR-016) |
 | `etlantic.control_plane.sse_cursor/1` | provisional (CP1 / ADR-016) |
 | `etlantic.control_plane.error/1` | provisional (CP1 / ADR-016) |
+| `etlantic.optimization/1` | stable (0.45) |
+| `etlantic.optimization-pass/1` | stable (0.45 protocol) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 

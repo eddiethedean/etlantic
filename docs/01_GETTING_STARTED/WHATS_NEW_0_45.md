@@ -12,14 +12,17 @@
   `CostProvider`s (no universal cost currency)
 - **Reference rewrites** — pushdown, pruning, fusion, materialization, reuse,
   repair/backfill selection, implementation selection, cross-backend handoffs
-- **Advisory by default** — `plan` / `run` keep the baseline; apply via
-  `optimization_policy=apply_accepted` or `etlantic plan optimize`
+- **Advisory by default** — `plan` / `run` keep the baseline; `apply_accepted`
+  / `--apply-optimizations` attach **host-consumable annotations** only (not a
+  physical rewrite)
 - **Explanation parity** — same explanation schema on CLI, API (`etl.optimization`),
   and IDE `optimize` command
 - **Shadow comparison** — baseline vs candidate plan diff with regression
-  thresholds
+  thresholds (shadow synthesis uses would-apply winners only)
 - **Conformance** — `etlantic.testing.run_optimizer_conformance_suite`
-- **Production trust** — `Profile.optimization_pass_allowlist` fail-closed
+- **Production trust** — `Profile.optimization_pass_allowlist` fail-closed;
+  entry points load only after allowlist checks; CLI exits `TRUST_FAILURE` on
+  `PMOPT140`
 
 ## Adopter actions
 

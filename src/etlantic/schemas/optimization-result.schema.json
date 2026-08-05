@@ -14,8 +14,20 @@
       "required": ["evidence_id"],
       "properties": {
         "evidence_id": { "type": "string" },
-        "freshness": { "type": ["string", "null"] },
-        "confidence": { "type": ["number", "null"] }
+        "kind": {
+          "type": "string",
+          "enum": [
+            "cardinality",
+            "partitioning",
+            "ordering",
+            "locality",
+            "reuse",
+            "freshness",
+            "generic"
+          ]
+        },
+        "confidence": { "type": ["number", "null"] },
+        "freshness": { "type": ["string", "null"] }
       },
       "additionalProperties": true
     },
@@ -64,8 +76,14 @@
           "type": "array",
           "items": { "$ref": "#/$defs/evidenceRef" }
         },
-        "policy_result": { "type": "string" },
-        "capability_result": { "type": "string" },
+        "policy_result": {
+          "type": "string",
+          "enum": ["accepted", "rejected", "not_evaluated"]
+        },
+        "capability_result": {
+          "type": "string",
+          "enum": ["supported", "unsupported", "unknown"]
+        },
         "reason": { "type": "string" },
         "cost_scores": { "type": "object", "additionalProperties": { "type": "number" } },
         "hints": { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }

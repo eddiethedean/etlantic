@@ -88,6 +88,14 @@ def main() -> int:
             )
             return 1
 
+    lazy = set(getattr(etlantic, "_LAZY_NAMESPACES", {}) or {})
+    missing_lazy = sorted(lazy - namespaces)
+    if missing_lazy:
+        print("surface-inventory sdk_root_namespaces missing lazy namespaces:")
+        for name in missing_lazy:
+            print(f"  - {name}")
+        return 1
+
     print(
         f"Surface inventory OK: {len(stable)} stable in __all__ + "
         f"{len(namespaces)} lazy namespaces verified "

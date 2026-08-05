@@ -16,7 +16,7 @@ python -m pip install \
 The equivalent ETLantic extra is:
 
 ```bash
-python -m pip install 'etlantic[medallantic]==0.44.0'
+python -m pip install 'etlantic[medallantic]==0.45.0'
 ```
 
 Execution engines remain optional. Install the engine separately when moving

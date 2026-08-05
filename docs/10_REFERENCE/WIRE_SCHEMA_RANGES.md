@@ -40,6 +40,8 @@ outcome.
 | `etlantic.control_plane.event/1` | 0.39+ (**provisional**) | SSE / event envelope |
 | `etlantic.control_plane.sse_cursor/1` | 0.39+ (**provisional**) | Opaque resume cursor (410 on unknown) |
 | `etlantic.control_plane.error/1` | 0.39+ (**provisional**) | Control-plane error envelope |
+| `etlantic.optimization/1` | 0.45+ (**stable**) | Optimization result / explanation wire document |
+| `etlantic.optimization-pass/1` | 0.45+ (**stable**) | Optimization pass protocol identity |
 
 Upgrade hooks live in `etlantic.authoring.upgrade`, `etlantic.plan.upgrade`,
 `etlantic.reports.upgrade`, and `etlantic.quality.upgrade`. Empty `_UPGRADERS`
