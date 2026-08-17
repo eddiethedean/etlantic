@@ -4030,6 +4030,12 @@ Acceptance:
 
 ## 0.46 — Streaming and Event-Driven Pipelines
 
+**Status:** Current planning freeze (not started). See
+[IMPLEMENTATION_PLAN_0_46](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md),
+[ADR-022](docs/11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
+and [EXIT_GATE_0_46](docs/11_DEVELOPMENT/EXIT_GATE_0_46.md). These surfaces are
+**not Available**.
+
 Deliver:
 
 - bounded, explicit runtime mapping and reduction over declared upstream

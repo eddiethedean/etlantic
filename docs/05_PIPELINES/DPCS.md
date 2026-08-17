@@ -333,6 +333,15 @@ Control flow must remain explicit and portable.
 It should not be inferred from arbitrary Python branching that cannot be
 represented faithfully in DPCS.
 
+!!! note "Future / 0.46 — not Available"
+    Bounded map/reduce expansion, typed failure/compensation branches with
+    stable child identity, and stream-time nodes are a **planned DPCS
+    extension** for [ETLantic 0.46](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md).
+    Until that exit gate is Met, validators must fail closed rather than
+    inventing implicit control flow. See
+    [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md)
+    and [EXIT_GATE_0_46](../11_DEVELOPMENT/EXIT_GATE_0_46.md).
+
 ## Contract References
 
 DPCS composes contracts through references.

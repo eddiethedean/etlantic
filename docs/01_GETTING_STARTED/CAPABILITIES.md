@@ -222,8 +222,8 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | GitOps preview-to-production workflow | **Available** (CP-GA in-process evidence; see [WHATS_NEW_0_43](WHATS_NEW_0_43.md)) |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Kubernetes/reference proof in 0.47; optional supported packs planned for 0.51 |
-| Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | Planned first-class for 0.46 |
-| Streaming poison-record/DLQ policy and schema-registry interoperability | Planned first-class for 0.46 |
+| Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | Planned first-class for 0.46 — [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md) / [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) (not Available) |
+| Streaming poison-record/DLQ policy and schema-registry interoperability | Planned first-class for 0.46 — [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (not Available) |
 | Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.49 |
 | Read-only-first operator console | Planned first-class for 0.50 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.51 |

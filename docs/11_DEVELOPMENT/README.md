@@ -19,6 +19,16 @@ released.
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
+## Next phase (planning)
+
+0.46 is a **planning freeze — not started**. Do not treat these pages as
+Available product docs. The published line remains 0.45.0.
+
+- [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md)
+- [Exit gate 0.46](EXIT_GATE_0_46.md)
+- [Findings ledger 0.46](FINDINGS_0_46.md)
+- [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed)
+
 ## Current migrations and exit gates
 
 - [Migration 0.44 → 0.45](MIGRATION_0_44_TO_0_45.md) (Released — Planner and Optimization SDK)

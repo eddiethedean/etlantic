@@ -792,9 +792,9 @@ Rows from 0.39 onward are future sequence.
 | [0.41](IMPLEMENTATION_PLAN_0_41.md) | Incremental invalidation, repair, state, and reproducibility |
 | [0.42](IMPLEMENTATION_PLAN_0_42.md) | Governance, delivery objectives, deadline/escalation routing, governed erasure, approvals, budgets, destructive-write policy |
 | [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
-| [0.45](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook previews, diagnostics, and trend displays |
+| [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook previews, diagnostics, and trend displays |
 | [0.45](IMPLEMENTATION_PLAN_0_45.md) | Cost-aware repair, materialization, and implementation selection |
-| [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability |
+| [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability — [EXIT_GATE_0_46](EXIT_GATE_0_46.md) (planning freeze) |
 | [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed repair and migration proposals |
 
 ## Success Criteria

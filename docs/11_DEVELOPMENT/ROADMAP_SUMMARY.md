@@ -310,7 +310,7 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK — [Released](EXIT_GATE_0_45.md)
 - **[0.46](IMPLEMENTATION_PLAN_0_46.md):** bounded dynamic mapping and control flow,
   streaming and event-driven pipelines, poison-record/DLQ policy, and
-  schema-registry interoperability
+  schema-registry interoperability — [planning freeze](EXIT_GATE_0_46.md)
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** remote execution federation with Kubernetes and a managed Spark
   reference provider
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed engineering

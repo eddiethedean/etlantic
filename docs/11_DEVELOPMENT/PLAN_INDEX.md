@@ -18,6 +18,10 @@ release gates. They are **not** a substitute for current product documentation.
     - To evaluate **0.45 planner/optimization evidence**, use the
       [0.45 exit gate](EXIT_GATE_0_45.md), [ADR-021](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md),
       release notes, and tests.
+    - To evaluate **0.46 planning freeze** (not shipped), use the
+      [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md),
+      [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
+      [0.46 exit gate](EXIT_GATE_0_46.md), and [findings](FINDINGS_0_46.md).
     - To evaluate **CP-GA gate evidence**, use the
       [0.43 exit gate](EXIT_GATE_0_43.md), [support matrix](cp_ga_support_matrix_0_43.json),
       [traceability](cp_ga_traceability_0_43.json), release notes, and tests.
@@ -50,7 +54,9 @@ remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
+| [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Current planning freeze — not started | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
+| [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) | Proposed | Core vs provider ownership; no payloads in artifacts | 0.46 |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
 | [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md) | Released milestone | Optimization-pass SDK | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
 | [0.43 implementation plan](IMPLEMENTATION_PLAN_0_43.md) | Released milestone | CP-GA qualification / graduation | [EXIT_GATE_0_43](EXIT_GATE_0_43.md) |

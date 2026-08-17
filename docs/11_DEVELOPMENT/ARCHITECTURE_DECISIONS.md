@@ -51,6 +51,10 @@ Accepted control-plane identity decision (0.39 Wave 0):
 
 - [ADR-016: Control-Plane Identity, Durability, and Event Contracts](adr/ADR-016-CONTROL-PLANE-IDENTITY.md)
 
+Proposed 0.46 dynamic-control and streaming freeze:
+
+- [ADR-022: Dynamic Control and Streaming Ownership](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md)
+
 Accepted registry and isolation decision (0.40 Wave 0):
 
 - [ADR-017: Registry Records, Revisions, and Isolation Profiles](adr/ADR-017-REGISTRY-AND-ISOLATION.md)
