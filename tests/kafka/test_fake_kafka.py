@@ -8,6 +8,7 @@ import anyio
 import pytest
 from etlantic_kafka import FakeKafka, create_sink, create_source, live_bootstrap
 
+from etlantic.connectors.models import LandingReadManifest
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
 
 pytestmark = pytest.mark.kafka
@@ -99,6 +100,46 @@ def test_overlapping_sink_sessions_keep_distinct_records() -> None:
 
     _id_a, _id_b, records = anyio.run(_run)
     assert {row["id"] for row in records} == {"A", "B"}
+
+
+def test_source_reads_from_committed_offset() -> None:
+    broker = FakeKafka(partitions=1)
+    broker.produce(0, {"id": "a"})
+    broker.produce(0, {"id": "b"})
+    broker.commit_offset("g", 0, 1)
+    source = create_source(broker=broker)
+
+    async def _run() -> tuple[list[dict[str, object]], str | None]:
+        plan = await source.plan_read(
+            binding={"topic": "events", "group": "g"}, context={}
+        )
+        batches = [
+            b
+            async for b in source.read_batches(
+                plan=plan, binding={"topic": "events", "group": "g"}, context={}
+            )
+        ]
+        cursor = await source.propose_cursor(
+            plan=plan,
+            manifest=LandingReadManifest(root_ref="kafka://events"),
+            context={"group": "g"},
+        )
+        return list(batches[0].records), None if cursor is None else cursor.candidate
+
+    records, candidate = anyio.run(_run)
+    assert records == [{"id": "b"}]
+    assert candidate is not None
+    assert candidate != ""
+
+
+def test_source_live_metadata_stays_false_on_fake(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ETLANTIC_KAFKA_BOOTSTRAP", "localhost:9092")
+    first = create_source()
+    second = create_source()
+    assert first._broker is not second._broker
+    assert first.info().metadata.get("live") is False
 
 
 def test_live_broker_skipped_unless_env() -> None:

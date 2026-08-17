@@ -31,14 +31,27 @@ from etlantic.connectors.models import (
     WriteSession,
     fingerprint_public_config,
 )
-from etlantic_kafka.fake import FakeKafka, live_bootstrap
+from etlantic_kafka.fake import FakeKafka
 
-_DEFAULT = FakeKafka()
+_DEFAULT_GROUP = "default"
+
+
+def _consumer_group(binding: Mapping[str, Any], context: Mapping[str, Any]) -> str:
+    raw = (
+        binding.get("group")
+        or binding.get("consumer_group")
+        or context.get("group")
+        or context.get("consumer_group")
+        or _DEFAULT_GROUP
+    )
+    return str(raw)
 
 
 class KafkaSourceConnector:
     def __init__(self, broker: FakeKafka | None = None) -> None:
-        self._broker = broker or _DEFAULT
+        self._broker = FakeKafka() if broker is None else broker
+        self._last_end_offsets: dict[int, int] = {}
+        self._last_group = _DEFAULT_GROUP
 
     def info(self) -> ConnectorInfo:
         return ConnectorInfo(
@@ -48,7 +61,7 @@ class KafkaSourceConnector:
             provider="kafka",
             capabilities=(SOURCE_STREAM, SOURCE_WATERMARK, IDEMPOTENCY),
             maturity=ConnectorMaturity.EXPERIMENTAL,
-            metadata={"live": bool(live_bootstrap())},
+            metadata={"live": False},
         )
 
     async def plan_read(
@@ -73,14 +86,25 @@ class KafkaSourceConnector:
         context: Mapping[str, Any],
     ) -> AsyncIterator[ReadBatch]:
         async def _gen() -> AsyncIterator[ReadBatch]:
-            records = []
+            group = _consumer_group(binding, context)
+            records: list[Any] = []
+            end_offsets: dict[int, int] = {}
             for partition in range(self._broker.partitions):
-                records.extend(self._broker.fetch(partition, 0))
+                start = int(self._broker.committed.get(group, {}).get(partition, 0))
+                batch = self._broker.fetch(partition, start)
+                records.extend(batch)
+                end_offsets[partition] = start + len(batch)
+            self._last_group = group
+            self._last_end_offsets = end_offsets
             yield ReadBatch(
                 records=tuple(records),
                 batch_index=0,
                 exhausted=True,
-                metadata={"count": len(records)},
+                metadata={
+                    "count": len(records),
+                    "group": group,
+                    "offsets": {str(k): v for k, v in sorted(end_offsets.items())},
+                },
             )
 
         return _gen()
@@ -92,12 +116,27 @@ class KafkaSourceConnector:
         manifest: LandingReadManifest,
         context: Mapping[str, Any],
     ) -> CursorProposal | None:
-        return CursorProposal(subject_id=str(plan.metadata.get("topic") or "events"))
+        group = self._last_group
+        offsets = dict(self._last_end_offsets)
+        if not offsets:
+            for partition in range(self._broker.partitions):
+                offsets[partition] = int(
+                    self._broker.committed.get(group, {}).get(partition, 0)
+                )
+        candidate = ",".join(f"{part}:{off}" for part, off in sorted(offsets.items()))
+        return CursorProposal(
+            subject_id=str(plan.metadata.get("topic") or "events"),
+            candidate=candidate,
+            metadata={
+                "group": group,
+                "offsets": {str(k): v for k, v in sorted(offsets.items())},
+            },
+        )
 
 
 class KafkaSinkConnector:
     def __init__(self, broker: FakeKafka | None = None) -> None:
-        self._broker = broker or _DEFAULT
+        self._broker = FakeKafka() if broker is None else broker
         self._staged: dict[str, list[Any]] = {}
 
     def info(self) -> ConnectorInfo:
@@ -210,9 +249,9 @@ class KafkaSinkConnector:
         return CleanupReceipt(status="completed")
 
 
-def create_source() -> KafkaSourceConnector:
-    return KafkaSourceConnector()
+def create_source(broker: FakeKafka | None = None) -> KafkaSourceConnector:
+    return KafkaSourceConnector(broker)
 
 
-def create_sink() -> KafkaSinkConnector:
-    return KafkaSinkConnector()
+def create_sink(broker: FakeKafka | None = None) -> KafkaSinkConnector:
+    return KafkaSinkConnector(broker)
