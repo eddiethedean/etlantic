@@ -305,12 +305,14 @@ payloads; unauthorized principals exit `11` (`TRUST_FAILURE`).
 ```bash
 python -m etlantic stream dead-letters inspect --store dlq.json --principal ops
 python -m etlantic stream redrive plan --store dlq.json --identity rec-1 --principal ops
-python -m etlantic stream schemas check --subject orders-value --fingerprint abc123
+python -m etlantic stream schemas check --store registry.json --subject orders-value --fingerprint abc123
 ```
 
-`inspect` and `redrive plan` read identifier documents. Store JSON that
-contains payload keys is rejected (`INVALID_MODEL`). Production registry
-adapters require `Profile.schema_registry_allowlist`.
+`inspect` and `redrive plan` read identifier documents. `schemas check`
+requires `--store` (fingerprint identities only) and never registers the
+candidate it is checking. Store JSON that contains payload keys is
+rejected (`INVALID_MODEL`). Production registry adapters require
+`Profile.schema_registry_allowlist`.
 
 ## `reliability`
 

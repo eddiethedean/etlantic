@@ -13,11 +13,7 @@ from etlantic.cli.cmds.context import emit_payload
 from etlantic.profile import Profile, resolve_profile
 from etlantic.streaming.envelope import FORBIDDEN_ENVELOPE_KEYS
 from etlantic.streaming.errors import RecordErrorPolicy
-from etlantic.streaming.registry import (
-    CompatibilityMode,
-    InMemorySchemaRegistry,
-    SchemaFormat,
-)
+from etlantic.streaming.registry import InMemorySchemaRegistry
 from etlantic.streaming.trust import registry_adapter_allowed
 
 
@@ -112,6 +108,7 @@ def register_stream_commands(app: typer.Typer) -> None:
 
     @schemas_app.command("check")
     def schemas_check(
+        store: Path = typer.Option(..., "--store", exists=True, readable=True),
         subject: str = typer.Option(..., "--subject"),
         fingerprint: str = typer.Option(..., "--fingerprint"),
         schema_format: str = typer.Option("json_schema", "--schema-format"),
@@ -136,24 +133,60 @@ def register_stream_commands(app: typer.Typer) -> None:
                     fmt=fmt,
                 )
                 raise typer.Exit(ec.TRUST_FAILURE)
+        data = _load_json(store)
+        if _contains_payload(data):
+            raise typer.Exit(ec.INVALID_MODEL)
         registry = InMemorySchemaRegistry()
         try:
-            registry.register(
-                subject,
-                fingerprint,
-                format=SchemaFormat(schema_format),
-                compatibility=CompatibilityMode.BACKWARD,
+            registry.load_snapshot(data)
+        except (LookupError, ValueError, KeyError) as exc:
+            emit_payload(
+                {
+                    "schema": "etlantic.streaming.schema-check/1",
+                    "ok": False,
+                    "error": str(exc),
+                    "diagnostic": "PMREG110",
+                },
+                fmt=fmt,
             )
-            compatible = registry.check_compatibility(subject, fingerprint)
-        except (LookupError, ValueError) as exc:
-            emit_payload({"ok": False, "error": str(exc)}, fmt=fmt)
             raise typer.Exit(ec.INVALID_MODEL) from exc
+        try:
+            registry.lookup(subject)
+        except LookupError as exc:
+            emit_payload(
+                {
+                    "schema": "etlantic.streaming.schema-check/1",
+                    "ok": False,
+                    "subject": subject,
+                    "fingerprint": fingerprint,
+                    "diagnostic": "PMREG110",
+                    "error": str(exc),
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.INVALID_MODEL) from exc
+        compatible = registry.check_compatibility(subject, fingerprint)
+        if not compatible:
+            emit_payload(
+                {
+                    "schema": "etlantic.streaming.schema-check/1",
+                    "ok": False,
+                    "subject": subject,
+                    "fingerprint": fingerprint,
+                    "schema_format": schema_format,
+                    "diagnostic": "PMREG100",
+                    "record_error_policy": RecordErrorPolicy().to_dict(),
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.INVALID_MODEL)
         emit_payload(
             {
                 "schema": "etlantic.streaming.schema-check/1",
-                "ok": compatible,
+                "ok": True,
                 "subject": subject,
                 "fingerprint": fingerprint,
+                "schema_format": schema_format,
                 "record_error_policy": RecordErrorPolicy().to_dict(),
             },
             fmt=fmt,

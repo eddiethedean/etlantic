@@ -117,6 +117,29 @@ class InMemorySchemaRegistry:
     def _fail(self, key: str, message: str) -> Diagnostic:
         return reg_diagnostic(key, message, path=("schema_registry",))
 
+    def load_snapshot(self, data: Mapping[str, Any]) -> None:
+        """Load identifier-only subjects from a store document (never registers)."""
+        subjects = data.get("subjects") or {}
+        if not isinstance(subjects, Mapping):
+            raise ValueError("schema store 'subjects' must be an object")
+        loaded: dict[str, list[SchemaIdentity]] = {}
+        for name, versions in subjects.items():
+            subject = str(name)
+            if not isinstance(versions, list):
+                raise ValueError(f"schema store subject {subject!r} must be a list")
+            items: list[SchemaIdentity] = []
+            for raw in versions:
+                if not isinstance(raw, Mapping):
+                    raise ValueError(
+                        f"schema store entry for {subject!r} must be an object"
+                    )
+                payload = dict(raw)
+                payload.setdefault("subject", subject)
+                items.append(SchemaIdentity.from_dict(payload))
+            items.sort(key=lambda item: item.version)
+            loaded[subject] = items
+        self._subjects = loaded
+
     def lookup(self, subject: str, version: int | None = None) -> SchemaIdentity:
         if self.outage:
             raise LookupError(
