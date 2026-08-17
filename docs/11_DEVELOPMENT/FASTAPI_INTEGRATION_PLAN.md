@@ -8,8 +8,10 @@
 >
 > **Current 0.46 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
-> Phase 0.47 adds separately supervised scheduler and execution-host service
-> roles behind this gateway; it does not run either role in an ASGI worker.
+> Phase 0.47 **plans** separately supervised scheduler and execution-host service
+> roles behind this gateway ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md),
+> [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md)); it does not run
+> either role in an ASGI worker, and those routes are **not Available**.
 > Continuous directory watchers are not in core. Reliability stubs remain
 > `experimental: true` unless a history store is injected.
 >
@@ -410,4 +412,9 @@ depending on their internals.
 
 The optional 0.47 scheduler/runner service preserves this principle: FastAPI is
 the control surface, while dedicated scheduler and execution-host processes own
-timer evaluation and pipeline execution against shared durable providers.
+timer evaluation and pipeline execution against shared durable providers. That
+split is frozen in [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)
+and is **not shipped**. Frozen HTTP names (when implemented later):
+`/v1/definitions/{definition_id}/schedules`, `/v1/schedules/{schedule_id}`
+(plus pause/resume/preview/trigger/firings), `/v1/scheduler/health`, and
+`/v1/workers/health`.

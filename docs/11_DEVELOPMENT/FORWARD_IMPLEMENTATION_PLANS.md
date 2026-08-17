@@ -2,7 +2,7 @@
 title: Forward Implementation Plans
 description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.52.
 plan_status: current
-plan_last_reviewed: 0.45.0
+plan_last_reviewed: 0.46.0
 ---
 
 # Forward Implementation Plans
@@ -24,7 +24,7 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.44 | Developer intelligence, LSP, and IDE surfaces | [0.44](IMPLEMENTATION_PLAN_0_44.md) | [UI/UX](UI_UX_PLAN.md) |
 | 0.45 | Planner and optimization SDK | [0.45](IMPLEMENTATION_PLAN_0_45.md) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
 | 0.46 | Bounded dynamic control flow, streaming, and event pipelines | [0.46](IMPLEMENTATION_PLAN_0_46.md) | [Reliability](ETL_RELIABILITY_PLAN.md) |
-| 0.47 | FastAPI scheduler/runner service and remote execution federation | [0.47](IMPLEMENTATION_PLAN_0_47.md) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
+| 0.47 | FastAPI scheduler/runner service and remote execution federation | [0.47](IMPLEMENTATION_PLAN_0_47.md) ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md), [exit gate](EXIT_GATE_0_47.md) Not started) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 | 0.48 | Human-governed AI workflows | [0.48](IMPLEMENTATION_PLAN_0_48.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.49 | Brownfield bridges and orchestration compilers | [0.49](IMPLEMENTATION_PLAN_0_49.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.50 | Operator console | [0.50](IMPLEMENTATION_PLAN_0_50.md) | [UI/UX](UI_UX_PLAN.md) |

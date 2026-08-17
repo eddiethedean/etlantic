@@ -22,6 +22,7 @@ embedding the control plane.
 | Wire schema ids | [Wire schema ranges](WIRE_SCHEMA_RANGES.md) |
 | FastAPI dual surface | [`etlantic-fastapi` README](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) · [Optional packages](OPTIONAL_PACKAGES.md) |
 | Program sequencing | [Multi-tenant control plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
+| Planned 0.47 schedule/worker HTTP | [IMPLEMENTATION_PLAN_0_47](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md) — **not Available** |
 
 ## Core import (`etl.control_plane`)
 
@@ -82,6 +83,23 @@ Shipped host routes under `/v1/durable/*` (authz first):
 
 Core does **not** embed a broker or worker supervisor; adopters drain the
 outbox with their own dispatcher.
+
+### Planned 0.47 schedule routes (not Available)
+
+The 0.47 freeze names these routes. They are **not shipped**. FastAPI remains
+the gateway only; scheduler and execution-host processes stay out of the ASGI
+worker ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
+
+| Route | Purpose |
+|---|---|
+| `/v1/definitions/{definition_id}/schedules` | Create / list schedules for a definition |
+| `/v1/schedules/{schedule_id}` | Inspect / update / delete |
+| `…/pause` · `…/resume` · `…/preview` · `…/trigger` · `…/firings` | Lifecycle, next-fire preview, manual trigger, firing history |
+| `/v1/scheduler/health` | Authorized scheduler-leader health |
+| `/v1/workers/health` | Authorized worker health (no host leak to unauthorized callers) |
+
+Matching CLI (also not Available): `etlantic schedule …`,
+`etlantic scheduler serve`, `etlantic worker serve`.
 
 ### CP4 governance routes
 

@@ -61,12 +61,15 @@ pipeline.
 
 ## Appendix — planned / not shipped
 
-These categories appear in older design pages and are **not** installable
-protocols in **0.39.0**:
+These categories appear in design pages and are **not** installable
+protocols in **0.46.0**:
 
-- Managed resource providers — Kubernetes/reference proof in 0.47 and
-  supported provider packs in 0.51.
-- Registry plugins / approval workflows — planned through 0.40–0.43.
+- Managed resource providers — `etlantic.resource/1` plus Experimental
+  `etlantic-k8s` / `etlantic-spark-connect` fakes are the 0.47 freeze;
+  live packs are 0.51. Do not implement against
+  [Resource Provider](RESOURCE_PROVIDER.md) yet.
+- Registry plugins / approval workflows — shipped foundations in 0.40–0.43
+  (CP2–CP4 / CP-GA); not a new plugin protocol here.
 
 Source / sink / **storage connectors** ship via
 [Connector SDK](CONNECTOR_SDK.md) (`etlantic.storage_connectors`). The older

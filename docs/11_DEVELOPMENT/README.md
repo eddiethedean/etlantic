@@ -21,6 +21,10 @@ released.
 
 ## Current migrations and exit gates
 
+- [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) (Planning freeze — not started)
+- [ADR-023: Scheduler service and federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Proposed)
+- [Exit gate 0.47](EXIT_GATE_0_47.md) (Not started — do not describe as Available)
+- [Findings ledger 0.47](FINDINGS_0_47.md)
 - [Migration 0.45 → 0.46](MIGRATION_0_45_TO_0_46.md) (Gate-ready — Streaming and Dynamic Control)
 - [Exit gate 0.46](EXIT_GATE_0_46.md) (Gate-ready — Streaming and Dynamic Control)
 - [Findings ledger 0.46](FINDINGS_0_46.md)

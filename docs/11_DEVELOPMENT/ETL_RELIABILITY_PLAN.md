@@ -216,6 +216,12 @@ records, worker claims, leases, heartbeats, fencing, scheduler leadership,
 retry timing, and process recovery. ETLantic core must not become a queue,
 scheduler, worker supervisor, or database.
 
+The 0.47 planning freeze optionally supplies separately supervised scheduler
+and execution-host **roles** behind public `ScheduleStore` / CP3 providers
+([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). That service is
+not Available; until it ships, leadership remains adopter-owned. Core still
+does not embed a broker.
+
 ETLantic should provide the portable semantic evidence those hosts need to
 decide whether a failed or abandoned execution may be retried, resumed,
 reconciled, or must stop for review.
@@ -794,7 +800,8 @@ Rows from 0.39 onward are future sequence.
 | [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
 | [0.44](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook previews, diagnostics, and trend displays |
 | [0.45](IMPLEMENTATION_PLAN_0_45.md) | Cost-aware repair, materialization, and implementation selection |
-| [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability — [EXIT_GATE_0_46](EXIT_GATE_0_46.md) (planning freeze) |
+| [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability — [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
+| [0.47](IMPLEMENTATION_PLAN_0_47.md) | Optional scheduler/runner service and remote federation wrapping CP3 — [EXIT_GATE_0_47](EXIT_GATE_0_47.md) (planning freeze; not Available) |
 | [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed repair and migration proposals |
 
 ## Success Criteria

@@ -28,6 +28,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
+| Next | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Planning freeze](EXIT_GATE_0_47.md) (not started) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
 | Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.46 Streaming gate-ready; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
 
@@ -314,8 +315,9 @@ shared entry, evidence, and completion rules for all later phases.
   streaming and event-driven pipelines, poison-record/DLQ policy, and
   schema-registry interoperability — [Gate-ready](EXIT_GATE_0_46.md)
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
-  service plus remote execution federation with Kubernetes and a managed Spark
-  reference provider
+  service plus remote execution federation — [planning freeze](EXIT_GATE_0_47.md)
+  / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
+  Spark Connect are Experimental fakes; live packs remain 0.51
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed engineering
 - **[0.49](IMPLEMENTATION_PLAN_0_49.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
 - **[0.50](IMPLEMENTATION_PLAN_0_50.md):** read-only-first operator console
@@ -338,11 +340,13 @@ portable evidence needed to recover safely:
   durable schedule evaluation, separately supervised scheduler and execution
   roles, host-neutral recovery negotiation, fenced attempt attribution,
   resumable observation, and conformance semantics for retry, replay, repair,
-  reconciliation, and manual review.
+  reconciliation, and manual review. The 0.47 gate is protocol plus in-process
+  fakes; live Kubernetes and managed Spark hardening remain 0.51.
 
-Before 0.47, queue, worker, and scheduler leadership remain adopter-owned. The
-0.47 optional service provides reference implementations behind public provider
-contracts; applications and orchestrator plugins may continue replacing them.
+Before 0.47 ships, queue, worker, and scheduler leadership remain adopter-owned.
+The 0.47 optional service provides reference implementations behind public
+provider contracts; applications and orchestrator plugins may continue replacing
+them.
 See
 [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md#durable-host-recovery-integration).
 

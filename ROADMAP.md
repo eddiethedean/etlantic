@@ -25,7 +25,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.47 | FastAPI scheduler/runner service and remote execution federation | Planned |
+| Next | 0.47 | FastAPI scheduler/runner service and remote execution federation | Planning freeze — not started |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
 | Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → optimization → streaming → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.46 Streaming gate-ready; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior) |
 
@@ -4088,6 +4088,14 @@ Acceptance:
 
 ## 0.47 — FastAPI Scheduler/Runner Service and Remote Execution Federation
 
+Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md),
+[ADR-023](docs/11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)
+(Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
+surfaces are not Available. Kubernetes and Spark Connect are Experimental
+in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
+**0.51**. Implementation of scheduler/worker processes, schedule HTTP routes,
+or new packages is out of scope for this freeze.
+
 Deliver:
 
 - versioned cron and interval schedules with explicit timezone/DST, misfire,
@@ -4113,12 +4121,15 @@ Deliver:
 - recovery negotiation for whole-run retry, checkpoint resume, replay, repair,
   reconciliation, or manual review;
 - placement across multiple approved execution environments;
-- a Kubernetes Job reference provider with workload identity, resource limits,
-  cancellation, log/event correlation, terminal-state reconciliation, and
-  bounded provider-owned cleanup;
-- versioned OCI execution-image contracts and at least one maintained managed
-  Spark reference path using Databricks, EMR, or Spark Connect;
-- FastAPI gateway support without requiring FastAPI in workers.
+- a Kubernetes Job reference provider (`etlantic-k8s`) with `FakeKubernetes`,
+  workload identity, resource limits, cancellation, log/event correlation,
+  terminal-state reconciliation, and bounded provider-owned cleanup;
+  live Kind/cluster is skip `047-K-01`;
+- an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.51
+  (skip `047-S-01`);
+- FastAPI gateway support without requiring FastAPI in workers;
+- Helm/OCI production images remain out of 0.47 (0.51 `051-D`).
 
 Acceptance:
 
@@ -4138,9 +4149,9 @@ Acceptance:
   authority.
 - loss of a worker after an external commit cannot be reported as safely
   retryable when the commit outcome is unknown.
-- the Kubernetes and managed Spark references pass public conformance from
-  isolated deployments, prefer workload identity, and leave no unscoped
-  resources after cancellation or failure.
+- the Kubernetes and Spark Connect Experimental extras pass fake
+  conformance, prefer workload identity, and leave no unscoped resources after
+  cancellation or failure; live isolated deployments remain deferred skips.
 
 ## 0.48 — AI-Assisted, Human-Governed Engineering
 

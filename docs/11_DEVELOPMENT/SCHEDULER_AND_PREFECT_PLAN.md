@@ -1,12 +1,17 @@
 # Local Scheduler and Prefect Integration Plan
 
 > **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); remaining
-> deploy and serve scope is open.
+> deploy and serve scope is open. Durable cron / separately supervised scheduler
+> and execution-host **service** roles are the 0.47 planning freeze — not this
+> `etlantic.scheduler/1` protocol
+> ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
+> [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
 >
 > **Current 0.46 boundary:** ETLantic core provides local scheduling, the
 > optional Prefect package provides the Python-native local MVP, and
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.
+> `etlantic schedule` / `scheduler serve` / `worker serve` are **not Available**.
 >
 > **Scope:** ETLantic core, `etlantic.orchestration`, and optional orchestrator
 > packages. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
@@ -236,7 +241,10 @@ Deliver:
 Deferred past 0.16:
 
 - fusion-driven `physical_units` as the execution grain
-- Prefect deployment/serve and durable scheduling
+- Prefect deployment/serve (Prefect Cloud / server deploy remains Prefect-owned)
+- durable cron, leader-elected timer loops, and execution-host **service**
+  processes — owned by 0.47, not by `etlantic.scheduler/1`
+  ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md))
 - the full scheduler conformance corpus below
 
 The plugin must not:

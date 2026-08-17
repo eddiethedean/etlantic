@@ -1,9 +1,11 @@
 # Spark Provider
 
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
-Kubernetes and one managed Spark reference path are planned for 0.47; supported
-Databricks, EMR, and Spark Connect provider packs are assigned to 0.51. See the
+An Experimental Spark Connect extra (`etlantic-spark-connect`) plus in-process
+fake is planned for 0.47 ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md));
+live Databricks, EMR, and Spark Connect packs are assigned to 0.51. See the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
+Do not describe the 0.47 extra as Available.
 
 A **Spark Provider** implements the ETLantic Resource Provider API for
 creating, configuring, supplying, reusing, and disposing Apache Spark sessions
@@ -812,6 +814,10 @@ A YARN provider may configure:
 - Hadoop configuration
 
 ## Kubernetes Provider
+
+A Kubernetes Spark-on-cluster configuration is **not shipped**. Experimental
+Kubernetes Job execution (`etlantic-k8s` + `FakeKubernetes`) is the 0.47 freeze;
+live isolated clusters are 0.51. Do not implement against this section yet.
 
 A Kubernetes provider may configure:
 

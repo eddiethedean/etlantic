@@ -50,7 +50,7 @@ adoption and ecosystem gates described below.
 | 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
 | 0.41–0.43 | GitOps previews, delivery objectives, governed erasure, promotion evidence, and graduation | Supported preview-to-production and governed operations workflow |
 | 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
-| 0.47 | Kubernetes and managed execution reference providers | Conforming remote execution profiles |
+| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.51 |
 | 0.49 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
 | 0.50 | Operator console | Supported control-plane operations UI |
 | 0.51 | Enterprise provider packs | Supported cloud provider matrix |

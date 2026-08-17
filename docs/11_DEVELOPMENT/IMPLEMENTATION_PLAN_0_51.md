@@ -2,7 +2,7 @@
 title: ETLantic 0.51 Implementation Plan
 description: Implementation-grade plan for managed-runtime and provider packs.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.46.0
 ---
 
 # ETLantic 0.51 Implementation Plan
@@ -22,8 +22,13 @@ region, lifecycle, and cleanup behavior.
 
 ## Prerequisites And Non-Goals
 
-- 0.43 qualification and 0.47 remote-provider conformance are mandatory; the
-  console from 0.50 may observe providers but does not own them.
+- 0.43 qualification and 0.47 remote-provider **fake** conformance are
+  mandatory ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
+  [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). 0.47 ships
+  `FakeKubernetes` (`etlantic-k8s`) and an in-process Spark Connect fake
+  (`etlantic-spark-connect`); live Kind/cluster and live Databricks/EMR are
+  this phase. The console from 0.50 may observe providers but does not own
+  them.
 - Provider packs are independently versioned, allowlisted in production, and
   capability-negotiated before plan acceptance.
 - Long-lived cloud credentials are not embedded in plans, reports, artifacts,
@@ -48,7 +53,9 @@ region, lifecycle, and cleanup behavior.
 
 1. Freeze package/version/support policy and the provider qualification matrix.
 2. Build signed distribution artifacts and validate clean deployment lifecycle.
-3. Harden Kubernetes and managed Spark providers against remote conformance.
+3. Harden the 0.47 Kubernetes (`etlantic-k8s`) and Spark Connect
+   (`etlantic-spark-connect`) Experimental extras against live isolated
+   conformance; promote Databricks/EMR packs only after that evidence.
 4. Add secret-provider packs and credential-rotation/outage behavior.
 5. Promote connector packs only after state, schema, reliability, effect,
    erasure, and cleanup conformance pass in isolated accounts/projects.

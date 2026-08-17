@@ -17,6 +17,11 @@ release gates. They are **not** a substitute for current product documentation.
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
+    - To evaluate **0.47 scheduler/federation planning**, use the
+      [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md),
+      [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Proposed),
+      [exit gate](EXIT_GATE_0_47.md) (Not started), and
+      [findings](FINDINGS_0_47.md). Do not treat 0.47 as Available.
     - To evaluate **0.46 streaming/dynamic-control evidence**, use the
       [0.46 exit gate](EXIT_GATE_0_46.md), [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
       [findings](FINDINGS_0_46.md), release notes, and tests.
@@ -56,7 +61,9 @@ CP1 evidence remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.46 Streaming gate-ready; next 0.47+ | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.46 Streaming gate-ready; next 0.47 planning freeze | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
+| [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) | Current — not started | Scheduler/runner service + remote federation freeze | [EXIT_GATE_0_47](EXIT_GATE_0_47.md) |
+| [ADR-023: Scheduler service and federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) | Proposed | FastAPI vs CP3 vs remote/resource; fake vs live | 0.47 |
 | [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Gate-ready milestone | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
 | [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) | Accepted | Core vs provider ownership; no payloads in artifacts | 0.46 |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
@@ -84,8 +91,8 @@ CP1 evidence remains in **0.39**; connectivity evidence remains in **0.38**.
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
 | [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped; CP2 persistence open | The optional contract-to-SQLModel bridge exists; reference registry stores incubate with 0.40 | Request-scoped CP stores |
-| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Graduated host in 0.43 for Supported profiles | `ETLanticAPI` + thin `create_reference_app`; CPn alone ≠ GA | Operator Console 0.50; shared-service remains Experimental |
-| [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP shipped | The built-in scheduler and optional local Prefect path exist; deploy and serve workflows remain open | Graduate only with deployment, recovery, and parity evidence |
+| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Graduated host in 0.43 for Supported profiles | `ETLanticAPI` + thin `create_reference_app`; CPn alone ≠ GA; 0.47 schedule routes are planned, not Available | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md); Operator Console 0.50 |
+| [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP shipped | The built-in scheduler and optional local Prefect path exist; durable cron is the 0.47 service (not `etlantic.scheduler/1`) | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
 | [Portable transformations](PORTABLE_TRANSFORM_PLAN.md) | Shipped record with follow-up work | Authoring, planning, conformance, and first-party compilers exist; support remains operation- and backend-specific | Expand only through the published compiler matrix and conformance gates |
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |

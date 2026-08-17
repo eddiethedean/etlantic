@@ -24,9 +24,10 @@ process boundaries.
 This reference model is suitable for one trusted application or worker per
 runtime. ETLantic 0.43 does not replace adopter-owned brokers or worker
 supervisors; optional CP3/CP4 control-plane stores coordinate accepted work across hosts.
-An optional FastAPI-fronted scheduler and execution-host service is planned for
-0.47; until it ships, scheduling, dispatch, and worker supervision remain
-adopter-owned.
+An optional FastAPI-fronted scheduler and execution-host service is the 0.47
+planning freeze ([IMPLEMENTATION_PLAN_0_47](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md));
+until it ships, scheduling, dispatch, and worker supervision remain
+adopter-owned. Do not treat `etlantic scheduler serve` as Available.
 
 ## Reference topologies
 
