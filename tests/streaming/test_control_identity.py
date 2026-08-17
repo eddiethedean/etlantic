@@ -66,7 +66,35 @@ def test_empty_keys_fail_closed() -> None:
     assert any(d.code == "PMDYN100" for d in exc.value.report.diagnostics)
 
 
-def test_python_branch_diagnostic() -> None:
+def test_from_dict_honors_zero_bounds() -> None:
+    bounds = ExpansionBounds.from_dict(
+        {"max_children": 0, "max_concurrency": 0, "max_depth": 0}
+    )
+    assert bounds.max_children == 0
+    assert bounds.max_concurrency == 0
+    assert bounds.max_depth == 0
+
+
+def test_bound_exhaustion_max_concurrency() -> None:
+    spec = ExpansionSpec(
+        parent_id="map-1",
+        collection_identity="parts",
+        bounds=ExpansionBounds(max_concurrency=1),
+    )
+    with pytest.raises(PipelineValidationError) as exc:
+        expand_children(spec, ["a", "b"], plan_id="p", input_snapshot_id="s")
+    assert any(d.code == "PMDYN101" for d in exc.value.report.diagnostics)
+
+
+def test_non_positive_duration_fails_closed() -> None:
+    spec = ExpansionSpec(
+        parent_id="map-1",
+        collection_identity="parts",
+        bounds=ExpansionBounds(max_duration_seconds=0),
+    )
+    with pytest.raises(PipelineValidationError) as exc:
+        expand_children(spec, ["a"], plan_id="p", input_snapshot_id="s")
+    assert any(d.code == "PMDYN101" for d in exc.value.report.diagnostics)
     diag = reject_python_branch()
     assert diag.code == "PMDYN120"
 
