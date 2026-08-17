@@ -75,6 +75,32 @@ def test_sink_commit_source_read_without_payloads_in_plan() -> None:
     assert records == [{"value_id": "r1"}]
 
 
+def test_overlapping_sink_sessions_keep_distinct_records() -> None:
+    broker = FakeKafka(partitions=1)
+    sink = create_sink()
+    sink._broker = broker
+
+    async def _run() -> tuple[str, str, list[dict[str, object]]]:
+        plan = await sink.plan_write(binding={"topic": "events"}, context={})
+        session_a = await sink.begin_write(
+            plan=plan, binding={"topic": "events"}, context={}
+        )
+        await sink.write_batch(session_a, {"id": "A"}, context={})
+        session_b = await sink.begin_write(
+            plan=plan, binding={"topic": "events"}, context={}
+        )
+        await sink.write_batch(session_b, {"id": "B"}, context={})
+        rec_a = await sink.commit(session_a, context={})
+        rec_b = await sink.commit(session_b, context={})
+        assert rec_a.status == "committed"
+        assert rec_b.status == "committed"
+        assert session_a.session_id != session_b.session_id
+        return session_a.session_id, session_b.session_id, list(broker.fetch(0, 0))
+
+    _id_a, _id_b, records = anyio.run(_run)
+    assert {row["id"] for row in records} == {"A", "B"}
+
+
 def test_live_broker_skipped_unless_env() -> None:
     if live_bootstrap():
         pytest.skip("live Kafka opt-in is Experimental and not part of default CI")
