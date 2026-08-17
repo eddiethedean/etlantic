@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import AsyncIterator, Mapping
 from typing import Any
 
@@ -135,7 +136,10 @@ class KafkaSinkConnector:
         binding: Mapping[str, Any],
         context: Mapping[str, Any],
     ) -> WriteSession:
-        session = WriteSession(session_id="kafka-1", provider="kafka")
+        session = WriteSession(
+            session_id=f"kafka-{uuid.uuid4().hex}",
+            provider="kafka",
+        )
         self._staged[session.session_id] = []
         self._broker.begin_txn(session.session_id)
         return session
