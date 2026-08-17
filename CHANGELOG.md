@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote-runtime fakes (`etlantic.remote-runtime/1`) with placement reject-before-transfer
 - `Profile.resource_provider_allowlist` (`PMRES140`)
 - Experimental packages `etlantic-k8s` (FakeKubernetes) and `etlantic-spark-connect` (fake SparkProvider)
+- `tzdata` runtime dependency so IANA schedule timezones resolve on Windows
 - Diagnostics `PMSVC*`, `PMFIRE*`, `PMFED*`, `PMRES*`
 
 ### Changed
