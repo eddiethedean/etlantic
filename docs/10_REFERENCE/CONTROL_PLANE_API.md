@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: Available in ETLantic 0.46.0.** CP1–CP4 are foundations;
+> **Status: Available in ETLantic 0.47.0.** CP1–CP4 are foundations;
 > **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
 > profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
 > remains Experimental; community **non-SLA**.
@@ -22,7 +22,7 @@ embedding the control plane.
 | Wire schema ids | [Wire schema ranges](WIRE_SCHEMA_RANGES.md) |
 | FastAPI dual surface | [`etlantic-fastapi` README](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) · [Optional packages](OPTIONAL_PACKAGES.md) |
 | Program sequencing | [Multi-tenant control plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
-| Planned 0.47 schedule/worker HTTP | [IMPLEMENTATION_PLAN_0_47](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md) — **not Available** |
+| 0.47 schedule/worker HTTP | [What's new in 0.47](../01_GETTING_STARTED/WHATS_NEW_0_47.md) — Available gateway; workers stay off FastAPI |
 
 ## Core import (`etl.control_plane`)
 
@@ -54,7 +54,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.46.0'` (match `etlantic==0.46.0`).
+Pin: `pip install 'etlantic-fastapi==0.47.0'` (match `etlantic==0.47.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
@@ -84,10 +84,10 @@ Shipped host routes under `/v1/durable/*` (authz first):
 Core does **not** embed a broker or worker supervisor; adopters drain the
 outbox with their own dispatcher.
 
-### Planned 0.47 schedule routes (not Available)
+### Schedule routes (Available in 0.47)
 
-The 0.47 freeze names these routes. They are **not shipped**. FastAPI remains
-the gateway only; scheduler and execution-host processes stay out of the ASGI
+The 0.47 release ships these gateway routes. FastAPI remains the gateway only;
+scheduler and execution-host processes stay out of the ASGI
 worker ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
 
 | Route | Purpose |
@@ -98,7 +98,7 @@ worker ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION
 | `/v1/scheduler/health` | Authorized scheduler-leader health |
 | `/v1/workers/health` | Authorized worker health (no host leak to unauthorized callers) |
 
-Matching CLI (also not Available): `etlantic schedule …`,
+Matching CLI: `etlantic schedule …`,
 `etlantic scheduler serve`, `etlantic worker serve`.
 
 ### CP4 governance routes

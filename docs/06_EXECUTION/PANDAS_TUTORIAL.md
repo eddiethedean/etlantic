@@ -1,6 +1,6 @@
 # Execute with Pandas
 
-> **Status: Available in ETLantic 0.46.0.** Prefer the **PyPI path** after
+> **Status: Available in ETLantic 0.47.0.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 !!! tip "PyPI vs clone"
@@ -16,7 +16,7 @@ Pandas implementation and select the engine.
 ### 1. Install
 
 ```bash
-python -m pip install 'etlantic[pandas]==0.46.0'
+python -m pip install 'etlantic[pandas]==0.47.0'
 ```
 
 ### 2. Register a Pandas implementation
@@ -63,8 +63,8 @@ cat data/out.json
 Repository scripts under `examples/` are **not** in the PyPI wheel.
 
 ```bash
-python -m pip install 'etlantic==0.46.0' 'etlantic-pandas==0.46.0'
-git clone --branch v0.46.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.47.0' 'etlantic-pandas==0.47.0'
+git clone --branch v0.47.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas
 ```

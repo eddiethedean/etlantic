@@ -71,6 +71,8 @@ class ETLanticAPI:
     registry: RegistryProvider | None = None
     # Optional CP3 durable work store for /v1/durable/* host routes.
     durable_work: DurableWorkStore | None = None
+    # Optional 0.47 schedule store for /v1/schedules* (501 without it).
+    schedule_store: Any = None
     # Optional CP4 governance providers.
     policy: PolicyProvider | None = None
     approvals: ApprovalStore | None = None
@@ -162,6 +164,7 @@ def create_app(
     principal_dependency: PrincipalDependency | None = None,
     registry: RegistryProvider | None = None,
     durable_work: DurableWorkStore | None = None,
+    schedule_store: Any = None,
     policy: PolicyProvider | None = None,
     approvals: ApprovalStore | None = None,
     quotas: QuotaProvider | None = None,
@@ -221,6 +224,7 @@ def create_app(
             principal_dependency=principal_dependency or principal_from_header,
             registry=registry,
             durable_work=durable_work,
+            schedule_store=schedule_store,
             policy=policy,
             approvals=approvals,
             quotas=quotas,
@@ -244,6 +248,8 @@ def create_app(
             api.registry = registry
         if durable_work is not None:
             api.durable_work = durable_work
+        if schedule_store is not None:
+            api.schedule_store = schedule_store
         if policy is not None:
             api.policy = policy
         if approvals is not None:
@@ -277,6 +283,7 @@ def create_app(
             app.state.events = api.events
             app.state.registry = api.registry
             app.state.durable_work = api.durable_work
+            app.state.schedule_store = getattr(api, "schedule_store", None)
             app.state.policy = api.policy
             app.state.approvals = api.approvals
             app.state.quotas = api.quotas

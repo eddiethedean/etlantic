@@ -1,0 +1,27 @@
+{
+  "capabilities": [
+    "k8s"
+  ],
+  "digest": "sha256:e08b96348c930d412fb42c1fcd914cb80c9e08c57753e86e49b96aea7e373267",
+  "entries": [
+    {
+      "capabilities": [
+        "k8s"
+      ],
+      "engine": "kubernetes",
+      "group": "etlantic.resource_providers",
+      "name": "kubernetes",
+      "protocol": "etlantic.resource/1",
+      "target": "etlantic_k8s:create_provider"
+    }
+  ],
+  "package": "etlantic-k8s",
+  "privileges": [],
+  "protocol_range": "etlantic.resource/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.47.0"
+}

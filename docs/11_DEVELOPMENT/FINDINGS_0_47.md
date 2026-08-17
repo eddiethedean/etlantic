@@ -1,7 +1,6 @@
 # Findings Ledger 0.47 — Scheduler Service and Remote Federation
 
-> **Status: Open for 0.47 implementation.** Planning freeze recorded after
-> ETLantic **0.46.0**. Open **P0 count is 0**. Live Kind (`047-K-01`) and live
+> **Status: Closed for 0.47.** Open **P0 count is 0**. Live Kind (`047-K-01`) and live
 > Spark Connect (`047-S-01`) remain deferred Experimental skips.
 
 ## Severity policy
@@ -37,7 +36,7 @@ Open **P0 count is 0**.
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | No open P0 | Planning freeze; no implementation yet |
+| — | — | — | closed | No open P0 | Implementation complete; live Kind/Spark Connect remain skipped |
 
 ## P1 placeholders (implementation)
 

@@ -1,16 +1,18 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.46.0 (published Beta).**
+> **Status: Available in ETLantic 0.47.0 (published Beta).**
 
-Practical questions for ETLantic **0.46.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.47.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
 
 A typed Python framework for contract-driven data pipelines. You model once,
 validate before write, then run or compile on local Python, Polars, Pandas,
-SQL, or Spark. It is **not** dbt, **not** a scheduler, and **not** a
-dataframe engine. See [Compare](COMPARE.md) for when not to use it.
+SQL, or Spark. Optional `etlantic schedule` / `scheduler serve` / `worker serve`
+add a timer service wrapping CP3 durable work; FastAPI never executes
+pipelines. It is **not** dbt and **not** a dataframe engine. See
+[Compare](COMPARE.md) for when not to use it.
 
 ## What is a Profile?
 
@@ -47,7 +49,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.46.0' 'etlantic-polars==0.46.0'
+python -m pip install 'etlantic==0.47.0' 'etlantic-polars==0.47.0'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -66,9 +68,9 @@ non-empty `plugin_allowlist` — **not** the profile name. See
 Use `SecretRef` — never put values in plans. Follow the
 [Secrets decision tree](../10_REFERENCE/SECRETS_DECISION.md).
 
-## Is ETLantic 0.46 production-supported?
+## Is ETLantic 0.47 production-supported?
 
-ETLantic **0.46.0** is a **Beta** (PyPI) release for documented single-tenant
+ETLantic **0.47.0** is a **Beta** (PyPI) release for documented single-tenant
 pilots—not unrestricted enterprise production. See
 [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).

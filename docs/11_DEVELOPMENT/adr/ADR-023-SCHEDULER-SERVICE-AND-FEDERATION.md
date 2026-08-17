@@ -1,7 +1,7 @@
 # ADR-023: Scheduler Service, Execution Host, and Remote Federation
 
 Date: 2026-08-17
-Status: Proposed (ETLantic **0.47** planning freeze)
+Status: Accepted (ETLantic **0.47.0**)
 
 ## Context
 
@@ -169,11 +169,9 @@ Do not overload `PMSCHED*` (`etlantic.scheduler/1` plugin analysis).
 
 ## Compatibility
 
-- Additive control-plane HTTP routes and CLI commands when implemented;
-  existing `/v1/*` and `etlantic.scheduler/1` stay `/1`.
-- No public API, package, or extra exists in this planning freeze.
-- Official plugins remain on the 0.46 lockstep (`etlantic>=0.46.0,<0.47`)
-  until 0.47 implementation begins.
+- Additive control-plane HTTP routes and CLI commands; existing `/v1/*` and
+  `etlantic.scheduler/1` stay `/1`.
+- Official plugins lockstep to `0.47.0` (`etlantic>=0.47.0,<0.48`).
 
 ## See also
 

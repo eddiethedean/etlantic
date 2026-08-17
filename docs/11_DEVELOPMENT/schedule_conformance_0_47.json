@@ -1,0 +1,12 @@
+{
+  "schema": "etlantic.schedule.conformance-report/1",
+  "release": "0.47.0",
+  "checks": {
+    "clock_dst": true,
+    "firing_key_idempotent": true,
+    "no_payload_in_schedule": true,
+    "production_rejects_memory_store": true,
+    "dual_replica_one_firing": true
+  },
+  "passed": true
+}

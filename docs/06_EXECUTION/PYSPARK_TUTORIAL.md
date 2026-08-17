@@ -1,6 +1,6 @@
 # Run a Local PySpark Batch
 
-> **Status: Available in ETLantic 0.46.0.** Structured Streaming remains
+> **Status: Available in ETLantic 0.47.0.** Structured Streaming remains
 > experimental.
 
 !!! warning "Clone-assisted path"
@@ -13,7 +13,7 @@
 - A JDK supported by your PySpark build (CI uses **Java 17** for
   `real-pyspark`)
 - `JAVA_HOME` pointing at that JDK (not only `java` on `PATH`)
-- `etlantic-pyspark==0.46.0`
+- `etlantic-pyspark==0.47.0`
 
 ## JDK / JAVA_HOME / platform notes
 
@@ -41,8 +41,8 @@ Databricks / EMR / Spark Connect providers are **not** included in 0.38.
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.46.0' 'etlantic-pyspark==0.46.0'
-git clone --branch v0.46.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.47.0' 'etlantic-pyspark==0.47.0'
+git clone --branch v0.47.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py
 ```
@@ -78,7 +78,7 @@ Delta Lake is **optional**. Without `delta-spark`, the plugin does not advertise
 merge / Delta storage capabilities and Delta-required plans fail closed.
 
 ```bash
-python -m pip install 'etlantic-pyspark[delta]==0.46.0'
+python -m pip install 'etlantic-pyspark[delta]==0.47.0'
 # or: python -m pip install 'delta-spark>=3.0,<4'
 ```
 

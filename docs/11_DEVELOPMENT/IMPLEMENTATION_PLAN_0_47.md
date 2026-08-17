@@ -1,18 +1,17 @@
 ---
 title: ETLantic 0.47 Implementation Plan
 description: Implementation-grade plan for the FastAPI scheduler/runner service and remote execution federation.
-plan_status: current
-plan_last_reviewed: 0.46.0
+plan_status: released
+plan_last_reviewed: 0.47.0
 ---
 
 # ETLantic 0.47 Implementation Plan
 
-> **Status: Current — not started.** Planning freeze after ETLantic **0.46.0**.
-> See [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Proposed) and
-> [EXIT_GATE_0_47](EXIT_GATE_0_47.md). Do not describe 0.47 surfaces as
-> Available. Implementation of scheduler/worker processes, FastAPI schedule
-> routes, Kubernetes, Spark Connect, SQLModel migration `004`, or new packages
-> is **out of scope for this freeze**.
+> **Status: Released with ETLantic 0.47.0** (gate-ready in-tree; no git tag in
+> this commit). See [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)
+> (Accepted) and [EXIT_GATE_0_47](EXIT_GATE_0_47.md). Scheduler/worker processes,
+> FastAPI schedule routes, SQLModel `004`, and Experimental extras are Available
+> as documented in [What's new in 0.47](../01_GETTING_STARTED/WHATS_NEW_0_47.md).
 
 Phase 0.47 adds an optional FastAPI-fronted scheduler and runner service while
 separating API requests, durable scheduling, and execution-host processes. It

@@ -52,6 +52,8 @@ jobs:
           LSP_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-lsp/pyproject.toml | head -1)"
           S3_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-s3/pyproject.toml | head -1)"
           KAFKA_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-kafka/pyproject.toml | head -1)"
+          K8S_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-k8s/pyproject.toml | head -1)"
+          SPARK_CONNECT_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-spark-connect/pyproject.toml | head -1)"
           SR_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-schemaregistry/pyproject.toml | head -1)"
           ICEBERG_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-iceberg/pyproject.toml | head -1)"
           SNOWFLAKE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-snowflake/pyproject.toml | head -1)"
@@ -60,8 +62,8 @@ jobs:
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$MEDALLANTIC_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ] || [ "$TAG" != "$LSP_VERSION" ] || [ "$TAG" != "$S3_VERSION" ] || [ "$TAG" != "$KAFKA_VERSION" ] || [ "$TAG" != "$SR_VERSION" ] || [ "$TAG" != "$ICEBERG_VERSION" ] || [ "$TAG" != "$SNOWFLAKE_VERSION" ] || [ "$TAG" != "$OPENLINEAGE_VERSION" ]; then
-            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION' lsp='$LSP_VERSION' s3='$S3_VERSION' kafka='$KAFKA_VERSION' schemaregistry='$SR_VERSION' iceberg='$ICEBERG_VERSION' snowflake='$SNOWFLAKE_VERSION' openlineage='$OPENLINEAGE_VERSION'"
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$MEDALLANTIC_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ] || [ "$TAG" != "$LSP_VERSION" ] || [ "$TAG" != "$S3_VERSION" ] || [ "$TAG" != "$KAFKA_VERSION" ] || [ "$TAG" != "$K8S_VERSION" ] || [ "$TAG" != "$SPARK_CONNECT_VERSION" ] || [ "$TAG" != "$SR_VERSION" ] || [ "$TAG" != "$ICEBERG_VERSION" ] || [ "$TAG" != "$SNOWFLAKE_VERSION" ] || [ "$TAG" != "$OPENLINEAGE_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION' lsp='$LSP_VERSION' s3='$S3_VERSION' kafka='$KAFKA_VERSION' k8s='$K8S_VERSION' spark-connect='$SPARK_CONNECT_VERSION' schemaregistry='$SR_VERSION' iceberg='$ICEBERG_VERSION' snowflake='$SNOWFLAKE_VERSION' openlineage='$OPENLINEAGE_VERSION'"
             exit 1
           fi
 
@@ -85,6 +87,8 @@ jobs:
           uv build --package etlantic-lsp --out-dir dist
           uv build --package etlantic-s3 --out-dir dist
           uv build --package etlantic-kafka --out-dir dist
+          uv build --package etlantic-k8s --out-dir dist
+          uv build --package etlantic-spark-connect --out-dir dist
           uv build --package etlantic-schemaregistry --out-dir dist
           uv build --package etlantic-iceberg --out-dir dist
           uv build --package etlantic-snowflake --out-dir dist
@@ -380,6 +384,12 @@ jobs:
           publish_pair etlantic-kafka \
             "dist/etlantic_kafka-${TAG}-py3-none-any.whl" \
             "dist/etlantic_kafka-${TAG}.tar.gz"
+          publish_pair etlantic-k8s \
+            "dist/etlantic_k8s-${TAG}-py3-none-any.whl" \
+            "dist/etlantic_k8s-${TAG}.tar.gz"
+          publish_pair etlantic-spark-connect \
+            "dist/etlantic_spark_connect-${TAG}-py3-none-any.whl" \
+            "dist/etlantic_spark_connect-${TAG}.tar.gz"
           publish_pair etlantic-schemaregistry \
             "dist/etlantic_schemaregistry-${TAG}-py3-none-any.whl" \
             "dist/etlantic_schemaregistry-${TAG}.tar.gz"

@@ -353,6 +353,21 @@ class Cp4GovernanceSnapshotRow(SQLModel, table=True):
     updated_at: str | None = None
 
 
+class ScheduleSnapshotRow(SQLModel, table=True):
+    """Transactional 0.47 schedule-store snapshot (reference provider)."""
+
+    __tablename__ = "cp_schedule_snapshot"
+    __table_args__ = (UniqueConstraint("store_id", name="uq_cp_schedule_snapshot"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: str = Field(
+        sa_column=Column(String(), index=True, nullable=False), default="default"
+    )
+    payload_json: str = "{}"
+    payload_version: int = Field(default=0, sa_column=Column(Integer(), nullable=False))
+    updated_at: str | None = None
+
+
 __all__ = [
     "AliasRow",
     "Cp4GovernanceSnapshotRow",
@@ -365,6 +380,7 @@ __all__ = [
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
+    "ScheduleSnapshotRow",
     "SecurityDomainRow",
     "SubmissionRow",
     "TenantRow",

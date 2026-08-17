@@ -1,20 +1,20 @@
 ---
 status: available
-since: "0.46.0"
-current_minor: "0.46"
+since: "0.47.0"
+current_minor: "0.47"
 audience: developer
 ---
 
 # etlantic-schemaregistry API
 
-> **Status: Experimental in ETLantic 0.46.0.** Confluent-compatible schema-registry
+> **Status: Experimental in ETLantic 0.47.0.** Confluent-compatible schema-registry
 > adapter over the core identity protocol. Live HTTP is opt-in. Hub:
 > [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-schemaregistry==0.46.0'
+pip install 'etlantic-schemaregistry==0.47.0'
 ```
 
 ```python

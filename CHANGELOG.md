@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-08-17
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.46.x` or plugins with `<0.47` |
+| Breaking | Dependency floor becomes `etlantic>=0.47.0,<0.48` (scheduler/federation line) |
+| Upgrade | `pip install 'etlantic==0.47.0'` and matching plugins / `medallantic==0.47.0`. See [Migration 0.46 → 0.47](docs/11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
+| Rollback | Re-pin 0.46.0 minors together |
+| Security | Schedules never contain payloads/secrets; production `plugin_allowlist` and `resource_provider_allowlist` fail closed |
+
+### Added
+
+- Scheduler/runner service: `etlantic.schedule/1`, `etlantic.firing/1`, `ScheduleStore`, `etlantic scheduler serve`, `etlantic worker serve` ([ADR-023](docs/11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md))
+- FastAPI schedule routes under `/v1/schedules*` and `/v1/definitions/{id}/schedules` (gateway only)
+- CLI `etlantic schedule create|list|inspect|pause|resume|delete|preview|trigger`
+- SQLModel migration `004_schedules_0_47`
+- Remote-runtime fakes (`etlantic.remote-runtime/1`) with placement reject-before-transfer
+- `Profile.resource_provider_allowlist` (`PMRES140`)
+- Experimental packages `etlantic-k8s` (FakeKubernetes) and `etlantic-spark-connect` (fake SparkProvider)
+- Diagnostics `PMSVC*`, `PMFIRE*`, `PMFED*`, `PMRES*`
+
+### Changed
+
+- Lockstep official plugins and Medallantic to `0.47.0` (`etlantic>=0.47.0,<0.48`)
+- Production rejects `MemoryScheduleStore`
+
 ## [0.46.0] - 2026-08-17
 
 ### Adopter summary
@@ -1785,6 +1813,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.47.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.47.0
 [0.46.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.46.0
 [0.45.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.45.0
 [0.44.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.44.0

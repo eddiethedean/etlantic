@@ -7,7 +7,7 @@ from typing import Any
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.protocol import DataframePluginInfo
 
-__version__ = "0.46.0"
+__version__ = "0.47.0"
 
 
 class DataFusionPlugin:

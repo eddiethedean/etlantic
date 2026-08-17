@@ -8,7 +8,7 @@
     "publication.atomic",
     "idempotency"
   ],
-  "digest": "sha256:26648b9b6cd817cc68fa6ac2a50678e59971cfe845ace6c77120362c2452d6eb",
+  "digest": "sha256:621a1e8f71965755f876224a925916b098c7f03ed3c3bf12b679c9ed1e1272ac",
   "entries": [
     {
       "capabilities": [
@@ -45,5 +45,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.46.0"
+  "version": "0.47.0"
 }

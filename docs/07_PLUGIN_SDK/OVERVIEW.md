@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-> **Status: Available in ETLantic 0.46.0** for the shipped protocols below.
+> **Status: Available in ETLantic 0.47.0** for the shipped protocols below.
 > Future protocols are listed only in the appendix—do not treat them as APIs.
 
 For the package-from-zero workflow, start with
@@ -25,6 +25,7 @@ concrete runtime behavior.
 | Event consumer | [EVENT_CONSUMER](EVENT_CONSUMER.md) | trend consumer reference |
 | Source / sink / storage connectors | [CONNECTOR_SDK](CONNECTOR_SDK.md) | core `local-files`; `etlantic-s3`, `etlantic-iceberg`, `etlantic-snowflake`, `etlantic-sql` |
 | Portable transform compiler | [PORTABLE_TRANSFORM_COMPILER](PORTABLE_TRANSFORM_COMPILER.md) | engine packages above |
+| Resource provider | [RESOURCE_PROVIDER](RESOURCE_PROVIDER.md) | Experimental `etlantic-k8s` (`FakeKubernetes`) |
 | Testing / conformance | [TESTING_PLUGINS](TESTING_PLUGINS.md) | `etlantic.testing` |
 
 Compiler support is expressed through exact [DTCS](../04_TRANSFORMATIONS/DTCS.md) profiles, actions, functions,
@@ -61,13 +62,12 @@ pipeline.
 
 ## Appendix — planned / not shipped
 
-These categories appear in design pages and are **not** installable
-protocols in **0.46.0**:
+These categories appear in design pages and are **not** Available as
+production live runtimes in **0.47.0**:
 
-- Managed resource providers — `etlantic.resource/1` plus Experimental
-  `etlantic-k8s` / `etlantic-spark-connect` fakes are the 0.47 freeze;
-  live packs are 0.51. Do not implement against
-  [Resource Provider](RESOURCE_PROVIDER.md) yet.
+- Live Kind / Databricks / EMR / Spark Connect — skipped (`047-K-01` /
+  `047-S-01`); enterprise packs are 0.51. The Experimental fakes
+  (`etlantic-k8s`, `etlantic-spark-connect`) are installable.
 - Registry plugins / approval workflows — shipped foundations in 0.40–0.43
   (CP2–CP4 / CP-GA); not a new plugin protocol here.
 
@@ -75,7 +75,7 @@ Source / sink / **storage connectors** ship via
 [Connector SDK](CONNECTOR_SDK.md) (`etlantic.storage_connectors`). The older
 [Storage Plugin](STORAGE_PLUGIN.md) page points at that path; it is not a
 separate unshipped protocol. See
-[Resource Provider](RESOURCE_PROVIDER.md) for the managed-resource design stub.
+[Resource Provider](RESOURCE_PROVIDER.md) for the Experimental resource protocol.
 Operator how-to: [Observability today](../06_EXECUTION/OBSERVABILITY_TODAY.md)
 and [Reports and history](../06_EXECUTION/REPORTS_AND_HISTORY.md).
 

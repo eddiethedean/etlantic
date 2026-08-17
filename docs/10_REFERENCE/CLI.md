@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.46.0.** This page documents the commands
+> **Status: Available in ETLantic 0.47.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -312,6 +312,39 @@ python -m etlantic stream schemas check --store registry.json --subject orders-v
 requires `--store` (fingerprint identities only) and never registers the
 candidate it is checking. Store JSON that contains payload keys is
 rejected (`INVALID_MODEL`). Production registry adapters require
+
+## `schedule`
+
+Create and inspect secret-free schedules (interval or 5-field cron). Never
+embeds payloads or secret values.
+
+```bash
+python -m etlantic schedule create --store schedules.json --definition-id pipe-1 --interval 60
+python -m etlantic schedule list --store schedules.json
+python -m etlantic schedule inspect sch-1 --store schedules.json
+python -m etlantic schedule pause sch-1 --store schedules.json
+python -m etlantic schedule preview sch-1 --store schedules.json
+python -m etlantic schedule trigger sch-1 --store schedules.json
+```
+
+## `scheduler`
+
+Timer-leadership process. Production must not colocate this with the FastAPI
+gateway.
+
+```bash
+python -m etlantic scheduler serve --store schedules.json --once
+```
+
+## `worker`
+
+Execution host. Polls CP3 durable outbox; never imports FastAPI.
+
+```bash
+python -m etlantic worker serve --once
+```
+
+`inspect` and `redrive plan` read identifier documents. `schemas check`
 `Profile.schema_registry_allowlist`.
 
 ## `reliability`
@@ -449,7 +482,7 @@ in addition to exit codes.
 
 | Command | Mutates workspace? |
 |---|---|
-| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor`, `watch`, `stream` | No (read-only analysis / metadata) |
+| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor`, `watch`, `stream`, `schedule list/inspect/preview`, `scheduler`, `worker` | No (read-only analysis / metadata) |
 | `viz lineage` | No (read-only; prints to stdout) |
 | `viz dot` | Writes only when `-o` / `--output` is set; otherwise stdout |
 | `viz html` | Writes `lineage.html` by default (`-o` overrides the path) |

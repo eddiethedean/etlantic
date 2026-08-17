@@ -24,6 +24,9 @@ PUBLIC_CLI_COMMANDS = (
     "report",
     "watch",
     "stream",
+    "schedule",
+    "scheduler",
+    "worker",
 )
 
 PUBLIC_SDK_IMPORTS = (
@@ -39,6 +42,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.control_plane",
     "etlantic.optimization",
     "etlantic.streaming",
+    "etlantic.resources",
 )
 
 SECURITY_RULES = (
@@ -48,6 +52,8 @@ SECURITY_RULES = (
     "Profile.optimization_pass_allowlist and fail closed.",
     "Production profiles that enable schema-registry adapters require "
     "Profile.schema_registry_allowlist and fail closed.",
+    "Production profiles that enable resource providers require "
+    "Profile.resource_provider_allowlist and fail closed.",
     "Schema history stores fingerprints/metadata only — never source rows.",
     "Prefer public SDK imports; do not rely on private underscore modules.",
     "Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.",

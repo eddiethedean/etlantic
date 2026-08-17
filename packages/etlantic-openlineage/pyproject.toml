@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-openlineage"
-version = "0.46.0"
+version = "0.47.0"
 description = "Experimental outbound OpenLineage export for ETLantic CP2."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.46.0,<0.47",
+    "etlantic>=0.47.0,<0.48",
 ]
 
 [project.optional-dependencies]

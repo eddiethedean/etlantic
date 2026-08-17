@@ -88,6 +88,11 @@
       "additionalProperties": { "type": ["string", "null"] },
       "description": "Schema-registry adapter package → optional version pin (production fail-closed when undeclared)."
     },
+    "resource_provider_allowlist": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] },
+      "description": "Resource provider package → optional version pin (production fail-closed when a provider is selected)."
+    },
     "optimization_policy": {
       "type": "string",
       "enum": ["off", "shadow", "apply_accepted"],

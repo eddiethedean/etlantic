@@ -20,6 +20,8 @@ MANIFEST_PACKAGES = (
     "etlantic-datafusion",
     "etlantic-s3",
     "etlantic-kafka",
+    "etlantic-k8s",
+    "etlantic-spark-connect",
     "etlantic-iceberg",
     "etlantic-snowflake",
 )

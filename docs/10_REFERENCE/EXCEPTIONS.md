@@ -1,6 +1,6 @@
 # Exceptions Reference
 
-> **Status: Available in ETLantic 0.46.0.** This page documents exceptions
+> **Status: Available in ETLantic 0.47.0.** This page documents exceptions
 > exported by the installed package. Broader proposed exception trees on older
 > design pages are not authoritative.
 

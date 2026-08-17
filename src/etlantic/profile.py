@@ -136,6 +136,8 @@ class Profile:
     optimization_policy: OptimizationPolicy = "off"
     # 0.46: schema-registry adapter trust (production fail-closed).
     schema_registry_allowlist: dict[str, str | None] = field(default_factory=dict)
+    # 0.47: resource-provider trust (production fail-closed when selected).
+    resource_provider_allowlist: dict[str, str | None] = field(default_factory=dict)
     # 0.12: portable vs native selection (no silent fallback).
     portable_transform_policy: PortableTransformPolicy = "prefer"
     # 0.20: safe I/O, outbound, isolation, optional capability probe.
@@ -181,6 +183,7 @@ class Profile:
         optimization_pass_allowlist: dict[str, str | None] | None = None,
         optimization_policy: OptimizationPolicy = "off",
         schema_registry_allowlist: dict[str, str | None] | None = None,
+        resource_provider_allowlist: dict[str, str | None] | None = None,
         portable_transform_policy: PortableTransformPolicy = "prefer",
         tenant: str = "default",
         environment: str = "default",
@@ -229,6 +232,8 @@ class Profile:
                 ``"apply_accepted"`` (advisory until accept).
             schema_registry_allowlist: Registry adapter package → optional
                 version pin (production fail-closed when empty).
+            resource_provider_allowlist: Resource provider package → optional
+                version pin (production fail-closed when a provider is selected).
             portable_transform_policy: ``"prefer"``, ``"require"``, or
                 ``"native"``.
             tenant: Tenant label for safe I/O / outbound policy.
@@ -310,6 +315,11 @@ class Profile:
             self,
             "schema_registry_allowlist",
             dict(schema_registry_allowlist or {}),
+        )
+        object.__setattr__(
+            self,
+            "resource_provider_allowlist",
+            dict(resource_provider_allowlist or {}),
         )
         object.__setattr__(self, "portable_transform_policy", portable_transform_policy)
         object.__setattr__(self, "tenant", str(tenant or "default"))
@@ -591,6 +601,10 @@ class Profile:
             schema_registry_allowlist={
                 str(k): (None if v in (None, "") else str(v))
                 for k, v in dict(data.get("schema_registry_allowlist") or {}).items()
+            },
+            resource_provider_allowlist={
+                str(k): (None if v in (None, "") else str(v))
+                for k, v in dict(data.get("resource_provider_allowlist") or {}).items()
             },
             portable_transform_policy=_parse_portable_policy(
                 data.get("portable_transform_policy")

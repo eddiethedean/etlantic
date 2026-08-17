@@ -570,6 +570,8 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-datafusion",
         "etlantic-s3",
         "etlantic-kafka",
+        "etlantic-k8s",
+        "etlantic-spark-connect",
         "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",
@@ -665,6 +667,8 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-fastapi",
         "etlantic-s3",
         "etlantic-kafka",
+        "etlantic-k8s",
+        "etlantic-spark-connect",
         "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",
@@ -676,9 +680,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes twenty distributions" not in release_process:
+    if "publishes twenty-two distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 18-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 22-package "
             "release inventory"
         )
 
@@ -1763,9 +1767,7 @@ def main() -> None:
         ):
             raise SystemExit(f"{path} missing Future design / design-study admonition")
 
-    future_plugin_pages = [
-        ROOT / "docs/07_PLUGIN_SDK/RESOURCE_PROVIDER.md",
-    ]
+    future_plugin_pages: list[Path] = []
     for path in future_plugin_pages:
         text = path.read_text(encoding="utf-8")
         if "Future design" not in text and "!!! warning" not in text:
@@ -2075,9 +2077,10 @@ def main() -> None:
     if start < 0 or end < 0:
         raise SystemExit("status-banner.js missing futurePluginSdkPages array")
     future_sdk_block = banner_js[start:end]
-    for future_sdk in ("RESOURCE_PROVIDER",):
-        if f'"{future_sdk}"' not in future_sdk_block:
-            raise SystemExit(f"status-banner.js must mark {future_sdk} as future")
+    if '"RESOURCE_PROVIDER"' in future_sdk_block:
+        raise SystemExit(
+            "status-banner.js must not list shipped RESOURCE_PROVIDER as future"
+        )
 
     secrets = (ROOT / "docs/06_EXECUTION/SECRETS_MANAGEMENT.md").read_text(
         encoding="utf-8"
@@ -2342,6 +2345,8 @@ def main() -> None:
         ROOT / "packages/medallantic/ROADMAP.md",
         ROOT / "packages/etlantic-s3/README.md",
         ROOT / "packages/etlantic-kafka/README.md",
+        ROOT / "packages/etlantic-k8s/README.md",
+        ROOT / "packages/etlantic-spark-connect/README.md",
         ROOT / "packages/etlantic-schemaregistry/README.md",
         ROOT / "packages/etlantic-iceberg/README.md",
         ROOT / "packages/etlantic-snowflake/README.md",
@@ -2461,6 +2466,8 @@ def main() -> None:
         "etlantic-datafusion",
         "etlantic-s3",
         "etlantic-kafka",
+        "etlantic-k8s",
+        "etlantic-spark-connect",
         "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",

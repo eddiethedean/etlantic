@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.46.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.47.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -156,6 +156,20 @@
 | `PMEXEC500` | `src/etlantic/runtime/orchestrator.py` |
 | `PMEXEC501` | `src/etlantic/reliability_runtime.py` |
 | `PMEXEC502` | `src/etlantic/reliability_runtime.py` |
+| `PMFED100` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED101` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED110` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED120` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED130` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED140` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFED999` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE100` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE110` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE120` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE130` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE140` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE150` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMFIRE999` | `src/etlantic/control_plane/schedule_diagnostics.py` |
 | `PMGEN201` | `src/etlantic/interchange/policy.py` |
 | `PMGEN202` | `src/etlantic/interchange/policy.py` |
 | `PMGEN203` | `src/etlantic/interchange/diff.py`, `src/etlantic/interchange/dtcs.py` |
@@ -244,7 +258,7 @@
 | `PMPLUG421` | `src/etlantic/plugins/coordinator.py` |
 | `PMPLUG422` | `src/etlantic/plugins/coordinator.py` |
 | `PMPLUG423` | `src/etlantic/plugins/coordinator.py` |
-| `PMPLUG424` | `src/etlantic/plugin_lifecycle/__init__.py` |
+| `PMPLUG424` | `src/etlantic/plugin_lifecycle/__init__.py`, `src/etlantic/plugins/coordinator.py` |
 | `PMPLUG430` | `src/etlantic/capability_probe.py` |
 | `PMPLUG431` | `src/etlantic/capability_probe.py` |
 | `PMPLUG432` | `src/etlantic/capability_probe.py`, `src/etlantic/plugin_lifecycle/__init__.py` |
@@ -261,13 +275,17 @@
 | `PMPLUG450` | `src/etlantic/plugin_compatibility.py` |
 | `PMQTY400` | `src/etlantic/quality/evaluate.py` |
 | `PMQTY410` | `src/etlantic/quality/evaluate.py` |
-| `PMREG100` | `src/etlantic/streaming/diagnostics.py` |
+| `PMREG100` | `src/etlantic/cli/cmds/stream.py`, `src/etlantic/streaming/diagnostics.py` |
 | `PMREG101` | `src/etlantic/streaming/diagnostics.py` |
 | `PMREG102` | `src/etlantic/streaming/diagnostics.py` |
-| `PMREG110` | `src/etlantic/streaming/diagnostics.py` |
+| `PMREG110` | `src/etlantic/cli/cmds/stream.py`, `src/etlantic/streaming/diagnostics.py` |
 | `PMREG140` | `src/etlantic/cli/cmds/stream.py`, `src/etlantic/streaming/diagnostics.py` |
 | `PMREG150` | `src/etlantic/streaming/diagnostics.py` |
 | `PMREG999` | `src/etlantic/streaming/diagnostics.py` |
+| `PMRES100` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMRES110` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMRES140` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMRES999` | `src/etlantic/control_plane/schedule_diagnostics.py` |
 | `PMSCHED101` | `src/etlantic/runtime/scheduler.py` |
 | `PMSCHED102` | `src/etlantic/runtime/scheduler.py`, `src/etlantic/testing/scheduler.py` |
 | `PMSEC050` | `src/etlantic/outbound.py` |
@@ -298,6 +316,11 @@
 | `PMSTR210` | `src/etlantic/streaming/diagnostics.py` |
 | `PMSTR300` | `src/etlantic/streaming/diagnostics.py` |
 | `PMSTR999` | `src/etlantic/streaming/diagnostics.py` |
+| `PMSVC100` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMSVC101` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMSVC110` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMSVC120` | `src/etlantic/control_plane/schedule_diagnostics.py` |
+| `PMSVC999` | `src/etlantic/control_plane/schedule_diagnostics.py` |
 | `PMTRN001` | `src/etlantic/validation/__init__.py` |
 | `PMTRN101` | `src/etlantic/validation/__init__.py` |
 | `PMTRN102` | `src/etlantic/validation/__init__.py` |

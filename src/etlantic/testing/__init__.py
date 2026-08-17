@@ -88,6 +88,9 @@ from etlantic.testing.portable_transform_conformance import (
 from etlantic.testing.production_conformance import run_production_conformance_suite
 from etlantic.testing.quality_conformance import run_quality_conformance_suite
 from etlantic.testing.run_history_conformance import run_run_history_conformance_suite
+from etlantic.testing.schedule_store_conformance import (
+    run_schedule_store_conformance_suite,
+)
 from etlantic.testing.scheduler import (
     assert_scheduler_plugin_info,
     run_scheduler_conformance_suite,
@@ -192,6 +195,7 @@ __all__ = [
     "run_recovery_campaign",
     "run_resilience_campaign",
     "run_run_history_conformance_suite",
+    "run_schedule_store_conformance_suite",
     "run_scheduler_conformance_suite",
     "run_schema_registry_conformance_suite",
     "run_secret_conformance_suite",

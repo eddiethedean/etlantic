@@ -1,0 +1,11 @@
+{
+  "schema": "etlantic.ops.capacity-envelope/1",
+  "release": "0.47.0",
+  "roles": ["fastapi-gateway", "scheduler", "execution-host"],
+  "wake": "polling",
+  "live_cluster": false,
+  "notes": [
+    "In-process failover/reconnect drills replace live Kind.",
+    "Admission is durable-store limited; FastAPI does not execute pipelines."
+  ]
+}

@@ -14,7 +14,7 @@ ETLantic does **not** depend on database drivers. Install the plugin
 separately:
 
 ```bash
-pip install 'etlantic[sql]==0.46.0'
+pip install 'etlantic[sql]==0.47.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 ```
 

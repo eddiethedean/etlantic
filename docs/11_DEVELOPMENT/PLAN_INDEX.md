@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.46.0 (gate-ready Beta).
+> **Status: Shipped product docs describe ETLantic 0.47.0 (gate-ready Beta).
 > Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
 > notebooks) is Available; CP-GA production multi-tenant remains Supported
@@ -11,17 +11,20 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.46 can do now**, use
+    - To learn what **ETLantic 0.47 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
-    - To evaluate **0.47 scheduler/federation planning**, use the
-      [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md),
-      [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Proposed),
-      [exit gate](EXIT_GATE_0_47.md) (Not started), and
-      [findings](FINDINGS_0_47.md). Do not treat 0.47 as Available.
+    - To evaluate **0.47 scheduler/federation evidence**, use the
+      [0.47 exit gate](EXIT_GATE_0_47.md),
+      [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Accepted),
+      [findings](FINDINGS_0_47.md), release notes, and tests.
+    - To evaluate **0.48 governed-approval planning**, use the
+      [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) when present and
+      the [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
+      § 0.48. Do not treat 0.48 surfaces as Available.
     - To evaluate **0.46 streaming/dynamic-control evidence**, use the
       [0.46 exit gate](EXIT_GATE_0_46.md), [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
       [findings](FINDINGS_0_46.md), release notes, and tests.
@@ -53,18 +56,19 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.46** Streaming and event-driven pipelines line.
-Prior Optimization SDK evidence remains in **0.45**; Developer Intelligence
-remains in **0.44**; CP-GA evidence remains in **0.43**; CP4 evidence remains in
-**0.42**; CP3 evidence remains in **0.41**; CP2 evidence remains in **0.40**;
-CP1 evidence remains in **0.39**; connectivity evidence remains in **0.38**.
+Status is relative to the **0.47** scheduler/runner and remote-federation line.
+Prior Streaming evidence remains in **0.46**; Optimization SDK evidence remains
+in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
+in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;
+CP2 evidence remains in **0.40**; CP1 evidence remains in **0.39**; connectivity
+evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.46 Streaming gate-ready; next 0.47 planning freeze | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
-| [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) | Current — not started | Scheduler/runner service + remote federation freeze | [EXIT_GATE_0_47](EXIT_GATE_0_47.md) |
-| [ADR-023: Scheduler service and federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) | Proposed | FastAPI vs CP3 vs remote/resource; fake vs live | 0.47 |
-| [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Gate-ready milestone | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.47 Scheduler/federation gate-ready; next 0.48 planning freeze | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) § 0.48 |
+| [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) | Gate-ready milestone | Scheduler/runner service + remote federation | [EXIT_GATE_0_47](EXIT_GATE_0_47.md) |
+| [ADR-023: Scheduler service and federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) | Accepted | FastAPI vs CP3 vs remote/resource; fake vs live | 0.47 |
+| [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Previous / released | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
 | [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) | Accepted | Core vs provider ownership; no payloads in artifacts | 0.46 |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
 | [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md) | Released milestone | Optimization-pass SDK | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |

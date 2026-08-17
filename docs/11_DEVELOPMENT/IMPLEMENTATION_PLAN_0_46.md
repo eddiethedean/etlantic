@@ -1,17 +1,15 @@
 ---
 title: ETLantic 0.46 Implementation Plan
 description: Implementation-grade plan for bounded dynamic control flow, streaming, and event-driven pipelines.
-plan_status: current
-plan_last_reviewed: 0.45.0
+plan_status: released
+plan_last_reviewed: 0.47.0
 ---
 
 # ETLantic 0.46 Implementation Plan
 
-> **Status: Current — not started.** Planning freeze after ETLantic **0.46.0**.
-> See [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed) and
-> [EXIT_GATE_0_46](EXIT_GATE_0_46.md). Do not describe 0.46 surfaces as
-> Available. Implementation of map/reduce, streaming engines, DLQ storage, or
-> schema-registry packages is **out of scope for this freeze**.
+> **Status: Released with ETLantic 0.46.0.** See
+> [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Accepted) and
+> [EXIT_GATE_0_46](EXIT_GATE_0_46.md).
 
 Phase 0.46 extends ETLantic's bounded state and reliability semantics to
 runtime-expanded work and continuous event pipelines. It reuses the durable

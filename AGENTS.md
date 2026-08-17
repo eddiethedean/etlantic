@@ -7,7 +7,7 @@ surfaces; fail closed on secrets, plugin trust, and schema mutations.
 
 ## Public CLI
 
-`etlantic init`, `etlantic doctor`, `etlantic validate`, `etlantic inspect`, `etlantic plan`, `etlantic profile`, `etlantic run`, `etlantic compile`, `etlantic generate`, `etlantic diff`, `etlantic plugin`, `etlantic schema`, `etlantic reliability`, `etlantic erasure`, `etlantic viz`, `etlantic report`, `etlantic watch`, `etlantic stream`
+`etlantic init`, `etlantic doctor`, `etlantic validate`, `etlantic inspect`, `etlantic plan`, `etlantic profile`, `etlantic run`, `etlantic compile`, `etlantic generate`, `etlantic diff`, `etlantic plugin`, `etlantic schema`, `etlantic reliability`, `etlantic erasure`, `etlantic viz`, `etlantic report`, `etlantic watch`, `etlantic stream`, `etlantic schedule`, `etlantic scheduler`, `etlantic worker`
 
 ## Public SDK imports
 
@@ -16,7 +16,8 @@ Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 `etlantic.orchestration`, `etlantic.viz`, `etlantic.secrets`,
 `etlantic.testing`, `etlantic.quality`, `etlantic.connectors`,
-`etlantic.control_plane`, `etlantic.optimization`, `etlantic.streaming`
+`etlantic.control_plane`, `etlantic.optimization`, `etlantic.streaming`,
+`etlantic.resources`
 
 ## FastAPI dual surface
 
@@ -32,6 +33,7 @@ Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 - Production profiles require Profile.plugin_allowlist and fail closed.
 - Production profiles that enable optimization require Profile.optimization_pass_allowlist and fail closed.
 - Production profiles that enable schema-registry adapters require Profile.schema_registry_allowlist and fail closed.
+- Production profiles that enable resource providers require Profile.resource_provider_allowlist and fail closed.
 - Schema history stores fingerprints/metadata only — never source rows.
 - Prefer public SDK imports; do not rely on private underscore modules.
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.

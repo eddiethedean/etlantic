@@ -31,6 +31,7 @@ class PluginDiscoveryResult:
     sql_plugins: dict[str, Any] = field(default_factory=dict)
     spark_plugins: dict[str, Any] = field(default_factory=dict)
     spark_providers: dict[str, Any] = field(default_factory=dict)
+    resource_providers: dict[str, Any] = field(default_factory=dict)
     orchestrator_plugins: dict[str, Any] = field(default_factory=dict)
     scheduler_plugins: dict[str, Any] = field(default_factory=dict)
     observability_providers: dict[str, Any] = field(default_factory=dict)
@@ -256,6 +257,27 @@ class PluginDiscoveryCoordinator:
                         severity=Severity.ERROR,
                         message=f"Spark provider discovery failed: {exc}",
                         path=("plugin", "spark_providers"),
+                        phase="plugin_load",
+                    )
+                )
+            try:
+                from etlantic.resources.discovery import RESOURCE_PROVIDER_ENTRY_POINT
+
+                resources = discover_evaluate_authorize_load(
+                    RESOURCE_PROVIDER_ENTRY_POINT,
+                    profile=profile,
+                    key_fn=_provider_key,
+                )
+                result.diagnostics.extend(resources.diagnostics)
+                result.trust_records.extend(resources.trust_records)
+                result.resource_providers = dict(resources.loaded)
+            except Exception as exc:
+                result.diagnostics.append(
+                    Diagnostic(
+                        code="PMPLUG424",
+                        severity=Severity.ERROR,
+                        message=f"Resource provider discovery failed: {exc}",
+                        path=("plugin", "resource_providers"),
                         phase="plugin_load",
                     )
                 )

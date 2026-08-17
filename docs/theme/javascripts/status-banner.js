@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const futureExecutionPages = [
     "PLUGINS",
     "STORAGE_PLUGINS",
-    "RESOURCE_PLUGINS",
   ];
   const experimentalExecutionPages = ["STRUCTURED_STREAMING"];
   const isFutureExecution = futureExecutionPages.some((name) =>
@@ -25,10 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isExperimentalExecution = experimentalExecutionPages.some((name) =>
     path.includes(`/06_EXECUTION/${name}/`)
   );
-  // Only these unshipped provider protocol pages are future in 0.46.
-  const futurePluginSdkPages = [
-    "RESOURCE_PROVIDER",
-  ];
+  // Resource provider protocol shipped in 0.47 (Experimental k8s extra).
+  const futurePluginSdkPages = [];
   const isPluginSdk = futurePluginSdkPages.some((name) =>
     path.includes(`/07_PLUGIN_SDK/${name}/`)
   );
@@ -82,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   banner.className = "admonition warning";
   banner.dataset.etlanticStatus = "future";
   banner.innerHTML =
-    '<p class="admonition-title">Future design—not an ETLantic 0.46 API guide</p>' +
+    '<p class="admonition-title">Future design—not an ETLantic 0.47 API guide</p>' +
     "<p>This page may contain unshipped packages, commands, or interfaces. " +
     "Use Current Capabilities, the API reference, and the CLI reference for shipped behavior. " +
     "Polars, PySpark, Pandas, and SQL portable-relational compilers are shipped. " +

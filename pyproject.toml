@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.46.0"
+version = "0.47.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,34 +30,36 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.46.0"]
-pandas = ["etlantic-pandas==0.46.0"]
-sql = ["etlantic-sql==0.46.0"]
-postgresql = ["etlantic-sql==0.46.0"]
-pyspark = ["etlantic-pyspark==0.46.0"]
-spark = ["etlantic-pyspark==0.46.0"]
-airflow = ["etlantic-airflow==0.46.0"]
-prefect = ["etlantic-prefect==0.46.0"]
-keyring = ["etlantic-keyring==0.46.0"]
-sqlmodel = ["etlantic-sqlmodel==0.46.0"]
-medallantic = ["medallantic==0.46.0"]
-sparkforge = ["etlantic-sparkforge==0.46.0"]
-fastapi = ["etlantic-fastapi==0.46.0"]
-datafusion = ["etlantic-datafusion==0.46.0"]
-s3 = ["etlantic-s3==0.46.0"]
-kafka = ["etlantic-kafka==0.46.0"]
-schemaregistry = ["etlantic-schemaregistry==0.46.0"]
-iceberg = ["etlantic-iceberg==0.46.0"]
-snowflake = ["etlantic-snowflake==0.46.0"]
-openlineage = ["etlantic-openlineage==0.46.0"]
+polars = ["etlantic-polars==0.47.0"]
+pandas = ["etlantic-pandas==0.47.0"]
+sql = ["etlantic-sql==0.47.0"]
+postgresql = ["etlantic-sql==0.47.0"]
+pyspark = ["etlantic-pyspark==0.47.0"]
+spark = ["etlantic-pyspark==0.47.0"]
+airflow = ["etlantic-airflow==0.47.0"]
+prefect = ["etlantic-prefect==0.47.0"]
+keyring = ["etlantic-keyring==0.47.0"]
+sqlmodel = ["etlantic-sqlmodel==0.47.0"]
+medallantic = ["medallantic==0.47.0"]
+sparkforge = ["etlantic-sparkforge==0.47.0"]
+fastapi = ["etlantic-fastapi==0.47.0"]
+datafusion = ["etlantic-datafusion==0.47.0"]
+s3 = ["etlantic-s3==0.47.0"]
+kafka = ["etlantic-kafka==0.47.0"]
+k8s = ["etlantic-k8s==0.47.0"]
+spark-connect = ["etlantic-spark-connect==0.47.0"]
+schemaregistry = ["etlantic-schemaregistry==0.47.0"]
+iceberg = ["etlantic-iceberg==0.47.0"]
+snowflake = ["etlantic-snowflake==0.47.0"]
+openlineage = ["etlantic-openlineage==0.47.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
-lsp = ["etlantic-lsp==0.46.0"]
+lsp = ["etlantic-lsp==0.47.0"]
 dataframes = [
-    "etlantic-polars==0.46.0",
-    "etlantic-pandas==0.46.0",
+    "etlantic-polars==0.47.0",
+    "etlantic-pandas==0.47.0",
 ]
 
 [project.scripts]
@@ -134,6 +136,12 @@ s3 = [
 kafka = [
     "etlantic-kafka",
 ]
+k8s = [
+    "etlantic-k8s",
+]
+spark-connect = [
+    "etlantic-spark-connect",
+]
 schemaregistry = [
     "etlantic-schemaregistry",
 ]
@@ -191,6 +199,8 @@ members = [
     "packages/etlantic-fastapi",
     "packages/etlantic-s3",
     "packages/etlantic-kafka",
+    "packages/etlantic-k8s",
+    "packages/etlantic-spark-connect",
     "packages/etlantic-schemaregistry",
     "packages/etlantic-iceberg",
     "packages/etlantic-snowflake",
@@ -214,6 +224,8 @@ etlantic-datafusion = { workspace = true }
 etlantic-fastapi = { workspace = true }
 etlantic-s3 = { workspace = true }
 etlantic-kafka = { workspace = true }
+etlantic-k8s = { workspace = true }
+etlantic-spark-connect = { workspace = true }
 etlantic-schemaregistry = { workspace = true }
 etlantic-iceberg = { workspace = true }
 etlantic-snowflake = { workspace = true }
@@ -238,6 +250,8 @@ pythonpath = [
     "packages/etlantic-fastapi/src",
     "packages/etlantic-s3/src",
     "packages/etlantic-kafka/src",
+    "packages/etlantic-k8s/src",
+    "packages/etlantic-spark-connect/src",
     "packages/etlantic-schemaregistry/src",
     "packages/etlantic-iceberg/src",
     "packages/etlantic-snowflake/src",
@@ -259,6 +273,8 @@ markers = [
     "datafusion: tests for the experimental DataFusion plugin stub",
     "s3: tests for the experimental S3 connector package",
     "kafka: tests for the experimental Kafka connector package",
+    "k8s: tests for the experimental Kubernetes resource provider",
+    "spark_connect: tests for the experimental Spark Connect provider",
     "schemaregistry: tests for the experimental schema-registry package",
     "iceberg: tests for the experimental Iceberg connector package",
     "snowflake: tests for the experimental Snowflake connector package",
@@ -308,6 +324,8 @@ known-first-party = [
     "etlantic_sparkforge",
     "etlantic_datafusion",
     "etlantic_fastapi",
+    "etlantic_k8s",
+    "etlantic_spark_connect",
     "etlantic_openlineage",
     "etlantic_lsp",
 ]
@@ -315,12 +333,14 @@ known-first-party = [
 [tool.ruff.lint.per-file-ignores]
 # FastAPI Depends()/Header() defaults are the framework's DI idiom.
 "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py" = ["B008"]
+"packages/etlantic-fastapi/src/etlantic_fastapi/schedule_routes.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/deps.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py" = ["B008"]
 # Typer Option()/Argument() defaults are the CLI framework idiom.
 "src/etlantic/cli/cmds/erasure.py" = ["B008"]
 "src/etlantic/cli/cmds/watch.py" = ["B008"]
 "src/etlantic/cli/cmds/stream.py" = ["B008"]
+"src/etlantic/cli/cmds/schedule.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

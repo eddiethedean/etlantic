@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.46.0.**
+> **Status: Available in ETLantic 0.47.0.**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
@@ -61,6 +61,10 @@ PMDYNxxx   Dynamic expansion / identity / bounds (0.46)
 PMSTRxxx   Stream semantics / handoff / backpressure (0.46)
 PMDLQxxx   Record-error / dead-letter policy (0.46)
 PMREGxxx   Schema-registry identity / outage / allowlist (0.46)
+PMSVCxxx   Scheduler-service topology / memory-store reject (0.47)
+PMFIRExxx  Firing identity / cron / catch-up / payload leak (0.47)
+PMFEDxxx   Remote federation negotiate / fence / skew (0.47)
+PMRESxxx   Resource-provider allowlist / placement (0.47)
 PMINTxxx   Internal framework invariants
 ```
 
@@ -69,8 +73,8 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.46.0** /
-0.46.x).
+These codes are emitted by the installed ETLantic package (currently **0.47.0** /
+0.47.x).
 The message, path, metadata, and severity provide the case-specific detail.
 
 **Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)

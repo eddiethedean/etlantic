@@ -1,11 +1,10 @@
 # Spark Provider
 
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
-An Experimental Spark Connect extra (`etlantic-spark-connect`) plus in-process
-fake is planned for 0.47 ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md));
-live Databricks, EMR, and Spark Connect packs are assigned to 0.51. See the
+An Experimental Spark Connect extra (`etlantic-spark-connect`) with an
+in-process fake is Available in **0.47.0**. Live Databricks, EMR, and Spark
+Connect packs remain deferred (`047-S-01` / 0.51). See the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
-Do not describe the 0.47 extra as Available.
 
 A **Spark Provider** implements the ETLantic Resource Provider API for
 creating, configuring, supplying, reusing, and disposing Apache Spark sessions

@@ -4,10 +4,11 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.46.0** is the current gate-ready Streaming and event-driven pipelines line
-(**Beta**): bounded dynamic control, stream-time semantics, record-error policy,
-in-memory fixtures, and Experimental Kafka / schema-registry extras. Prior
-**0.45** closed the Planner and Optimization SDK. Prior **0.44** closed Developer
+**0.47.0** is the current gate-ready scheduler/runner and remote-federation
+line (**Beta**): split-role FastAPI gateway, timer leadership, execution host,
+SQLModel `004`, and Experimental Kubernetes / Spark Connect fakes. Prior
+**0.46** closed Streaming and event-driven pipelines. Prior **0.45** closed
+the Planner and Optimization SDK. Prior **0.44** closed Developer
 Intelligence (LSP / IDE / notebooks). Prior **0.43** closed CP-GA
 multi-tenant graduation (Supported isolation profiles only). Prior **0.42**
 closed CP4. Milestones describe capability order, not release-date
@@ -19,7 +20,8 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.46 | Streaming and event-driven pipelines | [Gate-ready](EXIT_GATE_0_46.md) |
+| Current | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Gate-ready](EXIT_GATE_0_47.md) |
+| Previous | 0.46 | Streaming and event-driven pipelines | [Gate-ready](EXIT_GATE_0_46.md) |
 | Previous | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
 | Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
 | Previous | 0.43 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
@@ -28,9 +30,9 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Planning freeze](EXIT_GATE_0_47.md) (not started) |
+| Next | 0.48 | Governed human-approval loops and promotion policy | Planning freeze — not started |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.46 Streaming gate-ready; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.47 scheduler/federation gate-ready; 0.46 Streaming prior; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

@@ -1,0 +1,10 @@
+{
+  "schema": "etlantic.spark-connect.conformance-report/1",
+  "release": "0.47.0",
+  "checks": {
+    "fake_spark_provider": true,
+    "live_databricks_skipped": true
+  },
+  "skip": "047-S-01",
+  "passed": true
+}

@@ -1,23 +1,21 @@
 # Resource Provider
 
-!!! warning "Planned provider boundary — not a shipped entry-point protocol"
-    Resource providers are not a discoverable entry-point protocol in
-    ETLantic 0.46. The `etlantic.resource/1` protocol, Kubernetes Job
-    `FakeKubernetes` extra (`etlantic-k8s`), and Spark Connect fake
-    (`etlantic-spark-connect`) are assigned to the **0.47 planning freeze**
-    ([IMPLEMENTATION_PLAN_0_47](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md),
-    [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
-    Live Kind/cluster and live Databricks/EMR packs remain 0.51.
-    None of these extras exist yet. Do not describe them as Available.
+> **Status: Available in ETLantic 0.47.0** as a discoverable core protocol
+> (`etlantic.resource/1`). The Kubernetes extra is **Experimental**.
 
-**Do not implement a package against this page until 0.47 implementation
-starts.** Prefer shipped dataframe / SQL / Spark / orchestration / secrets /
-observability plugins.
+`etlantic.resource_providers` is the entry-point group. Production profiles
+that select a resource provider require `Profile.resource_provider_allowlist`
+(`PMRES140`).
+
+| Package | Maturity | Fake | Live |
+|---|---|---|---|
+| `etlantic-k8s` | Experimental (Alpha) | `FakeKubernetes` | skip `047-K-01` (`ETLANTIC_K8S_CONTEXT`) |
+
+Do not embed kubeconfig secrets in schedules or plans. Spark Connect is a
+`SparkProvider` (`etlantic.spark_providers`), not a resource provider.
 
 | Use instead | Link |
 |---|---|
-| Shipped protocols | [Plugin SDK Overview](OVERVIEW.md) |
+| Spark session provider | [Spark Provider](SPARK_PROVIDER.md) |
 | Secrets | [Secret Provider](SECRET_PROVIDER.md) |
-| Local Spark session provider | [Spark Provider](SPARK_PROVIDER.md) (`etlantic-pyspark`) |
 | Operator view | [Resource Providers (execution)](../06_EXECUTION/RESOURCE_PLUGINS.md) |
-| Program ownership | [Adoption ecosystem plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md) |

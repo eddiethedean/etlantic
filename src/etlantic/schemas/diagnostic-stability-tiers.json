@@ -32,6 +32,10 @@
     "PMPLAN": "stable",
     "PMPLUG": "stable",
     "PMQTY": "provisional",
+    "PMSVC": "stable",
+    "PMFIRE": "stable",
+    "PMFED": "stable",
+    "PMRES": "stable",
     "PMSCHED": "stable",
     "PMSEC": "stable",
     "PMSPARK": "stable",
@@ -48,6 +52,7 @@
     "PMQTY is provisional while etlantic.quality/1 remains provisional.",
     "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families.",
     "PMOPT covers optimization-pass diagnostics introduced in 0.45 (stable with etlantic.optimization/1).",
-    "PMDYN / PMSTR / PMDLQ / PMREG cover 0.46 dynamic expansion, stream semantics, record-error/DLQ, and schema-registry diagnostics."
+    "PMDYN / PMSTR / PMDLQ / PMREG cover 0.46 dynamic expansion, stream semantics, record-error/DLQ, and schema-registry diagnostics.",
+    "PMSVC / PMFIRE / PMFED / PMRES cover 0.47 scheduler-service topology, firing semantics, remote federation, and resource-provider allowlists."
   ]
 }

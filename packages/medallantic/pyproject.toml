@@ -1,6 +1,6 @@
 [project]
 name = "medallantic"
-version = "0.46.0"
+version = "0.47.0"
 description = "Engine-agnostic medallion facade on ETLantic (native authoring + SparkForge IR migrate)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.46.0,<0.47",
+    "etlantic>=0.47.0,<0.48",
 ]
 
 # Native MedallionPipeline authoring (M1) plus SparkForge IR migrate adapter.

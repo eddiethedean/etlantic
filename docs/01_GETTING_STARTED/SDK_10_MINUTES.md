@@ -1,6 +1,6 @@
 # SDK 10-minute tutorial
 
-> **Status: Available in ETLantic 0.46.0.** Secondary path — complete the CLI
+> **Status: Available in ETLantic 0.47.0.** Secondary path — complete the CLI
 > [Quickstart](QUICKSTART.md) (Ada/Grace in `data/out.json`) first. This page
 > is for SDK muscle memory after that green path. No clone required.
 
@@ -11,7 +11,7 @@ Use the curated root (`import etlantic as etl`) for a tiny in-process pipeline.
 Same install as [Installation](INSTALLATION.md):
 
 ```bash
-python -m pip install 'etlantic==0.46.0'
+python -m pip install 'etlantic==0.47.0'
 ```
 
 ## Author, validate, plan, run

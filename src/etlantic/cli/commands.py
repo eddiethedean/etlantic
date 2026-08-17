@@ -13,6 +13,7 @@ from etlantic.cli import exit_codes as ec
 from etlantic.cli.cmds.compile import register_compile_commands
 from etlantic.cli.cmds.context import emit_payload, report_to_payload
 from etlantic.cli.cmds.erasure import register_erasure_commands
+from etlantic.cli.cmds.schedule import register_schedule_commands
 from etlantic.cli.cmds.stream import register_stream_commands
 from etlantic.cli.context import get_cli_context
 from etlantic.plan.planner import plan_pipeline_with_report
@@ -60,6 +61,7 @@ def register_commands(
     register_compile_commands(app, context_factory)
     register_erasure_commands(app)
     register_stream_commands(app)
+    register_schedule_commands(app)
 
     @plugin_app.command("list")
     def plugin_list_cmd(
@@ -74,7 +76,7 @@ def register_commands(
         kind: str = typer.Option(
             "all",
             "--kind",
-            help="all|dataframe|sql|spark|orchestrator|scheduler|transform_compiler",
+            help="all|dataframe|sql|spark|orchestrator|scheduler|transform_compiler|resource",
         ),
     ) -> None:
         """List discovered plugins (honors profile allowlist)."""
@@ -111,6 +113,10 @@ def register_commands(
             groups["transform_compiler"] = discover_transform_compilers_for_profile(
                 resolved
             )
+        if kind in {"all", "resource"}:
+            from etlantic.resources.discovery import discover_resource_providers
+
+            groups["resource"] = discover_resource_providers(profile=resolved)
         items: list[dict[str, Any]] = []
         diagnostics: list[dict[str, Any]] = []
         for group_name, plugins in groups.items():
@@ -187,13 +193,17 @@ def register_commands(
             )
 
             plugins = discover_transform_compilers_for_profile(resolved)
+        elif kind == "resource":
+            from etlantic.resources.discovery import discover_resource_providers
+
+            plugins = discover_resource_providers(profile=resolved)
         else:
             emit_payload(
                 {
                     "ok": False,
                     "error": (
                         f"Unknown kind {kind!r}; expected dataframe|sql|spark|"
-                        "orchestrator|scheduler|transform_compiler"
+                        "orchestrator|scheduler|transform_compiler|resource"
                     ),
                 },
                 fmt=fmt,

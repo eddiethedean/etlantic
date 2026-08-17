@@ -1,0 +1,27 @@
+{
+  "capabilities": [
+    "spark-connect"
+  ],
+  "digest": "sha256:3ae5d176ac5386469d0bffdf63c9c292da55323dd439739696939aec9adfa277",
+  "entries": [
+    {
+      "capabilities": [
+        "spark-connect"
+      ],
+      "engine": "spark-connect",
+      "group": "etlantic.spark_providers",
+      "name": "spark-connect",
+      "protocol": "etlantic.spark/1",
+      "target": "etlantic_spark_connect:create_provider"
+    }
+  ],
+  "package": "etlantic-spark-connect",
+  "privileges": [],
+  "protocol_range": "etlantic.spark/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.47.0"
+}

@@ -1,6 +1,6 @@
 # Best Practices
 
-> **Status: Available in ETLantic 0.46.0.** Adopter-facing habits for safe,
+> **Status: Available in ETLantic 0.47.0.** Adopter-facing habits for safe,
 > inspectable pipelines. Prefer this over scattered “best practices” asides.
 
 ## Authoring
@@ -18,7 +18,7 @@
    explicit `--profile` in CI.
 2. Production profiles require a non-empty `plugin_allowlist` with exact pins.
 3. Set `security_mode` explicitly (`development` | `test` | `production`).
-4. Pin matching minors: `etlantic==0.46.0` with `etlantic-polars==0.46.0`, etc.
+4. Pin matching minors: `etlantic==0.47.0` with `etlantic-polars==0.47.0`, etc.
 
 ## Secrets and artifacts
 

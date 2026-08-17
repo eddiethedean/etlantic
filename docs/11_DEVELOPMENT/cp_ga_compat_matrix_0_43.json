@@ -1,5 +1,5 @@
 {
-  "matrix_version": "0.46.0",
+  "matrix_version": "0.47.0",
   "campaign": "043-C",
   "cases": [
     {
@@ -9,13 +9,13 @@
     {
       "id": "sqlmodel_migrations_fresh",
       "status": "pass",
-      "version": "003_cp4_governance"
+      "version": "004_schedules_0_47"
     },
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.46.0,<0.47",
-      "installed": "0.46.0"
+      "policy": ">=0.47.0,<0.48",
+      "installed": "0.47.0"
     }
   ],
   "pass": true,

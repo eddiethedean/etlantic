@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "classes": [
     "stable",
     "provisional",
@@ -42,7 +42,8 @@
     "connectors",
     "control_plane",
     "optimization",
-    "streaming"
+    "streaming",
+    "resources"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -59,7 +60,8 @@
     "connectors": "etlantic.connectors",
     "control_plane": "etlantic.control_plane",
     "optimization": "etlantic.optimization",
-    "streaming": "etlantic.streaming"
+    "streaming": "etlantic.streaming",
+    "resources": "etlantic.resources"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",
@@ -91,7 +93,10 @@
     "viz",
     "report",
     "watch",
-    "stream"
+    "stream",
+    "schedule",
+    "scheduler",
+    "worker"
   ],
   "wire_schemas": {
     "etlantic.plan/1": "stable",
@@ -103,6 +108,8 @@
     "etlantic.quality/1": "provisional",
     "etlantic.optimization/1": "stable",
     "etlantic.streaming/1": "stable",
+    "etlantic.schedule/1": "stable",
+    "etlantic.firing/1": "stable",
     "etlantic.landing_checkpoint/1": "provisional",
     "etlantic.control_plane.context/1": "provisional",
     "etlantic.control_plane.accept_receipt/1": "provisional",
@@ -135,7 +142,9 @@
     "etlantic.sink/1": "provisional",
     "etlantic.storage/1": "provisional",
     "etlantic.optimization-pass/1": "stable",
-    "etlantic.schema-registry/1": "stable"
+    "etlantic.schema-registry/1": "stable",
+    "etlantic.remote-runtime/1": "stable",
+    "etlantic.resource/1": "experimental"
   },
   "foundations": {
     "etlantic.testing": "stable"

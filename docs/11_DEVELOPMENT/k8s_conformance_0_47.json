@@ -1,0 +1,10 @@
+{
+  "schema": "etlantic.k8s.conformance-report/1",
+  "release": "0.47.0",
+  "checks": {
+    "fake_acquire_release": true,
+    "live_kind_skipped": true
+  },
+  "skip": "047-K-01",
+  "passed": true
+}

@@ -258,6 +258,34 @@ from etlantic.control_plane.registry_protocols import (
     TenantDirectory,
     WorkspaceDirectory,
 )
+from etlantic.control_plane.schedule_clock import (
+    FakeScheduleClock,
+    ScheduleClock,
+    SystemClock,
+    catch_up_nominals,
+    next_fire_after,
+    parse_cron,
+)
+from etlantic.control_plane.schedule_memory import MemoryScheduleStore
+from etlantic.control_plane.schedule_models import (
+    FIRING_SCHEMA,
+    SCHEDULE_SCHEMA,
+    FiringRecord,
+    ScheduleRecord,
+    ScheduleSpec,
+    assert_schedule_payload_clean,
+    firing_key,
+)
+from etlantic.control_plane.schedule_protocols import (
+    PollingWakeTransport,
+    SchedulerLeaderLease,
+    ScheduleStore,
+    WakeTransport,
+)
+from etlantic.control_plane.schedule_trust import (
+    assert_schedule_store_allowed,
+    resource_provider_allowed,
+)
 from etlantic.control_plane.workspace_resources import (
     WORKSPACE_RESOURCE_RECORD_SCHEMA,
     MemoryWorkspaceResourceStore,
@@ -270,7 +298,7 @@ from etlantic.control_plane.workspace_resources import (
     validate_workspace_resource_record,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     "ACCEPT_RECEIPT_SCHEMA",
     "ALIAS_RECORD_SCHEMA",
     # CP4
@@ -366,6 +394,9 @@ __all__ = [
     "ErasureStore",
     "ErrorDisclosure",
     "EventStore",
+    "FIRING_SCHEMA",
+    "FakeScheduleClock",
+    "FiringRecord",
     "GovernanceConstraints",
     "HistoryStore",
     "IdempotencyKey",
@@ -392,6 +423,7 @@ __all__ = [
     "MemoryRegistryProvider",
     "MemoryRetentionHook",
     "MemoryRevisionRegistry",
+    "MemoryScheduleStore",
     "MemorySubmissionStore",
     "MemoryTenantDirectory",
     "MemoryWorkspaceDirectory",
@@ -407,6 +439,7 @@ __all__ = [
     "PolicyBundle",
     "PolicyDecision",
     "PolicyProvider",
+    "PollingWakeTransport",
     "PreviewWorkspace",
     "Principal",
     "ProblemDetails",
@@ -422,6 +455,12 @@ __all__ = [
     "RepairPlan",
     "ReplayRecord",
     "RetentionHook",
+    "SCHEDULE_SCHEMA",
+    "ScheduleClock",
+    "ScheduleRecord",
+    "ScheduleSpec",
+    "ScheduleStore",
+    "SchedulerLeaderLease",
     "RevisionRegistry",
     "RevisionSearchHit",
     "RevisionSearchPage",
@@ -434,6 +473,7 @@ __all__ = [
     "StateTransitionExplanation",
     "SubmissionRecord",
     "SubmissionStore",
+    "SystemClock",
     "TenantDirectory",
     "TenantRecord",
     "TenantRef",
@@ -442,11 +482,15 @@ __all__ = [
     "WorkspaceRecord",
     "WorkspaceRef",
     "WorkspaceResourceRecord",
+    "WakeTransport",
     "WorkspaceResourceStore",
     "assert_history_metadata_only",
     "assert_no_secrets",
     "assert_no_subject_values",
+    "assert_schedule_payload_clean",
+    "assert_schedule_store_allowed",
     "authorized_get_definition",
+    "catch_up_nominals",
     "compute_policy_fingerprint",
     "compute_record_hash",
     "content_fingerprint",
@@ -456,6 +500,7 @@ __all__ = [
     "evaluate_policy",
     "gate_pre_plan",
     "gate_pre_promote",
+    "firing_key",
     "gate_pre_submit",
     "is_absolute_root_ref",
     "map_deny_disclosure",
@@ -465,6 +510,8 @@ __all__ = [
     "memory_webhook_provider",
     "merge_constraints",
     "namespaced_checkpoint_id",
+    "next_fire_after",
+    "parse_cron",
     "raise_for_deny",
     "redact_control_plane_payload",
     "redact_control_plane_text",
@@ -472,6 +519,7 @@ __all__ = [
     "reject_symlink_or_traversal",
     "require_authorized",
     "require_authorized_run",
+    "resource_provider_allowed",
     "require_verified",
     "resolve_safe_root",
     "search_revisions",

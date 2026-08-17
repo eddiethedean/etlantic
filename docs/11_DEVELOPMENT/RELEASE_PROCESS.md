@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.46.0,<0.47`.
+Official plugins declare `etlantic>=0.47.0,<0.48`.
 
 ## Package categories
 
@@ -35,7 +35,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes twenty distributions:
+Tag `vX.Y.Z` publishes twenty-two distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -55,6 +55,8 @@ Tag `vX.Y.Z` publishes twenty distributions:
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 | `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
 | `etlantic-kafka` | `packages/etlantic-kafka` | **Experimental** Kafka reference (Alpha; fake-first) |
+| `etlantic-k8s` | `packages/etlantic-k8s` | **Experimental** Kubernetes resource provider (Alpha; FakeKubernetes) |
+| `etlantic-spark-connect` | `packages/etlantic-spark-connect` | **Experimental** Spark Connect provider (Alpha; fake) |
 | `etlantic-schemaregistry` | `packages/etlantic-schemaregistry` | **Experimental** Confluent-compatible registry (Alpha; fake-first) |
 | `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
@@ -209,7 +211,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.46** plugins, `etlantic>=0.46.0,<0.47`). A core
+**0.47** plugins, `etlantic>=0.47.0,<0.48`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

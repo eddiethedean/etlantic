@@ -1,0 +1,17 @@
+{
+  "schema": "etlantic.federation.conformance-report/1",
+  "release": "0.47.0",
+  "checks": {
+    "negotiate_map_branch_stream": true,
+    "placement_reject_before_transfer": true,
+    "signed_plan_tamper": true,
+    "signed_plan_replay": true,
+    "no_payload_in_submit": true,
+    "unknown_commit_no_retry": true
+  },
+  "skew_matrix": {
+    "compatible": "0.47.0",
+    "reject": ["0.46.0-missing-dyn-caps"]
+  },
+  "passed": true
+}

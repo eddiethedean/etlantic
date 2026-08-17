@@ -1,7 +1,7 @@
 # PySpark
 
 **Status: shipped in 0.7.0** via `etlantic-pyspark` (local Spark provider).
-An Experimental Spark Connect extra is planned for 0.47 (in-process fake;
+An Experimental Spark Connect extra ships in 0.47 (in-process fake;
 [IMPLEMENTATION_PLAN_0_47](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md));
 supported Databricks/EMR/Spark Connect packs are assigned to 0.51. They are not
 shipped in 0.46.
