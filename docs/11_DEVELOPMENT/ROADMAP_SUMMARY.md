@@ -4,11 +4,13 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.45.0** is the current published Developer Intelligence line (**Beta**):
-editor-neutral LSP, static analysis, and notebook surfaces. Prior **0.43**
-closed CP-GA multi-tenant graduation (Supported isolation profiles only).
-Prior **0.42** closed CP4. Milestones describe capability order, not
-release-date commitments.
+**0.45.0** is the current published Planner and Optimization SDK line
+(**Beta**): advisory optimization passes, evidence/cost selection, explanation
+and shadow compare, and optimizer conformance. Prior **0.44** closed Developer
+Intelligence (LSP / IDE / notebooks). Prior **0.43** closed CP-GA
+multi-tenant graduation (Supported isolation profiles only). Prior **0.42**
+closed CP4. Milestones describe capability order, not release-date
+commitments.
 
 For the status, current boundary, and owner of every domain plan, use the
 [Planning Hub](PLAN_INDEX.md). For shipped behavior, use
@@ -16,7 +18,8 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_44.md) |
+| Current | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
+| Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
 | Previous | 0.43 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
 | Previous | 0.42 | Policy / quotas / audit (CP4) | [Released](EXIT_GATE_0_42.md) |
 | Previous | 0.41 | Durable submission / state (CP3) | [Gate-ready / shipped evidence](EXIT_GATE_0_41.md) |
@@ -304,7 +307,7 @@ shared entry, evidence, and completion rules for all later phases.
 ## Remaining post-foundation 0.x sequence
 
 - **[0.44](IMPLEMENTATION_PLAN_0_44.md):** developer intelligence, LSP, IDE, and static analysis — [Released](EXIT_GATE_0_44.md)
-- **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK (released)
+- **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK — [Released](EXIT_GATE_0_45.md)
 - **[0.46](IMPLEMENTATION_PLAN_0_46.md):** bounded dynamic mapping and control flow,
   streaming and event-driven pipelines, poison-record/DLQ policy, and
   schema-registry interoperability

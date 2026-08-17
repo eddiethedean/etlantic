@@ -50,7 +50,7 @@ remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
 | [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md) | Released milestone | Optimization-pass SDK | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
 | [0.43 implementation plan](IMPLEMENTATION_PLAN_0_43.md) | Released milestone | CP-GA qualification / graduation | [EXIT_GATE_0_43](EXIT_GATE_0_43.md) |

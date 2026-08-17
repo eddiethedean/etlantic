@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Lockstep official plugins and Medallantic to `0.45.0` (`etlantic>=0.45.0,<0.46`)
+- `apply_accepted` / `--apply-optimizations` attach host-consumable annotations only (not a silent physical rewrite)
+- Production undeclared passes fail closed; CLI exits `TRUST_FAILURE` on `PMOPT140`
 
 ## [0.44.0] - 2026-08-04
 

@@ -191,8 +191,10 @@ dependencies outside ETLantic core.
 
 ## Phase 4 — Fast authoring feedback and editor integration
 
-**Roadmap alignment:** 0.45 Developer Intelligence (**Released** with
-ETLantic 0.45.0 — see [EXIT_GATE_0_44](EXIT_GATE_0_44.md)).
+**Roadmap alignment:** 0.44 Developer Intelligence (**Released** with
+ETLantic 0.44.0 — see [EXIT_GATE_0_44](EXIT_GATE_0_44.md)). 0.45 adds
+advisory planner/optimization explanation on the same IDE/CLI artifacts
+([EXIT_GATE_0_45](EXIT_GATE_0_45.md)).
 
 ### Deliver
 

@@ -4004,6 +4004,11 @@ Acceptance:
 
 ## 0.45 — Planner and Optimization SDK
 
+**Status:** Gate-ready for tag/publish — ETLantic **0.45.0** (Planner and
+Optimization SDK). See
+[EXIT_GATE_0_45](docs/11_DEVELOPMENT/EXIT_GATE_0_45.md) and
+[ADR-021](docs/11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md).
+
 Deliver:
 
 - stable optimization-pass protocol;
