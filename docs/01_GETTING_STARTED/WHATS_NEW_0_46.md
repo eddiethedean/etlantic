@@ -20,7 +20,8 @@
   compatibility in core; production `Profile.schema_registry_allowlist` fail
   closed (`PMREG140`)
 - **CLI** — `etlantic stream dead-letters inspect`, `redrive plan`, and
-  `schemas check` (metadata only; payload keys exit `INVALID_MODEL`)
+  `schemas check --store` (metadata only; never registers the candidate;
+  payload keys exit `INVALID_MODEL`)
 - **Experimental extras** — `etlantic-kafka` (`FakeKafka`) and
   `etlantic-schemaregistry` (`FakeConfluentRegistry`). Live brokers/registries
   are skipped unless opt-in env is set (`046-K-01`, `046-G-01`)
@@ -31,7 +32,7 @@
 
 | Who | Action |
 |---|---|
-| Everyone on **0.46.x** | Upgrade to `etlantic==0.46.0` with matching plugins; see [migration](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
+| Everyone on **0.45.x** | Upgrade to `etlantic==0.46.0` with matching plugins; see [migration](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | Stream connector authors | Follow [Streaming connectors](../07_PLUGIN_SDK/STREAMING_CONNECTORS.md) |
 | Registry adapter authors | Follow [Schema registry](../07_PLUGIN_SDK/SCHEMA_REGISTRY.md); pin `schema_registry_allowlist` in production |
 | Operators | Keep production `plugin_allowlist` non-empty; Kafka/registry stay Experimental |

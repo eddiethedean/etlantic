@@ -11,7 +11,7 @@
 | Support | Community; **no SLA** |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
-ETLantic 0.45.0 is a **Beta** release suitable for the documented single-tenant
+ETLantic 0.46.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page plus production multi-tenant for Supported
 isolation profiles. The milestone name “production readiness” (M6)
 means the observability / run-history *pilot* slice—it does

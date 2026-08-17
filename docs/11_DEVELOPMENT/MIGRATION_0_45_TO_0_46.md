@@ -13,7 +13,7 @@
 | New surface | `etlantic.streaming` (`etlantic.streaming/1`) |
 | New node kinds | `map`, `reduce`, `conditional`, `failure`, `compensation` |
 | New profile field | `schema_registry_allowlist` |
-| New CLI | `etlantic stream` (`dead-letters inspect`, `redrive plan`, `schemas check`) |
+| New CLI | `etlantic stream` (`dead-letters inspect`, `redrive plan`, `schemas check --store`) |
 | New testing | `run_streaming_conformance_suite`, `run_schema_registry_conformance_suite` |
 | Experimental extras | `etlantic-kafka`, `etlantic-schemaregistry` (fake-first; not Available in core) |
 | Optimizer | Unknown rewrite kinds fail closed (`PMOPT112`); no expansion/stream rewrites |

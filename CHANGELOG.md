@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimizer `select_candidates` rejects unknown rewrite kinds (`PMOPT112`)
 - Compilers reject map/branch/stream plans they cannot preserve (`PMDYN130`)
 
+### Fixed
+
+- Kafka sink `begin_write` uses a unique session id so overlapping batches are not overwritten
+- Kafka source reads from the consumer group's committed offset, proposes a cursor candidate, and keeps `live=false` on FakeKafka
+- `etlantic stream schemas check` requires `--store`, never registers the candidate, and fails closed (`PMREG110` / `PMREG100`)
+- `ExpansionBounds.from_dict` honors `0` (instead of falling back to defaults) and `expand_children` enforces `max_concurrency`
+- `collect_report_json` fails closed when `payload` or `secret` tokens appear in keys or string values
+
 ## [0.45.0] - 2026-08-05
 
 ### Adopter summary

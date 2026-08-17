@@ -19,6 +19,8 @@ REQUIRED_MODULES = (
     "etlantic_sqlmodel",
     "etlantic_datafusion",
     "etlantic_s3",
+    "etlantic_kafka",
+    "etlantic_schemaregistry",
     "etlantic_iceberg",
     "etlantic_snowflake",
     "etlantic_openlineage",

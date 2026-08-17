@@ -60,6 +60,7 @@ root facade alias waves:
 | `etl.connectors` | `etlantic.connectors` | provisional (0.38 burn-in) |
 | `etl.control_plane` | `etlantic.control_plane` | provisional (CP1 / 0.39 identity incubation) |
 | `etl.optimization` | `etlantic.optimization` | stable (0.45 advisory optimization-pass SDK) |
+| `etl.streaming` | `etlantic.streaming` | stable (0.46 streaming / dynamic-control contracts) |
 
 ## Plan helpers (stable)
 
@@ -80,8 +81,8 @@ and [Planning](../05_PIPELINES/PLANNING.md#plan-immutability-contract).
 ## CLI (stable)
 
 Commands: `init`, `doctor`, `profile`, `validate`, `inspect`, `plan`, `run`,
-`compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `viz`,
-`report`.
+`compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `erasure`,
+`viz`, `report`, `watch`, `stream`.
 
 Stable flags: `--allow-adhoc-profile`, `--accept-legacy-bindings`.
 
@@ -110,6 +111,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.control_plane.error/1` | provisional (CP1 / ADR-016) |
 | `etlantic.optimization/1` | stable (0.45) |
 | `etlantic.optimization-pass/1` | stable (0.45 protocol) |
+| `etlantic.streaming/1` | stable (0.46) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 
@@ -126,6 +128,7 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.source/1` | provisional (0.38 connector burn-in; ADR-015) |
 | `etlantic.sink/1` | provisional (0.38 connector burn-in; ADR-015) |
 | `etlantic.storage/1` | provisional (0.38 connector burn-in; ADR-015) |
+| `etlantic.schema-registry/1` | stable (0.46 identity protocol; adapters Experimental) |
 
 Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 (provisional). Concrete file identities appear only in run-scoped
@@ -156,6 +159,12 @@ Pin to the same minor as core (`==0.46.0`). Details:
 | `etlantic-fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
 | `etlantic-lsp` | Editor-neutral language server (`etlantic[lsp]`) |
 | `etlantic-datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
+| `etlantic-s3` | **Experimental** S3 connector (Alpha) |
+| `etlantic-kafka` | **Experimental** Kafka connector (fake-first; Alpha) |
+| `etlantic-schemaregistry` | **Experimental** schema-registry adapter (fake-first; Alpha) |
+| `etlantic-iceberg` | **Experimental** Iceberg connector (Alpha) |
+| `etlantic-snowflake` | **Experimental** Snowflake connector (Alpha) |
+| `etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
 
 ## See also
 

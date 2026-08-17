@@ -33,7 +33,7 @@ Fit check: [Compare](COMPARE.md).
 | Planning / optimization | Deterministic `PipelinePlan`; advisory `optimize_plan` / `etlantic plan optimize` with evidence, cost, proofs, and shadow compare |
 | Engines | Local Python; Polars; Pandas; SQL (`etlantic-sql`); PySpark |
 | Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`) |
-| Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist` and `optimization_pass_allowlist` |
+| Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist`, `optimization_pass_allowlist`, and `schema_registry_allowlist` |
 | Observability and evidence | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
 | Testing | Application-pipeline cases via `etlantic.testing`; optimizer and streaming conformance suites |
 | Connectors | `etlantic.connectors` protocols; `local-files` Preview landing zone; Experimental `etlantic-s3` / `etlantic-kafka` / `etlantic-iceberg` / `etlantic-snowflake`; PostgreSQL via `etlantic-sql` |
