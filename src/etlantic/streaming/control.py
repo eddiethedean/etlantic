@@ -77,12 +77,18 @@ class ExpansionBounds:
         raw = dict(data or {})
         duration = raw.get("max_duration_seconds")
         return cls(
-            max_children=int(raw.get("max_children") or 1024),
-            max_depth=int(raw.get("max_depth") or 8),
-            max_concurrency=int(raw.get("max_concurrency") or 32),
-            max_metadata_bytes=int(raw.get("max_metadata_bytes") or 65536),
+            max_children=_bound_int(raw, "max_children", 1024),
+            max_depth=_bound_int(raw, "max_depth", 8),
+            max_concurrency=_bound_int(raw, "max_concurrency", 32),
+            max_metadata_bytes=_bound_int(raw, "max_metadata_bytes", 65536),
             max_duration_seconds=(None if duration in (None, "") else float(duration)),
         )
+
+
+def _bound_int(raw: Mapping[str, Any], key: str, default: int) -> int:
+    if key not in raw or raw[key] in (None, ""):
+        return default
+    return int(raw[key])
 
 
 def child_identity(
@@ -214,6 +220,35 @@ def expand_children(
                     f"max_metadata_bytes={spec.bounds.max_metadata_bytes}"
                 ),
                 path=("expansion", spec.parent_id, "max_metadata_bytes"),
+            )
+        )
+    if n > spec.bounds.max_concurrency:
+        diagnostics.append(
+            dyn_diagnostic(
+                "bound_exhausted",
+                (
+                    f"Expansion of {spec.parent_id!r} produced {n} children; "
+                    f"max_concurrency={spec.bounds.max_concurrency}"
+                ),
+                path=("expansion", spec.parent_id, "max_concurrency"),
+                metadata={
+                    "parent_id": spec.parent_id,
+                    "child_count": n,
+                    "max_concurrency": spec.bounds.max_concurrency,
+                },
+            )
+        )
+    duration = spec.bounds.max_duration_seconds
+    if duration is not None and duration <= 0:
+        diagnostics.append(
+            dyn_diagnostic(
+                "bound_exhausted",
+                (
+                    f"Expansion of {spec.parent_id!r} has "
+                    f"max_duration_seconds={duration}; "
+                    "refusing work with a non-positive duration budget"
+                ),
+                path=("expansion", spec.parent_id, "max_duration_seconds"),
             )
         )
     if n == 0:
