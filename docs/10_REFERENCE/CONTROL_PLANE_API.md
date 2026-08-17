@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: Available in ETLantic 0.45.0.** CP1–CP4 are foundations;
+> **Status: Available in ETLantic 0.46.0.** CP1–CP4 are foundations;
 > **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
 > profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
 > remains Experimental; community **non-SLA**.
@@ -53,7 +53,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.45.0'` (match `etlantic==0.45.0`).
+Pin: `pip install 'etlantic-fastapi==0.46.0'` (match `etlantic==0.46.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.

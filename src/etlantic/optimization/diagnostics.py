@@ -12,6 +12,7 @@ OPT_CODES = {
     "conflicting_evidence": "PMOPT102",
     "missing_proof": "PMOPT110",
     "proof_rejected": "PMOPT111",
+    "unknown_rewrite_kind": "PMOPT112",
     "policy_rejected": "PMOPT120",
     "capability_rejected": "PMOPT121",
     "budget_exceeded": "PMOPT130",

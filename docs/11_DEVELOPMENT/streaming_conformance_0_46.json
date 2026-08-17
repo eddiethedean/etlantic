@@ -1,0 +1,15 @@
+{
+  "schema": "etlantic.streaming.conformance-report/1",
+  "release": "0.46.0",
+  "checks": {
+    "deterministic_identity": true,
+    "bounds": true,
+    "no_payload_in_report": true,
+    "dlq_metadata_only": true,
+    "dlq_unauthorized": true,
+    "redrive_idempotent": true,
+    "handoff_exact": true,
+    "handoff_gap": true
+  },
+  "passed": true
+}

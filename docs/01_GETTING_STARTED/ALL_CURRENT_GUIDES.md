@@ -1,6 +1,6 @@
 # All current guides
 
-> **Status: Available in ETLantic 0.45.0.** Index of primary navigation pages
+> **Status: Available in ETLantic 0.46.0.** Index of primary navigation pages
 > for the current minor. Generated for discoverability; the sidebar remains
 > authoritative for hierarchy.
 

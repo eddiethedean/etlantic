@@ -1,7 +1,7 @@
 # ADR-021: Optimizer Pass Protocol and Advisory Selection
 
 Date: 2026-08-05  
-Status: Accepted (ships with ETLantic **0.45.0**)
+Status: Accepted (ships with ETLantic **0.46.0**)
 
 ## Context
 

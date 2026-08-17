@@ -1,13 +1,13 @@
 ---
 status: available
 since: "0.45.0"
-current_minor: "0.45"
+current_minor: "0.46"
 audience: developer
 ---
 
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.45.0.** Per-package API pages for first-party
+> **Status: Available in ETLantic 0.46.0.** Per-package API pages for first-party
 > optional packages. Install/overview hub:
 > [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).
@@ -28,6 +28,8 @@ install and narrative home.
 - [etlantic-sqlmodel](api_optional/etlantic_sqlmodel.md) — SQLModel bridge helpers
 - [etlantic-datafusion](api_optional/etlantic_datafusion.md) — Experimental DataFusion stub
 - [etlantic-s3](api_optional/etlantic_s3.md) — Experimental S3-compatible connectors
+- [etlantic-kafka](api_optional/etlantic_kafka.md) — Experimental Kafka connectors (fake/CI)
+- [etlantic-schemaregistry](api_optional/etlantic_schemaregistry.md) — Experimental schema-registry adapter (fake/CI)
 - [etlantic-iceberg](api_optional/etlantic_iceberg.md) — Experimental Iceberg connectors
 - [etlantic-snowflake](api_optional/etlantic_snowflake.md) — Experimental Snowflake connectors
 - [etlantic-openlineage](api_optional/etlantic_openlineage.md) — Experimental outbound OpenLineage (CP2)
@@ -123,6 +125,24 @@ The directives below keep root-level coverage discoverable from this hub:
 ## etlantic-s3
 
 ::: etlantic_s3
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-kafka
+
+::: etlantic_kafka
+    options:
+      show_source: false
+      members_order: source
+      filters:
+        - "!^_"
+
+## etlantic-schemaregistry
+
+::: etlantic_schemaregistry
     options:
       show_source: false
       members_order: source

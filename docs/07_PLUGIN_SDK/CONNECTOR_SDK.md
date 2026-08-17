@@ -1,6 +1,6 @@
 # Connector SDK
 
-> **Status: Available in ETLantic 0.45.0.** Public source, sink, and storage
+> **Status: Available in ETLantic 0.46.0.** Public source, sink, and storage
 > connector protocols under `etlantic.connectors`.
 
 ## Protocols
@@ -73,6 +73,7 @@ from etlantic.testing import run_source_connector_conformance_suite
 |---|---|---|
 | `local-files` | built-in | Preview |
 | `s3` | `etlantic-s3` | Experimental |
+| `kafka` | `etlantic-kafka` | Experimental |
 | `iceberg` | `etlantic-iceberg` | Experimental |
 | `snowflake` | `etlantic-snowflake` | Experimental |
 | `postgresql` | `etlantic-sql` | Experimental connector path |

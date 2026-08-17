@@ -474,7 +474,7 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.44 — Developer Intelligence: LSP, IDE, and Static Analysis",
         "## 0.45 — Planner and Optimization SDK",
         "## 0.46 — Streaming and Event-Driven Pipelines",
-        "## 0.47 — Remote Execution Federation",
+        "## 0.47 — FastAPI Scheduler/Runner Service and Remote Execution Federation",
         "## 0.48 — AI-Assisted, Human-Governed Engineering",
         "## 0.49 — Brownfield Adoption Bridges",
         "## 0.50 — Operator Console",
@@ -569,6 +569,8 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-airflow",
         "etlantic-datafusion",
         "etlantic-s3",
+        "etlantic-kafka",
+        "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",
@@ -662,6 +664,8 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-datafusion",
         "etlantic-fastapi",
         "etlantic-s3",
+        "etlantic-kafka",
+        "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",
@@ -672,7 +676,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes eighteen distributions" not in release_process:
+    if "publishes twenty distributions" not in release_process:
         raise SystemExit(
             "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 18-package "
             "release inventory"
@@ -2337,6 +2341,8 @@ def main() -> None:
         ROOT / "packages/medallantic/docs/getting-started.md",
         ROOT / "packages/medallantic/ROADMAP.md",
         ROOT / "packages/etlantic-s3/README.md",
+        ROOT / "packages/etlantic-kafka/README.md",
+        ROOT / "packages/etlantic-schemaregistry/README.md",
         ROOT / "packages/etlantic-iceberg/README.md",
         ROOT / "packages/etlantic-snowflake/README.md",
         ROOT / "packages/etlantic-prefect/README.md",
@@ -2454,6 +2460,8 @@ def main() -> None:
     experimental_packages = {
         "etlantic-datafusion",
         "etlantic-s3",
+        "etlantic-kafka",
+        "etlantic-schemaregistry",
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",

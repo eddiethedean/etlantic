@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.45.0.**
+> **Status: Available in ETLantic 0.46.0.**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
@@ -56,6 +56,11 @@ PMCFGxxx   Configuration and profiles
 PMSECxxx   Security policy (I/O, serialization, outbound)
 PMGENxxx   Contract and documentation generation
 PMIDxxx    IDE / static-analysis workspace (experimental in 0.45)
+PMOPTxxx   Optimization-pass SDK (0.45)
+PMDYNxxx   Dynamic expansion / identity / bounds (0.46)
+PMSTRxxx   Stream semantics / handoff / backpressure (0.46)
+PMDLQxxx   Record-error / dead-letter policy (0.46)
+PMREGxxx   Schema-registry identity / outage / allowlist (0.46)
 PMINTxxx   Internal framework invariants
 ```
 
@@ -64,8 +69,8 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.45.0** /
-0.45.x).
+These codes are emitted by the installed ETLantic package (currently **0.46.0** /
+0.46.x).
 The message, path, metadata, and severity provide the case-specific detail.
 
 **Exhaustive generated inventory:** [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
@@ -118,6 +123,21 @@ The curated tables below remain the human-oriented index.
 | `PMXFORM810` | Portable plan exceeds the document-size budget |
 | `PMXFORM811` | Portable plan exceeds the node-count budget |
 | `PMXFORM812` | Portable plan exceeds the depth budget |
+
+### Streaming and dynamic control (0.46)
+
+| Code | Meaning |
+|---|---|
+| `PMDYN100` | Expansion has no declared keys (unbounded work refused) |
+| `PMDYN101` | Expansion/depth/metadata bound exhausted |
+| `PMDYN120` | Arbitrary Python control flow is not a plan surface |
+| `PMSTR100` | Engine cannot prove a required stream semantic |
+| `PMSTR200` | Snapshot-to-stream handoff gap |
+| `PMSTR201` | Snapshot-to-stream handoff overlap |
+| `PMDLQ110` | Policy refuses silent offset/checkpoint advance |
+| `PMDLQ121` | Unauthorized dead-letter payload access |
+| `PMREG110` | Schema registry unavailable (fail closed) |
+| `PMREG140` | Schema-registry adapter not production-allowlisted |
 
 ### IDE and static analysis (experimental)
 

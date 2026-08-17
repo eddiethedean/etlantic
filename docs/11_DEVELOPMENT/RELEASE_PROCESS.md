@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.45.0,<0.46`.
+Official plugins declare `etlantic>=0.46.0,<0.47`.
 
 ## Package categories
 
@@ -35,7 +35,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes eighteen distributions:
+Tag `vX.Y.Z` publishes twenty distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -54,6 +54,8 @@ Tag `vX.Y.Z` publishes eighteen distributions:
 | `etlantic-lsp` | `packages/etlantic-lsp` | language server host (since 0.44) |
 | `etlantic-datafusion` | `packages/etlantic-datafusion` | **Experimental** (Alpha classifier) |
 | `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
+| `etlantic-kafka` | `packages/etlantic-kafka` | **Experimental** Kafka reference (Alpha; fake-first) |
+| `etlantic-schemaregistry` | `packages/etlantic-schemaregistry` | **Experimental** Confluent-compatible registry (Alpha; fake-first) |
 | `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
 | `etlantic-openlineage` | `packages/etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
@@ -138,7 +140,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all eighteen wheels/sdists.
+3. Builds all twenty wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (thirteen established
@@ -207,7 +209,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.45** plugins, `etlantic>=0.45.0,<0.46`). A core
+**0.46** plugins, `etlantic>=0.46.0,<0.47`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

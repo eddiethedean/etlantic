@@ -114,6 +114,10 @@ from etlantic.testing.sql_builder_differential import (
     default_sql_builder_fixtures,
     run_sql_builder_differential_suite,
 )
+from etlantic.testing.streaming_conformance import (
+    run_schema_registry_conformance_suite,
+    run_streaming_conformance_suite,
+)
 from etlantic.testing.write_semantics import (
     assert_write_intent_parity,
     run_write_semantics_parity_suite,
@@ -189,6 +193,7 @@ __all__ = [
     "run_resilience_campaign",
     "run_run_history_conformance_suite",
     "run_scheduler_conformance_suite",
+    "run_schema_registry_conformance_suite",
     "run_secret_conformance_suite",
     "run_security_campaign",
     "run_sink_connector_conformance_suite",
@@ -198,6 +203,7 @@ __all__ = [
     "run_sql_builder_differential_suite",
     "run_sql_conformance_suite",
     "run_storage_connector_conformance_suite",
+    "run_streaming_conformance_suite",
     "run_tabular_interchange_conformance_smoke",
     "run_write_semantics_parity_suite",
     "snapshot_plan",

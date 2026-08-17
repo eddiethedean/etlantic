@@ -16,6 +16,11 @@ class NodeKind(StrEnum):
     STEP = "step"
     SINK = "sink"
     SUBPIPELINE = "subpipeline"
+    MAP = "map"
+    REDUCE = "reduce"
+    CONDITIONAL = "conditional"
+    FAILURE = "failure"
+    COMPENSATION = "compensation"
 
 
 @dataclass(frozen=True, slots=True)

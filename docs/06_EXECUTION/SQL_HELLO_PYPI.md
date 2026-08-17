@@ -1,6 +1,6 @@
 # SQL hello (PyPI path)
 
-> **Status: Available in ETLantic 0.45.0.** Paste-ready SQLite demo — no
+> **Status: Available in ETLantic 0.46.0.** Paste-ready SQLite demo — no
 > git clone. PostgreSQL is the reference backend for production; MERGE
 > (`sql_merge`) is PostgreSQL-only.
 
@@ -12,12 +12,12 @@ After [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) success on local
 Python, use this page to prove `etlantic-sql` installs and runs.
 
 Companion script (clone / optional download):
-[`examples/sql_hello_pypi.py`](https://github.com/eddiethedean/etlantic/blob/v0.45.0/examples/sql_hello_pypi.py).
+[`examples/sql_hello_pypi.py`](https://github.com/eddiethedean/etlantic/blob/v0.46.0/examples/sql_hello_pypi.py).
 
 ## 1. Install
 
 ```bash
-python -m pip install 'etlantic[sql]==0.45.0'
+python -m pip install 'etlantic[sql]==0.46.0'
 ```
 
 SQLite is the default when `ETLANTIC_SQL_URL` is unset. For PostgreSQL later:
@@ -158,7 +158,7 @@ Optional raw download from the tagged release (still no full clone):
 
 ```bash
 curl -fsSL -o sql_hello.py \
-  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.45.0/examples/sql_hello_pypi.py
+  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.46.0/examples/sql_hello_pypi.py
 python sql_hello.py
 ```
 

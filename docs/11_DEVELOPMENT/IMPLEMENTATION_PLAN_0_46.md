@@ -7,7 +7,7 @@ plan_last_reviewed: 0.45.0
 
 # ETLantic 0.46 Implementation Plan
 
-> **Status: Current — not started.** Planning freeze after ETLantic **0.45.0**.
+> **Status: Current — not started.** Planning freeze after ETLantic **0.46.0**.
 > See [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed) and
 > [EXIT_GATE_0_46](EXIT_GATE_0_46.md). Do not describe 0.46 surfaces as
 > Available. Implementation of map/reduce, streaming engines, DLQ storage, or

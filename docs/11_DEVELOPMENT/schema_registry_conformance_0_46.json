@@ -1,0 +1,11 @@
+{
+  "schema": "etlantic.schema-registry.conformance-report/1",
+  "release": "0.46.0",
+  "checks": {
+    "register_lookup": true,
+    "outage": true,
+    "production_allowlist": true,
+    "production_pin": true
+  },
+  "passed": true
+}

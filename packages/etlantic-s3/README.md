@@ -1,7 +1,7 @@
 # etlantic-s3 (Experimental / Preview)
 
 
-Version **0.45.0** (lockstep with ETLantic core).
+Version **0.46.0** (lockstep with ETLantic core).
 S3-compatible object-store connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `s3` source/sink/storage connectors (fake/CI path
@@ -14,13 +14,13 @@ prepare/commit.
 ## Install
 
 ```bash
-pip install 'etlantic-s3==0.45.0'
+pip install 'etlantic-s3==0.46.0'
 # Live AWS (opt-in later; not required for CI):
-# pip install 'etlantic-s3[aws]==0.45.0'
-# pip install 'etlantic==0.45.0'
+# pip install 'etlantic-s3[aws]==0.46.0'
+# pip install 'etlantic==0.46.0'
 ```
 
-Core dependency: `etlantic>=0.45.0,<0.46`. Optional: `boto3`, `pyarrow`.
+Core dependency: `etlantic>=0.46.0,<0.47`. Optional: `boto3`, `pyarrow`.
 
 ## Behavior
 

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.45.0"
+version = "0.46.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -30,32 +30,34 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.45.0"]
-pandas = ["etlantic-pandas==0.45.0"]
-sql = ["etlantic-sql==0.45.0"]
-postgresql = ["etlantic-sql==0.45.0"]
-pyspark = ["etlantic-pyspark==0.45.0"]
-spark = ["etlantic-pyspark==0.45.0"]
-airflow = ["etlantic-airflow==0.45.0"]
-prefect = ["etlantic-prefect==0.45.0"]
-keyring = ["etlantic-keyring==0.45.0"]
-sqlmodel = ["etlantic-sqlmodel==0.45.0"]
-medallantic = ["medallantic==0.45.0"]
-sparkforge = ["etlantic-sparkforge==0.45.0"]
-fastapi = ["etlantic-fastapi==0.45.0"]
-datafusion = ["etlantic-datafusion==0.45.0"]
-s3 = ["etlantic-s3==0.45.0"]
-iceberg = ["etlantic-iceberg==0.45.0"]
-snowflake = ["etlantic-snowflake==0.45.0"]
-openlineage = ["etlantic-openlineage==0.45.0"]
+polars = ["etlantic-polars==0.46.0"]
+pandas = ["etlantic-pandas==0.46.0"]
+sql = ["etlantic-sql==0.46.0"]
+postgresql = ["etlantic-sql==0.46.0"]
+pyspark = ["etlantic-pyspark==0.46.0"]
+spark = ["etlantic-pyspark==0.46.0"]
+airflow = ["etlantic-airflow==0.46.0"]
+prefect = ["etlantic-prefect==0.46.0"]
+keyring = ["etlantic-keyring==0.46.0"]
+sqlmodel = ["etlantic-sqlmodel==0.46.0"]
+medallantic = ["medallantic==0.46.0"]
+sparkforge = ["etlantic-sparkforge==0.46.0"]
+fastapi = ["etlantic-fastapi==0.46.0"]
+datafusion = ["etlantic-datafusion==0.46.0"]
+s3 = ["etlantic-s3==0.46.0"]
+kafka = ["etlantic-kafka==0.46.0"]
+schemaregistry = ["etlantic-schemaregistry==0.46.0"]
+iceberg = ["etlantic-iceberg==0.46.0"]
+snowflake = ["etlantic-snowflake==0.46.0"]
+openlineage = ["etlantic-openlineage==0.46.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
-lsp = ["etlantic-lsp==0.45.0"]
+lsp = ["etlantic-lsp==0.46.0"]
 dataframes = [
-    "etlantic-polars==0.45.0",
-    "etlantic-pandas==0.45.0",
+    "etlantic-polars==0.46.0",
+    "etlantic-pandas==0.46.0",
 ]
 
 [project.scripts]
@@ -129,6 +131,12 @@ datafusion = [
 s3 = [
     "etlantic-s3",
 ]
+kafka = [
+    "etlantic-kafka",
+]
+schemaregistry = [
+    "etlantic-schemaregistry",
+]
 iceberg = [
     "etlantic-iceberg",
 ]
@@ -182,6 +190,8 @@ members = [
     "packages/etlantic-datafusion",
     "packages/etlantic-fastapi",
     "packages/etlantic-s3",
+    "packages/etlantic-kafka",
+    "packages/etlantic-schemaregistry",
     "packages/etlantic-iceberg",
     "packages/etlantic-snowflake",
     "packages/etlantic-openlineage",
@@ -203,6 +213,8 @@ etlantic-sparkforge = { workspace = true }
 etlantic-datafusion = { workspace = true }
 etlantic-fastapi = { workspace = true }
 etlantic-s3 = { workspace = true }
+etlantic-kafka = { workspace = true }
+etlantic-schemaregistry = { workspace = true }
 etlantic-iceberg = { workspace = true }
 etlantic-snowflake = { workspace = true }
 etlantic-openlineage = { workspace = true }
@@ -225,6 +237,8 @@ pythonpath = [
     "packages/etlantic-datafusion/src",
     "packages/etlantic-fastapi/src",
     "packages/etlantic-s3/src",
+    "packages/etlantic-kafka/src",
+    "packages/etlantic-schemaregistry/src",
     "packages/etlantic-iceberg/src",
     "packages/etlantic-snowflake/src",
     "packages/etlantic-openlineage/src",
@@ -244,6 +258,8 @@ markers = [
     "medallantic: tests for the Medallantic package",
     "datafusion: tests for the experimental DataFusion plugin stub",
     "s3: tests for the experimental S3 connector package",
+    "kafka: tests for the experimental Kafka connector package",
+    "schemaregistry: tests for the experimental schema-registry package",
     "iceberg: tests for the experimental Iceberg connector package",
     "snowflake: tests for the experimental Snowflake connector package",
     "openlineage: tests for the experimental OpenLineage export package",
@@ -304,6 +320,7 @@ known-first-party = [
 # Typer Option()/Argument() defaults are the CLI framework idiom.
 "src/etlantic/cli/cmds/erasure.py" = ["B008"]
 "src/etlantic/cli/cmds/watch.py" = ["B008"]
+"src/etlantic/cli/cmds/stream.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

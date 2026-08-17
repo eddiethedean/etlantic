@@ -182,6 +182,41 @@ def discover_authoring_catalog(
                 display_name="Subpipeline",
                 description="Nested pipeline",
             ),
+            CatalogEntry(
+                identity="etlantic.map",
+                kind="map",
+                display_name="Map",
+                description="Bounded runtime map expansion",
+                capabilities=("control.expansion",),
+            ),
+            CatalogEntry(
+                identity="etlantic.reduce",
+                kind="reduce",
+                display_name="Reduce",
+                description="Bounded runtime reduction",
+                capabilities=("control.expansion",),
+            ),
+            CatalogEntry(
+                identity="etlantic.conditional",
+                kind="conditional",
+                display_name="Conditional",
+                description="Explicit typed conditional branch",
+                capabilities=("control.branch",),
+            ),
+            CatalogEntry(
+                identity="etlantic.failure",
+                kind="failure",
+                display_name="Failure",
+                description="Explicit failure branch",
+                capabilities=("control.branch",),
+            ),
+            CatalogEntry(
+                identity="etlantic.compensation",
+                kind="compensation",
+                display_name="Compensation",
+                description="Explicit compensation path",
+                capabilities=("control.branch",),
+            ),
         )
     )
 

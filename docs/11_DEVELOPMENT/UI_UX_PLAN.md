@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, cross-cutting plan.**
 >
-> **Current 0.45 boundary:** The local CLI, generated read-only HTML/diagram
+> **Current 0.46 boundary:** The local CLI, generated read-only HTML/diagram
 > artifacts, and Phase 4 developer intelligence (watch, `etlantic-lsp`, VS Code
 > reference client, notebooks) are available in published **0.45.0**. Interactive
 > HTML workspace (Phase 2), run dashboard (Phase 3), and hosted Operator Console

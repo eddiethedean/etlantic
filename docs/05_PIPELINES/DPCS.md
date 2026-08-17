@@ -333,14 +333,14 @@ Control flow must remain explicit and portable.
 It should not be inferred from arbitrary Python branching that cannot be
 represented faithfully in DPCS.
 
-!!! note "Future / 0.46 — not Available"
+!!! note "Supported in 0.46 — core types"
     Bounded map/reduce expansion, typed failure/compensation branches with
-    stable child identity, and stream-time nodes are a **planned DPCS
-    extension** for [ETLantic 0.46](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_46.md).
-    Until that exit gate is Met, validators must fail closed rather than
-    inventing implicit control flow. See
-    [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md)
-    and [EXIT_GATE_0_46](../11_DEVELOPMENT/EXIT_GATE_0_46.md).
+    stable child identity, and stream-time nodes are **Supported** as core
+    [DPCS](DPCS.md) / plan extensions in
+    [ETLantic 0.46](../11_DEVELOPMENT/EXIT_GATE_0_46.md). Validators still fail
+    closed on implicit Python control flow. Kafka I/O and live schema registries
+    remain Experimental extras. See
+    [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md).
 
 ## Contract References
 

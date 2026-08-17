@@ -13,6 +13,34 @@ from typing import Any
 from etlantic.spark.protocol import STREAMING_STABILITY
 
 
+def project_core_watermark(core: Any) -> WatermarkSpec:
+    """Project core :class:`etlantic.streaming.semantics.WatermarkSpec` onto Spark types."""
+    event_time = getattr(core, "event_time_field", None) or getattr(
+        core, "event_time_column", ""
+    )
+    late = getattr(core, "late_policy", LateEventPolicy.DROP)
+    late_value = late.value if hasattr(late, "value") else str(late)
+    return WatermarkSpec(
+        event_time_column=str(event_time),
+        delay=str(getattr(core, "delay", "0 seconds")),
+        late_policy=LateEventPolicy(late_value),
+    )
+
+
+def project_core_semantics(core: Any) -> StreamingQuerySpec:
+    """Project core :class:`etlantic.streaming.semantics.StreamSemantics` onto Spark types."""
+    watermark = getattr(core, "watermark", None)
+    trigger = getattr(core, "trigger", StreamingTrigger.AVAILABLE_NOW)
+    trigger_value = trigger.value if hasattr(trigger, "value") else str(trigger)
+    return StreamingQuerySpec(
+        checkpoint_location="memory://spark-stream",
+        trigger=StreamingTrigger(trigger_value),
+        trigger_interval=getattr(core, "trigger_interval", None),
+        watermark=project_core_watermark(watermark) if watermark is not None else None,
+        metadata={"etlantic.streaming.projection": "spark"},
+    )
+
+
 class StreamingTrigger(StrEnum):
     """Supported Structured Streaming triggers."""
 

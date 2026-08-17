@@ -1,0 +1,49 @@
+{
+  "capabilities": [
+    "source.stream",
+    "source.watermark",
+    "sink.stream",
+    "sink.exactly_once",
+    "transactions",
+    "publication.atomic",
+    "idempotency"
+  ],
+  "digest": "sha256:26648b9b6cd817cc68fa6ac2a50678e59971cfe845ace6c77120362c2452d6eb",
+  "entries": [
+    {
+      "capabilities": [
+        "source.stream",
+        "source.watermark",
+        "idempotency"
+      ],
+      "engine": "kafka",
+      "group": "etlantic.source_connectors",
+      "name": "kafka",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_kafka:create_source"
+    },
+    {
+      "capabilities": [
+        "sink.stream",
+        "sink.exactly_once",
+        "transactions",
+        "publication.atomic",
+        "idempotency"
+      ],
+      "engine": "kafka",
+      "group": "etlantic.sink_connectors",
+      "name": "kafka",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_kafka:create_sink"
+    }
+  ],
+  "package": "etlantic-kafka",
+  "privileges": [],
+  "protocol_range": "etlantic.source/1,etlantic.sink/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.46.0"
+}

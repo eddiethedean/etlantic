@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.45.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.46.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona

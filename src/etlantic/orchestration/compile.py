@@ -58,6 +58,38 @@ def _assert_capabilities(
     return diagnostics
 
 
+def _assert_streaming_control(
+    plugin: OrchestratorPlugin,
+    plan: PipelinePlan,
+) -> list[CompilationDiagnostic]:
+    from etlantic.streaming.plan_meta import graph_required_streaming_extras
+
+    required = graph_required_streaming_extras(plan.logical_graph)
+    if not required:
+        meta = dict(plan.metadata or {})
+        if "etlantic.expansion" in meta or "etlantic.streaming" in meta:
+            required = ("control.expansion",)
+    if not required:
+        return []
+    caps = plugin.capabilities()
+    diagnostics: list[CompilationDiagnostic] = []
+    for extra in required:
+        if not caps.supports(extra):
+            diagnostics.append(
+                CompilationDiagnostic(
+                    code="PMDYN130",
+                    severity="error",
+                    message=(
+                        f"Orchestrator {plugin.info.engine!r} cannot preserve "
+                        f"required dynamic/stream extra {extra!r}; refusing to "
+                        "flatten into an inequivalent static DAG."
+                    ),
+                    subject_id=extra,
+                )
+            )
+    return diagnostics
+
+
 def compile_plan(
     plan: PipelinePlan,
     *,
@@ -134,6 +166,15 @@ def compile_plan(
         )
 
     cap_diags = _assert_capabilities(plugin, context)
+    cap_diags.extend(_assert_streaming_control(plugin, plan))
+    cap_errors = [d for d in cap_diags if d.severity == "error"]
+    if cap_errors:
+        raise OrchestrationCompilationError(
+            f"Orchestration compilation to {target!r} failed with "
+            f"{len(cap_errors)} error(s): {cap_errors[0].message}",
+            diagnostics=cap_diags,
+            code=cap_errors[0].code,
+        )
     artifact = plugin.compile(plan, context=context)
     all_diags = list(cap_diags) + list(artifact.diagnostics)
     errors = [d for d in all_diags if d.severity == "error"]

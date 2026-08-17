@@ -1,31 +1,30 @@
 # Exit Gate 0.46 — Streaming and Event-Driven Pipelines
 
-> **Status: Not started — planning freeze.** ETLantic **0.45.0** remains the
-> published line. Bounded dynamic control, stream semantics, record-error
-> policy, and optional Kafka / schema-registry providers are **not Available**.
-> See [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md) and
-> [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed).
+> **Status: Met — gate-ready for tag/publish.** ETLantic **0.46.0** closes
+> bounded dynamic control, stream semantics, record-error policy, and
+> Experimental Kafka / schema-registry extras (in-memory fakes). See
+> [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md) and
+> [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Accepted).
 
 | Deliverable | Status |
 |---|---|
-| Planning: this exit gate / findings / ADR-022 | **In progress** (freeze) |
-| What's New / migration (ship artifacts) | **Not started** |
-| Dynamic control (046-D) | **Not started** |
-| Stream model (046-M) | **Not started** |
-| Change envelope (046-E) | **Not started** |
-| State and checkpoints (046-S) | **Not started** |
-| Snapshot handoff (046-H) | **Not started** |
-| Kafka provider (046-K) | **Not started** |
-| Record errors / DLQ (046-Q) | **Not started** |
-| Schema registries (046-G) | **Not started** |
-| Reliability and reporting (046-R) | **Not started** |
-| Compatibility / operations (046-C) | **Not started** |
-| Lockstep version 0.46.0 | **Not started** |
+| Planning: this exit gate / findings / ADR-022 | **Met** (Accepted ADR-022) |
+| What's New / migration (ship artifacts) | **Met** |
+| Dynamic control (046-D) | **Met** |
+| Stream model (046-M) | **Met** |
+| Change envelope (046-E) | **Met** |
+| State and checkpoints (046-S) | **Met** |
+| Snapshot handoff (046-H) | **Met** |
+| Kafka provider (046-K) | **Met** (Experimental fake; live skipped) |
+| Record errors / DLQ (046-Q) | **Met** |
+| Schema registries (046-G) | **Met** (Experimental fake; live skipped) |
+| Reliability and reporting (046-R) | **Met** |
+| Compatibility / operations (046-C) | **Met** (in-process mixed-version fixtures) |
+| Lockstep version 0.46.0 | **Met** |
 
 ## Supported claim (target freeze)
 
-From [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md). Not Available
-until Current is Met.
+From [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md).
 
 | Surface | Target | Notes |
 |---|---|---|
@@ -39,7 +38,7 @@ until Current is Met.
 | Kafka reference (`etlantic-kafka`) | **Experimental** | Optional package |
 | Schema registry (`etlantic-schemaregistry`) | **Experimental** | Optional package |
 | Live DLQ storage / redrive | **Experimental** | Provider-owned |
-| Rescale / rolling-upgrade campaigns | **Experimental** | Ops evidence |
+| Rescale / rolling-upgrade campaigns | **Experimental** | In-process fake versions |
 
 ## Quantified exit scorecard
 
@@ -47,46 +46,38 @@ From [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md):
 
 | # | Measure | Required | Current |
 |---|---|---:|---|
-| 1 | 046-D dynamic control types, identity, bounds | Pass | **Not met** |
-| 2 | 046-M stream semantic model + batch/stream fixtures | Pass | **Not met** |
-| 3 | 046-E change-envelope metadata (no payloads) | Pass | **Not met** |
-| 4 | 046-S checkpoint/offset identities reuse 0.38/0.41 | Pass | **Not met** |
-| 5 | 046-H snapshot-to-stream handoff protocol | Pass | **Not met** |
-| 6 | 046-K Kafka provider Experimental | Pass | **Not met** |
-| 7 | 046-Q record-error policy + DLQ identity | Pass | **Not met** |
-| 8 | 046-G schema-registry protocol Experimental | Pass | **Not met** |
-| 9 | 046-R continuous reports: watermark, lag, backpressure | Pass | **Not met** |
-| 10 | 046-C envelope/state migration + rolling upgrade | Pass | **Not met** |
-| 11 | Optimizer cannot expand/stream-rewrite without new proof kinds | Pass | **Not met** |
-| 12 | Production allowlists fail closed; no payload in artifacts | Pass | **Not met** |
-| 13 | No unresolved P0 in [FINDINGS_0_46](FINDINGS_0_46.md) | 0 | **Not met** |
-| 14 | Release record: supported vs experimental | Pass | **Not met** — this freeze |
+| 1 | 046-D dynamic control types, identity, bounds | Pass | **Met** |
+| 2 | 046-M stream semantic model + batch/stream fixtures | Pass | **Met** |
+| 3 | 046-E change-envelope metadata (no payloads) | Pass | **Met** |
+| 4 | 046-S checkpoint/offset identities reuse 0.38/0.41 | Pass | **Met** |
+| 5 | 046-H snapshot-to-stream handoff protocol | Pass | **Met** |
+| 6 | 046-K Kafka provider Experimental | Pass | **Met** (fake; live skipped) |
+| 7 | 046-Q record-error policy + DLQ identity | Pass | **Met** |
+| 8 | 046-G schema-registry protocol Experimental | Pass | **Met** (fake; live skipped) |
+| 9 | 046-R continuous reports: watermark, lag, backpressure | Pass | **Met** |
+| 10 | 046-C envelope/state migration + rolling upgrade | Pass | **Met** (in-process fakes) |
+| 11 | Optimizer cannot expand/stream-rewrite without new proof kinds | Pass | **Met** (`PMOPT112`) |
+| 12 | Production allowlists fail closed; no payload in artifacts | Pass | **Met** |
+| 13 | No unresolved P0 in [FINDINGS_0_46](FINDINGS_0_46.md) | 0 | **Met** (P0 = 0) |
+| 14 | Release record: supported vs experimental | Pass | **Met** |
 
 ## Evidence map
 
 | Gate item | Evidence |
 |---|---|
 | Implementation plan | [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md) |
-| ADR | [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed) |
+| ADR | [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Accepted) |
 | Findings | [FINDINGS_0_46](FINDINGS_0_46.md) |
-| Conformance JSON | Planned at ship (not created in this freeze) |
-| Migration | Planned `MIGRATION_0_45_TO_0_46` at ship |
-| What's New | Planned `WHATS_NEW_0_46` at ship |
-| In-memory fixtures / Kafka / registry tests | Not started |
+| Conformance JSON | [streaming_conformance_0_46.json](streaming_conformance_0_46.json), [schema_registry_conformance_0_46.json](schema_registry_conformance_0_46.json), [kafka_fake_conformance_0_46.json](kafka_fake_conformance_0_46.json) |
+| Migration | [MIGRATION_0_45_TO_0_46](MIGRATION_0_45_TO_0_46.md) |
+| What's New | [WHATS_NEW_0_46](../01_GETTING_STARTED/WHATS_NEW_0_46.md) |
+| Tests | `uv run pytest tests/streaming tests/kafka tests/schemaregistry tests/optimization -q` |
+| Docs / agents | `uv run python scripts/check_docs.py`; `uv run python scripts/check_agent_guidance.py` |
+| Redaction | `tests/streaming/test_envelope_no_payload.py`; report JSON without fixture payloads |
+| Production allowlists | `tests/streaming/test_registry_trust.py`; empty production `schema_registry_allowlist` → `PMREG140` |
 
 ## Go / no-go
 
-**Not ready.** No scorecard row is Met. Do not bump package versions off
-`0.45.0` and do not describe 0.46 as Available.
-
-## Explicit non-claims
-
-- No Kafka client or Confluent registry in core
-- No universal stream cost model or cross-provider cost currency
-- No remote execution federation (0.47)
-- No AI-proposed optimizations or repairs (0.48)
-- No event payloads, source rows, or secrets in plans, reports, diagnostics,
-  audit, or fixtures
-- No inference of control flow from arbitrary Python branching
-- Optimization does not expand or stream-rewrite graphs until new proof kinds
-  exist (default remains baseline `off`)
+**Go — gate-ready for tag/publish.** Live Kafka (`046-K-01`) and live Confluent
+(`046-G-01`) remain explicitly deferred Experimental skips. Do not describe
+Kafka or the Confluent adapter as Available in core.

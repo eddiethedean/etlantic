@@ -4,9 +4,10 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.45.0** is the current published Planner and Optimization SDK line
-(**Beta**): advisory optimization passes, evidence/cost selection, explanation
-and shadow compare, and optimizer conformance. Prior **0.44** closed Developer
+**0.46.0** is the current gate-ready Streaming and event-driven pipelines line
+(**Beta**): bounded dynamic control, stream-time semantics, record-error policy,
+in-memory fixtures, and Experimental Kafka / schema-registry extras. Prior
+**0.45** closed the Planner and Optimization SDK. Prior **0.44** closed Developer
 Intelligence (LSP / IDE / notebooks). Prior **0.43** closed CP-GA
 multi-tenant graduation (Supported isolation profiles only). Prior **0.42**
 closed CP4. Milestones describe capability order, not release-date
@@ -18,7 +19,8 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
+| Current | 0.46 | Streaming and event-driven pipelines | [Gate-ready](EXIT_GATE_0_46.md) |
+| Previous | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
 | Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
 | Previous | 0.43 | First-class multi-tenant graduation (CP-GA) | [Released](EXIT_GATE_0_43.md) |
 | Previous | 0.42 | Policy / quotas / audit (CP4) | [Released](EXIT_GATE_0_42.md) |
@@ -27,7 +29,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.45 Optimization SDK published; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.46 Streaming gate-ready; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -310,8 +312,9 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.45](IMPLEMENTATION_PLAN_0_45.md):** planner and optimization SDK — [Released](EXIT_GATE_0_45.md)
 - **[0.46](IMPLEMENTATION_PLAN_0_46.md):** bounded dynamic mapping and control flow,
   streaming and event-driven pipelines, poison-record/DLQ policy, and
-  schema-registry interoperability — [planning freeze](EXIT_GATE_0_46.md)
-- **[0.47](IMPLEMENTATION_PLAN_0_47.md):** remote execution federation with Kubernetes and a managed Spark
+  schema-registry interoperability — [Gate-ready](EXIT_GATE_0_46.md)
+- **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
+  service plus remote execution federation with Kubernetes and a managed Spark
   reference provider
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed engineering
 - **[0.49](IMPLEMENTATION_PLAN_0_49.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
@@ -324,18 +327,23 @@ The roadmap does not reserve a 1.0 or 1.x phase.
 
 ## Post-foundation recovery and federation
 
-Durable execution hosts remain outside ETLantic core, while ETLantic supplies
-the portable evidence needed to recover safely:
+Durable execution hosts remain outside ETLantic core, while optional ETLantic
+service packages supply deployable scheduler and execution-host roles and the
+portable evidence needed to recover safely:
 
 - **0.41 / CP3 Incremental State and Reproducibility** adds a secret-free
   execution-attempt context, checkpoint/resume evidence, and normalized
   known/unknown external-effect outcomes.
-- **0.47 Remote Execution Federation** adds host-neutral recovery negotiation,
-  fenced attempt attribution, resumable observation, and conformance semantics
-  for retry, replay, repair, reconciliation, and manual review.
+- **0.47 FastAPI Scheduler/Runner Service and Remote Execution Federation** adds
+  durable schedule evaluation, separately supervised scheduler and execution
+  roles, host-neutral recovery negotiation, fenced attempt attribution,
+  resumable observation, and conformance semantics for retry, replay, repair,
+  reconciliation, and manual review.
 
-The queue, worker claim/lease store, heartbeat service, and scheduler leadership
-remain responsibilities of applications and orchestrator plugins. See
+Before 0.47, queue, worker, and scheduler leadership remain adopter-owned. The
+0.47 optional service provides reference implementations behind public provider
+contracts; applications and orchestrator plugins may continue replacing them.
+See
 [ETL Reliability and Recovery Plan](ETL_RELIABILITY_PLAN.md#durable-host-recovery-integration).
 
 ## Stable foundation at 0.37

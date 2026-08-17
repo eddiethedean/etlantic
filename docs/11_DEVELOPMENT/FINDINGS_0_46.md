@@ -1,7 +1,7 @@
 # Findings Ledger 0.46 — Streaming and Event-Driven Pipelines
 
-> **Status: Planning freeze** — not started. Open **P0 count is 0**.
-> ETLantic **0.45.0** remains the published line.
+> **Status: Closed for gate-ready 0.46.0.** Open **P0 count is 0**.
+> Live Kafka / live Confluent remain deferred Experimental skips.
 
 ## Severity policy
 
@@ -23,24 +23,24 @@ From [IMPLEMENTATION_PLAN_0_46](IMPLEMENTATION_PLAN_0_46.md) and
 | Kafka / registry | Optional Experimental packages | `etlantic-kafka`, `etlantic-schemaregistry` |
 | Payloads | Provider-owned storage only | Identifiers + bounded metadata in ETLantic |
 | Python branching | Not a plan surface | Explicit [DPCS](../05_PIPELINES/DPCS.md)-representable control flow |
-| Optimizer | Reject expansion/stream rewrite | Until new proof kinds; ADR-021 still off-by-default |
+| Optimizer | Reject unknown / expansion rewrite | `PMOPT112`; ADR-021 still off-by-default |
 | Production trust | `plugin_allowlist` + `schema_registry_allowlist` | Fail closed |
 
 ## Open findings
 
-Open **P0 count is 0** at planning freeze (no implementation yet).
+Open **P0 count is 0**.
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | No open P0 | — |
+| — | — | — | — | No open P0 | Redaction + identity tests in `tests/streaming` |
 
 ## P1 placeholders (implementation)
 
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
-| `046-K-01` | P1 | Connectors | Open | Kafka live-cluster vs fake/CI reference | Defer live broker to Experimental; in-memory first |
-| `046-G-01` | P1 | Connectors | Open | Confluent live registry vs wire-only protocol | Wire protocol in core; live adapter Experimental |
-| `046-O-01` | P1 | Optimization | Open | 0.45 passes must not expand/stream-rewrite | Fail closed until new proof kinds; [ADR-021](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md) |
+| `046-K-01` | P1 | Connectors | Deferred | Kafka live-cluster vs fake/CI reference | Live skipped unless `ETLANTIC_KAFKA_BOOTSTRAP`; FakeKafka in CI |
+| `046-G-01` | P1 | Connectors | Deferred | Confluent live registry vs wire-only protocol | Live skipped unless `ETLANTIC_SCHEMA_REGISTRY_URL`; FakeConfluentRegistry in CI |
+| `046-O-01` | P1 | Optimization | Closed | 0.45 passes must not expand/stream-rewrite | `PMOPT112` unknown-kind reject; `tests/streaming/test_runtime_0_46.py` |
 
 ## Soft-continue from prior phases
 

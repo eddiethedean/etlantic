@@ -1,27 +1,28 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.45.0 (published Beta).
-> Developer Intelligence (LSP / IDE / notebooks) is Available; CP-GA production
-> multi-tenant remains Supported only for isolation profiles graduated in 0.43.
-> `shared-service` remains Experimental.**
+> **Status: Shipped product docs describe ETLantic 0.46.0 (gate-ready Beta).
+> Streaming and bounded dynamic control are Supported in core; Kafka and
+> schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
+> notebooks) is Available; CP-GA production multi-tenant remains Supported
+> only for isolation profiles graduated in 0.43. `shared-service` remains
+> Experimental.**
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.45 can do now**, use
+    - To learn what **ETLantic 0.46 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
     - To understand **release order**, use the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md).
+    - To evaluate **0.46 streaming/dynamic-control evidence**, use the
+      [0.46 exit gate](EXIT_GATE_0_46.md), [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
+      [findings](FINDINGS_0_46.md), release notes, and tests.
     - To evaluate **0.45 planner/optimization evidence**, use the
       [0.45 exit gate](EXIT_GATE_0_45.md), [ADR-021](adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md),
       release notes, and tests.
-    - To evaluate **0.46 planning freeze** (not shipped), use the
-      [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md),
-      [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
-      [0.46 exit gate](EXIT_GATE_0_46.md), and [findings](FINDINGS_0_46.md).
     - To evaluate **CP-GA gate evidence**, use the
       [0.43 exit gate](EXIT_GATE_0_43.md), [support matrix](cp_ga_support_matrix_0_43.json),
       [traceability](cp_ga_traceability_0_43.json), release notes, and tests.
@@ -47,16 +48,17 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.45** Planner and Optimization SDK published line.
-Prior CP-GA evidence remains in **0.43**; CP4 evidence remains in **0.42**;
-CP3 evidence remains in **0.41**; CP2 evidence remains in **0.40**; CP1 evidence
-remains in **0.39**; connectivity evidence remains in **0.38**.
+Status is relative to the **0.46** Streaming and event-driven pipelines line.
+Prior Optimization SDK evidence remains in **0.45**; Developer Intelligence
+remains in **0.44**; CP-GA evidence remains in **0.43**; CP4 evidence remains in
+**0.42**; CP3 evidence remains in **0.41**; CP2 evidence remains in **0.40**;
+CP1 evidence remains in **0.39**; connectivity evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.45 Optimization SDK released; next 0.46+ | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
-| [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Current planning freeze — not started | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
-| [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) | Proposed | Core vs provider ownership; no payloads in artifacts | 0.46 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.46 Streaming gate-ready; next 0.47+ | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
+| [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md) | Gate-ready milestone | Dynamic control, streaming, Kafka/DLQ/registry | [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
+| [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) | Accepted | Core vs provider ownership; no payloads in artifacts | 0.46 |
 | [0.44 implementation plan](IMPLEMENTATION_PLAN_0_44.md) | Released milestone | LSP / IDE / static analysis | [EXIT_GATE_0_44](EXIT_GATE_0_44.md) |
 | [0.45 implementation plan](IMPLEMENTATION_PLAN_0_45.md) | Released milestone | Optimization-pass SDK | [EXIT_GATE_0_45](EXIT_GATE_0_45.md) |
 | [0.43 implementation plan](IMPLEMENTATION_PLAN_0_43.md) | Released milestone | CP-GA qualification / graduation | [EXIT_GATE_0_43](EXIT_GATE_0_43.md) |

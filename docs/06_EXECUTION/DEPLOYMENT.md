@@ -1,12 +1,12 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.45.0.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.46.0.** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
-| Topic | 0.45 |
+| Topic | 0.46 |
 |---|---|
 | Maturity | Beta (PyPI) |
 | Topology | Single trusted process / worker per runtime (reference); multi-tenant via Supported CP-GA profiles |
@@ -24,12 +24,15 @@ process boundaries.
 This reference model is suitable for one trusted application or worker per
 runtime. ETLantic 0.43 does not replace adopter-owned brokers or worker
 supervisors; optional CP3/CP4 control-plane stores coordinate accepted work across hosts.
+An optional FastAPI-fronted scheduler and execution-host service is planned for
+0.47; until it ships, scheduling, dispatch, and worker supervision remain
+adopter-owned.
 
 ## Reference topologies
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.45.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.46.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -53,7 +56,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.45.0`.
+1. Install `etlantic-prefect==0.46.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.

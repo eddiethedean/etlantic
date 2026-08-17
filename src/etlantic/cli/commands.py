@@ -13,6 +13,7 @@ from etlantic.cli import exit_codes as ec
 from etlantic.cli.cmds.compile import register_compile_commands
 from etlantic.cli.cmds.context import emit_payload, report_to_payload
 from etlantic.cli.cmds.erasure import register_erasure_commands
+from etlantic.cli.cmds.stream import register_stream_commands
 from etlantic.cli.context import get_cli_context
 from etlantic.plan.planner import plan_pipeline_with_report
 from etlantic.registry import PlanningContext
@@ -58,6 +59,7 @@ def register_commands(
 
     register_compile_commands(app, context_factory)
     register_erasure_commands(app)
+    register_stream_commands(app)
 
     @plugin_app.command("list")
     def plugin_list_cmd(

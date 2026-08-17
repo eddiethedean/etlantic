@@ -19,6 +19,7 @@ MANIFEST_PACKAGES = (
     "etlantic-prefect",
     "etlantic-datafusion",
     "etlantic-s3",
+    "etlantic-kafka",
     "etlantic-iceberg",
     "etlantic-snowflake",
 )

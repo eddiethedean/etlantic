@@ -1,6 +1,6 @@
 # Diagnostic-code stability tiers (0.37)
 
-> **Status: Available in ETLantic 0.45.0.** Foundation freeze inventory for
+> **Status: Available in ETLantic 0.46.0.** Foundation freeze inventory for
 > diagnostic **code families** (alphabetic prefix before the numeric suffix).
 > Machine-readable companion:
 > [`diagnostic-stability-tiers.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/diagnostic-stability-tiers.json)
@@ -38,6 +38,11 @@ notes. Exhaustive code→source index:
 | `PMPIPE` | stable | Pipeline topology and wiring |
 | `PMPLAN` | stable | Planning and capability resolution |
 | `PMPLUG` | stable | Plugin trust / allowlist / compatibility |
+| `PMOPT` | stable | Optimization-pass SDK (0.45) |
+| `PMDYN` | stable | Dynamic expansion / identity / bounds (0.46) |
+| `PMSTR` | stable | Stream semantics / handoff / backpressure (0.46) |
+| `PMDLQ` | stable | Record-error / dead-letter policy (0.46) |
+| `PMREG` | stable | Schema-registry identity / outage / allowlist (0.46) |
 | `PMQTY` | provisional | Portable quality (`etlantic.quality/1` still provisional) |
 | `PMSCHED` | stable | Scheduler / local run selection |
 | `PMSEC` | stable | Security policy (I/O, serialization, outbound) |
@@ -65,4 +70,4 @@ Every shipped code family under `src/etlantic` must appear in
 - [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Surface inventory](SURFACE_INVENTORY.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-045)
+- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-046)

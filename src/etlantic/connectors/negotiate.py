@@ -10,6 +10,8 @@ from etlantic.connectors.capabilities import (
     SOURCE_BATCH_SNAPSHOT,
     SOURCE_FILE_GLOB,
     SOURCE_INCREMENTAL_CURSOR,
+    SOURCE_STREAM,
+    SOURCE_WATERMARK,
     WRITE_APPEND,
     WRITE_MERGE,
     WRITE_OVERWRITE,
@@ -57,6 +59,13 @@ _KNOWN_SOURCE_CAPS: dict[str, frozenset[str]] = {
             "idempotency",
         }
     ),
+    "kafka": frozenset(
+        {
+            SOURCE_STREAM,
+            SOURCE_WATERMARK,
+            "idempotency",
+        }
+    ),
 }
 
 _KNOWN_SINK_CAPS: dict[str, frozenset[str]] = {
@@ -101,6 +110,15 @@ _KNOWN_SINK_CAPS: dict[str, frozenset[str]] = {
             "idempotency",
         }
     ),
+    "kafka": frozenset(
+        {
+            "sink.stream",
+            "sink.exactly_once",
+            "transactions",
+            "publication.atomic",
+            "idempotency",
+        }
+    ),
 }
 
 _MODE_TO_SOURCE_CAP: dict[str, str] = {
@@ -108,6 +126,8 @@ _MODE_TO_SOURCE_CAP: dict[str, str] = {
     "batch_snapshot": SOURCE_BATCH_SNAPSHOT,
     "incremental": SOURCE_INCREMENTAL_CURSOR,
     "incremental_cursor": SOURCE_INCREMENTAL_CURSOR,
+    "stream": SOURCE_STREAM,
+    "streaming": SOURCE_STREAM,
 }
 
 _MODE_TO_SINK_CAP: dict[str, str] = {

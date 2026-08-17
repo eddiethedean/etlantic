@@ -245,6 +245,15 @@ class PipelineRunReport:
             "metadata": dict(self.metadata),
         }
 
+    def stream_operations(self) -> Any:
+        """Return namespaced stream-operations snapshot when present."""
+        from etlantic.reports.streaming import STREAM_OPS_KEY, StreamOperationsSnapshot
+
+        raw = self.metadata.get(STREAM_OPS_KEY)
+        if not isinstance(raw, dict):
+            return None
+        return StreamOperationsSnapshot.from_dict(raw)
+
     def to_json(self, *, indent: int | None = 2) -> str:
         import json
 

@@ -30,6 +30,8 @@ REFERENCE_PACKAGES = ("etlantic-fastapi", "etlantic-lsp")
 EXPERIMENTAL_PACKAGES = (
     "etlantic-datafusion",
     "etlantic-s3",
+    "etlantic-kafka",
+    "etlantic-schemaregistry",
     "etlantic-iceberg",
     "etlantic-snowflake",
     "etlantic-openlineage",

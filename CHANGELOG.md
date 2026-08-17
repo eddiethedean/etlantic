@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-08-17
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.45.x` or plugins with `<0.46` |
+| Breaking | Dependency floor becomes `etlantic>=0.46.0,<0.47` (streaming / dynamic-control line) |
+| Upgrade | `pip install 'etlantic==0.46.0'` and matching plugins / `medallantic==0.46.0`. See [Migration 0.45 → 0.46](docs/11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
+| Rollback | Re-pin 0.45.0 minors together |
+| Security | Plans/reports never contain event payloads; production `plugin_allowlist` and `schema_registry_allowlist` fail closed |
+
+### Added
+
+- `etlantic.streaming` core SDK: bounded expansion, stream-time semantics, envelope metadata, record-error policy, in-memory fixtures ([ADR-022](docs/11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md))
+- `NodeKind` values `map`, `reduce`, `conditional`, `failure`, `compensation` with `PMDYN*` bounds
+- `Profile.schema_registry_allowlist` and core `etlantic.schema-registry/1` protocol (`PMREG*`)
+- CLI `etlantic stream` (`dead-letters inspect`, `redrive plan`, `schemas check`)
+- Experimental packages `etlantic-kafka` (FakeKafka) and `etlantic-schemaregistry` (FakeConfluentRegistry)
+- `etlantic.testing.run_streaming_conformance_suite` and `run_schema_registry_conformance_suite`
+- Continuous report snapshot fields (watermark, lag, backpressure, rejected record ids)
+
+### Changed
+
+- Lockstep official plugins and Medallantic to `0.46.0` (`etlantic>=0.46.0,<0.47`)
+- Optimizer `select_candidates` rejects unknown rewrite kinds (`PMOPT112`)
+- Compilers reject map/branch/stream plans they cannot preserve (`PMDYN130`)
+
 ## [0.45.0] - 2026-08-05
 
 ### Adopter summary
@@ -1749,6 +1777,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.46.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.46.0
 [0.45.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.45.0
 [0.44.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.44.0
 [0.43.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.43.0

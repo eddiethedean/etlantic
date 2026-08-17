@@ -1,0 +1,12 @@
+{
+  "schema": "etlantic.kafka.fake-conformance-report/1",
+  "release": "0.46.0",
+  "adapter": "FakeKafka",
+  "live_required": false,
+  "checks": {
+    "fake_produce_fetch": "pass",
+    "txn_commit_abort": "pass",
+    "live_skipped_unless_ETLANTIC_KAFKA_BOOTSTRAP": "pass"
+  },
+  "passed": true
+}

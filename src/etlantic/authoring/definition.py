@@ -265,7 +265,7 @@ class NodeDefinition:
     """A node in an unresolved pipeline definition."""
 
     name: str
-    kind: str  # source | step | sink | subpipeline
+    kind: str  # source | step | sink | subpipeline | map | reduce | conditional | failure | compensation
     identity: str
     asset: str | None = None
     contract_id: str | None = None

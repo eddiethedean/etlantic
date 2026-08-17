@@ -16,7 +16,7 @@ and ``__version__``.
 Lazy namespaces (import-safe; no optional engines until accessed):
 ``transform``, ``dataframe``, ``sql``, ``spark``, ``orchestration``, ``viz``,
 ``secrets``, ``testing``, ``quality``, ``connectors``, ``service``,
-``control_plane``, and ``optimization`` (for example ``etl.sql`` after
+``control_plane``, ``optimization``, and ``streaming`` (for example ``etl.sql`` after
 ``import etlantic as etl``).
 
 ``from etlantic import Data, Pipeline`` and public submodule imports remain
@@ -86,6 +86,7 @@ _LAZY_NAMESPACES: dict[str, str] = {
     "connectors": "etlantic.connectors",
     "control_plane": "etlantic.control_plane",
     "optimization": "etlantic.optimization",
+    "streaming": "etlantic.streaming",
 }
 
 # Demoted root aliases were removed in 0.37.0 (see _REMOVED_0_37).

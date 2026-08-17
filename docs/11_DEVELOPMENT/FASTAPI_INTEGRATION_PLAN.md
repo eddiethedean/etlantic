@@ -6,8 +6,10 @@
 > multi-tenant is Available for `isolated-deployment` / `dedicated-schema`;
 > `shared-service` remains Experimental; community **non-SLA**.
 >
-> **Current 0.45 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
+> **Current 0.46 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
+> Phase 0.47 adds separately supervised scheduler and execution-host service
+> roles behind this gateway; it does not run either role in an ASGI worker.
 > Continuous directory watchers are not in core. Reliability stubs remain
 > `experimental: true` unless a history store is injected.
 >
@@ -405,3 +407,7 @@ depending on their internals.
 > FastAPI exposes ETLantic's typed control plane. It does not become the
 > pipeline runtime, scheduler, tenant-isolation boundary for Python execution,
 > or source of pipeline semantics.
+
+The optional 0.47 scheduler/runner service preserves this principle: FastAPI is
+the control surface, while dedicated scheduler and execution-host processes own
+timer evaluation and pipeline execution against shared durable providers.

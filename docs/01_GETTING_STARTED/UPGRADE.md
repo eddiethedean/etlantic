@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.45.0 (published Beta).**
+> **Status: Available in ETLantic 0.46.0 (published Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,13 +13,14 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.45.0** (published Beta) — choose your guide:
+**ETLantic 0.46.0** (gate-ready Beta) — choose your guide:
 
-| From version | Ordered path to 0.45 |
+| From version | Ordered path to 0.46 |
 |---|---|
-| 0.45.x | Already current |
-| 0.44.x | [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
-| 0.43.x | [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
+| 0.46.x | Already current |
+| 0.45.x | [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
+| 0.44.x | [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) → [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
+| 0.43.x | [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) → [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | 0.42.x | [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) → [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
 | 0.41.x | [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) → [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) → [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
 | 0.40.x | [0.40 → 0.41](../11_DEVELOPMENT/MIGRATION_0_40_TO_0_41.md) → [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) → [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) → [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
@@ -76,7 +77,8 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
 | 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
-| 0.44 → 0.45 | Planner and optimization SDK; plugin floor `etlantic>=0.45.0,<0.46` |
+| 0.45 → 0.46 | Streaming and dynamic control; plugin floor `etlantic>=0.46.0,<0.47` |
+| 0.44 → 0.45 | Planner and optimization SDK; plugin floor `etlantic>=0.46.0,<0.47` |
 | 0.43 → 0.44 | Developer Intelligence (LSP / IDE / notebooks); plugin floor `etlantic>=0.44.0,<0.45` |
 | 0.42 → 0.43 | CP-GA Supported-profile multi-tenant (published Beta; community non-SLA); plugin floor `etlantic>=0.43.0,<0.44` |
 | 0.41 → 0.42 | CP4 policy / quotas / audit (published Beta); plugin floor `etlantic>=0.42.0,<0.43` |
@@ -88,6 +90,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.45 → 0.46 | [MIGRATION_0_45_TO_0_46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | 0.44 → 0.45 | [MIGRATION_0_44_TO_0_45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
 | 0.43 → 0.44 | [MIGRATION_0_43_TO_0_44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) |
 | 0.41 → 0.42 | [MIGRATION_0_41_TO_0_42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) |
@@ -283,11 +286,22 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
+## 0.46 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.46.0` and matching plugins / `medallantic==0.46.0` | Mix 0.45 plugins with a 0.46 core |
+| Keep production `plugin_allowlist` and, if used, `schema_registry_allowlist` explicit | Load Kafka/registry adapters in production with empty allowlists |
+| Treat Kafka and Confluent extras as Experimental fakes-first | Put event payloads into plans, reports, or `etlantic stream` output |
+| Keep `optimization_policy` at `off` unless you accept unknown-kind reject (`PMOPT112`) | Expect compilers to flatten map/branch into a static DAG |
+
+See [Migration 0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md).
+
 ## 0.45 configuration cheat sheet
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.45.0` and matching plugins / `medallantic==0.45.0` | Mix 0.44 plugins with a 0.45 core |
+| Pin `etlantic==0.46.0` and matching plugins / `medallantic==0.46.0` | Mix 0.44 plugins with a 0.45 core |
 | Keep `optimization_policy` at `off` or `shadow` until ready | Apply optimizations in production without allowlisting passes |
 | Allowlist optimization passes in production | Rely on empty `optimization_pass_allowlist` under `security_mode=production` |
 

@@ -23,6 +23,7 @@ PUBLIC_CLI_COMMANDS = (
     "viz",
     "report",
     "watch",
+    "stream",
 )
 
 PUBLIC_SDK_IMPORTS = (
@@ -37,6 +38,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.connectors",
     "etlantic.control_plane",
     "etlantic.optimization",
+    "etlantic.streaming",
 )
 
 SECURITY_RULES = (
@@ -44,6 +46,8 @@ SECURITY_RULES = (
     "Production profiles require Profile.plugin_allowlist and fail closed.",
     "Production profiles that enable optimization require "
     "Profile.optimization_pass_allowlist and fail closed.",
+    "Production profiles that enable schema-registry adapters require "
+    "Profile.schema_registry_allowlist and fail closed.",
     "Schema history stores fingerprints/metadata only — never source rows.",
     "Prefer public SDK imports; do not rely on private underscore modules.",
     "Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.",
@@ -111,20 +115,21 @@ def render_claude_md() -> str:
 
 
 def render_codex_skill_md() -> str:
-    return """---
+    cmds = ", ".join(f"`{c}`" for c in PUBLIC_CLI_COMMANDS)
+    sdk = ", ".join(
+        f"`{imp}`" if i == 0 else f"`.{imp.removeprefix('etlantic.')}`"
+        for i, imp in enumerate(PUBLIC_SDK_IMPORTS)
+    )
+    return f"""---
 name: etlantic
 description: Validate, plan, compile, and generate ETLantic pipelines safely.
 ---
 
 # ETLantic skill
 
-Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`,
-`profile`, `run`, `compile`, `generate`, `diff`, `plugin`, `schema`,
-`reliability`, `erasure`, `viz`, `report`, `watch`) and
+Use public CLI commands ({cmds}) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
-public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`,
-`.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`,
-`.optimization`).
+public SDK imports ({sdk}).
 
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.
@@ -147,7 +152,7 @@ globs:
 
 # ETLantic
 
-- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization.
+- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization, streaming.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.

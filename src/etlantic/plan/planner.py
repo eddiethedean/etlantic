@@ -560,6 +560,9 @@ def _build_plan(
         },
         "etlantic.quality": quality_plan,
     }
+    from etlantic.streaming.plan_meta import plan_overlay_from_graph
+
+    plan_metadata.update(plan_overlay_from_graph(graph, plan_id=graph.pipeline_id))
     if definition is not None:
         plan_metadata.update(
             namespaced_extension_items(

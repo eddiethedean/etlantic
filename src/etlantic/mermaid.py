@@ -39,6 +39,16 @@ def _node_label(name: str, kind: NodeKind, transformation_name: str | None) -> s
         return f"Load: {name}"
     if kind is NodeKind.SUBPIPELINE:
         return f"Subpipeline: {name}"
+    if kind is NodeKind.MAP:
+        return f"Map: {name}"
+    if kind is NodeKind.REDUCE:
+        return f"Reduce: {name}"
+    if kind is NodeKind.CONDITIONAL:
+        return f"Conditional: {name}"
+    if kind is NodeKind.FAILURE:
+        return f"Failure: {name}"
+    if kind is NodeKind.COMPENSATION:
+        return f"Compensation: {name}"
     if transformation_name:
         return f"{name}\\n({transformation_name})"
     return name

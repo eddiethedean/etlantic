@@ -1,6 +1,6 @@
 # Rollback and recovery
 
-> **Status: Available in ETLantic 0.45.0.** Operator checklist for pinned
+> **Status: Available in ETLantic 0.46.0.** Operator checklist for pinned
 > package rollback, re-validate / re-plan, workspace backup, and failed deploy
 > recovery. Single-tenant Beta envelope only.
 

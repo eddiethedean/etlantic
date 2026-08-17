@@ -170,6 +170,23 @@ def pipeline_to_dpcs(
                     for key, value in sorted(member.parameters.items())
                 ]
             steps.append(step_entry)
+        else:
+            from etlantic.streaming.control import is_control_kind
+
+            if is_control_kind(node.kind):
+                steps.append(
+                    {
+                        "id": node.name,
+                        "type": f"etlantic:{node.kind.value}",
+                        "etlantic:controlKind": node.kind.value,
+                        "etlantic:identity": node.identity,
+                        "inputs": [{"id": p.name, "role": p.role} for p in node.inputs],
+                        "outputs": [
+                            {"id": p.name, "role": p.role} for p in node.outputs
+                        ],
+                        "metadata": dict(node.metadata),
+                    }
+                )
 
     for edge in graph.edges:
         producer_node = graph.node_map()[edge.producer_node]

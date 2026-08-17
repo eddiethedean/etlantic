@@ -5,6 +5,8 @@ from __future__ import annotations
 # Landing-zone / local source (required tokens)
 SOURCE_BATCH_SNAPSHOT = "source.batch_snapshot"
 SOURCE_INCREMENTAL_CURSOR = "source.incremental_cursor"
+SOURCE_STREAM = "source.stream"
+SOURCE_WATERMARK = "source.watermark"
 SOURCE_FILE_GLOB = "source.file_glob"
 FORMAT_CSV = "format.csv"
 IDEMPOTENCY = "idempotency"
@@ -23,6 +25,8 @@ WRITE_MERGE = "write.merge"
 WRITE_UPSERT = "write.upsert"
 WRITE_SKIP_IF_EXISTS = "write.skip_if_exists"
 WRITE_PARTITION_REPLACE = "write.partition_replace"
+SINK_EXACTLY_ONCE = "sink.exactly_once"
+SINK_STREAM = "sink.stream"
 
 PUBLICATION_ATOMIC = "publication.atomic"
 TRANSACTIONS = "transactions"
@@ -32,6 +36,8 @@ CONNECTOR_CAPABILITY_VOCABULARY: frozenset[str] = frozenset(
     {
         SOURCE_BATCH_SNAPSHOT,
         SOURCE_INCREMENTAL_CURSOR,
+        SOURCE_STREAM,
+        SOURCE_WATERMARK,
         SOURCE_FILE_GLOB,
         FORMAT_CSV,
         IDEMPOTENCY,
@@ -47,6 +53,8 @@ CONNECTOR_CAPABILITY_VOCABULARY: frozenset[str] = frozenset(
         WRITE_UPSERT,
         WRITE_SKIP_IF_EXISTS,
         WRITE_PARTITION_REPLACE,
+        SINK_EXACTLY_ONCE,
+        SINK_STREAM,
         PUBLICATION_ATOMIC,
         TRANSACTIONS,
         RECONCILIATION,
@@ -72,6 +80,8 @@ __all__ = [
     "LOCAL_FILES_CAPABILITIES",
     "PUBLICATION_ATOMIC",
     "RECONCILIATION",
+    "SINK_EXACTLY_ONCE",
+    "SINK_STREAM",
     "SOURCE_BATCH_SNAPSHOT",
     "SOURCE_FILE_GLOB",
     "SOURCE_INCREMENTAL_CURSOR",
@@ -80,6 +90,8 @@ __all__ = [
     "SOURCE_PROJECTION_PUSHDOWN",
     "SOURCE_SCHEMA_DISCOVERY",
     "SOURCE_STATISTICS_BOUNDED",
+    "SOURCE_STREAM",
+    "SOURCE_WATERMARK",
     "TRANSACTIONS",
     "WRITE_APPEND",
     "WRITE_MERGE",

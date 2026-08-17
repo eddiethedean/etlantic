@@ -1,7 +1,7 @@
 # Public Surface Inventory (0.40)
 
-> **Status: Available in ETLantic 0.45.0.** Canonical public surface for the
-> **0.45 reference envelope**.
+> **Status: Available in ETLantic 0.46.0.** Canonical public surface for the
+> **0.46 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,7 +10,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.45 reference envelope |
+| `stable` | Supported within the documented 0.46 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a stable-foundation obligation |
 | `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
@@ -139,7 +139,7 @@ Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.45.0`). Details:
+Pin to the same minor as core (`==0.46.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

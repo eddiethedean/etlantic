@@ -1,7 +1,7 @@
 # ADR-022: Dynamic Control and Streaming Ownership
 
 Date: 2026-08-17
-Status: Proposed (design freeze for ETLantic **0.46**; Accepted only at ship)
+Status: Accepted (ETLantic **0.46.0** gate-ready)
 
 ## Context
 
@@ -70,8 +70,8 @@ closed; default `optimization_policy` stays `off`.
 
 ## Consequences
 
-- DPCS integration notes describe expansion/stream nodes as **Future / 0.46**,
-  not Available.
+- DPCS integration notes describe expansion/stream **core types** as Supported
+  in 0.46; Kafka and live registry adapters remain Experimental.
 - In-memory fixtures prove identity, bounds, and handoff before Kafka.
 - Compilers that cannot preserve declared control flow reject the plan before
   emitting artifacts.
@@ -93,8 +93,7 @@ closed; default `optimization_policy` stays `off`.
 - Additive plan/report fields when implemented; wire family remains `/1` unless
   a schema bump is separately versioned.
 - No public API or package version change in this planning freeze.
-- Official plugins stay on the published 0.45 line until 0.46 implementation
-  begins.
+- Official plugins lockstep to `0.46.0` (`etlantic>=0.46.0,<0.47`).
 
 ## See also
 

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-lsp"
-version = "0.45.0"
+version = "0.46.0"
 description = "Language server for ETLantic pipelines (editor-neutral LSP host)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.45.0,<0.46",
+    "etlantic>=0.46.0,<0.47",
     "pygls>=1.3,<2",
     "lsprotocol>=2023.0.1",
 ]

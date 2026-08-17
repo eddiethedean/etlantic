@@ -19,18 +19,14 @@ released.
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
-## Next phase (planning)
-
-0.46 is a **planning freeze — not started**. Do not treat these pages as
-Available product docs. The published line remains 0.45.0.
-
-- [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md)
-- [Exit gate 0.46](EXIT_GATE_0_46.md)
-- [Findings ledger 0.46](FINDINGS_0_46.md)
-- [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Proposed)
-
 ## Current migrations and exit gates
 
+- [Migration 0.45 → 0.46](MIGRATION_0_45_TO_0_46.md) (Gate-ready — Streaming and Dynamic Control)
+- [Exit gate 0.46](EXIT_GATE_0_46.md) (Gate-ready — Streaming and Dynamic Control)
+- [Findings ledger 0.46](FINDINGS_0_46.md)
+- [0.46 implementation plan](IMPLEMENTATION_PLAN_0_46.md)
+- [ADR-022: Dynamic control and streaming](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) (Accepted)
+- [What's new in 0.46](../01_GETTING_STARTED/WHATS_NEW_0_46.md) (Gate-ready)
 - [Migration 0.44 → 0.45](MIGRATION_0_44_TO_0_45.md) (Released — Planner and Optimization SDK)
 - [Exit gate 0.45](EXIT_GATE_0_45.md) (Released — Planner and Optimization SDK)
 - [Findings ledger 0.45](FINDINGS_0_45.md)
@@ -167,10 +163,10 @@ available through the [archive index](ARCHIVE_INDEX.md).
 
 Assigned post-control-plane reliability work includes portable delivery
 objectives and governed erasure in
-[0.42](IMPLEMENTATION_PLAN_0_42.md), followed by bounded dynamic control flow,
-streaming dead-letter policy, and schema-registry interoperability in
-[0.46](IMPLEMENTATION_PLAN_0_46.md). These are planned capabilities, not claims
-about the shipped 0.38 package.
+[0.42](IMPLEMENTATION_PLAN_0_42.md). Bounded dynamic control, stream
+contracts, and Experimental Kafka / schema-registry extras are
+[0.46](IMPLEMENTATION_PLAN_0_46.md) (gate-ready — not a claim about the
+older 0.38 package).
 
 The [Documentation Status](../02_FOUNDATIONS/DOCUMENTATION_STATUS.md) chapter
 defines how design examples, proposals, and normative requirements should be

@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, get_args, runtime_checkable
 
 from etlantic.optimization.diagnostics import optimization_diagnostic
 from etlantic.optimization.evidence import EvidenceStore
-from etlantic.optimization.protocol import OptimizationCandidate
+from etlantic.optimization.protocol import OptimizationCandidate, RewriteKind
 from etlantic.plan.model import PipelinePlan
+
+_KNOWN_REWRITE_KINDS = frozenset(get_args(RewriteKind))
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,6 +294,27 @@ def select_candidates(
         )
 
     for candidate in candidates:
+        if candidate.rewrite_kind not in _KNOWN_REWRITE_KINDS:
+            diagnostics.append(
+                optimization_diagnostic(
+                    "unknown_rewrite_kind",
+                    (
+                        f"Rewrite kind {candidate.rewrite_kind!r} is not a known "
+                        "optimization kind; expansion/stream rewrites are rejected"
+                    ),
+                    severity="error",
+                    path=("optimization", "rewrite", candidate.candidate_id),
+                    metadata={"rewrite_kind": candidate.rewrite_kind},
+                )
+            )
+            scored.append(
+                _reject_candidate(
+                    candidate,
+                    reason=f"unknown rewrite kind {candidate.rewrite_kind!r}",
+                )
+            )
+            continue
+
         if stats.conflicting_subjects and candidate.decision != "rejected":
             scored.append(
                 _reject_candidate(

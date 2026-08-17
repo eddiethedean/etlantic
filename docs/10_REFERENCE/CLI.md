@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.45.0.** This page documents the commands
+> **Status: Available in ETLantic 0.46.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -297,6 +297,21 @@ python -m etlantic schema acknowledge orders --note "accepted additive column"
 `monitor` writes an observation into file history. `acknowledge` accepts a
 known drift subject for subsequent checks.
 
+## `stream`
+
+Metadata-only dead-letter and schema-registry operations. Never prints event
+payloads; unauthorized principals exit `11` (`TRUST_FAILURE`).
+
+```bash
+python -m etlantic stream dead-letters inspect --store dlq.json --principal ops
+python -m etlantic stream redrive plan --store dlq.json --identity rec-1 --principal ops
+python -m etlantic stream schemas check --subject orders-value --fingerprint abc123
+```
+
+`inspect` and `redrive plan` read identifier documents. Store JSON that
+contains payload keys is rejected (`INVALID_MODEL`). Production registry
+adapters require `Profile.schema_registry_allowlist`.
+
 ## `reliability`
 
 Subcommands: `freshness`, `partition-check`, `repair-explain`,
@@ -432,7 +447,7 @@ in addition to exit codes.
 
 | Command | Mutates workspace? |
 |---|---|
-| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor`, `watch` | No (read-only analysis) |
+| `validate`, `inspect`, `plan`, `diff`, `plugin`, `doctor`, `watch`, `stream` | No (read-only analysis / metadata) |
 | `viz lineage` | No (read-only; prints to stdout) |
 | `viz dot` | Writes only when `-o` / `--output` is set; otherwise stdout |
 | `viz html` | Writes `lineage.html` by default (`-o` overrides the path) |

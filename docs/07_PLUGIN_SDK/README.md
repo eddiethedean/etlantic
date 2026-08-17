@@ -1,6 +1,6 @@
 # Plugin SDK
 
-> **Status: Available in ETLantic 0.45.0.**
+> **Status: Available in ETLantic 0.46.0.**
 
 !!! tip "Start here when creating a plugin"
     Follow [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md) for the canonical
@@ -137,6 +137,8 @@ The SDK supports plugin categories such as:
 - Resource providers
 - Secret providers
 - Registry plugins
+- Streaming connectors ([Streaming connectors](STREAMING_CONNECTORS.md))
+- Schema-registry adapters ([Schema registry](SCHEMA_REGISTRY.md))
 - Observability providers
 - Future extension types
 
