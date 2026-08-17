@@ -91,3 +91,98 @@ def test_cli_payload_store_rejected(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code != 0
+
+
+def _schema_store(tmp_path: Path, *, fingerprint: str = "abc123") -> Path:
+    path = tmp_path / "registry.json"
+    path.write_text(
+        json.dumps(
+            {
+                "subjects": {
+                    "orders-value": [
+                        {
+                            "version": 1,
+                            "format": "json_schema",
+                            "fingerprint": fingerprint,
+                            "compatibility": "backward",
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_cli_schemas_check_requires_store_and_does_not_register(
+    tmp_path: Path,
+) -> None:
+    store = _schema_store(tmp_path, fingerprint="abc123")
+    runner = CliRunner()
+    missing = runner.invoke(
+        app,
+        [
+            "stream",
+            "schemas",
+            "check",
+            "--subject",
+            "orders-value",
+            "--fingerprint",
+            "abc123",
+        ],
+    )
+    assert missing.exit_code != 0
+    ok = runner.invoke(
+        app,
+        [
+            "stream",
+            "schemas",
+            "check",
+            "--store",
+            str(store),
+            "--subject",
+            "orders-value",
+            "--fingerprint",
+            "abc123",
+        ],
+    )
+    assert ok.exit_code == 0
+    payload = json.loads(ok.stdout)
+    assert payload["ok"] is True
+    incompatible = runner.invoke(
+        app,
+        [
+            "stream",
+            "schemas",
+            "check",
+            "--store",
+            str(store),
+            "--subject",
+            "orders-value",
+            "--fingerprint",
+            "other-fingerprint",
+        ],
+    )
+    assert incompatible.exit_code == 10
+    bad = json.loads(incompatible.stdout)
+    assert bad["ok"] is False
+    assert bad["diagnostic"] == "PMREG100"
+    unknown = runner.invoke(
+        app,
+        [
+            "stream",
+            "schemas",
+            "check",
+            "--store",
+            str(store),
+            "--subject",
+            "missing-subject",
+            "--fingerprint",
+            "abc123",
+        ],
+    )
+    assert unknown.exit_code == 10
+    missing_subject = json.loads(unknown.stdout)
+    assert missing_subject["ok"] is False
+    assert missing_subject["diagnostic"] == "PMREG110"
