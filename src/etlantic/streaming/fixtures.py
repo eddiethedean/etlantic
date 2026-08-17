@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -204,19 +205,45 @@ class InMemoryTriggerQueue:
         }
 
 
-def collect_report_json(*parts: MappingLike) -> dict[str, Any]:
-    """Merge fixture report fields and assert no payload keys."""
-    from etlantic.streaming.envelope import assert_no_payload
+_REPORT_FORBIDDEN_TOKENS = ("payload", "secret")
 
+
+def _reject_forbidden_report_tokens(value: Any) -> None:
+    if isinstance(value, Mapping):
+        from etlantic.streaming.envelope import assert_no_payload
+
+        assert_no_payload(value)
+        for key, nested in value.items():
+            lowered = str(key).lower()
+            hits = [tok for tok in _REPORT_FORBIDDEN_TOKENS if tok in lowered]
+            if hits:
+                raise ValueError(
+                    "Change envelopes must not contain event payloads; "
+                    f"forbidden tokens in report keys: {', '.join(hits)}"
+                )
+            _reject_forbidden_report_tokens(nested)
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_forbidden_report_tokens(item)
+        return
+    if isinstance(value, str):
+        lowered = value.lower()
+        hits = [tok for tok in _REPORT_FORBIDDEN_TOKENS if tok in lowered]
+        if hits:
+            raise ValueError(
+                "Change envelopes must not contain event payloads; "
+                f"forbidden tokens in report values: {', '.join(hits)}"
+            )
+
+
+def collect_report_json(*parts: MappingLike) -> dict[str, Any]:
+    """Merge fixture report fields and fail closed on payload or secret tokens."""
     merged: dict[str, Any] = {}
     for part in parts:
         data = part.report_fields() if hasattr(part, "report_fields") else dict(part)
         merged.update(data)
-    assert_no_payload(merged)
-    text = str(merged)
-    for forbidden in ("payload", "secret"):
-        if forbidden in text.lower() and "etlantic." not in forbidden:
-            pass
+    _reject_forbidden_report_tokens(merged)
     return merged
 
 

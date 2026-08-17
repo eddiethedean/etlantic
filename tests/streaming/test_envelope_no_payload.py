@@ -37,3 +37,14 @@ def test_forbidden_payload_keys() -> None:
                 "body": "nope",
             }
         )
+
+
+def test_collect_report_json_rejects_payload_tokens_in_values() -> None:
+    from etlantic.streaming.fixtures import collect_report_json
+
+    clean = collect_report_json({"etlantic.streaming.lag": 1})
+    assert clean["etlantic.streaming.lag"] == 1
+    with pytest.raises(ValueError, match="payload"):
+        collect_report_json({"etlantic.streaming.row": "payload=secret-row"})
+    with pytest.raises(ValueError, match="secret"):
+        collect_report_json({"secret_token": "ok"})
