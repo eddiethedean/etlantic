@@ -123,7 +123,11 @@ wheel). Build with `npm run package` after `npm install`.
    public, prefer a new patch version rather than moving the tag.
 10. If a prior tag’s publish job was cancelled mid-way before any public
     consumers rely on it, re-run that job until remaining packages land, or
-    cut a new patch version.
+    cut a new patch version. For a partial PyPI upload blocked by
+    `429 Too many new projects created`, dispatch **Release** with the existing
+    tag (`workflow_dispatch`, input `tag=vX.Y.Z`). Existing projects upload
+    first and skip already-present files; the GitHub Release is created before
+    remaining new names. Re-run later for any new project still rate-limited.
 
 ## Tag and publish (`X.Y.Z` example)
 

@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Git tag to publish remaining artifacts for (vX.Y.Z)
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,16 +19,22 @@ permissions:
 jobs:
   checks:
     name: Checks
+    if: github.event_name == 'push'
     uses: ./.github/workflows/checks.yml
 
   publish:
     name: Publish to PyPI
     needs: checks
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.checks.result == 'success')
     runs-on: ubuntu-latest
     environment: pypi
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
@@ -34,7 +46,7 @@ jobs:
 
       - name: Verify tag matches package version
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
           VERSION="$(uv version --short)"
           MODULE_VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/etlantic/_version.py)"
           POLARS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-polars/pyproject.toml | head -1)"
@@ -140,7 +152,7 @@ jobs:
 
       - name: Smoke test core wheel
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
           WHEEL="dist/etlantic-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project --with "$WHEEL" \
             python -c "
@@ -157,7 +169,7 @@ jobs:
 
       - name: Smoke discover plugins on installed wheels
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
           CORE="dist/etlantic-${TAG}-py3-none-any.whl"
           POLARS="dist/etlantic_polars-${TAG}-py3-none-any.whl"
           PANDAS="dist/etlantic_pandas-${TAG}-py3-none-any.whl"
@@ -244,7 +256,7 @@ jobs:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
 
           # Prefer short-lived Trusted Publishing (OIDC). Fall back to the
           # repository token only when OIDC is not configured for a project.
@@ -387,9 +399,6 @@ jobs:
           publish_pair etlantic-k8s \
             "dist/etlantic_k8s-${TAG}-py3-none-any.whl" \
             "dist/etlantic_k8s-${TAG}.tar.gz"
-          publish_pair etlantic-spark-connect \
-            "dist/etlantic_spark_connect-${TAG}-py3-none-any.whl" \
-            "dist/etlantic_spark_connect-${TAG}.tar.gz"
           publish_pair etlantic-schemaregistry \
             "dist/etlantic_schemaregistry-${TAG}-py3-none-any.whl" \
             "dist/etlantic_schemaregistry-${TAG}.tar.gz"
@@ -408,7 +417,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${RELEASE_TAG}"
           VER="${TAG#v}"
           python3 - "$VER" <<'PY' > /tmp/release-notes.md
           import re
@@ -441,3 +450,62 @@ jobs:
               --notes-file /tmp/release-notes.md \
               "${assets[@]}"
           fi
+
+      - name: Publish remaining new PyPI projects
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${RELEASE_TAG#v}"
+          RETRY_BASE_SECONDS=60
+          pypi_project_exists() {
+            local code
+            code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/$1/json")"
+            [ "$code" = "200" ]
+          }
+          pypi_version_exists() {
+            local code
+            code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/$1/$2/json")"
+            [ "$code" = "200" ]
+          }
+          name="etlantic-spark-connect"
+          wheel="dist/etlantic_spark_connect-${TAG}-py3-none-any.whl"
+          sdist="dist/etlantic_spark_connect-${TAG}.tar.gz"
+          if pypi_version_exists "$name" "$TAG"; then
+            echo "Already published; verified on PyPI: ${name}==${TAG}"
+            exit 0
+          fi
+          attempt=1
+          max_attempts=5
+          delay="$RETRY_BASE_SECONDS"
+          while true; do
+            echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
+            set +e
+            log="$(uv publish --trusted-publishing always --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
+            status=$?
+            if [ "$status" -ne 0 ] && [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+              echo "OIDC publish unavailable; falling back to token for $name"
+              log="$(uv publish --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
+              status=$?
+            fi
+            set -e
+            printf '%s\n' "$log"
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if printf '%s' "$log" | grep -Eiq 'file already exists|already uploaded|skipping.*already'; then
+              if pypi_version_exists "$name" "$TAG"; then
+                echo "Already published; verified on PyPI: ${name}==${TAG}"
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Publish failed after $max_attempts attempts: $wheel"
+              echo "If this is a new-project 429, wait for the daily/hourly window and re-run."
+              exit 1
+            fi
+            echo "Publish failed; waiting ${delay}s before retry..."
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
