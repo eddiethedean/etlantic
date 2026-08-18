@@ -452,6 +452,7 @@ jobs:
           fi
 
       - name: Publish remaining new PyPI projects
+        continue-on-error: true
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
