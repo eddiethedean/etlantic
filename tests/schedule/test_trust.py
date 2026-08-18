@@ -50,3 +50,11 @@ def test_production_rejects_memory_schedule_store() -> None:
 
 def test_non_production_allows_memory_store() -> None:
     assert_schedule_store_allowed(make_test_profile(), MemoryScheduleStore())
+
+
+def test_validate_schedule_runtime_rejects_production_memory() -> None:
+    from etlantic.control_plane.schedule_trust import validate_schedule_runtime
+
+    profile = production_profile(plugin_allowlist={"etlantic-polars": "==0.47.0"})
+    with pytest.raises(ValueError, match="PMSVC100"):
+        validate_schedule_runtime(profile, MemoryScheduleStore())

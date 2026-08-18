@@ -24,6 +24,8 @@ from etlantic.control_plane import (
     RegistryProvider,
     SubmissionStore,
 )
+from etlantic.control_plane.schedule_trust import validate_schedule_runtime
+from etlantic.profile import resolve_profile
 from etlantic_fastapi._version import __version__
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -270,6 +272,9 @@ def create_app(
                     "definitions_backend='registry' requires a registry provider"
                 )
             api.definitions = RegistryDefinitionRepository(api.registry)
+
+    if getattr(api, "schedule_store", None) is not None:
+        validate_schedule_runtime(api.profile, api.schedule_store)
 
     lifespan = None
     if with_lifespan:

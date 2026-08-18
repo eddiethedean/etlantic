@@ -261,16 +261,15 @@ class PluginDiscoveryCoordinator:
                     )
                 )
             try:
-                from etlantic.resources.discovery import RESOURCE_PROVIDER_ENTRY_POINT
+                from etlantic.resources.discovery import discover_resource_providers
 
-                resources = discover_evaluate_authorize_load(
-                    RESOURCE_PROVIDER_ENTRY_POINT,
-                    profile=profile,
-                    key_fn=_provider_key,
+                result.resource_providers = discover_resource_providers(profile=profile)
+                result.diagnostics.extend(
+                    getattr(discover_resource_providers, "last_diagnostics", [])
                 )
-                result.diagnostics.extend(resources.diagnostics)
-                result.trust_records.extend(resources.trust_records)
-                result.resource_providers = dict(resources.loaded)
+                result.trust_records.extend(
+                    getattr(discover_resource_providers, "last_trust_records", [])
+                )
             except Exception as exc:
                 result.diagnostics.append(
                     Diagnostic(

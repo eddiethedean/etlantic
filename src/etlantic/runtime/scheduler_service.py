@@ -39,7 +39,12 @@ class SchedulerService:
         ttl_seconds: int = 30,
         wake: WakeTransport | None = None,
         plan_fingerprint: str = "plan",
+        profile: Any = None,
     ) -> None:
+        if profile is not None:
+            from etlantic.control_plane.schedule_trust import validate_schedule_runtime
+
+            validate_schedule_runtime(profile, schedule_store)
         self.schedule_store = schedule_store
         self.durable = durable
         self.clock = clock or SystemClock()

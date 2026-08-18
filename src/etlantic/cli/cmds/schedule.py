@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from etlantic.control_plane.models import (
 from etlantic.control_plane.schedule_clock import next_fire_after
 from etlantic.control_plane.schedule_memory import MemoryScheduleStore
 from etlantic.control_plane.schedule_models import ScheduleSpec
+from etlantic.control_plane.schedule_trust import validate_schedule_runtime
+from etlantic.profile import resolve_profile
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.scheduler_service import SchedulerService
 
@@ -234,13 +237,21 @@ def register_schedule_commands(app: typer.Typer) -> None:
         tenant: str = typer.Option("default", "--tenant"),
         workspace: str = typer.Option("default", "--workspace"),
         principal: str = typer.Option("cli", "--principal"),
+        profile: str = typer.Option("development", "--profile"),
         once: bool = typer.Option(False, "--once"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         """Run one due-timer scan (--once) or poll until interrupted."""
         mem = _load_schedule_store(store)
+        resolved = resolve_profile(profile, allow_adhoc_profile=True)
+        validate_schedule_runtime(resolved, mem)
         durable = MemoryDurableWorkStore()
-        service = SchedulerService(mem, durable=durable, owner_id="cli-scheduler")
+        service = SchedulerService(
+            mem,
+            durable=durable,
+            owner_id="cli-scheduler",
+            profile=resolved,
+        )
         ctx = _ctx(tenant=tenant, workspace=workspace, principal=principal)
         claimed = service.tick(ctx)
         _save_schedule_store(store, mem)
