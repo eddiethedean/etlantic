@@ -55,6 +55,20 @@ def test_dual_replica_one_durable_firing() -> None:
     assert len(durable.pending_outbox(ctx)) == 1
 
 
+def test_execution_host_default_runner_completes_submission() -> None:
+    durable = MemoryDurableWorkStore()
+    ctx = _ctx()
+    submission, _ = durable.accept(
+        ctx,
+        idempotency_key="default-runner",
+        operation="schedule.fire",
+        plan_fingerprint="plan",
+    )
+    host = ExecutionHost(durable, owner_id="w1")
+    assert host.tick(ctx) == 1
+    assert durable.submission_status(ctx, submission.submission_id) == "completed"
+
+
 def test_execution_host_completes_and_unknown_commit_does_not_retry() -> None:
     durable = MemoryDurableWorkStore()
     ctx = _ctx()

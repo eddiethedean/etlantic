@@ -108,7 +108,7 @@ class ExecutionHost:
         return processed
 
 
-def _default_runner(**_: Any) -> None:
+def _default_runner(_ctx: Any, **_: Any) -> None:
     return None
 
 
