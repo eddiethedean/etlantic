@@ -974,5 +974,13 @@ class MemoryDurableWorkStore:
                     cleaned.append(deepcopy(done))
         return cleaned
 
+    def submission_status(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> str | None:
+        """Return the durable submission status, if present."""
+        with self._lock:
+            row = self._submissions.get((*_scope(ctx), submission_id))
+            return row.status if row is not None else None
+
 
 __all__ = ["MemoryDurableWorkStore"]
