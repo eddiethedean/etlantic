@@ -119,6 +119,38 @@ def test_execution_host_module_does_not_import_fastapi() -> None:
     assert "etlantic_fastapi" not in names
 
 
+def test_manual_trigger_does_not_require_leader_lease() -> None:
+    store = MemoryScheduleStore()
+    durable = MemoryDurableWorkStore()
+    clock = FakeScheduleClock(datetime(2026, 1, 1, 0, 2, tzinfo=UTC))
+    ctx = _ctx()
+    rec = store.create(
+        ctx,
+        definition_id="pipe-1",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at="2026-01-01T00:01:00Z",
+    )
+    scheduler = SchedulerService(
+        store, durable=durable, clock=clock, owner_id="sched-1"
+    )
+    scheduler.tick(ctx)
+    now = clock.now().isoformat().replace("+00:00", "Z")
+    firing, created = store.claim_firing(
+        ctx,
+        schedule_id=rec.schedule_id,
+        revision_id=rec.revision_id,
+        nominal_fire_time=now,
+        owner_id="gateway",
+        fencing_token=0,
+        plan_fingerprint="manual",
+        durable=durable,
+        require_leader_lease=False,
+    )
+    assert created
+    assert firing.status == "accepted"
+
+
 def test_scheduler_drain_stops_ticks() -> None:
     store = MemoryScheduleStore()
     service = SchedulerService(

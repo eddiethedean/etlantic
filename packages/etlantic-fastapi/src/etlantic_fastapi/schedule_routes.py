@@ -188,7 +188,6 @@ def register_schedule_routes(
         )
         store = _require_schedule()
         rec = store.get(ctx, schedule_id)
-        lease = store.acquire_leader_lease(ctx, owner_id="gateway", ttl_seconds=30)
         now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         durable = getattr(api, "durable_work", None)
         firing, created = store.claim_firing(
@@ -197,9 +196,10 @@ def register_schedule_routes(
             revision_id=rec.revision_id,
             nominal_fire_time=now,
             owner_id="gateway",
-            fencing_token=lease.fencing_token,
+            fencing_token=0,
             plan_fingerprint=str(rec.policy_fingerprint or "gateway"),
             durable=durable,
+            require_leader_lease=False,
         )
         return {**firing.to_dict(), "created": created}
 

@@ -217,6 +217,7 @@ class SQLModelScheduleStore:
         plan_fingerprint: str,
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
+        require_leader_lease: bool = True,
     ) -> tuple[FiringRecord, bool]:
         kwargs: dict[str, Any] = {
             "schedule_id": schedule_id,
@@ -226,6 +227,7 @@ class SQLModelScheduleStore:
             "fencing_token": fencing_token,
             "plan_fingerprint": plan_fingerprint,
             "next_fire_at": next_fire_at,
+            "require_leader_lease": require_leader_lease,
         }
         if (
             isinstance(durable, SQLModelDurableWorkStore)

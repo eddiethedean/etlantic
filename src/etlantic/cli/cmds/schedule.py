@@ -214,7 +214,6 @@ def register_schedule_commands(app: typer.Typer) -> None:
         mem = _load_schedule_store(store)
         ctx = _ctx(tenant=tenant, workspace=workspace, principal=principal)
         rec = mem.get(ctx, schedule_id)
-        lease = mem.acquire_leader_lease(ctx, owner_id="cli-trigger", ttl_seconds=30)
         now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         firing, created = mem.claim_firing(
             ctx,
@@ -222,8 +221,9 @@ def register_schedule_commands(app: typer.Typer) -> None:
             revision_id=rec.revision_id,
             nominal_fire_time=now,
             owner_id="cli-trigger",
-            fencing_token=lease.fencing_token,
+            fencing_token=0,
             plan_fingerprint="cli-manual",
+            require_leader_lease=False,
         )
         _save_schedule_store(store, mem)
         emit_payload({**firing.to_dict(), "created": created}, fmt=fmt)

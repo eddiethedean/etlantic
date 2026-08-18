@@ -234,11 +234,13 @@ class MemoryScheduleStore:
         plan_fingerprint: str,
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
+        require_leader_lease: bool = True,
     ) -> tuple[FiringRecord, bool]:
         logical = firing_key(schedule_id, revision_id, nominal_fire_time)
         scope = _scope(ctx)
         with self._lock:
-            self._require_leader(scope, owner_id, fencing_token)
+            if require_leader_lease:
+                self._require_leader(scope, owner_id, fencing_token)
             existing = self._firings.get(logical)
             if existing is not None:
                 return deepcopy(existing), False
