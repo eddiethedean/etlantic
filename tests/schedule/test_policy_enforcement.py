@@ -84,9 +84,7 @@ def test_misfire_skip_does_not_accept_durable_work() -> None:
         ),
         next_fire_at="2026-01-01T00:01:00Z",
     )
-    service = SchedulerService(
-        store, durable=durable, clock=clock, owner_id="sched-1"
-    )
+    service = SchedulerService(store, durable=durable, clock=clock, owner_id="sched-1")
     assert service.tick(ctx) == 1
     firings = store.list_firings(ctx, rec.schedule_id)
     assert len(firings) == 1
@@ -112,9 +110,7 @@ def test_effective_window_skip_outside_window() -> None:
         ),
         next_fire_at="2026-01-01T00:01:00Z",
     )
-    service = SchedulerService(
-        store, durable=durable, clock=clock, owner_id="sched-1"
-    )
+    service = SchedulerService(store, durable=durable, clock=clock, owner_id="sched-1")
     assert service.tick(ctx) == 1
     firings = store.list_firings(ctx, rec.schedule_id)
     assert len(firings) == 1

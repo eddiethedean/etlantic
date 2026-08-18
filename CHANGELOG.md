@@ -36,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lockstep official plugins and Medallantic to `0.47.0` (`etlantic>=0.47.0,<0.48`)
 - Production rejects `MemoryScheduleStore`
 
+### Fixed
+
+- Default execution-host runner accepts positional `ctx` so worker ticks finish `completed` instead of `failed`
+- Manual `schedule trigger` no longer acquires the scheduler leader lease
+- Enforce `overlap=skip`, `misfire=skip`, and effective-window policies (`skipped_overlap`, `skipped_misfire`, `skipped_window`)
+- Wire `PMRES140` through plugin discovery and reject `MemoryScheduleStore` on production scheduler/CLI/FastAPI paths (`PMSVC100`)
+- CLI `scheduler serve` / `worker serve` share a durable-work JSON file and poll until interrupted unless `--once`
+
 ## [0.46.0] - 2026-08-17
 
 ### Adopter summary

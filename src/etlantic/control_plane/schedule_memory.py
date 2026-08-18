@@ -14,6 +14,7 @@ from typing import Any
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.schedule_clock import _in_window
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
@@ -22,8 +23,6 @@ from etlantic.control_plane.schedule_models import (
     firing_key,
 )
 from etlantic.control_plane.schedule_protocols import SchedulerLeaderLease
-from etlantic.control_plane.schedule_clock import _in_window
-
 
 _NON_TERMINAL = frozenset({"accepted", "dispatched", "cancel_requested"})
 

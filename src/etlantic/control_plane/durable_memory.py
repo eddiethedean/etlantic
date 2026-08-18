@@ -1021,7 +1021,9 @@ class MemoryDurableWorkStore:
             return loaded
 
         with self._lock:
-            self._submissions = _rows(payload.get("submissions") or {}, SubmissionRecord)
+            self._submissions = _rows(
+                payload.get("submissions") or {}, SubmissionRecord
+            )
             self._idempotency = {
                 tuple(json.loads(key)): str(value)
                 for key, value in dict(payload.get("idempotency") or {}).items()

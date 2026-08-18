@@ -20,6 +20,7 @@ from etlantic.control_plane.schedule_protocols import (
     ScheduleStore,
     WakeTransport,
 )
+from etlantic.profile import Profile
 
 
 def _iso(value: datetime) -> str:
@@ -39,7 +40,7 @@ class SchedulerService:
         ttl_seconds: int = 30,
         wake: WakeTransport | None = None,
         plan_fingerprint: str = "plan",
-        profile: Any = None,
+        profile: Profile | str | None = None,
     ) -> None:
         if profile is not None:
             from etlantic.control_plane.schedule_trust import validate_schedule_runtime
