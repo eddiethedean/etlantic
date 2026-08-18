@@ -16,11 +16,36 @@ from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
+    FiringStatus,
     ScheduleRecord,
     ScheduleSpec,
     firing_key,
 )
 from etlantic.control_plane.schedule_protocols import SchedulerLeaderLease
+from etlantic.control_plane.schedule_clock import _in_window
+
+
+_NON_TERMINAL = frozenset({"accepted", "dispatched", "cancel_requested"})
+
+
+def _parse_iso(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _submission_inflight(
+    durable: DurableWorkStore | None,
+    ctx: ControlPlaneContext,
+    submission_id: str | None,
+) -> bool:
+    if submission_id is None:
+        return True
+    if durable is None:
+        return True
+    status_fn = getattr(durable, "submission_status", None)
+    if status_fn is None:
+        return True
+    status = status_fn(ctx, submission_id)
+    return status in _NON_TERMINAL if status is not None else False
 
 
 def _now() -> datetime:
@@ -235,6 +260,7 @@ class MemoryScheduleStore:
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
+        skip_status: FiringStatus | None = None,
     ) -> tuple[FiringRecord, bool]:
         logical = firing_key(schedule_id, revision_id, nominal_fire_time)
         scope = _scope(ctx)
@@ -244,6 +270,21 @@ class MemoryScheduleStore:
             existing = self._firings.get(logical)
             if existing is not None:
                 return deepcopy(existing), False
+            sk = (*scope, schedule_id)
+            rec = self._schedules.get(sk)
+            spec = rec.spec if rec is not None else None
+            nominal_dt = _parse_iso(nominal_fire_time)
+            status: FiringStatus = "accepted"
+            if skip_status is not None:
+                status = skip_status
+            elif spec is not None and not _in_window(spec, nominal_dt):
+                status = "skipped_window"
+            elif (
+                spec is not None
+                and spec.overlap == "skip"
+                and self._has_inflight_firing(ctx, schedule_id, scope, durable)
+            ):
+                status = "skipped_overlap"
             firing = FiringRecord(
                 firing_id=f"fire-{uuid.uuid4().hex[:16]}",
                 schedule_id=schedule_id,
@@ -252,10 +293,10 @@ class MemoryScheduleStore:
                 tenant_id=ctx.tenant.tenant_id,
                 workspace_id=ctx.workspace.workspace_id,
                 created_at=_iso(),
-                status="accepted",
+                status=status,
             )
             submission_id = None
-            if durable is not None:
+            if status == "accepted" and durable is not None:
                 submission, _created = durable.accept(
                     ctx,
                     idempotency_key=logical,
@@ -267,13 +308,29 @@ class MemoryScheduleStore:
                 submission_id = submission.submission_id
             firing = replace(firing, submission_id=submission_id)
             self._firings[logical] = firing
-            sk = (*scope, schedule_id)
-            rec = self._schedules.get(sk)
             if rec is not None:
                 self._schedules[sk] = replace(
                     rec, next_fire_at=next_fire_at, updated_at=_iso()
                 )
             return deepcopy(firing), True
+
+    def _has_inflight_firing(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        scope: tuple[str, str],
+        durable: DurableWorkStore | None,
+    ) -> bool:
+        for item in self._firings.values():
+            if item.schedule_id != schedule_id:
+                continue
+            if (item.tenant_id, item.workspace_id) != scope:
+                continue
+            if item.status != "accepted":
+                continue
+            if _submission_inflight(durable, ctx, item.submission_id):
+                return True
+        return False
 
     def list_firings(
         self, ctx: ControlPlaneContext, schedule_id: str

@@ -87,6 +87,21 @@ class SchedulerService:
         due = datetime.fromisoformat(rec.next_fire_at.replace("Z", "+00:00"))
         if due > now:
             return 0
+        if rec.spec.misfire == "skip" and due < now:
+            nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
+            _firing, created = self.schedule_store.claim_firing(
+                ctx,
+                schedule_id=rec.schedule_id,
+                revision_id=rec.revision_id,
+                nominal_fire_time=_iso(due),
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+                plan_fingerprint=self.plan_fingerprint,
+                durable=self.durable,
+                next_fire_at=_iso(nxt) if nxt is not None else None,
+                skip_status="skipped_misfire",
+            )
+            return int(created)
         if rec.spec.misfire == "catch_up":
             from datetime import timedelta
 
