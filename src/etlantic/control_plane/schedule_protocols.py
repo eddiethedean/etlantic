@@ -106,6 +106,7 @@ class ScheduleStore(Protocol):
         plan_fingerprint: str,
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
+        require_leader_lease: bool = True,
     ) -> tuple[FiringRecord, bool]: ...
 
     def list_firings(
