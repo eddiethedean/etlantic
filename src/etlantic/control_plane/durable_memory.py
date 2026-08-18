@@ -7,6 +7,7 @@ deployments should use a transactional provider with the same semantics.
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 import uuid
 from collections.abc import Mapping, Sequence
@@ -981,6 +982,53 @@ class MemoryDurableWorkStore:
         with self._lock:
             row = self._submissions.get((*_scope(ctx), submission_id))
             return row.status if row is not None else None
+
+    def dump(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "submissions": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._submissions.items()
+                },
+                "idempotency": {
+                    json.dumps(list(key)): value
+                    for key, value in self._idempotency.items()
+                },
+                "outbox": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._outbox.items()
+                },
+                "leases": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._leases.items()
+                },
+                "attempts": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._attempts.items()
+                },
+            }
+
+    def load(self, payload: Mapping[str, Any]) -> None:
+        def _rows(raw: Mapping[str, Any], cls: type) -> dict[tuple[Any, ...], Any]:
+            loaded: dict[tuple[Any, ...], Any] = {}
+            for key, value in dict(raw or {}).items():
+                fields = {
+                    field: data
+                    for field, data in dict(value).items()
+                    if field != "schema"
+                }
+                loaded[tuple(json.loads(key))] = cls(**fields)
+            return loaded
+
+        with self._lock:
+            self._submissions = _rows(payload.get("submissions") or {}, SubmissionRecord)
+            self._idempotency = {
+                tuple(json.loads(key)): str(value)
+                for key, value in dict(payload.get("idempotency") or {}).items()
+            }
+            self._outbox = _rows(payload.get("outbox") or {}, OutboxRecord)
+            self._leases = _rows(payload.get("leases") or {}, LeaseRecord)
+            self._attempts = _rows(payload.get("attempts") or {}, AttemptRecord)
 
 
 __all__ = ["MemoryDurableWorkStore"]
