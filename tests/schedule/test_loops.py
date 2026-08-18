@@ -128,7 +128,7 @@ def test_manual_trigger_does_not_require_leader_lease() -> None:
         ctx,
         definition_id="pipe-1",
         profile_name="test",
-        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
         next_fire_at="2026-01-01T00:01:00Z",
     )
     scheduler = SchedulerService(
