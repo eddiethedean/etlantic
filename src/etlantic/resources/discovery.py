@@ -24,6 +24,7 @@ def discover_resource_providers(
 ) -> dict[str, ResourceProvider]:
     """Discover resource providers with plugin allowlist, then PMRES140."""
     discover_resource_providers.last_diagnostics = []  # type: ignore[attr-defined]
+    discover_resource_providers.last_trust_records = []  # type: ignore[attr-defined]
     result = discover_evaluate_authorize_load(
         RESOURCE_PROVIDER_ENTRY_POINT,
         profile=profile,
@@ -49,4 +50,5 @@ def discover_resource_providers(
                 if diag is not None:
                     diagnostics.append(diag)
     discover_resource_providers.last_diagnostics = diagnostics  # type: ignore[attr-defined]
+    discover_resource_providers.last_trust_records = list(result.trust_records)  # type: ignore[attr-defined]
     return loaded

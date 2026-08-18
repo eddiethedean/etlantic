@@ -6,7 +6,7 @@ from collections.abc import Mapping
 
 from etlantic.control_plane.schedule_diagnostics import res_diagnostic, svc_diagnostic
 from etlantic.plugin_trust import is_production_profile
-from etlantic.profile import Profile
+from etlantic.profile import Profile, resolve_profile
 
 
 def resource_provider_allowed(
@@ -74,3 +74,13 @@ def assert_schedule_store_allowed(profile: Profile, store: object) -> None:
             path=("profile", "schedule_store"),
         )
         raise ValueError(f"{diag.code}: {diag.message}")
+
+
+def validate_schedule_runtime(profile: Profile | str | None, store: object) -> None:
+    """Fail closed when a production profile uses an in-memory schedule store."""
+    resolved = (
+        profile
+        if isinstance(profile, Profile)
+        else resolve_profile(profile, allow_adhoc_profile=True)
+    )
+    assert_schedule_store_allowed(resolved, store)
