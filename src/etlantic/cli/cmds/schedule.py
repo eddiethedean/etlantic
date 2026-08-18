@@ -54,6 +54,53 @@ def _save_schedule_store(path: Path, store: MemoryScheduleStore) -> None:
     )
 
 
+def _default_durable_path(schedule_store: Path) -> Path:
+    return schedule_store.with_name(f"{schedule_store.stem}.durable.json")
+
+
+def _load_durable_store(path: Path) -> MemoryDurableWorkStore:
+    store = MemoryDurableWorkStore()
+    if path.exists():
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            store.load(data)
+    return store
+
+
+def _save_durable_store(path: Path, store: MemoryDurableWorkStore) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(store.dump(), indent=2, sort_keys=True), encoding="utf-8"
+    )
+
+
+def _run_scheduler_tick(
+    *,
+    service: SchedulerService,
+    ctx: ControlPlaneContext,
+    schedule_path: Path,
+    schedule_store: MemoryScheduleStore,
+    durable_path: Path,
+    durable_store: MemoryDurableWorkStore,
+) -> int:
+    claimed = service.tick(ctx)
+    _save_schedule_store(schedule_path, schedule_store)
+    _save_durable_store(durable_path, durable_store)
+    return claimed
+
+
+def _run_worker_tick(
+    *,
+    host: ExecutionHost,
+    ctx: ControlPlaneContext,
+    durable_path: Path,
+    durable_store: MemoryDurableWorkStore,
+) -> int:
+    processed = host.tick(ctx)
+    _save_durable_store(durable_path, durable_store)
+    return processed
+
+
 def register_schedule_commands(app: typer.Typer) -> None:
     """Attach schedule authoring and scheduler/worker serve commands."""
     schedule_app = typer.Typer(help="Create and inspect secret-free schedules.")
@@ -234,18 +281,25 @@ def register_schedule_commands(app: typer.Typer) -> None:
     @scheduler_app.command("serve")
     def scheduler_serve(
         store: Path = typer.Option(..., "--store"),
+        durable_store: Path | None = typer.Option(
+            None,
+            "--durable-store",
+            help="Shared durable-work JSON file (default: <store-stem>.durable.json).",
+        ),
         tenant: str = typer.Option("default", "--tenant"),
         workspace: str = typer.Option("default", "--workspace"),
         principal: str = typer.Option("cli", "--principal"),
         profile: str = typer.Option("development", "--profile"),
         once: bool = typer.Option(False, "--once"),
+        poll_seconds: float = typer.Option(1.0, "--poll-seconds"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
         """Run one due-timer scan (--once) or poll until interrupted."""
         mem = _load_schedule_store(store)
         resolved = resolve_profile(profile, allow_adhoc_profile=True)
         validate_schedule_runtime(resolved, mem)
-        durable = MemoryDurableWorkStore()
+        durable_path = durable_store or _default_durable_path(store)
+        durable = _load_durable_store(durable_path)
         service = SchedulerService(
             mem,
             durable=durable,
@@ -253,23 +307,62 @@ def register_schedule_commands(app: typer.Typer) -> None:
             profile=resolved,
         )
         ctx = _ctx(tenant=tenant, workspace=workspace, principal=principal)
-        claimed = service.tick(ctx)
-        _save_schedule_store(store, mem)
+        claimed = _run_scheduler_tick(
+            service=service,
+            ctx=ctx,
+            schedule_path=store,
+            schedule_store=mem,
+            durable_path=durable_path,
+            durable_store=durable,
+        )
         emit_payload({"claimed": claimed, "ready": service.ready()}, fmt=fmt)
-        if not once:
-            raise typer.Exit(0)
+        if once:
+            return
+        try:
+            while True:
+                time.sleep(poll_seconds)
+                _run_scheduler_tick(
+                    service=service,
+                    ctx=ctx,
+                    schedule_path=store,
+                    schedule_store=mem,
+                    durable_path=durable_path,
+                    durable_store=durable,
+                )
+        except KeyboardInterrupt:
+            raise typer.Exit(0) from None
 
     @worker_app.command("serve")
     def worker_serve(
+        durable_store: Path = typer.Option(..., "--durable-store"),
         once: bool = typer.Option(True, "--once"),
+        poll_seconds: float = typer.Option(1.0, "--poll-seconds"),
         tenant: str = typer.Option("default", "--tenant"),
         workspace: str = typer.Option("default", "--workspace"),
         principal: str = typer.Option("cli", "--principal"),
         fmt: str = typer.Option("json", "--format"),
     ) -> None:
-        """Poll durable outbox. Default is a single tick (no FastAPI)."""
-        host = ExecutionHost(MemoryDurableWorkStore())
-        processed = host.tick(
-            _ctx(tenant=tenant, workspace=workspace, principal=principal)
+        """Poll durable outbox from a shared store file."""
+        durable = _load_durable_store(durable_store)
+        host = ExecutionHost(durable, owner_id="cli-worker")
+        ctx = _ctx(tenant=tenant, workspace=workspace, principal=principal)
+        processed = _run_worker_tick(
+            host=host,
+            ctx=ctx,
+            durable_path=durable_store,
+            durable_store=durable,
         )
         emit_payload({"processed": processed, "once": once}, fmt=fmt)
+        if once:
+            return
+        try:
+            while True:
+                time.sleep(poll_seconds)
+                _run_worker_tick(
+                    host=host,
+                    ctx=ctx,
+                    durable_path=durable_store,
+                    durable_store=durable,
+                )
+        except KeyboardInterrupt:
+            raise typer.Exit(0) from None
