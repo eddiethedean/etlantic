@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.47.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.48.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash
@@ -88,6 +88,13 @@
 | `PMCP409` | `src/etlantic/control_plane/errors.py` |
 | `PMCP410` | `src/etlantic/control_plane/errors.py` |
 | `PMCP503` | `src/etlantic/control_plane/policy_gates.py`, `src/etlantic/control_plane/policy_memory.py`, `src/etlantic/control_plane/policy_opa.py` |
+| `PMCTX100` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX110` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX120` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX130` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX140` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX150` | `src/etlantic/agents/diagnostics.py` |
+| `PMCTX999` | `src/etlantic/agents/diagnostics.py` |
 | `PMDATA101` | `src/etlantic/interchange/odcs.py`, `src/etlantic/validation/__init__.py` |
 | `PMDATA102` | `src/etlantic/validation/__init__.py` |
 | `PMDATA103` | `src/etlantic/validation/__init__.py` |
@@ -191,8 +198,18 @@
 | `PMGEN233` | `src/etlantic/interchange/bundle.py` |
 | `PMGEN301` | `src/etlantic/interchange/diff.py` |
 | `PMGEN311` | `src/etlantic/interchange/diff.py` |
+| `PMGUIDE100` | `src/etlantic/agents/diagnostics.py` |
+| `PMGUIDE110` | `src/etlantic/agents/diagnostics.py` |
+| `PMGUIDE120` | `src/etlantic/agents/diagnostics.py` |
+| `PMGUIDE999` | `src/etlantic/agents/diagnostics.py` |
 | `PMID001` | `src/etlantic/ide/analysis/index.py` |
 | `PMID002` | `src/etlantic/ide/analysis/index.py` |
+| `PMMCP100` | `src/etlantic/agents/diagnostics.py` |
+| `PMMCP110` | `src/etlantic/agents/diagnostics.py` |
+| `PMMCP140` | `src/etlantic/agents/diagnostics.py` |
+| `PMMCP150` | `src/etlantic/agents/diagnostics.py` |
+| `PMMCP160` | `src/etlantic/agents/diagnostics.py` |
+| `PMMCP999` | `src/etlantic/agents/diagnostics.py` |
 | `PMOPT100` | `src/etlantic/optimization/diagnostics.py` |
 | `PMOPT101` | `src/etlantic/optimization/diagnostics.py` |
 | `PMOPT102` | `src/etlantic/optimization/diagnostics.py` |
@@ -273,6 +290,12 @@
 | `PMPLUG448` | `src/etlantic/plugin_compatibility.py` |
 | `PMPLUG449` | `src/etlantic/plugin_compatibility.py` |
 | `PMPLUG450` | `src/etlantic/plugin_compatibility.py` |
+| `PMPROP100` | `src/etlantic/agents/diagnostics.py` |
+| `PMPROP110` | `src/etlantic/agents/diagnostics.py` |
+| `PMPROP120` | `src/etlantic/agents/diagnostics.py` |
+| `PMPROP130` | `src/etlantic/agents/diagnostics.py` |
+| `PMPROP140` | `src/etlantic/agents/diagnostics.py` |
+| `PMPROP999` | `src/etlantic/agents/diagnostics.py` |
 | `PMQTY400` | `src/etlantic/quality/evaluate.py` |
 | `PMQTY410` | `src/etlantic/quality/evaluate.py` |
 | `PMREG100` | `src/etlantic/cli/cmds/stream.py`, `src/etlantic/streaming/diagnostics.py` |

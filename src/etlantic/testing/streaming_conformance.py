@@ -137,10 +137,10 @@ def run_schema_registry_conformance_suite() -> dict[str, Any]:
     pinned = Profile(
         name="production",
         security_mode="production",
-        schema_registry_allowlist={"etlantic-schemaregistry": "==0.47.0"},
+        schema_registry_allowlist={"etlantic-schemaregistry": "==0.48.0"},
     )
     ok2, _ = registry_adapter_allowed(
-        pinned, "etlantic-schemaregistry", version="0.47.0"
+        pinned, "etlantic-schemaregistry", version="0.48.0"
     )
     checks["production_pin"] = ok2 is True
     return {

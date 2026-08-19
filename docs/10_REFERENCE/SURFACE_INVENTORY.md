@@ -1,7 +1,7 @@
-# Public Surface Inventory (0.47)
+# Public Surface Inventory (0.48)
 
-> **Status: Available in ETLantic 0.47.0.** Canonical public surface for the
-> **0.47 reference envelope**.
+> **Status: Available in ETLantic 0.48.0.** Canonical public surface for the
+> **0.48 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,7 +10,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.47 reference envelope |
+| `stable` | Supported within the documented 0.48 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a stable-foundation obligation |
 | `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
@@ -114,6 +114,9 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.streaming/1` | stable (0.46) |
 | `etlantic.schedule/1` | stable (0.47) |
 | `etlantic.firing/1` | stable (0.47) |
+| `etlantic.ai_task/1` | experimental (0.48) |
+| `etlantic.context_bundle/1` | experimental (0.48) |
+| `etlantic.proposal/1` | experimental (0.48) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 
@@ -146,7 +149,7 @@ Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.47.0`). Details:
+Pin to the same minor as core (`==0.48.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |
@@ -167,6 +170,7 @@ Pin to the same minor as core (`==0.47.0`). Details:
 | `etlantic-kafka` | **Experimental** Kafka connector (fake-first; Alpha) |
 | `etlantic-k8s` | **Experimental** Kubernetes resource provider (FakeKubernetes; Alpha) |
 | `etlantic-spark-connect` | **Experimental** Spark Connect provider (fake; Alpha) |
+| `etlantic-mcp` | **Experimental** read-only MCP extra (FakeMcpServer; Alpha) |
 | `etlantic-schemaregistry` | **Experimental** schema-registry adapter (fake-first; Alpha) |
 | `etlantic-iceberg` | **Experimental** Iceberg connector (Alpha) |
 | `etlantic-snowflake` | **Experimental** Snowflake connector (Alpha) |

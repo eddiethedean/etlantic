@@ -1,0 +1,12 @@
+{
+  "schema": "etlantic.mcp.conformance-report/1",
+  "release": "0.48.0",
+  "checks": {
+    "fake_read_only_methods": true,
+    "method_denied_mutate_submit_secrets_network": true,
+    "tool_expansion_denied": true,
+    "production_plugin_allowlist_fail_closed": true,
+    "live_client_skipped_048_M_01": true
+  },
+  "passed": true
+}

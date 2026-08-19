@@ -1,20 +1,20 @@
 ---
 status: available
-since: "0.47.0"
-current_minor: "0.47"
+since: "0.48.0"
+current_minor: "0.48"
 audience: developer
 ---
 
 # etlantic-spark-connect API
 
-> **Status: Experimental in ETLantic 0.47.0.** Fake-first Spark Connect
+> **Status: Experimental in ETLantic 0.48.0.** Fake-first Spark Connect
 > `SparkProvider`. Live Databricks/EMR/Connect endpoints are opt-in. Hub:
 > [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-spark-connect==0.47.0'
+pip install 'etlantic-spark-connect==0.48.0'
 ```
 
 ```python

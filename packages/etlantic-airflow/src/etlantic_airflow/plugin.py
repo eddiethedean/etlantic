@@ -18,7 +18,7 @@ from etlantic.orchestration.protocol import (
 )
 from etlantic.plan.model import PipelinePlan
 
-__version__ = "0.47.0"
+__version__ = "0.48.0"
 
 _SECRET_NEEDLES = (
     "password",

@@ -24,6 +24,7 @@ MANIFEST_PACKAGES = (
     "etlantic-spark-connect",
     "etlantic-iceberg",
     "etlantic-snowflake",
+    "etlantic-mcp",
 )
 
 

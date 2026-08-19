@@ -1,6 +1,6 @@
 # Application Integration (0.39)
 
-> **Status: Available in ETLantic 0.47.0.** Framework-agnostic authoring contract
+> **Status: Available in ETLantic 0.48.0.** Framework-agnostic authoring contract
 > plus the optional FastAPI package dual surface (CP1 primary; sync reference
 > demo secondary).
 
@@ -48,8 +48,8 @@ job = service.submit_run("demo")
 Install the optional package (same minor as core):
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.47.0'
-# or: python -m pip install 'etlantic[fastapi]==0.47.0'
+python -m pip install 'etlantic-fastapi==0.48.0'
+# or: python -m pip install 'etlantic[fastapi]==0.48.0'
 ```
 
 | Surface | Entry points | Role |

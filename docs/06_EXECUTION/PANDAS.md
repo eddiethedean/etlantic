@@ -6,8 +6,8 @@
 ## Install
 
 ```bash
-pip install 'etlantic[pandas]==0.47.0'
-pip install 'etlantic-pandas[arrow]==0.47.0'  # optional Arrow interchange
+pip install 'etlantic[pandas]==0.48.0'
+pip install 'etlantic-pandas[arrow]==0.48.0'  # optional Arrow interchange
 ```
 
 ## Behavior

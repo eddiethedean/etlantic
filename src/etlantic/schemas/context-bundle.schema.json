@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/etlantic.context_bundle/1",
+  "title": "ETLantic bounded context bundle",
+  "type": "object",
+  "required": ["schema", "sources", "freshness", "redacted"],
+  "properties": {
+    "schema": { "const": "etlantic.context_bundle/1" },
+    "pipeline_id": { "type": ["string", "null"] },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "identity"],
+        "properties": {
+          "kind": { "type": "string" },
+          "identity": { "type": "string" },
+          "fingerprint": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "freshness": { "type": "string" },
+    "redacted": { "type": "boolean" },
+    "graph": { "type": ["object", "null"] },
+    "plan": { "type": ["object", "null"] },
+    "diagnostics": { "type": "array" },
+    "budgets": { "type": "object" }
+  },
+  "additionalProperties": true
+}

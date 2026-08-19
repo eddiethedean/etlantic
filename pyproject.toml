@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.47.0"
+version = "0.48.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -31,36 +31,37 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.47.0"]
-pandas = ["etlantic-pandas==0.47.0"]
-sql = ["etlantic-sql==0.47.0"]
-postgresql = ["etlantic-sql==0.47.0"]
-pyspark = ["etlantic-pyspark==0.47.0"]
-spark = ["etlantic-pyspark==0.47.0"]
-airflow = ["etlantic-airflow==0.47.0"]
-prefect = ["etlantic-prefect==0.47.0"]
-keyring = ["etlantic-keyring==0.47.0"]
-sqlmodel = ["etlantic-sqlmodel==0.47.0"]
-medallantic = ["medallantic==0.47.0"]
-sparkforge = ["etlantic-sparkforge==0.47.0"]
-fastapi = ["etlantic-fastapi==0.47.0"]
-datafusion = ["etlantic-datafusion==0.47.0"]
-s3 = ["etlantic-s3==0.47.0"]
-kafka = ["etlantic-kafka==0.47.0"]
-k8s = ["etlantic-k8s==0.47.0"]
-spark-connect = ["etlantic-spark-connect==0.47.0"]
-schemaregistry = ["etlantic-schemaregistry==0.47.0"]
-iceberg = ["etlantic-iceberg==0.47.0"]
-snowflake = ["etlantic-snowflake==0.47.0"]
-openlineage = ["etlantic-openlineage==0.47.0"]
+polars = ["etlantic-polars==0.48.0"]
+pandas = ["etlantic-pandas==0.48.0"]
+sql = ["etlantic-sql==0.48.0"]
+postgresql = ["etlantic-sql==0.48.0"]
+pyspark = ["etlantic-pyspark==0.48.0"]
+spark = ["etlantic-pyspark==0.48.0"]
+airflow = ["etlantic-airflow==0.48.0"]
+prefect = ["etlantic-prefect==0.48.0"]
+keyring = ["etlantic-keyring==0.48.0"]
+sqlmodel = ["etlantic-sqlmodel==0.48.0"]
+medallantic = ["medallantic==0.48.0"]
+sparkforge = ["etlantic-sparkforge==0.48.0"]
+fastapi = ["etlantic-fastapi==0.48.0"]
+datafusion = ["etlantic-datafusion==0.48.0"]
+s3 = ["etlantic-s3==0.48.0"]
+kafka = ["etlantic-kafka==0.48.0"]
+k8s = ["etlantic-k8s==0.48.0"]
+spark-connect = ["etlantic-spark-connect==0.48.0"]
+schemaregistry = ["etlantic-schemaregistry==0.48.0"]
+iceberg = ["etlantic-iceberg==0.48.0"]
+snowflake = ["etlantic-snowflake==0.48.0"]
+openlineage = ["etlantic-openlineage==0.48.0"]
+mcp = ["etlantic-mcp==0.48.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
-lsp = ["etlantic-lsp==0.47.0"]
+lsp = ["etlantic-lsp==0.48.0"]
 dataframes = [
-    "etlantic-polars==0.47.0",
-    "etlantic-pandas==0.47.0",
+    "etlantic-polars==0.48.0",
+    "etlantic-pandas==0.48.0",
 ]
 
 [project.scripts]
@@ -155,6 +156,9 @@ snowflake = [
 openlineage = [
     "etlantic-openlineage",
 ]
+mcp = [
+    "etlantic-mcp",
+]
 observability = [
     "opentelemetry-api>=1.36,<2",
 ]
@@ -206,6 +210,7 @@ members = [
     "packages/etlantic-iceberg",
     "packages/etlantic-snowflake",
     "packages/etlantic-openlineage",
+    "packages/etlantic-mcp",
     "packages/etlantic-lsp",
 ]
 
@@ -231,6 +236,7 @@ etlantic-schemaregistry = { workspace = true }
 etlantic-iceberg = { workspace = true }
 etlantic-snowflake = { workspace = true }
 etlantic-openlineage = { workspace = true }
+etlantic-mcp = { workspace = true }
 etlantic-lsp = { workspace = true }
 
 [tool.pytest.ini_options]
@@ -257,6 +263,7 @@ pythonpath = [
     "packages/etlantic-iceberg/src",
     "packages/etlantic-snowflake/src",
     "packages/etlantic-openlineage/src",
+    "packages/etlantic-mcp/src",
     "packages/etlantic-lsp/src",
 ]
 markers = [
@@ -280,6 +287,7 @@ markers = [
     "iceberg: tests for the experimental Iceberg connector package",
     "snowflake: tests for the experimental Snowflake connector package",
     "openlineage: tests for the experimental OpenLineage export package",
+    "mcp: tests for the experimental read-only MCP extra",
 ]
 
 [tool.ruff]
@@ -328,6 +336,7 @@ known-first-party = [
     "etlantic_k8s",
     "etlantic_spark_connect",
     "etlantic_openlineage",
+    "etlantic_mcp",
     "etlantic_lsp",
 ]
 
@@ -335,6 +344,7 @@ known-first-party = [
 # FastAPI Depends()/Header() defaults are the framework's DI idiom.
 "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/schedule_routes.py" = ["B008"]
+"packages/etlantic-fastapi/src/etlantic_fastapi/ai_routes.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/deps.py" = ["B008"]
 "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py" = ["B008"]
 # Typer Option()/Argument() defaults are the CLI framework idiom.
@@ -342,6 +352,7 @@ known-first-party = [
 "src/etlantic/cli/cmds/watch.py" = ["B008"]
 "src/etlantic/cli/cmds/stream.py" = ["B008"]
 "src/etlantic/cli/cmds/schedule.py" = ["B008"]
+"src/etlantic/cli/cmds/proposal.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

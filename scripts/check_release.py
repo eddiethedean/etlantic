@@ -37,6 +37,7 @@ EXPERIMENTAL_PACKAGES = (
     "etlantic-iceberg",
     "etlantic-snowflake",
     "etlantic-openlineage",
+    "etlantic-mcp",
 )
 
 

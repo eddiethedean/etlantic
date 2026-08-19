@@ -1,29 +1,31 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.47.0 (published Beta).** What ships now for
+> **Status: Available in ETLantic 0.48.0 (published Beta).** What ships now for
 > controlled single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.47)
+## What works today (0.48)
 
-ETLantic 0.47.0 is a gate-ready Beta release for documented, controlled,
-single-tenant pilots (install `etlantic==0.47.0` from PyPI). It validates and
+ETLantic 0.48.0 is a gate-ready Beta release for documented, controlled,
+single-tenant pilots (install `etlantic==0.48.0` from PyPI). It validates and
 plans typed pipelines, runs them locally or through supported engine plugins,
-compiles valid plans to supported orchestration targets, ships a **scheduler
+compiles valid plans to supported orchestration targets, ships **human-governed
+AI** context/proposal surfaces (`etlantic context` / `etlantic proposal`),
+ships a **scheduler
 and execution-host** (`etlantic schedule` / `scheduler serve` / `worker serve`),
 developer intelligence (static analysis, `etlantic-lsp`, notebook surfaces),
 keeps the advisory **planner and optimization SDK**, and keeps **Supported**
 core streaming and bounded dynamic-control contracts. Kafka, Confluent registry,
-Kubernetes, and Spark Connect extras are **Experimental**. Control-plane
+Kubernetes, Spark Connect, and MCP extras are **Experimental**. Control-plane
 production multi-tenant remains as graduated in 0.43 for Supported isolation
 profiles (`isolated-deployment`, `dedicated-schema`). `shared-service` remains
 Experimental. Support is community **non-SLA**.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.47.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.48.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
 Fit check: [Compare](COMPARE.md).
 
@@ -34,6 +36,7 @@ Fit check: [Compare](COMPARE.md).
 | Planning / optimization | Deterministic `PipelinePlan`; advisory `optimize_plan` / `etlantic plan optimize` with evidence, cost, proofs, and shadow compare |
 | Engines | Local Python; Polars; Pandas; SQL (`etlantic-sql`); PySpark |
 | Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`); FastAPI-fronted schedules (`etlantic schedule`, `scheduler serve`, `worker serve`) |
+| Agents | Bounded context bundles, proposal sandbox, `generate --kind agents`; apply via 0.42 approvals |
 | Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist`, `optimization_pass_allowlist`, `schema_registry_allowlist`, and `resource_provider_allowlist` |
 | Observability and evidence | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
 | Testing | Application-pipeline cases via `etlantic.testing`; optimizer, streaming, and schedule-store conformance suites |
@@ -42,10 +45,11 @@ Fit check: [Compare](COMPARE.md).
 | Streaming / dynamic control | Core `etlantic.streaming` types (Supported); Kafka/registry extras Experimental — never Available in core |
 | Facades | `medallantic` medallion + SparkForge inventory/generate; optional `etlantic-keyring`, SQLModel, OTel |
 | Developer intelligence | `etlantic.ide` + optional `etlantic[lsp]` / `etlantic[notebook]` (from 0.44) |
+| Human-governed AI | `etlantic.agents` context bundles and proposal sandbox; `etlantic generate --kind agents`; Experimental `etlantic-mcp` |
 
 ## Limits
 
-| Topic | ETLantic 0.47 |
+| Topic | ETLantic 0.48 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots; Supported multi-tenant profiles |
@@ -91,7 +95,19 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.47
+## Available in 0.48
+
+### Human-governed AI
+
+| Capability | Status |
+|---|---|
+| `etlantic.context_bundle/1` + `etlantic context bundle` | Available (`etlantic.agents`) |
+| `etlantic.proposal/1` sandbox + `etlantic proposal validate` | Available; never applies files |
+| `etlantic generate --kind agents` + user-region preservation | Available |
+| Vendor-neutral `etlantic.ai_task/1` catalog | Available (Codex / Claude / Cursor adapters) |
+| FastAPI `POST /v1/definitions/{id}/context` and `POST /v1/proposals/validate` | Available (`etlantic-fastapi`; compute only) |
+| Approval handoff to `/v1/approvals*` | Available (reuse 0.42; no second mutation API) |
+| Experimental `etlantic-mcp` `FakeMcpServer` | **Experimental** (live skip `048-M-01`) |
 
 ### Scheduler/runner service and remote federation
 
@@ -246,6 +262,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.51 |
 | FastAPI scheduler/runner service and remote federation | **Available in the bounded 0.47 envelope** — gateway routes plus separate scheduler/worker processes; see [What's new in 0.47](WHATS_NEW_0_47.md) and [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) |
+| Human-governed AI context/proposals | **Available in the bounded 0.48 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.48](WHATS_NEW_0_48.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
 | Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.49 |
@@ -274,7 +291,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.47.0` first).
+(the sample uses Polars — install `etlantic-polars==0.48.0` first).
 
 ```json
 {
@@ -287,7 +304,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.47.0"
+    "etlantic-polars": "==0.48.0"
   },
   "assets": {},
   "secrets": {},
@@ -303,17 +320,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.47.0'
-pip install 'etlantic[lsp]==0.47.0'            # optional language server
-pip install 'etlantic-polars==0.47.0'          # optional
-pip install 'etlantic-pandas==0.47.0'          # optional
-pip install 'etlantic-sql==0.47.0'             # optional
-pip install 'etlantic-pyspark==0.47.0'         # optional
-pip install 'etlantic-airflow==0.47.0'         # optional
-pip install 'etlantic-prefect==0.47.0'         # optional
-pip install 'etlantic-keyring==0.47.0'         # optional
-pip install 'etlantic-sqlmodel==0.47.0'        # optional
-pip install 'medallantic==0.47.0'              # optional
+pip install 'etlantic==0.48.0'
+pip install 'etlantic[lsp]==0.48.0'            # optional language server
+pip install 'etlantic-polars==0.48.0'          # optional
+pip install 'etlantic-pandas==0.48.0'          # optional
+pip install 'etlantic-sql==0.48.0'             # optional
+pip install 'etlantic-pyspark==0.48.0'         # optional
+pip install 'etlantic-airflow==0.48.0'         # optional
+pip install 'etlantic-prefect==0.48.0'         # optional
+pip install 'etlantic-keyring==0.48.0'         # optional
+pip install 'etlantic-sqlmodel==0.48.0'        # optional
+pip install 'medallantic==0.48.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

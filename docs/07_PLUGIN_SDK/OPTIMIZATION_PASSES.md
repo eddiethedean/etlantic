@@ -1,6 +1,6 @@
 # Optimization Passes (0.45)
 
-> **Status: Available in ETLantic 0.47.0.**
+> **Status: Available in ETLantic 0.48.0.**
 
 ETLantic's optimization SDK lets built-in and third-party **passes** propose
 deterministic physical-plan changes with evidence, cost estimates, and semantic

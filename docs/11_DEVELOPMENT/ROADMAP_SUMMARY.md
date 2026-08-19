@@ -4,9 +4,10 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.47.0** is the current gate-ready scheduler/runner and remote-federation
-line (**Beta**): split-role FastAPI gateway, timer leadership, execution host,
-SQLModel `004`, and Experimental Kubernetes / Spark Connect fakes. Prior
+**0.48.0** is the current gate-ready human-governed AI line (**Beta**):
+redacted context bundles, proposal sandbox, user-region generators, and
+Experimental `etlantic-mcp` fakes. Prior **0.47** closed the scheduler/runner
+and remote-federation line. Prior
 **0.46** closed Streaming and event-driven pipelines. Prior **0.45** closed
 the Planner and Optimization SDK. Prior **0.44** closed Developer
 Intelligence (LSP / IDE / notebooks). Prior **0.43** closed CP-GA
@@ -20,7 +21,8 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Gate-ready](EXIT_GATE_0_47.md) |
+| Current | 0.48 | AI-assisted, human-governed proposals | [Gate-ready](EXIT_GATE_0_48.md) |
+| Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Gate-ready](EXIT_GATE_0_47.md) |
 | Previous | 0.46 | Streaming and event-driven pipelines | [Gate-ready](EXIT_GATE_0_46.md) |
 | Previous | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
 | Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | [Released](EXIT_GATE_0_44.md) |
@@ -30,9 +32,9 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next | 0.48 | Governed human-approval loops and promotion policy | Planning freeze — not started |
+| Next | 0.49 | Brownfield adoption bridges | Planning freeze |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.47 scheduler/federation gate-ready; 0.46 Streaming prior; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.47 scheduler/federation prior; 0.46 Streaming prior; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -320,7 +322,10 @@ shared entry, evidence, and completion rules for all later phases.
   service plus remote execution federation — [planning freeze](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
   Spark Connect are Experimental fakes; live packs remain 0.51
-- **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed engineering
+- **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed
+  proposals — [Gate-ready](EXIT_GATE_0_48.md) /
+  [ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md); MCP is Experimental
+  `etlantic-mcp`; live model eval is skip `048-E-01`.
 - **[0.49](IMPLEMENTATION_PLAN_0_49.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
 - **[0.50](IMPLEMENTATION_PLAN_0_50.md):** read-only-first operator console
 - **[0.51](IMPLEMENTATION_PLAN_0_51.md):** managed runtime and enterprise provider packs

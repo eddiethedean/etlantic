@@ -11,8 +11,8 @@ pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
 ## Install
 
 ```bash
-pip install 'etlantic-sql==0.47.0'
-# pip install 'etlantic==0.47.0'
+pip install 'etlantic-sql==0.48.0'
+# pip install 'etlantic==0.48.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
@@ -80,7 +80,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.47.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.47.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.48.0/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.48.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

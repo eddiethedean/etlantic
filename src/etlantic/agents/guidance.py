@@ -5,6 +5,10 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+from etlantic.agents.diagnostics import guide_diagnostic
+from etlantic.agents.regions import merge_user_regions
+from etlantic.diagnostics import Diagnostic
+
 PUBLIC_CLI_COMMANDS = (
     "init",
     "doctor",
@@ -27,6 +31,8 @@ PUBLIC_CLI_COMMANDS = (
     "schedule",
     "scheduler",
     "worker",
+    "context",
+    "proposal",
 )
 
 PUBLIC_SDK_IMPORTS = (
@@ -43,6 +49,7 @@ PUBLIC_SDK_IMPORTS = (
     "etlantic.optimization",
     "etlantic.streaming",
     "etlantic.resources",
+    "etlantic.agents",
 )
 
 SECURITY_RULES = (
@@ -158,20 +165,28 @@ globs:
 
 # ETLantic
 
-- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization, streaming.
+- Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization, streaming, resources, agents.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.
 - Fail closed: secrets, production plugin allowlists, schema history without rows.
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.
+- Agent proposals are untrusted until `etlantic proposal validate` and a current 0.42 approval.
 """
 
 
 def generate_agent_guidance(
-    root: str | Path, *, overwrite: bool = True
+    root: str | Path,
+    *,
+    overwrite: bool = True,
+    preserve_user_regions: bool = True,
 ) -> dict[str, Path]:
-    """Write agent guidance files under ``root``."""
+    """Write agent guidance files under ``root``.
+
+    Marked user regions are preserved. Generated content never grants mutation
+    authority. Returns only paths that were written.
+    """
     base = Path(root)
     base.mkdir(parents=True, exist_ok=True)
     mapping = {
@@ -181,13 +196,31 @@ def generate_agent_guidance(
         ".cursor/rules/etlantic.mdc": render_cursor_rule(),
     }
     written: dict[str, Path] = {}
+    diagnostics: list[Diagnostic] = []
     for rel, content in mapping.items():
         path = base / rel
-        if path.exists() and not overwrite:
+        if path.exists() and not overwrite and not preserve_user_regions:
+            continue
+        text = content if content.endswith("\n") else content + "\n"
+        if path.exists() and preserve_user_regions:
+            merged = merge_user_regions(text, path.read_text(encoding="utf-8"))
+            diagnostics.extend(merged.diagnostics)
+            if merged.diagnostics:
+                generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
+                continue
+            text = merged.text
+        elif path.exists() and not overwrite:
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            content if content.endswith("\n") else content + "\n", encoding="utf-8"
-        )
+        path.write_text(text, encoding="utf-8")
         written[rel] = path
+    generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
+    if not written and diagnostics:
+        diagnostics.append(
+            guide_diagnostic(
+                "overwrite",
+                "Guidance files were not rewritten because user-region markers conflicted.",
+            )
+        )
+        generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
     return written

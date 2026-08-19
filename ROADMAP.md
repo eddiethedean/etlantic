@@ -6,17 +6,18 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.47.0** (Beta) — gate-ready scheduler/runner
-service and remote execution federation: schedule contracts, split-role FastAPI
-gateway, SQLModel `004`, Experimental Kubernetes / Spark Connect fakes. Prior
-**0.46** Streaming, **0.45** Planner and Optimization SDK, **0.44** Developer Intelligence,
+**Current release:** ETLantic **0.48.0** (Beta) — gate-ready human-governed AI:
+context bundles, proposal sandbox, user-region generators, and Experimental
+`etlantic-mcp` fakes. Prior **0.47** scheduler/runner service and remote
+federation, **0.46** Streaming, **0.45** Planner and Optimization SDK, **0.44** Developer Intelligence,
 **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2, and **0.39** CP1
 remain prior baselines. Milestones **0.25** (burn-in first slice)
 through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready for tag/publish |
+| Current | 0.48 | AI-assisted, human-governed proposals | Gate-ready for tag/publish |
+| Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |
 | Previous | 0.46 | Streaming and event-driven pipelines | Gate-ready / shipped evidence |
 | Previous | 0.45 | Planner and optimization SDK | Gate-ready / shipped evidence |
 | Previous | 0.44 | Developer Intelligence (LSP / IDE / static analysis) | Gate-ready / shipped evidence |
@@ -26,9 +27,9 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.48 | Governed human-approval loops and promotion policy | Planning freeze — not started |
+| Next | 0.49 | Brownfield adoption bridges | Planning freeze |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → optimization → streaming → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.47 scheduler/federation gate-ready; 0.46 Streaming prior) |
+| Post-foundation | 0.38–0.52 | Connectivity → control plane → developer intelligence → optimization → streaming → federation, governed AI, adoption, operations, providers, and modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.47 scheduler/federation prior) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -4156,66 +4157,101 @@ Acceptance:
 
 ## 0.48 — AI-Assisted, Human-Governed Engineering
 
+Gate-ready after **0.48.0**: [IMPLEMENTATION_PLAN_0_48](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_48.md),
+[ADR-024](docs/11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted),
+[EXIT_GATE_0_48](docs/11_DEVELOPMENT/EXIT_GATE_0_48.md). These surfaces are
+**Available** in 0.48.0 (in-tree; no tag in this commit). Live MCP-client
+(`048-M-01`) and live paid-model eval (`048-E-01`) remain skipped.
+
+**Objective:** a supported agent can inspect redacted context, emit a
+structured proposal, get deterministic validation and impact, and stop at an
+explicit human approval. No model or MCP tool mutates contracts, baselines,
+runs, secrets, providers, schedules, or external systems.
+
+**Reuse (do not duplicate):** extend `etlantic.agents.generate_agent_guidance`
+and `scripts/check_agent_guidance.py`; wrap `etlantic validate|plan|diff|inspect`
+and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
+`/v1/approvals*`. 0.45 optimizer candidates remain one advisory proposal kind
+([ADR-021](docs/11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md)).
+0.40–0.43 GitOps preview, promotion, and rollback stay those phases' APIs;
+0.48 may request them, not replace them.
+
+**Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
+autonomous run submission; applying optimizations without approval;
+brownfield dbt/orchestrator import (0.49); operator console (0.50); live
+cloud providers (0.51); live paid-model eval as a release blocker
+(skip `048-E-01`).
+
+Supported vs Experimental (claims only until the exit gate is Met):
+
+- **Supported (core):** vendor-neutral task/proposal/evidence schemas;
+  bounded redacted context bundles; deterministic no-network/no-secret
+  sandbox; generators with user-region preservation; Codex/Claude/Cursor
+  adapters from one catalog; approval records enforced by 0.42 APIs;
+  prompt-injection and false-authority tests.
+- **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
+  interop is skip `048-M-01` if fixtures suffice.
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.49–0.51
+  programs.
+
+0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
+schedules, and federation. Agents cannot route notifications, redrive dead
+letters, reveal payloads, approve erasure, create/pause/trigger schedules,
+or submit runs.
+
 Deliver:
 
-- read-only machine-consumable inspection APIs for models, contracts, lineage,
-  diagnostics, plans, capabilities, and run history;
-- a versioned, vendor-neutral ETLantic AI workflow catalog;
-- maintained skill packs for Codex and Claude Code plus scoped Cursor rules and
-  commands for explaining pipelines, scaffolding models, diagnosing wiring,
-  generating contracts, creating conformance tests, reviewing security, and
-  performing migrations;
-- project-local generators for `AGENTS.md`, `CLAUDE.md`, Codex skills, and
-  `.cursor/rules` or `.cursor/commands` that preserve user-owned instructions;
-- composable repository, directory, and task-specific instruction layers;
-- bounded machine-readable context bundles containing selected contracts,
-  graph slices, diagnostics, plan explanations, and report summaries with
-  explicit provenance;
-- an optional read-only MCP server for inspection, validation, planning,
-  documentation, and report-query tools;
-- structured proposal format for generated pipelines, migrations, policies, and
-  optimization suggestions;
-- human-governed proposals for schema adapters, source corrections, contract
-  revisions, migrations, and conformance tests using bounded redacted drift
-  evidence;
-- human-governed proposals for repair plans, backfill tests, reconciliation
-  rules, parity fixes, write-policy migrations, and quality remediation;
-- provenance and evidence attached to every generated proposal;
-- deterministic validation sandbox for proposals before review;
-- proposal previews showing file diffs, graph changes, compatibility, plan
-  changes, downstream impact, and required approvals;
-- cross-agent evaluation fixtures that score correctness, safety, determinism,
-  and unnecessary context use;
-- prompt-injection-resistant boundaries around documents, logs, and metadata;
-- explicit human approval before mutation, submission, secret access, or
-  external communication;
-- optional agent/tool adapters in separate packages, with no Claude, OpenAI, or
-  Cursor SDK dependency in ETLantic core.
+- versioned vendor-neutral task, context-bundle, proposal, and evidence
+  schemas (`etlantic.ai_task/1`, `etlantic.context_bundle/1`,
+  `etlantic.proposal/1`);
+- bounded, redacted, provenance-linked, freshness-labeled context bundles
+  over selected contracts, graph slices, diagnostics, plan explanations,
+  and report summaries;
+- CLI `etlantic context bundle`, `etlantic proposal validate`, and
+  `etlantic generate --kind agents` wrapping existing generators;
+- preserve-user-region markers, composable instruction layers, and
+  conflict reporting (no silent overwrite);
+- Codex, Claude Code, and Cursor adapters generated from the same catalog;
+- a deterministic validation sandbox that compiles/plans/diffs proposals
+  without network, secrets, or pipeline execution;
+- proposal previews with file diffs, graph/compatibility/plan changes,
+  downstream impact, and required 0.42 approvals;
+- human-governed proposals for schema adapters, contract revisions,
+  migrations, repair/backfill, and advisory 0.45 optimizations — apply only
+  through existing approval/ack APIs;
+- optional Experimental `etlantic-mcp` with method-by-method deny of
+  mutate/submit/install/secrets/network;
+- fixture-based cross-agent evaluation of correctness, safety, determinism,
+  and unnecessary context use; live model eval is skip `048-E-01`.
 
 Acceptance:
 
 - an assistant can propose a contract-compatible transformation and receive
-  precise validation feedback without execution authority;
-- Codex, Claude Code, and Cursor can perform the same canonical scaffold,
-  validation, migration, and review workflows through their native project
-  instruction formats;
+  precise validation feedback without running user code, accessing secrets,
+  or executing the pipeline;
+- Codex, Claude Code, and Cursor produce the same structured evidence and
+  approval boundary for equivalent tasks, with documented capability diffs;
 - regeneration is deterministic, preserves marked user-owned regions, and
   reports conflicts rather than silently overwriting them;
-- context bundles are bounded, redacted, explicitly selected, and identify
-  every included source;
+- context bundles are bounded, redacted, explicitly selected, freshness-
+  labeled, and identify every included source; embedded instructions in
+  untrusted project text cannot grant tools;
 - read-only MCP tools cannot submit runs, install plugins, resolve secrets,
-  mutate files, or contact undeclared external systems;
-- generated changes are ordinary reviewable files and plans, not hidden runtime
-  mutations;
+  mutate files, communicate externally, or expand their own tool authority;
+- generated changes are ordinary reviewable files and plans, not hidden
+  runtime mutations;
 - every proposed mutation includes validation results and a semantic-impact
-  preview before human approval;
-- an assistant cannot acknowledge drift, replace an operational baseline, or
-  revise an authoritative contract without explicit human approval;
-- untrusted contract text or logs cannot grant tools, reveal secrets, install
-  plugins, or initiate runs.
+  preview before a **current** 0.42 human approval;
+- no schema baseline, contract, reliability threshold, run, schedule,
+  provider, or external effect changes without that approval;
+- untrusted contract text or logs cannot grant tools, reveal secrets,
+  install plugins, or initiate runs;
+- security review has no unresolved critical/high prompt-injection, data
+  leakage, sandbox escape, or authority-escalation finding.
 
 See [Schema Drift and Evolution Plan](docs/11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md).
 See [ETL Reliability and Recovery Plan](docs/11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md).
+See [SECURITY.md — AI Coding Assistants](docs/02_FOUNDATIONS/SECURITY.md).
 
 ## 0.49 — Brownfield Adoption Bridges
 

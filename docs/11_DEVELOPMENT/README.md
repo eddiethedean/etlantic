@@ -21,6 +21,12 @@ released.
 
 ## Current migrations and exit gates
 
+- [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
+- [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
+- [Exit gate 0.48](EXIT_GATE_0_48.md) (Gate-ready)
+- [Findings ledger 0.48](FINDINGS_0_48.md)
+- [Migration 0.47 → 0.48](MIGRATION_0_47_TO_0_48.md) (Gate-ready — human-governed AI)
+- [What's new in 0.48](../01_GETTING_STARTED/WHATS_NEW_0_48.md) (Gate-ready)
 - [Migration 0.46 → 0.47](MIGRATION_0_46_TO_0_47.md) (Gate-ready — scheduler service and federation)
 - [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) (Implemented)
 - [ADR-023: Scheduler service and federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) (Accepted)

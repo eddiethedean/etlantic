@@ -6,7 +6,7 @@
 > multi-tenant is Available for `isolated-deployment` / `dedicated-schema`;
 > `shared-service` remains Experimental; community **non-SLA**.
 >
-> **Current 0.47 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
+> **Current 0.48 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
 > Phase 0.47 **plans** separately supervised scheduler and execution-host service
 > roles behind this gateway ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md),

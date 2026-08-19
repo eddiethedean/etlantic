@@ -24,6 +24,7 @@ REQUIRED_MODULES = (
     "etlantic_iceberg",
     "etlantic_snowflake",
     "etlantic_openlineage",
+    "etlantic_mcp",
     "etlantic_fastapi",
     "etlantic_lsp",
     "medallantic",

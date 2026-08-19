@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.47.0 is a Beta (PyPI) release suitable for documented single-tenant
+ETLantic 0.48.0 is a Beta (PyPI) release suitable for documented single-tenant
 pilots—not unrestricted enterprise production. The roadmap remains entirely
 within the 0.x series; **0.37** closed the stable-foundation gate and later
 minors continue post-foundation incubation. Breaking
@@ -11,7 +11,7 @@ changes remain possible, but they must not be silent. See
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.47 public imports | Supported for the 0.47.x line |
+| Documented 0.48 public imports | Supported for the 0.48.x line |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |

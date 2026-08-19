@@ -1,0 +1,13 @@
+{
+  "schema": "etlantic.context.conformance-report/1",
+  "release": "0.48.0",
+  "checks": {
+    "redacted": true,
+    "provenance_and_freshness": true,
+    "budget_fail_closed": true,
+    "no_secret_resolver": true,
+    "no_execution": true,
+    "hostile_text_cannot_grant_tools": true
+  },
+  "passed": true
+}

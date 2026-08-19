@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.47"
+current_minor: "0.48"
 audience: developer
 ---
 
 # etlantic-airflow API
 
-> **Status: Available in ETLantic 0.47.0.** Airflow DAG compiler.
+> **Status: Available in ETLantic 0.48.0.** Airflow DAG compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-airflow==0.47.0'
+pip install 'etlantic-airflow==0.48.0'
 ```
 
 ```python

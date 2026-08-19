@@ -1,0 +1,13 @@
+{
+  "schema": "etlantic.proposal.conformance-report/1",
+  "release": "0.48.0",
+  "checks": {
+    "schema_etlantic_proposal_1": true,
+    "sandbox_no_network_no_secrets": true,
+    "applied_false": true,
+    "approval_handoff_approval_store": true,
+    "deny_expire_stale": true,
+    "adapter_catalog_shared": true
+  },
+  "passed": true
+}

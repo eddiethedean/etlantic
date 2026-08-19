@@ -11,7 +11,7 @@ def test_negotiate_submit_and_recover() -> None:
     host = FakeRemoteHost()
     session = host.negotiate(
         {
-            "version": "0.47.0",
+            "version": "0.48.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )
@@ -27,7 +27,7 @@ def test_negotiate_submit_and_recover() -> None:
 def test_missing_dyn_caps_rejected() -> None:
     host = FakeRemoteHost()
     with pytest.raises(ValueError, match="PMFED110"):
-        host.negotiate({"version": "0.47.0", "capabilities": {"map": False}})
+        host.negotiate({"version": "0.48.0", "capabilities": {"map": False}})
 
 
 def test_placement_rejects_before_transfer() -> None:
@@ -51,7 +51,7 @@ def test_tamper_partial_replay() -> None:
     dirty = {"fingerprint": "abc", "payload": {"row": 1}}
     session = host.negotiate(
         {
-            "version": "0.47.0",
+            "version": "0.48.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )

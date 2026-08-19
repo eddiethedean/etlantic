@@ -59,6 +59,10 @@ Proposed 0.47 scheduler-service and remote-federation freeze:
 
 - [ADR-023: Scheduler Service, Execution Host, and Remote Federation](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)
 
+Proposed 0.48 human-governed AI freeze:
+
+- [ADR-024: Human-Governed AI Workflows](adr/ADR-024-HUMAN-GOVERNED-AI.md)
+
 Accepted registry and isolation decision (0.40 Wave 0):
 
 - [ADR-017: Registry Records, Revisions, and Isolation Profiles](adr/ADR-017-REGISTRY-AND-ISOLATION.md)

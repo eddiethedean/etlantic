@@ -2288,9 +2288,11 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             provider=provider,
         ).to_dict()
 
+    from etlantic_fastapi.ai_routes import register_ai_routes
     from etlantic_fastapi.schedule_routes import register_schedule_routes
 
     register_schedule_routes(router, api, get_ctx)
+    register_ai_routes(router, api, get_ctx)
 
     return router
 

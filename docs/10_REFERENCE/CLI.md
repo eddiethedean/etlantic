@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: Available in ETLantic 0.47.0.** This page documents the commands
+> **Status: Available in ETLantic 0.48.0.** This page documents the commands
 > implemented by the installed package.
 
 ```bash
@@ -240,8 +240,15 @@ python -m etlantic generate pipeline.py:SamplePipeline \
 ```
 
 `--kind definition` writes an `etlantic.pipeline/1` document (Available in
-0.24). `--sqlmodel` requires `etlantic-sqlmodel`. Definition kind works from a
-class target or an existing definition JSON.
+0.24). `--kind agents` writes `AGENTS.md`, `CLAUDE.md`, Codex skill, and Cursor
+rule files (TARGET optional, default `.`). `--sqlmodel` requires
+`etlantic-sqlmodel`. Definition kind works from a class target or an existing
+definition JSON.
+
+```bash
+python -m etlantic generate --kind agents
+python -m etlantic generate --kind agents path/to/project
+```
 
 ## `diff`
 
@@ -312,6 +319,32 @@ python -m etlantic stream schemas check --store registry.json --subject orders-v
 requires `--store` (fingerprint identities only) and never registers the
 candidate it is checking. Store JSON that contains payload keys is
 rejected (`INVALID_MODEL`). Production registry adapters require
+
+## `context`
+
+Assemble a bounded, redacted context bundle for agents. Never executes the
+pipeline, never resolves secrets, and never contacts the network.
+
+```bash
+python -m etlantic context bundle pipeline.py:SamplePipeline --format json
+python -m etlantic context bundle pipeline.py:SamplePipeline --max-bytes 262144
+```
+
+The payload is `etlantic.context_bundle/1`. Overflow, missing provenance, stale
+evidence, or redaction failures emit `PMCTX*` and a non-zero exit.
+
+## `proposal`
+
+Validate an untrusted `etlantic.proposal/1` JSON document in the deterministic
+sandbox. Does **not** apply files, submit runs, or create approvals.
+
+```bash
+python -m etlantic proposal validate proposal.json --format json
+python -m etlantic proposal validate proposal.json --target pipeline.py:SamplePipeline
+```
+
+Forbidden actions (`run.submit`, schedule/DLQ/erasure mutation, secrets) fail
+closed with `PMPROP*`. Apply remains `etlantic` control-plane `/v1/approvals*`.
 
 ## `schedule`
 

@@ -2,7 +2,7 @@
 title: ETLantic 0.46 Implementation Plan
 description: Implementation-grade plan for bounded dynamic control flow, streaming, and event-driven pipelines.
 plan_status: released
-plan_last_reviewed: 0.47.0
+plan_last_reviewed: 0.48.0
 ---
 
 # ETLantic 0.46 Implementation Plan

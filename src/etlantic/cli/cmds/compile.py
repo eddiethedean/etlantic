@@ -130,15 +130,15 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
     @app.command("generate")
     def generate_cmd(
         ctx: typer.Context,
-        target: str = typer.Argument(
-            ..., help="module:Class, path.py:Class, or pipeline JSON"
+        target: str | None = typer.Argument(
+            None, help="module:Class, path.py:Class, pipeline JSON, or directory"
         ),
         output: str = typer.Option("contracts", "--output", "-o"),
         fmt: str = typer.Option("json", "--format"),
         kind: str = typer.Option(
             "contracts",
             "--kind",
-            help="contracts (ODCS/DTCS/DPCS) or definition (etlantic.pipeline/1 JSON)",
+            help="contracts, definition, or agents",
         ),
         sqlmodel: bool = typer.Option(
             False,
@@ -146,8 +146,41 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             help="Also emit SQLModel stubs (requires etlantic-sqlmodel)",
         ),
     ) -> None:
-        """Generate ODCS/DTCS/DPCS contract bundles or pipeline definition JSON."""
+        """Generate ODCS/DTCS/DPCS contract bundles, pipeline JSON, or agent guidance."""
         cli = _cli(ctx)
+        if kind == "agents":
+            from etlantic.agents import generate_agent_guidance
+
+            root = Path(target) if target else Path(".")
+            if output != "contracts":
+                root = Path(output)
+            written = generate_agent_guidance(root)
+            emit_payload(
+                {
+                    "ok": True,
+                    "kind": "agents",
+                    "output": {rel: str(path) for rel, path in written.items()},
+                },
+                fmt=fmt,
+            )
+            return
+        if kind not in {"contracts", "definition", "agents"}:
+            emit_payload(
+                {
+                    "ok": False,
+                    "error": (
+                        f"Unknown kind {kind!r}; expected contracts|definition|agents"
+                    ),
+                },
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.INVALID_MODEL)
+        if not target:
+            emit_payload(
+                {"ok": False, "error": "TARGET is required unless --kind agents"},
+                fmt=fmt,
+            )
+            raise typer.Exit(ec.INVALID_MODEL)
         pipeline_cls = cli.load_target(target)
         from etlantic.authoring.definition import PipelineDefinition
         from etlantic.authoring.normalize import definition_from_pipeline

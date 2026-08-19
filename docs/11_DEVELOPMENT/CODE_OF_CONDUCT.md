@@ -1,6 +1,6 @@
 # Code of Conduct
 
-> **Status: Available in ETLantic 0.47.0.**
+> **Status: Available in ETLantic 0.48.0.**
 
 ETLantic contributors, maintainers, and community participants must keep project
 spaces respectful, technically focused, and safe.

@@ -5,9 +5,9 @@ description: Validate, plan, compile, and generate ETLantic pipelines safely.
 
 # ETLantic skill
 
-Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`, `profile`, `run`, `compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `erasure`, `viz`, `report`, `watch`, `stream`, `schedule`, `scheduler`, `worker`) and
+Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`, `profile`, `run`, `compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `erasure`, `viz`, `report`, `watch`, `stream`, `schedule`, `scheduler`, `worker`, `context`, `proposal`) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
-public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`, `.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`, `.optimization`, `.streaming`, `.resources`).
+public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`, `.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`, `.optimization`, `.streaming`, `.resources`, `.agents`).
 
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.

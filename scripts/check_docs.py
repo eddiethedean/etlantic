@@ -576,6 +576,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",
+        "etlantic-mcp",
         "etlantic-fastapi",
         "etlantic-keyring",
         "etlantic-pandas",
@@ -673,6 +674,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",
+        "etlantic-mcp",
     )
     for distribution in release_distributions:
         if f"| `{distribution}` |" not in release_process:
@@ -680,9 +682,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes twenty-two distributions" not in release_process:
+    if "publishes twenty-three distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 22-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 23-package "
             "release inventory"
         )
 
@@ -2350,6 +2352,7 @@ def main() -> None:
         ROOT / "packages/etlantic-schemaregistry/README.md",
         ROOT / "packages/etlantic-iceberg/README.md",
         ROOT / "packages/etlantic-snowflake/README.md",
+        ROOT / "packages/etlantic-mcp/README.md",
         ROOT / "packages/etlantic-prefect/README.md",
         ROOT / "examples/portable_polars_kernel.py",
         ROOT / "examples/portable_pandas_kernel.py",
@@ -2472,6 +2475,7 @@ def main() -> None:
         "etlantic-iceberg",
         "etlantic-snowflake",
         "etlantic-openlineage",
+        "etlantic-mcp",
     }
     reference_packages = {"etlantic-fastapi"}
     redirect_packages = {"etlantic-sparkforge"}

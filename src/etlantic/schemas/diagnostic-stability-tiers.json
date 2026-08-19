@@ -36,6 +36,10 @@
     "PMFIRE": "stable",
     "PMFED": "stable",
     "PMRES": "stable",
+    "PMCTX": "experimental",
+    "PMPROP": "experimental",
+    "PMGUIDE": "experimental",
+    "PMMCP": "experimental",
     "PMSCHED": "stable",
     "PMSEC": "stable",
     "PMSPARK": "stable",
@@ -53,6 +57,7 @@
     "ODCS/DTCS/DPCS codes retain their upstream namespaces when present; declare a tier here before shipping new ETLantic-owned families.",
     "PMOPT covers optimization-pass diagnostics introduced in 0.45 (stable with etlantic.optimization/1).",
     "PMDYN / PMSTR / PMDLQ / PMREG cover 0.46 dynamic expansion, stream semantics, record-error/DLQ, and schema-registry diagnostics.",
-    "PMSVC / PMFIRE / PMFED / PMRES cover 0.47 scheduler-service topology, firing semantics, remote federation, and resource-provider allowlists."
+    "PMSVC / PMFIRE / PMFED / PMRES cover 0.47 scheduler-service topology, firing semantics, remote federation, and resource-provider allowlists.",
+    "PMCTX / PMPROP / PMGUIDE / PMMCP cover 0.48 context bundles, proposal sandbox, generator-region conflicts, and MCP method authority (experimental)."
   ]
 }

@@ -1,7 +1,7 @@
 # etlantic-iceberg (Experimental)
 
 
-Version **0.47.0** (lockstep with ETLantic core).
+Version **0.48.0** (lockstep with ETLantic core).
 Apache Iceberg connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43** via PyIceberg.
 Install when pipelines need Experimental `iceberg` source/sink/storage
@@ -16,13 +16,13 @@ until partition-scoped replace is real.
 ## Install
 
 ```bash
-pip install 'etlantic-iceberg==0.47.0'
+pip install 'etlantic-iceberg==0.48.0'
 # Optional live PyIceberg:
-# pip install 'etlantic-iceberg[pyiceberg]==0.47.0'
-# pip install 'etlantic==0.47.0'
+# pip install 'etlantic-iceberg[pyiceberg]==0.48.0'
+# pip install 'etlantic==0.48.0'
 ```
 
-Core dependency: `etlantic>=0.47.0,<0.48`.
+Core dependency: `etlantic>=0.48.0,<0.49`.
 
 ## Entry points
 

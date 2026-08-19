@@ -1,6 +1,6 @@
 # Pilot evidence packet (0.39)
 
-> **Status: Available in ETLantic 0.47.0.** Reproducible checklist for a
+> **Status: Available in ETLantic 0.48.0.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -8,10 +8,10 @@
 
 | Component | Pin |
 |---|---|
-| Core | `etlantic==0.47.0` |
-| Docs | `https://etlantic.readthedocs.io/en/v0.47.0/` |
+| Core | `etlantic==0.48.0` |
+| Docs | `https://etlantic.readthedocs.io/en/v0.48.0/` |
 | Optional engines | Matching `0.45.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
-| Facade | `medallantic==0.47.0` when used |
+| Facade | `medallantic==0.48.0` when used |
 
 ## Topology (reference)
 
@@ -21,7 +21,7 @@
 3. Local or one engine plugin (Polars **or** Pandas **or** SQL **or** local PySpark)
 4. Optional Airflow compile or Prefect local MVP — not a managed control plane
 
-Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.47.0/examples/sample_pilot).
+Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.48.0/examples/sample_pilot).
 
 ## Ownership
 
@@ -50,8 +50,8 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 
 ## Sign-off checklist
 
-- [ ] `etlantic --version` prints `0.47.0`
+- [ ] `etlantic --version` prints `0.48.0`
 - [ ] Quickstart succeeds and intentional `PMPIPE210` fails closed
 - [ ] Production profile has `plugin_allowlist`
-- [ ] Docs consulted from `/en/v0.47.0/` for the pin
+- [ ] Docs consulted from `/en/v0.48.0/` for the pin
 - [ ] Limitations reviewed in [Capabilities](CAPABILITIES.md)

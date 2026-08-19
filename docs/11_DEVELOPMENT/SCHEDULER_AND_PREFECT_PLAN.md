@@ -7,7 +7,7 @@
 > ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
 > [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
 >
-> **Current 0.47 boundary:** ETLantic core provides local scheduling, the
+> **Current 0.48 boundary:** ETLantic core provides local scheduling, the
 > optional Prefect package provides the Python-native local MVP, and
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.

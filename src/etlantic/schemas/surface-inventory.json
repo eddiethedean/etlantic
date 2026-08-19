@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.47.0",
+  "version": "0.48.0",
   "classes": [
     "stable",
     "provisional",
@@ -43,7 +43,8 @@
     "control_plane",
     "optimization",
     "streaming",
-    "resources"
+    "resources",
+    "agents"
   ],
   "namespace_ownership": {
     "authoring": "etlantic.authoring",
@@ -61,7 +62,8 @@
     "control_plane": "etlantic.control_plane",
     "optimization": "etlantic.optimization",
     "streaming": "etlantic.streaming",
-    "resources": "etlantic.resources"
+    "resources": "etlantic.resources",
+    "agents": "etlantic.agents"
   },
   "plan_helpers_stable": [
     "verify_plan_fingerprint",
@@ -96,7 +98,9 @@
     "stream",
     "schedule",
     "scheduler",
-    "worker"
+    "worker",
+    "context",
+    "proposal"
   ],
   "wire_schemas": {
     "etlantic.plan/1": "stable",
@@ -110,6 +114,9 @@
     "etlantic.streaming/1": "stable",
     "etlantic.schedule/1": "stable",
     "etlantic.firing/1": "stable",
+    "etlantic.ai_task/1": "experimental",
+    "etlantic.context_bundle/1": "experimental",
+    "etlantic.proposal/1": "experimental",
     "etlantic.landing_checkpoint/1": "provisional",
     "etlantic.control_plane.context/1": "provisional",
     "etlantic.control_plane.accept_receipt/1": "provisional",

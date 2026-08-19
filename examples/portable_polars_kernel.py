@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.47.0 etlantic-polars==0.47.0
+    pip install etlantic==0.48.0 etlantic-polars==0.48.0
 
 Run with:
 

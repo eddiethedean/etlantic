@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/etlantic.proposal/1",
+  "title": "ETLantic untrusted AI proposal",
+  "type": "object",
+  "required": ["schema", "task_id", "files"],
+  "properties": {
+    "schema": { "const": "etlantic.proposal/1" },
+    "task_id": { "type": "string" },
+    "kind": { "type": "string" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "content": { "type": "string" },
+          "patch": { "type": "string" }
+        }
+      }
+    },
+    "plan_fingerprint": { "type": ["string", "null"] },
+    "policy_fingerprint": { "type": ["string", "null"] },
+    "optimization_candidate": { "type": ["object", "null"] }
+  },
+  "additionalProperties": true
+}

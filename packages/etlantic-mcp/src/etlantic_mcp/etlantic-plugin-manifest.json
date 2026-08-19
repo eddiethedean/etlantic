@@ -1,0 +1,27 @@
+{
+  "capabilities": [
+    "mcp"
+  ],
+  "digest": "sha256:6d211a05843962b07da093a23745d0fcb9ffaa459adfe11eb946a5b8a2cafa91",
+  "entries": [
+    {
+      "capabilities": [
+        "mcp"
+      ],
+      "engine": "mcp",
+      "group": "etlantic.mcp_servers",
+      "name": "mcp",
+      "protocol": "etlantic.mcp/1",
+      "target": "etlantic_mcp:create_server"
+    }
+  ],
+  "package": "etlantic-mcp",
+  "privileges": [],
+  "protocol_range": "etlantic.mcp/1",
+  "provenance": {
+    "publisher": "etlantic",
+    "maturity": "experimental"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.48.0"
+}

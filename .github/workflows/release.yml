@@ -70,12 +70,13 @@ jobs:
           ICEBERG_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-iceberg/pyproject.toml | head -1)"
           SNOWFLAKE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-snowflake/pyproject.toml | head -1)"
           OPENLINEAGE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-openlineage/pyproject.toml | head -1)"
+          MCP_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-mcp/pyproject.toml | head -1)"
           if [ "$TAG" != "$VERSION" ] || [ "$TAG" != "$MODULE_VERSION" ]; then
             echo "Version mismatch: tag='$TAG' pyproject='$VERSION' module='$MODULE_VERSION'"
             exit 1
           fi
-          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$MEDALLANTIC_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ] || [ "$TAG" != "$LSP_VERSION" ] || [ "$TAG" != "$S3_VERSION" ] || [ "$TAG" != "$KAFKA_VERSION" ] || [ "$TAG" != "$K8S_VERSION" ] || [ "$TAG" != "$SPARK_CONNECT_VERSION" ] || [ "$TAG" != "$SR_VERSION" ] || [ "$TAG" != "$ICEBERG_VERSION" ] || [ "$TAG" != "$SNOWFLAKE_VERSION" ] || [ "$TAG" != "$OPENLINEAGE_VERSION" ]; then
-            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION' lsp='$LSP_VERSION' s3='$S3_VERSION' kafka='$KAFKA_VERSION' k8s='$K8S_VERSION' spark-connect='$SPARK_CONNECT_VERSION' schemaregistry='$SR_VERSION' iceberg='$ICEBERG_VERSION' snowflake='$SNOWFLAKE_VERSION' openlineage='$OPENLINEAGE_VERSION'"
+          if [ "$TAG" != "$POLARS_VERSION" ] || [ "$TAG" != "$PANDAS_VERSION" ] || [ "$TAG" != "$SQL_VERSION" ] || [ "$TAG" != "$SPARK_VERSION" ] || [ "$TAG" != "$AIRFLOW_VERSION" ] || [ "$TAG" != "$PREFECT_VERSION" ] || [ "$TAG" != "$KEYRING_VERSION" ] || [ "$TAG" != "$SQLMODEL_VERSION" ] || [ "$TAG" != "$MEDALLANTIC_VERSION" ] || [ "$TAG" != "$SPARKFORGE_VERSION" ] || [ "$TAG" != "$DATAFUSION_VERSION" ] || [ "$TAG" != "$FASTAPI_VERSION" ] || [ "$TAG" != "$LSP_VERSION" ] || [ "$TAG" != "$S3_VERSION" ] || [ "$TAG" != "$KAFKA_VERSION" ] || [ "$TAG" != "$K8S_VERSION" ] || [ "$TAG" != "$SPARK_CONNECT_VERSION" ] || [ "$TAG" != "$SR_VERSION" ] || [ "$TAG" != "$ICEBERG_VERSION" ] || [ "$TAG" != "$SNOWFLAKE_VERSION" ] || [ "$TAG" != "$OPENLINEAGE_VERSION" ] || [ "$TAG" != "$MCP_VERSION" ]; then
+            echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION' lsp='$LSP_VERSION' s3='$S3_VERSION' kafka='$KAFKA_VERSION' k8s='$K8S_VERSION' spark-connect='$SPARK_CONNECT_VERSION' schemaregistry='$SR_VERSION' iceberg='$ICEBERG_VERSION' snowflake='$SNOWFLAKE_VERSION' openlineage='$OPENLINEAGE_VERSION' mcp='$MCP_VERSION'"
             exit 1
           fi
 
@@ -105,6 +106,7 @@ jobs:
           uv build --package etlantic-iceberg --out-dir dist
           uv build --package etlantic-snowflake --out-dir dist
           uv build --package etlantic-openlineage --out-dir dist
+          uv build --package etlantic-mcp --out-dir dist
           ls -la dist/
 
       - name: Generate CycloneDX SBOMs
@@ -411,6 +413,9 @@ jobs:
           publish_pair etlantic-openlineage \
             "dist/etlantic_openlineage-${TAG}-py3-none-any.whl" \
             "dist/etlantic_openlineage-${TAG}.tar.gz"
+          publish_pair etlantic-mcp \
+            "dist/etlantic_mcp-${TAG}-py3-none-any.whl" \
+            "dist/etlantic_mcp-${TAG}.tar.gz"
 
       - name: Create GitHub Release
         env:

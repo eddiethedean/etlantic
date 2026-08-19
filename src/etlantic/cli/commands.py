@@ -62,6 +62,11 @@ def register_commands(
     register_erasure_commands(app)
     register_stream_commands(app)
     register_schedule_commands(app)
+    from etlantic.cli.cmds.ai_context import register_context_commands
+    from etlantic.cli.cmds.proposal import register_proposal_commands
+
+    register_context_commands(app)
+    register_proposal_commands(app)
 
     @plugin_app.command("list")
     def plugin_list_cmd(

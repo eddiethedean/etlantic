@@ -2,7 +2,7 @@
 
 > **Plan status: partially shipped, living cross-release plan.**
 >
-> **Current 0.47 boundary:** Public reliability models, provider protocols,
+> **Current 0.48 boundary:** Public reliability models, provider protocols,
 > and local CLI inspection and preview workflows are available. Durable
 > managed history, control-plane coordination, federation, cost-aware
 > selection, and human-governed automation remain planned.
@@ -802,7 +802,7 @@ Rows from 0.39 onward are future sequence.
 | [0.45](IMPLEMENTATION_PLAN_0_45.md) | Cost-aware repair, materialization, and implementation selection |
 | [0.46](IMPLEMENTATION_PLAN_0_46.md) | Bounded dynamic control flow, streaming record errors/DLQs, schema registries, and continuous reliability — [EXIT_GATE_0_46](EXIT_GATE_0_46.md) |
 | [0.47](IMPLEMENTATION_PLAN_0_47.md) | Optional scheduler/runner service and remote federation wrapping CP3 — [EXIT_GATE_0_47](EXIT_GATE_0_47.md) (planning freeze; not Available) |
-| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed repair and migration proposals |
+| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed repair and migration proposals; apply via existing approval/ack APIs — [EXIT_GATE_0_48](EXIT_GATE_0_48.md) (planning freeze; not Available) |
 
 ## Success Criteria
 

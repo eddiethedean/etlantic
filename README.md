@@ -22,11 +22,11 @@
 </p>
 
 <p align="center">
-  <a href="https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
   <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/API_REFERENCE/">Python API</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/CLI/">CLI</a>
+  <a href="https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/API_REFERENCE/">Python API</a> ·
+  <a href="https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/CLI/">CLI</a>
 </p>
 
 ---
@@ -44,7 +44,7 @@ them.
 ETLantic requires Python 3.11 or newer. In an activated virtual environment:
 
 ```bash
-python -m pip install 'etlantic==0.47.0'
+python -m pip install 'etlantic==0.48.0'
 python -m etlantic --version
 mkdir my-pipeline
 cd my-pipeline
@@ -54,7 +54,7 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
 The run should succeed and write Ada and Grace to `data/out.json`. See the
-[full Quickstart](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/QUICKSTART/)
+[full Quickstart](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.
 
 ## What it provides
@@ -66,9 +66,9 @@ for setup details and expected output.
 - Deterministic plans that can be inspected, fingerprinted, diffed, run, or
   compiled.
 - Contract generation for
-  [ODCS](https://etlantic.readthedocs.io/en/v0.47.0/03_DATA_CONTRACTS/ODCS/),
-  [DTCS](https://etlantic.readthedocs.io/en/v0.47.0/04_TRANSFORMATIONS/DTCS/),
-  and [DPCS](https://etlantic.readthedocs.io/en/v0.47.0/05_PIPELINES/DPCS/)
+  [ODCS](https://etlantic.readthedocs.io/en/v0.48.0/03_DATA_CONTRACTS/ODCS/),
+  [DTCS](https://etlantic.readthedocs.io/en/v0.48.0/04_TRANSFORMATIONS/DTCS/),
+  and [DPCS](https://etlantic.readthedocs.io/en/v0.48.0/05_PIPELINES/DPCS/)
   artifacts.
 - Pluggable execution across local Python, Polars, Pandas, SQL, and PySpark,
   plus orchestration integrations.
@@ -88,7 +88,7 @@ The public CLI includes `init`, `doctor`, `validate`, `inspect`, `plan`, `run`,
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.47 |
+| Capability | 0.48 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |
@@ -97,9 +97,9 @@ only the integrations a pipeline needs:
 
 Each transformation must support the selected backend. In controlled
 deployments, pin ETLantic and official plugins to the same release. See
-[engine selection](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/ENGINE_SELECTION/)
+[engine selection](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/ENGINE_SELECTION/)
 and
-[compatibility](https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/COMPATIBILITY/).
+[compatibility](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/COMPATIBILITY/).
 
 ## Security and production posture
 
@@ -108,7 +108,7 @@ single-tenant pilots—not unrestricted enterprise production.
 
 It does not include a managed runtime or multi-tenant control plane; that work
 is tracked in the
-[control-plane program](https://etlantic.readthedocs.io/en/v0.47.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/).
+[control-plane program](https://etlantic.readthedocs.io/en/v0.48.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/).
 
 Plans and reports contain secret references, never resolved secret values.
 Production profiles require an explicit non-empty `plugin_allowlist`; an
@@ -116,21 +116,21 @@ allowlist controls selection but is not a sandbox. Schema history stores
 fingerprints and metadata, never source rows.
 
 Review the
-[production readiness](https://etlantic.readthedocs.io/en/v0.47.0/06_EXECUTION/PRODUCTION_READINESS/)
+[production readiness](https://etlantic.readthedocs.io/en/v0.48.0/06_EXECUTION/PRODUCTION_READINESS/)
 and
-[security model](https://etlantic.readthedocs.io/en/v0.47.0/02_FOUNDATIONS/SECURITY/)
+[security model](https://etlantic.readthedocs.io/en/v0.48.0/02_FOUNDATIONS/SECURITY/)
 before a pilot.
 
 ## Learn more
 
-- [Quickstart](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/QUICKSTART/)
-  and [first pipeline](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/FIRST_PIPELINE/)
-- [Is ETLantic for me?](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/COMPARE/)
-  and [capabilities](https://etlantic.readthedocs.io/en/v0.47.0/01_GETTING_STARTED/CAPABILITIES/)
-- [CLI reference](https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/CLI/)
-  and [Python API](https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/API_REFERENCE/)
-- [Plugin SDK](https://etlantic.readthedocs.io/en/v0.47.0/07_PLUGIN_SDK/)
-  and [optional packages](https://etlantic.readthedocs.io/en/v0.47.0/10_REFERENCE/OPTIONAL_PACKAGES/)
+- [Quickstart](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/)
+  and [first pipeline](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/FIRST_PIPELINE/)
+- [Is ETLantic for me?](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/COMPARE/)
+  and [capabilities](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/CAPABILITIES/)
+- [CLI reference](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/CLI/)
+  and [Python API](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/API_REFERENCE/)
+- [Plugin SDK](https://etlantic.readthedocs.io/en/v0.48.0/07_PLUGIN_SDK/)
+  and [optional packages](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/OPTIONAL_PACKAGES/)
 
 ## Contributing
 

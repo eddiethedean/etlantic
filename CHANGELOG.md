@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-08-18
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning `etlantic==0.47.x` or plugins with `<0.48` |
+| Breaking | Dependency floor becomes `etlantic>=0.48.0,<0.49` (human-governed AI line) |
+| Upgrade | `pip install 'etlantic==0.48.0'` and matching plugins / `medallantic==0.48.0`. See [Migration 0.47 → 0.48](docs/11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
+| Rollback | Re-pin 0.47.0 minors together |
+| Security | Context bundles and proposals never contain secrets/rows/payloads; apply stays a current 0.42 approval; production `plugin_allowlist` fails closed for `etlantic-mcp` |
+
+### Added
+
+- Context bundles (`etlantic.context_bundle/1`), proposal sandbox (`etlantic.proposal/1`), and vendor-neutral task catalog (`etlantic.ai_task/1`) ([ADR-024](docs/11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md))
+- CLI `etlantic context bundle` and `etlantic proposal validate`
+- `etlantic generate --kind agents` with user-region preservation
+- FastAPI `POST /v1/definitions/{id}/context` and `POST /v1/proposals/validate` (compute only)
+- Experimental package `etlantic-mcp` (`FakeMcpServer`; live skip `048-M-01`)
+- Diagnostics `PMCTX*`, `PMPROP*`, `PMGUIDE*`, `PMMCP*` (experimental)
+
+### Changed
+
+- Lockstep official plugins and Medallantic to `0.48.0` (`etlantic>=0.48.0,<0.49`)
+- `generate_agent_guidance` preserves marked user regions instead of silent overwrite
+
+### Fixed
+
+- Agent instruction generators no longer drop marked user-owned regions
+
 ## [0.47.0] - 2026-08-17
 
 ### Adopter summary
@@ -1822,6 +1852,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[0.48.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.48.0
 [0.47.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.47.0
 [0.46.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.46.0
 [0.45.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.45.0

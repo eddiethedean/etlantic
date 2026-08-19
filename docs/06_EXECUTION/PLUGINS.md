@@ -7,9 +7,9 @@
     [Building a Plugin](../07_PLUGIN_SDK/BUILDING_A_PLUGIN.md). For storage
     that exists today, see [Storage today](STORAGE_TODAY.md).
 
-## What ships in 0.47 (start here)
+## What ships in 0.48 (start here)
 
-| Category | Reality in 0.47 |
+| Category | Reality in 0.48 |
 |---|---|
 | Dataframe / SQL / Spark engines | Shipped as `etlantic-*` packages |
 | Orchestrators | Airflow compile + Prefect local MVP |

@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-> **Status: Available in ETLantic 0.47.0** for the shipped protocols below.
+> **Status: Available in ETLantic 0.48.0** for the shipped protocols below.
 > Future protocols are listed only in the appendix—do not treat them as APIs.
 
 For the package-from-zero workflow, start with
@@ -63,7 +63,7 @@ pipeline.
 ## Appendix — planned / not shipped
 
 These categories appear in design pages and are **not** Available as
-production live runtimes in **0.47.0**:
+production live runtimes in **0.48.0**:
 
 - Live Kind / Databricks / EMR / Spark Connect — skipped (`047-K-01` /
   `047-S-01`); enterprise packs are 0.51. The Experimental fakes

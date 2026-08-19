@@ -1,6 +1,6 @@
 # Python API Reference
 
-> **Status: Available in ETLantic 0.47.0.** Signatures and docstrings are
+> **Status: Available in ETLantic 0.48.0.** Signatures and docstrings are
 > generated from the package source across the pages linked below.
 
 ## Start here by persona
@@ -33,6 +33,7 @@ etl.connectors  # source / sink / storage connector protocols
 etl.control_plane  # CP1 identity, authz, memory stores (provisional)
 etl.optimization   # advisory optimize_plan / EvidenceStore / explain_optimization
 etl.streaming      # bounded expansion, envelopes, record-error policy
+etl.agents         # context bundles, proposal sandbox, agent guidance
 ```
 
 You may also import curated symbols directly:

@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.47.0,<0.48`.
+Official plugins declare `etlantic>=0.48.0,<0.49`.
 
 ## Package categories
 
@@ -35,7 +35,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes twenty-two distributions:
+Tag `vX.Y.Z` publishes twenty-three distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -61,6 +61,7 @@ Tag `vX.Y.Z` publishes twenty-two distributions:
 | `etlantic-iceberg` | `packages/etlantic-iceberg` | **Experimental** connector (Alpha classifier) |
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
 | `etlantic-openlineage` | `packages/etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
+| `etlantic-mcp` | `packages/etlantic-mcp` | **Experimental** read-only MCP extra (Alpha; FakeMcpServer) |
 
 VS Code reference extension lives at `editors/vscode` (VSIX; not a PyPI
 wheel). Build with `npm run package` after `npm install`.
@@ -215,7 +216,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.47** plugins, `etlantic>=0.47.0,<0.48`). A core
+**0.48** plugins, `etlantic>=0.48.0,<0.49`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

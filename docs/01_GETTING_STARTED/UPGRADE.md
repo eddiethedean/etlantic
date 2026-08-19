@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.47.0 (published Beta).**
+> **Status: Available in ETLantic 0.48.0 (published Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,14 +13,14 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.47.0** (gate-ready Beta) — choose your guide:
+**ETLantic 0.48.0** (gate-ready Beta) — choose your guide:
 
-| From version | Ordered path to 0.47 |
+| From version | Ordered path to 0.48 |
 |---|---|
-| 0.47.x | Already current |
-| 0.46.x | [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
-| 0.45.x | [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) → [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
-| 0.44.x | [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) → [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) → [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
+| 0.48.x | Already current |
+| 0.47.x | [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
+| 0.46.x | [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) → [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
+| 0.45.x | [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) → [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) → [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
 | 0.43.x | [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) → [0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | 0.42.x | [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) → [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
 | 0.41.x | [0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) → [0.42 → 0.43](../11_DEVELOPMENT/MIGRATION_0_42_TO_0_43.md) → [0.43 → 0.44](../11_DEVELOPMENT/MIGRATION_0_43_TO_0_44.md) → [0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
@@ -78,6 +78,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 | 0.38 → 0.39 | CP1 control-plane incubation; plugin floor `etlantic>=0.39.0,<0.40` |
 | 0.39 → 0.40 | CP2 registry / persistence; plugin floor `etlantic>=0.40.0,<0.41` |
 | 0.40 → 0.41 | CP3 durable work; plugin floor `etlantic>=0.41.0,<0.42` |
+| 0.47 → 0.48 | Human-governed AI context/proposals; plugin floor `etlantic>=0.48.0,<0.49` |
 | 0.46 → 0.47 | Scheduler/runner service and remote federation; plugin floor `etlantic>=0.47.0,<0.48` |
 | 0.45 → 0.46 | Streaming and dynamic control; plugin floor `etlantic>=0.46.0,<0.47` |
 | 0.44 → 0.45 | Planner and optimization SDK; plugin floor `etlantic>=0.45.0,<0.46` |
@@ -92,6 +93,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
+| 0.47 → 0.48 | [MIGRATION_0_47_TO_0_48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
 | 0.46 → 0.47 | [MIGRATION_0_46_TO_0_47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
 | 0.45 → 0.46 | [MIGRATION_0_45_TO_0_46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | 0.44 → 0.45 | [MIGRATION_0_44_TO_0_45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) |
@@ -288,6 +290,16 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
+
+## 0.48 configuration cheat sheet
+
+| Do | Don't |
+|---|---|
+| Pin `etlantic==0.48.0` and matching plugins / `medallantic==0.48.0` | Mix 0.47 plugins with a 0.48 core |
+| Treat proposals as untrusted until sandbox + a current 0.42 approval | Give agents schedule/DLQ/erasure/run mutation tools |
+| Pin `plugin_allowlist` for `etlantic-mcp` when that extra is selected | Embed secrets, rows, or payloads in context bundles |
+
+See [Migration 0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md).
 
 ## 0.47 configuration cheat sheet
 

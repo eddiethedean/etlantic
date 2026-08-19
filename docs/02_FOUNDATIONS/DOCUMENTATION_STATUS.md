@@ -1,6 +1,6 @@
 # Documentation Status and Conventions
 
-Prefer pages marked **Available in 0.47** and the Green path on the docs
+Prefer pages marked **Available in 0.48** and the Green path on the docs
 home. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer release evidence:
@@ -13,7 +13,7 @@ completed documentation audit:
 ## How to read a page
 
 1. Read the page status label first (table below).
-2. Treat **Available in 0.47** / **Shipped in 0.x** as current package
+2. Treat **Available in 0.48** / **Shipped in 0.x** as current package
    behavior; treat **Future design** and Design Proposals as intended 0.x
    surfaces, not APIs to install against.
 3. Treat **Experimental** as public but changeable without a major bump.
@@ -24,7 +24,7 @@ completed documentation audit:
    compiled artifact → run result.
 6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
    GUI catalogs/edit commands, and the FastAPI reference adapter as
-   **Available in 0.47** (see
+   **Available in 0.48** (see
    [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
    Historical design notes remain under Project → Archive.
 
@@ -32,7 +32,7 @@ completed documentation audit:
 
 | Page status | Meaning |
 |---|---|
-| Available in 0.47 | Tested against the current package |
+| Available in 0.48 | Tested against the current package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

@@ -2,7 +2,7 @@
 
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
 An Experimental Spark Connect extra (`etlantic-spark-connect`) with an
-in-process fake is Available in **0.47.0**. Live Databricks, EMR, and Spark
+in-process fake is Available in **0.48.0**. Live Databricks, EMR, and Spark
 Connect packs remain deferred (`047-S-01` / 0.51). See the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
 

@@ -57,7 +57,7 @@ class KafkaSourceConnector:
         return ConnectorInfo(
             name="kafka",
             protocol=SOURCE_PROTOCOL,
-            version="0.47.0",
+            version="0.48.0",
             provider="kafka",
             capabilities=(SOURCE_STREAM, SOURCE_WATERMARK, IDEMPOTENCY),
             maturity=ConnectorMaturity.EXPERIMENTAL,
@@ -143,7 +143,7 @@ class KafkaSinkConnector:
         return ConnectorInfo(
             name="kafka",
             protocol=SINK_PROTOCOL,
-            version="0.47.0",
+            version="0.48.0",
             provider="kafka",
             capabilities=(
                 SINK_STREAM,

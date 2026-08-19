@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: Available in ETLantic 0.47.0.** CP1–CP4 are foundations;
+> **Status: Available in ETLantic 0.48.0.** CP1–CP4 are foundations;
 > **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
 > profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
 > remains Experimental; community **non-SLA**.
@@ -54,7 +54,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.47.0'` (match `etlantic==0.47.0`).
+Pin: `pip install 'etlantic-fastapi==0.48.0'` (match `etlantic==0.48.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
@@ -100,6 +100,21 @@ worker ([ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION
 
 Matching CLI: `etlantic schedule …`,
 `etlantic scheduler serve`, `etlantic worker serve`.
+
+### Context and proposal routes (Available in 0.48)
+
+Compute-only inspect routes. They do **not** persist proposals or apply
+files. Apply remains `/v1/approvals*`
+([ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md)).
+
+| Route | Purpose |
+|---|---|
+| `POST /v1/definitions/{definition_id}/context` | Bounded redacted `etlantic.context_bundle/1` |
+| `POST /v1/proposals/validate` | Deterministic sandbox; `applied` is always false |
+
+Authz runs before lookup; missing or unauthorized definitions are opaque `404`.
+
+Matching CLI: `etlantic context bundle`, `etlantic proposal validate`.
 
 ### CP4 governance routes
 

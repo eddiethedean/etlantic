@@ -26,7 +26,7 @@ PlacementReason = Literal[
 
 @dataclass(frozen=True, slots=True)
 class RemoteCapabilities:
-    version: str = "0.47.0"
+    version: str = "0.48.0"
     map: bool = True
     branch: bool = True
     stream: bool = True

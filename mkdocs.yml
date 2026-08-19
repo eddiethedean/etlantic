@@ -201,9 +201,11 @@ not_in_nav: |
   11_DEVELOPMENT/EXIT_GATE_0_45.md
   11_DEVELOPMENT/EXIT_GATE_0_46.md
   11_DEVELOPMENT/EXIT_GATE_0_47.md
+  11_DEVELOPMENT/EXIT_GATE_0_48.md
   11_DEVELOPMENT/FINDINGS_0_45.md
   11_DEVELOPMENT/FINDINGS_0_46.md
   11_DEVELOPMENT/FINDINGS_0_47.md
+  11_DEVELOPMENT/FINDINGS_0_48.md
   11_DEVELOPMENT/EXTERNAL_PLUGIN_FEEDBACK.md
   11_DEVELOPMENT/FACADE_PACKAGES.md
   11_DEVELOPMENT/FASTAPI_INTEGRATION_PLAN.md
@@ -278,6 +280,7 @@ not_in_nav: |
   11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md
   11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md
   11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md
+  11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md
   11_DEVELOPMENT/MIGRATION_0_4_TO_0_5.md
   11_DEVELOPMENT/MIGRATION_0_5_TO_0_6.md
   11_DEVELOPMENT/MIGRATION_0_6_TO_0_7.md
@@ -309,6 +312,7 @@ not_in_nav: |
   11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md
   11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md
   11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md
+  11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md
   specifications/DPCS_SPEC.md
   specifications/DTCS.md
   specifications/DTCS_SPEC.md
@@ -422,6 +426,7 @@ plugins:
             - packages/etlantic-iceberg/src
             - packages/etlantic-snowflake/src
             - packages/etlantic-openlineage/src
+            - packages/etlantic-mcp/src
             - packages/etlantic-fastapi/src
             - packages/etlantic-lsp/src
             - packages/medallantic/src
@@ -457,7 +462,7 @@ nav:
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
-      - Current 0.47 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.48 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -544,6 +549,7 @@ nav:
           - etlantic-kafka: 10_REFERENCE/api_optional/etlantic_kafka.md
           - etlantic-k8s: 10_REFERENCE/api_optional/etlantic_k8s.md
           - etlantic-spark-connect: 10_REFERENCE/api_optional/etlantic_spark_connect.md
+          - etlantic-mcp: 10_REFERENCE/api_optional/etlantic_mcp.md
           - etlantic-schemaregistry: 10_REFERENCE/api_optional/etlantic_schemaregistry.md
           - etlantic-iceberg: 10_REFERENCE/api_optional/etlantic_iceberg.md
           - etlantic-snowflake: 10_REFERENCE/api_optional/etlantic_snowflake.md
@@ -554,7 +560,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.47.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.48.0: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -603,6 +609,7 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - What's new in 0.48: 01_GETTING_STARTED/WHATS_NEW_0_48.md
           - What's new in 0.47: 01_GETTING_STARTED/WHATS_NEW_0_47.md
           - What's new in 0.46: 01_GETTING_STARTED/WHATS_NEW_0_46.md
           - What's new in 0.45: 01_GETTING_STARTED/WHATS_NEW_0_45.md
