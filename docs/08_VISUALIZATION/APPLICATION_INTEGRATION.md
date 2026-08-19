@@ -59,7 +59,7 @@ python -m pip install 'etlantic-fastapi==0.48.0'
 
 ### CP1 control plane (primary)
 
-Adopter guide: [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md).
+Adopter guide: [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md).
 Contracts: [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 
 ```python
@@ -112,7 +112,7 @@ complete before return; `cancel_run` reports in-flight cancel unsupported. It is
 
 ## Related
 
-- [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md)
+- [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md)
 - [etlantic-fastapi API](../10_REFERENCE/api_optional/etlantic_fastapi.md)
 - [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 - [API — Authoring](../10_REFERENCE/API_AUTHORING.md) (`etlantic.authoring`, `etlantic.service`)

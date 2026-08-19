@@ -1,6 +1,6 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.48.0 (published Beta).** What ships now for
+> **Status: Available in ETLantic 0.48.0 (shipped Beta).** What ships now for
 > controlled single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
@@ -9,8 +9,11 @@
 
 ## What works today (0.48)
 
-ETLantic 0.48.0 is a gate-ready Beta release for documented, controlled,
-single-tenant pilots (install `etlantic==0.48.0` from PyPI). It validates and
+ETLantic 0.48.0 is a **Beta** release for documented, controlled,
+single-tenant pilots (install `etlantic==0.48.0` from PyPI). You can embed an
+HTTP control plane with **Supported** isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
+SaaS and no SLA. It validates and
 plans typed pipelines, runs them locally or through supported engine plugins,
 compiles valid plans to supported orchestration targets, ships **human-governed
 AI** context/proposal surfaces (`etlantic context` / `etlantic proposal`),
@@ -19,14 +22,14 @@ and execution-host** (`etlantic schedule` / `scheduler serve` / `worker serve`),
 developer intelligence (static analysis, `etlantic-lsp`, notebook surfaces),
 keeps the advisory **planner and optimization SDK**, and keeps **Supported**
 core streaming and bounded dynamic-control contracts. Kafka, Confluent registry,
-Kubernetes, Spark Connect, and MCP extras are **Experimental**. Control-plane
-production multi-tenant remains as graduated in 0.43 for Supported isolation
-profiles (`isolated-deployment`, `dedicated-schema`). `shared-service` remains
-Experimental. Support is community **non-SLA**.
+Kubernetes, Spark Connect, and MCP extras are **Experimental**. `shared-service`
+remains Experimental. Support is community **non-SLA**.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
 (install `etlantic==0.48.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
+Headline 0.48/0.47 tutorials: [Human-governed AI](HUMAN_GOVERNED_AI.md) and
+[Scheduler and worker](SCHEDULER_TUTORIAL.md).
 Fit check: [Compare](COMPARE.md).
 
 | Area | You can |
@@ -107,7 +110,7 @@ Public surface classes:
 | Vendor-neutral `etlantic.ai_task/1` catalog | Available (Codex / Claude / Cursor adapters) |
 | FastAPI `POST /v1/definitions/{id}/context` and `POST /v1/proposals/validate` | Available (`etlantic-fastapi`; compute only) |
 | Approval handoff to `/v1/approvals*` | Available (reuse 0.42; no second mutation API) |
-| Experimental `etlantic-mcp` `FakeMcpServer` | **Experimental** (live skip `048-M-01`) |
+| Experimental `etlantic-mcp` `FakeMcpServer` | **Experimental** (live client skipped) |
 
 ### Scheduler/runner service and remote federation
 
@@ -122,8 +125,8 @@ Public surface classes:
 | CLI `etlantic schedule create\|list\|inspect\|pause\|resume\|delete\|preview\|trigger` | Available |
 | `etlantic.remote-runtime/1` fakes + placement reject-before-transfer | Available (in-process fake host) |
 | `Profile.resource_provider_allowlist` (`PMRES140`) | Available |
-| `etlantic.resource/1` + Experimental `etlantic-k8s` | **Experimental** (`FakeKubernetes`; live skip `047-K-01`) |
-| Fake Spark Connect `SparkProvider` (`etlantic-spark-connect`) | **Experimental** (live skip `047-S-01`) |
+| `etlantic.resource/1` + Experimental `etlantic-k8s` | **Experimental** (`FakeKubernetes`; live pack skipped) |
+| Fake Spark Connect `SparkProvider` (`etlantic-spark-connect`) | **Experimental** (live pack skipped) |
 
 ## Previously shipped (control plane through 0.46)
 

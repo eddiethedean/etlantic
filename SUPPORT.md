@@ -1,8 +1,10 @@
 # Support
 
-ETLantic **0.48.0** is a gate-ready **Beta** release suitable for documented single-tenant
-pilots and production multi-tenant for Supported isolation profiles only.
-Community support has **no formal SLA** or guaranteed response time.
+ETLantic **0.48.0** is a **Beta** release suitable for documented single-tenant
+pilots. You can embed an HTTP control plane with **Supported** isolation
+profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
+multi-tenant SaaS. Community support has **no formal SLA** or guaranteed
+response time.
 
 ## What we support
 

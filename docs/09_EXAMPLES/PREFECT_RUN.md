@@ -3,8 +3,9 @@
 > **Status: Available in ETLantic 0.48.0.** This guide runs the shipped Prefect
 > scheduler locally through `etlantic-prefect`.
 
-Runnable companion:
-[`examples/prefect_run.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/prefect_run.py).
+!!! warning "Clone required"
+    `examples/prefect_run.py` is **not** on the PyPI wheel. Use a git checkout
+    (prefer the `v0.48.0` tag) plus `uv sync --group prefect`.
 
 ## Install and run
 

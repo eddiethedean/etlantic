@@ -1,5 +1,7 @@
 # Data Contracts
 
+> **Status: Available in ETLantic 0.48.0.** Hub for typed `Data` contracts.
+
 Data contracts are the foundation of every ETLantic pipeline.
 
 They describe the structure, constraints, and meaning of the data that flows

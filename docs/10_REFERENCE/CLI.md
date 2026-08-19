@@ -321,6 +321,7 @@ python -m etlantic stream schemas check --store registry.json --subject orders-v
 requires `--store` (fingerprint identities only) and never registers the
 candidate it is checking. Store JSON that contains payload keys is
 rejected (`INVALID_MODEL`). Production registry adapters require
+`Profile.schema_registry_allowlist`.
 
 ## `context`
 
@@ -334,6 +335,7 @@ python -m etlantic context bundle pipeline.py:SamplePipeline --max-bytes 262144
 
 The payload is `etlantic.context_bundle/1`. Overflow, missing provenance, stale
 evidence, or redaction failures emit `PMCTX*` and a non-zero exit.
+Tutorial: [Human-governed AI](../01_GETTING_STARTED/HUMAN_GOVERNED_AI.md).
 
 ## `proposal`
 
@@ -347,11 +349,13 @@ python -m etlantic proposal validate proposal.json --target pipeline.py:SamplePi
 
 Forbidden actions (`run.submit`, schedule/DLQ/erasure mutation, secrets) fail
 closed with `PMPROP*`. Apply remains `etlantic` control-plane `/v1/approvals*`.
+Tutorial: [Human-governed AI](../01_GETTING_STARTED/HUMAN_GOVERNED_AI.md).
 
 ## `schedule`
 
 Create and inspect secret-free schedules (interval or 5-field cron). Never
-embeds payloads or secret values.
+embeds payloads or secret values. Tutorial:
+[Scheduler and worker](../01_GETTING_STARTED/SCHEDULER_TUTORIAL.md).
 
 ```bash
 python -m etlantic schedule create --store schedules.json --definition-id pipe-1 --interval 60
@@ -376,11 +380,10 @@ python -m etlantic scheduler serve --store schedules.json --once
 Execution host. Polls CP3 durable outbox; never imports FastAPI.
 
 ```bash
-python -m etlantic worker serve --once
+python -m etlantic worker serve --durable-store schedules.durable.json --once
 ```
 
-`inspect` and `redrive plan` read identifier documents. `schemas check`
-`Profile.schema_registry_allowlist`.
+Tutorial: [Scheduler and worker](../01_GETTING_STARTED/SCHEDULER_TUTORIAL.md).
 
 ## `reliability`
 

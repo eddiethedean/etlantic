@@ -22,7 +22,7 @@ Aspirational design-study pages under `docs/09_EXAMPLES/` were removed in
 - [File-backed pipeline](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) — JSON and CSV
 - [Landing zone](../06_EXECUTION/LANDING_ZONE.md) —
   `examples/landing_zone_watch_submitter.py` (continuous submitter)
-- [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) — embeddable FastAPI
+- [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) — embeddable FastAPI
 - [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) — secrets, schema, SARIF
 - [Polars](../06_EXECUTION/POLARS_TUTORIAL.md)
 - [Pandas](../06_EXECUTION/PANDAS_TUTORIAL.md)
@@ -93,7 +93,7 @@ uv run python examples/landing_zone_watch_submitter.py \
 ```
 
 See [Landing zone](../06_EXECUTION/LANDING_ZONE.md) and
-[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md).
+[Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md).
 
 ### Dataframe parity (Polars / Pandas) (CI)
 

@@ -90,6 +90,18 @@ audience: adopter
     <span>Implement public protocols and verify behavior with conformance suites.</span>
     <span class="etlantic-path-card__action">Explore the Plugin SDK →</span>
   </a>
+  <a class="etlantic-path-card" href="01_GETTING_STARTED/HUMAN_GOVERNED_AI/">
+    <span class="etlantic-path-card__kicker">Agents</span>
+    <strong>Govern AI assistance</strong>
+    <span>Assemble a redacted context bundle, validate a proposal, generate agent files.</span>
+    <span class="etlantic-path-card__action">Open the AI tutorial →</span>
+  </a>
+  <a class="etlantic-path-card" href="01_GETTING_STARTED/SCHEDULER_TUTORIAL/">
+    <span class="etlantic-path-card__kicker">Schedule</span>
+    <strong>Run a local timer</strong>
+    <span>Create a secret-free schedule, preview fires, tick the scheduler and worker once.</span>
+    <span class="etlantic-path-card__action">Open the scheduler tutorial →</span>
+  </a>
 </div>
 
 ## Green path: first success
@@ -193,24 +205,28 @@ and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
 
 ## Know the release boundary
 
-ETLantic 0.48 is a **Beta** release for documented, controlled, single-tenant
-pilots—not unrestricted enterprise production.
+ETLantic is **Beta**, community-supported, with no SLA. Use it for documented
+single-tenant pilots. You can embed an HTTP control plane
+(`etlantic-fastapi`) with **Supported** isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
+SaaS.
 
 <div class="etlantic-release-grid">
   <div class="etlantic-release-card etlantic-release-card--available">
     <strong>Available</strong>
     <span>Typed authoring, validation, deterministic planning, local and plugin
-    execution, Airflow compilation, reports, and observability providers.</span>
+    execution, Airflow compilation, schedules, human-governed AI context and
+    proposals, reports, and observability providers.</span>
   </div>
   <div class="etlantic-release-card etlantic-release-card--experimental">
     <strong>Experimental</strong>
-    <span>Structured Streaming and the <code>etlantic-datafusion</code>
-    package remain outside the pilot path.</span>
+    <span>Kafka, Iceberg, MCP, DataFusion, Kubernetes, Spark Connect, and
+    <code>shared-service</code> isolation may change or stay fake-first.</span>
   </div>
   <div class="etlantic-release-card etlantic-release-card--unavailable">
     <strong>Not included</strong>
-    <span>Managed runtime, multi-tenant control plane, formal SLA, or
-    compliance certification.</span>
+    <span>Hosted multi-tenant SaaS, a formal SLA, or compliance
+    certification.</span>
   </div>
 </div>
 

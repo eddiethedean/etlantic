@@ -1,14 +1,28 @@
-# Control plane (CP1)
+# Embeddable HTTP API
 
-> **Status: Available in ETLantic 0.48.0 (incubation).** Embeddable HTTP control
-> plane via `etlantic-fastapi`. CP1 is **not** production multi-tenant isolation
-> (reserved for **0.43**).
+> **Status: Available in ETLantic 0.48.0.** Embed `etlantic-fastapi` in a host
+> application. Isolation is **Supported** for `isolated-deployment` and
+> `dedicated-schema` (since 0.43). `shared-service` remains Experimental.
+> There is no hosted SaaS.
 
-## What CP1 is / is not
+## Program labels (CP1–CP-GA)
 
-| CP1 is | CP1 is not |
+These names are internal milestones, not separate products. The shipped surface
+is one embeddable HTTP API.
+
+| Label | Shipped | What it added |
+|---|---|---|
+| CP1 | 0.39 | Identity context, authz, durable accept, resumable SSE |
+| CP2 | 0.40 | Tenant/workspace registry and revisions |
+| CP3 | 0.41 | Durable work store, outbox, leases |
+| CP4 | 0.42 | Policy, audit, and approvals |
+| CP-GA | 0.43 | Supported isolation profiles |
+
+## What this API is / is not
+
+| This API is | This API is not |
 |---|---|
-| Embeddable FastAPI routes with injected stores | A hosted SaaS or multi-tenant GA product |
+| Embeddable FastAPI routes with injected stores | A hosted SaaS or managed multi-tenant product |
 | Authz before lookup, opaque 404 across tenants | Path/header tenant strings as authority |
 | Durable `202` accept + scoped idempotency | In-request pipeline execution |
 | Resumable SSE with fail-closed `410` | Unbounded long-poll or silent cursor skip |
@@ -94,7 +108,8 @@ CP1 submit paths stay stable. With `durable_work` present, submit dual-writes a
 durable accept (plan/revision fingerprints only). Host ops use `/v1/durable/*`
 (authz before lookup). See [Durable work](DURABLE_WORK.md) and
 [ADR-018](../11_DEVELOPMENT/adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md).
-**CP3 ≠ production multi-tenant** (**0.43**).
+Durable work is not isolation: production multi-tenant uses **0.43 Supported**
+profiles, not CP3 by itself.
 
 ## Authz before lookup (non-enumeration)
 

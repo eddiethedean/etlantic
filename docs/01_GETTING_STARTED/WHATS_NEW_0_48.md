@@ -1,6 +1,6 @@
 # What's New in ETLantic 0.48
 
-> **Status: Available in ETLantic 0.48.0 (gate-ready Beta).** Human-governed AI:
+> **Status: Available in ETLantic 0.48.0 (shipped Beta).** Human-governed AI:
 > redacted context bundles, `etlantic.proposal/1` sandbox, user-region
 > generators, and approval handoff to existing 0.42 `/v1/approvals*`.
 > Experimental `etlantic-mcp` is fake-first. Live MCP-client and paid-model
@@ -19,8 +19,9 @@
 - **Approval handoff** — proposal fingerprints call existing `ApprovalStore`
   / `/v1/approvals*`. Deny, expire, and stale fingerprints stay 0.42 behavior
 - **CLI / FastAPI** — `etlantic context bundle`, `etlantic proposal validate`,
-  `POST /v1/definitions/{id}/context`, `POST /v1/proposals/validate`
-- **Experimental extra** — `etlantic-mcp` `FakeMcpServer` (live skip `048-M-01`)
+  `POST /v1/definitions/{id}/context`, `POST /v1/proposals/validate`.
+  Tutorial: [Human-governed AI](HUMAN_GOVERNED_AI.md).
+- **Experimental extra** — `etlantic-mcp` `FakeMcpServer` (live client skipped)
 
 ## Adopter actions
 
@@ -33,6 +34,6 @@
 ## Not in 0.48
 
 - Write MCP tools, vendor AI SDKs in core, autonomous run submit
-- Live MCP-client interop (skip `048-M-01`)
-- Live paid-model eval (skip `048-E-01`)
+- Live MCP-client interop
+- Live paid-model eval
 - GitOps promotion (0.40–0.43 APIs), brownfield import (0.49), operator console (0.50)

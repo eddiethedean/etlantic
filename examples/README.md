@@ -107,7 +107,7 @@ uv run python examples/landing_zone_watch_submitter.py \
 Continuous directory watching as a durable CP1 submitter (outside core) — not
 an Extract kind. Posts `local-files` binding refs, never file bytes. See
 [Landing zone](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/LANDING_ZONE/)
-and [Control plane (CP1)](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/CONTROL_PLANE/).
+and [Embeddable HTTP API](https://etlantic.readthedocs.io/en/stable/06_EXECUTION/CONTROL_PLANE/).
 
 ## Dataframe parity (CI)
 

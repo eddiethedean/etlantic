@@ -7,6 +7,12 @@ ETLantic documentation. Unless otherwise noted, these definitions
 reflect ETLantic's architecture and may differ from how similar
 terms are used in other ETL frameworks.
 
+## Available
+
+In the current minor (0.48): documented, tested, and covered by the Beta
+support policy (current minor only, community **non-SLA**). Contrast
+[Experimental](#experimental). See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
+
 ## Artifact
 
 A generated file or runtime data value/reference. Generated artifacts include
@@ -24,6 +30,17 @@ orchestrator, or a storage provider.
 
 A user-defined function invoked in response to a lifecycle event, such
 as invalid data, execution failure, or pipeline completion.
+
+## CP1
+
+Internal label for the 0.39 embeddable HTTP foundation (identity, authz,
+durable accept, SSE). Not a separate product. See
+[Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md).
+
+## CP-GA
+
+Internal label for **0.43** graduation of **Supported** isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is still no hosted SaaS.
 
 ## Contract
 
@@ -73,6 +90,13 @@ Historical name for a `Data` subclass. Prefer `Data`. The
 `DataContractModel` alias was **removed in 0.37.0** (hard error on root and
 `etlantic.contracts` import).
 
+## Experimental
+
+Alpha extras that may change or stay fake-first (Kafka, Iceberg, MCP,
+DataFusion, Kubernetes, Spark Connect, `shared-service` isolation). Not
+covered by the Beta Supported claim. See
+[Experimental surfaces](../01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md).
+
 ## Execution Engine
 
 The technology that performs actual work, such as Polars, Pandas, Spark,
@@ -99,6 +123,12 @@ fingerprint verify—not full object-graph freezing.
 `Profile.plugin_allowlist` — the map of trusted plugin distribution names to
 version constraints. Required and fail-closed when `security_mode="production"`.
 The allowlist selects discovered plugins; it does not install packages.
+
+## Supported isolation
+
+Production multi-tenant **in process** for host-embedded `etlantic-fastapi`:
+`isolated-deployment` and `dedicated-schema` are Supported since 0.43.
+`shared-service` remains Experimental. There is no hosted multi-tenant SaaS.
 
 ## security_mode
 

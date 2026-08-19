@@ -14,7 +14,10 @@
 | [SQL (repository)](../06_EXECUTION/SQL_TUTORIAL.md) | ~30 min | Clone + SQL | `sql` job |
 | [PySpark (repository)](../06_EXECUTION/PYSPARK_TUTORIAL.md) | ~30 min | Clone + PySpark | `spark` job |
 | [Airflow compilation](../06_EXECUTION/AIRFLOW_TUTORIAL.md) | ~20 min | `etlantic-airflow` | `airflow` job |
-| [Prefect local](../09_EXAMPLES/PREFECT_RUN.md) | ~15 min | `etlantic-prefect` | `prefect` job |
+| [Prefect local](../09_EXAMPLES/PREFECT_RUN.md) | ~15 min | Clone + `etlantic-prefect` | `prefect` job |
+| [Human-governed AI](HUMAN_GOVERNED_AI.md) | ~15 min | PyPI / no clone | CLI |
+| [Scheduler and worker](SCHEDULER_TUTORIAL.md) | ~15 min | PyPI / no clone | CLI |
 
 Start with the [Quickstart](QUICKSTART.md) before engine tutorials.
+Clone-required rows need a git checkout (`examples/` is not on the wheel).
 Runnable companions are registered in `scripts/check_runnable_docs.py`.

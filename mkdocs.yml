@@ -15,7 +15,6 @@ exclude_docs: |
 # Historical archive and non-primary pages remain buildable (linked from
 # ARCHIVE_INDEX / hubs) but are omitted from the primary 8-section nav.
 not_in_nav: |
-  01_GETTING_STARTED/EARLIER_RELEASES.md
   01_GETTING_STARTED/EXPERIMENTAL_SURFACES.md
   01_GETTING_STARTED/INTERCHANGE_GATE_A_FAQ.md
   01_GETTING_STARTED/MIGRATION_FROM_OTHER_TOOLS.md
@@ -23,6 +22,8 @@ not_in_nav: |
   01_GETTING_STARTED/PORTABLE_VS_NATIVE.md
   01_GETTING_STARTED/README.md
   01_GETTING_STARTED/SDK_10_MINUTES.md
+  01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
+  01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md
   01_GETTING_STARTED/WHATS_NEW_0_14.md
   01_GETTING_STARTED/WHATS_NEW_0_15.md
   01_GETTING_STARTED/WHATS_NEW_0_16.md
@@ -48,9 +49,15 @@ not_in_nav: |
   01_GETTING_STARTED/WHATS_NEW_0_36.md
   01_GETTING_STARTED/WHATS_NEW_0_37.md
   01_GETTING_STARTED/WHATS_NEW_0_38.md
+  01_GETTING_STARTED/WHATS_NEW_0_39.md
   01_GETTING_STARTED/WHATS_NEW_0_40.md
   01_GETTING_STARTED/WHATS_NEW_0_41.md
   01_GETTING_STARTED/WHATS_NEW_0_42.md
+  01_GETTING_STARTED/WHATS_NEW_0_43.md
+  01_GETTING_STARTED/WHATS_NEW_0_44.md
+  01_GETTING_STARTED/WHATS_NEW_0_45.md
+  01_GETTING_STARTED/WHATS_NEW_0_46.md
+  01_GETTING_STARTED/WHATS_NEW_0_47.md
   02_FOUNDATIONS/DESIGN_PRINCIPLES.md
   02_FOUNDATIONS/DOCUMENTATION_STATUS.md
   02_FOUNDATIONS/FASTAPI_PHILOSOPHY.md
@@ -61,7 +68,6 @@ not_in_nav: |
   03_DATA_CONTRACTS/LOADING.md
   03_DATA_CONTRACTS/ODCS.md
   03_DATA_CONTRACTS/PYDANTIC_INTEGRATION.md
-  03_DATA_CONTRACTS/README.md
   03_DATA_CONTRACTS/VALIDATION.md
   03_DATA_CONTRACTS/VERSIONING.md
   04_TRANSFORMATIONS/ASYNC.md
@@ -82,11 +88,8 @@ not_in_nav: |
   05_PIPELINES/DPCS.md
   05_PIPELINES/EXTRACTS.md
   05_PIPELINES/LOADS.md
-  05_PIPELINES/PIPELINE.md
   05_PIPELINES/PIPELINE_VALIDATION.md
-  05_PIPELINES/PLANNING.md
   05_PIPELINES/PROFILES.md
-  05_PIPELINES/PROFILE_PRIMER.md
   05_PIPELINES/PROGRAMMATIC_AUTHORING.md
   05_PIPELINES/README.md
   05_PIPELINES/SINKS.md
@@ -142,13 +145,33 @@ not_in_nav: |
   09_MEDALLANTIC/AUTHORING.md
   09_MEDALLANTIC/COMPATIBILITY.md
   09_MEDALLANTIC/EXECUTION.md
-  09_MEDALLANTIC/GETTING_STARTED.md
   09_MEDALLANTIC/QUALITY.md
   09_MEDALLANTIC/README.md
   09_MEDALLANTIC/SPARKFORGE_MIGRATION.md
   09_MEDALLANTIC/TROUBLESHOOTING.md
   10_REFERENCE/CONFIGURATION.md
   10_REFERENCE/ENVIRONMENT_VARIABLES.md
+  10_REFERENCE/api_optional/etlantic_polars.md
+  10_REFERENCE/api_optional/etlantic_pandas.md
+  10_REFERENCE/api_optional/etlantic_sql.md
+  10_REFERENCE/api_optional/etlantic_pyspark.md
+  10_REFERENCE/api_optional/etlantic_airflow.md
+  10_REFERENCE/api_optional/etlantic_prefect.md
+  10_REFERENCE/api_optional/etlantic_keyring.md
+  10_REFERENCE/api_optional/etlantic_sqlmodel.md
+  10_REFERENCE/api_optional/etlantic_datafusion.md
+  10_REFERENCE/api_optional/etlantic_s3.md
+  10_REFERENCE/api_optional/etlantic_kafka.md
+  10_REFERENCE/api_optional/etlantic_k8s.md
+  10_REFERENCE/api_optional/etlantic_spark_connect.md
+  10_REFERENCE/api_optional/etlantic_mcp.md
+  10_REFERENCE/api_optional/etlantic_schemaregistry.md
+  10_REFERENCE/api_optional/etlantic_iceberg.md
+  10_REFERENCE/api_optional/etlantic_snowflake.md
+  10_REFERENCE/api_optional/etlantic_openlineage.md
+  10_REFERENCE/api_optional/etlantic_fastapi.md
+  10_REFERENCE/api_optional/etlantic_lsp.md
+  10_REFERENCE/api_optional/medallantic.md
   11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md
   11_DEVELOPMENT/ARCHITECTURE_DECISIONS.md
   11_DEVELOPMENT/BENCHMARKS.md
@@ -462,6 +485,7 @@ nav:
       - First Pipeline: 01_GETTING_STARTED/FIRST_PIPELINE.md
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
+      - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
       - Current 0.48 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
@@ -469,9 +493,8 @@ nav:
       - Evaluator brief: 01_GETTING_STARTED/EVALUATOR.md
       - Enterprise evaluation: 01_GETTING_STARTED/ENTERPRISE_EVALUATION.md
       - Production readiness: 06_EXECUTION/PRODUCTION_READINESS.md
-      - Performance envelope: 01_GETTING_STARTED/PERFORMANCE_ENVELOPE.md
-      - Release artifact verification: 01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md
-      - Known limitations: 10_REFERENCE/KNOWN_ISSUES.md
+      - Medallion / SparkForge: 09_MEDALLANTIC/GETTING_STARTED.md
+      - Pilot packet: 01_GETTING_STARTED/PILOT_EVIDENCE_PACKET.md
   - Tutorials:
       - Overview: 01_GETTING_STARTED/TUTORIALS.md
       - End-to-end pilot: 01_GETTING_STARTED/END_TO_END_PILOT.md
@@ -488,20 +511,25 @@ nav:
       - Orchestration:
           - Airflow compilation: 06_EXECUTION/AIRFLOW_TUTORIAL.md
           - Prefect local execution: 09_EXAMPLES/PREFECT_RUN.md
+      - Human-governed AI: 01_GETTING_STARTED/HUMAN_GOVERNED_AI.md
+      - Scheduler and worker: 01_GETTING_STARTED/SCHEDULER_TUTORIAL.md
   - How-to:
       - Overview: 01_GETTING_STARTED/HOW_TO.md
-      - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
-      - Pilot evidence packet: 01_GETTING_STARTED/PILOT_EVIDENCE_PACKET.md
+      - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
       - Author pipelines:
           - Cookbook: 01_GETTING_STARTED/COOKBOOK.md
           - Best practices: 01_GETTING_STARTED/BEST_PRACTICES.md
           - Project structure: 01_GETTING_STARTED/PROJECT_STRUCTURE.md
           - Profiles: 05_PIPELINES/PROFILES_HUB.md
           - Portable transformations: 04_TRANSFORMATIONS/PORTABLE_HUB.md
+      - Agents and schedules:
+          - Human-governed AI: 01_GETTING_STARTED/HUMAN_GOVERNED_AI.md
+          - Scheduler and worker: 01_GETTING_STARTED/SCHEDULER_TUTORIAL.md
+          - Visualize a pipeline: 01_GETTING_STARTED/VISUALIZE.md
       - Operate safely:
           - Deployment: 06_EXECUTION/DEPLOYMENT.md
           - Durable submission and state: 06_EXECUTION/DURABLE_WORK.md
-          - Control plane (CP1): 06_EXECUTION/CONTROL_PLANE.md
+          - Embeddable HTTP API: 06_EXECUTION/CONTROL_PLANE.md
           - CI integration: 06_EXECUTION/CI_INTEGRATION.md
           - Production profiles: 06_EXECUTION/PRODUCTION_PROFILES.md
           - Secrets management: 06_EXECUTION/SECRETS_MANAGEMENT.md
@@ -513,50 +541,34 @@ nav:
           - PySpark overview: 06_EXECUTION/PYSPARK.md
           - Orchestration plugins: 06_EXECUTION/ORCHESTRATION_PLUGINS.md
       - Get help:
-          - Troubleshooting: 01_GETTING_STARTED/TROUBLESHOOTING.md
           - FAQ: 01_GETTING_STARTED/FAQ.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
   - Concepts:
       - Overview: 02_FOUNDATIONS/README.md
       - Core concepts: 02_FOUNDATIONS/CORE_CONCEPTS.md
       - Architecture: 02_FOUNDATIONS/ARCHITECTURE.md
+      - Manifesto: ETLANTIC_MANIFESTO.md
+      - Pipeline: 05_PIPELINES/PIPELINE.md
+      - Plan: 05_PIPELINES/PLANNING.md
+      - Profile: 05_PIPELINES/PROFILE_PRIMER.md
+      - Data contracts: 03_DATA_CONTRACTS/README.md
+      - Plugins: 07_PLUGIN_SDK/OVERVIEW.md
       - Validation everywhere: 02_FOUNDATIONS/VALIDATION_EVERYWHERE.md
       - Execution model: 06_EXECUTION/EXECUTION_MODEL.md
       - Security: 02_FOUNDATIONS/SECURITY.md
       - Security verification matrix: 02_FOUNDATIONS/SECURITY_VERIFICATION_MATRIX.md
       - Glossary: 02_FOUNDATIONS/GLOSSARY.md
-      - Manifesto: ETLANTIC_MANIFESTO.md
   - Reference:
       - Overview: 10_REFERENCE/README.md
       - Python API:
           - API overview: 10_REFERENCE/API_REFERENCE.md
-          - Control plane API (CP1): 10_REFERENCE/CONTROL_PLANE_API.md
           - Authoring: 10_REFERENCE/API_AUTHORING.md
           - Plan and runtime: 10_REFERENCE/API_PLAN_RUNTIME.md
+          - Agents: 10_REFERENCE/API_AGENTS.md
           - Quality: 10_REFERENCE/API_QUALITY.md
           - Protocols: 10_REFERENCE/API_PROTOCOLS.md
+          - Control plane API: 10_REFERENCE/CONTROL_PLANE_API.md
           - Optional packages: 10_REFERENCE/API_OPTIONAL_PACKAGES.md
-          - etlantic-polars: 10_REFERENCE/api_optional/etlantic_polars.md
-          - etlantic-pandas: 10_REFERENCE/api_optional/etlantic_pandas.md
-          - etlantic-sql: 10_REFERENCE/api_optional/etlantic_sql.md
-          - etlantic-pyspark: 10_REFERENCE/api_optional/etlantic_pyspark.md
-          - etlantic-airflow: 10_REFERENCE/api_optional/etlantic_airflow.md
-          - etlantic-prefect: 10_REFERENCE/api_optional/etlantic_prefect.md
-          - etlantic-keyring: 10_REFERENCE/api_optional/etlantic_keyring.md
-          - etlantic-sqlmodel: 10_REFERENCE/api_optional/etlantic_sqlmodel.md
-          - etlantic-datafusion: 10_REFERENCE/api_optional/etlantic_datafusion.md
-          - etlantic-s3: 10_REFERENCE/api_optional/etlantic_s3.md
-          - etlantic-kafka: 10_REFERENCE/api_optional/etlantic_kafka.md
-          - etlantic-k8s: 10_REFERENCE/api_optional/etlantic_k8s.md
-          - etlantic-spark-connect: 10_REFERENCE/api_optional/etlantic_spark_connect.md
-          - etlantic-mcp: 10_REFERENCE/api_optional/etlantic_mcp.md
-          - etlantic-schemaregistry: 10_REFERENCE/api_optional/etlantic_schemaregistry.md
-          - etlantic-iceberg: 10_REFERENCE/api_optional/etlantic_iceberg.md
-          - etlantic-snowflake: 10_REFERENCE/api_optional/etlantic_snowflake.md
-          - etlantic-openlineage: 10_REFERENCE/api_optional/etlantic_openlineage.md
-          - etlantic-fastapi: 10_REFERENCE/api_optional/etlantic_fastapi.md
-          - etlantic-lsp: 10_REFERENCE/api_optional/etlantic_lsp.md
-          - medallantic: 10_REFERENCE/api_optional/medallantic.md
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
@@ -610,15 +622,7 @@ nav:
       - Releases:
           - Changelog: CHANGELOG.md
           - What's new in 0.48: 01_GETTING_STARTED/WHATS_NEW_0_48.md
-          - What's new in 0.47: 01_GETTING_STARTED/WHATS_NEW_0_47.md
-          - What's new in 0.46: 01_GETTING_STARTED/WHATS_NEW_0_46.md
-          - What's new in 0.45: 01_GETTING_STARTED/WHATS_NEW_0_45.md
-          - What's new in 0.44: 01_GETTING_STARTED/WHATS_NEW_0_44.md
-          - What's new in 0.43: 01_GETTING_STARTED/WHATS_NEW_0_43.md
-          - What's new in 0.42: 01_GETTING_STARTED/WHATS_NEW_0_42.md
-          - What's new in 0.41: 01_GETTING_STARTED/WHATS_NEW_0_41.md
-          - What's new in 0.40: 01_GETTING_STARTED/WHATS_NEW_0_40.md
-          - What's new in 0.39: 01_GETTING_STARTED/WHATS_NEW_0_39.md
+          - Earlier releases: 01_GETTING_STARTED/EARLIER_RELEASES.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md
       - Contribute:
           - Contributor guide: 11_DEVELOPMENT/CONTRIBUTING.md

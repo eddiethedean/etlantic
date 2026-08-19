@@ -1,5 +1,7 @@
 # Profile primer
 
+> **Status: Available in ETLantic 0.48.0.** Bind a portable pipeline to an environment.
+
 Profiles bind a portable pipeline to a concrete environment: engines, assets,
 trust policy, and validation strictness. This page helps you pick the right
 profile shape for local work, CI, and production.

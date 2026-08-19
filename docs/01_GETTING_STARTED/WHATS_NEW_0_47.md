@@ -17,7 +17,8 @@
   pipelines; workers do not import FastAPI
 - **Gateway** — FastAPI `/v1/definitions/{id}/schedules`, `/v1/schedules/{id}`,
   scheduler/worker health. Dual-write firing into `DurableWorkStore.accept`
-- **CLI** — `etlantic schedule create|list|inspect|pause|resume|delete|preview|trigger`
+- **CLI** — `etlantic schedule create|list|inspect|pause|resume|delete|preview|trigger`.
+  Tutorial: [Scheduler and worker](SCHEDULER_TUTORIAL.md)
 - **Remote federation** — `etlantic.remote-runtime/1` negotiate (preserve 0.46
   map/branch/stream or `PMFED*`), signed-plan fakes, placement reject-before-transfer
 - **Trust** — `Profile.resource_provider_allowlist` fail-closed when a resource

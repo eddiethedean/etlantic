@@ -59,6 +59,9 @@ Prefer another tool (or use ETLantic only as a thin companion) when:
 
 If several rows match, ETLantic is usually complementary — not a replacement.
 
+ETLantic will **not** silently apply AI proposals, ship write MCP tools, or
+replace Airflow/dbt. Proposals stay untrusted until a current 0.42 approval.
+
 ## Next
 
 1. [Installation](INSTALLATION.md)

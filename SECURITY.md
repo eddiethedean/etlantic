@@ -1,8 +1,9 @@
 # Security Policy
 
-ETLantic 0.48.0 is a gate-ready **Beta** release suitable for documented single-tenant
-pilots and production multi-tenant for **Supported** isolation profiles
-(`isolated-deployment`, `dedicated-schema`). Security reports
+ETLantic 0.48.0 is a **Beta** release suitable for documented single-tenant
+pilots. You can embed an HTTP control plane with **Supported** isolation
+profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
+multi-tenant SaaS. Security reports
 concerning the published package, contract loading, planning, optimization,
 streaming/dynamic control, human-governed AI context/proposals, local runtime, storage bindings, connectors, secret handling, dataframe, SQL,
 and PySpark plugins, documentation, or repository automation are welcome.

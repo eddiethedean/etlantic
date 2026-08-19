@@ -22,22 +22,20 @@
 </p>
 
 <p align="center">
-  <a href="https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
-  <a href="https://etlantic.readthedocs.io/">Documentation</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/API_REFERENCE/">Python API</a> ·
-  <a href="https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/CLI/">CLI</a>
+  <a href="https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/">Quickstart</a> ·
+  <a href="https://etlantic.readthedocs.io/en/stable/">Documentation</a> ·
+  <a href="https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/COMPARE/">Is ETLantic for me?</a> ·
+  <a href="https://etlantic.readthedocs.io/en/stable/10_REFERENCE/API_REFERENCE/">Python API</a> ·
+  <a href="https://etlantic.readthedocs.io/en/stable/10_REFERENCE/CLI/">CLI</a>
 </p>
 
 ---
 
-ETLantic gives Python data pipelines one portable, typed logical model. It
-coordinates contracts, transformations, and topology while plugins handle
-execution. It validates wiring, capabilities, configuration, and plugin trust
-before producing a deterministic plan.
-
-ETLantic complements dataframe engines and orchestrators; it does not replace
-them.
+ETLantic is a Python library for **defining** data pipelines as typed
+contracts and graphs, **validating** them before they run, and **producing a
+deterministic plan** that a plugin executes (local Python, Polars, Pandas,
+SQL, or Spark) or an orchestrator compiles (Airflow). It is not dbt, not a
+dataframe engine, and not a hosted scheduler.
 
 ## Quickstart
 
@@ -54,8 +52,14 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
 The run should succeed and write Ada and Grace to `data/out.json`. See the
-[full Quickstart](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/)
+[full Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.
+
+If `init` refuses the directory, use an empty folder (or `--force` only after
+you have reviewed what it overwrites). Pin every official plugin to the same
+version as core (`etlantic-polars==0.48.0` with `etlantic==0.48.0`). Mixed
+plugin versions fail closed — see
+[Troubleshooting](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/TROUBLESHOOTING/#core-and-plugin-versions-do-not-match).
 
 ## What it provides
 
@@ -66,9 +70,9 @@ for setup details and expected output.
 - Deterministic plans that can be inspected, fingerprinted, diffed, run, or
   compiled.
 - Contract generation for
-  [ODCS](https://etlantic.readthedocs.io/en/v0.48.0/03_DATA_CONTRACTS/ODCS/),
-  [DTCS](https://etlantic.readthedocs.io/en/v0.48.0/04_TRANSFORMATIONS/DTCS/),
-  and [DPCS](https://etlantic.readthedocs.io/en/v0.48.0/05_PIPELINES/DPCS/)
+  [ODCS](https://etlantic.readthedocs.io/en/stable/03_DATA_CONTRACTS/ODCS/),
+  [DTCS](https://etlantic.readthedocs.io/en/stable/04_TRANSFORMATIONS/DTCS/),
+  and [DPCS](https://etlantic.readthedocs.io/en/stable/05_PIPELINES/DPCS/)
   artifacts.
 - Pluggable execution across local Python, Polars, Pandas, SQL, and PySpark,
   plus orchestration integrations.
@@ -79,9 +83,14 @@ Application code should use the curated public facade:
 import etlantic as etl
 ```
 
-The public CLI includes `init`, `doctor`, `validate`, `inspect`, `plan`, `run`,
-`compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `viz`, and
-`report`.
+The public CLI (see the
+[CLI reference](https://etlantic.readthedocs.io/en/stable/10_REFERENCE/CLI/)):
+
+- Authoring: `init`, `doctor`, `validate`, `inspect`, `plan`, `profile`, `run`,
+  `compile`, `generate`, `diff`
+- Ops: `plugin`, `schema`, `reliability`, `erasure`, `viz`, `report`, `watch`,
+  `stream`, `schedule`, `scheduler`, `worker`
+- Agents: `context`, `proposal`
 
 ## Execution options
 
@@ -97,18 +106,20 @@ only the integrations a pipeline needs:
 
 Each transformation must support the selected backend. In controlled
 deployments, pin ETLantic and official plugins to the same release. See
-[engine selection](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/ENGINE_SELECTION/)
+[engine selection](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/ENGINE_SELECTION/)
 and
-[compatibility](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/COMPATIBILITY/).
+[compatibility](https://etlantic.readthedocs.io/en/stable/10_REFERENCE/COMPATIBILITY/).
 
 ## Security and production posture
 
-ETLantic is currently **Beta**. It is suitable for documented, controlled,
-single-tenant pilots—not unrestricted enterprise production.
-
-It does not include a managed runtime or multi-tenant control plane; that work
-is tracked in the
-[control-plane program](https://etlantic.readthedocs.io/en/v0.48.0/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/).
+ETLantic is **Beta**, community-supported, with no SLA. Use it for documented
+single-tenant pilots. You can embed an HTTP control plane
+(`etlantic-fastapi`) with **Supported** isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
+SaaS. See
+[Capabilities](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/CAPABILITIES/)
+and the
+[control-plane program](https://etlantic.readthedocs.io/en/stable/11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN/).
 
 Plans and reports contain secret references, never resolved secret values.
 Production profiles require an explicit non-empty `plugin_allowlist`; an
@@ -116,21 +127,27 @@ allowlist controls selection but is not a sandbox. Schema history stores
 fingerprints and metadata, never source rows.
 
 Review the
-[production readiness](https://etlantic.readthedocs.io/en/v0.48.0/06_EXECUTION/PRODUCTION_READINESS/)
+[production readiness](https://etlantic.readthedocs.io/en/stable/06_EXECUTION/PRODUCTION_READINESS/)
 and
-[security model](https://etlantic.readthedocs.io/en/v0.48.0/02_FOUNDATIONS/SECURITY/)
+[security model](https://etlantic.readthedocs.io/en/stable/02_FOUNDATIONS/SECURITY/)
 before a pilot.
 
 ## Learn more
 
-- [Quickstart](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/QUICKSTART/)
-  and [first pipeline](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/FIRST_PIPELINE/)
-- [Is ETLantic for me?](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/COMPARE/)
-  and [capabilities](https://etlantic.readthedocs.io/en/v0.48.0/01_GETTING_STARTED/CAPABILITIES/)
-- [CLI reference](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/CLI/)
-  and [Python API](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/API_REFERENCE/)
-- [Plugin SDK](https://etlantic.readthedocs.io/en/v0.48.0/07_PLUGIN_SDK/)
-  and [optional packages](https://etlantic.readthedocs.io/en/v0.48.0/10_REFERENCE/OPTIONAL_PACKAGES/)
+These links use the Read the Docs **stable** alias (currently 0.48.0). The
+pinned tree is also at
+[v0.48.0](https://etlantic.readthedocs.io/en/v0.48.0/).
+
+- [Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
+  and [first pipeline](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/FIRST_PIPELINE/)
+- [Is ETLantic for me?](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/COMPARE/)
+  and [capabilities](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/CAPABILITIES/)
+- [CLI reference](https://etlantic.readthedocs.io/en/stable/10_REFERENCE/CLI/)
+  and [Python API](https://etlantic.readthedocs.io/en/stable/10_REFERENCE/API_REFERENCE/)
+- [Plugin SDK](https://etlantic.readthedocs.io/en/stable/07_PLUGIN_SDK/)
+  and [optional packages](https://etlantic.readthedocs.io/en/stable/10_REFERENCE/OPTIONAL_PACKAGES/)
+- [Human-governed AI](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/HUMAN_GOVERNED_AI/)
+  and [scheduler tutorial](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/SCHEDULER_TUTORIAL/)
 
 ## Contributing
 

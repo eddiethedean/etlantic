@@ -66,7 +66,7 @@ uv run python examples/landing_zone_watch_submitter.py \
 
 Submitters call durable `POST /v1/definitions/{id}/runs` with `local-files`
 binding refs (`root_ref`, `glob`, `mode`, …). Never embed file bytes in plans or
-submit bodies. See [Control plane (CP1)](CONTROL_PLANE.md).
+submit bodies. See [Embeddable HTTP API](CONTROL_PLANE.md).
 
 ## Cloud profile swap
 
@@ -78,7 +78,7 @@ See [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md) and
 ## Related
 
 - [Storage today](STORAGE_TODAY.md)
-- [Control plane (CP1)](CONTROL_PLANE.md)
+- [Embeddable HTTP API](CONTROL_PLANE.md)
 - [Storage plugins](STORAGE_PLUGINS.md)
 - [Landing-zone plan](../11_DEVELOPMENT/LANDING_ZONE_CONNECTOR_PLAN.md)
 - [ADR-015](../11_DEVELOPMENT/adr/ADR-015-CONNECTOR-PROTOCOLS.md)

@@ -5,9 +5,9 @@
 > This page is the deeper clone companion. PostgreSQL is the reference
 > backend for production; MERGE is PostgreSQL-only.
 
-!!! tip "PyPI first"
-    Paste [SQL hello](SQL_HELLO_PYPI.md) after Quickstart. Come here only when
-    you want the repository `examples/sql_to_sql.py` fusion demo.
+!!! warning "Clone required"
+    `examples/sql_to_sql.py` is **not** on the PyPI wheel. Use
+    [SQL hello](SQL_HELLO_PYPI.md) unless you have a git checkout.
 
 ## Install and run (clone companion)
 

@@ -13,7 +13,7 @@ embedding the control plane.
 
 | Topic | Where |
 |---|---|
-| Adopter how-to (embed FastAPI) | [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) |
+| Adopter how-to (embed FastAPI) | [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) |
 | Durable work (CP3) | [Durable work](../06_EXECUTION/DURABLE_WORK.md) |
 | CP-GA claim / evidence | [What's new in 0.44](../01_GETTING_STARTED/WHATS_NEW_0_43.md) · [Exit gate 0.43](../11_DEVELOPMENT/EXIT_GATE_0_43.md) |
 | What shipped in CP4 | [What's new in 0.42](../01_GETTING_STARTED/WHATS_NEW_0_42.md) |
@@ -154,5 +154,5 @@ existence lookup; cross-tenant misses stay opaque **404**.
 ## Related
 
 - [Python API overview](API_REFERENCE.md)
-- [FAQ — What is CP1?](../01_GETTING_STARTED/FAQ.md#what-is-cp1)
+- [FAQ — embeddable HTTP API](../01_GETTING_STARTED/FAQ.md#what-is-the-embeddable-http-api-cp1)
 - [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md)

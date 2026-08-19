@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.48.0 (published Beta).**
+> **Status: Available in ETLantic 0.48.0 (shipped Beta).**
 
 Practical questions for ETLantic **0.48.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
@@ -70,26 +70,37 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic 0.48 production-supported?
 
-ETLantic **0.48.0** is a **Beta** (PyPI) release for documented single-tenant
-pilots—not unrestricted enterprise production. See
-[Capabilities](CAPABILITIES.md) and
+ETLantic **0.48.0** is **Beta**, community-supported, with no SLA. Use it for
+documented single-tenant pilots. You can embed an HTTP control plane
+(`etlantic-fastapi`) with **Supported** isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
+SaaS. See [Capabilities](CAPABILITIES.md) and
 [Production readiness](../06_EXECUTION/PRODUCTION_READINESS.md).
 
 ## Available vs Experimental?
 
-**Available** means supported inside the documented **0.39** pilot envelope
-(Beta, single-tenant). **Experimental** (Structured Streaming,
-`etlantic-datafusion`, Experimental connector packages) may change.
+**Available** means it is in the 0.48 product envelope: documented, tested, and
+covered by the Beta support policy (current minor only, no SLA).
+**Experimental** means Alpha extras (Kafka, Iceberg, MCP, DataFusion, k8s,
+Spark Connect, `shared-service` isolation) that may change or stay fake-first.
 See [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
-## What is CP1?
+## What is the embeddable HTTP API (CP1)?
 
-**CP1** is the 0.39 control-plane incubation: typed identity context,
-authorization envelope, durable accept receipts, and resumable SSE via
-`etlantic.control_plane` and optional `etlantic-fastapi` (`ETLanticAPI`).
-It is **not** production multi-tenant isolation (reserved for **0.43**).
-See [Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) and
-[What's new in 0.39](WHATS_NEW_0_39.md).
+**CP1** is the 0.39 identity and HTTP foundation: typed context, authorization,
+durable accept receipts, and resumable SSE via `etlantic.control_plane` and
+optional `etlantic-fastapi` (`ETLanticAPI`). Later minors added persistence
+(CP2), durable work (CP3), policy/audit (CP4), and **0.43 CP-GA** graduation
+for Supported isolation profiles. The names are internal program labels, not
+separate products. There is still no hosted SaaS.
+See [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) and
+[What's new in 0.43](WHATS_NEW_0_43.md).
+
+## What will 0.48 not do?
+
+Proposals never apply files, submit runs, or grant tools. There is no write MCP
+in core, no vendor AI SDK, and no silent optimizer. Schedules never embed
+payloads or secrets. See [What's new in 0.48](WHATS_NEW_0_48.md).
 
 ## Thin FastAPI app vs control plane?
 
@@ -150,9 +161,9 @@ No — those stay in SparkForge / `medallantic`. See
 ## Can I build a GUI?
 
 Not as a shipped product. Use programmatic authoring plus optional
-`etlantic-fastapi`: prefer CP1 (`ETLanticAPI`) for embeddable control-plane
-HTTP, or `create_reference_app` for the thin non-CP authoring demo. See
-[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md),
+`etlantic-fastapi`: prefer `ETLanticAPI` for the embeddable HTTP API, or
+`create_reference_app` for the thin non-CP authoring demo. See
+[Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md),
 [Control plane API](../10_REFERENCE/CONTROL_PLANE_API.md), and
 [Application integration](../08_VISUALIZATION/APPLICATION_INTEGRATION.md).
 

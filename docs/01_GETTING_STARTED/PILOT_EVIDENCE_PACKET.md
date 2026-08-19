@@ -1,16 +1,22 @@
-# Pilot evidence packet (0.39)
+# Pilot evidence packet
 
 > **Status: Available in ETLantic 0.48.0.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
+
+Related evaluator pages (also in this packet):
+
+- [Performance envelope](PERFORMANCE_ENVELOPE.md)
+- [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md)
+- [Known limitations](../10_REFERENCE/KNOWN_ISSUES.md)
 
 ## Exact versions
 
 | Component | Pin |
 |---|---|
 | Core | `etlantic==0.48.0` |
-| Docs | `https://etlantic.readthedocs.io/en/v0.48.0/` |
-| Optional engines | Matching `0.45.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
+| Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.48.0` if you need a frozen tree) |
+| Optional engines | Matching `0.48.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
 | Facade | `medallantic==0.48.0` when used |
 
 ## Topology (reference)
@@ -30,7 +36,7 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 | Pipeline contracts and wiring | Adopter |
 | Plugin allowlist / trust | Adopter (fail-closed in production) |
 | Secrets | Adopter SecretRef providers — never embed values |
-| Multi-tenant isolation | Out of scope in 0.37 |
+| Multi-tenant isolation | Supported profiles only (`isolated-deployment`, `dedicated-schema`); no hosted SaaS |
 | Incident response / SLA | Community only — see [SUPPORT](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md) |
 
 ## Recovery

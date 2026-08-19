@@ -13,6 +13,8 @@
 | 2 | [Quickstart](QUICKSTART.md) | `validate` / `run` succeed; Ada/Grace in `data/out.json`; aha failure observed |
 | 3 | [First Pipeline](FIRST_PIPELINE.md) | Transform evolved; validate → plan → run still green |
 | 4 | [Engine selection](ENGINE_SELECTION.md) | One engine tutorial completed (or stay on local) |
+| 5 | [Human-governed AI](HUMAN_GOVERNED_AI.md) (optional) | Context bundle + proposal validate green |
+| 6 | [Scheduler and worker](SCHEDULER_TUTORIAL.md) (optional) | `schedule create` + `--once` ticks |
 
 Short capability teaser (full matrix later): typed contracts, validate-before-write,
 deterministic plans, Local/Polars/Pandas/SQL/PySpark, Airflow compile, M6

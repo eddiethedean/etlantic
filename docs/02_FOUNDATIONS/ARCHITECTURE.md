@@ -29,50 +29,39 @@ See the [Security Model](SECURITY.md).
 ## System Overview
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ Authoring and Interchange                                   │
-│                                                              │
-│ ContractModel classes   Transformation classes   Pipelines   │
-│ Portable expressions   ODCS / DTCS / DPCS documents          │
-└──────────────────────────────┬───────────────────────────────┘
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│ Typed Logical Model                                          │
-│                                                              │
-│ Contracts • ports • steps • edges • parameters • identities │
-└──────────────────────────────┬───────────────────────────────┘
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│ Analysis                                                     │
-│                                                              │
-│ Introspection • references • validation • diagnostics        │
-└──────────────────────────────┬───────────────────────────────┘
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│ Planning                                                     │
-│                                                              │
-│ Profiles • bindings • capabilities • execution regions       │
-│ resources • materialization boundaries                       │
-│ Gate A interchange descriptors (Polars ↔ Pandas; shipped 0.18, current) │
-│ Quality gates (`etlantic.quality/1`; provisional since 0.30)           │
-│ Delta storage extras (`storage.delta.*`; since 0.32)                   │
-└──────────────────────────────┬───────────────────────────────┘
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│ PipelinePlan                                                 │
-│                                                              │
-│ Immutable • resolved • deterministic • secret-free           │
-└──────────────────────┬───────────────┬───────────────────────┘
-                       ▼               ▼
-              Direct execution     Compilation / generation
-                       │               │
-                       ▼               ▼
-              Runtime plugins      Backend artifacts, docs,
-                                   diagrams, lineage
+Author (Data / Transformation / Pipeline)
+                 │
+                 ▼
+        Validate (wiring, contracts, trust)
+                 │
+                 ▼
+        Plan (secret-free PipelinePlan)
+                 │
+     ┌───────────┼────────────┬──────────────┐
+     ▼           ▼            ▼              ▼
+    Run      Compile      Schedule       Context /
+  (plugins)  (Airflow)   (timer+worker)  proposal
 ```
 
-Medallion bronze/silver/gold vocabulary and SparkForge migration live in
-**Medallantic** (facade), not core. See [Medallantic](../09_MEDALLANTIC/README.md).
+Schedules wrap durable work; they do not embed payloads. Context bundles and
+proposals are redacted and never apply files. Medallion bronze/silver/gold
+vocabulary lives in **Medallantic**, not core. See
+[Medallantic](../09_MEDALLANTIC/GETTING_STARTED.md).
+
+## History of the layers
+
+The 0.48 diagram above is the current mental model. Earlier minors added
+layers that still exist, but they are not the starting picture:
+
+- **0.18 Gate A** — Polars↔Pandas tabular interchange (`etlantic.interchange/1`)
+- **0.30** — Quality gates (`etlantic.quality/1`)
+- **0.32** — Delta storage extras (`storage.delta.*`)
+- **0.39–0.43** — Embeddable HTTP API (CP1 through CP-GA)
+- **0.47** — Scheduler and worker
+- **0.48** — Human-governed AI (context, proposal, generators)
+
+See [What's new in 0.48](../01_GETTING_STARTED/WHATS_NEW_0_48.md) and
+[Earlier releases](../01_GETTING_STARTED/EARLIER_RELEASES.md).
 
 ## Authoring Layer
 
@@ -102,13 +91,12 @@ Class / functions / JSON / GUI
 
 A FastAPI application may expose a transport-neutral ETLantic service facade,
 but authentication, persistence, durable job submission, and deployment remain
-host-application concerns. In **0.39**, `etlantic-fastapi` ships a dual
-surface: **CP1** (`ETLanticAPI` / `include_router` / `create_app`) incubates
-the typed control-plane identity, authz, durable accept, and SSE path; the
-thin `create_reference_app` remains a non-CP authoring demo (shipped since
-0.24). CP1 is **not** production multi-tenant isolation — that graduates at
-**0.43** after CP1–CP4. See
-[Control plane (CP1)](../06_EXECUTION/CONTROL_PLANE.md) and
+host-application concerns. `etlantic-fastapi` ships a dual surface:
+**embeddable HTTP API** (`ETLanticAPI` / `include_router` / `create_app`) and
+the thin `create_reference_app` authoring demo. Internal labels CP1–CP4 built
+that API; **0.43 CP-GA** graduated Supported isolation profiles
+(`isolated-deployment`, `dedicated-schema`). There is no hosted SaaS. See
+[Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) and
 [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 
 ### Code-first

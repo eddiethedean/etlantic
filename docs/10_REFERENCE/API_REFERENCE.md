@@ -9,7 +9,8 @@
 |---|---|---|
 | Pipeline author | Author essentials below, [CLI](CLI.md) | [Authoring API](API_AUTHORING.md), [Plan and runtime](API_PLAN_RUNTIME.md) |
 | Plugin author | [Protocols](API_PROTOCOLS.md) | [Plugin SDK](../07_PLUGIN_SDK/README.md), [Testing plugins](../07_PLUGIN_SDK/TESTING_PLUGINS.md) |
-| Control-plane embedder | [Control plane API (CP1)](CONTROL_PLANE_API.md) | [`etlantic-fastapi`](api_optional/etlantic_fastapi.md), [What's new in 0.39](../01_GETTING_STARTED/WHATS_NEW_0_39.md) |
+| Control-plane embedder | [Control plane API](CONTROL_PLANE_API.md) | [`etlantic-fastapi`](api_optional/etlantic_fastapi.md) |
+| Agent / IDE author | [Agents API](API_AGENTS.md) | [Human-governed AI](../01_GETTING_STARTED/HUMAN_GOVERNED_AI.md) |
 | CI / ops | [CLI](CLI.md), [Runtime configuration](RUNTIME_CONFIGURATION.md) | [Ops examples](../01_GETTING_STARTED/OPS_EXAMPLES.md) |
 
 ## Recommended imports
