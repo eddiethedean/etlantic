@@ -137,8 +137,8 @@ How to read status labels in deeper chapters:
   0.51); OS keyring **is** available via `etlantic-keyring`
 - Process-local / durable file reports as an audit system of record
 - Stable-foundation compatibility inventories (shipped in 0.37; Beta retained)
-- Managed Databricks/EMR/Connect Spark providers (0.47 Experimental fakes
-  planned, not started; supported live packs planned for 0.51)
+- Managed Databricks/EMR/Connect Spark providers (0.47+ Experimental fakes
+  shipped; live Kind/Databricks skipped; supported live packs planned for 0.51)
 - **Undocumented advanced portable profiles** — Polars and PySpark ship the
   documented 0.17 Wave 1 / Wave 2 families; Pandas and SQL remain at kernel +
   `portable-relational/1`. Continuation profiles remain outside the advertised

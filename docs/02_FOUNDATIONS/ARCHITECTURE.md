@@ -297,7 +297,7 @@ The core depends on public protocols rather than backend packages.
 
 | Extension | Responsibility |
 |---|---|
-| Managed resource providers (0.47 Experimental fakes planned; live packs 0.51) | Acquire managed runtime dependencies |
+| Managed resource providers (0.47 Experimental fakes shipped; live packs 0.51) | Acquire managed runtime dependencies |
 | Notification provider protocol | Deliver typed outbound events beyond built-in outbound policy |
 
 Plugins advertise capabilities. The planner selects them only when those

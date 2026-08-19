@@ -19,10 +19,10 @@ if TYPE_CHECKING:
     from etlantic_fastapi.api import ETLanticAPI
 
 
-def _pipeline_from_document(document: Mapping[str, Any]) -> Any:
+def _pipeline_from_document(document: Mapping[str, Any], *, verify: bool) -> Any:
     from etlantic.authoring.serialize import pipeline_from_dict
 
-    return pipeline_from_dict(dict(document), verify=False)
+    return pipeline_from_dict(dict(document), verify=verify)
 
 
 def register_ai_routes(
@@ -30,6 +30,8 @@ def register_ai_routes(
     api: ETLanticAPI,
     get_ctx: Callable[..., Any],
 ) -> None:
+    from etlantic_fastapi.routes import _profile_meta
+
     @router.post(
         "/v1/definitions/{definition_id}/context",
         operation_id="cp_definition_context",
@@ -39,6 +41,7 @@ def register_ai_routes(
         definition_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
+        profile, production_like, _metadata = _profile_meta(api)
         document = authorized_get_definition(
             api.authorizer,
             api.definitions,
@@ -46,9 +49,26 @@ def register_ai_routes(
             definition_id,
             action="definition.read",
         )
-        pipeline = _pipeline_from_document(document)
-        bundle = assemble_context_bundle(pipeline, profile="development")
-        return redact_control_plane_payload(bundle.to_dict())
+        if document.get("schema") == "etlantic.pipeline/1" or "nodes" in document:
+            pipeline = _pipeline_from_document(document, verify=production_like)
+            bundle = assemble_context_bundle(pipeline, profile=profile)
+            return redact_control_plane_payload(bundle.to_dict())
+        return redact_control_plane_payload(
+            {
+                "schema": "etlantic.context_bundle/1",
+                "pipeline_id": definition_id,
+                "sources": [{"kind": "inspect", "identity": definition_id}],
+                "redacted": True,
+                "ok": False,
+                "diagnostics": [
+                    {
+                        "code": "PMCTX110",
+                        "severity": "error",
+                        "message": "Definition is not an etlantic.pipeline/1 document.",
+                    }
+                ],
+            }
+        )
 
     @router.post(
         "/v1/proposals/validate",
@@ -59,6 +79,7 @@ def register_ai_routes(
         body: dict[str, Any],
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
+        profile, production_like, _metadata = _profile_meta(api)
         require_authorized(
             api.authorizer,
             ctx,
@@ -76,7 +97,8 @@ def register_ai_routes(
                 definition_id,
                 action="definition.read",
             )
-            pipeline = _pipeline_from_document(document)
+            if document.get("schema") == "etlantic.pipeline/1" or "nodes" in document:
+                pipeline = _pipeline_from_document(document, verify=production_like)
         proposal = Proposal.from_dict(body.get("proposal") or body)
-        result = validate_proposal(proposal, pipeline=pipeline, profile="development")
+        result = validate_proposal(proposal, pipeline=pipeline, profile=profile)
         return redact_control_plane_payload(result.to_dict())

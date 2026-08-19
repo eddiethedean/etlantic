@@ -61,6 +61,8 @@ root facade alias waves:
 | `etl.control_plane` | `etlantic.control_plane` | provisional (CP1 / 0.39 identity incubation) |
 | `etl.optimization` | `etlantic.optimization` | stable (0.45 advisory optimization-pass SDK) |
 | `etl.streaming` | `etlantic.streaming` | stable (0.46 streaming / dynamic-control contracts) |
+| `etl.resources` | `etlantic.resources` | experimental (0.47 resource providers) |
+| `etl.agents` | `etlantic.agents` | provisional (0.48 human-governed AI) |
 
 ## Plan helpers (stable)
 
@@ -82,7 +84,8 @@ and [Planning](../05_PIPELINES/PLANNING.md#plan-immutability-contract).
 
 Commands: `init`, `doctor`, `profile`, `validate`, `inspect`, `plan`, `run`,
 `compile`, `generate`, `diff`, `plugin`, `schema`, `reliability`, `erasure`,
-`viz`, `report`, `watch`, `stream`.
+`viz`, `report`, `watch`, `stream`, `schedule`, `scheduler`, `worker`,
+`context`, `proposal`.
 
 Stable flags: `--allow-adhoc-profile`, `--accept-legacy-bindings`.
 
@@ -114,9 +117,9 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.streaming/1` | stable (0.46) |
 | `etlantic.schedule/1` | stable (0.47) |
 | `etlantic.firing/1` | stable (0.47) |
-| `etlantic.ai_task/1` | experimental (0.48) |
-| `etlantic.context_bundle/1` | experimental (0.48) |
-| `etlantic.proposal/1` | experimental (0.48) |
+| `etlantic.ai_task/1` | provisional (0.48 Supported catalog) |
+| `etlantic.context_bundle/1` | provisional (0.48 Supported bundles) |
+| `etlantic.proposal/1` | provisional (0.48 Supported sandbox) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 

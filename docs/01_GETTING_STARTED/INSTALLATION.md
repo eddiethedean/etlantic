@@ -139,7 +139,7 @@ python -m pip install 'etlantic[schemaregistry]==0.48.0'  # Experimental fake re
 ```
 
 Also available: `[keyring]`, `[sqlmodel]`, `[medallantic]`, `[fastapi]`,
-`[otel]`, `[arrow]`.
+`[otel]`, `[arrow]`, `[mcp]`, `[k8s]`, `[spark-connect]`.
 
 ```bash
 python -m pip install 'etlantic-fastapi==0.48.0'   # dual surface: CP1 ETLanticAPI + thin create_reference_app (non-CP); CP1 ≠ multi-tenant GA

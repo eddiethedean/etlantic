@@ -19,7 +19,12 @@ Prefer `python -m etlantic` and `import etlantic as etl`.
 | `plan diff` | Diff two plans / targets |
 | `run TARGET` | Execute in-process |
 | `compile TARGET` | Compile (e.g. Airflow; needs plugin) |
-| `generate TARGET` | Contracts, or `--kind definition` JSON |
+| `generate TARGET` | Contracts, `--kind definition` JSON, or `--kind agents` |
+| `watch` | Read-only static revalidation |
+| `stream` | Streaming helpers |
+| `schedule` / `scheduler` / `worker` | Schedule contracts and service roles |
+| `context` | Bounded redacted context bundles |
+| `proposal` | Proposal sandbox (`validate` only; never apply) |
 | `diff` | Diff contracts / pipelines |
 | `plugin` | List / info / compatibility |
 | `schema` | Schema history (fingerprints only) |
@@ -48,6 +53,7 @@ etl.transform   # portable authoring helpers
 etl.dataframe / etl.sql / etl.spark
 etl.orchestration / etl.viz / etl.secrets / etl.testing / etl.quality
 etl.optimization  # optimize_plan, EvidenceStore, explain_optimization
+etl.streaming / etl.resources / etl.connectors / etl.control_plane / etl.agents
 ```
 
 Minimal definition path:

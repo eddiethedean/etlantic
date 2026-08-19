@@ -18,3 +18,8 @@ Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
 Medallion bronze/silver/gold stay in SparkForge / medallantic — never
 in core. Airflow compile needs the optional `etlantic-airflow` package.
+
+## User-owned notes
+
+<!-- etlantic:user-region:start id=project -->
+<!-- etlantic:user-region:end -->

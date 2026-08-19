@@ -11,7 +11,7 @@
 | Package pin | `etlantic==0.48.0` (do not mix 0.47 and 0.48 minors) |
 | Plugin floor | `etlantic>=0.48.0,<0.49` |
 | New surface | `etlantic context bundle`, `etlantic proposal validate`, `generate --kind agents` |
-| New wire | `etlantic.ai_task/1`, `etlantic.context_bundle/1`, `etlantic.proposal/1` (experimental) |
+| New wire | `etlantic.ai_task/1`, `etlantic.context_bundle/1`, `etlantic.proposal/1` (provisional / Supported) |
 | New FastAPI | `POST /v1/definitions/{id}/context`, `POST /v1/proposals/validate` (compute only) |
 | Approvals | Unchanged `/v1/approvals*` — no second mutation API |
 | Experimental extra | `etlantic-mcp` (fake-first; not Available in core) |

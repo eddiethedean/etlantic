@@ -13,16 +13,20 @@
       "items": {
         "type": "object",
         "required": ["path"],
+        "additionalProperties": false,
         "properties": {
           "path": { "type": "string" },
-          "content": { "type": "string" },
-          "patch": { "type": "string" }
+          "content": { "type": "string" }
         }
       }
     },
     "plan_fingerprint": { "type": ["string", "null"] },
     "policy_fingerprint": { "type": ["string", "null"] },
-    "optimization_candidate": { "type": ["object", "null"] }
+    "optimization_candidate": { "type": ["object", "null"] },
+    "requested_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

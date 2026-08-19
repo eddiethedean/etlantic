@@ -35,6 +35,25 @@ READ_ONLY_EVIDENCE = (
     "context_bundle",
 )
 
+ALLOWED_PROPOSAL_ACTIONS = frozenset(READ_ONLY_EVIDENCE)
+
+_FORBIDDEN_ACTION_PREFIXES = frozenset(
+    {
+        "run",
+        "schedule",
+        "erasure",
+        "dlq",
+        "secret",
+        "plugin",
+        "network",
+        "tools",
+        "baseline",
+        "notification",
+        "approval",
+        "approvals",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class AiTask:
@@ -143,7 +162,11 @@ def task_by_id(task_id: str) -> AiTask | None:
 
 
 def action_is_forbidden(action: str) -> bool:
-    return action in FORBIDDEN_ACTIONS
+    """True for canonical mutate verbs and any sibling under those prefixes."""
+    if action in FORBIDDEN_ACTIONS:
+        return True
+    prefix = action.split(".", 1)[0]
+    return prefix in _FORBIDDEN_ACTION_PREFIXES
 
 
 def catalog_from_mapping(payload: Mapping[str, Any]) -> tuple[AiTask, ...]:

@@ -6,7 +6,7 @@ import textwrap
 from pathlib import Path
 
 from etlantic.agents.diagnostics import guide_diagnostic
-from etlantic.agents.regions import merge_user_regions
+from etlantic.agents.regions import extract_user_regions, merge_user_regions
 from etlantic.diagnostics import Diagnostic
 
 PUBLIC_CLI_COMMANDS = (
@@ -66,6 +66,13 @@ SECURITY_RULES = (
     "Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.",
 )
 
+_USER_OWNED_REGION = """
+## User-owned notes
+
+<!-- etlantic:user-region:start id=project -->
+<!-- etlantic:user-region:end -->
+"""
+
 
 def render_agents_md() -> str:
     cmds = ", ".join(f"`etlantic {c}`" for c in PUBLIC_CLI_COMMANDS)
@@ -114,7 +121,7 @@ Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 4. Emit CI diagnostics as SARIF: `etlantic validate TARGET --format sarif`
 5. Use `etlantic.testing` conformance suites for third-party plugins
 6. Diagrams: `Pipeline.to_mermaid()` or `etlantic.viz` / `etlantic viz`
-"""
+{_USER_OWNED_REGION}"""
 
 
 def render_claude_md() -> str:
@@ -153,11 +160,12 @@ Never write secret values into plans or reports. Production profiles require
 `plugin_allowlist`. Schema observe/acknowledge must not store source rows.
 Medallion bronze/silver/gold stay in SparkForge / medallantic — never
 in core. Airflow compile needs the optional `etlantic-airflow` package.
-"""
+{_USER_OWNED_REGION}"""
 
 
 def render_cursor_rule() -> str:
-    return """---
+    return (
+        """---
 description: ETLantic public API and security guardrails
 globs:
   - "**/*.py"
@@ -174,18 +182,21 @@ globs:
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.
 - Agent proposals are untrusted until `etlantic proposal validate` and a current 0.42 approval.
 """
+        + _USER_OWNED_REGION
+    )
 
 
 def generate_agent_guidance(
     root: str | Path,
     *,
-    overwrite: bool = True,
+    overwrite: bool = False,
     preserve_user_regions: bool = True,
 ) -> dict[str, Path]:
     """Write agent guidance files under ``root``.
 
-    Marked user regions are preserved. Generated content never grants mutation
-    authority. Returns only paths that were written.
+    Marked user regions are preserved. Unmarked existing files are left
+    untouched unless ``overwrite=True``. Generated content never grants
+    mutation authority. Returns only paths that were written.
     """
     base = Path(root)
     base.mkdir(parents=True, exist_ok=True)
@@ -199,28 +210,31 @@ def generate_agent_guidance(
     diagnostics: list[Diagnostic] = []
     for rel, content in mapping.items():
         path = base / rel
-        if path.exists() and not overwrite and not preserve_user_regions:
-            continue
         text = content if content.endswith("\n") else content + "\n"
-        if path.exists() and preserve_user_regions:
-            merged = merge_user_regions(text, path.read_text(encoding="utf-8"))
-            diagnostics.extend(merged.diagnostics)
-            if merged.diagnostics:
-                generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
+        if path.exists():
+            existing = path.read_text(encoding="utf-8")
+            regions, region_diags = extract_user_regions(existing)
+            diagnostics.extend(region_diags)
+            if region_diags:
                 continue
-            text = merged.text
-        elif path.exists() and not overwrite:
-            continue
+            if regions and preserve_user_regions:
+                merged = merge_user_regions(text, existing)
+                diagnostics.extend(merged.diagnostics)
+                if merged.diagnostics:
+                    continue
+                text = merged.text
+            elif not overwrite:
+                diagnostics.append(
+                    guide_diagnostic(
+                        "overwrite",
+                        f"{rel} exists without user-region markers; pass "
+                        "overwrite=True to replace it.",
+                        path=(rel,),
+                    )
+                )
+                continue
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
         written[rel] = path
     generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
-    if not written and diagnostics:
-        diagnostics.append(
-            guide_diagnostic(
-                "overwrite",
-                "Guidance files were not rewritten because user-region markers conflicted.",
-            )
-        )
-        generate_agent_guidance.last_diagnostics = tuple(diagnostics)  # type: ignore[attr-defined]
     return written

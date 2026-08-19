@@ -188,3 +188,49 @@ def test_cli_commands_registered() -> None:
 def test_adapter_catalog_is_shared() -> None:
     adapters = {task.adapters for task in task_catalog()}
     assert adapters == {("codex", "claude", "cursor")}
+
+
+def test_unknown_and_sibling_actions_are_denied() -> None:
+    result = validate_proposal(
+        Proposal(
+            files=[{"path": "ok.py", "content": "x = 1\n"}],
+            requested_actions=("run.cancel", "secret.get", "approvals.decide"),
+        )
+    )
+    assert result.ok is False
+    assert any(d.code == "PMPROP130" for d in result.diagnostics)
+
+
+def test_proposal_patch_field_rejected() -> None:
+    result = validate_proposal(
+        {
+            "schema": "etlantic.proposal/1",
+            "task_id": "scaffold_model",
+            "files": [{"path": "ok.py", "content": "x = 1\n", "patch": "diff"}],
+        }
+    )
+    assert result.ok is False
+    assert any(d.code == "PMPROP100" for d in result.diagnostics)
+
+
+def test_unmarked_guidance_is_not_overwritten(tmp_path: Path) -> None:
+    agents = tmp_path / "AGENTS.md"
+    agents.write_text("# custom team guidance\n", encoding="utf-8")
+    written = generate_agent_guidance(tmp_path)
+    assert "AGENTS.md" not in written
+    assert agents.read_text(encoding="utf-8") == "# custom team guidance\n"
+    diags = getattr(generate_agent_guidance, "last_diagnostics", ())
+    assert any(d.code == "PMGUIDE110" for d in diags)
+
+
+def test_context_bundle_redacts_secret_keys() -> None:
+    bundle = assemble_context_bundle(SamplePipeline, profile="development")
+    leaked = {"password": "hunter2", "rows": [{"id": 1}], "source_row": {"id": 1}}
+    from etlantic.agents.context import _redact_mapping
+
+    findings: list = []
+    redacted = _redact_mapping(leaked, diagnostics=findings)
+    assert redacted["password"] == "[redacted]"
+    assert redacted["rows"] == "[redacted]"
+    dumped = json.dumps(bundle.to_dict())
+    assert "hunter2" not in dumped

@@ -145,6 +145,11 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             "--sqlmodel",
             help="Also emit SQLModel stubs (requires etlantic-sqlmodel)",
         ),
+        overwrite: bool = typer.Option(
+            False,
+            "--overwrite",
+            help="Replace existing agent guidance files that have no user-region markers",
+        ),
     ) -> None:
         """Generate ODCS/DTCS/DPCS contract bundles, pipeline JSON, or agent guidance."""
         cli = _cli(ctx)
@@ -154,15 +159,24 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             root = Path(target) if target else Path(".")
             if output != "contracts":
                 root = Path(output)
-            written = generate_agent_guidance(root)
+            written = generate_agent_guidance(root, overwrite=overwrite)
+            diags = getattr(generate_agent_guidance, "last_diagnostics", ())
+            errors = [
+                d.to_dict()
+                for d in diags
+                if getattr(getattr(d, "severity", None), "value", "") == "error"
+            ]
             emit_payload(
                 {
-                    "ok": True,
+                    "ok": not errors,
                     "kind": "agents",
                     "output": {rel: str(path) for rel, path in written.items()},
+                    "diagnostics": [d.to_dict() for d in diags],
                 },
                 fmt=fmt,
             )
+            if errors:
+                raise typer.Exit(ec.TRUST_FAILURE)
             return
         if kind not in {"contracts", "definition", "agents"}:
             emit_payload(

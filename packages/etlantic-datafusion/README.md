@@ -2,7 +2,7 @@
 
 
 Version **0.48.0** (lockstep with ETLantic core).
-Gate B experimental DataFusion plugin stub for ETLantic 0.47.
+Gate B experimental DataFusion plugin stub for ETLantic 0.48.
 
 **Not recommended for production.** Does not replace Polars as the reference
 dataframe engine. Advertises no graduated dataframe/Arrow/lazy capabilities

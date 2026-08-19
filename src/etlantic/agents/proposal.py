@@ -8,7 +8,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from etlantic.agents.catalog import FORBIDDEN_ACTIONS, action_is_forbidden
+from etlantic.agents.catalog import (
+    ALLOWED_PROPOSAL_ACTIONS,
+    FORBIDDEN_ACTIONS,
+    action_is_forbidden,
+)
 from etlantic.agents.diagnostics import prop_diagnostic
 from etlantic.authoring.lifecycle import validate_pipeline_like
 from etlantic.authoring.preview import plan_preview
@@ -60,6 +64,8 @@ class Proposal:
                 "files": self.files,
                 "plan_fingerprint": self.plan_fingerprint,
                 "policy_fingerprint": self.policy_fingerprint,
+                "requested_actions": list(self.requested_actions),
+                "optimization_candidate": self.optimization_candidate,
             }
         )
 
@@ -143,6 +149,7 @@ def validate_proposal(
     profile: str | Any | None = "development",
 ) -> ProposalValidation:
     """Deterministic no-network/no-secret sandbox. Never applies files."""
+    raw = proposal if isinstance(proposal, Mapping) else None
     parsed = (
         proposal if isinstance(proposal, Proposal) else Proposal.from_dict(proposal)
     )
@@ -155,8 +162,26 @@ def validate_proposal(
                 path=("schema",),
             )
         )
+    if raw is not None:
+        for item in raw.get("files") or ():
+            if not isinstance(item, Mapping):
+                continue
+            extra = set(item) - {"path", "content"}
+            if extra:
+                diagnostics.append(
+                    prop_diagnostic(
+                        "invalid",
+                        "Proposal files must send full content; patches and unknown "
+                        "file fields are rejected.",
+                        path=("files", str(item.get("path") or "")),
+                    )
+                )
     for action in parsed.requested_actions:
-        if action_is_forbidden(action) or action in FORBIDDEN_ACTIONS:
+        if (
+            action_is_forbidden(action)
+            or action in FORBIDDEN_ACTIONS
+            or action not in ALLOWED_PROPOSAL_ACTIONS
+        ):
             diagnostics.append(
                 prop_diagnostic(
                     "untrusted",
@@ -223,6 +248,7 @@ def validate_proposal(
         approval_fingerprints={
             "plan_fingerprint": plan_fp,
             "policy_fingerprint": policy_fp,
+            "proposal_fingerprint": parsed.fingerprint,
         },
     )
 

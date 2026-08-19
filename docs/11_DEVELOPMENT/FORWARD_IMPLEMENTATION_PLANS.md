@@ -25,7 +25,7 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.45 | Planner and optimization SDK | [0.45](IMPLEMENTATION_PLAN_0_45.md) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
 | 0.46 | Bounded dynamic control flow, streaming, and event pipelines | [0.46](IMPLEMENTATION_PLAN_0_46.md) | [Reliability](ETL_RELIABILITY_PLAN.md) |
 | 0.47 | FastAPI scheduler/runner service and remote execution federation | [0.47](IMPLEMENTATION_PLAN_0_47.md) ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md), [exit gate](EXIT_GATE_0_47.md) Met) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
-| 0.48 | Human-governed AI workflows | [0.48](IMPLEMENTATION_PLAN_0_48.md) ([ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md) Proposed, [exit gate](EXIT_GATE_0_48.md) Not started) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.48 | Human-governed AI workflows | [0.48](IMPLEMENTATION_PLAN_0_48.md) ([ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md) Accepted, [exit gate](EXIT_GATE_0_48.md) Met) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.49 | Brownfield bridges and orchestration compilers | [0.49](IMPLEMENTATION_PLAN_0_49.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.50 | Operator console | [0.50](IMPLEMENTATION_PLAN_0_50.md) | [UI/UX](UI_UX_PLAN.md) |
 | 0.51 | Managed-runtime and provider packs | [0.51](IMPLEMENTATION_PLAN_0_51.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |

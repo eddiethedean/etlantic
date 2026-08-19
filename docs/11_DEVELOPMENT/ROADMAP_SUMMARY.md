@@ -319,7 +319,7 @@ shared entry, evidence, and completion rules for all later phases.
   streaming and event-driven pipelines, poison-record/DLQ policy, and
   schema-registry interoperability — [Gate-ready](EXIT_GATE_0_46.md)
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
-  service plus remote execution federation — [planning freeze](EXIT_GATE_0_47.md)
+  service plus remote execution federation — [Gate-ready](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
   Spark Connect are Experimental fakes; live packs remain 0.51
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed

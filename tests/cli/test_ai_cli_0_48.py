@@ -50,3 +50,16 @@ def test_generate_kind_agents(tmp_path: Path) -> None:
     assert (tmp_path / "AGENTS.md").is_file()
     payload = json.loads(result.stdout)
     assert payload["kind"] == "agents"
+
+
+def test_generate_kind_agents_does_not_clobber_unmarked(tmp_path: Path) -> None:
+    custom = tmp_path / "AGENTS.md"
+    custom.write_text("# keep me\n", encoding="utf-8")
+    result = runner.invoke(
+        app,
+        ["generate", "--kind", "agents", str(tmp_path), "--format", "json"],
+    )
+    assert result.exit_code != 0
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
+    assert custom.read_text(encoding="utf-8") == "# keep me\n"

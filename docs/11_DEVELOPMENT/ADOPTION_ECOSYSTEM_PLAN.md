@@ -70,7 +70,7 @@ to every program below. Detailed implementation and release evidence live in:
 - [0.43 control-plane graduation](IMPLEMENTATION_PLAN_0_43.md)
 - [0.46 dynamic control, streaming, dead-letter, and schema-registry contracts](IMPLEMENTATION_PLAN_0_46.md)
 - [0.47 remote execution providers](IMPLEMENTATION_PLAN_0_47.md)
-- [0.48 human-governed AI workflows](IMPLEMENTATION_PLAN_0_48.md) ([exit gate](EXIT_GATE_0_48.md) not started)
+- [0.48 human-governed AI workflows](IMPLEMENTATION_PLAN_0_48.md) ([exit gate](EXIT_GATE_0_48.md) Met)
 - [0.49 brownfield bridges](IMPLEMENTATION_PLAN_0_49.md)
 - [0.50 operator console](IMPLEMENTATION_PLAN_0_50.md)
 - [0.51 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_51.md)

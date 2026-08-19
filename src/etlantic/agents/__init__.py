@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from etlantic.agents.catalog import (
+    ALLOWED_PROPOSAL_ACTIONS,
     CANONICAL_TASKS,
     FORBIDDEN_ACTIONS,
     AiTask,
@@ -39,6 +40,7 @@ from etlantic.agents.proposal import (
 from etlantic.agents.regions import merge_user_regions
 
 __all__ = [
+    "ALLOWED_PROPOSAL_ACTIONS",
     "CANONICAL_TASKS",
     "FORBIDDEN_ACTIONS",
     "PROPOSAL_SCHEMA",

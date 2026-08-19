@@ -49,6 +49,11 @@ Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 5. Use `etlantic.testing` conformance suites for third-party plugins
 6. Diagrams: `Pipeline.to_mermaid()` or `etlantic.viz` / `etlantic viz`
 
+## User-owned notes
+
+<!-- etlantic:user-region:start id=project -->
+<!-- etlantic:user-region:end -->
+
 ## Claude-specific notes
 
 - Prefer editing contracts/pipelines over inventing backend-specific DAGs.

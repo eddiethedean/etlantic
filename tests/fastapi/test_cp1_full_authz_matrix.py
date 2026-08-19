@@ -41,6 +41,12 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
         None,
     ),
     ("cp_plan_definition", "POST", "/v1/definitions/{definition_id}/plan", None),
+    (
+        "cp_definition_context",
+        "POST",
+        "/v1/definitions/{definition_id}/context",
+        None,
+    ),
     ("cp_submit_run", "POST", "/v1/definitions/{definition_id}/runs", {}),
     ("cp_get_run", "GET", "/v1/runs/{run_id}", None),
     ("cp_cancel_run", "POST", "/v1/runs/{run_id}/cancel", None),

@@ -6,7 +6,7 @@ This table describes the declared compatibility of ETLantic 0.48.0.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
 [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) /
 ContractModel / Python):
-[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-047).
+[Capabilities — Supported standards policy](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-048).
 
 | Surface | Supported range or version |
 |---|---|

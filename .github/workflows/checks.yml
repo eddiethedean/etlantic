@@ -642,7 +642,13 @@ jobs:
             "etlantic_s3:etlantic_s3" \
             "etlantic_iceberg:etlantic_iceberg" \
             "etlantic_snowflake:etlantic_snowflake" \
-            "etlantic_openlineage:etlantic_openlineage"; do
+            "etlantic_openlineage:etlantic_openlineage" \
+            "etlantic_mcp:etlantic_mcp" \
+            "etlantic_k8s:etlantic_k8s" \
+            "etlantic_kafka:etlantic_kafka" \
+            "etlantic_spark_connect:etlantic_spark_connect" \
+            "etlantic_lsp:etlantic_lsp" \
+            "etlantic_schemaregistry:etlantic_schemaregistry"; do
             wheel_glob="${pair%%:*}"
             mod="${pair##*:}"
             wheel=$(ls dist/${wheel_glob}-*.whl 2>/dev/null | head -1 || true)

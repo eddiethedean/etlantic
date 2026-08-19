@@ -241,13 +241,15 @@ python -m etlantic generate pipeline.py:SamplePipeline \
 
 `--kind definition` writes an `etlantic.pipeline/1` document (Available in
 0.24). `--kind agents` writes `AGENTS.md`, `CLAUDE.md`, Codex skill, and Cursor
-rule files (TARGET optional, default `.`). `--sqlmodel` requires
-`etlantic-sqlmodel`. Definition kind works from a class target or an existing
-definition JSON.
+rule files (TARGET optional, default `.`). Existing unmarked files are left
+alone unless `--overwrite` is passed; marked user regions are merged.
+`--sqlmodel` requires `etlantic-sqlmodel`. Definition kind works from a class
+target or an existing definition JSON.
 
 ```bash
 python -m etlantic generate --kind agents
 python -m etlantic generate --kind agents path/to/project
+python -m etlantic generate --kind agents path/to/project --overwrite
 ```
 
 ## `diff`
@@ -269,7 +271,7 @@ python -m etlantic plugin compatibility --format human
 ```
 
 Supported `--kind` values today: `dataframe`, `sql`, `spark`, `orchestrator`,
-`scheduler`, `transform_compiler`.
+`scheduler`, `transform_compiler`, `resource`, `mcp`.
 
 `plugin compatibility` evaluates installed plugin packages (static
 `etlantic-plugin-manifest.json` plus packaging metadata) against the core

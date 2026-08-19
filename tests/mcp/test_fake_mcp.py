@@ -11,7 +11,7 @@ pytest.importorskip("etlantic_mcp")
 from etlantic.agents.catalog import FORBIDDEN_ACTIONS
 from etlantic.agents.mcp_trust import mcp_server_allowed
 from etlantic.profile import Profile
-from etlantic_mcp import FakeMcpServer, live_configured
+from etlantic_mcp import FakeMcpServer, create_server, live_configured
 
 pytestmark = pytest.mark.mcp
 
@@ -27,6 +27,21 @@ def test_fake_read_only_methods() -> None:
     assert secrets["diagnostic"]["code"] == "PMMCP150"
     expand = server.call("inspect", grant_tools=["run.submit"])
     assert expand["diagnostic"]["code"] == "PMMCP110"
+    nested = server.call("inspect", body={"grant_tools": ["run.submit"]})
+    assert nested["diagnostic"]["code"] == "PMMCP110"
+    echoed = server.call("inspect", password="hunter2", target="pipe")
+    assert echoed["arguments"]["password"] == "[redacted]"
+    proposal = server.call(
+        "proposal.validate",
+        proposal={
+            "schema": "etlantic.proposal/1",
+            "task_id": "scaffold_model",
+            "files": [{"path": "ok.py", "content": "x = 1\n"}],
+            "requested_actions": ["run.submit"],
+        },
+    )
+    assert proposal["ok"] is False
+    assert proposal["applied"] is False
 
 
 def test_fake_catalog_excludes_mutating_methods() -> None:
@@ -55,6 +70,10 @@ def test_production_allowlist_fail_closed() -> None:
     )
     ok, _ = mcp_server_allowed(pinned, "etlantic-mcp", version="0.48.0", selected=True)
     assert ok is True
+    denied_server = create_server(profile=profile)
+    blocked = denied_server.call("inspect")
+    assert blocked["ok"] is False
+    assert blocked["diagnostic"]["code"] == "PMMCP140"
 
 
 @pytest.mark.skipif(

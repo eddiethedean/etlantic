@@ -47,3 +47,8 @@ Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 4. Emit CI diagnostics as SARIF: `etlantic validate TARGET --format sarif`
 5. Use `etlantic.testing` conformance suites for third-party plugins
 6. Diagrams: `Pipeline.to_mermaid()` or `etlantic.viz` / `etlantic viz`
+
+## User-owned notes
+
+<!-- etlantic:user-region:start id=project -->
+<!-- etlantic:user-region:end -->

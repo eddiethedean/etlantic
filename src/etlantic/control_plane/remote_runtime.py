@@ -70,9 +70,11 @@ class FakeRemoteHost:
                     path=("capabilities",),
                 ).code
             )
+        offer_version = str(offer.get("version") or "")
+        compat_prefix = ".".join(str(self.capabilities.version).split(".")[:2])
         if (
-            str(offer.get("version") or "")
-            and not str(offer["version"]).startswith("0.47")
+            offer_version
+            and not offer_version.startswith(compat_prefix)
             and offer.get("version") not in {None, self.capabilities.version}
         ):
             raise ValueError(

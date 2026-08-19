@@ -24,7 +24,26 @@ def test_negotiate_submit_and_recover() -> None:
     assert recovered.disconnected is False
 
 
-def test_missing_dyn_caps_rejected() -> None:
+def test_version_skew_rejects_other_minor() -> None:
+    host = FakeRemoteHost()
+    with pytest.raises(ValueError, match="PMFED101"):
+        host.negotiate(
+            {
+                "version": "0.47.0",
+                "capabilities": {"map": True, "branch": True, "stream": True},
+            }
+        )
+
+
+def test_same_minor_patch_is_compatible() -> None:
+    host = FakeRemoteHost()
+    session = host.negotiate(
+        {
+            "version": "0.48.1",
+            "capabilities": {"map": True, "branch": True, "stream": True},
+        }
+    )
+    assert session.session_id
     host = FakeRemoteHost()
     with pytest.raises(ValueError, match="PMFED110"):
         host.negotiate({"version": "0.48.0", "capabilities": {"map": False}})

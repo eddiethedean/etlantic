@@ -103,3 +103,39 @@ def test_context_and_proposal_validate_routes() -> None:
     payload = validated.json()
     assert payload["applied"] is False
     assert payload["ok"] is True
+
+
+def test_context_route_opaque_404_for_other_principal() -> None:
+    authz = MemoryAuthorizer()
+    alice = _ctx()
+    bob = ControlPlaneContext(
+        principal=Principal(subject="bob", issuer="tests"),
+        tenant=TenantRef(tenant_id="tenant-b"),
+        workspace=WorkspaceRef(tenant_id="tenant-b", workspace_id="ws-1"),
+        environment=EnvironmentRef(name="development"),
+        security_domain=SecurityDomain(domain_id="default"),
+    )
+    authz.grant(alice, "definition.read")
+    authz.grant(bob, "definition.read")
+    defs = MemoryDefinitionRepository()
+    defn = definition_from_pipeline(SamplePipeline)
+    defs.put(alice, "pipe-1", defn.to_dict())
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=defs,
+        submissions=MemorySubmissionStore(),
+        events=MemoryEventStore(),
+        context_factory=membership_context_factory(
+            {
+                "alice": ("tenant-a", "ws-1", "development", "default"),
+                "bob": ("tenant-b", "ws-1", "development", "default"),
+            }
+        ),
+        principal_dependency=principal_from_header,
+    )
+    client = TestClient(create_app(api))
+    forbidden = client.post(
+        "/v1/definitions/pipe-1/context",
+        headers={"X-Principal": "bob"},
+    )
+    assert forbidden.status_code == 404

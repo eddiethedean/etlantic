@@ -28,6 +28,7 @@ _LEAK_KEYS = frozenset(
         "api_key",
     }
 )
+_LEAK_EXACT_KEYS = frozenset({"rows", "records", "subjects", "source_rows"})
 
 DEFAULT_BUDGETS = {
     "max_bytes": 262144,
@@ -40,12 +41,18 @@ def _now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _is_leak_key(key: str) -> bool:
+    lowered = str(key).lower()
+    if lowered in _LEAK_EXACT_KEYS:
+        return True
+    return any(token in lowered for token in _LEAK_KEYS)
+
+
 def _redact_mapping(value: Any, *, diagnostics: list[Diagnostic]) -> Any:
     if isinstance(value, Mapping):
         out: dict[str, Any] = {}
         for key, item in value.items():
-            lowered = str(key).lower()
-            if any(token in lowered for token in _LEAK_KEYS):
+            if _is_leak_key(str(key)):
                 diagnostics.append(
                     ctx_diagnostic(
                         "redaction",
@@ -63,6 +70,29 @@ def _redact_mapping(value: Any, *, diagnostics: list[Diagnostic]) -> Any:
     if isinstance(value, str):
         return str(redact_value(value))
     return value
+
+
+def _strip_hostile(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(k): _strip_hostile(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_strip_hostile(item) for item in value]
+    if isinstance(value, str) and _contains_instruction_injection(value):
+        return "[omitted-hostile-text]"
+    return value
+
+
+def _has_unredacted_leak(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if _is_leak_key(str(key)) and item != "[redacted]":
+                return True
+            if _has_unredacted_leak(item):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_has_unredacted_leak(item) for item in value)
+    return False
 
 
 def _contains_instruction_injection(text: str) -> bool:
@@ -160,7 +190,6 @@ def assemble_context_bundle(
         {
             "kind": "validate",
             "identity": str(pipeline_id or "validate"),
-            "fingerprint": None,
         }
     )
     findings.extend(list(report.diagnostics)[: int(limits["max_diagnostics"])])
@@ -183,6 +212,14 @@ def assemble_context_bundle(
             )
             if planned is not None:
                 plan_payload = planned.to_dict()
+                if not planned.fingerprint:
+                    findings.append(
+                        ctx_diagnostic(
+                            "missing_provenance",
+                            "Plan preview produced no fingerprint.",
+                            path=("plan", "fingerprint"),
+                        )
+                    )
                 sources.append(
                     {
                         "kind": "plan",
@@ -212,6 +249,8 @@ def assemble_context_bundle(
                 path=("bundle",),
             )
         )
+        graph_payload = _strip_hostile(graph_payload)
+        plan_payload = _strip_hostile(plan_payload)
     if len(dumped.encode("utf-8")) > int(limits["max_bytes"]):
         findings.append(
             ctx_diagnostic(
@@ -221,13 +260,35 @@ def assemble_context_bundle(
             )
         )
         plan_payload = None
+        shrunk = json.dumps(
+            {"graph": graph_payload, "plan": None},
+            default=str,
+            sort_keys=True,
+        )
+        if len(shrunk.encode("utf-8")) > int(limits["max_bytes"]):
+            graph_payload = {
+                "pipeline_id": pipeline_id,
+                "nodes": [],
+                "edges": [],
+            }
 
     redacted_graph = _redact_mapping(graph_payload, diagnostics=findings)
     redacted_plan = _redact_mapping(plan_payload, diagnostics=findings)
+    if _has_unredacted_leak(redacted_graph) or _has_unredacted_leak(redacted_plan):
+        findings.append(
+            ctx_diagnostic(
+                "leakage",
+                "Context bundle still contained secret, row, or payload material.",
+                path=("bundle",),
+            )
+        )
+        redacted_graph = _redact_mapping(redacted_graph, diagnostics=findings)
+        redacted_plan = _redact_mapping(redacted_plan, diagnostics=findings)
     ok = not any(d.severity.value == "error" for d in findings)
     return ContextBundle(
         pipeline_id=pipeline_id,
         sources=sources,
+        redacted=True,
         graph=redacted_graph if isinstance(redacted_graph, dict) else None,
         plan=redacted_plan if isinstance(redacted_plan, dict) else None,
         diagnostics=[d.to_dict() for d in findings],

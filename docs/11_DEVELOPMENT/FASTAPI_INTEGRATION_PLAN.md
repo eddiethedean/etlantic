@@ -8,10 +8,10 @@
 >
 > **Current 0.48 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
-> Phase 0.47 **plans** separately supervised scheduler and execution-host service
+> Phase 0.47 shipped separately supervised scheduler and execution-host service
 > roles behind this gateway ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md),
 > [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md)); it does not run
-> either role in an ASGI worker, and those routes are **not Available**.
+> either role in an ASGI worker. Those schedule routes are **Available**.
 > Continuous directory watchers are not in core. Reliability stubs remain
 > `experimental: true` unless a history store is injected.
 >

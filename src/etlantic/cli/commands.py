@@ -81,7 +81,7 @@ def register_commands(
         kind: str = typer.Option(
             "all",
             "--kind",
-            help="all|dataframe|sql|spark|orchestrator|scheduler|transform_compiler|resource",
+            help="all|dataframe|sql|spark|orchestrator|scheduler|transform_compiler|resource|mcp",
         ),
     ) -> None:
         """List discovered plugins (honors profile allowlist)."""
@@ -122,8 +122,19 @@ def register_commands(
             from etlantic.resources.discovery import discover_resource_providers
 
             groups["resource"] = discover_resource_providers(profile=resolved)
+        if kind in {"all", "mcp"}:
+            from etlantic.agents.mcp_trust import discover_mcp_servers
+
+            groups["mcp"] = discover_mcp_servers(profile=resolved)
         items: list[dict[str, Any]] = []
         diagnostics: list[dict[str, Any]] = []
+        if kind in {"all", "mcp"}:
+            from etlantic.agents.mcp_trust import discover_mcp_servers
+
+            for diag in getattr(discover_mcp_servers, "last_diagnostics", ()) or ():
+                diagnostics.append(
+                    diag.to_dict() if hasattr(diag, "to_dict") else dict(diag)
+                )
         for group_name, plugins in groups.items():
             for engine, plugin in plugins.items():
                 info = getattr(plugin, "info", None)
@@ -202,13 +213,17 @@ def register_commands(
             from etlantic.resources.discovery import discover_resource_providers
 
             plugins = discover_resource_providers(profile=resolved)
+        elif kind == "mcp":
+            from etlantic.agents.mcp_trust import discover_mcp_servers
+
+            plugins = discover_mcp_servers(profile=resolved)
         else:
             emit_payload(
                 {
                     "ok": False,
                     "error": (
                         f"Unknown kind {kind!r}; expected dataframe|sql|spark|"
-                        "orchestrator|scheduler|transform_compiler|resource"
+                        "orchestrator|scheduler|transform_compiler|resource|mcp"
                     ),
                 },
                 fmt=fmt,

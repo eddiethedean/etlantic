@@ -128,8 +128,8 @@ remains in Medallantic—not core.
   [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md))
 - SOC2, GDPR, HIPAA, or other compliance attestations
 - HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs in
-  this Beta line; Kubernetes execution **fakes** are the 0.47 freeze (not
-  started); live packs remain 0.51
+  this Beta line; Kubernetes execution **fakes** shipped in 0.47 (live packs
+  remain 0.51)
 - Cloud secret managers (Vault, AWS Secrets Manager)—OS keyring ships via
   `etlantic-keyring`; optional cloud provider packs are planned for 0.51
 - Formal support SLAs or guaranteed response times

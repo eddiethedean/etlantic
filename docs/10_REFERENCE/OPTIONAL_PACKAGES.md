@@ -5,7 +5,7 @@
 
 !!! warning "Maturity vs PyPI classifiers"
     Official engine packages declare **Beta** PyPI classifiers that match the
-    **ETLantic 0.47 Beta** envelope (community non-SLA). Treat that envelope as
+    **ETLantic 0.48 Beta** envelope (community non-SLA). Treat that envelope as
     authoritative for readiness claims. **CP1–CP4 alone ≠ GA**; Supported
     profiles graduated in **0.43** (`isolated-deployment`, `dedicated-schema`;
     `shared-service` Experimental). See

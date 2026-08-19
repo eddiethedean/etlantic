@@ -459,7 +459,7 @@ Rows from 0.39 onward are future sequence.
 | [0.42](IMPLEMENTATION_PLAN_0_42.md) | Approval, governance, signed observations, retention, policy evidence |
 | [0.43](IMPLEMENTATION_PLAN_0_43.md) | Integrated multi-tenant control-plane graduation |
 | [0.45](IMPLEMENTATION_PLAN_0_44.md) | IDE and notebook history, impact, proposals, and navigation |
-| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed AI remediation proposals; apply via existing approval/ack APIs — [EXIT_GATE_0_48](EXIT_GATE_0_48.md) (planning freeze; not Available) |
+| [0.48](IMPLEMENTATION_PLAN_0_48.md) | Human-governed AI remediation proposals; apply via existing approval/ack APIs — [EXIT_GATE_0_48](EXIT_GATE_0_48.md) (Met; Available) |
 
 ## Success Criteria
 

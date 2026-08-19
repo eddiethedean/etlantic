@@ -14,3 +14,8 @@ globs:
 - Medallion bronze/silver/gold stay in SparkForge / medallantic — never in core.
 - Do not redesign orchestration protocols; wrap existing `compile_plan` / plugins.
 - Agent proposals are untrusted until `etlantic proposal validate` and a current 0.42 approval.
+
+## User-owned notes
+
+<!-- etlantic:user-region:start id=project -->
+<!-- etlantic:user-region:end -->
