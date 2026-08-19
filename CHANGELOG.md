@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Agent instruction generators no longer drop marked user-owned regions
+- Remote-runtime federation skew uses the current 0.48 minor (rejects `0.47.x`)
+- Proposal sandbox allowlists verbs, rejects extra file fields, and fingerprints requested actions
+- Context bundles redact secret-like keys, strip hostile instruction text, and fail closed on stub documents (`PMCTX110`)
+- `etlantic-mcp` `proposal.validate` runs the real sandbox; production `plugin_allowlist` fails closed (`PMMCP140`)
+- Refresh Medallantic migration definition goldens for the 0.48 lockstep
 
 ## [0.47.0] - 2026-08-17
 

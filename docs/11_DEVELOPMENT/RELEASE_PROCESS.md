@@ -110,8 +110,9 @@ wheel). Build with `npm run package` after `npm install`.
    existing projects. Prefer Trusted Publishing / OIDC when configured;
    otherwise use the least-privilege token documented for this repository.
    Treat long-lived user tokens and first-project bootstrap as exceptional.
-   For 0.38.0, `etlantic-s3`, `etlantic-iceberg`, and `etlantic-snowflake` are
-   brand-new PyPI names—pace new-project creates accordingly.
+   For 0.48.0, `etlantic-mcp` is a brand-new PyPI name and
+   `etlantic-spark-connect` is still unpublished from the 0.47 rate-limit
+   window—pace new-project creates accordingly.
 8. **New distribution bootstrap only:** if introducing a brand-new PyPI name,
    review `scripts/check_release.py` output and PyPI new-project rate limits
    (`429 Too many new projects created`). Release CI waits between brand-new
@@ -147,14 +148,17 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all twenty wheels/sdists.
+3. Builds all twenty-three wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
-5. Publishes to PyPI: **existing projects first** (thirteen established
-   projects, then the three new 0.38 experimental connector projects),
-   **10-minute** gaps only between brand-new project creates; skips files
-   already present via `--check-url`; retries on transient 429s.
-6. Creates the GitHub Release from `CHANGELOG.md` notes when publish succeeds.
+5. Publishes to PyPI: **existing projects first** (skip files already present
+   via `--check-url`; retry transient 429s).
+6. Creates the GitHub Release from `CHANGELOG.md` notes when existing-project
+   publish succeeds.
+7. Then publishes brand-new names (`etlantic-spark-connect`, `etlantic-mcp`)
+   after the GitHub Release with `continue-on-error` and a **10-minute** gap
+   so a new-project `429` cannot block the rest of the line. Re-dispatch
+   **Release** later for any new name still rate-limited.
 
 ## After PyPI succeeds
 

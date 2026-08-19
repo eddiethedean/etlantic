@@ -413,9 +413,6 @@ jobs:
           publish_pair etlantic-openlineage \
             "dist/etlantic_openlineage-${TAG}-py3-none-any.whl" \
             "dist/etlantic_openlineage-${TAG}.tar.gz"
-          publish_pair etlantic-mcp \
-            "dist/etlantic_mcp-${TAG}-py3-none-any.whl" \
-            "dist/etlantic_mcp-${TAG}.tar.gz"
 
       - name: Create GitHub Release
         env:
@@ -464,54 +461,78 @@ jobs:
           set -euo pipefail
           TAG="${RELEASE_TAG#v}"
           RETRY_BASE_SECONDS=60
-          pypi_project_exists() {
-            local code
-            code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/$1/json")"
-            [ "$code" = "200" ]
-          }
+          NEW_PROJECT_GAP_SECONDS=600
           pypi_version_exists() {
             local code
             code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/$1/$2/json")"
             [ "$code" = "200" ]
           }
-          name="etlantic-spark-connect"
-          wheel="dist/etlantic_spark_connect-${TAG}-py3-none-any.whl"
-          sdist="dist/etlantic_spark_connect-${TAG}.tar.gz"
-          if pypi_version_exists "$name" "$TAG"; then
-            echo "Already published; verified on PyPI: ${name}==${TAG}"
-            exit 0
-          fi
-          attempt=1
-          max_attempts=5
-          delay="$RETRY_BASE_SECONDS"
-          while true; do
-            echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
-            set +e
-            log="$(uv publish --trusted-publishing always --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
-            status=$?
-            if [ "$status" -ne 0 ] && [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
-              echo "OIDC publish unavailable; falling back to token for $name"
-              log="$(uv publish --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
+          publish_new() {
+            local name="$1"
+            local wheel="$2"
+            local sdist="$3"
+            local attempt=1
+            local max_attempts=5
+            local delay="$RETRY_BASE_SECONDS"
+            local log=""
+            local status=0
+            if pypi_version_exists "$name" "$TAG"; then
+              echo "Already published; verified on PyPI: ${name}==${TAG}"
+              return 0
+            fi
+            while true; do
+              echo "Publishing $(basename "$wheel") (attempt $attempt/$max_attempts)"
+              set +e
+              log="$(uv publish --trusted-publishing always --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
               status=$?
-            fi
-            set -e
-            printf '%s\n' "$log"
-            if [ "$status" -eq 0 ]; then
-              exit 0
-            fi
-            if printf '%s' "$log" | grep -Eiq 'file already exists|already uploaded|skipping.*already'; then
-              if pypi_version_exists "$name" "$TAG"; then
-                echo "Already published; verified on PyPI: ${name}==${TAG}"
-                exit 0
+              if [ "$status" -ne 0 ] && [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+                echo "OIDC publish unavailable; falling back to token for $name"
+                log="$(uv publish --check-url https://pypi.org/simple/ "$wheel" "$sdist" 2>&1)"
+                status=$?
               fi
+              set -e
+              printf '%s\n' "$log"
+              if [ "$status" -eq 0 ]; then
+                return 0
+              fi
+              if printf '%s' "$log" | grep -Eiq 'file already exists|already uploaded|skipping.*already'; then
+                if pypi_version_exists "$name" "$TAG"; then
+                  echo "Already published; verified on PyPI: ${name}==${TAG}"
+                  return 0
+                fi
+              fi
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "Publish failed after $max_attempts attempts: $wheel"
+                echo "If this is a new-project 429, wait for the daily/hourly window and re-run."
+                return 1
+              fi
+              echo "Publish failed; waiting ${delay}s before retry..."
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+          failures=0
+          pending=0
+          for spec in \
+            "etlantic-spark-connect|dist/etlantic_spark_connect-${TAG}-py3-none-any.whl|dist/etlantic_spark_connect-${TAG}.tar.gz" \
+            "etlantic-mcp|dist/etlantic_mcp-${TAG}-py3-none-any.whl|dist/etlantic_mcp-${TAG}.tar.gz"
+          do
+            IFS='|' read -r name wheel sdist <<< "$spec"
+            if pypi_version_exists "$name" "$TAG"; then
+              echo "Already published; verified on PyPI: ${name}==${TAG}"
+              continue
             fi
-            if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Publish failed after $max_attempts attempts: $wheel"
-              echo "If this is a new-project 429, wait for the daily/hourly window and re-run."
-              exit 1
+            if [ "$pending" -gt 0 ]; then
+              echo "Waiting ${NEW_PROJECT_GAP_SECONDS}s before creating new PyPI project: $name"
+              sleep "$NEW_PROJECT_GAP_SECONDS"
             fi
-            echo "Publish failed; waiting ${delay}s before retry..."
-            sleep "$delay"
-            attempt=$((attempt + 1))
-            delay=$((delay * 2))
+            pending=$((pending + 1))
+            if ! publish_new "$name" "$wheel" "$sdist"; then
+              failures=$((failures + 1))
+            fi
           done
+          if [ "$failures" -gt 0 ]; then
+            echo "One or more new PyPI projects failed; re-dispatch Release after the rate-limit window."
+            exit 1
+          fi
