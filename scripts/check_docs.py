@@ -541,7 +541,9 @@ def check_zero_x_roadmap_phases() -> None:
     }
     planned_exit_paths: list[Path] = []
     for phase, theme in planned_exit_gates.items():
-        exit_path = ROOT / "docs/11_DEVELOPMENT" / f"EXIT_GATE_{phase.replace('.', '_')}.md"
+        exit_path = (
+            ROOT / "docs/11_DEVELOPMENT" / f"EXIT_GATE_{phase.replace('.', '_')}.md"
+        )
         planned_exit_paths.append(exit_path)
         if not exit_path.is_file():
             raise SystemExit(f"missing planned exit gate: {exit_path}")
