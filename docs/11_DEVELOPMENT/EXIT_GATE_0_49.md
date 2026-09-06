@@ -46,7 +46,7 @@ passing implementations without calling the phase complete.
 | 11 | Real JVM PySpark passes the complete baseline without Python/Pandas UDF fallback | Pass | **Not started** | #100 |
 | 12 | `spark` and `pyspark` resolve to one authorized identity, or the alias is removed with compatibility evidence | Pass | **Not started** | #100 |
 | 13 | DataFusion analysis, native lowering, execution, and Arrow boundaries pass the complete baseline | Pass | **Not started** | #101 |
-| 14 | Every engine emits truthful requirement-level evidence for supported, partial, unavailable, unknown, and rejected slices; only complete manifest coverage earns baseline qualification | Pass | **Not started** | #96–#108 |
+| 14 | Every engine emits truthful requirement-level evidence; shared negative fixtures cover partial, unavailable, unknown, and rejected slices; only complete manifest coverage earns baseline qualification | Pass | **Not started** | #96–#108 |
 | 15 | One unchanged authored pipeline validates, plans, and runs on all six engines | 6/6 | **Not started** | #108 |
 | 16 | Normalized differential corpus agrees for nulls, empty input, Unicode, numerics, ordering, joins, unions, aggregation, and deduplication | 6/6 | **Not started** | #108 |
 | 17 | The 0.49 evidence artifact drives a 0.50-style per-node eligibility fixture without engine-name or aggregate-qualification inference | Pass | **Not started** | #106–#109 |

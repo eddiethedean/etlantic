@@ -4293,7 +4293,7 @@ Deliver:
 - a native DataFusion compiler/runtime path that replaces the discoverable
   zero-capability stub and graduates only from executable evidence;
 - one unchanged authored pipeline plus a normalized edge-case corpus across all
-  six engines in isolated dependency environments; and
+  six engines in isolated dependency environments;
 - a machine-readable phase 0.50 handoff that supports exact per-node adaptive
   eligibility without engine-name or aggregate-maturity inference; and
 - a generated or evidence-checked requirement-level capability matrix,
