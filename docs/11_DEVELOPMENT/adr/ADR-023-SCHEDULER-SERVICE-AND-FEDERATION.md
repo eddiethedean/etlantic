@@ -33,7 +33,7 @@ Authoritative sequencing:
 [FASTAPI_INTEGRATION_PLAN](../FASTAPI_INTEGRATION_PLAN.md), and
 [SCHEDULER_AND_PREFECT_PLAN](../SCHEDULER_AND_PREFECT_PLAN.md). Live
 Kubernetes and managed Spark production packs remain
-[0.51](../IMPLEMENTATION_PLAN_0_51.md).
+[0.52](../IMPLEMENTATION_PLAN_0_52.md).
 
 ## Decision
 
@@ -105,7 +105,7 @@ Optional packages named before implementation:
 
 Core installs neither Kubernetes nor Spark Connect SDKs. Live Kind/cluster
 (`047-K-01`) and live Databricks/EMR/Spark Connect (`047-S-01`) are
-Experimental skips. Production hardening is 0.51.
+Experimental skips. Production hardening is 0.52.
 
 No new broker package: default wake-up is polling. An optional wake-transport
 protocol may exist; vendor brokers remain provider choices.
@@ -125,7 +125,7 @@ resolved secrets or source rows.
 
 Protocol plus in-process fakes are the 0.47 gate. Live cluster/cloud is an
 explicit Experimental skip. Helm/OCI production images are out of 0.47
-(0.51 `051-D`).
+(0.52 `052-D`).
 
 ### Production trust
 
@@ -162,7 +162,7 @@ Do not overload `PMSCHED*` (`etlantic.scheduler/1` plugin analysis).
 | Execute pipelines in FastAPI `BackgroundTasks` or lifespan | Violates ADR-018; accept is not execute |
 | Merge timer service into `etlantic.scheduler/1` | Conflates in-process execute with durable cron leadership |
 | Kubernetes/Spark SDK in core | Violates optional-package boundary; core stays engine-free |
-| Make live Kind/Databricks a 0.47 blocker | Collides with 0.51 packs; 0.46 used fakes + live skips |
+| Make live Kind/Databricks a 0.47 blocker | Collides with 0.52 packs; 0.46 used fakes + live skips |
 | Reuse CP3 execution lease for timer leadership | Duplicate ticks could advance next-fire from a non-leader |
 | Silent remote flatten of map/branch/stream | Loses 0.46 child identity and compensation semantics |
 | New message-broker package in 0.47 | Core must not embed a broker; polling is the reference |
@@ -178,7 +178,7 @@ Do not overload `PMSCHED*` (`etlantic.scheduler/1` plugin analysis).
 - [IMPLEMENTATION_PLAN_0_47](../IMPLEMENTATION_PLAN_0_47.md)
 - [EXIT_GATE_0_47](../EXIT_GATE_0_47.md)
 - [FINDINGS_0_47](../FINDINGS_0_47.md)
-- [IMPLEMENTATION_PLAN_0_51](../IMPLEMENTATION_PLAN_0_51.md)
+- [IMPLEMENTATION_PLAN_0_52](../IMPLEMENTATION_PLAN_0_52.md)
 - [ADR-018](ADR-018-DURABLE-SUBMISSION-AND-STATE.md)
 - [ADR-021](ADR-021-OPTIMIZER-PASS-PROTOCOL.md)
 - [ADR-022](ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md)

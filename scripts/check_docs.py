@@ -476,10 +476,11 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.46 — Streaming and Event-Driven Pipelines",
         "## 0.47 — FastAPI Scheduler/Runner Service and Remote Execution Federation",
         "## 0.48 — AI-Assisted, Human-Governed Engineering",
-        "## 0.49 — Brownfield Adoption Bridges",
-        "## 0.50 — Operator Console",
-        "## 0.51 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.52 — TransformationModel Incubation",
+        "## 0.49 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
+        "## 0.50 — Brownfield Adoption Bridges",
+        "## 0.51 — Operator Console",
+        "## 0.52 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.53 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:

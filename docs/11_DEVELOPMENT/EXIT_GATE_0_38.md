@@ -105,7 +105,7 @@ From [IMPLEMENTATION_PLAN_0_38](IMPLEMENTATION_PLAN_0_38.md):
 - Echo plugin source connector on PyPI (`038-X-01`) — before/with first
   cloud Supported promotion
 - Real Parquet / partition-scoped Iceberg replace — only when implemented
-- TransformationModel incubation — **0.52**
+- TransformationModel incubation — **0.53**
 - Publish residual: tag, PyPI, RTD `/en/v0.38.0/` activate
 
 ## See also

@@ -32,9 +32,13 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next | 0.49 | Brownfield adoption bridges | Planning freeze |
+| Next | 0.49 | Adaptive heterogeneous planning and executable physical DAGs | Planned opt-in static-batch/local-runtime scope — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
+| Later | 0.50 | Brownfield adoption bridges | Planning freeze |
+| Later | 0.51 | Operator console | Planned |
+| Later | 0.52 | Managed runtime and enterprise provider packs | Planned |
+| Later | 0.53 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.52 | Connectivity → control plane → intelligence, federation, adoption, operations, providers, and modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.47 scheduler/federation prior; 0.46 Streaming prior; 0.45 Optimization SDK prior; 0.44 Developer Intelligence prior; 0.43 CP-GA prior) |
+| Post-foundation | 0.38–0.53 | Connectivity → control plane → intelligence → federation → governed AI → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.49 adaptive execution next) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -51,7 +55,7 @@ outcomes without creating conflicting release numbers:
 3. A local run dashboard and visual plan/report comparison.
 4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.44.
 5. A hosted, governed experience after the 0.39–0.43 control-plane gates,
-   culminating in the read-only-first 0.50 Operator Console.
+   culminating in the read-only-first 0.51 Operator Console.
 
 All views remain projections of the same public artifacts and must preserve
 redaction, safe-I/O, authorization, accessibility, and bounded rendering.
@@ -283,7 +287,7 @@ See the
 [ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and
 [Exit gate 0.38](EXIT_GATE_0_38.md).
 
-TransformationModel incubation moves to 0.52.
+TransformationModel incubation moves to 0.53.
 
 ## First-class control-plane program
 
@@ -321,15 +325,19 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
   service plus remote execution federation — [Gate-ready](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
-  Spark Connect are Experimental fakes; live packs remain 0.51
+  Spark Connect are Experimental fakes; live packs remain 0.52
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed
   proposals — [Gate-ready](EXIT_GATE_0_48.md) /
   [ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md); MCP is Experimental
   `etlantic-mcp`; live model eval is skip `048-E-01`.
-- **[0.49](IMPLEMENTATION_PLAN_0_49.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
-- **[0.50](IMPLEMENTATION_PLAN_0_50.md):** read-only-first operator console
-- **[0.51](IMPLEMENTATION_PLAN_0_51.md):** managed runtime and enterprise provider packs
-- **[0.52](IMPLEMENTATION_PLAN_0_52.md):** TransformationModel incubation
+- **[0.49](IMPLEMENTATION_PLAN_0_49.md):** deterministic adaptive heterogeneous
+  placement for static batch graphs, connected execution regions, authoritative
+  `etlantic.plan/2` physical DAGs on qualified local runtimes, and shared
+  explain/diff evidence — [epic #30](https://github.com/eddiethedean/etlantic/issues/30)
+- **[0.50](IMPLEMENTATION_PLAN_0_50.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **[0.51](IMPLEMENTATION_PLAN_0_51.md):** read-only-first operator console
+- **[0.52](IMPLEMENTATION_PLAN_0_52.md):** managed runtime and enterprise provider packs
+- **[0.53](IMPLEMENTATION_PLAN_0_53.md):** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.
@@ -348,7 +356,7 @@ portable evidence needed to recover safely:
   roles, host-neutral recovery negotiation, fenced attempt attribution,
   resumable observation, and conformance semantics for retry, replay, repair,
   reconciliation, and manual review. The 0.47 gate is protocol plus in-process
-  fakes; live Kubernetes and managed Spark hardening remain 0.51.
+  fakes; live Kubernetes and managed Spark hardening remain 0.52.
 
 Before 0.47 ships, queue, worker, and scheduler leadership remain adopter-owned.
 The 0.47 optional service provides reference implementations behind public
@@ -366,7 +374,7 @@ frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), and stable
 foundation (**0.37**).
-TransformationModel incubation is deferred to **0.52** so connectivity,
+TransformationModel incubation is deferred to **0.53** so connectivity,
 interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference
