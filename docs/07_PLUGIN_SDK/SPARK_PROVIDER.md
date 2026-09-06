@@ -3,7 +3,7 @@
 **Status: shipped in 0.7.0** for the local provider in `etlantic-pyspark`.
 An Experimental Spark Connect extra (`etlantic-spark-connect`) with an
 in-process fake is Available in **0.48.0**. Live Databricks, EMR, and Spark
-Connect packs remain deferred (`047-S-01` / 0.52). See the
+Connect packs remain deferred (`047-S-01` / 0.53). See the
 [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#managed-runtime-and-enterprise-provider-packs).
 
 A **Spark Provider** implements the ETLantic Resource Provider API for
@@ -816,7 +816,7 @@ A YARN provider may configure:
 
 A Kubernetes Spark-on-cluster configuration is **not shipped**. Experimental
 Kubernetes Job execution (`etlantic-k8s` + `FakeKubernetes`) is the 0.47 freeze;
-live isolated clusters are 0.52. Do not implement against this section yet.
+live isolated clusters are 0.53. Do not implement against this section yet.
 
 A Kubernetes provider may configure:
 

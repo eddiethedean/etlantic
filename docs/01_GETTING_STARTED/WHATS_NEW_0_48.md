@@ -36,4 +36,4 @@
 - Write MCP tools, vendor AI SDKs in core, autonomous run submit
 - Live MCP-client interop
 - Live paid-model eval
-- GitOps promotion (0.40–0.43 APIs), brownfield import (0.50), operator console (0.51)
+- GitOps promotion (0.40–0.43 APIs), brownfield import (0.51), operator console (0.52)

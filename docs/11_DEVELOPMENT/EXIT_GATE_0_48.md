@@ -37,7 +37,7 @@ From [IMPLEMENTATION_PLAN_0_48](IMPLEMENTATION_PLAN_0_48.md).
 | `etlantic-mcp` read-only extra | **Experimental** | Live client skip `048-M-01` |
 | Live paid-model eval | **Out of 0.48** | Skip `048-E-01` |
 | Write MCP / autonomous submit / silent optimize | **Out of 0.48** | Forbidden |
-| GitOps promotion / 0.50–0.52 programs | **Out of 0.48** | Existing or later phases |
+| GitOps promotion / 0.51–0.53 programs | **Out of 0.48** | Existing or later phases |
 
 ## Quantified exit scorecard
 

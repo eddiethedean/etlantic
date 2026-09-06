@@ -1,13 +1,13 @@
 ---
 title: Forward Implementation Plans
-description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.53.
+description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.54.
 plan_status: current
 plan_last_reviewed: 0.48.0
 ---
 
 # Forward Implementation Plans
 
-This document is the delivery contract for ETLantic phases 0.39 through 0.53.
+This document is the delivery contract for ETLantic phases 0.39 through 0.54.
 The [roadmap summary](ROADMAP_SUMMARY.md) defines product intent, while the
 phase plans linked below define implementation order, evidence, and exit gates.
 Integrated domain plans remain authoritative for cross-release architecture.
@@ -26,11 +26,12 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.46 | Bounded dynamic control flow, streaming, and event pipelines | [0.46](IMPLEMENTATION_PLAN_0_46.md) | [Reliability](ETL_RELIABILITY_PLAN.md) |
 | 0.47 | FastAPI scheduler/runner service and remote execution federation | [0.47](IMPLEMENTATION_PLAN_0_47.md) ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md), [exit gate](EXIT_GATE_0_47.md) Met) | [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) |
 | 0.48 | Human-governed AI workflows | [0.48](IMPLEMENTATION_PLAN_0_48.md) ([ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md) Accepted, [exit gate](EXIT_GATE_0_48.md) Met) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.49 | Opt-in static-batch adaptive placement and authoritative `/2` physical DAGs on qualified local runtimes | [0.49](IMPLEMENTATION_PLAN_0_49.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
-| 0.50 | Brownfield bridges and orchestration compilers | [0.50](IMPLEMENTATION_PLAN_0_50.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.51 | Operator console | [0.51](IMPLEMENTATION_PLAN_0_51.md) | [UI/UX](UI_UX_PLAN.md) |
-| 0.52 | Managed-runtime and provider packs | [0.52](IMPLEMENTATION_PLAN_0_52.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.53 | TransformationModel incubation | [0.53](IMPLEMENTATION_PLAN_0_53.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
+| 0.49 | Baseline portable execution plus requirement-level partial-support evidence for adaptive planning | [0.49](IMPLEMENTATION_PLAN_0_49.md) ([epic #102](https://github.com/eddiethedean/etlantic/issues/102)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
+| 0.50 | Opt-in static-batch adaptive placement and authoritative `/2` physical DAGs on qualified local runtimes | [0.50](IMPLEMENTATION_PLAN_0_50.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
+| 0.51 | Brownfield bridges and orchestration compilers | [0.51](IMPLEMENTATION_PLAN_0_51.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.52 | Operator console | [0.52](IMPLEMENTATION_PLAN_0_52.md) | [UI/UX](UI_UX_PLAN.md) |
+| 0.53 | Managed-runtime and provider packs | [0.53](IMPLEMENTATION_PLAN_0_53.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.54 | TransformationModel incubation | [0.54](IMPLEMENTATION_PLAN_0_54.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
 
 ## Authority And Change Control
 

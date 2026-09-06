@@ -476,15 +476,81 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.46 — Streaming and Event-Driven Pipelines",
         "## 0.47 — FastAPI Scheduler/Runner Service and Remote Execution Federation",
         "## 0.48 — AI-Assisted, Human-Governed Engineering",
-        "## 0.49 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
-        "## 0.50 — Brownfield Adoption Bridges",
-        "## 0.51 — Operator Console",
-        "## 0.52 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.53 — TransformationModel Incubation",
+        "## 0.49 — Baseline Portable Execution Across First-Party Engines",
+        "## 0.50 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
+        "## 0.51 — Brownfield Adoption Bridges",
+        "## 0.52 — Operator Console",
+        "## 0.53 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.54 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
             raise SystemExit(f"{roadmap_path}: missing 0.x roadmap marker {marker!r}")
+
+    phase_markers = required_markers[1:]
+    marker_offsets = [roadmap.index(marker) for marker in phase_markers]
+    if marker_offsets != sorted(marker_offsets):
+        raise SystemExit(f"{roadmap_path}: 0.x roadmap phases are out of order")
+
+    planned_phase_contracts = {
+        "0.49": (
+            "IMPLEMENTATION_PLAN_0_49.md",
+            "baseline portable transformation syntax",
+        ),
+        "0.50": (
+            "IMPLEMENTATION_PLAN_0_50.md",
+            "adaptive execution",
+        ),
+        "0.51": (
+            "IMPLEMENTATION_PLAN_0_51.md",
+            "brownfield metadata bridges",
+        ),
+        "0.52": (
+            "IMPLEMENTATION_PLAN_0_52.md",
+            "operator console",
+        ),
+        "0.53": (
+            "IMPLEMENTATION_PLAN_0_53.md",
+            "provider packs",
+        ),
+        "0.54": (
+            "IMPLEMENTATION_PLAN_0_54.md",
+            "TransformationModel",
+        ),
+    }
+    planned_phase_paths: list[Path] = []
+    for phase, (filename, theme) in planned_phase_contracts.items():
+        phase_path = ROOT / "docs/11_DEVELOPMENT" / filename
+        planned_phase_paths.append(phase_path)
+        if not phase_path.is_file():
+            raise SystemExit(f"missing planned phase document: {phase_path}")
+        phase_text = phase_path.read_text(encoding="utf-8")
+        for marker in (
+            f"title: ETLantic {phase} Implementation Plan",
+            f"# ETLantic {phase} Implementation Plan",
+            theme,
+        ):
+            if marker not in phase_text:
+                raise SystemExit(
+                    f"{phase_path}: missing phase identity marker {marker!r}"
+                )
+
+    planned_exit_gates = {
+        "0.49": "Baseline Portable Execution Across First-Party Engines",
+        "0.50": "Adaptive Heterogeneous Planning and Executable Physical DAGs",
+    }
+    planned_exit_paths: list[Path] = []
+    for phase, theme in planned_exit_gates.items():
+        exit_path = ROOT / "docs/11_DEVELOPMENT" / f"EXIT_GATE_{phase.replace('.', '_')}.md"
+        planned_exit_paths.append(exit_path)
+        if not exit_path.is_file():
+            raise SystemExit(f"missing planned exit gate: {exit_path}")
+        exit_text = exit_path.read_text(encoding="utf-8")
+        expected_heading = f"# Exit Gate {phase} — {theme}"
+        if expected_heading not in exit_text:
+            raise SystemExit(
+                f"{exit_path}: missing phase identity marker {expected_heading!r}"
+            )
 
     adoption_plan = ROOT / "docs/11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md"
     adoption_text = adoption_plan.read_text(encoding="utf-8")
@@ -501,6 +567,10 @@ def check_zero_x_roadmap_phases() -> None:
             raise SystemExit(f"{adoption_plan}: missing first-class program {marker!r}")
 
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    for phase_path in (*planned_phase_paths, *planned_exit_paths):
+        relative = phase_path.relative_to(ROOT / "docs").as_posix()
+        if relative not in mkdocs:
+            raise SystemExit(f"mkdocs.yml must list planned phase document {relative}")
     if adoption_plan.relative_to(ROOT / "docs").as_posix() not in mkdocs:
         raise SystemExit(
             "mkdocs.yml must list the adoption/ecosystem plan (nav or not_in_nav)"

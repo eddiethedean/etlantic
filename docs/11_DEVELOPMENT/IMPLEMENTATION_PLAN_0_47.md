@@ -46,7 +46,7 @@ independently usable.
 - The remote protocol carries references and bounded artifacts, never ambient
   credentials or undeclared authority.
 - Kubernetes and Spark Connect are Experimental reference extras, not core
-  dependencies. Live Kind/cluster and live Databricks/EMR are 0.52 (or
+  dependencies. Live Kind/cluster and live Databricks/EMR are 0.53 (or
   explicit 0.47 live skips). Helm/OCI production images are out of 0.47.
 - Network delivery does not imply exactly-once effects; unknown remote commit
   states remain explicit and governed by repair policy.
@@ -104,8 +104,8 @@ records Met evidence.
 | In-process fake remote host + signed-plan/artifact fakes | **Supported** (core tests) | No network credentials |
 | Wake-up adapter (broker-style) | **Experimental** | Protocol + polling fallback |
 | `etlantic-k8s` + `FakeKubernetes` | **Experimental** | Live Kind/cluster = skip `047-K-01` |
-| `etlantic-spark-connect` + fake | **Experimental** | Live Databricks/EMR = 0.52; skip `047-S-01` |
-| Helm/OCI production images | **Out of 0.47** | 0.52 `052-D` |
+| `etlantic-spark-connect` + fake | **Experimental** | Live Databricks/EMR = 0.53; skip `047-S-01` |
+| Helm/OCI production images | **Out of 0.47** | 0.53 `053-D` |
 
 ## Service topology
 
@@ -299,7 +299,7 @@ Implementation (later — not this freeze):
 - Placement rejects missing capability, trust, policy, quota, residency, or
   recovery compatibility before artifact transfer or execution.
 - Kubernetes and Spark Connect Experimental extras pass fake conformance;
-  live isolated deployments remain skip `047-K-01` / `047-S-01` until 0.52.
+  live isolated deployments remain skip `047-K-01` / `047-S-01` until 0.53.
 - FastAPI remains a gateway/control dependency and is not imported by workers.
 - Production profiles reject memory stores, missing plugin allowlists,
   empty resource-provider allowlists when those plugins are selected, insecure
@@ -332,10 +332,10 @@ At ship (not written in this freeze):
 - Future `WHATS_NEW_0_47` / `MIGRATION_0_46_TO_0_47` (do not publish as
   Available until the exit gate is Met)
 
-## 0.52 boundary
+## 0.53 boundary
 
-[IMPLEMENTATION_PLAN_0_52](IMPLEMENTATION_PLAN_0_52.md) hardens live Kubernetes
+[IMPLEMENTATION_PLAN_0_53](IMPLEMENTATION_PLAN_0_53.md) hardens live Kubernetes
 and managed Spark (Databricks, EMR, Spark Connect), signs OCI/Helm
 distribution, and promotes provider packs. 0.47 ships protocols plus
-in-process fakes. Do not pull 0.52 live-cluster production claims into this
+in-process fakes. Do not pull 0.53 live-cluster production claims into this
 gate.

@@ -49,8 +49,8 @@ approval step before any privileged action.
   human review complete.
 - GitOps preview workspaces, promotion, and rollback remain 0.41–0.43. 0.48
   proposals may *request* those existing flows; they do not replace them.
-- Brownfield dbt/orchestrator import is 0.50. Operator console is 0.51. Live
-  cloud providers are 0.52.
+- Brownfield dbt/orchestrator import is 0.51. Operator console is 0.52. Live
+  cloud providers are 0.53.
 - Write MCP tools, autonomous run submission, and applying optimizations
   without approval are out of 0.48.
 - Live paid-model evaluation is not a release blocker (skip `048-E-01`).
@@ -92,7 +92,7 @@ records Met evidence.
 | `etlantic-mcp` read-only extra | **Experimental** | Live client skip `048-M-01` |
 | Live paid-model eval | **Out of 0.48** | Skip `048-E-01`; fixtures only |
 | Write MCP / autonomous submit / silent optimize | **Out of 0.48** | Forbidden |
-| GitOps promotion / 0.50–0.52 programs | **Out of 0.48** | Existing or later phases |
+| GitOps promotion / 0.51–0.53 programs | **Out of 0.48** | Existing or later phases |
 
 ## Authority topology
 
@@ -279,11 +279,11 @@ At ship (not written in this freeze):
 - Future `WHATS_NEW_0_48` / `MIGRATION_0_47_TO_0_48` (do not publish as
   Available until the exit gate is Met)
 
-## 0.50 / 0.51 / 0.52 boundary
+## 0.51 / 0.52 / 0.53 boundary
 
-[IMPLEMENTATION_PLAN_0_50](IMPLEMENTATION_PLAN_0_50.md) owns brownfield
+[IMPLEMENTATION_PLAN_0_51](IMPLEMENTATION_PLAN_0_51.md) owns brownfield
 metadata import and orchestration compilers.
-[IMPLEMENTATION_PLAN_0_51](IMPLEMENTATION_PLAN_0_51.md) owns the operator
-console. [IMPLEMENTATION_PLAN_0_52](IMPLEMENTATION_PLAN_0_52.md) owns live
+[IMPLEMENTATION_PLAN_0_52](IMPLEMENTATION_PLAN_0_52.md) owns the operator
+console. [IMPLEMENTATION_PLAN_0_53](IMPLEMENTATION_PLAN_0_53.md) owns live
 cloud provider packs. 0.48 ships governed proposals over existing
 inspection and approval APIs. Do not pull those programs into this gate.

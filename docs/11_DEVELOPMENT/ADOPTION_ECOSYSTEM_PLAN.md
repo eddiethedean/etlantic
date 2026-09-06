@@ -50,11 +50,11 @@ adoption and ecosystem gates described below.
 | 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
 | 0.41–0.43 | GitOps previews, delivery objectives, governed erasure, promotion evidence, and graduation | Supported preview-to-production and governed operations workflow |
 | 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
-| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.52 |
-| 0.50 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
-| 0.51 | Operator console | Supported control-plane operations UI |
-| 0.52 | Enterprise provider packs | Supported cloud provider matrix |
-| 0.53 | TransformationModel incubation | Independently useful modeling package |
+| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.53 |
+| 0.51 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
+| 0.52 | Operator console | Supported control-plane operations UI |
+| 0.53 | Enterprise provider packs | Supported cloud provider matrix |
+| 0.54 | TransformationModel incubation | Independently useful modeling package |
 
 No capability in this table is available merely because its phase is planned.
 Each claim begins only after the corresponding exit gate passes.
@@ -71,10 +71,10 @@ to every program below. Detailed implementation and release evidence live in:
 - [0.46 dynamic control, streaming, dead-letter, and schema-registry contracts](IMPLEMENTATION_PLAN_0_46.md)
 - [0.47 remote execution providers](IMPLEMENTATION_PLAN_0_47.md)
 - [0.48 human-governed AI workflows](IMPLEMENTATION_PLAN_0_48.md) ([exit gate](EXIT_GATE_0_48.md) Met)
-- [0.50 brownfield bridges](IMPLEMENTATION_PLAN_0_50.md)
-- [0.51 operator console](IMPLEMENTATION_PLAN_0_51.md)
-- [0.52 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_52.md)
-- [0.53 TransformationModel incubation](IMPLEMENTATION_PLAN_0_53.md)
+- [0.51 brownfield bridges](IMPLEMENTATION_PLAN_0_51.md)
+- [0.52 operator console](IMPLEMENTATION_PLAN_0_52.md)
+- [0.53 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_53.md)
+- [0.54 TransformationModel incubation](IMPLEMENTATION_PLAN_0_54.md)
 
 ## Product Boundaries
 
@@ -487,7 +487,7 @@ This program will not:
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) owns observations,
   baselines, acknowledgement, and schema-change impact.
 - [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md) owns the
-  0.53 package boundary and graduation.
+  0.54 package boundary and graduation.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns threat-model changes and
   mandatory controls.
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md) owns package isolation and
@@ -504,9 +504,9 @@ must be reconciled in the same change before implementation proceeds.
 | Select the 0.38 local, object, table-format, warehouse, and relational reference set | Integration maintainers | Before 0.38 implementation freeze |
 | Freeze OpenLineage namespace, identity, and facet mappings | Observability + registry maintainers | Before CP2 conformance |
 | Define preview workspace lifecycle and untrusted-fork policy | Control-plane + security maintainers | Before CP3 conformance |
-| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.50 preview |
-| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.51 implementation |
-| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.52 preview |
+| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.51 preview |
+| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.52 implementation |
+| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.53 preview |
 
 Every decision requires an ADR or explicit roadmap decision record,
 conformance changes, compatibility impact, and documentation updates.

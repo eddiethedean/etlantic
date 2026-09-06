@@ -24,7 +24,7 @@ From [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) and
 | Firing key | `(schedule_id, revision_id, nominal_fire_time)` | Leader failover returns original accepted run |
 | Leader vs execution lease | Distinct | Timer leadership is not a CP3 attempt lease |
 | Kubernetes / Spark Connect | Optional Experimental packages | `etlantic-k8s`, `etlantic-spark-connect` |
-| Fake vs live | Fakes are the 0.47 gate | Live Kind/Databricks/EMR → 0.52 or skip |
+| Fake vs live | Fakes are the 0.47 gate | Live Kind/Databricks/EMR → 0.53 or skip |
 | Wake-up | Polling reference | No new broker package in 0.47 |
 | Payloads / secrets | Provider-owned; opaque refs only | FORWARD invariant |
 | Optimizer | Advisory; no silent remote rewrite | ADR-021; 0.46 dyn/stream preserved or reject |
@@ -43,7 +43,7 @@ Open **P0 count is 0**.
 | ID | Severity | Owner | State | Summary | Evidence / disposition |
 |---|---|---|---|---|---|
 | `047-K-01` | P1 | Providers | Deferred | Kubernetes live Kind/cluster vs FakeKubernetes | Live skipped unless opt-in env; fake in CI |
-| `047-S-01` | P1 | Providers | Deferred | Live Spark Connect / Databricks / EMR vs in-process fake | Live skipped; production packs are 0.52 |
+| `047-S-01` | P1 | Providers | Deferred | Live Spark Connect / Databricks / EMR vs in-process fake | Live skipped; production packs are 0.53 |
 
 ## Soft-continue from prior phases
 

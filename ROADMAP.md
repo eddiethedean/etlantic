@@ -27,13 +27,14 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.49 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
-| Later | 0.50 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.51 | Operator Console | Planned |
-| Later | 0.52 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.53 | TransformationModel incubation | Proposed |
+| Next | 0.49 | Baseline portable execution across first-party engines | Planned — [epic #102](https://github.com/eddiethedean/etlantic/issues/102) |
+| Later | 0.50 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
+| Later | 0.51 | Brownfield adoption bridges | Planning freeze |
+| Later | 0.52 | Operator Console | Planned |
+| Later | 0.53 | Managed runtime and enterprise provider packs | Planned |
+| Later | 0.54 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.53 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.49 adaptive execution next) |
+| Post-foundation | 0.38–0.54 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.49 portable-engine baseline next) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -202,9 +203,9 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 |---|---|---|
 | 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
 | 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.51 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.52 |
 | 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.51 Operator Console |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.52 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2453,7 +2454,7 @@ parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
-TransformationModel incubation (0.53) remain post-foundation phases.
+TransformationModel incubation (0.54) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3513,7 +3514,7 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.38 through 0.53 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.54 expand ETLantic around the stable-foundation model
 without turning the core into a storage system, server, catalog, scheduler,
 IDE, cloud control plane, or AI platform. Each initiative has one assigned
 phase or a named gate in an integrated multi-phase program; none is an
@@ -4099,7 +4100,7 @@ Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT
 (Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
 surfaces are not Available. Kubernetes and Spark Connect are Experimental
 in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
-**0.52**. Implementation of scheduler/worker processes, schedule HTTP routes,
+**0.53**. Implementation of scheduler/worker processes, schedule HTTP routes,
 or new packages is out of scope for this freeze.
 
 Deliver:
@@ -4132,10 +4133,10 @@ Deliver:
   terminal-state reconciliation, and bounded provider-owned cleanup;
   live Kind/cluster is skip `047-K-01`;
 - an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
-  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.52
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.53
   (skip `047-S-01`);
 - FastAPI gateway support without requiring FastAPI in workers;
-- Helm/OCI production images remain out of 0.47 (0.52 `052-D`).
+- Helm/OCI production images remain out of 0.47 (0.53 `053-D`).
 
 Acceptance:
 
@@ -4182,8 +4183,8 @@ and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
 
 **Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
 autonomous run submission; applying optimizations without approval;
-brownfield dbt/orchestrator import (0.50); operator console (0.51); live
-cloud providers (0.52); live paid-model eval as a release blocker
+brownfield dbt/orchestrator import (0.51); operator console (0.52); live
+cloud providers (0.53); live paid-model eval as a release blocker
 (skip `048-E-01`).
 
 Supported vs Experimental (claims only until the exit gate is Met):
@@ -4195,7 +4196,7 @@ Supported vs Experimental (claims only until the exit gate is Met):
   prompt-injection and false-authority tests.
 - **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
   interop is skip `048-M-01` if fixtures suffice.
-- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.50–0.52
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.51–0.53
   programs.
 
 0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
@@ -4257,10 +4258,88 @@ See [Schema Drift and Evolution Plan](docs/11_DEVELOPMENT/SCHEMA_DRIFT_PLAN.md).
 See [ETL Reliability and Recovery Plan](docs/11_DEVELOPMENT/ETL_RELIABILITY_PLAN.md).
 See [SECURITY.md — AI Coding Assistants](docs/02_FOUNDATIONS/SECURITY.md).
 
-## 0.49 — Adaptive Heterogeneous Planning and Executable Physical DAGs
+## 0.49 — Baseline Portable Execution Across First-Party Engines
 
 Planned: [IMPLEMENTATION_PLAN_0_49](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md),
 [EXIT_GATE_0_49](docs/11_DEVELOPMENT/EXIT_GATE_0_49.md) (Not started),
+[epic #102](https://github.com/eddiethedean/etlantic/issues/102).
+
+**Objective:** make one frozen baseline portable transformation syntax validate,
+plan, and run end to end across Local, Polars, Pandas, SQL, PySpark, and
+DataFusion without engine-specific implementation bodies.
+
+Deliver:
+
+- a public machine-readable baseline manifest for both portable relational
+  profiles, all 12 baseline actions, the shared scalar/aggregate functions,
+  operators, modes, joins, unions, collision rules, and normative semantics;
+- a versioned two-axis contract that keeps `required`, `preferred`, and
+  `informational` obligation separate from `supported_exact`,
+  `supported_with_lowering`, `unsupported`, `unavailable`, and `unknown`
+  target support;
+- bounded requirement-level compiler findings with stable identities, reasons,
+  evidence fingerprints, and fail-closed validation/planning diagnostics;
+- named, condition-resolved lowering proofs that expose their collection,
+  transfer, materialization, and fusion consequences;
+- mandatory public claim-to-fixture conformance coverage for the complete
+  baseline, reusable through `etlantic.testing` by third-party compilers;
+- a dependency-free Local portable compiler/interpreter;
+- complete Polars and Pandas baseline qualification, preserving their declared
+  lazy/eager boundaries and engine-neutral portable semantics;
+- typed SQL-IR lowering through normal pipeline runtime dispatch, relation/query
+  handle preservation, bound parameters, and SQLite/PostgreSQL qualification;
+- complete real-JVM PySpark qualification without Python/Pandas UDF fallback and
+  consistent `spark`/`pyspark` identity resolution;
+- a native DataFusion compiler/runtime path that replaces the discoverable
+  zero-capability stub and graduates only from executable evidence;
+- one unchanged authored pipeline plus a normalized edge-case corpus across all
+  six engines in isolated dependency environments; and
+- a machine-readable phase 0.50 handoff that supports exact per-node adaptive
+  eligibility without engine-name or aggregate-maturity inference; and
+- a generated or evidence-checked requirement-level capability matrix,
+  migration/rollback guide, runnable example, findings ledger, and explicit
+  release decision.
+
+Acceptance:
+
+- every advertised baseline capability maps to mandatory public evidence and
+  every required baseline item is supported by each qualified engine;
+- a partial engine may truthfully execute matching definitions, but partial
+  coverage never shrinks the frozen manifest or satisfies full 0.49 baseline
+  qualification;
+- required unsupported, unavailable, unknown, omitted, ambiguous, and
+  unresolved-conditional findings reject the concrete compiler/target, while a
+  preferred unknown produces no positive adaptive-planning benefit;
+- lowering-backed claims are eligible only with stable identity, resolved
+  planning-time conditions, proof evidence, and declared physical effects;
+- the same portable-only pipeline validates, plans, and executes under
+  `portable_transform_policy="require"` on all six engines;
+- normalized results agree for nulls, empty inputs, Unicode, numeric edges,
+  ordering, joins, unions, aggregation, deduplication, multiple inputs, and
+  contract-shaped outputs;
+- unsupported syntax fails before execution or external I/O without silently
+  choosing a native body, Python/Pandas UDF, raw SQL, or another engine;
+- SQL preserves typed handles and bound parameters until declared boundaries,
+  PySpark evidence uses real JVM Spark, and DataFusion lowers to native
+  expressions;
+- optional engine dependencies remain outside core and pass isolated install
+  and dependency-boundary checks;
+- a 0.50-style handoff fixture proves partial per-node eligibility, graph-level
+  edge/region/unit rejection, fingerprinted evidence, and replan-on-drift rather
+  than runtime re-placement;
+- plans, reports, diagnostics, fixtures, and evidence contain no source rows,
+  executable objects, raw SQL escape hatches, or secret values; and
+- the release remains a no-go if any of the six engine rows or the common
+  conformance/differential gates lack passing evidence.
+
+Advanced profiles, adaptive placement, streaming, federation, remote providers,
+external compilation, and cross-engine performance equivalence receive no 0.49
+claim.
+
+## 0.50 — Adaptive Heterogeneous Planning and Executable Physical DAGs
+
+Planned: [IMPLEMENTATION_PLAN_0_50](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md),
+[EXIT_GATE_0_50](docs/11_DEVELOPMENT/EXIT_GATE_0_50.md) (Not started),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30).
 
 **Objective:** let pipeline authors retain explicit engine selection or opt into
@@ -4311,7 +4390,7 @@ The initial availability matrix is local-runtime only: single-target Local
 Python, Polars, and Pandas plus directional Polars→Pandas and Pandas→Polars
 handoffs through the shipped `etlantic.interchange/1` Arrow Gate A. SQL,
 PySpark, DataFusion, remote warehouses, external compilation, durable/federated
-execution, streaming, and runtime expansion receive no 0.49 adaptive claim.
+execution, streaming, and runtime expansion receive no 0.50 adaptive claim.
 
 Acceptance:
 
@@ -4347,13 +4426,13 @@ Acceptance:
 - production neither imports nor selects a non-allowlisted plugin,
   optimization pass, resource provider, connector, or applicable
   schema-registry adapter;
-- runtime-expanded and streaming graphs fail closed in 0.49, and the gated
+- runtime-expanded and streaming graphs fail closed in 0.50, and the gated
   release claims Available adaptive behavior only for the published local-batch
   combination matrix; and
 - planner, optimizer, interchange, runtime, conformance, stable-foundation,
   compatibility, security, and documentation gates pass.
 
-## 0.50 — Brownfield Adoption Bridges
+## 0.51 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4390,7 +4469,7 @@ Acceptance:
 - at least one real project adopts ETLantic incrementally without a flag-day
   rewrite.
 
-## 0.51 — Operator Console
+## 0.52 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4427,7 +4506,7 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.52 — Managed Runtime and Enterprise Provider Packs
+## 0.53 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
@@ -4463,7 +4542,7 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.53 — TransformationModel Incubation
+## 0.54 — TransformationModel Incubation
 
 **Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
@@ -4527,7 +4606,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.53, ETLantic may consume TransformationModel from the workspace behind
+During 0.54, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on

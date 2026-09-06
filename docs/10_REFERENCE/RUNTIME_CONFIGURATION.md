@@ -74,7 +74,7 @@ Do not configure these as if they exist in 0.37:
 
 - `ETLANTIC_CONFIG` / `ETLANTIC_PROFILE` / `ETLANTIC_PROJECT` auto-loading
 - AWS Secrets Manager / Vault providers (OS keyring is optional via
-  `etlantic-keyring`; cloud providers are planned for 0.52)
+  `etlantic-keyring`; cloud providers are planned for 0.53)
 
 Proposed 0.37 names beyond the optional project toml live under Future Design:
 [Configuration](CONFIGURATION.md) and
