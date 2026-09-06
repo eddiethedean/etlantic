@@ -29,6 +29,10 @@ release gates. They are **not** a substitute for current product documentation.
       [findings](FINDINGS_0_48.md), and the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
       § 0.48.
+    - To evaluate the **planned 0.49 adaptive-execution contract**, use the
+      [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md), the
+      [not-started exit gate](EXIT_GATE_0_49.md), and
+      [epic #30](https://github.com/eddiethedean/etlantic/issues/30).
     - To evaluate **0.46 streaming/dynamic-control evidence**, use the
       [0.46 exit gate](EXIT_GATE_0_46.md), [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
       [findings](FINDINGS_0_46.md), release notes, and tests.
@@ -70,7 +74,7 @@ evidence remains in **0.38**.
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
 | [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.48 Human-governed AI gate-ready; next 0.49 adaptive execution | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) § 0.49 |
-| [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Planned next milestone | Opt-in static-batch placement, connected target regions, authoritative `/2` physical DAGs on qualified local runtimes, and explain evidence | [Epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
+| [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Planned next milestone | Frozen Profile contract, bounded node placement, connected target regions, authoritative `/2` physical DAGs, and a local Polars↔Pandas launch matrix | [Exit gate 0.49](EXIT_GATE_0_49.md) (Not started) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |
 | [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) | Accepted | Proposals untrusted; read-only default; no vendor SDK in core | 0.48 |
 | [0.47 implementation plan](IMPLEMENTATION_PLAN_0_47.md) | Gate-ready milestone | Scheduler/runner service + remote federation | [EXIT_GATE_0_47](EXIT_GATE_0_47.md) |

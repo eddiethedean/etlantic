@@ -21,6 +21,10 @@ released.
 
 ## Current migrations and exit gates
 
+- [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) (Planned)
+- [Exit gate 0.49](EXIT_GATE_0_49.md) (Not started — evidence contract)
+- [Epic #30](https://github.com/eddiethedean/etlantic/issues/30) and
+  [0.49 milestone](https://github.com/eddiethedean/etlantic/milestone/1)
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
 - [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
 - [Exit gate 0.48](EXIT_GATE_0_48.md) (Gate-ready)

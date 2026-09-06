@@ -60,6 +60,15 @@ interchange evidence admit its complete placement target.
   connectors, resource providers, schema-registry adapters when applicable,
   versions, capabilities, authorization, contracts, and every handoff before any
   read, resource acquisition, staging, or mutation.
+- Partial selection is resolved into a dependency-closed logical graph before
+  candidate enumeration. The resulting `/2` plan and fingerprint cover that
+  exact selection. A runtime request cannot apply a different selection to a
+  stored `/2` plan; it must re-plan first. Fusion therefore never executes an
+  unselected logical effect.
+- Adaptive fallback defaults to `error`. An explicit-baseline fallback is used
+  only when the profile opts in, the ordinary explicit planner independently
+  passes every constraint, and the result is emitted as `/1` with a stable
+  fallback decision. A partial or approximate `/2` plan is never executable.
 - The gated 0.49 target is **Available** adaptive planning and local batch
   execution for an explicitly published combination matrix. Each participating
   engine/provider retains its own maturity, and a mixed combination inherits the
@@ -92,6 +101,80 @@ interchange evidence admit its complete placement target.
   partial-selection, validation, or publication boundaries. A fused unit uses a
   deterministic conservative policy derived from every logical member; when no
   safe aggregate exists, the region is split.
+
+## MVP Public Contract
+
+The ADR in #41 records these phase locks and rejected alternatives; it does not
+leave them open for downstream tasks. It may tighten a bound or validation rule,
+but a public rename or scope expansion requires an explicit update to this plan,
+the epic, and affected task acceptance criteria first.
+
+| Surface | Phase 0.49 lock |
+|---|---|
+| Profile strategy | `execution_strategy: Literal["explicit", "adaptive"] = "explicit"` |
+| Placement definitions | `placement_targets` is a secret-free mapping from stable target id to engine family, implementation/compiler, optional `resources` reference, location, security domain, and version/capability evidence requirements |
+| Eligible order | `eligible_targets` is an ordered, duplicate-free tuple of keys in `placement_targets`; adaptive mode requires at least one target and never discovers extra candidates from installed packages |
+| Fallback | `adaptive_fallback: Literal["error", "explicit"] = "error"`; `explicit` regenerates through the existing explicit planner and returns `/1` only after independent admission |
+| Existing engine fields | `dataframe_engine`, `sql_engine`, and `spark_engine` define the explicit baseline and do not silently enter the adaptive candidate set |
+| Override precedence | `RunRequest.implementation_overrides` → `Profile.implementation_overrides` → binding/provider and required-capability constraints → portable-transform policy → adaptive ranking; an override outside the eligible/trusted set fails instead of widening it |
+| Plan schemas | Keep `PLAN_SCHEMA == "etlantic.plan/1"` for compatibility and add `ADAPTIVE_PLAN_SCHEMA == "etlantic.plan/2"`; the public `PipelinePlan` reader façade dispatches to schema-specific codecs |
+| `/2` downgrade | No stored `/2` → `/1` downgrade. Regenerate with explicit policy; unsupported `/2` consumers reject before acceptance or external I/O |
+| Unit protocol | `etlantic.physical_unit/1` is the versioned admission/execution/result protocol for all seven unit kinds; executors advertise supported plan, unit, and capability versions |
+| Fusion | A backend may fuse only with an advertised fused-region capability. Otherwise the planner deterministically emits ordered single-node compute units without changing region identity or semantics |
+| Selection | Selection closure is computed before placement and fingerprinted. A different runtime selection requires a new plan |
+| Diagnostics | Reserve `PMADP1xx` policy/schema, `PMADP2xx` inventory/candidate, `PMADP3xx` solver/bounds, `PMADP4xx` physical validation, and `PMADP5xx` admission/runtime families |
+
+Planning remains side-effect free. Static manifests and already-authorized
+capability analyzers may contribute bounded evidence, but planning does not list
+sources, resolve secrets, acquire resources, execute user transformations, or
+probe a live data plane. Whole-DAG runtime preflight re-evaluates mutable
+authorization and resource policy rather than trusting a planning snapshot as
+live authority.
+
+## Deterministic Resource Envelope
+
+These are the initial required defaults. Profiles may tighten them but cannot
+raise them in 0.49. The limit-set version and effective values participate in
+the `/2` fingerprint.
+
+| Limit | Default | Deterministic behavior at the limit |
+|---|---:|---|
+| Selected logical nodes | 256 | `PMADP300`; use permitted explicit fallback or fail |
+| Eligible placement targets | 8 | `PMADP301`; reject profile before discovery |
+| Candidates per node | 8 | `PMADP302`; reject excess rather than truncate viable candidates |
+| Candidate/rejection records | 2,048 | `PMADP303`; canonical summary is explain-only, never solver input |
+| Solver state expansions | 1,000,000 | `PMADP304`; no approximate assignment is returned |
+| Explain alternatives per node/target | 8 | Canonical truncation marker plus omitted count |
+| Serialized adaptive explain artifact | 4 MiB | `PMADP305`; emit bounded summary and retain the plan |
+| Peak planner-owned transient memory | 256 MiB | `PMADP306`; measured in the release resource campaign |
+
+A solver work unit is one visited partial or complete assignment after hard
+constraint propagation. Nodes are visited in stable topological/name order and
+candidates in objective/target-identity order. Exact branch-and-bound may prune
+only with a deterministic proof that the subtree cannot beat the incumbent.
+Wall-clock duration is measured for evidence but never changes the selected
+assignment. The independent exhaustive oracle covers graphs of at most eight
+nodes, four targets, and 65,536 complete assignments.
+
+## Initial Qualification Matrix
+
+The phase must qualify at least the rows below. #95 may remove a row whose
+evidence does not pass; it cannot add a row without the same evidence. Connector,
+resource-provider, and engine maturity remain independent axes, so a qualified
+engine pair does not graduate an unrelated provider.
+
+| Placement combination | Physical boundary | Runtime | Target claim |
+|---|---|---|---|
+| Local Python only | None | Local | Available after single-target physical-DAG differential evidence |
+| Polars only | None | Local | Available after single-target physical-DAG differential evidence |
+| Pandas only | None | Local | Available after single-target physical-DAG differential evidence |
+| Polars → Pandas | `etlantic.interchange/1` Arrow Gate A | Local | Available after directional handoff, cleanup, and publication evidence |
+| Pandas → Polars | `etlantic.interchange/1` Arrow Gate A | Local | Available after independent reverse-direction evidence |
+
+SQL, PySpark, DataFusion, remote warehouses, external orchestrator compilation,
+durable/federated execution, streaming, and runtime-expanded graphs receive no
+0.49 adaptive availability claim. They fail closed unless a later gate adds a
+qualified `/2` physical-DAG consumer and combination row.
 
 ## Workstreams
 
@@ -148,6 +231,28 @@ For each logical node, the adaptive planner:
    evidence; and
 8. emits selected and rejected alternatives with stable reason codes.
 
+The exact minimized comparison tuple is:
+
+```text
+(-proven_local_io_nodes,
+ -proven_pushdown_actions,
+ cross_target_logical_edges,
+ collection_units,
+ durable_materialization_units,
+ -safely_fusible_logical_edges,
+ target_priority_vector,
+ target_identity_vector)
+```
+
+An I/O node counts as local only with positive provider/target locality evidence.
+A pushdown action is a distinct canonical predicate or projection action proved
+executable at that I/O target; a generic `pushdown` claim contributes nothing.
+Collection and materialization counts come from the candidate physical lowering,
+not from estimates. Fusible edges must already pass the single #62 boundary
+predicate. Both final vectors list one value per selected node in stable
+topological/name order, so multi-source and multi-sink ties are total and
+transitive.
+
 Unknown required capability is ineligible. Unknown optional locality or benefit
 is ranked below proven evidence and never becomes a favorable zero. Search uses
 ADR-frozen candidate, graph, and work-unit bounds; exhaustion produces a stable
@@ -155,26 +260,30 @@ diagnostic or the explicitly permitted baseline fallback, never a wall-clock-
 dependent partial answer. Fallback must independently satisfy every trust,
 security, contract, capability, and interchange constraint.
 
-## Delivery Sequence
+## Delivery Increments
 
-1. Accept the policy/schema ADR and freeze profile, placement, physical-unit,
-   reason-code, fingerprint, and compatibility contracts (`049-A`).
-2. Build the safe unified capability inventory and repair connector-pushdown
-   evidence wiring (`049-C`).
-3. Enumerate exact candidates, apply hard constraints, and prove deterministic
-   graph placement (`049-N`, `049-P`).
-4. Form connected regions and lower all canonical physical-unit kinds into
-   a validated physical DAG (`049-R`, `049-L`).
-5. Add whole-DAG admission and make the physical DAG authoritative for adaptive
-   local batch execution while preserving logical lifecycle and reliability
-   semantics (`049-X`).
-6. Expose shared explain/diff artifacts and draft user/operator/plugin guidance
-   from the frozen contracts (`049-E`, `049-D`).
-7. Pass conformance, heterogeneous end-to-end, differential, compatibility,
-   resource-bound, production-trust, redaction, unsupported-consumer, and
-   determinism campaigns (`049-Q`).
-8. Verify the completed documentation, assemble the evidence manifest, and make
-   the final **Available**-scope release decision (`049-D`, `049-Q`).
+Each increment is independently mergeable and leaves every public execution
+path safe. An incomplete increment cannot advertise the claim of a later one.
+
+| Increment | Task spine | Merge condition | Public state after merge |
+|---|---|---|---|
+| **I0 — contract freeze** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; exit-gate skeleton names every required artifact | Explicit `/1` unchanged; adaptive remains unavailable |
+| **I1 — plan and explain** | #45–#68, #74–#77, #91, #93 | Inventory, node candidates, exact bounded solver, connected regions, seven-kind lowering, explain/diff, oracle, and tamper evidence pass | Adaptive `/2` may be generated and inspected behind opt-in; every execution consumer rejects it before I/O |
+| **I2 — local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
+| **I3 — qualification** | #78–#81, #83–#87, #94–#95 | Public conformance, fixed launch topology, directional pair matrix, differential semantics, documentation, security scan, and final evidence decision pass | Only the published matrix becomes Available |
+
+The task-level critical path is:
+
+```text
+#41 → #42/#43 → #44/#45 → #46–#54 → #55–#59
+    → #62 → #60–#68 → #88/#90 → #69–#73
+    → #74–#81/#91–#94 → #87 → #95
+```
+
+Documentation drafting starts once its source contract is frozen; it does not
+wait for I3. #82 creates and maintains the
+[0.49 exit gate](EXIT_GATE_0_49.md), while #95 alone records the final release
+decision.
 
 ## Exit Gates
 
@@ -183,8 +292,13 @@ security, contract, capability, and interchange constraint.
 - Adaptive profiles emit `/2`; `/1`-only readers, compilers, schedulers, and
   execution hosts reject it before external I/O rather than following the
   logical graph.
+- An opted-in explicit fallback returns an independently validated `/1` plan
+  with a stable fallback decision; the runtime never executes a partial,
+  approximate, or exhausted-search `/2` plan.
 - Explicit per-step overrides always win or fail with a stable diagnostic; no
   automatic choice silently replaces them.
+- Partial-run selection is dependency-closed before placement and is part of
+  the `/2` fingerprint; runtime selection drift requires re-planning.
 - Identical logical-plan, profile, eligible-target inventory, and evidence
   fingerprints produce identical physical plans and explanations, independent
   of registry insertion order.
@@ -211,12 +325,19 @@ security, contract, capability, and interchange constraint.
 - Static batch and local-runtime bounds are enforced. Runtime-expanded or
   streaming graphs and unsupported compile/control-plane/federated consumers
   fail closed with stable diagnostics.
+- The deterministic resource envelope is enforced with stable `PMADP3xx`
+  diagnostics and no wall-clock-dependent selection.
+- Only rows that pass the initial qualification matrix may be described as
+  Available; every other adaptive engine/provider/consumer path remains
+  Experimental or unavailable according to its independently published gate.
 - All affected planner, optimizer, interchange, runtime, conformance,
   stable-foundation, compatibility, and documentation suites pass.
 
 ## Required Release Evidence
 
 - Accepted adaptive policy and physical-plan ADR.
+- Completed [0.49 exit gate](EXIT_GATE_0_49.md) with a dated #95 go/no-go
+  decision and no unresolved critical/high phase finding.
 - Profile/plan `/1`–`/2` reader-writer, verify-mode, unsupported-consumer, and
   deterministic-fingerprint report.
 - Capability inventory and candidate truthfulness matrix.
@@ -229,6 +350,21 @@ security, contract, capability, and interchange constraint.
 - Production trust/security campaign covering all applicable allowlists and the
   adaptive graduation exit gate with supported combination matrix.
 - Executed quickstart plus documentation build and link report.
+
+## Evidence Ownership
+
+| Evidence artifact | Owning tasks |
+|---|---|
+| ADR, public-field inventory, diagnostic ranges | #41–#43 |
+| `/1`–`/2` compatibility matrix | #44, #94 |
+| Capability/candidate truthfulness | #45–#54, #78 |
+| Solver oracle and resource envelope | #55–#59, #91, #93 |
+| Physical-DAG validation and interchange | #60–#68, #79 |
+| Admission, execution, lifecycle, and unsupported consumers | #69–#73, #88–#92 |
+| Explain/diff parity and redaction | #74–#77 |
+| Fixed heterogeneous differential | #80–#81 |
+| Operator/plugin/migration documentation | #83–#87, #94 |
+| Evidence manifest and final maturity decision | #82, #95 |
 
 ## Follow-On Boundary
 

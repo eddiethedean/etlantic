@@ -4260,6 +4260,7 @@ See [SECURITY.md — AI Coding Assistants](docs/02_FOUNDATIONS/SECURITY.md).
 ## 0.49 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
 Planned: [IMPLEMENTATION_PLAN_0_49](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md),
+[EXIT_GATE_0_49](docs/11_DEVELOPMENT/EXIT_GATE_0_49.md) (Not started),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30).
 
 **Objective:** let pipeline authors retain explicit engine selection or opt into
@@ -4271,9 +4272,10 @@ resulting physical DAG on a qualified local runtime.
 Deliver:
 
 - an ADR and stable profile/plan contracts for explicit versus adaptive
-  strategy, ordered eligible targets, precedence with existing Profile engine
-  fields, hard overrides, decision reasons, bounded search, fallback,
-  compatibility, and fingerprinting;
+  strategy, secret-free placement-target definitions, ordered eligible targets,
+  precedence with `RunRequest`/Profile overrides and existing engine fields,
+  hard constraints, decision reasons, bounded search, explicit fallback,
+  selection closure, compatibility, and fingerprinting;
 - authoritative `etlantic.plan/2` adaptive documents while existing explicit
   profiles retain canonical `etlantic.plan/1` bytes and fingerprints; unsupported
   readers and execution consumers reject `/2` before external I/O;
@@ -4286,6 +4288,9 @@ Deliver:
   evaluator and a versioned integer/enum objective for locality, pushdown,
   cross-target transitions, collection, materialization, fusion,
   configured-priority, and stable target identity;
+- frozen default ceilings of 256 selected nodes, eight targets/candidates per
+  node, 2,048 candidate records, 1,000,000 solver state expansions, 4 MiB of
+  serialized explain output, and 256 MiB of planner-owned transient memory;
 - maximal connected compatible regions, including multiple disconnected
   regions that use the same placement target;
 - an explicit physical DAG of compute, transfer, collection, validation,
@@ -4302,6 +4307,12 @@ Deliver:
 - author, operator, rollback, plugin-participation, migration, and reference
   documentation backed by executable examples.
 
+The initial availability matrix is local-runtime only: single-target Local
+Python, Polars, and Pandas plus directional Polars→Pandas and Pandas→Polars
+handoffs through the shipped `etlantic.interchange/1` Arrow Gate A. SQL,
+PySpark, DataFusion, remote warehouses, external compilation, durable/federated
+execution, streaming, and runtime expansion receive no 0.49 adaptive claim.
+
 Acceptance:
 
 - explicit profiles retain their documented plan and runtime behavior, and
@@ -4309,6 +4320,11 @@ Acceptance:
   fail with a stable diagnostic;
 - adaptive plans use `/2`, and every unsupported compiler, scheduler, worker,
   control-plane, or federated consumer rejects them before external I/O;
+- adaptive fallback defaults to error; an explicitly permitted baseline
+  fallback regenerates an independently validated `/1` plan rather than
+  executing a partial or approximate `/2` result;
+- partial selections are dependency-closed before placement and fingerprinted;
+  a different runtime selection requires re-planning;
 - identical logical-plan, profile, eligible-plugin inventory, and evidence
   fingerprints produce identical physical plans independent of registry order;
 - unsupported, unknown, untrusted, or non-eligible candidates never receive an

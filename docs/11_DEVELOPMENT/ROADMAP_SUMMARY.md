@@ -32,7 +32,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next | 0.49 | Adaptive heterogeneous planning and executable physical DAGs | Planned opt-in static-batch/local-runtime scope — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
+| Next | 0.49 | Adaptive heterogeneous planning and executable physical DAGs | Planned bounded static-batch/local-runtime scope — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md) (Not started), [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Later | 0.50 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.51 | Operator console | Planned |
 | Later | 0.52 | Managed runtime and enterprise provider packs | Planned |
@@ -333,7 +333,8 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.49](IMPLEMENTATION_PLAN_0_49.md):** deterministic adaptive heterogeneous
   placement for static batch graphs, connected execution regions, authoritative
   `etlantic.plan/2` physical DAGs on qualified local runtimes, and shared
-  explain/diff evidence — [epic #30](https://github.com/eddiethedean/etlantic/issues/30)
+  explain/diff evidence — [exit gate](EXIT_GATE_0_49.md) (Not started),
+  [epic #30](https://github.com/eddiethedean/etlantic/issues/30)
 - **[0.50](IMPLEMENTATION_PLAN_0_50.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
 - **[0.51](IMPLEMENTATION_PLAN_0_51.md):** read-only-first operator console
 - **[0.52](IMPLEMENTATION_PLAN_0_52.md):** managed runtime and enterprise provider packs
