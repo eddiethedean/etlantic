@@ -62,7 +62,7 @@ jobs:
 
       - name: Transform compiler drift check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run --group polars --group pandas --group sql --group pyspark --group datafusion python scripts/check_transform_compiler_drift.py
+        run: uv run --group polars --group pandas --group sql --group pyspark --group datafusion --group duckdb python scripts/check_transform_compiler_drift.py
 
       - name: Release readiness check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -879,7 +879,10 @@ jobs:
 
       - name: Install and verify Airflow version
         run: |
-          uv pip install "apache-airflow==${{ matrix.airflow-version }}"
+          AIRFLOW_VERSION="${{ matrix.airflow-version }}"
+          PYTHON_VERSION="$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+          CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+          uv pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "$CONSTRAINT_URL"
           uv pip check
 
       - name: Compile and import generated DAG
