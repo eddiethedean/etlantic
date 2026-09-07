@@ -16,7 +16,7 @@ from etlantic.testing.capability_truthfulness import (
 
 
 def assert_sql_plugin_info(
-    plugin: SqlPlugin, *, expected_engine: str | None = None
+    plugin: SqlPlugin, *, expected_engine: str | None = "sql"
 ) -> None:
     """Assert a SQL plugin advertises protocol version and core capabilities."""
     info = plugin.info
@@ -31,7 +31,7 @@ def assert_sql_plugin_info(
 
 
 def run_sql_conformance_suite(
-    plugin: SqlPlugin, *, expected_engine: str | None = None
+    plugin: SqlPlugin, *, expected_engine: str | None = "sql"
 ) -> None:
     """Minimal conformance checks for SQL plugins (driver-backed)."""
     assert_sql_plugin_info(plugin, expected_engine=expected_engine)

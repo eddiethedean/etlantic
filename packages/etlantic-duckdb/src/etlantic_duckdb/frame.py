@@ -9,6 +9,7 @@ from typing import Any
 @dataclass
 class DuckDBFrame:
     rows: list[dict[str, Any]] = field(default_factory=list)
+    columns: list[str] = field(default_factory=list)
 
     def to_dicts(self) -> list[dict[str, Any]]:
         return list(self.rows)

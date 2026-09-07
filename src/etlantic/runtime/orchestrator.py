@@ -109,7 +109,12 @@ from etlantic.schema_policy import (
 from etlantic.secrets.provider import SecretResolutionContext
 from etlantic.secrets.ref import SecretRef
 from etlantic.spark.provider import SparkSessionHandle
-from etlantic.sql.protocol import RelationRef, SqlExecutionContext, SqlQuery
+from etlantic.sql.protocol import (
+    RelationRef,
+    SqlExecutionContext,
+    SqlQuery,
+    TransactionOutcome,
+)
 from etlantic.storage.protocol import as_records
 from etlantic.transformation import ImplementationRecord, Transformation
 
@@ -1529,7 +1534,9 @@ class LocalOrchestrator:
             return
 
         if node.kind is NodeKind.SINK:
-            inputs = self._gather_inputs(node, graph, artifacts)
+            inputs = self._gather_inputs(
+                node, graph, artifacts, run_id=run_id, attempt=attempt
+            )
             payload = next(iter(inputs.values()), [])
             if is_spark_engine(self._engine_for(node.name)):
                 plugin = resolve_spark_plugin(
@@ -1807,7 +1814,9 @@ class LocalOrchestrator:
             return
 
         if node.kind is NodeKind.STEP:
-            inputs = self._gather_inputs(node, graph, artifacts)
+            inputs = self._gather_inputs(
+                node, graph, artifacts, run_id=run_id, attempt=attempt
+            )
             state.records_in = _sum_counts(inputs.values())
             params = self._parameters_for(node)
             descriptor = self.plan.implementations.get(node.name)
@@ -2297,7 +2306,13 @@ class LocalOrchestrator:
         return result, []
 
     def _gather_inputs(
-        self, node: Node, graph: LogicalGraph, artifacts: ArtifactStore
+        self,
+        node: Node,
+        graph: LogicalGraph,
+        artifacts: ArtifactStore,
+        *,
+        run_id: str,
+        attempt: int,
     ) -> dict[str, Any]:
         inputs: dict[str, Any] = {}
         consumer_engine = self._engine_for(node.name)
@@ -2314,16 +2329,32 @@ class LocalOrchestrator:
                 plugin = self._resolve_sql_plugin(producer_engine)
                 allow_trusted = self._effective_allow_trusted_sql()
                 ctx = SqlExecutionContext(
-                    run_id="hybrid",
+                    run_id=run_id,
                     pipeline_id=self.plan.pipeline_id,
                     plan_id=self.plan.plan_id,
                     step_name=node.name,
                     engine=producer_engine,
+                    attempt=attempt,
                     allow_trusted_sql=allow_trusted,
                 )
                 fetched = plugin.fetch_records(
                     value, params={}, context=ctx, contract_type=node.contract_type
                 )
+                if fetched.outcome is not TransactionOutcome.COMMITTED:
+                    detail = "; ".join(
+                        str(
+                            item.get("message")
+                            or item.get("code")
+                            or "SQL fetch failed"
+                        )
+                        for item in fetched.diagnostics
+                    )
+                    raise NodeExecutionError(
+                        redact_message(detail or "SQL hybrid fetch did not commit"),
+                        node_name=node.name,
+                        stage=FailureStage.TRANSFORM.value,
+                        code="PMEXEC458",
+                    )
                 value = fetched.records or []
             inputs[edge.consumer_port] = value
         return inputs

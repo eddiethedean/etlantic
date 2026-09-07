@@ -6,6 +6,9 @@
     "python": ">=3.11"
   },
   "explicitly_unqualified": [
+    "dtcs:distinct",
+    "dtcs:drop_fields",
+    "dtcs:rename_fields",
     "dtcs:union",
     "python_udf",
     "raw_sql"
@@ -25,9 +28,6 @@
     "dtcs:filter",
     "dtcs:project",
     "dtcs:with_fields",
-    "dtcs:drop_fields",
-    "dtcs:rename_fields",
-    "dtcs:distinct",
     "dtcs:limit",
     "dtcs:sort",
     "dtcs:join",

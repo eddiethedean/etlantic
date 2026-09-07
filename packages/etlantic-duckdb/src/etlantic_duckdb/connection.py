@@ -31,8 +31,9 @@ def configure_connection(conn: duckdb.DuckDBPyConnection, config: DuckDBConfig) 
     conn.execute(f"SET threads = {int(config.threads)}")
     if config.memory_limit:
         conn.execute(f"SET memory_limit = {_quote_setting(config.memory_limit)}")
-    if config.temp_directory:
-        conn.execute(f"SET temp_directory = {_quote_setting(config.temp_directory)}")
+    temp_directory = config.resolve_temp_directory()
+    if temp_directory:
+        conn.execute(f"SET temp_directory = {_quote_setting(temp_directory)}")
     for setting in (
         "enable_external_access",
         "autoinstall_known_extensions",

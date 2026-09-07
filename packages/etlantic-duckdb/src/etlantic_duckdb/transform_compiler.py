@@ -8,7 +8,7 @@ import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from etlantic.sql.protocol import RelationRef, SqlExecutionContext
+from etlantic.sql.protocol import RelationRef, SqlExecutionContext, TransactionOutcome
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
@@ -39,9 +39,6 @@ _ACTIONS = frozenset(
         "dtcs:filter",
         "dtcs:project",
         "dtcs:with_fields",
-        "dtcs:drop_fields",
-        "dtcs:rename_fields",
-        "dtcs:distinct",
         "dtcs:limit",
         "dtcs:sort",
         "dtcs:aggregate",
@@ -51,23 +48,9 @@ _ACTIONS = frozenset(
 _FUNCTIONS = frozenset(
     {
         "dtcs:lower",
-        "dtcs:upper",
-        "dtcs:length",
-        "dtcs:abs",
-        "dtcs:round",
-        "dtcs:floor",
-        "dtcs:ceil",
-        "dtcs:sqrt",
         "dtcs:coalesce",
-        "dtcs:if_null",
-        "dtcs:null_if",
         "dtcs:sum",
-        "dtcs:average",
-        "dtcs:min",
-        "dtcs:max",
-        "dtcs:count",
         "dtcs:count_all",
-        "dtcs:count_distinct",
     }
 )
 
@@ -89,6 +72,15 @@ class DuckDBTransformCompiler:
             "capabilities": caps.to_dict(),
             "compiler_source": inspect.getsource(DuckDBTransformCompiler),
             "dialect_source": inspect.getsource(DuckDBCompiler),
+            "lowering_sources": {
+                name: inspect.getsource(function)
+                for name, function in {
+                    "input_relation": _input_relation,
+                    "apply_action": _apply_action,
+                    "expr": _expr,
+                    "safe_identifier": _safe,
+                }.items()
+            },
             "evidence_schema": "etlantic-duckdb-evidence/1",
         }
         evidence = hashlib.sha256(
@@ -255,27 +247,75 @@ class DuckDBTransformCompiler:
                     f"_{int(context.attempt)}"
                 ),
             )
-            action_id = str((action.get("kind") or {}).get("id") or f"a{index}")
+            action_id = str(
+                (action.get("kind") or {}).get("id") or action.get("id") or f"a{index}"
+            )
             relations[action_id] = current
             columns[action_id] = out_cols
             current_columns = out_cols
-        if context.metadata.get("_return_handles"):
-            output: Any = current
-        else:
-            fetched = plugin.fetch_records(
-                current,
-                params={},
-                context=SqlExecutionContext(
-                    run_id=context.run_id,
-                    pipeline_id=context.pipeline_id,
-                    plan_id=context.plan_id,
-                    step_name=context.step_name,
-                    engine="duckdb",
+        lineage = (plan.get("requirements") or {}).get("dependencies") or []
+        last_action = plan.get("actions")[-1] if plan.get("actions") else None
+        last_kind = (last_action or {}).get("kind") or {}
+        fallback_source = str(
+            last_kind.get("id")
+            or (last_action or {}).get("id")
+            or next(iter(relations), "")
+        )
+        output_relations: dict[str, RelationRef] = {}
+        for output_name in compiled.output_ports:
+            source_name = next(
+                (
+                    str(dep.get("from"))
+                    for dep in lineage
+                    if dep.get("to") == output_name and dep.get("from") is not None
                 ),
+                fallback_source,
             )
-            output = _ResultFrame(fetched.records or [])
+            relation = relations.get(source_name)
+            if relation is None:
+                raise ValueError(
+                    f"Cannot resolve DuckDB portable output {output_name!r} "
+                    f"from relation {source_name!r}"
+                )
+            output_relations[output_name] = relation
+
+        if context.metadata.get("_return_handles"):
+            outputs: dict[str, Any] = output_relations
+        else:
+            frame_cache: dict[str, _ResultFrame] = {}
+            fetch_context = SqlExecutionContext(
+                run_id=context.run_id,
+                pipeline_id=context.pipeline_id,
+                plan_id=context.plan_id,
+                step_name=context.step_name,
+                engine="duckdb",
+                attempt=context.attempt,
+            )
+            for _output_name, relation in output_relations.items():
+                cache_key = relation.qualified_name
+                if cache_key not in frame_cache:
+                    fetched = plugin.fetch_records(
+                        relation, params={}, context=fetch_context
+                    )
+                    if fetched.outcome is not TransactionOutcome.COMMITTED:
+                        detail = "; ".join(
+                            str(
+                                item.get("message")
+                                or item.get("code")
+                                or "DuckDB portable fetch failed"
+                            )
+                            for item in fetched.diagnostics
+                        )
+                        raise RuntimeError(
+                            detail or "DuckDB portable fetch did not commit"
+                        )
+                    frame_cache[cache_key] = _ResultFrame(fetched.records or [])
+            outputs = {
+                output_name: frame_cache[relation.qualified_name]
+                for output_name, relation in output_relations.items()
+            }
         return TransformOutputBundle(
-            valid={name: output for name in compiled.output_ports},
+            valid=outputs,
             metrics={
                 "engine": "duckdb",
                 "lazy": True,
@@ -314,6 +354,11 @@ def _input_relation(
     )
     if rows is None:
         raise TypeError(f"Unsupported DuckDB portable input {type(value)!r}")
+    declared_columns = list(getattr(value, "columns", ()) or ())
+    if not rows and not declared_columns:
+        raise ValueError(
+            f"DuckDB portable input {name!r} is empty and has no declared schema"
+        )
     relation = RelationRef(
         name=(
             f"pl_in_{_safe(session.run_id)}_{_safe(step_name)}"
@@ -331,7 +376,16 @@ def _input_relation(
             engine="duckdb",
         ),
     )
-    return relation, list(rows[0]) if rows else []
+    if not rows:
+        session.execute(
+            f"CREATE TEMP TABLE {plugin.quote_identifier(relation.name)} ("
+            + ", ".join(
+                f"{plugin.quote_identifier(column)} VARCHAR"
+                for column in declared_columns
+            )
+            + ")"
+        )
+    return relation, list(rows[0]) if rows else declared_columns
 
 
 _ResultFrame = DuckDBFrame
@@ -565,7 +619,11 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
 
 def _safe(value: str) -> str:
     cleaned = "".join(char if char.isalnum() or char == "_" else "_" for char in value)
-    return cleaned if cleaned and not cleaned[0].isdigit() else f"t_{cleaned}"
+    prefix = cleaned[:48] if cleaned else "value"
+    if prefix[0].isdigit():
+        prefix = f"t_{prefix[:46]}"
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
+    return f"{prefix}_{digest}"
 
 
 def _parameter_names(definition: Mapping[str, Any]) -> tuple[str, ...]:

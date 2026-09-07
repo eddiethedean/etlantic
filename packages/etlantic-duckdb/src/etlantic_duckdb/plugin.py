@@ -181,12 +181,11 @@ class DuckDBSqlPlugin:
                     metrics.statements += 1
                     if fetch:
                         names = [str(item[0]) for item in result.description or ()]
-                        rows = [
-                            dict(zip(names, row, strict=False))
-                            for row in result.fetchall()
-                        ]
-                        if len(rows) > self.config.max_result_rows:
+                        remaining = self.config.max_result_rows - len(records)
+                        rows_raw = result.fetchmany(max(remaining, 0) + 1)
+                        if len(rows_raw) > remaining:
                             raise RuntimeError("DuckDB result row budget exceeded")
+                        rows = [dict(zip(names, row, strict=False)) for row in rows_raw]
                         records.extend(rows)
                         self._rows_fetched += len(rows)
                         metrics.rows_fetched += len(rows)

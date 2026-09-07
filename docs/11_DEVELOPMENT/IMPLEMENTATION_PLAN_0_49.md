@@ -38,9 +38,10 @@ unproven surfaces fail-closed:
 - The DuckDB plugin uses explicit run-scoped connections, verified default-deny
   settings, sealed closed-IR statements, bound parameters, safe identifiers,
   transactions, rollback, lazy relation handles, and deterministic cleanup.
-- The portable compiler qualifies filter/project/field, distinct, limit, sort,
-  join, and aggregate lowering. Union, raw SQL, Python UDFs, and connectors
-  remain explicitly unqualified and are rejected before I/O.
+- The portable compiler qualifies filter/project/with-fields, limit, sort,
+  join, and aggregate lowering. Distinct/drop/rename, union, raw SQL, Python
+  UDFs, and connectors remain explicitly unqualified and are rejected before
+  I/O.
 - A deterministic `scripts/check_duckdb_0_49.py` command generates and checks
   seven redacted evidence artifacts under
   `docs/11_DEVELOPMENT/evidence/duckdb_0_49/` for the 0.50 handoff.

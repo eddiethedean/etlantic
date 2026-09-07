@@ -10,6 +10,7 @@ pytestmark = pytest.mark.duckdb
 
 from etlantic_duckdb import create_plugin  # noqa: E402
 from etlantic_duckdb.config import DuckDBConfig  # noqa: E402
+from etlantic_duckdb.plugin import DuckDBSqlPlugin  # noqa: E402
 from etlantic_duckdb.transform_compiler import DuckDBTransformCompiler  # noqa: E402
 
 from etlantic.sql.protocol import (  # noqa: E402
@@ -82,6 +83,24 @@ def test_compiled_statements_are_sealed() -> None:
     plugin.cleanup_run(run_id="run-a")
 
 
+def test_duckdb_result_row_budget_applies_across_statements() -> None:
+    plugin = DuckDBSqlPlugin(config=DuckDBConfig(max_result_rows=2))
+    context = _context("budget")
+    plugin.load_records(
+        [{"id": 1}, {"id": 2}], target=RelationRef(name="items"), context=context
+    )
+    first = plugin.compile_query(
+        SqlQuery(source=RelationRef(name="items")), context=context
+    )
+    second = plugin.compile_query(
+        SqlQuery(source=RelationRef(name="items")), context=context
+    )
+    result = plugin.execute([first, second], params={}, context=context, fetch=True)
+    assert result.outcome.value == "rolled_back"
+    assert result.diagnostics
+    plugin.cleanup_run(run_id=context.run_id)
+
+
 def test_compiled_statement_cannot_cross_run_or_replay() -> None:
     plugin = create_plugin()
     statement = plugin.compile_query(
@@ -124,6 +143,17 @@ def test_duckdb_config_fingerprints_distinguish_logical_paths() -> None:
         "/tmp/approved.duckdb", allowed_paths=("/tmp/approved.duckdb",)
     )
     assert approved.resolve_database() == str(Path("/tmp/approved.duckdb").resolve())
+    assert (
+        DuckDBConfig(temp_directory="a").fingerprint
+        != DuckDBConfig(temp_directory="b").fingerprint
+    )
+    with pytest.raises(ValueError):
+        DuckDBConfig(temp_directory="spill").resolve_temp_directory()
+    assert DuckDBConfig(
+        temp_directory="spill", allowed_directories=("/tmp",)
+    ).resolve_temp_directory() == str(Path("/tmp/spill").resolve())
+    with pytest.raises(ValueError):
+        DuckDBConfig(metadata={"password": "TOP-SECRET"})
 
 
 def test_duckdb_cte_lowering_is_explicit() -> None:
@@ -188,6 +218,148 @@ def test_duckdb_portable_parameters_are_bound_and_input_names_are_scoped() -> No
         )
     )
     assert output.valid["result"].to_dicts() == [{"id": 2}]
+
+
+def test_duckdb_portable_outputs_follow_lineage() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"input": {}},
+        "actions": [
+            {
+                "id": "low",
+                "kind": {
+                    "id": "low",
+                    "action": "dtcs:filter",
+                    "target": "input",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "lt",
+                            "left": {"kind": "fieldRef", "target": "id"},
+                            "right": {"kind": "literal", "value": 2},
+                        }
+                    },
+                },
+            },
+            {
+                "id": "high",
+                "kind": {
+                    "id": "high",
+                    "action": "dtcs:filter",
+                    "target": "input",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "gte",
+                            "left": {"kind": "fieldRef", "target": "id"},
+                            "right": {"kind": "literal", "value": 2},
+                        }
+                    },
+                },
+            },
+        ],
+        "outputs": {"low_output": {}, "high_output": {}},
+        "requirements": {
+            "dependencies": [
+                {"from": "low", "to": "low_output"},
+                {"from": "high", "to": "high_output"},
+            ]
+        },
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    output = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"input": [{"id": 1}, {"id": 2}]},
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="lineage",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    )
+    assert output.valid["low_output"].to_dicts() == [{"id": 1}]
+    assert output.valid["high_output"].to_dicts() == [{"id": 2}]
+
+
+def test_duckdb_portable_input_identity_is_collision_resistant() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"a-b": {}, "a_b": {}},
+        "actions": [],
+        "outputs": {"result": {}},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    output = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"a-b": [{"id": 1}], "a_b": [{"id": 2}]},
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="collision",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    )
+    assert output.valid["result"].to_dicts() == [{"id": 1}]
+
+
+def test_duckdb_portable_empty_frame_requires_schema() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"input": {}},
+        "actions": [],
+        "outputs": {"result": {}},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    with pytest.raises(ValueError, match="no declared schema"):
+        asyncio.run(
+            compiler.execute(
+                compiled,
+                inputs={"input": []},
+                parameters={},
+                context=TransformExecutionContext(
+                    run_id="empty",
+                    pipeline_id="p",
+                    plan_id="plan",
+                    step_name="step",
+                    engine="duckdb",
+                ),
+            )
+        )
 
 
 def test_security_defaults_reject_unsafe_configuration() -> None:

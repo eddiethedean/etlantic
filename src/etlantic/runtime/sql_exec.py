@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping
 from typing import Any
 
 from etlantic.exceptions import NodeExecutionError
@@ -240,7 +241,7 @@ async def execute_portable_sql_step(
     profile_snapshot = plan.profile_snapshot or {}
     profile = (
         Profile.from_plan_snapshot(dict(profile_snapshot))
-        if isinstance(profile_snapshot, dict)
+        if isinstance(profile_snapshot, Mapping)
         else None
     )
     compiler = load_transform_compiler(engine, profile=profile)

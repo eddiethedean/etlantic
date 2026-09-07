@@ -49,6 +49,12 @@ class DuckDBConfig:
             raise ValueError("DuckDB community/unsigned extensions are disabled")
         if self.allow_persistent_secrets or self.allow_unredacted_secrets:
             raise ValueError("DuckDB persistent/unredacted secrets are disabled")
+        secret_markers = ("password", "secret", "token", "credential", "private_key")
+        if any(
+            any(marker in str(key).lower() for marker in secret_markers)
+            for key in self.metadata
+        ):
+            raise ValueError("DuckDB metadata keys must not identify secrets")
 
     @classmethod
     def from_database(
@@ -74,7 +80,9 @@ class DuckDBConfig:
             "read_only": self.read_only,
             "threads": self.threads,
             "memory_limit": self.memory_limit,
-            "temp_directory": "<logical>" if self.temp_directory else None,
+            "temp_directory": (
+                logical_ref(self.temp_directory) if self.temp_directory else None
+            ),
             "allowed_paths": [logical_ref(value) for value in self.allowed_paths],
             "allowed_directories": [
                 logical_ref(value) for value in self.allowed_directories
@@ -88,7 +96,10 @@ class DuckDBConfig:
             "allow_unredacted_secrets": self.allow_unredacted_secrets,
             "max_result_rows": self.max_result_rows,
             "max_statements": self.max_statements,
-            "metadata": dict(sorted(self.metadata.items())),
+            "metadata": {
+                str(key): logical_ref(str(value))
+                for key, value in sorted(self.metadata.items())
+            },
         }
 
     @property
@@ -119,3 +130,20 @@ class DuckDBConfig:
                     return str(resolved)
             raise ValueError("DuckDB database path escapes the approved root")
         raise ValueError("file-backed DuckDB requires an approved root")
+
+    def resolve_temp_directory(self) -> str | None:
+        """Resolve the spill directory only inside an approved path."""
+        if self.temp_directory is None:
+            return None
+        candidate = Path(self.temp_directory)
+        allowed_files = {Path(path).resolve() for path in self.allowed_paths}
+        if candidate.is_absolute() and candidate.resolve() in allowed_files:
+            return str(candidate.resolve())
+        for root in self.allowed_directories:
+            root_path = Path(root).resolve()
+            resolved = (
+                candidate if candidate.is_absolute() else root_path / candidate
+            ).resolve()
+            if resolved == root_path or root_path in resolved.parents:
+                return str(resolved)
+        raise ValueError("DuckDB temporary directory requires an approved root")
