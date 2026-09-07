@@ -1,8 +1,8 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.48.0 (shipped Beta).**
+> **Status: Available in ETLantic 0.49.0 (shipped Beta).**
 
-Practical questions for ETLantic **0.48.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.49.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -49,7 +49,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.48.0' 'etlantic-polars==0.48.0'
+python -m pip install 'etlantic==0.49.0' 'etlantic-polars==0.49.0'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -68,9 +68,9 @@ non-empty `plugin_allowlist` — **not** the profile name. See
 Use `SecretRef` — never put values in plans. Follow the
 [Secrets decision tree](../10_REFERENCE/SECRETS_DECISION.md).
 
-## Is ETLantic 0.48 production-supported?
+## Is ETLantic 0.49 production-supported?
 
-ETLantic **0.48.0** is **Beta**, community-supported, with no SLA. Use it for
+ETLantic **0.49.0** is **Beta**, community-supported, with no SLA. Use it for
 documented single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
@@ -79,7 +79,7 @@ SaaS. See [Capabilities](CAPABILITIES.md) and
 
 ## Available vs Experimental?
 
-**Available** means it is in the 0.48 product envelope: documented, tested, and
+**Available** means it is in the 0.49 product envelope: documented, tested, and
 covered by the Beta support policy (current minor only, no SLA).
 **Experimental** means Alpha extras (Kafka, Iceberg, MCP, DataFusion, k8s,
 Spark Connect, `shared-service` isolation) that may change or stay fake-first.
@@ -96,11 +96,11 @@ separate products. There is still no hosted SaaS.
 See [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) and
 [What's new in 0.43](WHATS_NEW_0_43.md).
 
-## What will 0.48 not do?
+## What will 0.49 not do?
 
 Proposals never apply files, submit runs, or grant tools. There is no write MCP
 in core, no vendor AI SDK, and no silent optimizer. Schedules never embed
-payloads or secrets. See [What's new in 0.48](WHATS_NEW_0_48.md).
+payloads or secrets. See [What's new in 0.49](WHATS_NEW_0_49.md).
 
 ## Thin FastAPI app vs control plane?
 

@@ -4,9 +4,10 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.48.0** is the current gate-ready human-governed AI line (**Beta**):
-redacted context bundles, proposal sandbox, user-region generators, and
-Experimental `etlantic-mcp` fakes. Prior **0.47** closed the scheduler/runner
+**0.49.0** is the current gate-ready DuckDB line (**Beta**): qualified
+optional DuckDB SQL/portable transforms, fail-closed preflight, and release
+evidence. Prior **0.48** closed human-governed AI context/proposals; prior
+**0.47** closed the scheduler/runner
 and remote-federation line. Prior
 **0.46** closed Streaming and event-driven pipelines. Prior **0.45** closed
 the Planner and Optimization SDK. Prior **0.44** closed Developer

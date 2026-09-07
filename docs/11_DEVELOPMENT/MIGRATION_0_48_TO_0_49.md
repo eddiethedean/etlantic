@@ -7,13 +7,14 @@ select the DuckDB SQL engine:
 
 ```bash
 uv sync --locked --group duckdb
-# The current development checkout remains lockstep version 0.48.x until the
-# 0.49 release tag is cut.
-# or: pip install 'etlantic-duckdb==0.48.*'
+# or: pip install 'etlantic-duckdb==0.49.0'
 ```
 
 Core installations remain driver-free and continue to use the existing SQL,
 dataframe, and local engines.
+
+Official plugins must be upgraded with core and use the 0.49 compatibility
+floor (`etlantic>=0.49.0,<0.50`). Do not mix 0.48 plugins with a 0.49 core.
 
 ## Profile and plan behavior
 

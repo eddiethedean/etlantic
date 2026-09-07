@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.48.0.**
+> **Status: Available in ETLantic 0.49.0.**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
@@ -65,10 +65,10 @@ PMSVCxxx   Scheduler-service topology / memory-store reject (0.47)
 PMFIRExxx  Firing identity / cron / catch-up / payload leak (0.47)
 PMFEDxxx   Remote federation negotiate / fence / skew (0.47)
 PMRESxxx   Resource-provider allowlist / placement (0.47)
-PMCTXxxx   Context-bundle budget / provenance / redaction (0.48, experimental)
-PMPROPxxx  Proposal sandbox / untrusted input (0.48, experimental)
-PMGUIDExxx Generator user-region conflicts (0.48, experimental)
-PMMCPxxx   MCP method authority / allowlist (0.48, experimental)
+PMCTXxxx   Context-bundle budget / provenance / redaction (0.49, experimental)
+PMPROPxxx  Proposal sandbox / untrusted input (0.49, experimental)
+PMGUIDExxx Generator user-region conflicts (0.49, experimental)
+PMMCPxxx   MCP method authority / allowlist (0.49, experimental)
 PMINTxxx   Internal framework invariants
 ```
 
@@ -77,7 +77,7 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.48.0** /
+These codes are emitted by the installed ETLantic package (currently **0.49.0** /
 0.47.x).
 The message, path, metadata, and severity provide the case-specific detail.
 

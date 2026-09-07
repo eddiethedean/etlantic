@@ -1,6 +1,6 @@
 # Building an ETLantic Plugin
 
-> **Status: Available in ETLantic 0.48.0.**
+> **Status: Available in ETLantic 0.49.0.**
 
 This is the canonical guide for creating and maintaining an independently
 distributed ETLantic plugin. Reference plugins in the ETLantic repository and
@@ -169,7 +169,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.48.0,<0.49",
+    "etlantic>=0.49.0,<0.50",
     "acme-dataframe>=2,<3",
 ]
 classifiers = [

@@ -1,7 +1,7 @@
 # Earlier release notes
 
-> **Status: Available in ETLantic 0.48.0.** Historical “What's new” pages for
-> prior minors. Current line: [What's new in 0.48](WHATS_NEW_0_48.md). Full
+> **Status: Available in ETLantic 0.49.0.** Historical “What's new” pages for
+> prior minors. Current line: [What's new in 0.49](WHATS_NEW_0_49.md). Full
 > history: [Changelog](../CHANGELOG.md).
 
 | Release | Notes |

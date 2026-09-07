@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.48.0 (gate-ready Beta).
+> **Status: Shipped product docs describe ETLantic 0.49.0 (gate-ready Beta).
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
@@ -12,7 +12,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.48 can do now**, use
+    - To learn what **ETLantic 0.49 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).

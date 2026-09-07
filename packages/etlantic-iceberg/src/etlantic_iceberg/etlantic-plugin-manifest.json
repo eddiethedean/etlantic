@@ -9,7 +9,7 @@
     "reconciliation",
     "idempotency"
   ],
-  "digest": "sha256:9509a3e4e30f423b9ee231219b0fa52de649c800d8449b1edee36c76bc4ac48b",
+  "digest": "sha256:42a88cf25b975d7676c23ba60c14b196561e0fd47531569705e978c0b247041c",
   "entries": [
     {
       "capabilities": [
@@ -57,5 +57,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.48.0"
+  "version": "0.49.0"
 }

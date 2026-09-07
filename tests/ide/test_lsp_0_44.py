@@ -26,7 +26,9 @@ from etlantic_lsp.server import (
 
 
 def test_package_version() -> None:
-    assert __version__ == "0.48.0"
+    from importlib.metadata import version
+
+    assert __version__ == version("etlantic-lsp")
 
 
 def test_create_server() -> None:

@@ -1,6 +1,6 @@
 # Testing
 
-> **Status: Available in ETLantic 0.48.0.**
+> **Status: Available in ETLantic 0.49.0.**
 
 ## Test-cost matrix (order of magnitude)
 

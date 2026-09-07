@@ -1,6 +1,6 @@
 # Architecture
 
-> **Status: Available in ETLantic 0.48.0.**
+> **Status: Available in ETLantic 0.49.0.**
 
 ETLantic is a typed modeling, validation, planning, and coordination
 framework for data pipelines.
@@ -50,7 +50,7 @@ vocabulary lives in **Medallantic**, not core. See
 
 ## History of the layers
 
-The 0.48 diagram above is the current mental model. Earlier minors added
+The 0.49 diagram above is the current mental model. Earlier minors added
 layers that still exist, but they are not the starting picture:
 
 - **0.18 Gate A** — Polars↔Pandas tabular interchange (`etlantic.interchange/1`)
@@ -58,9 +58,9 @@ layers that still exist, but they are not the starting picture:
 - **0.32** — Delta storage extras (`storage.delta.*`)
 - **0.39–0.43** — Embeddable HTTP API (CP1 through CP-GA)
 - **0.47** — Scheduler and worker
-- **0.48** — Human-governed AI (context, proposal, generators)
+- **0.49** — Human-governed AI (context, proposal, generators)
 
-See [What's new in 0.48](../01_GETTING_STARTED/WHATS_NEW_0_48.md) and
+See [What's new in 0.49](../01_GETTING_STARTED/WHATS_NEW_0_49.md) and
 [Earlier releases](../01_GETTING_STARTED/EARLIER_RELEASES.md).
 
 ## Authoring Layer

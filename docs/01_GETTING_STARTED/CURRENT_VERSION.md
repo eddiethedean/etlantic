@@ -1,11 +1,11 @@
-# ETLantic 0.48 User Guide
+# ETLantic 0.49 User Guide
 
-> **Status: Available in ETLantic 0.48.0 (shipped Beta).**
+> **Status: Available in ETLantic 0.49.0 (shipped Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.48.0** is a **Beta** release for documented
+ETLantic **0.49.0** is a **Beta** release for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported**
 isolation profiles (`isolated-deployment`, `dedicated-schema`). There is no
 hosted multi-tenant SaaS. The line includes **human-governed AI**
@@ -20,7 +20,7 @@ Experimental. `shared-service` remains Experimental. Support is community
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — what you can use today
-3. [What's new in 0.48](WHATS_NEW_0_48.md)
+3. [What's new in 0.49](WHATS_NEW_0_49.md)
 4. [Learning path](LEARNING_PATH.md)
 5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 
@@ -36,7 +36,7 @@ under `etl.control_plane`. IDE surfaces live under `etlantic.ide` with optional
 
 | Goal | Guide |
 |---|---|
-| Adopt human-governed AI | [Human-governed AI tutorial](HUMAN_GOVERNED_AI.md) / [What's new in 0.48](WHATS_NEW_0_48.md) |
+| Adopt human-governed AI | [Human-governed AI tutorial](HUMAN_GOVERNED_AI.md) / [What's new in 0.49](WHATS_NEW_0_49.md) |
 | Adopt scheduler/runner and federation | [Scheduler tutorial](SCHEDULER_TUTORIAL.md) / [What's new in 0.47](WHATS_NEW_0_47.md) |
 | Adopt streaming and dynamic control | [What's new in 0.46](WHATS_NEW_0_46.md) / [Migration 0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |
 | Adopt optimization SDK | [What's new in 0.45](WHATS_NEW_0_45.md) / [Migration 0.44 → 0.45](../11_DEVELOPMENT/MIGRATION_0_44_TO_0_45.md) / [ADR-021](../11_DEVELOPMENT/adr/ADR-021-OPTIMIZER-PASS-PROTOCOL.md) / [Optimization Passes](../07_PLUGIN_SDK/OPTIMIZATION_PASSES.md) |

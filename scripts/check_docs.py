@@ -656,6 +656,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-snowflake",
         "etlantic-openlineage",
         "etlantic-mcp",
+        "etlantic-duckdb",
         "etlantic-fastapi",
         "etlantic-keyring",
         "etlantic-pandas",
@@ -762,9 +763,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes twenty-three distributions" not in release_process:
+    if "publishes twenty-four distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 23-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 24-package "
             "release inventory"
         )
 

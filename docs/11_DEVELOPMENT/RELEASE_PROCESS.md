@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.48.0,<0.49`.
+Official plugins declare `etlantic>=0.49.0,<0.50`.
 
 ## Package categories
 
@@ -35,7 +35,7 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes twenty-three distributions:
+Tag `vX.Y.Z` publishes twenty-four distributions:
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -62,6 +62,7 @@ Tag `vX.Y.Z` publishes twenty-three distributions:
 | `etlantic-snowflake` | `packages/etlantic-snowflake` | **Experimental** connector (Alpha classifier) |
 | `etlantic-openlineage` | `packages/etlantic-openlineage` | **Experimental** outbound OpenLineage (Alpha) |
 | `etlantic-mcp` | `packages/etlantic-mcp` | **Experimental** read-only MCP extra (Alpha; FakeMcpServer) |
+| `etlantic-duckdb` | `packages/etlantic-duckdb` | **Experimental** optional DuckDB SQL and portable-transform package |
 
 VS Code reference extension lives at `editors/vscode` (VSIX; not a PyPI
 wheel). Build with `npm run package` after `npm install`.
@@ -110,7 +111,7 @@ wheel). Build with `npm run package` after `npm install`.
    existing projects. Prefer Trusted Publishing / OIDC when configured;
    otherwise use the least-privilege token documented for this repository.
    Treat long-lived user tokens and first-project bootstrap as exceptional.
-   For 0.48.0, `etlantic-mcp` is a brand-new PyPI name and
+   For 0.49.0, `etlantic-duckdb` is a brand-new PyPI name and
    `etlantic-spark-connect` is still unpublished from the 0.47 rate-limit
    window—pace new-project creates accordingly.
 8. **New distribution bootstrap only:** if introducing a brand-new PyPI name,
@@ -148,7 +149,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all twenty-three wheels/sdists.
+3. Builds all twenty-four wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (skip files already present
@@ -220,7 +221,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.48** plugins, `etlantic>=0.48.0,<0.49`). A core
+**0.49** plugins, `etlantic>=0.49.0,<0.50`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

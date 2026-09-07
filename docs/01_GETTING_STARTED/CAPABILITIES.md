@@ -1,16 +1,16 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.48.0 (shipped Beta).** What ships now for
+> **Status: Available in ETLantic 0.49.0 (shipped Beta).** What ships now for
 > controlled single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.48)
+## What works today (0.49)
 
-ETLantic 0.48.0 is a **Beta** release for documented, controlled,
-single-tenant pilots (install `etlantic==0.48.0` from PyPI). You can embed an
+ETLantic 0.49.0 is a **Beta** release for documented, controlled,
+single-tenant pilots (install `etlantic==0.49.0` from PyPI). You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -26,9 +26,9 @@ Kubernetes, Spark Connect, and MCP extras are **Experimental**. `shared-service`
 remains Experimental. Support is community **non-SLA**.
 
 **Canonical first success:** [Quickstart](QUICKSTART.md)
-(install `etlantic==0.48.0` from PyPI → `python -m etlantic init` → validate →
+(install `etlantic==0.49.0` from PyPI → `python -m etlantic init` → validate →
 run). Do not start from repository `examples/` unless you have cloned the repo.
-Headline 0.48/0.47 tutorials: [Human-governed AI](HUMAN_GOVERNED_AI.md) and
+Headline 0.49/0.47 tutorials: [Human-governed AI](HUMAN_GOVERNED_AI.md) and
 [Scheduler and worker](SCHEDULER_TUTORIAL.md).
 Fit check: [Compare](COMPARE.md).
 
@@ -52,7 +52,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.48 |
+| Topic | ETLantic 0.49 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots; Supported multi-tenant profiles |
@@ -66,13 +66,13 @@ Experimental. Pattern: community **non-SLA**. Roadmap programs live under
 Contribute → Maintainers (see the
 [multi-tenant control-plane plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 
-## Supported standards policy (0.48)
+## Supported standards policy (0.49)
 
-For the 0.48 envelope, ETLantic supports these standards and
+For the 0.49 envelope, ETLantic supports these standards and
 toolkits at the declared ranges (exact pins and protocol notes:
 [Compatibility](../10_REFERENCE/COMPATIBILITY.md)):
 
-| Standard / surface | 0.48 policy |
+| Standard / surface | 0.49 policy |
 |---|---|
 | Python | 3.11, 3.12, 3.13 (`requires-python >=3.11`) |
 | ContractModel | `>=0.2,<0.3` ([ODCS](../03_DATA_CONTRACTS/ODCS.md) `v3.1.0` document model) |
@@ -98,7 +98,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.48
+## Available in 0.49
 
 ### Human-governed AI
 
@@ -265,7 +265,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
 | Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.54 |
 | FastAPI scheduler/runner service and remote federation | **Available in the bounded 0.47 envelope** — gateway routes plus separate scheduler/worker processes; see [What's new in 0.47](WHATS_NEW_0_47.md) and [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) |
-| Human-governed AI context/proposals | **Available in the bounded 0.48 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.48](WHATS_NEW_0_48.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
+| Human-governed AI context/proposals | **Available in the bounded 0.49 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.49](WHATS_NEW_0_49.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
 | Baseline portable execution across first-party engines | **Planned, not currently available** for 0.50: one frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB, with a required pushdown contract — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [not-started exit gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [epic #102](https://github.com/eddiethedean/etlantic/issues/102) |
 | Adaptive heterogeneous planning and executable physical DAGs | **Planned, not currently available** for 0.51: opt-in static-batch local execution with bounded `/2` plans; proposed qualification is Local/Polars/Pandas single-target plus directional Polars↔Pandas Gate A — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md), [not-started exit gate](../11_DEVELOPMENT/EXIT_GATE_0_51.md), and [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
@@ -297,7 +297,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.48.0` first).
+(the sample uses Polars — install `etlantic-polars==0.49.0` first).
 
 ```json
 {
@@ -310,7 +310,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.48.0"
+    "etlantic-polars": "==0.49.0"
   },
   "assets": {},
   "secrets": {},
@@ -326,17 +326,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.48.0'
-pip install 'etlantic[lsp]==0.48.0'            # optional language server
-pip install 'etlantic-polars==0.48.0'          # optional
-pip install 'etlantic-pandas==0.48.0'          # optional
-pip install 'etlantic-sql==0.48.0'             # optional
-pip install 'etlantic-pyspark==0.48.0'         # optional
-pip install 'etlantic-airflow==0.48.0'         # optional
-pip install 'etlantic-prefect==0.48.0'         # optional
-pip install 'etlantic-keyring==0.48.0'         # optional
-pip install 'etlantic-sqlmodel==0.48.0'        # optional
-pip install 'medallantic==0.48.0'              # optional
+pip install 'etlantic==0.49.0'
+pip install 'etlantic[lsp]==0.49.0'            # optional language server
+pip install 'etlantic-polars==0.49.0'          # optional
+pip install 'etlantic-pandas==0.49.0'          # optional
+pip install 'etlantic-sql==0.49.0'             # optional
+pip install 'etlantic-pyspark==0.49.0'         # optional
+pip install 'etlantic-airflow==0.49.0'         # optional
+pip install 'etlantic-prefect==0.49.0'         # optional
+pip install 'etlantic-keyring==0.49.0'         # optional
+pip install 'etlantic-sqlmodel==0.49.0'        # optional
+pip install 'medallantic==0.49.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

@@ -1,6 +1,6 @@
 # Scheduler and worker
 
-> **Status: Available in ETLantic 0.48.0.** Budget ~15 minutes after
+> **Status: Available in ETLantic 0.49.0.** Budget ~15 minutes after
 > [Quickstart](QUICKSTART.md). PyPI only — local JSON stores, no FastAPI.
 
 Schedules are secret-free timers that wrap durable work. They never embed

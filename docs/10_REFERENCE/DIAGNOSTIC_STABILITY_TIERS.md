@@ -1,6 +1,6 @@
 # Diagnostic-code stability tiers (0.37)
 
-> **Status: Available in ETLantic 0.48.0.** Foundation freeze inventory for
+> **Status: Available in ETLantic 0.49.0.** Foundation freeze inventory for
 > diagnostic **code families** (alphabetic prefix before the numeric suffix).
 > Machine-readable companion:
 > [`diagnostic-stability-tiers.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/diagnostic-stability-tiers.json)
@@ -47,10 +47,10 @@ notes. Exhaustive code→source index:
 | `PMFIRE` | stable | Firing identity / cron / catch-up / payload leak (0.47) |
 | `PMFED` | stable | Remote federation negotiate / fence / skew (0.47) |
 | `PMRES` | stable | Resource-provider allowlist / placement (0.47) |
-| `PMCTX` | experimental | Context-bundle budget / provenance / redaction (0.48) |
-| `PMPROP` | experimental | Proposal sandbox / untrusted input (0.48) |
-| `PMGUIDE` | experimental | Generator user-region conflicts (0.48) |
-| `PMMCP` | experimental | MCP method authority / allowlist (0.48) |
+| `PMCTX` | experimental | Context-bundle budget / provenance / redaction (0.49) |
+| `PMPROP` | experimental | Proposal sandbox / untrusted input (0.49) |
+| `PMGUIDE` | experimental | Generator user-region conflicts (0.49) |
+| `PMMCP` | experimental | MCP method authority / allowlist (0.49) |
 | `PMQTY` | provisional | Portable quality (`etlantic.quality/1` still provisional) |
 | `PMSCHED` | stable | Scheduler / local run selection |
 | `PMSEC` | stable | Security policy (I/O, serialization, outbound) |
@@ -78,4 +78,4 @@ Every shipped code family under `src/etlantic` must appear in
 - [Diagnostics catalog](DIAGNOSTICS_CATALOG.md)
 - [Diagnostics](DIAGNOSTICS.md)
 - [Surface inventory](SURFACE_INVENTORY.md)
-- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-048)
+- [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md#supported-standards-policy-049)

@@ -6,9 +6,10 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.48.0** (Beta) — gate-ready human-governed AI:
-context bundles, proposal sandbox, user-region generators, and Experimental
-`etlantic-mcp` fakes. Prior **0.47** scheduler/runner service and remote
+**Current release:** ETLantic **0.49.0** (Beta) — qualified optional DuckDB:
+embedded SQL, portable transforms, fail-closed preflight, and release evidence.
+Prior **0.48** human-governed AI context/proposals and Experimental `etlantic-mcp`
+fakes; prior **0.47** scheduler/runner service and remote
 federation, **0.46** Streaming, **0.45** Planner and Optimization SDK, **0.44** Developer Intelligence,
 **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2, and **0.39** CP1
 remain prior baselines. Milestones **0.25** (burn-in first slice)
@@ -16,7 +17,8 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.48 | AI-assisted, human-governed proposals | Gate-ready for tag/publish |
+| Current | 0.49 | Qualified optional DuckDB engine package | Gate-ready for tag/publish |
+| Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |
 | Previous | 0.46 | Streaming and event-driven pipelines | Gate-ready / shipped evidence |
 | Previous | 0.45 | Planner and optimization SDK | Gate-ready / shipped evidence |

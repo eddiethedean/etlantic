@@ -2,7 +2,7 @@
   "capabilities": [
     "spark-connect"
   ],
-  "digest": "sha256:989e8e82a88937091613232dd8165b844ab52476f7a5c960b6edde631e5c692b",
+  "digest": "sha256:be3861a15c1656f3ce4fb7477cec76995a8761718e1b2f454c8f163040065f3f",
   "entries": [
     {
       "capabilities": [
@@ -23,5 +23,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.48.0"
+  "version": "0.49.0"
 }

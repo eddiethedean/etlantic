@@ -7,11 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-09-07
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone adopting the optional DuckDB engine or pinning the 0.48 line |
+| Breaking | Lockstep dependency floor becomes `etlantic>=0.49.0,<0.50` |
+| Upgrade | Install `etlantic==0.49.0` with matching first-party plugins; DuckDB remains optional |
+| Rollback | Re-pin the complete 0.48.x lockstep set |
+| Security | DuckDB evidence and plans exclude source rows, secrets, paths, and executable backend objects |
+
 ### Added
 
-- Qualified optional DuckDB SQL and portable-transform package surface for 0.49,
-  including fail-closed preflight validation, evidence artifacts, and installed
-  wheel discovery smoke coverage. See the [0.49 migration guide](docs/11_DEVELOPMENT/MIGRATION_0_48_TO_0_49.md).
+- Qualified optional `etlantic-duckdb` SQL and portable-transform package
+- Fail-closed capability, schema-column, and join-collision preflight
+- Cross-platform/min-max DuckDB qualification matrix and installed-wheel smoke
+- Runnable DuckDB example, migration guidance, release evidence, and findings ledger
+
+### Changed
+
+- All first-party packages and optional dependency pins move to the 0.49.0
+  lockstep line (`etlantic>=0.49.0,<0.50`)
+- Release metadata, support policy, and current documentation identify 0.49.0
 
 ## [0.48.0] - 2026-08-18
 
@@ -1863,6 +1882,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.49.0...HEAD
+[0.49.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.49.0
 [0.48.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.48.0
 [0.47.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.47.0
 [0.46.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.46.0

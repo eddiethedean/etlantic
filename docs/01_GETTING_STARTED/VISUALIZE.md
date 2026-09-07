@@ -1,6 +1,6 @@
 # Visualize a pipeline
 
-> **Status: Available in ETLantic 0.48.0.** After [Quickstart](QUICKSTART.md).
+> **Status: Available in ETLantic 0.49.0.** After [Quickstart](QUICKSTART.md).
 
 ## Python
 

@@ -1,7 +1,7 @@
-# Public Surface Inventory (0.48)
+# Public Surface Inventory (0.49)
 
-> **Status: Available in ETLantic 0.48.0.** Canonical public surface for the
-> **0.48 reference envelope**.
+> **Status: Available in ETLantic 0.49.0.** Canonical public surface for the
+> **0.49 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,7 +10,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.48 reference envelope |
+| `stable` | Supported within the documented 0.49 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a stable-foundation obligation |
 | `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
@@ -62,7 +62,7 @@ root facade alias waves:
 | `etl.optimization` | `etlantic.optimization` | stable (0.45 advisory optimization-pass SDK) |
 | `etl.streaming` | `etlantic.streaming` | stable (0.46 streaming / dynamic-control contracts) |
 | `etl.resources` | `etlantic.resources` | experimental (0.47 resource providers) |
-| `etl.agents` | `etlantic.agents` | provisional (0.48 human-governed AI) |
+| `etl.agents` | `etlantic.agents` | provisional (0.49 human-governed AI) |
 
 ## Plan helpers (stable)
 
@@ -117,9 +117,9 @@ Schema ids keep meaning under additive `/1` rules. That is **not** the same as
 | `etlantic.streaming/1` | stable (0.46) |
 | `etlantic.schedule/1` | stable (0.47) |
 | `etlantic.firing/1` | stable (0.47) |
-| `etlantic.ai_task/1` | provisional (0.48 Supported catalog) |
-| `etlantic.context_bundle/1` | provisional (0.48 Supported bundles) |
-| `etlantic.proposal/1` | provisional (0.48 Supported sandbox) |
+| `etlantic.ai_task/1` | provisional (0.49 Supported catalog) |
+| `etlantic.context_bundle/1` | provisional (0.49 Supported bundles) |
+| `etlantic.proposal/1` | provisional (0.49 Supported sandbox) |
 | Profile JSON | stable |
 | Reliability / policy / extension bags | stable (secret-free; unknown fields fail closed where enforced) |
 
@@ -152,7 +152,7 @@ Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.48.0`). Details:
+Pin to the same minor as core (`==0.49.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

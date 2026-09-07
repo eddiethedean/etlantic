@@ -35,7 +35,7 @@ from etlantic_duckdb.dialect import DuckDBCompiler
 from etlantic_duckdb.frame import DuckDBFrame
 from etlantic_duckdb.plugin import DuckDBSqlPlugin
 
-__version__ = "0.48.0"
+__version__ = "0.49.0"
 
 _ACTIONS = frozenset(
     {

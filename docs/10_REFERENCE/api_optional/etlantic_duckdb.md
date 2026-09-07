@@ -3,7 +3,7 @@
 Optional DuckDB SQL engine and portable transform compiler for ETLantic.
 
 ```bash
-pip install 'etlantic-duckdb==0.48.0'
+pip install 'etlantic-duckdb==0.49.0'
 ```
 
 Select it explicitly with `Profile(sql_engine="duckdb")`. The package keeps
