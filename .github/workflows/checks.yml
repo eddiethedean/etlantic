@@ -300,9 +300,15 @@ jobs:
         python-version: ["3.11", "3.13"]
         duckdb-version: ["1.0.0", "1.5.5"]
         exclude:
-          # DuckDB 1.0.0 does not publish a Windows CPython 3.13 wheel;
-          # uv otherwise falls back to a source build that requires a
-          # compiler configuration unavailable on the hosted runner.
+          # DuckDB 1.0.0 predates CPython 3.13 wheels; uv otherwise falls
+          # back to a source build that is not supported by the hosted
+          # runner toolchains.
+          - os: ubuntu-latest
+            python-version: "3.13"
+            duckdb-version: "1.0.0"
+          - os: macos-latest
+            python-version: "3.13"
+            duckdb-version: "1.0.0"
           - os: windows-latest
             python-version: "3.13"
             duckdb-version: "1.0.0"
