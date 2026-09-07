@@ -22,7 +22,7 @@ durable orchestrator.
 | **dbt** | SQL transformation project / warehouse analytics | Complementary |
 | **Airflow** | Orchestration and scheduling | Complementary — `etlantic-airflow` **compiles** plans to DAG artifacts (does not install Airflow) |
 | **Prefect** | Orchestration and scheduling | Complementary — `etlantic-prefect` is a local direct-execution scheduler MVP, not a DAG compiler |
-| **Dagster** | Orchestration and software-defined assets | Complementary — compiler bridge planned for 0.51, not shipped |
+| **Dagster** | Orchestration and software-defined assets | Complementary — compiler bridge planned for 0.52, not shipped |
 | **Pandera / GE** | Dataframe / table validation libraries | Complementary — ETLantic validates wiring and contracts; row suites stay engine-side |
 | **Polars / Pandas / Spark / SQL engines** | Execution | Complementary — install matching `etlantic-*` plugins |
 
@@ -53,7 +53,7 @@ Prefer another tool (or use ETLantic only as a thin companion) when:
 | Warehouse-only SQL analytics with dbt already owning the project | **dbt** alone |
 | You only need a durable multi-worker scheduler / ops UI | **Airflow / Dagster / Prefect** alone |
 | You only need row-level dataframe checks inside notebooks | **Pandera / Great Expectations** alone |
-| You need unrestricted shared-service multi-tenant SaaS or a formal SLA today | Wait / supplement — Supported profiles Available; community **non-SLA**; Operator Console is 0.52 |
+| You need unrestricted shared-service multi-tenant SaaS or a formal SLA today | Wait / supplement — Supported profiles Available; community **non-SLA**; Operator Console is 0.53 |
 | You need bronze/silver/gold medallion vocabulary as core APIs | **SparkForge / medallantic**, not core ETLantic |
 | You refuse typed Python modeling and only want SQL files on disk | Stick with your SQL toolchain |
 

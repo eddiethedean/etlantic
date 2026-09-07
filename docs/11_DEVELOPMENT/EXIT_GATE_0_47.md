@@ -41,7 +41,7 @@ From [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md).
 | Wake-up adapter (broker-style) | **Experimental** | Protocol + polling fallback |
 | Kubernetes reference (`etlantic-k8s`) | **Experimental** | `FakeKubernetes`; live Kind skip `047-K-01` |
 | Spark Connect (`etlantic-spark-connect`) | **Experimental** | Fake; live Databricks/EMR skip `047-S-01` |
-| Helm/OCI production images | **Out of 0.47** | 0.53 `053-D` |
+| Helm/OCI production images | **Out of 0.47** | 0.54 `054-D` |
 
 ## Quantified exit scorecard
 

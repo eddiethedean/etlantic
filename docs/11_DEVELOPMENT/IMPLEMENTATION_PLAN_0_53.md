@@ -1,88 +1,89 @@
 ---
 title: ETLantic 0.53 Implementation Plan
-description: Implementation-grade plan for managed-runtime and provider packs.
+description: Implementation-grade plan for the separately deployable operator console.
 plan_status: current
-plan_last_reviewed: 0.46.0
+plan_last_reviewed: 0.37.0
 ---
 
 # ETLantic 0.53 Implementation Plan
 
-Phase 0.53 packages qualified deployment and provider integrations without
-turning any cloud, secret manager, runtime, or connector into a core dependency.
-The [adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs provider
-maturity and support claims.
+Phase 0.53 delivers a separately deployable, read-only-first operator console.
+It consumes the versioned control-plane API through a generated client and uses
+the shared artifact language from the [UI/UX plan](UI_UX_PLAN.md).
 
 ## Outcome
 
-Operators can deploy supported ETLantic control-plane/runtime profiles with OCI
-images and Helm, use hardened Kubernetes and managed Spark execution, obtain
-credentials through workload identity and optional secret-provider packs, and
-select promoted cloud connector packs with explicit compatibility, cost, quota,
-region, lifecycle, and cleanup behavior.
+Authorized operators can inspect definitions, revisions, plans, diffs, runs,
+attempts, events, lineage, partitions, checkpoints, quality, schema, repairs,
+backfills, delivery objectives, deadline/escalation state, erasure operations,
+dynamic expansions and branches, dead-letter/redrive state, schema-registry
+compatibility, quotas, policy, approvals, audit, providers, and health.
+Privileged actions reuse API policy, idempotency, approval, and audit paths
+exactly.
 
 ## Prerequisites And Non-Goals
 
-- 0.43 qualification and 0.47 remote-provider **fake** conformance are
-  mandatory ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
-  [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). 0.47 ships
-  `FakeKubernetes` (`etlantic-k8s`) and an in-process Spark Connect fake
-  (`etlantic-spark-connect`); live Kind/cluster and live Databricks/EMR are
-  this phase. The console from 0.52 may observe providers but does not own
-  them.
-- Provider packs are independently versioned, allowlisted in production, and
-  capability-negotiated before plan acceptance.
-- Long-lived cloud credentials are not embedded in plans, reports, artifacts,
-  images, Helm values, examples, or test fixtures.
-- Infrastructure recipes are maintained examples with tested support matrices,
-  not claims that every topology or cloud service is supported.
+- 0.43 API/auth/event support and 0.44 artifact/interaction contracts are stable;
+  0.46–0.52 capabilities appear only where the server advertises them.
+- The console owns no source of truth, authorization rule, execution path, policy
+  engine, schema authority, or provider credential.
+- The core and API packages never depend on frontend code or its toolchain.
+- Preview rendering is bounded and hostile content is treated as data, not markup
+  or executable instruction.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 053-D | Distribution | Versioned OCI images, SBOM/attestations, Helm chart, configuration schema, upgrade/rollback hooks | Clean install, signed-image verification, upgrade/rollback matrix |
-| 053-K | Kubernetes hardening | Workload identity, network/storage policies, pod security, autoscaling, disruption, scoped cleanup | Isolated cluster, node-loss, policy, and orphan tests |
-| 053-S | Managed Spark | Promoted provider(s), runtime images, capability/cost/region model, cancellation/recovery | Live isolated conformance and workload comparison |
-| 053-X | Secret providers | AWS, Azure, GCP, and Vault provider packs; references, rotation, expiry, outage semantics | Missing/expired/rotated/outage and redaction suite |
-| 053-C | Connector packs | Promoted cloud connectors with schema, state, reliability, effect, erasure/delete/anonymize proof, quota, and cleanup conformance | Per-provider live isolated qualification matrix |
-| 053-E | Enterprise event providers | Qualified notification/escalation, dead-letter, and schema-registry provider packs where maintained demand justifies support | Live delivery/dedupe/redaction, DLQ/redrive, registry-outage, and compatibility matrix |
-| 053-G | Governance | Compatibility/support tiers, region/cost/quota metadata, deprecation, incident and security lifecycle | Published support matrix and provider retirement drill |
-| 053-I | Infrastructure recipes | Tested reference deployments, least-privilege identities, observability, backup/restore | Reproducible environment creation and recovery evidence |
+| 053-F | Frontend foundation | Separate package/deployment, pinned generated client, session/bootstrap, capability negotiation, routing | Clean build/deploy and client/server compatibility matrix |
+| 053-R | Read surfaces | Scoped list/detail views for definitions through health; stable URLs and breadcrumbs | View fixture matrix, pagination, empty/error/loading states |
+| 053-E | Live events | Resumable run/event views, cursor persistence, history fallback, reconnect and duplicate suppression | Refresh/disconnect/cursor-expiry tests |
+| 053-A | Privileged actions | Cancel, retry, repair, backfill, approve, promote, authorize/retry erasure, suspend, containment actions through public API | Policy/idempotency/approval/audit equivalence traces |
+| 053-D | Objectives and dynamic execution | Deadline timelines, breach/escalation/recovery state, map/reduce children, branch decisions, stable identities, bounds, and capability explanations | Clock/reconnect/dedupe fixtures plus large bounded expansion and branch-state tests |
+| 053-P | Privacy and stream errors | Erasure request/plan/provider/reconciliation views plus payload-free DLQ/redrive and schema-compatibility views | No-subject/no-payload browser-state tests and partial/unsupported outcome fixtures |
+| 053-S | Security/privacy | Object authorization, non-enumeration, cache partitioning, bounded previews, CSP, hostile-content redaction | Two-tenant/two-workspace UI leakage campaign |
+| 053-U | Usability/accessibility | Keyboard/screen-reader flows, localization readiness, responsive layouts, latency budgets | WCAG-oriented audit, locale/pseudo-localization, performance report |
+| 053-T | Test fixtures | Deterministic generated-client mocks plus integrated API fixtures for all capability states | CI visual/interaction tests without production credentials |
+| 053-O | Operations | OCI image, configuration, health, telemetry, upgrade/rollback and incident runbooks | Deployment, version-skew, failover, and rollback drill |
 
 ## Delivery Sequence
 
-1. Freeze package/version/support policy and the provider qualification matrix.
-2. Build signed distribution artifacts and validate clean deployment lifecycle.
-3. Harden the 0.47 Kubernetes (`etlantic-k8s`) and Spark Connect
-   (`etlantic-spark-connect`) Experimental extras against live isolated
-   conformance; promote Databricks/EMR packs only after that evidence.
-4. Add secret-provider packs and credential-rotation/outage behavior.
-5. Promote connector packs only after state, schema, reliability, effect,
-   erasure, and cleanup conformance pass in isolated accounts/projects.
-6. Promote notification/escalation, DLQ, and schema-registry packs only after
-   live authorization, redaction, retry, outage, and reconciliation evidence.
-7. Publish tested recipes, costs/quotas/regions, lifecycle policy, and runbooks.
+1. Freeze console information architecture, threat model, and generated-client
+   version policy.
+2. Implement read-only registry, plan, run, quality, schema, delivery-objective,
+   erasure, dynamic-control, dead-letter, and operations views.
+3. Add resumable live events, bounded previews, deadline/escalation timelines,
+   dynamic child/branch navigation, and lineage/partition navigation.
+4. Add privileged actions only through existing API commands and approvals.
+5. Complete accessibility, localization, hostile-content, isolation, and
+   performance qualification.
+6. Publish deployment artifacts and the supported server/client matrix.
 
 ## Exit Gates
 
-- Every provider pack installs independently, is production-allowlisted
-  explicitly, advertises versioned capabilities, and fails closed when missing.
-- Credential references resolve through workload identity or a scoped provider;
-  secret values never appear in persistent artifacts or diagnostics.
-- Missing, expired, rotated, revoked, and unavailable credentials produce stable
-  redacted outcomes and do not fall back to broader ambient authority.
-- External effects use normalized pending/committed/failed/unknown state and
-  provider cleanup is tenant/workspace scoped and idempotent.
-- Each claimed provider passes live isolated conformance for identity, policy,
-  schema, state, reliability, effects, cancellation, recovery, and cleanup.
-- Distribution and recipes pass clean install, upgrade, rollback, backup/restore,
-  region/limit documentation, and dependency/SBOM verification.
-- No vendor SDK or managed-runtime dependency enters ETLantic core.
+- The console contains no independent database, authorization decision, schema
+  mutation, run scheduler, secret resolver, or provider control path.
+- Every mutation produces the same policy, idempotency, approval, state-machine,
+  and audit evidence as the equivalent API operation.
+- Unauthorized scope cannot leak through counts, search, links, error shape,
+  browser/server caches, history, event streams, downloadable artifacts, or
+  timing-sensitive pagination behavior.
+- Refresh and reconnect resume events without duplicating attempts or actions.
+- Hostile names, diagnostics, payloads, and artifact previews are bounded,
+  escaped, redacted, and covered by content-security policy.
+- Erasure and dead-letter views never place data-subject values or event
+  payloads in browser state, URLs, telemetry, caches, logs, or fixtures, and
+  cannot report completion while required effects remain unknown or
+  unreconciled.
+- Critical workflows pass keyboard and screen-reader review, localization
+  readiness, responsive layouts, and published latency budgets.
+- The console deploys, upgrades, rolls back, and version-negotiates independently
+  from ETLantic core and the control-plane API.
 
 ## Required Release Evidence
 
-- Signed distribution and Helm lifecycle report.
-- Per-provider support/conformance matrix.
-- Workload-identity and credential lifecycle/redaction report.
-- Failure, external-effect, and scoped-cleanup campaign.
-- Reference deployment reproducibility and recovery transcript.
+- Generated-client compatibility and deployment report.
+- Full view/action-to-API traceability matrix.
+- Cross-tenant UI leakage and hostile-content report.
+- Event reconnect/refresh results.
+- Accessibility, localization, and performance audits.

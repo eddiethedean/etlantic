@@ -1,375 +1,299 @@
 ---
 title: ETLantic 0.50 Implementation Plan
-description: Implementation-grade plan for deterministic adaptive heterogeneous execution planning and executable physical DAGs.
+description: Implementation-grade plan for baseline portable execution across seven first-party engines and pushdown conformance.
 plan_status: current
 plan_last_reviewed: 0.48.0
 ---
 
 # ETLantic 0.50 Implementation Plan
 
-Phase 0.50 turns the existing multi-engine planning, capability, optimization,
-interchange, and hybrid-runtime foundations into an opt-in adaptive execution
-strategy for static batch graphs. It converts one ETLantic logical plan into a
-deterministic, inspectable, and executable physical DAG spanning multiple
-trusted, profile-bound placement targets.
+Phase 0.50 makes ETLantic's baseline portable transformation syntax executable
+across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB. It closes
+the gap between portable authoring, compiler capability claims, runtime
+dispatch, pushdown behavior, and reproducible release evidence. The full
+DuckDB package is delivered by phase 0.49, then must pass this phase's same
+baseline and pushdown contract before it is a qualified seventh engine.
 
-The governing backlog is
-[epic #30](https://github.com/eddiethedean/etlantic/issues/30). Its ten stories
-and implementation tasks are the delivery ledger for this phase.
+The phase is governed by
+[epic #102](https://github.com/eddiethedean/etlantic/issues/102), the
+[0.50 milestone](https://github.com/eddiethedean/etlantic/milestone/2), and the
+[0.50 exit gate](EXIT_GATE_0_50.md).
 
 ## Outcome
 
-Pipeline authors can retain explicit engine selection or opt into adaptive
-placement through a profile. For adaptive plans, ETLantic enumerates only
-eligible and trusted placement targets, proves per-node support, selects
-placements using stable capability/locality rules, forms connected execution
-regions, lowers cross-region handoffs into validated physical units, executes
-the physical DAG, and explains every important selection and rejection.
+An author can define a transformation only with `@Transformation.portable`,
+select any qualified first-party engine through a Profile, and validate, plan,
+and run the same baseline pipeline under
+`portable_transform_policy="require"` without adding an engine-specific
+implementation body.
 
-Installing an engine does not grant it authority. A candidate participates only
-when the profile, all applicable production allowlists, compiler and connector
-capabilities, contracts, security boundaries, resource policy, and directional
-interchange evidence admit its complete placement target.
+The shared guarantee is deliberately the frozen baseline. Advanced profiles,
+native escape hatches, physical execution strategies, and performance
+characteristics remain engine-specific and separately claimed.
 
-## Frozen Phase Boundaries
+## Current Reality At Phase Entry
 
-- Adaptive plans use a new authoritative `etlantic.plan/2` wire schema. Existing
-  explicit profiles continue producing the existing canonical `etlantic.plan/1`
-  document and fingerprint unless the user opts into adaptive planning. New
-  readers support `/1` and `/2`; old or unsupported consumers must reject `/2`
-  before external I/O. Adaptive fields are not serialized into explicit `/1`
-  plans merely because their defaults exist in a newer Profile implementation.
-- A placement target is not only an engine name. Its stable identity includes
-  engine family, implementation or compiler, profile-bound execution target or
-  resource reference, location/security domain, and relevant version evidence.
-  Region formation and transition counts operate on compatible placement-target
-  identity.
-- The 0.50 MVP assigns individual logical nodes. Portable multi-node fragment
-  selection and overlapping fragment-cover optimization are deferred. Proven
-  same-target fusion happens only after node placement.
-- Adaptive 0.50 execution is limited to static batch graphs on the local runtime.
-  Runtime-expanded maps, streaming graphs, speculative execution, external
-  orchestrator compilation, and consumers without `/2` physical-DAG support
-  fail closed with stable diagnostics. A durable or federated worker may execute
-  `/2` only when it advertises and uses the same qualified physical-DAG runtime.
-- The canonical physical-unit kinds are compute, transfer, collection,
-  validation, materialization, reuse, and publication. Every unit records typed
-  dependencies, placement target, logical provenance, security/policy envelope,
-  artifact ownership/lifecycle, and effective retry/attempt semantics.
-- One whole-DAG preflight verifies integrity, schema support, plugins, compilers,
-  connectors, resource providers, schema-registry adapters when applicable,
-  versions, capabilities, authorization, contracts, and every handoff before any
-  read, resource acquisition, staging, or mutation.
-- Partial selection is resolved into a dependency-closed logical graph before
-  candidate enumeration. The resulting `/2` plan and fingerprint cover that
-  exact selection. A runtime request cannot apply a different selection to a
-  stored `/2` plan; it must re-plan first. Fusion therefore never executes an
-  unselected logical effect.
-- Adaptive fallback defaults to `error`. An explicit-baseline fallback is used
-  only when the profile opts in, the ordinary explicit planner independently
-  passes every constraint, and the result is emitted as `/1` with a stable
-  fallback decision. A partial or approximate `/2` plan is never executable.
-- The gated 0.50 target is **Available** adaptive planning and local batch
-  execution for an explicitly published combination matrix. Each participating
-  engine/provider retains its own maturity, and a mixed combination inherits the
-  weakest participating maturity. Nothing graduates by association.
-
-## Prerequisites And Non-Goals
-
-- The immutable `PipelinePlan`, execution regions, physical units, capability
-  vocabulary, portable compiler analysis, connector negotiation, tabular
-  interchange, and hybrid runtime from prior phases remain the foundation.
-- The 0.45 optimization protocol remains advisory and proof-gated; phase 0.50
-  may consume or extend its evidence and explanation contracts but cannot let an
-  optimization pass acquire runtime, data, secret, registry, or mutation
-  authority.
-- The 0.47 scheduler/runtime and 0.48 human-governed proposal boundaries remain
-  intact. Adaptive planning does not create an autonomous execution or approval
-  path.
-- Explicit planning remains the default. Explicit implementation overrides and
-  required engines are hard constraints.
-- The first release is deterministic and capability/locality-driven. Universal
-  cost currency, statistics-dependent join ordering, speculative execution,
-  live trial runs, telemetry feedback, and runtime adaptive replanning are out
-  of scope.
-- Adaptive placement cannot cross or weaken authorization, tenant, workspace,
-  environment, residency, masking, classification, security-domain, contract,
-  quality, retry-safety, or publication boundaries.
-- Plans, evidence, explanations, diagnostics, reports, and fixtures never store
-  resolved secrets or source rows.
-- Fusion cannot cross external-effect, retry-safety, checkpoint/state,
-  partial-selection, validation, or publication boundaries. A fused unit uses a
-  deterministic conservative policy derived from every logical member; when no
-  safe aggregate exists, the region is split.
-
-## MVP Public Contract
-
-The ADR in #41 records these phase locks and rejected alternatives; it does not
-leave them open for downstream tasks. It may tighten a bound or validation rule,
-but a public rename or scope expansion requires an explicit update to this plan,
-the epic, and affected task acceptance criteria first.
-
-| Surface | Phase 0.50 lock |
-|---|---|
-| Profile strategy | `execution_strategy: Literal["explicit", "adaptive"] = "explicit"` |
-| Placement definitions | `placement_targets` is a secret-free mapping from stable target id to engine family, implementation/compiler, optional `resources` reference, location, security domain, and version/capability evidence requirements |
-| Eligible order | `eligible_targets` is an ordered, duplicate-free tuple of keys in `placement_targets`; adaptive mode requires at least one target and never discovers extra candidates from installed packages |
-| Fallback | `adaptive_fallback: Literal["error", "explicit"] = "error"`; `explicit` regenerates through the existing explicit planner and returns `/1` only after independent admission |
-| Existing engine fields | `dataframe_engine`, `sql_engine`, and `spark_engine` define the explicit baseline and do not silently enter the adaptive candidate set |
-| Override precedence | `RunRequest.implementation_overrides` → `Profile.implementation_overrides` → binding/provider and required-capability constraints → portable-transform policy → adaptive ranking; an override outside the eligible/trusted set fails instead of widening it |
-| Plan schemas | Keep `PLAN_SCHEMA == "etlantic.plan/1"` for compatibility and add `ADAPTIVE_PLAN_SCHEMA == "etlantic.plan/2"`; the public `PipelinePlan` reader façade dispatches to schema-specific codecs |
-| `/2` downgrade | No stored `/2` → `/1` downgrade. Regenerate with explicit policy; unsupported `/2` consumers reject before acceptance or external I/O |
-| Unit protocol | `etlantic.physical_unit/1` is the versioned admission/execution/result protocol for all seven unit kinds; executors advertise supported plan, unit, and capability versions |
-| Fusion | A backend may fuse only with an advertised fused-region capability. Otherwise the planner deterministically emits ordered single-node compute units without changing region identity or semantics |
-| Selection | Selection closure is computed before placement and fingerprinted. A different runtime selection requires a new plan |
-| Diagnostics | Reserve `PMADP1xx` policy/schema, `PMADP2xx` inventory/candidate, `PMADP3xx` solver/bounds, `PMADP4xx` physical validation, and `PMADP5xx` admission/runtime families |
-
-Planning remains side-effect free. Static manifests and already-authorized
-capability analyzers may contribute bounded evidence, but planning does not list
-sources, resolve secrets, acquire resources, execute user transformations, or
-probe a live data plane. Whole-DAG runtime preflight re-evaluates mutable
-authorization and resource policy rather than trusting a planning snapshot as
-live authority.
-
-## Deterministic Resource Envelope
-
-These are the initial required defaults. Profiles may tighten them but cannot
-raise them in 0.50. The limit-set version and effective values participate in
-the `/2` fingerprint.
-
-| Limit | Default | Deterministic behavior at the limit |
-|---|---:|---|
-| Selected logical nodes | 256 | `PMADP300`; use permitted explicit fallback or fail |
-| Eligible placement targets | 8 | `PMADP301`; reject profile before discovery |
-| Candidates per node | 8 | `PMADP302`; reject excess rather than truncate viable candidates |
-| Candidate/rejection records | 2,048 | `PMADP303`; canonical summary is explain-only, never solver input |
-| Solver state expansions | 1,000,000 | `PMADP304`; no approximate assignment is returned |
-| Explain alternatives per node/target | 8 | Canonical truncation marker plus omitted count |
-| Serialized adaptive explain artifact | 4 MiB | `PMADP305`; emit bounded summary and retain the plan |
-| Peak planner-owned transient memory | 256 MiB | `PMADP306`; measured in the release resource campaign |
-
-A solver work unit is one visited partial or complete assignment after hard
-constraint propagation. Nodes are visited in stable topological/name order and
-candidates in objective/target-identity order. Exact branch-and-bound may prune
-only with a deterministic proof that the subtree cannot beat the incumbent.
-Wall-clock duration is measured for evidence but never changes the selected
-assignment. The independent exhaustive oracle covers graphs of at most eight
-nodes, four targets, and 65,536 complete assignments.
-
-## Initial Qualification Matrix
-
-The phase must qualify at least the rows below. #95 may remove a row whose
-evidence does not pass; it cannot add a row without the same evidence. Connector,
-resource-provider, and engine maturity remain independent axes, so a qualified
-engine pair does not graduate an unrelated provider.
-
-| Placement combination | Physical boundary | Runtime | Target claim |
-|---|---|---|---|
-| Local Python only | None | Local | Available after single-target physical-DAG differential evidence |
-| Polars only | None | Local | Available after single-target physical-DAG differential evidence |
-| Pandas only | None | Local | Available after single-target physical-DAG differential evidence |
-| Polars → Pandas | `etlantic.interchange/1` Arrow Gate A | Local | Available after directional handoff, cleanup, and publication evidence |
-| Pandas → Polars | `etlantic.interchange/1` Arrow Gate A | Local | Available after independent reverse-direction evidence |
-
-SQL, PySpark, DataFusion, remote warehouses, external orchestrator compilation,
-durable/federated execution, streaming, and runtime-expanded graphs receive no
-0.50 adaptive availability claim. They fail closed unless a later gate adds a
-qualified `/2` physical-DAG consumer and combination row.
-
-## Workstreams
-
-| ID | Workstream | Governing story | Deliverables | Completion evidence |
+| Engine | Portable planning | Normal runtime | Baseline evidence at entry | Principal gap |
 |---|---|---|---|---|
-| 050-A | Policy and contracts | [#31](https://github.com/eddiethedean/etlantic/issues/31) | ADR; `/1` versus `/2` compatibility; Profile precedence; placement-target identity; unit taxonomy; bounded-search, fallback, partial-run, fusion, and consumer-support rules | Accepted ADR plus profile/plan reader-writer matrix, production-trust, and unsupported-consumer evidence |
-| 050-C | Capability inventory | [#32](https://github.com/eddiethedean/etlantic/issues/32) | Unified target/compiler/connector/locality/directional-interchange inventory; canonical pushdown vocabulary; deterministic evidence fingerprint | Truthful inventory fixtures, directional pairwise matrix, authorize-before-import tests, and secret scan |
-| 050-N | Candidate enumeration | [#33](https://github.com/eddiethedean/etlantic/issues/33) | Source, sink, native, and portable per-node candidates with exact support analysis and stable rejection reasons | Complete candidate matrix across native/portable/I/O/ambiguous/no-solution fixtures |
-| 050-P | Placement selection | [#34](https://github.com/eddiethedean/etlantic/issues/34) | One graph-level constraint evaluator; versioned integer/enum objective vector; bounded deterministic search; explicit fallback records | Exhaustive small-graph oracle, seeded properties, resource budgets, and registration-randomized fingerprints |
-| 050-R | Connected regions | [#35](https://github.com/eddiethedean/etlantic/issues/35) | Maximal connected compatible regions, stable identities, topological dependencies, protected semantic boundaries | Branch/join/fan-out/disconnected/security fixtures and explicit-plan compatibility goldens |
-| 050-L | Physical lowering | [#36](https://github.com/eddiethedean/etlantic/issues/36) | Seven canonical unit kinds with validated dependencies, execution contract, policy/security envelopes, and directional handoffs | Physical-DAG round trips, tamper tests, interchange proofs, and secret/source-row scan |
-| 050-X | Runtime authority | [#37](https://github.com/eddiethedean/etlantic/issues/37) | Whole-DAG admission; physical-unit scheduling/dispatch; explicit handoffs; fused attribution/reliability; unsupported-consumer rejection | Adaptive-versus-explicit local batch differential suite plus compile/control-plane/remote rejection or capability tests |
-| 050-E | Explain and diff | [#38](https://github.com/eddiethedean/etlantic/issues/38) | Candidate, selection, rejection, region, topology, interchange, estimate, and fallback explanations across public surfaces | Python/CLI/IDE/notebook parity, deterministic output, redaction, and size/depth-budget tests |
-| 050-Q | Conformance and graduation | [#39](https://github.com/eddiethedean/etlantic/issues/39) | Public claim conformance; graph corpus; solver oracle/budgets; heterogeneous end-to-end fixture; differential semantics; final evidence gate | Truthfulness, determinism, resource-bound, fail-closed, production-trust, docs, and stable-foundation reports |
-| 050-D | Documentation | [#40](https://github.com/eddiethedean/etlantic/issues/40) | Concepts/quickstart, operations/security/rollback, plugin participation, migration, wire/API/CLI references, release notes | Executed examples, docs build/link checks, maturity review, and safety scan |
+| Local | No portable compiler | Native callables only | None | Dependency-free compiler/interpreter |
+| Polars | Baseline and advanced claims | Runs portable descriptors | Partial public coverage | Complete claim-to-fixture qualification |
+| Pandas | Baseline claims | Runs portable descriptors | Partial public coverage | Exact eager/null/dtype/index qualification |
+| SQL | Baseline compiler analysis/direct execution | Normal pipeline dispatch rejects portable SQL | Partial, row-backed compiler path | Typed SQL IR/runtime integration and handle preservation |
+| PySpark | Baseline and advanced claims | Runs with `pyspark` identity | Partial real-JVM coverage | Full real-Spark gate and canonical alias resolution |
+| DataFusion | Zero-capability stub | Not implemented | None | Native compiler and dataframe/runtime implementation |
+| DuckDB | 0.49 package subset | Optional package only | 0.49 package evidence | Complete seven-engine baseline and pushdown qualification |
 
-## Task Ledger
+This table is a planning baseline, not an availability claim. The exit gate
+replaces it with evidence produced from the release candidate.
 
-The GitHub sub-issue hierarchy and native `blocked by` relationships are the
-operational source of truth. These task groups provide stable phase-plan
-traceability without duplicating task acceptance criteria here.
+## Frozen Target Contract
 
-| Story | Tasks |
-|---|---|
-| [#31](https://github.com/eddiethedean/etlantic/issues/31) | [#41](https://github.com/eddiethedean/etlantic/issues/41), [#42](https://github.com/eddiethedean/etlantic/issues/42), [#43](https://github.com/eddiethedean/etlantic/issues/43), [#44](https://github.com/eddiethedean/etlantic/issues/44) |
-| [#32](https://github.com/eddiethedean/etlantic/issues/32) | [#45](https://github.com/eddiethedean/etlantic/issues/45), [#46](https://github.com/eddiethedean/etlantic/issues/46), [#47](https://github.com/eddiethedean/etlantic/issues/47), [#48](https://github.com/eddiethedean/etlantic/issues/48), [#49](https://github.com/eddiethedean/etlantic/issues/49) |
-| [#33](https://github.com/eddiethedean/etlantic/issues/33) | [#50](https://github.com/eddiethedean/etlantic/issues/50), [#51](https://github.com/eddiethedean/etlantic/issues/51), [#52](https://github.com/eddiethedean/etlantic/issues/52), [#53](https://github.com/eddiethedean/etlantic/issues/53), [#54](https://github.com/eddiethedean/etlantic/issues/54) |
-| [#34](https://github.com/eddiethedean/etlantic/issues/34) | [#55](https://github.com/eddiethedean/etlantic/issues/55), [#56](https://github.com/eddiethedean/etlantic/issues/56), [#57](https://github.com/eddiethedean/etlantic/issues/57), [#58](https://github.com/eddiethedean/etlantic/issues/58), [#59](https://github.com/eddiethedean/etlantic/issues/59) |
-| [#35](https://github.com/eddiethedean/etlantic/issues/35) | [#60](https://github.com/eddiethedean/etlantic/issues/60), [#61](https://github.com/eddiethedean/etlantic/issues/61), [#62](https://github.com/eddiethedean/etlantic/issues/62), [#63](https://github.com/eddiethedean/etlantic/issues/63) |
-| [#36](https://github.com/eddiethedean/etlantic/issues/36) | [#64](https://github.com/eddiethedean/etlantic/issues/64), [#65](https://github.com/eddiethedean/etlantic/issues/65), [#66](https://github.com/eddiethedean/etlantic/issues/66), [#67](https://github.com/eddiethedean/etlantic/issues/67), [#68](https://github.com/eddiethedean/etlantic/issues/68) |
-| [#37](https://github.com/eddiethedean/etlantic/issues/37) | [#69](https://github.com/eddiethedean/etlantic/issues/69), [#70](https://github.com/eddiethedean/etlantic/issues/70), [#71](https://github.com/eddiethedean/etlantic/issues/71), [#72](https://github.com/eddiethedean/etlantic/issues/72), [#73](https://github.com/eddiethedean/etlantic/issues/73), [#88](https://github.com/eddiethedean/etlantic/issues/88), [#89](https://github.com/eddiethedean/etlantic/issues/89), [#90](https://github.com/eddiethedean/etlantic/issues/90) |
-| [#38](https://github.com/eddiethedean/etlantic/issues/38) | [#74](https://github.com/eddiethedean/etlantic/issues/74), [#75](https://github.com/eddiethedean/etlantic/issues/75), [#76](https://github.com/eddiethedean/etlantic/issues/76), [#77](https://github.com/eddiethedean/etlantic/issues/77) |
-| [#39](https://github.com/eddiethedean/etlantic/issues/39) | [#78](https://github.com/eddiethedean/etlantic/issues/78), [#79](https://github.com/eddiethedean/etlantic/issues/79), [#80](https://github.com/eddiethedean/etlantic/issues/80), [#81](https://github.com/eddiethedean/etlantic/issues/81), [#82](https://github.com/eddiethedean/etlantic/issues/82), [#91](https://github.com/eddiethedean/etlantic/issues/91), [#92](https://github.com/eddiethedean/etlantic/issues/92), [#93](https://github.com/eddiethedean/etlantic/issues/93), [#95](https://github.com/eddiethedean/etlantic/issues/95) |
-| [#40](https://github.com/eddiethedean/etlantic/issues/40) | [#83](https://github.com/eddiethedean/etlantic/issues/83), [#84](https://github.com/eddiethedean/etlantic/issues/84), [#85](https://github.com/eddiethedean/etlantic/issues/85), [#86](https://github.com/eddiethedean/etlantic/issues/86), [#87](https://github.com/eddiethedean/etlantic/issues/87), [#94](https://github.com/eddiethedean/etlantic/issues/94) |
+The phase freezes one machine-readable baseline manifest covering:
 
-## Deterministic Placement Contract
+- `dtcs:profile/portable-relational-kernel/1` and
+  `dtcs:profile/portable-relational/1`;
+- kernel actions `filter`, `project`, `with_fields`, `drop_fields`, and
+  `rename_fields`;
+- relational actions `join`, `union`, `aggregate`, `sort`, `distinct`,
+  `deduplicate`, and `limit`;
+- the shared scalar and aggregate functions named by the manifest;
+- comparison, boolean, arithmetic, membership, and null-safe operators;
+- join types, by-name/by-position union, fail-only collision handling, and
+  declared eager/lazy modes; and
+- normative null, missing/invalid, ordering, numeric, Unicode, empty-input,
+  multiple-input, and contract-shaped-output behavior.
 
-For each logical node, the adaptive planner:
+The manifest, not the union of engine implementations, defines the portable
+baseline. A compiler must advertise every governed dimension truthfully and
+must not promote a partial implementation into a profile-wide claim. Unknown,
+omitted, unsupported, or currently unavailable required behavior fails during
+validation or planning with a stable diagnostic and never triggers a silent
+native fallback.
 
-1. enumerates only profile-eligible and trust-approved placement targets;
-2. rejects candidates that cannot prove the required operations, functions,
-   types, semantic modes, contracts, connector behavior, or interchange;
-3. applies explicit overrides, required engines, source/sink constraints, and
-   security policy as hard constraints;
-4. compares complete viable assignments with a versioned integer/enum vector:
-   maximize proven source/sink-local nodes, maximize proven pushdown actions,
-   minimize cross-target edges, minimize collections, minimize durable
-   materializations, maximize safely fusible edges, then compare configured
-   target-priority and stable target-identity vectors;
-5. forms maximal connected same-target regions without crossing protected
-   boundaries;
-6. lowers every region and cross-region edge into a validated physical DAG;
-7. fingerprints the candidate inventory, decisions, topology, and relevant
-   evidence; and
-8. emits selected and rejected alternatives with stable reason codes.
+### Pushdown conformance contract
 
-The exact minimized comparison tuple is:
+Pushdown is a requirement-level claim, not an engine-wide performance label.
+For every applicable logical action and expression, each engine must report a
+bounded pushdown finding at every declared source, relational, and sink
+boundary:
 
-```text
-(-proven_local_io_nodes,
- -proven_pushdown_actions,
- cross_target_logical_edges,
- collection_units,
- durable_materialization_units,
- -safely_fusible_logical_edges,
- target_priority_vector,
- target_identity_vector)
-```
+- `pushed_exact` means the backend executes the required semantics at that
+  boundary without collecting rows into the host runtime;
+- `pushed_with_lowering` names a deterministic, versioned rewrite and records
+  its proof, conditions, and physical effects;
+- `not_pushed` records an explicit, semantics-preserving host-side execution
+  boundary; it is eligible only when pushdown is `preferred` or
+  `informational`, never when the requirement is `required`;
+- `unsupported`, `unavailable`, and `unknown` fail closed for a required
+  pushdown requirement; and
+- every finding identifies the boundary, action/expression, target identity,
+  explain evidence, and whether collection, transfer, materialization, or
+  lost fusion occurred.
 
-An I/O node counts as local only with positive provider/target locality evidence.
-A pushdown action is a distinct canonical predicate or projection action proved
-executable at that I/O target; a generic `pushdown` claim contributes nothing.
-Collection and materialization counts come from the candidate physical lowering,
-not from estimates. Fusible edges must already pass the single #62 boundary
-predicate. Both final vectors list one value per selected node in stable
-topological/name order, so multi-source and multi-sink ties are total and
-transitive.
+An engine cannot claim pushdown from package installation, generic compiler
+success, or an opaque backend plan. Conformance fixtures must prove accepted
+and rejected pushdown, no silent host fallback, and equivalent results at the
+declared boundary. These findings are part of the immutable 0.50 evidence and
+are consumed by 0.51 adaptive placement and objective scoring.
 
-Unknown required capability is ineligible. Unknown optional locality or benefit
-is ranked below proven evidence and never becomes a favorable zero. Search uses
-ADR-frozen candidate, graph, and work-unit bounds; exhaustion produces a stable
-diagnostic or the explicitly permitted baseline fallback, never a wall-clock-
-dependent partial answer. Fallback must independently satisfy every trust,
-security, contract, capability, and interchange constraint.
+## Requirement And Support Contract
 
-## Delivery Increments
+Phase 0.50 replaces engine-wide support booleans with two independent axes. A
+requirement has an obligation level; a compiler or execution target reports an
+evidence-backed support state for that exact requirement.
 
-Each increment is independently mergeable and leaves every public execution
-path safe. An incomplete increment cannot advertise the claim of a later one.
+| Axis | Values | Meaning |
+|---|---|---|
+| Requirement obligation | `required`, `preferred`, `informational` | Whether failure makes a candidate invalid, affects a later placement preference, or is recorded only for inspection |
+| Target support | `supported_exact`, `supported_with_lowering`, `unsupported`, `unavailable`, `unknown` | What the named compiler/target can prove for the requirement in the current version and environment |
 
-| Increment | Task spine | Merge condition | Public state after merge |
+`supported_exact` means the ordinary compiler path preserves the normative
+semantics. `supported_with_lowering` is reserved for a named deterministic
+compatibility rewrite or adapter; ordinary backend compilation is not by itself
+a reason to use that state. A lowering-backed finding is valid only when it
+records the lowering identifier/version, proof or conformance evidence,
+statically resolved conditions, and observable physical consequences such as a
+collection, transfer, materialization, or lost fusion opportunity.
+
+`unsupported` means the implementation cannot preserve the requirement.
+`unavailable` means support exists in principle but the current target lacks a
+required dependency, version, configuration, or qualified runtime capability.
+`unknown` means no trustworthy evidence is available. These states remain
+distinct in diagnostics and generated capability matrices.
+
+Every normalized requirement and support finding is immutable and bounded and
+contains at least:
+
+- stable requirement identifier and vocabulary version;
+- scope and parameters, including expression or contract path where relevant;
+- obligation and applicability;
+- support state and stable reason code;
+- compiler, implementation, engine, and relevant protocol/version identity;
+- evidence reference and evidence fingerprint; and
+- for conditional or lowered support, resolved conditions, lowering identity,
+  proof reference, and declared physical effects.
+
+Plans and analysis reports retain the requirement-level findings even when they
+also expose a derived candidate summary. They never contain source rows,
+resolved secrets, executable backend objects, or unbounded plugin diagnostics.
+
+The eligibility rules are fail closed:
+
+- every applicable `required` requirement must be `supported_exact` or have an
+  approved `supported_with_lowering` proof whose conditions are resolved;
+- `unsupported`, `unavailable`, or `unknown` on a required requirement rejects
+  that compiler/target for the concrete definition before execution or I/O;
+- a `preferred` requirement contributes a positive placement benefit only when
+  supported by positive evidence; unknown is never treated as a favorable zero;
+- informational requirements affect fingerprints and explanation but not
+  eligibility; and
+- conditions that depend on source values, live trial execution, or unresolved
+  runtime state cannot establish planning-time support.
+
+An engine may advertise and execute a truthful subset for definitions whose
+complete required vectors fall inside that subset. It is nevertheless
+**baseline-qualified for 0.50 only when every required item in the frozen
+manifest and pushdown contract passes conformance**. Partial support may be
+documented or used by a later adaptive planner; it cannot satisfy or shrink the
+seven-engine release gate. DuckDB's phase 0.49 manifest is a prerequisite, not
+a qualification exemption.
+
+## Phase 0.51 Adaptive-Planning Handoff
+
+Phase 0.50 owns the portable semantic vocabulary and produces the immutable
+requirement/support evidence consumed by phase 0.51. Phase 0.51 must not infer
+node eligibility from an engine name, package installation, or the aggregate
+0.50 qualification label.
+
+For every logical node and complete placement target, the adaptive planner
+re-evaluates the node's exact requirement vector and retains all findings. It
+then applies the same model to connector behavior, directional interchange,
+security and resource policy, region fusion, physical-unit kinds, retry and
+publication semantics, and the `/2` runtime consumer. A node-valid assignment
+is not graph-valid unless every affected edge, region, unit, and whole-DAG
+requirement is also satisfied.
+
+Required findings are hard feasibility constraints applied before locality,
+pushdown, transfer, materialization, fusion, or target-priority scoring.
+Approved lowering effects enter the candidate physical lowering and therefore
+the existing graph objective; the planner does not invent a generic semantic
+penalty for a proven-equivalent lowering. Preferred capabilities influence
+ranking only through positive evidence.
+
+The `/2` plan fingerprints the exact requirements, findings, compiler/target
+versions, evidence, resolved conditions, and lowering identities used for
+selection. Whole-DAG runtime preflight revalidates mutable availability and the
+fingerprinted capability evidence before any read, resource acquisition,
+staging, or mutation. Drift rejects the stored plan and requires replanning; it
+never causes runtime re-placement. If no complete adaptive assignment exists,
+only the independently validated, policy-permitted explicit `/1` fallback may
+run.
+
+## Workstreams And Issue Hierarchy
+
+| ID | Workstream | Deliverables | Issues |
 |---|---|---|---|
-| **I0 — contract freeze** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; exit-gate skeleton names every required artifact | Explicit `/1` unchanged; adaptive remains unavailable |
-| **I1 — plan and explain** | #45–#68, #74–#77, #91, #93 | Inventory, node candidates, exact bounded solver, connected regions, seven-kind lowering, explain/diff, oracle, and tamper evidence pass | Adaptive `/2` may be generated and inspected behind opt-in; every execution consumer rejects it before I/O |
-| **I2 — local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
-| **I3 — qualification** | #78–#81, #83–#87, #94–#95 | Public conformance, fixed launch topology, directional pair matrix, differential semantics, documentation, security scan, and final evidence decision pass | Only the published matrix becomes Available |
+| 050-C | Contract and capability vocabulary | Normative manifest; obligation/support axes; requirement-level findings; lowering proofs; deterministic fail-closed matching | [story #103](https://github.com/eddiethedean/etlantic/issues/103), [task #106](https://github.com/eddiethedean/etlantic/issues/106) |
+| 050-T | Public conformance | Mandatory claim-to-fixture coverage, truthful partial/conditional/negative claims, and public third-party runner | [task #107](https://github.com/eddiethedean/etlantic/issues/107) |
+| 050-L | Local | Dependency-free baseline interpreter/compiler over Local artifacts | [#96](https://github.com/eddiethedean/etlantic/issues/96) |
+| 050-P | Polars | Complete eager/lazy baseline qualification; advanced claims remain separate | [#97](https://github.com/eddiethedean/etlantic/issues/97) |
+| 050-D | Pandas | Complete eager, index-neutral, dtype/null baseline qualification | [#98](https://github.com/eddiethedean/etlantic/issues/98) |
+| 050-Q | SQL | Typed `etlantic.sql/1` lowering, normal runtime dispatch, relation/query handle preservation, SQLite/PostgreSQL evidence | [#99](https://github.com/eddiethedean/etlantic/issues/99) |
+| 050-S | PySpark | Complete real-JVM baseline qualification and `spark`/`pyspark` identity resolution | [#100](https://github.com/eddiethedean/etlantic/issues/100) |
+| 050-F | DataFusion | Native compiler/runtime implementation, exact capabilities, and baseline graduation | [#101](https://github.com/eddiethedean/etlantic/issues/101) |
+| 050-U | DuckDB | Consume the 0.49 package, qualify the seventh engine, and prove the source/relational/sink pushdown contract | [task #118](https://github.com/eddiethedean/etlantic/issues/118), [package epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
+| 050-X | Cross-engine proof | Canonical authored pipeline, normalized differential corpus, partial-support negatives, isolated install/CI matrix, and 0.51 handoff fixture | [story #105](https://github.com/eddiethedean/etlantic/issues/105), [task #108](https://github.com/eddiethedean/etlantic/issues/108) |
+| 050-R | Release and migration | Requirement-level generated matrix, 0.51 consumption guidance, examples, evidence ledger, and go/no-go decision | [task #109](https://github.com/eddiethedean/etlantic/issues/109) |
 
-The task-level critical path is:
+Engine implementation work is grouped under
+[story #104](https://github.com/eddiethedean/etlantic/issues/104).
 
-```text
-#41 → #42/#43 → #44/#45 → #46–#54 → #55–#59
-    → #62 → #60–#68 → #88/#90 → #69–#73
-    → #74–#81/#91–#94 → #87 → #95
-```
+## Delivery Sequence
 
-Documentation drafting starts once its source contract is frozen; it does not
-wait for I3. #82 creates and maintains the
-[0.50 exit gate](EXIT_GATE_0_50.md), while #95 alone records the final release
-decision.
+1. Freeze the normative baseline manifest, obligation/support axes,
+   requirement records, finding states, and lowering evidence before changing
+   engine claims.
+2. Make public conformance completeness mechanical: every advertised baseline
+   claim must map to a mandatory fixture.
+3. Implement the missing Local and DataFusion paths and the SQL runtime path in
+   parallel with qualification of Polars, Pandas, PySpark, and the 0.49 DuckDB
+   package. Run the same pushdown fixtures against all seven targets.
+4. Run each engine in an isolated dependency environment and close all
+   engine-specific semantic gaps without weakening the common baseline.
+5. Run the same authored pipeline, normalized edge-case corpus, and pushdown
+   boundary fixtures across all seven engines, including real JVM Spark,
+   SQLite, PostgreSQL, DataFusion, and DuckDB; prove truthful partial,
+   unavailable, unknown, rejected, and lowered-support outcomes.
+6. Verify the requirement-level artifact can drive 0.51 per-node candidate
+   eligibility without an engine-wide inference.
+7. Generate or verify the published capability matrix from those artifacts,
+   complete migration and rollback guidance, and record the gate decision.
 
 ## Exit Gates
 
-- Profiles without adaptive policy retain the documented explicit plan and
-  runtime behavior and canonical `/1` plan bytes/fingerprints.
-- Adaptive profiles emit `/2`; `/1`-only readers, compilers, schedulers, and
-  execution hosts reject it before external I/O rather than following the
-  logical graph.
-- An opted-in explicit fallback returns an independently validated `/1` plan
-  with a stable fallback decision; the runtime never executes a partial,
-  approximate, or exhausted-search `/2` plan.
-- Explicit per-step overrides always win or fail with a stable diagnostic; no
-  automatic choice silently replaces them.
-- Partial-run selection is dependency-closed before placement and is part of
-  the `/2` fingerprint; runtime selection drift requires re-planning.
-- Identical logical-plan, profile, eligible-target inventory, and evidence
-  fingerprints produce identical physical plans and explanations, independent
-  of registry insertion order.
-- Disconnected same-target branches are separate regions, while adjacent
-  compatible nodes fuse only when their execution, effect, retry, checkpoint,
-  selection, security, and publication policies have a safe aggregate.
-- Every cross-region edge has a validated producer/consumer contract and an
-  executable interchange, collection, or materialization unit.
-- Whole-DAG admission succeeds before any external I/O, and the local runtime
-  schedules the adaptive physical DAG rather than treating
-  physical units as advisory metadata.
-- Adaptive and explicit executions produce equivalent observable outputs,
-  validations, lifecycle semantics, retry behavior, and publication outcomes
-  on the differential corpus.
-- Missing capability, trust, contract, or interchange evidence produces a
-  deterministic safe fallback only when policy permits it; otherwise planning
-  fails before mutation.
-- Explain output identifies the selected placement, rejected alternatives,
-  reason codes, region/fusion decision, handoff mechanism, and unavailable
-  estimates without leaking secrets or source rows.
-- Production planning neither imports nor selects a non-allowlisted plugin,
-  optimization pass, resource provider, connector, or applicable
-  schema-registry adapter.
-- Static batch and local-runtime bounds are enforced. Runtime-expanded or
-  streaming graphs and unsupported compile/control-plane/federated consumers
-  fail closed with stable diagnostics.
-- The deterministic resource envelope is enforced with stable `PMADP3xx`
-  diagnostics and no wall-clock-dependent selection.
-- Only rows that pass the initial qualification matrix may be described as
-  Available; every other adaptive engine/provider/consumer path remains
-  Experimental or unavailable according to its independently published gate.
-- All affected planner, optimizer, interchange, runtime, conformance,
-  stable-foundation, compatibility, and documentation suites pass.
+- The baseline manifest is public, versioned, machine-readable, and the single
+  authority for common syntax and semantics.
+- Every baseline capability claim has mandatory public conformance coverage;
+  CI rejects orphaned claims and missing required capabilities.
+- Requirement obligations and target support states remain independent,
+  deterministic, fingerprinted, and visible through public analysis reports.
+- Required partial, unsupported, unavailable, unknown, conditional, and
+  lowering-backed cases produce the specified eligibility and diagnostic
+  outcomes; engine-wide qualification never hides a requirement-level failure.
+- Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB each validate,
+  plan, and execute a portable-only baseline pipeline under a require policy.
+- The complete normalized corpus and pushdown fixtures produce equivalent
+  observable results across all seven engines, with stable, documented normalization where physical types
+  differ.
+- SQL-to-SQL paths preserve typed relation/query handles and bound parameters
+  until a declared materialization boundary; portable definitions cannot inject
+  raw or trusted SQL fragments.
+- PySpark's release evidence uses a real JVM session and contains no
+  Python/Pandas UDF fallback; `spark` and `pyspark` resolve consistently or the
+  unsupported alias is removed with migration guidance.
+- DataFusion no longer advertises a compiler stub: analysis returns structured
+  support reports and the claimed baseline lowers to native expressions.
+- Unsupported profiles, actions, functions, operators, modes, and engine
+  combinations fail before execution or external I/O without native fallback.
+- Optional engine dependencies remain outside core and pass isolated clean
+  install/import tests.
+- Plans, reports, diagnostics, fixtures, and evidence contain no source rows,
+  executable objects, raw SQL escape hatches, or secret values.
+- Documentation states the exact common baseline and keeps all advanced,
+  adaptive, remote, streaming, and performance claims separate.
+- The phase 0.50 evidence artifact is sufficient for phase 0.51 to evaluate
+  exact per-node requirements, lowering effects, and evidence drift without
+  inferring support from an engine name or aggregate maturity label.
+- Every row in [EXIT_GATE_0_50](EXIT_GATE_0_50.md) links reproducible evidence,
+  and no critical/high correctness, compatibility, security, or data-loss
+  finding remains open.
+
+## Explicit Non-Goals
+
+- Making every facade method or advanced
+  [DTCS](../04_TRANSFORMATIONS/DTCS.md) profile portable across engines.
+- Identical physical plans, dataframe types, execution latency, or memory use.
+- Adaptive heterogeneous placement or physical DAG execution; that is phase
+  0.51.
+- Streaming, federated, remote-provider, or external-orchestrator execution.
+- Silent conversion to native implementation bodies, Python/Pandas UDFs, raw
+  SQL, or another engine.
+- Adding Polars, Pandas, SQL-driver, PySpark, Arrow/DataFusion, or vendor
+  dependencies to ETLantic core.
 
 ## Required Release Evidence
 
-- Accepted adaptive policy and physical-plan ADR.
-- Completed [0.50 exit gate](EXIT_GATE_0_50.md) with a dated #95 go/no-go
-  decision and no unresolved critical/high phase finding.
-- Profile/plan `/1`–`/2` reader-writer, verify-mode, unsupported-consumer, and
-  deterministic-fingerprint report.
-- Capability inventory and candidate truthfulness matrix.
-- Placement exhaustive-oracle, seeded-property, resource-budget, and
-  connected-region randomized-order campaign.
-- Physical-DAG validation, tamper, interchange, and redaction report.
-- Whole-DAG admission, adaptive-versus-explicit runtime differential,
-  batch/static rejection, and unsupported-consumer report.
-- Public explain/diff parity report.
-- Production trust/security campaign covering all applicable allowlists and the
-  adaptive graduation exit gate with supported combination matrix.
-- Executed quickstart plus documentation build and link report.
-
-## Evidence Ownership
-
-| Evidence artifact | Owning tasks |
-|---|---|
-| ADR, public-field inventory, diagnostic ranges | #41–#43 |
-| `/1`–`/2` compatibility matrix | #44, #94 |
-| Capability/candidate truthfulness | #45–#54, #78 |
-| Solver oracle and resource envelope | #55–#59, #91, #93 |
-| Physical-DAG validation and interchange | #60–#68, #79 |
-| Admission, execution, lifecycle, and unsupported consumers | #69–#73, #88–#92 |
-| Explain/diff parity and redaction | #74–#77 |
-| Fixed heterogeneous differential | #80–#81 |
-| Operator/plugin/migration documentation | #83–#87, #94 |
-| Evidence manifest and final maturity decision | #82, #95 |
-
-## Follow-On Boundary
-
-Statistics-aware costing, provider-specific economic models, telemetry feedback,
-bounded runtime replanning, and additional experimental engines require later,
-separately gated phases. Phase 0.50 establishes no performance or maturity claim
-for an engine that has not independently passed its existing conformance and
-graduation requirements.
+- Versioned baseline manifest and claim-to-fixture coverage report.
+- Versioned requirement/support schema, lowering-proof records, and stable
+  rejection taxonomy.
+- Per-engine public conformance reports from isolated environments.
+- Seven-engine canonical pipeline, normalized differential corpus, and
+  pushdown-boundary conformance corpus.
+- Partial-support and phase 0.51 adaptive-handoff conformance report.
+- SQL SQLite/PostgreSQL handle, parameter, and materialization-boundary report.
+- Real-PySpark logical/physical-plan report proving no Python UDF fallback.
+- DataFusion native-lowering and Arrow-boundary report.
+- DuckDB native-lowering, boundary explain, and pushdown conformance report.
+- Dependency-boundary, security/redaction, and fail-closed diagnostic reports.
+- Generated capability matrix, migration guide, runnable example, findings
+  ledger, and signed go/no-go record.

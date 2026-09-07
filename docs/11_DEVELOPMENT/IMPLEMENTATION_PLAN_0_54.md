@@ -1,82 +1,88 @@
 ---
 title: ETLantic 0.54 Implementation Plan
-description: Implementation-grade incubation plan for a standalone TransformationModel package.
+description: Implementation-grade plan for managed-runtime and provider packs.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.46.0
 ---
 
 # ETLantic 0.54 Implementation Plan
 
-Phase 0.54 incubates `TransformationModel` as a standalone typed modeling package
-under `packages/transformationmodel`. The
-[TransformationModel plan](TRANSFORMATIONMODEL_PLAN.md) remains the governing
-architecture, and [DTCS](../04_TRANSFORMATIONS/DTCS.md) remains the semantic
-authority throughout incubation.
+Phase 0.54 packages qualified deployment and provider integrations without
+turning any cloud, secret manager, runtime, or connector into a core dependency.
+The [adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs provider
+maturity and support claims.
 
 ## Outcome
 
-An independent Python consumer can model typed transformations and references,
-round-trip supported DTCS deterministically, inspect diagnostics/diffs/fidelity,
-and integrate through a stable public protocol without importing ETLantic,
-execution engines, backend adapters, orchestration, secrets, or external effects.
+Operators can deploy supported ETLantic control-plane/runtime profiles with OCI
+images and Helm, use hardened Kubernetes and managed Spark execution, obtain
+credentials through workload identity and optional secret-provider packs, and
+select promoted cloud connector packs with explicit compatibility, cost, quota,
+region, lifecycle, and cleanup behavior.
 
 ## Prerequisites And Non-Goals
 
-- The existing DTCS boundary, ETLantic authoring surface, and plugin ecosystem
-  have characterization tests before extraction begins.
-- ETLantic keeps its direct DTCS dependency until the standalone package proves
-  semantic completeness and lifecycle stability; extraction is not a flag-day
-  replacement.
-- The package models transformations only. Execution engines, data access,
-  state/checkpoints, connectors, secrets, policy, orchestration, and medallion
-  abstractions are out of scope.
-- Lossy or unsupported DTCS constructs remain explicit and never round-trip as
-  silently changed semantics.
+- 0.43 qualification and 0.47 remote-provider **fake** conformance are
+  mandatory ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
+  [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). 0.47 ships
+  `FakeKubernetes` (`etlantic-k8s`) and an in-process Spark Connect fake
+  (`etlantic-spark-connect`); live Kind/cluster and live Databricks/EMR are
+  this phase. The console from 0.53 may observe providers but does not own
+  them.
+- Provider packs are independently versioned, allowlisted in production, and
+  capability-negotiated before plan acceptance.
+- Long-lived cloud credentials are not embedded in plans, reports, artifacts,
+  images, Helm values, examples, or test fixtures.
+- Infrastructure recipes are maintained examples with tested support matrices,
+  not claims that every topology or cloud service is supported.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 054-B | Boundary characterization | Import/dependency map, DTCS semantic corpus, ETLantic/plugin usage inventory, extraction ADRs | Baseline characterization suite passing before moves |
-| 054-M | Public model | Typed transformation, reference, expression, capability, diagnostic, diff, and fidelity protocols | Independent API/type tests and `py.typed` verification |
-| 054-D | DTCS interop | Deterministic import/export, canonicalization, fingerprint, version negotiation, explicit lossy handling | Cross-platform golden round-trip corpus |
-| 054-E | Extraction | Incremental move from ETLantic internals; compatibility adapters; no circular or private dependency | Dependency-boundary and import-graph enforcement |
-| 054-P | Plugin compatibility | Stable extension protocol, conformance, version/deprecation rules, third-party fixture | External plugin compatibility matrix |
-| 054-I | ETLantic integration | ETLantic consumes the public package for qualified paths while retaining guarded fallback during incubation | Full ETLantic suite plus before/after semantic comparison |
-| 054-R | Release engineering | Independent package metadata, semver policy, supported Python matrix, docs/examples, publish rehearsal | Clean-environment build/install and independent consumer demo |
+| 054-D | Distribution | Versioned OCI images, SBOM/attestations, Helm chart, configuration schema, upgrade/rollback hooks | Clean install, signed-image verification, upgrade/rollback matrix |
+| 054-K | Kubernetes hardening | Workload identity, network/storage policies, pod security, autoscaling, disruption, scoped cleanup | Isolated cluster, node-loss, policy, and orphan tests |
+| 054-S | Managed Spark | Promoted provider(s), runtime images, capability/cost/region model, cancellation/recovery | Live isolated conformance and workload comparison |
+| 054-X | Secret providers | AWS, Azure, GCP, and Vault provider packs; references, rotation, expiry, outage semantics | Missing/expired/rotated/outage and redaction suite |
+| 054-C | Connector packs | Promoted cloud connectors with schema, state, reliability, effect, erasure/delete/anonymize proof, quota, and cleanup conformance | Per-provider live isolated qualification matrix |
+| 054-E | Enterprise event providers | Qualified notification/escalation, dead-letter, and schema-registry provider packs where maintained demand justifies support | Live delivery/dedupe/redaction, DLQ/redrive, registry-outage, and compatibility matrix |
+| 054-G | Governance | Compatibility/support tiers, region/cost/quota metadata, deprecation, incident and security lifecycle | Published support matrix and provider retirement drill |
+| 054-I | Infrastructure recipes | Tested reference deployments, least-privilege identities, observability, backup/restore | Reproducible environment creation and recovery evidence |
 
 ## Delivery Sequence
 
-1. Characterize current DTCS semantics, imports, fingerprints, diagnostics, and
-   plugin behaviors before changing ownership.
-2. Freeze the minimal standalone public protocol and prohibited dependency list.
-3. Implement the package and deterministic DTCS interop beside existing code.
-4. Migrate qualified ETLantic paths incrementally through compatibility adapters.
-5. Qualify third-party plugin behavior and independent consumers.
-6. Decide promotion, further incubation, or rollback from evidence; do not remove
-   direct DTCS authority merely to meet a date.
+1. Freeze package/version/support policy and the provider qualification matrix.
+2. Build signed distribution artifacts and validate clean deployment lifecycle.
+3. Harden the 0.47 Kubernetes (`etlantic-k8s`) and Spark Connect
+   (`etlantic-spark-connect`) Experimental extras against live isolated
+   conformance; promote Databricks/EMR packs only after that evidence.
+4. Add secret-provider packs and credential-rotation/outage behavior.
+5. Promote connector packs only after state, schema, reliability, effect,
+   erasure, and cleanup conformance pass in isolated accounts/projects.
+6. Promote notification/escalation, DLQ, and schema-registry packs only after
+   live authorization, redaction, retry, outage, and reconciliation evidence.
+7. Publish tested recipes, costs/quotas/regions, lifecycle policy, and runbooks.
 
 ## Exit Gates
 
-- A clean independent consumer installs and uses `transformationmodel` without
-  ETLantic or any execution/backend/orchestration dependency.
-- Supported DTCS import/export, canonical fingerprints, diagnostics, and diffs
-  are deterministic across the supported operating-system and Python matrix.
-- Every unsupported or lossy construct has a stable fidelity result and cannot be
-  mistaken for an exact round trip.
-- The full ETLantic test suite passes through the public package boundary with
-  semantic comparison to the pre-extraction baseline.
-- The public protocol has semver, compatibility, deprecation, Python support, and
-  `py.typed` commitments and does not depend on ETLantic internals.
-- The package contains no engine, connector, secret, state, policy,
-  orchestration, external-effect, or medallion concern.
-- Promotion away from direct DTCS authority occurs only through a separate,
-  evidence-backed decision after incubation.
+- Every provider pack installs independently, is production-allowlisted
+  explicitly, advertises versioned capabilities, and fails closed when missing.
+- Credential references resolve through workload identity or a scoped provider;
+  secret values never appear in persistent artifacts or diagnostics.
+- Missing, expired, rotated, revoked, and unavailable credentials produce stable
+  redacted outcomes and do not fall back to broader ambient authority.
+- External effects use normalized pending/committed/failed/unknown state and
+  provider cleanup is tenant/workspace scoped and idempotent.
+- Each claimed provider passes live isolated conformance for identity, policy,
+  schema, state, reliability, effects, cancellation, recovery, and cleanup.
+- Distribution and recipes pass clean install, upgrade, rollback, backup/restore,
+  region/limit documentation, and dependency/SBOM verification.
+- No vendor SDK or managed-runtime dependency enters ETLantic core.
 
 ## Required Release Evidence
 
-- Boundary/import dependency report.
-- Cross-platform DTCS round-trip/fingerprint corpus.
-- ETLantic semantic regression comparison.
-- Third-party plugin compatibility matrix.
-- Independent consumer and clean publish/install rehearsal.
+- Signed distribution and Helm lifecycle report.
+- Per-provider support/conformance matrix.
+- Workload-identity and credential lifecycle/redaction report.
+- Failure, external-effect, and scoped-cleanup campaign.
+- Reference deployment reproducibility and recovery transcript.

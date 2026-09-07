@@ -36,7 +36,7 @@ The pipeline graph does not fork into three product types. Mode is a
 | Phase | Owns |
 |---|---|
 | **0.38 — Connectivity / Connector SDK** | Versioned local file landing-zone connector; `batch snapshot` and `incremental` modes; glob/list/read/CSV (and declared formats); checkpoint/cursor; idempotent consume/cleanup; plan-time capability fail-closed; local reference connector for deterministic CI |
-| **0.39+ — Control plane & ops composition** | Continuous file-drop → durable run submission (`202` / submitter); tenant/workspace/environment-scoped landing roots and Safe I/O; authorization on trigger and checkpoint stores; later operator visibility of landing-zone lag and failures (toward 0.52) |
+| **0.39+ — Control plane & ops composition** | Continuous file-drop → durable run submission (`202` / submitter); tenant/workspace/environment-scoped landing roots and Safe I/O; authorization on trigger and checkpoint stores; later operator visibility of landing-zone lag and failures (toward 0.53) |
 | **0.44+ — Developer intelligence (optional UX)** | IDE/workspace explanations of landing-zone binding impact; not a substitute for the connector |
 
 See [ROADMAP § 0.38](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)

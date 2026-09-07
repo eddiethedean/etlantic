@@ -10,7 +10,9 @@ Pushdown applies when a SQL plugin and dialect advertise the required
 capabilities; unsupported features fail closed at planning.
 
 SQL pushdown is the process of moving eligible pipeline operations into the
-database so computation occurs as close to the data as possible.
+database so computation occurs as close to the data as possible. In the 0.50
+portable baseline, pushdown is a versioned, requirement-level contract shared
+by every qualified engine, not a generic performance claim.
 
 ETLantic uses pushdown as an execution optimization. The logical pipeline,
 contracts, transformation interfaces, lineage, validation boundaries, and
@@ -220,7 +222,13 @@ Before pushdown, ETLantic should verify:
 - Parameter binding
 - Validation capabilities
 
-Unsupported operations remain outside the SQL region.
+Unsupported operations remain outside the SQL region only when the requirement
+is explicitly `preferred` or `informational`. A `required` pushdown obligation
+with `unsupported`, `unavailable`, `unknown`, or unresolved conditional support
+fails during validation/planning before reads or writes; it never silently
+falls back to host execution. Every accepted, lowered, or explicit host-side
+boundary records its target, boundary, explain evidence, and collection,
+transfer, materialization, or lost-fusion effect.
 
 ## Contract Validation
 

@@ -476,12 +476,13 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.46 — Streaming and Event-Driven Pipelines",
         "## 0.47 — FastAPI Scheduler/Runner Service and Remote Execution Federation",
         "## 0.48 — AI-Assisted, Human-Governed Engineering",
-        "## 0.49 — Baseline Portable Execution Across First-Party Engines",
-        "## 0.50 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
-        "## 0.51 — Brownfield Adoption Bridges",
-        "## 0.52 — Operator Console",
-        "## 0.53 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.54 — TransformationModel Incubation",
+        "## 0.49 — DuckDB Engine Package",
+        "## 0.50 — Baseline Portable Execution Across First-Party Engines",
+        "## 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
+        "## 0.52 — Brownfield Adoption Bridges",
+        "## 0.53 — Operator Console",
+        "## 0.54 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.55 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -495,26 +496,30 @@ def check_zero_x_roadmap_phases() -> None:
     planned_phase_contracts = {
         "0.49": (
             "IMPLEMENTATION_PLAN_0_49.md",
-            "baseline portable transformation syntax",
+            "DuckDB engine package",
         ),
         "0.50": (
             "IMPLEMENTATION_PLAN_0_50.md",
-            "adaptive execution",
+            "baseline portable transformation syntax",
         ),
         "0.51": (
             "IMPLEMENTATION_PLAN_0_51.md",
-            "brownfield metadata bridges",
+            "adaptive execution",
         ),
         "0.52": (
             "IMPLEMENTATION_PLAN_0_52.md",
-            "operator console",
+            "brownfield metadata bridges",
         ),
         "0.53": (
             "IMPLEMENTATION_PLAN_0_53.md",
-            "provider packs",
+            "operator console",
         ),
         "0.54": (
             "IMPLEMENTATION_PLAN_0_54.md",
+            "provider packs",
+        ),
+        "0.55": (
+            "IMPLEMENTATION_PLAN_0_55.md",
             "TransformationModel",
         ),
     }
@@ -536,8 +541,9 @@ def check_zero_x_roadmap_phases() -> None:
                 )
 
     planned_exit_gates = {
-        "0.49": "Baseline Portable Execution Across First-Party Engines",
-        "0.50": "Adaptive Heterogeneous Planning and Executable Physical DAGs",
+        "0.49": "DuckDB Engine Package",
+        "0.50": "Seven-Engine Portable Execution and Pushdown Conformance",
+        "0.51": "Adaptive Heterogeneous Planning and Executable Physical DAGs",
     }
     planned_exit_paths: list[Path] = []
     for phase, theme in planned_exit_gates.items():

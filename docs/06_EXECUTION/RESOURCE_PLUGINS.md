@@ -3,7 +3,7 @@
 > **Status: Experimental in ETLantic 0.48.** Kubernetes Job
 > and Spark Connect fake-backed providers ship in the bounded 0.48 envelope
 > ([implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_47.md));
-> live cluster/cloud hardening and supported enterprise packs are 0.53.
+> live cluster/cloud hardening and supported enterprise packs are 0.54.
 > See the
 > [Adoption, Connectivity, and Operations Plan](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md).
 

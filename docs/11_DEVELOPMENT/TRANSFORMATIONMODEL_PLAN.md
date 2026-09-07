@@ -1,7 +1,7 @@
 # TransformationModel Incubation Plan
 
-> **Plan status: proposed post-foundation 0.54 incubation; not shipped.** The
-> [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) defines delivery
+> **Plan status: proposed post-foundation 0.55 incubation; not shipped.** The
+> [0.55 implementation plan](IMPLEMENTATION_PLAN_0_55.md) defines delivery
 > order, evidence, and phase exit gates.
 >
 > The work is deferred from 0.20+ and the former 0.38 slot. Connectivity,

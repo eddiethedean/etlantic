@@ -21,13 +21,12 @@ released.
 
 ## Current migrations and exit gates
 
-- [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) (Planned)
+- [0.49 DuckDB engine-package plan](IMPLEMENTATION_PLAN_0_49.md) (Planned)
 - [Exit gate 0.49](EXIT_GATE_0_49.md) (Not started — evidence contract)
-- [Epic #102](https://github.com/eddiethedean/etlantic/issues/102) and
-  [0.49 milestone](https://github.com/eddiethedean/etlantic/milestone/2)
-- [0.50 adaptive-execution plan](IMPLEMENTATION_PLAN_0_50.md) and
-  [exit gate](EXIT_GATE_0_50.md) (shifted following phase;
-  [epic #30](https://github.com/eddiethedean/etlantic/issues/30))
+- [0.50 portable-baseline plan](IMPLEMENTATION_PLAN_0_50.md) and
+  [exit gate](EXIT_GATE_0_50.md) ([epic #102](https://github.com/eddiethedean/etlantic/issues/102))
+- [0.51 adaptive-execution plan](IMPLEMENTATION_PLAN_0_51.md) and
+  [exit gate](EXIT_GATE_0_51.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30))
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
 - [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
 - [Exit gate 0.48](EXIT_GATE_0_48.md) (Gate-ready)
@@ -96,7 +95,7 @@ released.
 - [Exit gate 0.38](EXIT_GATE_0_38.md) (Done — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
-- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.54 delivery contract)
+- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.55 delivery contract)
 - [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
 - [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)
