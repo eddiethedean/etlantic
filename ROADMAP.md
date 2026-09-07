@@ -4341,10 +4341,8 @@ Deliver:
   consistent `spark`/`pyspark` identity resolution;
 - a native DataFusion compiler/runtime path that replaces the discoverable
   zero-capability stub and graduates only from executable evidence;
-- an independently installable `etlantic-duckdb` package with run-scoped native
-  connections, a declared DuckDB dialect/compiler subset, extension policy,
-  connection/transaction lifecycle evidence, and fail-closed unsupported
-  requirements;
+- consumption of the phase 0.49 `etlantic-duckdb` package and its reproducible
+  capability/security handoff without reopening the package-delivery scope;
 - DuckDB qualification as the seventh baseline engine, including source,
   relational, and sink pushdown findings, accepted/rejected boundary fixtures,
   explain evidence, and declared collection/transfer/materialization effects;
@@ -4371,7 +4369,8 @@ Acceptance:
   planning-time conditions, proof evidence, and declared physical effects;
 - the same portable-only pipeline validates, plans, and executes under
   `portable_transform_policy="require"` on all seven engines;
-- normalized results and required pushdown outcomes agree for nulls, empty
+- normalized results and manifest-applicable required pushdown outcomes agree
+  for nulls, empty
   inputs, Unicode, numeric edges,
   ordering, joins, unions, aggregation, deduplication, multiple inputs, and
   contract-shaped outputs;
@@ -4388,8 +4387,9 @@ Acceptance:
 - plans, reports, diagnostics, fixtures, and evidence contain no source rows,
   executable objects, raw SQL escape hatches, or secret values; and
 - the release remains a no-go if any of the seven baseline engine rows, any
-  required pushdown finding, or the common conformance/differential gates lack
-  passing evidence.
+  manifest-applicable required pushdown finding, or the common
+  conformance/differential gates lack passing evidence; `not_applicable` is a
+  governed boundary result and never a substitute for unsupported pushdown.
 
 Advanced profiles, adaptive placement, streaming, federation, remote providers,
 external compilation, and cross-engine performance equivalence receive no 0.50
