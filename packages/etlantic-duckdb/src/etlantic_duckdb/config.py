@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
+from typing import Any
 
 from etlantic.runtime.logging import is_sensitive_key
 
@@ -34,9 +37,27 @@ class DuckDBConfig:
     allow_unredacted_secrets: bool = False
     max_result_rows: int = 1_000_000
     max_statements: int = 10_000
-    metadata: dict[str, str] = field(default_factory=dict, repr=False)
+    metadata: Mapping[str, str] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "database", str(self.database))
+        object.__setattr__(
+            self,
+            "temp_directory",
+            str(self.temp_directory) if self.temp_directory is not None else None,
+        )
+        object.__setattr__(
+            self, "allowed_paths", _immutable_paths(self.allowed_paths, "allowed_paths")
+        )
+        object.__setattr__(
+            self,
+            "allowed_directories",
+            _immutable_paths(self.allowed_directories, "allowed_directories"),
+        )
+        if not isinstance(self.metadata, Mapping):
+            raise TypeError("DuckDB metadata must be a mapping")
+        metadata = {str(key): str(value) for key, value in self.metadata.items()}
+        object.__setattr__(self, "metadata", MappingProxyType(metadata))
         if self.read_only and self.database == ":memory:":
             raise ValueError("DuckDB read_only mode is unavailable for :memory:")
         if self.threads < 1:
@@ -60,7 +81,7 @@ class DuckDBConfig:
         database: str | Path = ":memory:",
         *,
         read_only: bool = False,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> DuckDBConfig:
         return cls(database=str(database), read_only=read_only, **kwargs)
 
@@ -145,3 +166,9 @@ class DuckDBConfig:
             if resolved == root_path or root_path in resolved.parents:
                 return str(resolved)
         raise ValueError("DuckDB temporary directory requires an approved root")
+
+
+def _immutable_paths(values: object, field_name: str) -> tuple[str, ...]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise TypeError(f"DuckDB {field_name} must be a sequence of paths")
+    return tuple(str(value) for value in values)

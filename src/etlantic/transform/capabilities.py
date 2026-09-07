@@ -125,23 +125,61 @@ def _collect_call_callees(node: Any, functions: set[str]) -> None:
 
 
 def merge_requirements(
-    *parts: Mapping[str, Sequence[str]] | None,
-) -> dict[str, list[str]]:
-    """Union requirement lists (profiles/actions/functions) fail-closed."""
-    profiles: set[str] = set()
-    actions: set[str] = set()
-    functions: set[str] = set()
+    *parts: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Union all capability requirements without dropping constraints.
+
+    Requirement maps are extensible.  In addition to the original profile,
+    action, and function lists, matching also understands operators, types,
+    semantic modes, and lazy/eager execution flags.  The previous
+    implementation silently discarded the former categories while combining
+    explicit and inferred requirements, which made unsupported plans appear
+    supported.  Preserve every known key and leave unknown keys untouched so
+    future requirement categories fail closed in their matcher rather than
+    being erased here.
+    """
+    list_keys = (
+        "profiles",
+        "actions",
+        "functions",
+        "operators",
+        "types",
+        "semantic_modes",
+    )
+    merged: dict[str, set[str]] = {key: set() for key in list_keys}
+    boolean_values: dict[str, bool] = {}
+    unknown: dict[str, Any] = {}
     for part in parts:
         if not part:
             continue
-        profiles.update(str(x) for x in (part.get("profiles") or ()))
-        actions.update(str(x) for x in (part.get("actions") or ()))
-        functions.update(str(x) for x in (part.get("functions") or ()))
-    return {
-        "profiles": sorted(profiles),
-        "actions": sorted(actions),
-        "functions": sorted(functions),
-    }
+        for key in list_keys:
+            values = part.get(key)
+            if values is None:
+                continue
+            if isinstance(values, (str, bytes)):
+                values = (values,)
+            if isinstance(values, Sequence):
+                merged[key].update(str(value) for value in values)
+        for key in ("lazy", "eager"):
+            value = part.get(key)
+            if isinstance(value, bool):
+                # Requirements are conjunctive: a requested lazy execution
+                # mode must remain requested, and eager=False must remain
+                # restrictive when any contributor asks for it.
+                if key == "lazy":
+                    boolean_values[key] = boolean_values.get(key, False) or value
+                elif key not in boolean_values:
+                    boolean_values[key] = value
+                else:
+                    boolean_values[key] = boolean_values[key] and value
+        for key, value in part.items():
+            if key not in list_keys and key not in {"lazy", "eager"}:
+                unknown[key] = value
+
+    result: dict[str, Any] = {key: sorted(values) for key, values in merged.items()}
+    result.update(boolean_values)
+    result.update(unknown)
+    return result
 
 
 def match_requirements(

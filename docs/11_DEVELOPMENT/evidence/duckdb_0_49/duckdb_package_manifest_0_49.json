@@ -1,4 +1,5 @@
 {
+  "duckdb_version": "1.5.5",
   "duckdb_version_range": ">=1.0,<2",
   "engine": "duckdb",
   "entries": [
@@ -27,14 +28,20 @@
     }
   ],
   "environment": {
-    "os": "supported-host",
-    "python": ">=3.11"
+    "architecture": "arm64",
+    "os": "darwin",
+    "python": "3.11.14"
   },
+  "etlantic_version": "0.48.0",
   "fixtures": [
     "duckdb.protocol",
     "duckdb.transform.conformance",
-    "duckdb.security.defaults"
+    "duckdb.security.defaults",
+    "duckdb.schema_preflight",
+    "duckdb.generic_sql_routing",
+    "duckdb.runnable_example"
   ],
+  "generator_version": "0.49.1",
   "kind": "package_manifest",
   "manifest_digest": "sha256:629bef3e28c54b9e1e416a59ce80f062c3d8f4011856c2f11135df9fd3fd71b5",
   "package": "etlantic-duckdb",

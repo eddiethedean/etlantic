@@ -102,6 +102,12 @@ RUNNABLE_ENTRIES: tuple[RunnableEntry, ...] = (
         executed_in_ci="portable-differentials",
         external_dependency="dataframes",
     ),
+    RunnableEntry(
+        "docs/01_GETTING_STARTED/WHATS_NEW_0_49.md",
+        "examples/duckdb_portable.py",
+        executed_in_ci="duckdb",
+        external_dependency="duckdb",
+    ),
 )
 
 

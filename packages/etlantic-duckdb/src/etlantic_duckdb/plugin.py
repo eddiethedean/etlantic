@@ -7,7 +7,9 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any
+from uuid import uuid4
 
+import duckdb
 from etlantic.capabilities import PluginCapabilities
 from etlantic.sql.helpers import require_safe_identifier
 from etlantic.sql.protocol import (
@@ -168,14 +170,16 @@ class DuckDBSqlPlugin:
         context: SqlExecutionContext,
         fetch: bool = False,
     ) -> SqlExecutionResult:
-        session = self.connections.session(context.run_id)
         metrics = SqlMetrics(phases=["execute"])
         records: list[dict[str, Any]] = []
-        started = False
+        phase = "not_started"
+        session = None
         try:
+            session = self.connections.session(context.run_id)
             with session.lock:
+                phase = "beginning"
                 session.connection.execute("BEGIN")
-                started = True
+                phase = "in_transaction"
                 for stmt in compiled:
                     text, values = self._resolve(stmt, params, run_id=context.run_id)
                     result = session.execute(text, values)
@@ -194,29 +198,38 @@ class DuckDBSqlPlugin:
                         count = getattr(result, "rowcount", -1)
                         if isinstance(count, int) and count >= 0:
                             metrics.rows_affected = (metrics.rows_affected or 0) + count
+                phase = "committing"
                 session.connection.execute("COMMIT")
+                phase = "committed"
             outcome = TransactionOutcome.COMMITTED
         except Exception as exc:
-            try:
-                if started:
+            rollback_proven = False
+            if session is not None and phase in {"beginning", "in_transaction"}:
+                try:
                     session.connection.execute("ROLLBACK")
-            except Exception:
-                pass
+                    rollback_proven = True
+                except Exception:
+                    pass
             outcome = (
-                TransactionOutcome.UNKNOWN
-                if started and "commit" in str(exc).lower()
-                else TransactionOutcome.ROLLED_BACK
+                TransactionOutcome.ROLLED_BACK
+                if phase == "not_started" or rollback_proven
+                else TransactionOutcome.UNKNOWN
             )
+            diagnostics = [
+                {
+                    "code": "PMDUCK500",
+                    "severity": "error",
+                    "message": f"DuckDB execution failed ({type(exc).__name__})",
+                }
+            ]
+            if outcome is TransactionOutcome.UNKNOWN:
+                cleanup_diagnostic = self._cleanup_unknown_run(run_id=context.run_id)
+                if cleanup_diagnostic is not None:
+                    diagnostics.append(cleanup_diagnostic)
             return SqlExecutionResult(
                 outcome=outcome,
                 metrics=metrics,
-                diagnostics=[
-                    {
-                        "code": "PMDUCK500",
-                        "severity": "error",
-                        "message": f"DuckDB execution failed ({type(exc).__name__})",
-                    }
-                ],
+                diagnostics=diagnostics,
             )
         return SqlExecutionResult(
             outcome=outcome,
@@ -279,65 +292,119 @@ class DuckDBSqlPlugin:
         target: RelationRef,
         context: SqlExecutionContext,
         column_types: Mapping[str, str] | None = None,
+        temporary: bool = False,
     ) -> SqlExecutionResult:
         rows = [
-            item.model_dump() if hasattr(item, "model_dump") else dict(item)
+            {
+                str(key): value
+                for key, value in (
+                    item.model_dump() if hasattr(item, "model_dump") else dict(item)
+                ).items()
+            }
             for item in records
         ]
-        if not rows:
-            return SqlExecutionResult(
-                outcome=TransactionOutcome.COMMITTED, relation=target
-            )
-        for row in rows:
-            for key in row:
-                require_safe_identifier(str(key))
-        columns = list(rows[0])
         declared_types = {
             str(column): _validate_duck_type(type_name)
             for column, type_name in (column_types or {}).items()
         }
-        session = self.connections.session(context.run_id)
-        table = ".".join(
-            quote_identifier(part)
-            for part in (target.catalog, target.namespace, target.name)
-            if part
-        )
-        defs = ", ".join(
-            f"{quote_identifier(c)} {declared_types.get(c) or _duck_type(rows, c)}"
-            for c in columns
-        )
-        placeholders = ", ".join("?" for _ in columns)
-        try:
-            with session.lock:
-                session.connection.execute("BEGIN")
-                session.connection.execute(
-                    f"CREATE TABLE IF NOT EXISTS {table} ({defs})"
-                )
-                session.connection.executemany(
-                    f"INSERT INTO {table} ({', '.join(quote_identifier(c) for c in columns)}) VALUES ({placeholders})",
-                    [tuple(row.get(c) for c in columns) for row in rows],
-                )
-                session.connection.execute("COMMIT")
-            return SqlExecutionResult(
-                outcome=TransactionOutcome.COMMITTED,
-                relation=target,
-                metrics=SqlMetrics(
-                    rows_affected=len(rows), statements=1 + len(rows), phases=["load"]
-                ),
-                backend_ref="duckdb",
-            )
-        except Exception as exc:
-            with contextlib.suppress(Exception):
-                session.connection.execute("ROLLBACK")
+        for column in declared_types:
+            require_safe_identifier(column)
+        columns: list[str] = []
+        for row in rows:
+            for key in row:
+                require_safe_identifier(key)
+                if key not in columns:
+                    columns.append(key)
+        for column in declared_types:
+            if column not in columns:
+                columns.append(column)
+        if not columns:
             return SqlExecutionResult(
                 outcome=TransactionOutcome.ROLLED_BACK,
                 diagnostics=[
                     {
                         "code": "PMDUCK510",
                         "severity": "error",
-                        "message": f"DuckDB load failed ({type(exc).__name__})",
+                        "message": "DuckDB empty load requires declared column types",
                     }
                 ],
+            )
+        table = ".".join(
+            quote_identifier(part)
+            for part in (target.catalog, target.namespace, target.name)
+            if part
+        )
+        if temporary and (target.catalog is not None or target.namespace is not None):
+            raise ValueError("DuckDB temporary loads require an unqualified relation")
+        defs = ", ".join(
+            f"{quote_identifier(c)} {declared_types.get(c) or _duck_type(rows, c)}"
+            for c in columns
+        )
+        placeholders = ", ".join("?" for _ in columns)
+        statement_total = 1 + len(rows)
+        metrics = SqlMetrics(phases=["load"])
+        phase = "not_started"
+        session = None
+        try:
+            session = self.connections.session(context.run_id)
+            session.reserve_statements(statement_total)
+            metrics.rows_affected = len(rows)
+            metrics.statements = statement_total
+            with session.lock:
+                phase = "beginning"
+                session.connection.execute("BEGIN")
+                phase = "in_transaction"
+                session.connection.execute(
+                    f"CREATE {'TEMP ' if temporary else ''}TABLE IF NOT EXISTS "
+                    f"{table} ({defs})"
+                )
+                if rows:
+                    session.connection.executemany(
+                        f"INSERT INTO {table} ({', '.join(quote_identifier(c) for c in columns)}) VALUES ({placeholders})",
+                        [tuple(row.get(c) for c in columns) for row in rows],
+                    )
+                phase = "committing"
+                session.connection.execute("COMMIT")
+                phase = "committed"
+            return SqlExecutionResult(
+                outcome=TransactionOutcome.COMMITTED,
+                relation=target,
+                metrics=metrics,
+                backend_ref="duckdb",
+            )
+        except Exception as exc:
+            rollback_proven = False
+            if session is not None and phase in {"beginning", "in_transaction"}:
+                with contextlib.suppress(Exception):
+                    session.connection.execute("ROLLBACK")
+                    rollback_proven = True
+            outcome = (
+                TransactionOutcome.ROLLED_BACK
+                if phase == "not_started" or rollback_proven
+                else TransactionOutcome.UNKNOWN
+            )
+            metrics.rows_affected = None
+            metrics.statements = 0
+            diagnostics = [
+                {
+                    "code": (
+                        "PMDUCK511"
+                        if isinstance(exc, RuntimeError)
+                        and "statement budget" in str(exc).lower()
+                        else "PMDUCK510"
+                    ),
+                    "severity": "error",
+                    "message": f"DuckDB load failed ({type(exc).__name__})",
+                }
+            ]
+            if outcome is TransactionOutcome.UNKNOWN:
+                cleanup_diagnostic = self._cleanup_unknown_run(run_id=context.run_id)
+                if cleanup_diagnostic is not None:
+                    diagnostics.append(cleanup_diagnostic)
+            return SqlExecutionResult(
+                outcome=outcome,
+                metrics=metrics,
+                diagnostics=diagnostics,
             )
 
     def fetch_records(
@@ -353,10 +420,9 @@ class DuckDBSqlPlugin:
         else:
             stmt = self._seal(
                 CompiledSql(
-                    # Include the run identity so concurrent executions cannot
-                    # overwrite each other's sealed fetch statement.
                     statement_id=(
-                        f"duckdb:fetch:{context.run_id}:{relation.qualified_name}"
+                        f"duckdb:fetch:{context.run_id}:{uuid4().hex}:"
+                        f"{relation.qualified_name}"
                     ),
                     text=f"SELECT * FROM {'.'.join(quote_identifier(part) for part in (relation.catalog, relation.namespace, relation.name) if part)}",
                     dialect="duckdb",
@@ -375,21 +441,15 @@ class DuckDBSqlPlugin:
         self, relation: RelationRef, *, context: SqlExecutionContext
     ) -> dict[str, Any]:
         session = self.connections.session(context.run_id)
-        predicates = ["table_name = ?"]
-        params: list[str] = [relation.name]
-        if relation.namespace:
-            predicates.append("table_schema = ?")
-            params.append(relation.namespace)
-        if relation.catalog:
-            predicates.append("table_catalog = ?")
-            params.append(relation.catalog)
-        rows = session.execute(
-            "SELECT column_name, data_type, is_nullable "
-            "FROM information_schema.columns WHERE "
-            + " AND ".join(predicates)
-            + " ORDER BY ordinal_position",
-            params,
-        ).fetchall()
+        table = ".".join(
+            quote_identifier(part)
+            for part in (relation.catalog, relation.namespace, relation.name)
+            if part
+        )
+        try:
+            rows = session.execute(f"DESCRIBE SELECT * FROM {table}").fetchall()
+        except duckdb.CatalogException:
+            rows = []
         return {
             "identity": relation.qualified_name,
             "fields": [
@@ -408,6 +468,18 @@ class DuckDBSqlPlugin:
             if record[3] == owner:
                 self._sealed.pop(statement_id, None)
         self.connections.cleanup_run(run_id)
+
+    def _cleanup_unknown_run(self, *, run_id: str) -> dict[str, str] | None:
+        """Detach all run state without masking an UNKNOWN transaction result."""
+        try:
+            self.cleanup_run(run_id=run_id)
+        except Exception as exc:
+            return {
+                "code": "PMDUCK500",
+                "severity": "error",
+                "message": f"DuckDB unknown-outcome cleanup failed ({type(exc).__name__})",
+            }
+        return None
 
     def cleanup_staging(self) -> None:
         # Backward-compatible hook; never closes another run's connection.
@@ -447,6 +519,8 @@ _DUCKDB_TYPES = frozenset(
         "DECIMAL",
         "DATE",
         "TIME",
+        "TIMETZ",
+        "TIME WITH TIME ZONE",
         "TIMESTAMP",
         "TIMESTAMPTZ",
         "TIMESTAMP WITH TIME ZONE",
@@ -463,7 +537,7 @@ _DUCKDB_TYPES = frozenset(
 def _validate_duck_type(type_name: str) -> str:
     text = str(type_name).strip().upper()
     if text in _DUCKDB_TYPES or re.fullmatch(
-        r"DECIMAL\s*\(\s*\d+\s*,\s*\d+\s*\)", text
+        r"DECIMAL\s*\(\s*\d+(?:\s*,\s*\d+)?\s*\)", text
     ):
         return text
     raise ValueError(f"unsupported DuckDB declared type {type_name!r}")

@@ -11,7 +11,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import platform
+import tempfile
+from dataclasses import replace
 from pathlib import Path
+
+from jsonschema import ValidationError, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs/11_DEVELOPMENT/evidence/duckdb_0_49"
@@ -27,6 +32,51 @@ FILES = (
     "duckdb_requirement_support_0_49.json",
     "duckdb_adaptive_handoff_0_49.json",
 )
+GENERATOR_VERSION = "0.49.1"
+EVIDENCE_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "required": [
+        "schema",
+        "phase",
+        "generator_version",
+        "status",
+        "package",
+        "package_version",
+        "etlantic_version",
+        "engine",
+        "duckdb_version",
+        "duckdb_version_range",
+        "manifest_digest",
+        "environment",
+        "fixtures",
+        "kind",
+    ],
+    "properties": {
+        "schema": {"const": "etlantic.duckdb.evidence/1"},
+        "phase": {"const": "0.49"},
+        "generator_version": {"type": "string", "minLength": 1},
+        "status": {"const": "qualified_subset"},
+        "package": {"const": "etlantic-duckdb"},
+        "package_version": {"type": "string", "minLength": 1},
+        "etlantic_version": {"type": "string", "minLength": 1},
+        "engine": {"const": "duckdb"},
+        "duckdb_version": {"type": "string", "minLength": 1},
+        "duckdb_version_range": {"const": ">=1.0,<2"},
+        "manifest_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "environment": {
+            "type": "object",
+            "required": ["python", "os", "architecture"],
+            "properties": {
+                "python": {"type": "string", "minLength": 1},
+                "os": {"type": "string", "minLength": 1},
+                "architecture": {"type": "string", "minLength": 1},
+            },
+        },
+        "fixtures": {"type": "array", "items": {"type": "string"}},
+        "kind": {"type": "string", "minLength": 1},
+        "result": {"enum": ["pass", "fail"]},
+    },
+}
 
 
 def _manifest_digest(manifest: dict[str, object]) -> str:
@@ -41,38 +91,70 @@ def _manifest_digest(manifest: dict[str, object]) -> str:
 
 
 def _base(manifest: dict[str, object]) -> dict[str, object]:
+    import duckdb
+    import etlantic
+
     return {
         "schema": "etlantic.duckdb.evidence/1",
         "phase": "0.49",
+        "generator_version": GENERATOR_VERSION,
         "status": "qualified_subset",
         "package": "etlantic-duckdb",
         "package_version": str(manifest["version"]),
+        "etlantic_version": str(etlantic.__version__),
         "engine": "duckdb",
+        "duckdb_version": str(duckdb.__version__),
         "duckdb_version_range": ">=1.0,<2",
         "manifest_digest": _manifest_digest(manifest),
-        "environment": {"python": ">=3.11", "os": "supported-host"},
+        "environment": {
+            "python": platform.python_version(),
+            "os": platform.system().lower(),
+            "architecture": platform.machine().lower(),
+        },
         "fixtures": [
             "duckdb.protocol",
             "duckdb.transform.conformance",
             "duckdb.security.defaults",
+            "duckdb.schema_preflight",
+            "duckdb.generic_sql_routing",
+            "duckdb.runnable_example",
         ],
     }
 
 
-def _verify_runtime() -> None:
+def _verify_runtime() -> dict[str, str]:
     """Run the public checks that justify the generated claims."""
     from etlantic_duckdb import create_plugin, create_transform_compiler
     from etlantic_duckdb.config import DuckDBConfig
+    from etlantic_duckdb.plugin import DuckDBSqlPlugin
 
     from etlantic.sql.protocol import CteDef, RelationRef, SqlExecutionContext, SqlQuery
     from etlantic.testing import (
         run_portable_transform_conformance_suite,
         run_sql_conformance_suite,
     )
+    from etlantic.transform.compiler import TransformPlanningContext
 
     plugin = create_plugin()
     run_sql_conformance_suite(plugin, expected_engine="duckdb")
-    run_portable_transform_conformance_suite(create_transform_compiler())
+    compiler = create_transform_compiler()
+    run_portable_transform_conformance_suite(compiler)
+    unsupported = compiler.analyze(
+        {
+            "inputs": {"input": {}},
+            "actions": [],
+            "outputs": {"result": {}},
+        },
+        context=TransformPlanningContext(
+            pipeline_id="evidence",
+            step_name="preflight",
+            profile_name="evidence",
+            engine="duckdb",
+        ),
+        requirements={"operators": ["dtcs:evidence_unsupported"]},
+    )
+    if unsupported.supported:
+        raise SystemExit("DuckDB requirement preflight is not fail-closed")
     try:
         DuckDBConfig(enable_external_access=True)
     except ValueError:
@@ -95,9 +177,55 @@ def _verify_runtime() -> None:
     )
     if not compiled.text.startswith("WITH "):
         raise SystemExit("DuckDB SQL CTE lowering is not implemented")
+    plugin.cleanup_run(run_id="evidence")
+    with tempfile.TemporaryDirectory(prefix="etlantic-duckdb-evidence-") as directory:
+        database = Path(directory) / "qualified.duckdb"
+        config = DuckDBConfig.from_database(database, allowed_paths=(str(database),))
+        file_plugin = DuckDBSqlPlugin(config=config)
+        file_context = SqlExecutionContext(
+            run_id="evidence-file",
+            pipeline_id="evidence",
+            plan_id="evidence",
+            step_name="file",
+            engine="duckdb",
+        )
+        loaded = file_plugin.load_records(
+            [{"id": 1}],
+            target=RelationRef(name="qualified_items"),
+            context=file_context,
+        )
+        if loaded.outcome.value != "committed":
+            raise SystemExit("DuckDB file-backed load did not commit")
+        fetched = file_plugin.fetch_records(
+            RelationRef(name="qualified_items"), params={}, context=file_context
+        )
+        if fetched.records != [{"id": 1}]:
+            raise SystemExit("DuckDB file-backed fetch returned unexpected rows")
+        file_plugin.cleanup_run(run_id="evidence-file")
+        read_only = DuckDBSqlPlugin(
+            config=DuckDBConfig.from_database(
+                database, read_only=True, allowed_paths=(str(database),)
+            )
+        )
+        read_context = replace(file_context, run_id="evidence-read-only")
+        readonly_fetch = read_only.fetch_records(
+            RelationRef(name="qualified_items"), params={}, context=read_context
+        )
+        if readonly_fetch.records != [{"id": 1}]:
+            raise SystemExit("DuckDB read-only file-backed fetch failed")
+        read_only.cleanup_run(run_id="evidence-read-only")
+    return {
+        "sql_conformance": "pass",
+        "transform_conformance": "pass",
+        "connection_lifecycle": "pass",
+        "file_backed": "pass",
+        "security_policy": "pass",
+        "requirement_support": "pass",
+        "adaptive_handoff": "pass",
+    }
 
 
-def build_bundle() -> dict[str, dict[str, object]]:
+def build_bundle(results: dict[str, str]) -> dict[str, dict[str, object]]:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     base = _base(manifest)
     return {
@@ -105,7 +233,7 @@ def build_bundle() -> dict[str, dict[str, object]]:
         FILES[1]: {
             **base,
             "kind": "sql_conformance",
-            "result": "pass",
+            "result": results["sql_conformance"],
             "protocol": "etlantic.sql/1",
             "qualified": [
                 "compile",
@@ -119,7 +247,7 @@ def build_bundle() -> dict[str, dict[str, object]]:
         FILES[2]: {
             **base,
             "kind": "transform_conformance",
-            "result": "pass",
+            "result": results["transform_conformance"],
             "protocol": "etlantic.transform-compiler/1",
             "qualified_actions": [
                 "dtcs:filter",
@@ -142,18 +270,19 @@ def build_bundle() -> dict[str, dict[str, object]]:
         FILES[3]: {
             **base,
             "kind": "connection_lifecycle",
-            "result": "pass",
+            "result": results["connection_lifecycle"],
             "qualified": [
                 "run_scoped_connection",
                 "rollback",
                 "cleanup_run",
                 "read_only_policy",
+                "file_backed",
             ],
         },
         FILES[4]: {
             **base,
             "kind": "security_policy",
-            "result": "pass",
+            "result": results["security_policy"],
             "enforced": [
                 "external_access_disabled",
                 "extensions_disabled",
@@ -166,7 +295,7 @@ def build_bundle() -> dict[str, dict[str, object]]:
         FILES[5]: {
             **base,
             "kind": "requirement_support",
-            "result": "pass",
+            "result": results["requirement_support"],
             "states": {
                 "supported_exact": ["sql", "portable", "transactions"],
                 "supported_with_lowering": ["dtcs:aggregate", "dtcs:join"],
@@ -177,7 +306,7 @@ def build_bundle() -> dict[str, dict[str, object]]:
         FILES[6]: {
             **base,
             "kind": "adaptive_handoff",
-            "result": "pass",
+            "result": results["adaptive_handoff"],
             "candidate": {"engine": "duckdb", "placement": "explicit_sql_region"},
             "drift": {
                 "compiler_evidence": "replan_required",
@@ -189,6 +318,50 @@ def build_bundle() -> dict[str, dict[str, object]]:
 
 
 def _validate(payload: dict[str, object]) -> None:
+    try:
+        validate(instance=payload, schema=EVIDENCE_SCHEMA)
+    except ValidationError as exc:
+        raise SystemExit(
+            f"DuckDB evidence schema validation failed: {exc.message}"
+        ) from exc
+    required = {
+        "schema",
+        "phase",
+        "generator_version",
+        "status",
+        "package",
+        "package_version",
+        "etlantic_version",
+        "engine",
+        "duckdb_version",
+        "duckdb_version_range",
+        "manifest_digest",
+        "environment",
+        "fixtures",
+        "kind",
+    }
+    missing = sorted(required - payload.keys())
+    if missing:
+        raise SystemExit(
+            "DuckDB evidence is missing required keys: " + ", ".join(missing)
+        )
+    if payload["schema"] != "etlantic.duckdb.evidence/1":
+        raise SystemExit("DuckDB evidence schema is unsupported")
+    environment = payload["environment"]
+    if (
+        not isinstance(environment, dict)
+        or not isinstance(environment.get("python"), str)
+        or not isinstance(environment.get("os"), str)
+        or not isinstance(environment.get("architecture"), str)
+    ):
+        raise SystemExit("DuckDB evidence environment identity is incomplete")
+    fixtures = payload["fixtures"]
+    if not isinstance(fixtures, list) or not all(
+        isinstance(item, str) for item in fixtures
+    ):
+        raise SystemExit("DuckDB evidence fixtures must be string identities")
+    if "result" in payload and payload["result"] not in {"pass", "fail"}:
+        raise SystemExit("DuckDB evidence result is invalid")
     encoded = json.dumps(payload, sort_keys=True)
     forbidden = ("/Volumes/", "/Users/", "password=", "secret=")
     if any(token in encoded for token in forbidden):
@@ -201,8 +374,8 @@ def main() -> int:
         "--write", action="store_true", help="write the checked-in evidence bundle"
     )
     args = parser.parse_args()
-    _verify_runtime()
-    bundle = build_bundle()
+    results = _verify_runtime()
+    bundle = build_bundle(results)
     OUT.mkdir(parents=True, exist_ok=True)
     mismatches: list[str] = []
     for name, payload in bundle.items():
@@ -211,8 +384,26 @@ def main() -> int:
         rendered = json.dumps(payload, indent=2, sort_keys=True) + "\n"
         if args.write:
             path.write_text(rendered, encoding="utf-8")
-        elif not path.exists() or path.read_text(encoding="utf-8") != rendered:
+        elif not path.exists():
             mismatches.append(name)
+        else:
+            # Runtime identity is intentionally captured in each generated
+            # artifact, but checked-in evidence remains portable across the
+            # supported OS/Python matrix.  Compare all deterministic fields
+            # while requiring the current runtime to pass the checks above.
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                mismatches.append(name)
+                continue
+            actual = dict(payload)
+            actual.pop("environment", None)
+            actual.pop("duckdb_version", None)
+            checked = dict(existing)
+            checked.pop("environment", None)
+            checked.pop("duckdb_version", None)
+            if actual != checked:
+                mismatches.append(name)
     if mismatches:
         raise SystemExit(
             "DuckDB 0.49 evidence drift: "

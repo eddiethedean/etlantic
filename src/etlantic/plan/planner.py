@@ -285,6 +285,7 @@ def _build_plan(
         security_domain,
         bindings=bindings,
         engines=context.registry.engines,
+        sql_engine=profile.sql_engine,
     )
     if profile.spark_streaming:
         from etlantic.engines import get_engine_registry
@@ -345,6 +346,7 @@ def _build_plan(
         security_domain,
         bindings=bindings,
         engines=context.registry.engines,
+        sql_engine=profile.sql_engine,
     )
     boundaries.extend(
         _collection_boundaries(
@@ -1402,6 +1404,7 @@ def _provider_engine(
     provider: str | None,
     default_engine: str,
     engines: dict[str, Any] | None = None,
+    sql_engine: str | None = None,
 ) -> str | None:
     """Map a binding provider to an execution engine when unambiguous."""
     from etlantic.engines import get_engine_registry
@@ -1410,6 +1413,15 @@ def _provider_engine(
         return None
     registry = get_engine_registry()
     if registry.is_sql_engine(provider, engines):
+        # ``sql`` is the protocol/provider family, not a concrete backend.
+        # Preserve an explicitly selected concrete SQL engine (for example
+        # ``Profile(sql_engine="duckdb")``) through region formation and
+        # runtime dispatch. Concrete third-party SQL provider keys remain
+        # authoritative when they are used directly.
+        if provider == "sql":
+            selected = sql_engine or default_engine
+            if registry.is_sql_engine(selected, engines):
+                return selected
         return provider
     if provider == "delta":
         return "pyspark"
@@ -1430,11 +1442,17 @@ def _resolved_io_engine(
     default_engine: str,
     bindings: dict[str, BindingDescriptor],
     engines: dict[str, Any] | None = None,
+    sql_engine: str | None = None,
 ) -> str:
     """Resolve source/sink engine from binding provider, else neighbor, else default."""
     binding = bindings.get(node.name)
     if binding is not None:
-        mapped = _provider_engine(binding.provider, default_engine, engines)
+        mapped = _provider_engine(
+            binding.provider,
+            default_engine,
+            engines,
+            sql_engine=sql_engine,
+        )
         if mapped is not None:
             return mapped
     if node.kind is NodeKind.SOURCE:
@@ -1456,6 +1474,7 @@ def _form_regions(
     *,
     bindings: dict[str, BindingDescriptor] | None = None,
     engines: dict[str, Any] | None = None,
+    sql_engine: str | None = None,
 ) -> list[ExecutionRegion]:
     """Form one region per (security_domain, engine); never merge across engines."""
     binding_map = bindings or {}
@@ -1469,6 +1488,7 @@ def _form_regions(
                 default_engine=default_engine,
                 bindings=binding_map,
                 engines=engines,
+                sql_engine=sql_engine,
             )
         else:
             engine = _node_engine(node.name, implementations, default_engine)
@@ -1616,6 +1636,7 @@ def _materialization_boundaries(
     *,
     bindings: dict[str, BindingDescriptor] | None = None,
     engines: dict[str, PluginCapabilities] | None = None,
+    sql_engine: str | None = None,
 ) -> list[MaterializationBoundary]:
     from etlantic.planning.capabilities import is_dataframe_engine
 
@@ -1634,6 +1655,7 @@ def _materialization_boundaries(
                 default_engine=default_engine,
                 bindings=binding_map,
                 engines=engine_capabilities,
+                sql_engine=sql_engine,
             )
         return _node_engine(name, implementations, default_engine)
 

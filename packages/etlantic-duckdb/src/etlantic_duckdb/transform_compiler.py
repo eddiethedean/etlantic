@@ -7,8 +7,10 @@ import inspect
 import json
 import re
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from typing import Any
 
+from etlantic.sql.helpers import require_safe_identifier
 from etlantic.sql.protocol import RelationRef, SqlExecutionContext, TransactionOutcome
 from etlantic.transform.capabilities import (
     match_requirements,
@@ -80,7 +82,25 @@ class DuckDBTransformCompiler:
                     "apply_action": _apply_action,
                     "expr": _expr,
                     "safe_identifier": _safe,
+                    "schema_fields": _schema_fields,
+                    "declared_column_types": _declared_column_types,
+                    "explicit_duck_type": _explicit_duck_type,
+                    "duck_type_for_schema": _duck_type_for_schema,
+                    "native_duck_type": _native_duck_type,
+                    "analyze_definition": _analyze_definition,
+                    "analyze_expression": _analyze_expression,
+                    "analyze_declared_inputs": _analyze_declared_inputs,
+                    "analyze_action": _analyze_action,
+                    "analyze_outputs": _analyze_outputs,
+                    "finding": _finding,
+                    "identifier_finding": _identifier_finding,
+                    "sequence": _sequence,
                 }.items()
+            },
+            "native_duckdb_types": sorted(_NATIVE_DUCKDB_TYPES),
+            "supported_expression_operators": sorted(_SUPPORTED_EXPR_OPERATORS),
+            "function_arities": {
+                name: list(arity) for name, arity in sorted(_FUNCTION_ARITIES.items())
             },
             "evidence_schema": "etlantic-duckdb-evidence/1",
         }
@@ -107,41 +127,26 @@ class DuckDBTransformCompiler:
         context: TransformPlanningContext,
         requirements: Mapping[str, Sequence[str]] | None = None,
     ) -> TransformSupportReport:
-        req = merge_requirements(requirements, requirements_from_plan(dict(definition)))
+        shape_findings = _analyze_definition(
+            definition, evidence_fingerprint=self._info.evidence_fingerprint
+        )
+        try:
+            inferred_requirements = requirements_from_plan(dict(definition))
+        except (AttributeError, TypeError, ValueError):
+            # Shape findings retain the precise path. Requirement extraction
+            # must not turn malformed IR into an unstructured exception.
+            inferred_requirements = None
+        req = merge_requirements(requirements, inferred_requirements)
         report = match_requirements(req, self._info.capabilities)
         findings = list(report.findings)
         findings.extend(three_state_findings(definition, self._info.capabilities))
-        for index, action in enumerate(definition.get("actions") or ()):
-            kind = action.get("kind") or {}
-            name = kind.get("action")
-            params = kind.get("parameters") or {}
-            if name == "dtcs:union":
-                findings.append(
-                    TransformSupportFinding(
-                        code="PMDUCK301",
-                        requirement=f"action:{name}",
-                        reason="DuckDB phase 0.49 compiler requires explicit relation lowering for joins/unions",
-                        expression_path=str(kind.get("id") or f"actions[{index}]"),
-                        obligation=str(name),
-                        support="unsupported",
-                        evidence_fingerprint=self._info.evidence_fingerprint,
-                    )
-                )
-            if (
-                name == "dtcs:join"
-                and str(params.get("collisionPolicy") or "fail") != "fail"
-            ):
-                findings.append(
-                    TransformSupportFinding(
-                        code="PMDUCK302",
-                        requirement=f"join.collisionPolicy:{params.get('collisionPolicy')}",
-                        reason="DuckDB compiler only supports fail-closed join collisions",
-                        expression_path=str(kind.get("id") or f"actions[{index}]"),
-                        obligation="join.collisionPolicy",
-                        support="unsupported",
-                        evidence_fingerprint=self._info.evidence_fingerprint,
-                    )
-                )
+        findings.extend(shape_findings)
+        findings = [
+            finding
+            if finding.evidence_fingerprint is not None
+            else replace(finding, evidence_fingerprint=self._info.evidence_fingerprint)
+            for finding in findings
+        ]
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),
@@ -260,7 +265,8 @@ class DuckDBTransformCompiler:
             columns[action_id] = out_cols
             current_columns = out_cols
         lineage = (plan.get("requirements") or {}).get("dependencies") or []
-        last_action = plan.get("actions")[-1] if plan.get("actions") else None
+        actions = plan.get("actions") or []
+        last_action = actions[-1] if actions else None
         last_kind = (last_action or {}).get("kind") or {}
         fallback_source = str(
             last_kind.get("id")
@@ -379,10 +385,31 @@ def _input_relation(
     )
     if rows is None:
         raise TypeError(f"Unsupported DuckDB portable input {type(value)!r}")
+    rows = [
+        {
+            str(key): item_value
+            for key, item_value in (
+                item.model_dump() if hasattr(item, "model_dump") else dict(item)
+            ).items()
+        }
+        for item in rows
+    ]
     schema_fields = _schema_fields(declared_spec)
-    declared_columns = list(getattr(value, "columns", ()) or ())
-    if not declared_columns:
-        declared_columns = [str(field["name"]) for field in schema_fields]
+    declared_columns = list(
+        dict.fromkeys(str(field["name"]) for field in schema_fields)
+    )
+    declared_columns.extend(
+        column
+        for column in dict.fromkeys(
+            str(column) for column in (getattr(value, "columns", ()) or ())
+        )
+        if column not in declared_columns
+    )
+    for row in rows:
+        for column in row:
+            column = str(column)
+            if column not in declared_columns:
+                declared_columns.append(column)
     if not rows and not declared_columns:
         raise ValueError(
             f"DuckDB portable input {name!r} is empty and has no declared schema"
@@ -403,8 +430,11 @@ def _input_relation(
             f"_{int(attempt)}_{_safe(name)}"
         )
     )
-    plugin.load_records(
-        rows,
+    ordered_rows = [
+        {column: row.get(column) for column in declared_columns} for row in rows
+    ]
+    loaded = plugin.load_records(
+        ordered_rows,
         target=relation,
         context=SqlExecutionContext(
             run_id=session.run_id,
@@ -414,17 +444,19 @@ def _input_relation(
             engine="duckdb",
         ),
         column_types=column_types,
+        temporary=True,
     )
-    if not rows:
-        session.execute(
-            f"CREATE TEMP TABLE {plugin.quote_identifier(relation.name)} ("
-            + ", ".join(
-                f"{plugin.quote_identifier(column)} {column_types[column]}"
-                for column in declared_columns
+    if loaded.outcome is not TransactionOutcome.COMMITTED:
+        detail = "; ".join(
+            str(
+                item.get("message")
+                or item.get("code")
+                or "DuckDB portable input load failed"
             )
-            + ")"
+            for item in loaded.diagnostics
         )
-    return relation, list(rows[0]) if rows else declared_columns
+        raise RuntimeError(detail or "DuckDB portable input load did not commit")
+    return relation, declared_columns
 
 
 def _schema_fields(spec: Any) -> list[dict[str, Any]]:
@@ -433,7 +465,7 @@ def _schema_fields(spec: Any) -> list[dict[str, Any]]:
     schema = spec.get("schema") if isinstance(spec.get("schema"), Mapping) else spec
     fields = schema.get("fields") if isinstance(schema, Mapping) else None
     return [
-        field
+        {str(key): value for key, value in field.items()}
         for field in fields or ()
         if isinstance(field, Mapping) and field.get("name")
     ]
@@ -442,73 +474,966 @@ def _schema_fields(spec: Any) -> list[dict[str, Any]]:
 def _declared_column_types(
     value: Any, schema_fields: list[dict[str, Any]]
 ) -> dict[str, str]:
-    types: dict[str, str] = {
-        str(field["name"]): _duck_type_for_schema(field.get("type"))
-        for field in schema_fields
-        if _duck_type_for_schema(field.get("type")) is not None
-    }
+    types: dict[str, str] = {}
+    for field in schema_fields:
+        type_name = field.get("type")
+        if type_name is None:
+            continue
+        duck_type = _duck_type_for_schema(type_name)
+        if duck_type is None:
+            raise ValueError(f"unsupported DuckDB declared type {type_name!r}")
+        types[str(field["name"])] = duck_type
     explicit = getattr(value, "column_types", None)
     if isinstance(explicit, Mapping):
         for name, type_name in explicit.items():
-            duck_type = _duck_type_for_schema(type_name)
-            if duck_type is not None:
-                types[str(name)] = duck_type
+            if type_name is None:
+                continue
+            duck_type = _explicit_duck_type(type_name)
+            if duck_type is None:
+                raise ValueError(f"unsupported DuckDB declared type {type_name!r}")
+            types[str(name)] = duck_type
     schema = getattr(value, "schema", None)
     if isinstance(schema, Mapping):
         for name, type_name in schema.items():
-            duck_type = _duck_type_for_schema(type_name)
-            if duck_type is not None:
-                types[str(name)] = duck_type
+            if type_name is None:
+                continue
+            duck_type = _explicit_duck_type(type_name)
+            if duck_type is None:
+                raise ValueError(f"unsupported DuckDB declared type {type_name!r}")
+            types[str(name)] = duck_type
     return types
+
+
+_NATIVE_DUCKDB_TYPES = frozenset(
+    {
+        "BOOLEAN",
+        "TINYINT",
+        "SMALLINT",
+        "INTEGER",
+        "BIGINT",
+        "HUGEINT",
+        "UTINYINT",
+        "USMALLINT",
+        "UINTEGER",
+        "UBIGINT",
+        "UHUGEINT",
+        "FLOAT",
+        "DOUBLE",
+        "REAL",
+        "DECIMAL",
+        "DATE",
+        "TIME",
+        "TIMETZ",
+        "TIME WITH TIME ZONE",
+        "TIMESTAMP",
+        "TIMESTAMPTZ",
+        "TIMESTAMP WITH TIME ZONE",
+        "INTERVAL",
+        "VARCHAR",
+        "TEXT",
+        "JSON",
+        "UUID",
+        "BLOB",
+    }
+)
+
+
+def _native_duck_type(type_name: Any) -> str | None:
+    text = str(type_name).strip().upper()
+    if text in _NATIVE_DUCKDB_TYPES:
+        return text
+    if re.fullmatch(r"DECIMAL\s*\(\s*\d+(?:\s*,\s*\d+)?\s*\)", text):
+        return re.sub(r"\s+", "", text)
+    return None
+
+
+def _explicit_duck_type(type_name: Any) -> str | None:
+    return _native_duck_type(type_name) or _duck_type_for_schema(type_name)
 
 
 def _duck_type_for_schema(type_name: Any) -> str | None:
     if type_name is None:
         return None
-    text = str(type_name).strip().lower()
+    raw_text = str(type_name).strip()
+    if not raw_text:
+        return None
+    if raw_text.isupper():
+        native_type = _native_duck_type(raw_text)
+        if native_type is not None:
+            return native_type
+    text = raw_text.lower()
     if not text:
         return None
-    if text in {"bool", "boolean"} or text.startswith("bool"):
+    if text in {"bool", "boolean"} or re.fullmatch(r"bool(?:ean)?\d+", text):
         return "BOOLEAN"
-    if text in {
-        "int",
-        "integer",
-        "long",
-        "bigint",
-        "smallint",
-        "tinyint",
-    } or text.startswith("int"):
+    if text in {"int", "integer", "long"} or re.fullmatch(r"int\d+", text):
         return "BIGINT"
-    if text in {
-        "hugeint",
-        "uhugeint",
-        "utinyint",
-        "usmallint",
-        "uinteger",
-        "ubigint",
-    }:
-        return text.upper()
-    if text in {"float", "double", "number", "real"} or text.startswith(
-        ("float", "double")
+    native_type = _native_duck_type(text)
+    if native_type is not None:
+        return native_type
+    if text in {"float", "double", "number", "real"} or re.fullmatch(
+        r"float(?:16|32|64)", text
     ):
         return "DOUBLE"
-    if text in {"datetime", "timestamp"} or text.startswith(("datetime", "timestamp")):
+    if text in {"datetime", "timestamp"} or re.fullmatch(
+        r"datetime64(?:\[[^\]]+\])?", text
+    ):
         return "TIMESTAMP"
-    if text == "date" or text.startswith("date"):
+    if text in {"date", "date32", "date64"}:
         return "DATE"
-    if text in {"time", "time64"} or text.startswith("time"):
+    if text in {"time", "time32", "time64"}:
         return "TIME"
-    if re.fullmatch(r"decimal(?:\s*\(\s*\d+\s*,\s*\d+\s*\))?", text):
+    if re.fullmatch(r"decimal(?:\s*\(\s*\d+(?:\s*,\s*\d+)?\s*\))?", text):
         return text.upper().replace(" ", "")
     if text in {"json", "object", "map", "array", "list"} or text.startswith(
-        ("list", "struct", "map")
+        ("list[", "list<", "struct[", "struct<", "map[", "map<")
     ):
         return "JSON"
-    if text in {"str", "string", "varchar", "text", "utf8"} or text.startswith(
-        ("string", "varchar")
-    ):
+    if text in {"str", "string", "varchar", "text", "utf8"}:
         return "VARCHAR"
     return None
+
+
+_SUPPORTED_EXPR_OPERATORS = frozenset(
+    {"eq", "neq", "gt", "gte", "lt", "lte", "and", "or"}
+)
+_FUNCTION_ARITIES: dict[str, tuple[int, int | None]] = {
+    "dtcs:lower": (1, 1),
+    "dtcs:coalesce": (1, None),
+    "dtcs:sum": (1, 1),
+    "dtcs:count_all": (0, 0),
+}
+
+
+def _finding(
+    requirement: str,
+    reason: str,
+    path: str,
+    evidence_fingerprint: str | None,
+    *,
+    code: str = "PMDUCK303",
+    obligation: str | None = None,
+) -> TransformSupportFinding:
+    return TransformSupportFinding(
+        code=code,
+        requirement=requirement,
+        reason=reason,
+        expression_path=path,
+        obligation=obligation or requirement,
+        support="unsupported",
+        evidence_fingerprint=evidence_fingerprint,
+    )
+
+
+def _identifier_finding(
+    value: Any,
+    *,
+    path: str,
+    evidence_fingerprint: str | None,
+) -> TransformSupportFinding | None:
+    if not isinstance(value, str) or not value:
+        return _finding(
+            "identifier",
+            "SQL identifiers must be non-empty strings",
+            path,
+            evidence_fingerprint,
+        )
+    try:
+        require_safe_identifier(value)
+    except ValueError:
+        return _finding(
+            "identifier",
+            "identifier is outside the DuckDB safe identifier policy",
+            path,
+            evidence_fingerprint,
+        )
+    return None
+
+
+def _column_findings(
+    value: Any,
+    *,
+    path: str,
+    available_fields: set[str] | None,
+    evidence_fingerprint: str | None,
+) -> list[TransformSupportFinding]:
+    """Validate an identifier and, when known, resolve it against a schema."""
+    finding = _identifier_finding(
+        value, path=path, evidence_fingerprint=evidence_fingerprint
+    )
+    if finding is not None:
+        return [finding]
+    if available_fields is not None and str(value) not in available_fields:
+        return [
+            _finding(
+                f"column:{value}",
+                "column is not declared by the source relation",
+                path,
+                evidence_fingerprint,
+            )
+        ]
+    return []
+
+
+def _analyze_expression(
+    node: Any,
+    *,
+    path: str,
+    evidence_fingerprint: str | None,
+    available_fields: set[str] | None = None,
+) -> list[TransformSupportFinding]:
+    if isinstance(node, str):
+        return _column_findings(
+            node,
+            path=path,
+            available_fields=available_fields,
+            evidence_fingerprint=evidence_fingerprint,
+        )
+    if isinstance(node, (int, float, bool)):
+        return []
+    if not isinstance(node, Mapping):
+        return [
+            _finding(
+                "expression",
+                "expression must use a supported closed-IR shape",
+                path,
+                evidence_fingerprint,
+            )
+        ]
+
+    kind = node.get("kind") or node.get("type")
+    if kind in {"fieldRef", "field"}:
+        name = node.get("target") or node.get("name")
+        if node.get("scope") == "parameter":
+            if isinstance(name, str) and name:
+                return []
+            return [
+                _finding(
+                    "parameter",
+                    "parameter references require a non-empty name",
+                    path,
+                    evidence_fingerprint,
+                )
+            ]
+        return _column_findings(
+            name,
+            path=path,
+            available_fields=available_fields,
+            evidence_fingerprint=evidence_fingerprint,
+        )
+    if kind == "literal":
+        return []
+    if kind == "call":
+        findings: list[TransformSupportFinding] = []
+        callee = node.get("callee")
+        if not isinstance(callee, str) or not callee:
+            findings.append(
+                _finding(
+                    "function",
+                    "function calls require a non-empty callee",
+                    f"{path}.callee",
+                    evidence_fingerprint,
+                )
+            )
+        elif callee not in _FUNCTIONS:
+            findings.append(
+                _finding(
+                    f"function:{callee}",
+                    "function is not implemented by the DuckDB compiler",
+                    path,
+                    evidence_fingerprint,
+                )
+            )
+        args = node.get("args") or ()
+        if isinstance(args, (str, bytes)) or not isinstance(args, Sequence):
+            findings.append(
+                _finding(
+                    f"function:{callee}:arguments",
+                    "function arguments must be a sequence",
+                    f"{path}.args",
+                    evidence_fingerprint,
+                )
+            )
+            return findings
+        arity = _FUNCTION_ARITIES.get(str(callee))
+        if arity is not None:
+            minimum, maximum = arity
+            if len(args) < minimum or (maximum is not None and len(args) > maximum):
+                findings.append(
+                    _finding(
+                        f"function:{callee}:arity",
+                        "function argument count is unsupported",
+                        f"{path}.args",
+                        evidence_fingerprint,
+                    )
+                )
+        for index, argument in enumerate(args):
+            findings.extend(
+                _analyze_expression(
+                    argument,
+                    path=f"{path}.args[{index}]",
+                    evidence_fingerprint=evidence_fingerprint,
+                    available_fields=available_fields,
+                )
+            )
+        return findings
+    if kind in {"binary", "operator"}:
+        findings = []
+        operator = str(node.get("op") or "")
+        if operator not in _SUPPORTED_EXPR_OPERATORS:
+            findings.append(
+                _finding(
+                    f"operator:{operator or '<missing>'}",
+                    "expression operator is not implemented by the DuckDB compiler",
+                    f"{path}.op",
+                    evidence_fingerprint,
+                )
+            )
+        for side in ("left", "right"):
+            findings.extend(
+                _analyze_expression(
+                    node.get(side),
+                    path=f"{path}.{side}",
+                    evidence_fingerprint=evidence_fingerprint,
+                    available_fields=available_fields,
+                )
+            )
+        return findings
+    return [
+        _finding(
+            f"expression:{kind or '<missing>'}",
+            "expression kind is not implemented by the DuckDB compiler",
+            path,
+            evidence_fingerprint,
+        )
+    ]
+
+
+def _sequence(
+    value: Any,
+    *,
+    requirement: str,
+    path: str,
+    evidence_fingerprint: str | None,
+) -> tuple[Sequence[Any] | None, list[TransformSupportFinding]]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        return None, [
+            _finding(
+                requirement,
+                f"{requirement} must be a sequence",
+                path,
+                evidence_fingerprint,
+            )
+        ]
+    return value, []
+
+
+def _analyze_definition(
+    definition: Mapping[str, Any],
+    *,
+    evidence_fingerprint: str | None,
+) -> list[TransformSupportFinding]:
+    inputs = definition.get("inputs") or {}
+    findings = _analyze_declared_inputs(
+        inputs, evidence_fingerprint=evidence_fingerprint
+    )
+    input_names = [str(name) for name in inputs] if isinstance(inputs, Mapping) else []
+    available_relations = set(input_names)
+    relation_columns: dict[str, set[str] | None] = (
+        {str(name): _declared_fields(spec) for name, spec in inputs.items()}
+        if isinstance(inputs, Mapping)
+        else {}
+    )
+    actions, action_findings = _sequence(
+        definition.get("actions") or (),
+        requirement="actions",
+        path="actions",
+        evidence_fingerprint=evidence_fingerprint,
+    )
+    findings.extend(action_findings)
+    if actions is None:
+        return findings
+
+    current_relation_name = input_names[0] if input_names else None
+    for index, action in enumerate(actions):
+        path = f"actions[{index}]"
+        if not isinstance(action, Mapping):
+            findings.append(
+                _finding(
+                    "action",
+                    "portable actions must be mappings",
+                    path,
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        kind = action.get("kind") or {}
+        if not isinstance(kind, Mapping):
+            findings.append(
+                _finding(
+                    "action.kind",
+                    "action kind must be a mapping",
+                    f"{path}.kind",
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        name = kind.get("action")
+        action_path = str(kind.get("id") or path)
+        params = kind.get("parameters") or {}
+        if not isinstance(params, Mapping):
+            findings.append(
+                _finding(
+                    f"action:{name}:parameters",
+                    "action parameters must be a mapping",
+                    f"{path}.kind.parameters",
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        if name == "dtcs:union":
+            findings.append(
+                _finding(
+                    f"action:{name}",
+                    "DuckDB phase 0.49 compiler requires explicit relation lowering for joins/unions",
+                    action_path,
+                    evidence_fingerprint,
+                    code="PMDUCK301",
+                    obligation=str(name),
+                )
+            )
+            continue
+        if name not in _ACTIONS:
+            findings.append(
+                _finding(
+                    f"action:{name or '<missing>'}",
+                    "action is not implemented by the DuckDB compiler",
+                    f"{path}.kind.action",
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        target = kind.get("target")
+        if target and str(target) not in available_relations:
+            findings.append(
+                _finding(
+                    f"action.target:{target}",
+                    "action target does not identify an available relation",
+                    f"{path}.kind.target",
+                    evidence_fingerprint,
+                )
+            )
+        target_name = str(target) if target else None
+        current_relation = target_name or current_relation_name
+        source_columns = (
+            relation_columns.get(current_relation) if current_relation else None
+        )
+        findings.extend(
+            _analyze_action(
+                str(name),
+                params,
+                path=path,
+                action_path=action_path,
+                available_relations=available_relations,
+                source_columns=source_columns,
+                relation_columns=relation_columns,
+                evidence_fingerprint=evidence_fingerprint,
+            )
+        )
+        output_relation = str(kind.get("id") or action.get("id") or f"a{index}")
+        available_relations.add(output_relation)
+        relation_columns[output_relation] = _action_output_fields(
+            str(name),
+            params,
+            source_columns=source_columns,
+            relation_columns=relation_columns,
+        )
+        current_relation_name = output_relation
+    findings.extend(
+        _analyze_outputs(
+            definition,
+            available_relations=available_relations,
+            evidence_fingerprint=evidence_fingerprint,
+        )
+    )
+    return findings
+
+
+def _declared_fields(spec: Any) -> set[str] | None:
+    """Return declared field names, or None when the schema is intentionally open."""
+    if not isinstance(spec, Mapping):
+        return None
+    schema = spec.get("schema") if isinstance(spec.get("schema"), Mapping) else spec
+    if not isinstance(schema, Mapping) or "fields" not in schema:
+        return None
+    fields = schema.get("fields")
+    if not isinstance(fields, Sequence) or isinstance(fields, (str, bytes)):
+        return None
+    return {
+        str(field.get("name"))
+        for field in fields
+        if isinstance(field, Mapping) and isinstance(field.get("name"), str)
+    }
+
+
+def _action_output_fields(
+    name: str,
+    params: Mapping[str, Any],
+    *,
+    source_columns: set[str] | None,
+    relation_columns: Mapping[str, set[str] | None],
+) -> set[str] | None:
+    """Approximate output columns for subsequent static resolution."""
+    if source_columns is None:
+        return None
+    if name in {"dtcs:filter", "dtcs:limit", "dtcs:sort"}:
+        return set(source_columns)
+    if name == "dtcs:project":
+        return {
+            str(item.get("name")) if isinstance(item, Mapping) else str(item)
+            for item in params.get("fields") or ()
+            if (isinstance(item, str) and item)
+            or (isinstance(item, Mapping) and item.get("name"))
+        }
+    if name == "dtcs:with_fields":
+        output = set(source_columns)
+        for item in params.get("assignments") or ():
+            if isinstance(item, Mapping) and item.get("name"):
+                output.add(str(item["name"]))
+        return output
+    if name == "dtcs:aggregate":
+        output = {
+            str(field)
+            for field in params.get("groupBy") or ()
+            if isinstance(field, str)
+        }
+        output.update(
+            str(item["name"])
+            for item in params.get("aggregates") or params.get("aggregations") or ()
+            if isinstance(item, Mapping) and item.get("name")
+        )
+        return output
+    if name == "dtcs:join":
+        right = params.get("right")
+        right_columns = relation_columns.get(str(right)) if right else None
+        if right_columns is None:
+            return None
+        right_key = params.get("rightKey")
+        return set(source_columns) | {
+            column for column in right_columns if column != right_key
+        }
+    return set(source_columns)
+
+
+def _analyze_declared_inputs(
+    inputs: Any, *, evidence_fingerprint: str | None
+) -> list[TransformSupportFinding]:
+    if not isinstance(inputs, Mapping):
+        return [
+            _finding(
+                "inputs",
+                "portable inputs must be a mapping",
+                "inputs",
+                evidence_fingerprint,
+            )
+        ]
+    findings: list[TransformSupportFinding] = []
+    for input_name, spec in inputs.items():
+        path = f"inputs.{input_name}"
+        if not isinstance(spec, Mapping):
+            findings.append(
+                _finding(
+                    "input.schema",
+                    "portable input declarations must be mappings",
+                    path,
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        schema = spec.get("schema") if "schema" in spec else spec
+        if not isinstance(schema, Mapping):
+            findings.append(
+                _finding(
+                    "input.schema",
+                    "portable input schema must be a mapping",
+                    f"{path}.schema",
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        fields = schema.get("fields")
+        if fields is None:
+            continue
+        field_items, item_findings = _sequence(
+            fields,
+            requirement="input.schema.fields",
+            path=f"{path}.schema.fields",
+            evidence_fingerprint=evidence_fingerprint,
+        )
+        findings.extend(item_findings)
+        if field_items is None:
+            continue
+        for index, field in enumerate(field_items):
+            field_path = f"{path}.schema.fields[{index}]"
+            if not isinstance(field, Mapping):
+                findings.append(
+                    _finding(
+                        "input.schema.field",
+                        "schema field declarations must be mappings",
+                        field_path,
+                        evidence_fingerprint,
+                    )
+                )
+                continue
+            identifier = _identifier_finding(
+                field.get("name"),
+                path=f"{field_path}.name",
+                evidence_fingerprint=evidence_fingerprint,
+            )
+            if identifier is not None:
+                findings.append(identifier)
+            type_name = field.get("type")
+            if type_name is not None and _duck_type_for_schema(type_name) is None:
+                findings.append(
+                    _finding(
+                        f"type:{type_name}",
+                        "declared type is not supported by DuckDB lowering",
+                        f"{field_path}.type",
+                        evidence_fingerprint,
+                    )
+                )
+    return findings
+
+
+def _analyze_action(
+    name: str,
+    params: Mapping[str, Any],
+    *,
+    path: str,
+    action_path: str,
+    available_relations: set[str],
+    source_columns: set[str] | None,
+    relation_columns: Mapping[str, set[str] | None],
+    evidence_fingerprint: str | None,
+) -> list[TransformSupportFinding]:
+    base = f"{path}.kind.parameters"
+    if name == "dtcs:filter":
+        return _analyze_expression(
+            params.get("predicate"),
+            path=f"{base}.predicate",
+            evidence_fingerprint=evidence_fingerprint,
+            available_fields=source_columns,
+        )
+    if name in {"dtcs:project", "dtcs:with_fields", "dtcs:sort"}:
+        key = {
+            "dtcs:project": "fields",
+            "dtcs:with_fields": "assignments",
+            "dtcs:sort": "by" if params.get("by") else "keys",
+        }[name]
+        items, findings = _sequence(
+            params.get(key) or (),
+            requirement=f"{name.removeprefix('dtcs:')}.{key}",
+            path=f"{base}.{key}",
+            evidence_fingerprint=evidence_fingerprint,
+        )
+        if items is None:
+            return findings
+        if name == "dtcs:project" and not items:
+            findings.append(
+                _finding(
+                    "project.fields",
+                    "project requires at least one field",
+                    f"{base}.fields",
+                    evidence_fingerprint,
+                )
+            )
+        for index, item in enumerate(items):
+            item_path = f"{base}.{key}[{index}]"
+            if name == "dtcs:sort":
+                value = item.get("column") if isinstance(item, Mapping) else item
+                identifier = _column_findings(
+                    value,
+                    path=item_path,
+                    available_fields=source_columns,
+                    evidence_fingerprint=evidence_fingerprint,
+                )
+                findings.extend(identifier)
+                continue
+            if isinstance(item, str):
+                if name == "dtcs:with_fields":
+                    findings.append(
+                        _finding(
+                            "with_fields.assignment",
+                            "with_fields assignments must be mappings",
+                            item_path,
+                            evidence_fingerprint,
+                        )
+                    )
+                else:
+                    identifier = _column_findings(
+                        item,
+                        path=item_path,
+                        available_fields=source_columns,
+                        evidence_fingerprint=evidence_fingerprint,
+                    )
+                    findings.extend(identifier)
+                continue
+            if not isinstance(item, Mapping):
+                findings.append(
+                    _finding(
+                        f"{name.removeprefix('dtcs:')}.item",
+                        "action items must be identifier strings or expression mappings",
+                        item_path,
+                        evidence_fingerprint,
+                    )
+                )
+                continue
+            identifier = _identifier_finding(
+                item.get("name"),
+                path=f"{item_path}.name",
+                evidence_fingerprint=evidence_fingerprint,
+            )
+            if identifier is not None:
+                findings.append(identifier)
+            findings.extend(
+                _analyze_expression(
+                    item.get("expression"),
+                    path=f"{item_path}.expression",
+                    evidence_fingerprint=evidence_fingerprint,
+                    available_fields=source_columns,
+                )
+            )
+        return findings
+    if name == "dtcs:limit":
+        count = params.get("count", params.get("n", 0))
+        try:
+            valid = int(count) >= 0
+        except (TypeError, ValueError):
+            valid = False
+        return (
+            []
+            if valid
+            else [
+                _finding(
+                    "limit.count",
+                    "limit count must be a non-negative integer",
+                    f"{base}.count",
+                    evidence_fingerprint,
+                )
+            ]
+        )
+    if name == "dtcs:join":
+        findings = []
+        collision = str(params.get("collisionPolicy") or "fail")
+        if collision != "fail":
+            findings.append(
+                _finding(
+                    f"join.collisionPolicy:{collision}",
+                    "DuckDB compiler only supports fail-closed join collisions",
+                    action_path,
+                    evidence_fingerprint,
+                    code="PMDUCK302",
+                    obligation="join.collisionPolicy",
+                )
+            )
+        right_relation = params.get("right")
+        if not isinstance(right_relation, str) or not right_relation:
+            findings.append(
+                _finding(
+                    "join.right",
+                    "join requires a right relation identity",
+                    f"{base}.right",
+                    evidence_fingerprint,
+                )
+            )
+        elif right_relation not in available_relations:
+            findings.append(
+                _finding(
+                    f"join.right:{right_relation}",
+                    "join right side does not identify an available relation",
+                    f"{base}.right",
+                    evidence_fingerprint,
+                )
+            )
+        right_columns = (
+            relation_columns.get(str(right_relation)) if right_relation else None
+        )
+        for key in ("leftKey", "rightKey"):
+            identifier = _column_findings(
+                params.get(key),
+                path=f"{base}.{key}",
+                available_fields=(
+                    source_columns if key == "leftKey" else right_columns
+                ),
+                evidence_fingerprint=evidence_fingerprint,
+            )
+            findings.extend(identifier)
+        if (
+            collision == "fail"
+            and source_columns is not None
+            and right_columns is not None
+        ):
+            overlap = sorted(
+                source_columns
+                & right_columns
+                - {str(params.get("leftKey")), str(params.get("rightKey"))}
+            )
+            if overlap:
+                findings.append(
+                    _finding(
+                        "join.collision",
+                        f"join column collision would occur for: {', '.join(overlap)}",
+                        f"{base}.collisionPolicy",
+                        evidence_fingerprint,
+                        code="PMDUCK302",
+                        obligation="join.collisionPolicy",
+                    )
+                )
+        join_type = str(params.get("type") or "inner").lower()
+        if join_type not in {"inner", "left", "right", "full", "outer"}:
+            findings.append(
+                _finding(
+                    f"join.type:{join_type}",
+                    "join type is not implemented by the DuckDB compiler",
+                    f"{base}.type",
+                    evidence_fingerprint,
+                )
+            )
+        return findings
+    if name == "dtcs:aggregate":
+        findings = []
+        group_by, group_findings = _sequence(
+            params.get("groupBy") or (),
+            requirement="aggregate.groupBy",
+            path=f"{base}.groupBy",
+            evidence_fingerprint=evidence_fingerprint,
+        )
+        aggregates, aggregate_findings = _sequence(
+            params.get("aggregates") or params.get("aggregations") or (),
+            requirement="aggregate.aggregates",
+            path=f"{base}.aggregates",
+            evidence_fingerprint=evidence_fingerprint,
+        )
+        findings.extend(group_findings)
+        findings.extend(aggregate_findings)
+        if group_by is not None:
+            for index, field in enumerate(group_by):
+                identifier = _column_findings(
+                    field,
+                    path=f"{base}.groupBy[{index}]",
+                    available_fields=source_columns,
+                    evidence_fingerprint=evidence_fingerprint,
+                )
+                findings.extend(identifier)
+        if aggregates is not None:
+            for index, aggregate in enumerate(aggregates):
+                aggregate_path = f"{base}.aggregates[{index}]"
+                if not isinstance(aggregate, Mapping):
+                    findings.append(
+                        _finding(
+                            "aggregate.expression",
+                            "aggregate expressions must be mappings",
+                            aggregate_path,
+                            evidence_fingerprint,
+                        )
+                    )
+                    continue
+                identifier = _identifier_finding(
+                    aggregate.get("name"),
+                    path=f"{aggregate_path}.name",
+                    evidence_fingerprint=evidence_fingerprint,
+                )
+                if identifier is not None:
+                    findings.append(identifier)
+                findings.extend(
+                    _analyze_expression(
+                        aggregate.get("expression"),
+                        path=f"{aggregate_path}.expression",
+                        evidence_fingerprint=evidence_fingerprint,
+                        available_fields=source_columns,
+                    )
+                )
+        if not group_by and not aggregates:
+            findings.append(
+                _finding(
+                    "aggregate",
+                    "aggregate requires grouping fields or aggregate expressions",
+                    base,
+                    evidence_fingerprint,
+                )
+            )
+        return findings
+    return []
+
+
+def _analyze_outputs(
+    definition: Mapping[str, Any],
+    *,
+    available_relations: set[str],
+    evidence_fingerprint: str | None,
+) -> list[TransformSupportFinding]:
+    outputs = definition.get("outputs") or {}
+    if not isinstance(outputs, Mapping):
+        return [
+            _finding(
+                "outputs",
+                "portable outputs must be a mapping",
+                "outputs",
+                evidence_fingerprint,
+            )
+        ]
+    requirements = definition.get("requirements") or {}
+    if not isinstance(requirements, Mapping):
+        return [
+            _finding(
+                "requirements",
+                "portable requirements must be a mapping",
+                "requirements",
+                evidence_fingerprint,
+            )
+        ]
+    dependencies = requirements.get("dependencies") or ()
+    dependency_items, findings = _sequence(
+        dependencies,
+        requirement="requirements.dependencies",
+        path="requirements.dependencies",
+        evidence_fingerprint=evidence_fingerprint,
+    )
+    if dependency_items is None:
+        return findings
+    for index, dependency in enumerate(dependency_items):
+        path = f"requirements.dependencies[{index}]"
+        if not isinstance(dependency, Mapping):
+            findings.append(
+                _finding(
+                    "requirements.dependency",
+                    "output dependencies must be mappings",
+                    path,
+                    evidence_fingerprint,
+                )
+            )
+            continue
+        source = dependency.get("from")
+        target = dependency.get("to")
+        if not isinstance(source, str) or source not in available_relations:
+            findings.append(
+                _finding(
+                    f"output.source:{source or '<missing>'}",
+                    "output dependency source is not an available relation",
+                    f"{path}.from",
+                    evidence_fingerprint,
+                )
+            )
+        if not isinstance(target, str) or target not in outputs:
+            findings.append(
+                _finding(
+                    f"output.target:{target or '<missing>'}",
+                    "output dependency target is not a declared output",
+                    f"{path}.to",
+                    evidence_fingerprint,
+                )
+            )
+    return findings
 
 
 _ResultFrame = DuckDBFrame

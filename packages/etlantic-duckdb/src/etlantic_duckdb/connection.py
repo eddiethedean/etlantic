@@ -43,8 +43,8 @@ def configure_connection(conn: duckdb.DuckDBPyConnection, config: DuckDBConfig) 
         "allow_persistent_secrets",
         "allow_unredacted_secrets",
     ):
-        value = conn.execute(f"SELECT current_setting('{setting}')").fetchone()[0]
-        if str(value).lower() not in {"false", "0"}:
+        row = conn.execute(f"SELECT current_setting('{setting}')").fetchone()
+        if row is None or str(row[0]).lower() not in {"false", "0"}:
             raise RuntimeError(f"DuckDB security setting {setting} was not enforced")
     conn.execute("SET lock_configuration = true")
 
@@ -69,12 +69,26 @@ class DuckDBSession:
                 return self.connection.execute(sql)
             return self.connection.execute(sql, params)
 
+    def reserve_statements(self, count: int) -> None:
+        """Reserve counted work before a multi-row operation mutates state."""
+        if count < 0:
+            raise ValueError("DuckDB statement reservation must be non-negative")
+        with self.lock:
+            next_count = self.statement_count + count
+            if next_count > self.config.max_statements:
+                raise RuntimeError("DuckDB statement budget exceeded")
+            self.statement_count = next_count
+
     def close(self) -> None:
         if self.closed:
             return
         with self.lock:
-            self.connection.close()
-            self.closed = True
+            try:
+                self.connection.close()
+            finally:
+                # A failed close must never leave this session eligible for
+                # reuse. The manager detaches it before invoking close().
+                self.closed = True
 
 
 class DuckDBConnectionManager:

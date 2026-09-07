@@ -191,11 +191,12 @@ jobs:
           ICEBERG="dist/etlantic_iceberg-${TAG}-py3-none-any.whl"
           SNOWFLAKE="dist/etlantic_snowflake-${TAG}-py3-none-any.whl"
           OPENLINEAGE="dist/etlantic_openlineage-${TAG}-py3-none-any.whl"
+          DUCKDB="dist/etlantic_duckdb-${TAG}-py3-none-any.whl"
           uv run --isolated --no-project \
             --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
             --with "$SPARK" --with "$AIRFLOW" --with "$PREFECT" --with "$KEYRING" \
             --with "$SQLMODEL" --with "$MEDALLANTIC" --with "$SPARKFORGE" --with "$DATAFUSION" --with "$FASTAPI" \
-            --with "$S3" --with "$ICEBERG" --with "$SNOWFLAKE" --with "$OPENLINEAGE" \
+            --with "$S3" --with "$ICEBERG" --with "$SNOWFLAKE" --with "$OPENLINEAGE" --with "$DUCKDB" \
             python -c "
           import etlantic
           import etlantic_polars
@@ -214,6 +215,7 @@ jobs:
           import etlantic_iceberg
           import etlantic_snowflake
           import etlantic_openlineage
+          import etlantic_duckdb
           assert etlantic.__version__ == '$TAG'
           assert etlantic_polars.__version__ == '$TAG'
           assert etlantic_pandas.__version__ == '$TAG'
@@ -231,6 +233,7 @@ jobs:
           assert etlantic_iceberg.__version__ == '$TAG'
           assert etlantic_snowflake.__version__ == '$TAG'
           assert etlantic_openlineage.__version__ == '$TAG'
+          assert etlantic_duckdb.__version__ == '$TAG'
           from etlantic.dataframe.discovery import discover_dataframe_plugins
           from etlantic.sql.discovery import discover_sql_plugins
           from etlantic.spark.discovery import discover_spark_plugins
@@ -252,6 +255,8 @@ jobs:
           assert 'pyspark' in compilers, compilers
           assert 'pandas' in compilers, compilers
           assert 'datafusion' in compilers, compilers
+          assert 'duckdb' in sql, sql
+          assert 'duckdb' in compilers, compilers
           print('ok', etlantic.__version__, sorted(found), sorted(sql), sorted(spark), sorted(orch), sorted(sched), sorted(compilers))
           "
 

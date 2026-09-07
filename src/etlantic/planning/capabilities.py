@@ -57,11 +57,23 @@ def assert_sql_engines_available(
     default_engine: str,
 ) -> None:
     registry = get_engine_registry()
-    engines = {default_engine} | {impl.engine for impl in implementations.values()}
+    engines = {
+        engine
+        for engine in (
+            default_engine,
+            context.profile.sql_engine,
+            *(impl.engine for impl in implementations.values()),
+        )
+        if engine
+    }
     missing = sorted(
         engine
         for engine in engines
-        if registry.is_sql_engine(engine) and engine not in context.registry.engines
+        if (
+            engine == context.profile.sql_engine
+            or registry.is_sql_engine(engine, context.registry.engines)
+        )
+        and engine not in context.registry.engines
     )
     if not missing:
         return
@@ -90,14 +102,22 @@ def assert_sql_write_capabilities(
     default_engine: str,
 ) -> None:
     registry = get_engine_registry()
-    engines = {default_engine} | {impl.engine for impl in implementations.values()}
-    if not any(registry.is_sql_engine(e) for e in engines):
+    engines = {
+        engine
+        for engine in (
+            default_engine,
+            context.profile.sql_engine,
+            *(impl.engine for impl in implementations.values()),
+        )
+        if engine
+    }
+    if not any(registry.is_sql_engine(e, context.registry.engines) for e in engines):
         return
     required = list(context.profile.required_sql_capabilities)
     if not required:
         return
     for engine in engines:
-        if not registry.is_sql_engine(engine):
+        if not registry.is_sql_engine(engine, context.registry.engines):
             continue
         available = context.registry.engines.get(engine)
         if available is None:

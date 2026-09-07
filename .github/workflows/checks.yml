@@ -292,7 +292,13 @@ jobs:
 
   duckdb:
     name: DuckDB optional plugin
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.13"]
+        duckdb-version: ["1.0.0", "1.5.5"]
     steps:
       - uses: actions/checkout@v7
 
@@ -300,7 +306,7 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
         with:
           version: "0.12.0"
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -309,15 +315,16 @@ jobs:
 
       - name: Discovery and security smoke
         run: |
-          uv run python -c "from etlantic.sql.discovery import discover_sql_plugins; assert 'duckdb' in discover_sql_plugins()"
-          uv run pytest -q tests/duckdb
+          uv run --with "duckdb==${{ matrix.duckdb-version }}" python -c "from etlantic.sql.discovery import discover_sql_plugins; import duckdb; assert duckdb.__version__ == '${{ matrix.duckdb-version }}'; assert 'duckdb' in discover_sql_plugins()"
+          uv run --with "duckdb==${{ matrix.duckdb-version }}" pytest -q tests/duckdb
 
       - name: Public portable conformance
-        run: uv run pytest -q tests/portable_conformance -m duckdb
+        run: uv run --with "duckdb==${{ matrix.duckdb-version }}" pytest -q tests/portable_conformance -m duckdb
 
       - name: DuckDB examples and manifest checks
         run: |
-          uv run python scripts/check_duckdb_0_49.py
+          uv run --with "duckdb==${{ matrix.duckdb-version }}" python examples/duckdb_portable.py
+          uv run --with "duckdb==${{ matrix.duckdb-version }}" python scripts/check_duckdb_0_49.py
           uv run python scripts/check_plugin_manifests.py
           uv run python scripts/check_release.py
 
@@ -683,7 +690,8 @@ jobs:
             "etlantic_kafka:etlantic_kafka" \
             "etlantic_spark_connect:etlantic_spark_connect" \
             "etlantic_lsp:etlantic_lsp" \
-            "etlantic_schemaregistry:etlantic_schemaregistry"; do
+            "etlantic_schemaregistry:etlantic_schemaregistry" \
+            "etlantic_duckdb:etlantic_duckdb"; do
             wheel_glob="${pair%%:*}"
             mod="${pair##*:}"
             wheel=$(ls dist/${wheel_glob}-*.whl 2>/dev/null | head -1 || true)

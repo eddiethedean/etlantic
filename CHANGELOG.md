@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Qualified optional DuckDB SQL and portable-transform package surface for 0.49,
+  including fail-closed preflight validation, evidence artifacts, and installed
+  wheel discovery smoke coverage. See the [0.49 migration guide](docs/11_DEVELOPMENT/MIGRATION_0_48_TO_0_49.md).
+
 ## [0.48.0] - 2026-08-18
 
 ### Adopter summary

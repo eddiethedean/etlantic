@@ -30,7 +30,7 @@ DuckDB package workstream in the roadmap.
 | 2 | Discovery authorizes before import and production allowlists are enforced | Pass | **Pass** |
 | 3 | Engine/compiler/version/config identity is stable and artifacts contain no secrets or backend objects | Pass | **Pass** |
 | 4 | Run-scoped/thread-local connections, explicit transactions, rollback, cleanup, and retry diagnostics pass | Pass | **Pass** |
-| 5 | In-memory and file-backed read-only behavior is deterministic and policy-enforced | Pass | **Partial; file qualification pending** |
+| 5 | In-memory and file-backed read-only behavior is deterministic and policy-enforced | Pass | **Qualified by generated file-backed/read-only fixture** |
 | 6 | SQL protocol handles remain lazy until declared fetch/materialization boundaries | Pass | **Pass** |
 | 7 | Bound parameters and validated identifiers are enforced; raw SQL and UDF escape hatches fail closed | Pass | **Pass** |
 | 8 | DuckDB dialect edge cases pass the declared semantic differential corpus | Pass | **Qualified subset** |
@@ -38,10 +38,10 @@ DuckDB package workstream in the roadmap.
 | 10 | Partial, lowered, unsupported, unavailable, and unknown findings are stable, bounded, and fingerprinted | Pass | **Pass** |
 | 11 | Optional connectors pass ownership, schema, idempotency, atomicity, publication, and cleanup evidence or remain unclaimed | Pass | **Unclaimed / fail-closed** |
 | 12 | Extension installation/loading, arbitrary file access, and unsupported dialect features fail before I/O | Pass | **Pass** |
-| 13 | Isolated CI covers supported DuckDB versions and dependency leakage into core | Pass | **CI wired; version matrix pending** |
+| 13 | Isolated CI covers supported DuckDB versions and dependency leakage into core | Pass | **OS/Python plus DuckDB min/max matrix wired** |
 | 14 | Phase 0.50 portable and phase 0.51 adaptive handoff fixtures prove exact candidate evidence and replan-on-drift | Pass | **Pass** |
 | 15 | No unresolved critical/high correctness, security, compatibility, or data-loss finding | 0 | **Pass for qualified subset** |
-| 16 | Fake non-`sql` SQL engine proves capability-driven plan/source/step/sink/hybrid routing | Pass | **Generic routing implemented; fixture pending** |
+| 16 | Fake non-`sql` SQL engine proves capability-driven plan/source/step/sink/hybrid routing | Pass | **Generic routing and full protocol fixture implemented** |
 | 17 | Additive support-evidence changes preserve frozen `/1` compatibility for existing plugins | Pass | **Pass** |
 | 18 | SQL `portable_compiled` execution uses the planned compiler and selected engine with no native fallback | Pass | **Pass** |
 | 19 | Run-specific cleanup isolates concurrent connection, relation, parameter, and staging state | Pass | **Pass** |
@@ -72,6 +72,9 @@ uv lock
 uv sync --locked --group duckdb
 uv run pytest -q tests/duckdb -m duckdb
 uv run pytest -q tests/portable_conformance -m duckdb
+uv run --with duckdb==1.0.0 pytest -q tests/duckdb -m duckdb
+uv run --with duckdb==1.5.5 pytest -q tests/duckdb -m duckdb
+uv run python examples/duckdb_portable.py
 uv run python scripts/check_duckdb_0_49.py
 uv run python scripts/check_plugin_manifests.py
 uv run --group polars --group pandas --group sql --group pyspark \

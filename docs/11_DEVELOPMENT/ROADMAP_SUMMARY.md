@@ -21,7 +21,7 @@ For the status, current boundary, and owner of every domain plan, use the
 
 | Horizon | Release | Outcome | Evidence / status |
 |---|---:|---|---|
-| Current | 0.48 | AI-assisted, human-governed proposals | [Gate-ready](EXIT_GATE_0_48.md) |
+| Previous | 0.48 | AI-assisted, human-governed proposals | [Gate-ready](EXIT_GATE_0_48.md) |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | [Gate-ready](EXIT_GATE_0_47.md) |
 | Previous | 0.46 | Streaming and event-driven pipelines | [Gate-ready](EXIT_GATE_0_46.md) |
 | Previous | 0.45 | Planner and Optimization SDK | [Released](EXIT_GATE_0_45.md) |
@@ -32,7 +32,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Next | 0.49 | Full optional DuckDB engine package development | Planned — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md) (Not started) |
+| Current | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
 | Later | 0.50 | Seven-engine portable execution and pushdown conformance | Planned — [plan](IMPLEMENTATION_PLAN_0_50.md), [exit gate](EXIT_GATE_0_50.md) (Not started), [epic #102](https://github.com/eddiethedean/etlantic/issues/102) |
 | Later | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [plan](IMPLEMENTATION_PLAN_0_51.md), [exit gate](EXIT_GATE_0_51.md) (Not started), [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Later | 0.52 | Brownfield adoption bridges | Planning freeze |
@@ -40,7 +40,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.55 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.49 DuckDB package next) |
+| Post-foundation | 0.38–0.55 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.49 qualified DuckDB subset; 0.50 portable-engine baseline next) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

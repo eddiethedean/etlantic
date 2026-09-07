@@ -21,7 +21,8 @@ _SECRET_KEY_RE = re.compile(
 _SENSITIVE_KEY_RE = re.compile(
     r"(^|_)(password|passwd|pwd|secret|secret_value|token|api[_-]?key|"
     r"api[_-]?token|access[_-]?key|access[_-]?token|private[_-]?key|"
-    r"client[_-]?secret|credential|credentials|authorization|auth|jwt|"
+    r"client[_-]?secret|aws[_-]?secret[_-]?access[_-]?key|"
+    r"aws[_-]?access[_-]?key(?:[_-]?id)?|credential|credentials|authorization|auth|jwt|"
     r"bearer|dsn|connection[_-]?string|jdbc[_-]?url|database[_-]?url|db[_-]?url)$",
     re.IGNORECASE,
 )
@@ -89,7 +90,7 @@ def redact_message(message: str) -> str:
 
 def is_sensitive_key(key: object) -> bool:
     """Return whether a mapping key conventionally carries secret material."""
-    normalized = str(key).replace("-", "_")
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", str(key)).strip("_")
     return _SENSITIVE_KEY_RE.search(normalized) is not None
 
 

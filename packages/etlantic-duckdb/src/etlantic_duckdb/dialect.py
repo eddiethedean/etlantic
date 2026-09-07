@@ -241,9 +241,13 @@ class DuckDBCompiler:
         if right_alias:
             sql += f" AS {right_alias}"
         if join.how != "cross":
+            if not join.left_keys or not join.right_keys:
+                raise ValueError("DuckDB joins require explicit key pairs")
+            if len(join.left_keys) != len(join.right_keys):
+                raise ValueError("DuckDB join key counts must match")
             left_alias = quote_identifier(alias) if alias else None
             conditions = []
-            for left, right_name in zip(join.left_keys, join.right_keys, strict=False):
+            for left, right_name in zip(join.left_keys, join.right_keys, strict=True):
                 left_sql = (
                     f"{left_alias}.{quote_identifier(left)}"
                     if left_alias
@@ -257,8 +261,6 @@ class DuckDBCompiler:
                 conditions.append(
                     f"{left_sql} {'IS NOT DISTINCT FROM' if join.null_safe else '='} {right_sql}"
                 )
-            if not conditions:
-                raise ValueError("DuckDB joins require explicit key pairs")
             sql += " ON " + " AND ".join(conditions)
         return sql
 
