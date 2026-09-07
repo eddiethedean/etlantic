@@ -248,17 +248,20 @@ def test_duckdb_diagnostics_do_not_echo_bound_secrets() -> None:
     plugin.cleanup_run(run_id=context.run_id)
 
 
-def test_duckdb_config_fingerprints_distinguish_logical_paths() -> None:
+def test_duckdb_config_fingerprints_distinguish_logical_paths(
+    tmp_path: Path,
+) -> None:
     first = DuckDBConfig.from_database("warehouse/a.duckdb")
     second = DuckDBConfig.from_database("warehouse/b.duckdb")
     assert first.fingerprint != second.fingerprint
     with pytest.raises(ValueError):
         first.resolve_database()
 
+    approved_path = tmp_path / "approved.duckdb"
     approved = DuckDBConfig.from_database(
-        "/tmp/approved.duckdb", allowed_paths=("/tmp/approved.duckdb",)
+        approved_path, allowed_paths=(str(approved_path),)
     )
-    assert approved.resolve_database() == str(Path("/tmp/approved.duckdb").resolve())
+    assert approved.resolve_database() == str(approved_path.resolve())
     assert (
         DuckDBConfig(temp_directory="a").fingerprint
         != DuckDBConfig(temp_directory="b").fingerprint
@@ -266,8 +269,8 @@ def test_duckdb_config_fingerprints_distinguish_logical_paths() -> None:
     with pytest.raises(ValueError):
         DuckDBConfig(temp_directory="spill").resolve_temp_directory()
     assert DuckDBConfig(
-        temp_directory="spill", allowed_directories=("/tmp",)
-    ).resolve_temp_directory() == str(Path("/tmp/spill").resolve())
+        temp_directory="spill", allowed_directories=(str(tmp_path),)
+    ).resolve_temp_directory() == str((tmp_path / "spill").resolve())
     with pytest.raises(ValueError):
         DuckDBConfig(metadata={"password": "TOP-SECRET"})
     with pytest.raises(ValueError):
