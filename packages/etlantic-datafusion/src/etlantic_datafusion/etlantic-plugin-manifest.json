@@ -1,12 +1,23 @@
 {
   "capabilities": [
-    "experimental"
+    "dataframe",
+    "eager",
+    "lazy",
+    "arrow_import",
+    "arrow_export",
+    "schema_inspection",
+    "portable_transform"
   ],
-  "digest": "sha256:4bbe5864fa7fcde4c58bec9cf90771b669e3b0b50c689faef5f3dc0949760b8d",
+  "digest": "sha256:c6e69b1ee3934f2ea722a26883941fe5615916640ea62fc7169ffc478fb3d5c0",
   "entries": [
     {
       "capabilities": [
-        "experimental"
+        "dataframe",
+        "eager",
+        "lazy",
+        "arrow_import",
+        "arrow_export",
+        "schema_inspection"
       ],
       "engine": "datafusion",
       "group": "etlantic.dataframe_plugins",
@@ -16,7 +27,7 @@
     },
     {
       "capabilities": [
-        "experimental"
+        "portable_transform"
       ],
       "engine": "datafusion",
       "group": "etlantic.transform_compilers",

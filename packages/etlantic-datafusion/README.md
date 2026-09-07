@@ -1,13 +1,10 @@
-# etlantic-datafusion (Experimental)
-
+# etlantic-datafusion
 
 Version **0.49.0** (lockstep with ETLantic core).
-Gate B experimental DataFusion plugin stub for ETLantic 0.49.
 
-**Not recommended for production.** Does not replace Polars as the reference
-dataframe engine. Advertises no graduated dataframe/Arrow/lazy capabilities
-until conformance, differentials, Gate A Arrow boundaries, and a measured
-advantage are complete.
+This package provides a capability-gated DataFusion dataframe plugin and a
+portable DTCS transform compiler. Native dependencies are installed with the
+package and are never imported by ETLantic core.
 
 ## Install
 
@@ -15,9 +12,10 @@ advantage are complete.
 pip install etlantic-datafusion
 ```
 
-The package currently exposes a capability-gated plugin stub. Use
-[`etlantic-polars`](https://pypi.org/project/etlantic-polars/) for supported
-dataframe execution.
+The compiler supports the portable kernel/relational action set, scalar and
+aggregate functions, Arrow interchange, lazy execution, schema inspection,
+and deterministic support/evidence reports. Unsupported extensions fail during
+analysis before execution.
 
 ## Links
 

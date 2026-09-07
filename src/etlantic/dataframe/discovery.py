@@ -88,6 +88,10 @@ def load_dataframe_plugin(
     profile: Profile | None = None,
 ) -> DataframePlugin | None:
     """Return a discovered plugin for ``engine``, or None."""
+    if engine == "local":
+        from etlantic.dataframe.local import LocalDataframePlugin
+
+        return LocalDataframePlugin()
     return discover_dataframe_plugins(profile=profile).get(engine)
 
 

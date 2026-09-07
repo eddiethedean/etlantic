@@ -1,21 +1,21 @@
-"""Experimental DataFusion plugin package (stub; not production-ready in 0.38.0)."""
+"""DataFusion plugin package for ETLantic."""
 
 from __future__ import annotations
 
 __version__ = "0.49.0"
 
-STREAMING_STABILITY = "experimental"
+STREAMING_STABILITY = "stable"
 
 
 def create_plugin():
-    """Entry-point factory for ``etlantic.dataframe_plugins`` (experimental stub)."""
+    """Entry-point factory for ``etlantic.dataframe_plugins``."""
     from etlantic_datafusion.plugin import DataFusionPlugin
 
     return DataFusionPlugin()
 
 
 def create_transform_compiler():
-    """Entry-point factory for ``etlantic.transform_compilers`` (experimental stub)."""
+    """Entry-point factory for ``etlantic.transform_compilers``."""
     from etlantic_datafusion.compiler import DataFusionTransformCompiler
 
     return DataFusionTransformCompiler()

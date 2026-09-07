@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-datafusion API
 
-> **Status: Available in ETLantic 0.49.0.** Experimental DataFusion stub.
+> **Status: Available in ETLantic 0.49.0.** DataFusion dataframe and portable compiler plugin.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
@@ -25,7 +25,8 @@ print(etlantic_datafusion.__version__)
 
 | Topic | Behavior |
 |---|---|
-| Experimental | No production guarantees |
+| Unsupported plan extension | Rejected during compiler analysis before execution |
+| Native dependencies | Installed with `etlantic-datafusion`; core remains import-safe |
 
 ## Public API
 

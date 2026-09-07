@@ -247,7 +247,7 @@ Public surface classes:
 | Capability | Status |
 |---|---|
 | Structured Streaming foundation | **Experimental** |
-| `etlantic-datafusion` | **Experimental** (Gate B stub — not recommended for pilots) |
+| `etlantic-datafusion` | Available (portable dataframe/compiler engine) |
 | VS Code reference extension (`editors/vscode`) | **Experimental** |
 | `etlantic-k8s` | **Experimental** (FakeKubernetes; live skip `047-K-01`) |
 | `etlantic-spark-connect` | **Experimental** (fake SparkProvider; live skip `047-S-01`) |

@@ -41,8 +41,8 @@ Official first-party plugins declare `etlantic>=0.49.0,<0.50`.
 Keep core and plugins on the same minor (pin all to `0.49.0` for pilots).
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 
-Experimental (not recommended): `pip install 'etlantic[datafusion]==0.49.0'`
-or `etlantic-datafusion==0.49.0` — Gate B stub; no graduated claims.
+DataFusion: `pip install 'etlantic[datafusion]==0.49.0'` or
+`etlantic-datafusion==0.49.0` — portable dataframe/compiler execution.
 
 Optional FastAPI package: `pip install 'etlantic-fastapi==0.49.0'` or
 `etlantic[fastapi]==0.49.0` — **dual surface**: CP1 (`ETLanticAPI` /
@@ -76,7 +76,7 @@ Experimental)([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 | [`etlantic-sparkforge`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sparkforge/README.md) | `etlantic_sparkforge` | **Redirect** (deprecated) — re-exports `medallantic` |
 | [`etlantic-fastapi`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-fastapi/README.md) | `etlantic_fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (pin `==0.49.0`; CPn alone ≠ GA) |
 | [`etlantic-lsp`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-lsp/README.md) | `etlantic_lsp` | Editor-neutral language server (`etlantic[lsp]` / pin `==0.49.0`) |
-| [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
+| [`etlantic-datafusion`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-datafusion/README.md) | `etlantic_datafusion` | DataFusion dataframe engine + portable compiler |
 
 MkDocs API generation includes core `src/` and first-party plugin package
 paths. Shallow module-level stubs for optional packages live in

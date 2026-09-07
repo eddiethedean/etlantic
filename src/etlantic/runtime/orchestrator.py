@@ -1826,6 +1826,7 @@ class LocalOrchestrator:
                 state.implementation = descriptor.identity
                 if (
                     not is_dataframe_engine(engine)
+                    and engine != "local"
                     and not is_spark_engine(engine)
                     and not self._is_sql_engine(engine)
                 ):
@@ -1957,7 +1958,11 @@ class LocalOrchestrator:
                 }
                 return
 
-            if is_dataframe_engine(engine):
+            if is_dataframe_engine(engine) or (
+                descriptor is not None
+                and descriptor.kind == "portable_compiled"
+                and engine == "local"
+            ):
                 plugin = resolve_dataframe_plugin(
                     engine,
                     plugins=getattr(self.runtime, "dataframe_plugins", None),

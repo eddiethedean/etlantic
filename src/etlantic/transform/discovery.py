@@ -49,7 +49,12 @@ def discover_transform_compilers() -> dict[str, PortableTransformCompiler]:
         profile=None,
         key_fn=_key,
     )
-    return result.loaded  # type: ignore[return-value]
+    loaded = dict(result.loaded)
+    # The local evaluator is part of core and has no plugin trust boundary.
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    loaded.setdefault("local", LocalTransformCompiler())
+    return loaded  # type: ignore[return-value]
 
 
 discover_transform_compilers._etlantic_lifecycle = True  # type: ignore[attr-defined]
@@ -132,7 +137,11 @@ def discover_transform_compilers_for_profile(
         discover_transform_compilers_for_profile.last_diagnostics = diagnostics  # type: ignore[attr-defined]
         from etlantic.plugin_trust import loaded_plugins_after_trust
 
-        return loaded_plugins_after_trust(result)  # type: ignore[return-value]
+        loaded = dict(loaded_plugins_after_trust(result))
+        from etlantic.transform.local_compiler import LocalTransformCompiler
+
+        loaded.setdefault("local", LocalTransformCompiler())
+        return loaded  # type: ignore[return-value]
 
     found = discover()
     if profile is None:
