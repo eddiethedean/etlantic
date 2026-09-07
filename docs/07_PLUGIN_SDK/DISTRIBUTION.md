@@ -49,6 +49,7 @@ Install matching minors throughout ETLantic's 0.x roadmap:
 - `etlantic-polars`
 - `etlantic-pandas`
 - `etlantic-sql`
+- `etlantic-duckdb`
 - `etlantic-pyspark`
 - `etlantic-airflow`
 - `etlantic-prefect`

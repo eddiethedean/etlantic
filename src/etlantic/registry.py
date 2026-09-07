@@ -61,10 +61,12 @@ class ImplementationDescriptor:
     # Bounded canonical dtcs.transform-plan/2 (data-only); never live objects.
     portable_plan: dict[str, Any] | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Optional evidence identity, appended to preserve positional /1 callers.
+    compiler_evidence_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize implementation descriptor."""
-        return {
+        payload = {
             "transformation_id": self.transformation_id,
             "engine": self.engine,
             "identity": self.identity,
@@ -82,6 +84,11 @@ class ImplementationDescriptor:
             "portable_plan": dict(self.portable_plan) if self.portable_plan else None,
             "metadata": dict(self.metadata),
         }
+        if self.compiler_evidence_fingerprint is not None:
+            payload["compiler_evidence_fingerprint"] = (
+                self.compiler_evidence_fingerprint
+            )
+        return payload
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ImplementationDescriptor:
@@ -97,6 +104,7 @@ class ImplementationDescriptor:
             compiler_name=data.get("compiler_name"),
             compiler_version=data.get("compiler_version"),
             compiler_protocol=data.get("compiler_protocol"),
+            compiler_evidence_fingerprint=data.get("compiler_evidence_fingerprint"),
             requirements={
                 str(k): [str(x) for x in (v or [])]
                 for k, v in dict(requirements_raw).items()

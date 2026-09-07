@@ -1,0 +1,30 @@
+{
+  "candidate": {
+    "engine": "duckdb",
+    "placement": "explicit_sql_region"
+  },
+  "drift": {
+    "compiler_evidence": "replan_required",
+    "ir_fingerprint": "replan_required"
+  },
+  "duckdb_version_range": ">=1.0,<2",
+  "engine": "duckdb",
+  "environment": {
+    "os": "supported-host",
+    "python": ">=3.11"
+  },
+  "fixtures": [
+    "duckdb.protocol",
+    "duckdb.transform.conformance",
+    "duckdb.security.defaults"
+  ],
+  "kind": "adaptive_handoff",
+  "manifest_digest": "sha256:629bef3e28c54b9e1e416a59ce80f062c3d8f4011856c2f11135df9fd3fd71b5",
+  "next_phase": "0.50",
+  "package": "etlantic-duckdb",
+  "package_version": "0.48.0",
+  "phase": "0.49",
+  "result": "pass",
+  "schema": "etlantic.duckdb.evidence/1",
+  "status": "qualified_subset"
+}

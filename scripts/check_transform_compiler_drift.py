@@ -30,6 +30,10 @@ FIRST_PARTY = {
         "package": "etlantic-datafusion",
         "runtime_group": "etlantic.dataframe_plugins",
     },
+    "duckdb": {
+        "package": "etlantic-duckdb",
+        "runtime_group": "etlantic.sql_plugins",
+    },
 }
 
 

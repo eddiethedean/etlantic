@@ -160,6 +160,7 @@ Pin to the same minor as core (`==0.48.0`). Details:
 | `etlantic-polars` | Polars dataframe engine + portable compiler |
 | `etlantic-pandas` | Pandas dataframe engine + eager portable compiler |
 | `etlantic-sql` | Native SQL engine + portable SQL lowering |
+| `etlantic-duckdb` | Optional DuckDB SQL engine + portable compiler |
 | `etlantic-pyspark` | PySpark engine + portable compiler |
 | `etlantic-airflow` | Airflow DAG compiler (`etlantic compile --target airflow`) |
 | `etlantic-prefect` | Prefect direct-execution scheduler |

@@ -50,9 +50,12 @@ class TransformCompilerInfo:
         "dtcs.transform-plan/1",
     )
     capabilities: TransformCapabilities = field(default_factory=TransformCapabilities)
+    # Optional evidence identity.  This is deliberately additive so existing
+    # /1 compiler implementations remain valid and serializable.
+    evidence_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "name": self.name,
             "version": self.version,
             "engine": self.engine,
@@ -60,6 +63,9 @@ class TransformCompilerInfo:
             "dtcs_plan_versions": list(self.dtcs_plan_versions),
             "capabilities": self.capabilities.to_dict(),
         }
+        if self.evidence_fingerprint is not None:
+            payload["evidence_fingerprint"] = self.evidence_fingerprint
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,14 +76,36 @@ class TransformSupportFinding:
     requirement: str
     reason: str
     expression_path: str | None = None
+    # /1-compatible optional evidence fields.  ``support`` is intentionally a
+    # string rather than a new enum so third-party compilers can add a state
+    # without requiring a protocol-major change.
+    obligation: str | None = None
+    support: str | None = None
+    lowering_id: str | None = None
+    conditions: tuple[str, ...] = ()
+    physical_effects: tuple[str, ...] = ()
+    evidence_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "code": self.code,
             "requirement": self.requirement,
             "reason": self.reason,
             "expression_path": self.expression_path,
         }
+        if self.obligation is not None:
+            payload["obligation"] = self.obligation
+        if self.support is not None:
+            payload["support"] = self.support
+        if self.lowering_id is not None:
+            payload["lowering_id"] = self.lowering_id
+        if self.conditions:
+            payload["conditions"] = list(self.conditions)
+        if self.physical_effects:
+            payload["physical_effects"] = list(self.physical_effects)
+        if self.evidence_fingerprint is not None:
+            payload["evidence_fingerprint"] = self.evidence_fingerprint
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,12 +114,16 @@ class TransformSupportReport:
 
     supported: bool
     findings: tuple[TransformSupportFinding, ...] = ()
+    evidence_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "supported": self.supported,
             "findings": [f.to_dict() for f in self.findings],
         }
+        if self.evidence_fingerprint is not None:
+            payload["evidence_fingerprint"] = self.evidence_fingerprint
+        return payload
 
 
 @dataclass(frozen=True, slots=True)

@@ -27,6 +27,7 @@ REQUIRED_MODULES = (
     "etlantic_mcp",
     "etlantic_fastapi",
     "etlantic_lsp",
+    "etlantic_duckdb",
     "medallantic",
 )
 

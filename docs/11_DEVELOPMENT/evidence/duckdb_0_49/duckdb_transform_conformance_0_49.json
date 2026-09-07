@@ -1,0 +1,39 @@
+{
+  "duckdb_version_range": ">=1.0,<2",
+  "engine": "duckdb",
+  "environment": {
+    "os": "supported-host",
+    "python": ">=3.11"
+  },
+  "explicitly_unqualified": [
+    "dtcs:union",
+    "python_udf",
+    "raw_sql"
+  ],
+  "fixtures": [
+    "duckdb.protocol",
+    "duckdb.transform.conformance",
+    "duckdb.security.defaults"
+  ],
+  "kind": "transform_conformance",
+  "manifest_digest": "sha256:629bef3e28c54b9e1e416a59ce80f062c3d8f4011856c2f11135df9fd3fd71b5",
+  "package": "etlantic-duckdb",
+  "package_version": "0.48.0",
+  "phase": "0.49",
+  "protocol": "etlantic.transform-compiler/1",
+  "qualified_actions": [
+    "dtcs:filter",
+    "dtcs:project",
+    "dtcs:with_fields",
+    "dtcs:drop_fields",
+    "dtcs:rename_fields",
+    "dtcs:distinct",
+    "dtcs:limit",
+    "dtcs:sort",
+    "dtcs:join",
+    "dtcs:aggregate"
+  ],
+  "result": "pass",
+  "schema": "etlantic.duckdb.evidence/1",
+  "status": "qualified_subset"
+}

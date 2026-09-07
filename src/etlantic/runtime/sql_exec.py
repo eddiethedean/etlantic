@@ -9,6 +9,7 @@ from typing import Any
 from etlantic.exceptions import NodeExecutionError
 from etlantic.model import Node
 from etlantic.plan.model import PipelinePlan
+from etlantic.registry import ImplementationDescriptor
 from etlantic.runtime.state import FailureStage
 from etlantic.sql.discovery import load_sql_plugin
 from etlantic.sql.helpers import require_safe_identifier
@@ -29,21 +30,48 @@ from etlantic.transformation import ImplementationRecord
 def is_sql_engine(
     engine: str,
     engines: dict[str, object] | object | None = None,
+    *,
+    profile: Any | None = None,
 ) -> bool:
     """Return True when capabilities/registration say sql (builtin name fallback)."""
     from etlantic.engines import get_engine_registry
 
-    return get_engine_registry().is_sql_engine(engine, engines)
+    if get_engine_registry().is_sql_engine(engine, engines):
+        return True
+    # Runtime dispatch may not carry a PlanningContext registry.  Consult the
+    # authorized discovery surface rather than maintaining a DuckDB-specific
+    # alias list; third-party SQL engines therefore route by their advertised
+    # capability as well.
+    try:
+        plugins = (
+            engines
+            if isinstance(engines, dict)
+            else getattr(engines, "sql_plugins", None)
+        )
+        if isinstance(plugins, dict):
+            if engine in plugins:
+                return bool(plugins[engine].capabilities().supports("sql"))
+            # An explicitly supplied runtime map is authoritative.  Do not
+            # silently fall back to an unauthorized global discovery result.
+            if engines is not None:
+                return False
+        from etlantic.sql.discovery import discover_sql_plugins
+
+        plugin = discover_sql_plugins(profile=profile).get(engine)
+        return plugin is not None and plugin.capabilities().supports("sql")
+    except Exception:
+        return False
 
 
 def resolve_sql_plugin(
     engine: str = "sql",
     *,
     plugins: dict[str, SqlPlugin] | None = None,
+    profile: Any | None = None,
 ) -> SqlPlugin:
-    if plugins and engine in plugins:
+    if plugins is not None and engine in plugins:
         return plugins[engine]
-    plugin = load_sql_plugin(engine)
+    plugin = load_sql_plugin(engine, profile=profile)
     if plugin is not None:
         return plugin
     raise NodeExecutionError(
@@ -61,13 +89,14 @@ def _context(
     run_id: str,
     attempt: int,
     allow_trusted_sql: bool,
+    engine: str = "sql",
 ) -> SqlExecutionContext:
     return SqlExecutionContext(
         run_id=run_id,
         pipeline_id=plan.pipeline_id,
         plan_id=plan.plan_id,
         step_name=node.name,
-        engine="sql",
+        engine=engine,
         attempt=attempt,
         connection_binding=node.binding,
         allow_trusted_sql=allow_trusted_sql,
@@ -117,6 +146,7 @@ async def execute_sql_source(
     attempt: int,
     location: str | None,
     binding: str | None,
+    engine: str | None = None,
 ) -> RelationRef:
     """Resolve a SQL source to a RelationRef without fetching rows."""
     return plugin.relation_from_binding(
@@ -137,6 +167,7 @@ async def execute_sql_step(
     run_id: str,
     attempt: int,
     allow_trusted_sql: bool = False,
+    engine: str | None = None,
 ) -> Any:
     """Invoke a SQL transformation implementation and keep IR in-process.
 
@@ -149,6 +180,7 @@ async def execute_sql_step(
         run_id=run_id,
         attempt=attempt,
         allow_trusted_sql=allow_trusted_sql,
+        engine=engine or plugin.info.engine,
     )
     kwargs = {**dict(params), **dict(inputs)}
     result = impl.callable(**kwargs)
@@ -176,6 +208,144 @@ async def execute_sql_step(
     )
 
 
+async def execute_portable_sql_step(
+    *,
+    plugin: SqlPlugin,
+    descriptor: ImplementationDescriptor,
+    node: Node,
+    inputs: dict[str, Any],
+    params: dict[str, Any],
+    plan: PipelinePlan,
+    run_id: str,
+    attempt: int,
+) -> Any:
+    """Compile and execute a sealed portable transform through the selected SQL engine."""
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+    from etlantic.transform.discovery import load_transform_compiler
+
+    definition = descriptor.portable_plan
+    if not isinstance(definition, dict):
+        raise NodeExecutionError(
+            f"portable_compiled step {node.name!r} has no embedded portable plan",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM302",
+        )
+    engine = plugin.info.engine
+    from etlantic.profile import Profile
+
+    profile_snapshot = plan.profile_snapshot or {}
+    profile = (
+        Profile.from_plan_snapshot(dict(profile_snapshot))
+        if isinstance(profile_snapshot, dict)
+        else None
+    )
+    compiler = load_transform_compiler(engine, profile=profile)
+    if compiler is None:
+        raise NodeExecutionError(
+            f"No portable compiler is registered for SQL engine {engine!r}",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM303",
+        )
+    info = compiler.info
+    if descriptor.compiler_name and info.name != descriptor.compiler_name:
+        raise NodeExecutionError(
+            f"Planned transform compiler {descriptor.compiler_name!r} is not installed",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM307",
+        )
+    if descriptor.compiler_version and info.version != descriptor.compiler_version:
+        raise NodeExecutionError(
+            f"Planned transform compiler version {descriptor.compiler_version!r} is not installed",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM307",
+        )
+    if (
+        descriptor.compiler_protocol
+        and info.compiler_protocol != descriptor.compiler_protocol
+    ):
+        raise NodeExecutionError(
+            f"Planned transform compiler protocol {descriptor.compiler_protocol!r} is not installed",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM307",
+        )
+    if info.engine and info.engine != engine:
+        raise NodeExecutionError(
+            f"Transform compiler targets {info.engine!r}, not planned engine {engine!r}",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM307",
+        )
+    planned_evidence = descriptor.compiler_evidence_fingerprint
+    installed_evidence = getattr(compiler.info, "evidence_fingerprint", None)
+    if planned_evidence and planned_evidence != installed_evidence:
+        raise NodeExecutionError(
+            f"Portable compiler evidence drift for {node.name!r}; replan required",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM306",
+        )
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id=plan.pipeline_id,
+            plan_id=plan.plan_id,
+            step_name=node.name,
+            profile_name=str((plan.profile_snapshot or {}).get("name") or "runtime"),
+            engine=engine,
+            metadata={"planned_ir_fingerprint": descriptor.ir_fingerprint},
+        ),
+        requirements=descriptor.requirements,
+    )
+    if (
+        descriptor.ir_fingerprint
+        and compiled.ir_fingerprint != descriptor.ir_fingerprint
+    ):
+        raise NodeExecutionError(
+            f"Portable plan fingerprint drift for {node.name!r}; replan required",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM304",
+        )
+    bundle = await compiler.execute(
+        compiled,
+        inputs=inputs,
+        parameters=params,
+        context=TransformExecutionContext(
+            run_id=run_id,
+            pipeline_id=plan.pipeline_id,
+            plan_id=plan.plan_id,
+            step_name=node.name,
+            engine=engine,
+            attempt=attempt,
+            metadata={
+                "_sql_plugin": plugin,
+                "_duckdb_plugin": plugin,
+                "_return_handles": True,
+            },
+        ),
+    )
+    if not bundle.valid:
+        raise NodeExecutionError(
+            f"Portable SQL compiler produced no valid outputs for {node.name!r}",
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM305",
+        )
+    return (
+        next(iter(bundle.valid.values()))
+        if len(bundle.valid) == 1
+        else dict(bundle.valid)
+    )
+
+
 async def execute_sql_sink(
     *,
     plugin: SqlPlugin,
@@ -188,6 +358,7 @@ async def execute_sql_sink(
     write_intent: str = "insert_select",
     params: dict[str, Any] | None = None,
     allow_trusted_sql: bool = False,
+    engine: str | None = None,
 ) -> SqlExecutionResult:
     """Publish a SQL query/relation into a sink without fetching intermediates."""
     # LOAD injection is owned by LocalOrchestrator (once per logical sink).
@@ -197,6 +368,7 @@ async def execute_sql_sink(
         run_id=run_id,
         attempt=attempt,
         allow_trusted_sql=allow_trusted_sql,
+        engine=engine or plugin.info.engine,
     )
     target = plugin.relation_from_binding(
         binding=node.binding or node.name,
@@ -275,6 +447,7 @@ async def materialize_sql_temp(
     attempt: int,
     params: dict[str, Any] | None = None,
     allow_trusted_sql: bool = False,
+    engine: str | None = None,
 ) -> RelationRef:
     """Materialize an intermediate SQL query as a durable staging relation."""
     context = _context(
@@ -283,6 +456,7 @@ async def materialize_sql_temp(
         run_id=run_id,
         attempt=attempt,
         allow_trusted_sql=allow_trusted_sql,
+        engine=engine or plugin.info.engine,
     )
     _assert_trusted_sql_allowed(
         value=query,

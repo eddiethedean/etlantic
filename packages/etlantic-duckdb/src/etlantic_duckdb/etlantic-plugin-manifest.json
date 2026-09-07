@@ -1,0 +1,46 @@
+{
+  "capabilities": [
+    "sql",
+    "portable",
+    "source.batch_snapshot",
+    "write.append",
+    "write.insert_select",
+    "write.replace",
+    "publication.atomic",
+    "transactions"
+  ],
+  "digest": "sha256:629bef3e28c54b9e1e416a59ce80f062c3d8f4011856c2f11135df9fd3fd71b5",
+  "entries": [
+    {
+      "capabilities": [
+        "sql",
+        "transactions",
+        "sql_catalog_inspect",
+        "publication.atomic"
+      ],
+      "engine": "duckdb",
+      "group": "etlantic.sql_plugins",
+      "name": "duckdb",
+      "protocol": "etlantic.sql/1",
+      "target": "etlantic_duckdb:create_plugin"
+    },
+    {
+      "capabilities": [
+        "portable"
+      ],
+      "engine": "duckdb",
+      "group": "etlantic.transform_compilers",
+      "name": "duckdb",
+      "protocol": "etlantic.transform-compiler/1",
+      "target": "etlantic_duckdb.transform_compiler:create_transform_compiler"
+    }
+  ],
+  "package": "etlantic-duckdb",
+  "privileges": [],
+  "protocol_range": "etlantic.sql/1,etlantic.transform-compiler/1",
+  "provenance": {
+    "publisher": "etlantic"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.48.0"
+}

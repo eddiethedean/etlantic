@@ -21,6 +21,7 @@ PACKAGES = (
     "etlantic-prefect",
     "etlantic-keyring",
     "etlantic-sqlmodel",
+    "etlantic-duckdb",
 )
 FACADE_PACKAGES = ("medallantic",)
 REDIRECT_PACKAGES = ("etlantic-sparkforge",)

@@ -1,8 +1,9 @@
 # Exit Gate 0.49 — DuckDB Engine Package
 
-> **Status: Not started.** This document defines the evidence contract for the
-> full optional DuckDB package. It does not claim that DuckDB is currently
-> Available or adaptively qualified.
+> **Status: Implemented qualified subset; release gate pending.** The optional
+> DuckDB package, selected-engine routing, secure runtime, portable compiler,
+> and redacted evidence bundle are implemented. Unproven connectors and full
+> dialect equivalence remain explicitly unclaimed.
 
 See the [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) and the
 DuckDB package workstream in the roadmap.
@@ -11,52 +12,52 @@ DuckDB package workstream in the roadmap.
 
 | Surface | Target at gate | Entry state |
 |---|---|---|
-| `etlantic-duckdb` package | Independently installable Experimental package | Not implemented |
-| `etlantic.sql/1` plugin | Embedded DuckDB SQL target with declared capabilities | Not implemented |
-| Portable transform compiler | Requirement-level exact/lowered/negative findings | Not implemented |
-| In-memory execution | Available only after lifecycle and conformance evidence | Not qualified |
-| File-backed execution | Experimental, explicit read-only/write policy | Not qualified |
+| `etlantic-duckdb` package | Independently installable Experimental package | Implemented |
+| `etlantic.sql/1` plugin | Embedded DuckDB SQL target with declared capabilities | Implemented |
+| Portable transform compiler | Requirement-level exact/lowered/negative findings | Implemented subset |
+| In-memory execution | Available only after lifecycle and conformance evidence | Qualified |
+| File-backed execution | Experimental, explicit read-only/write policy | Policy implemented; qualification pending |
 | Table/file connectors | Only individually qualified capabilities | Not qualified |
 | Adaptive placement | No 0.49 claim | Deferred to 0.51 |
-| Generic SQL-engine routing | Selected/discovered engine preserved end to end | Not implemented |
-| SQL portable execution | Planned compiler executes without native fallback | Not implemented |
+| Generic SQL-engine routing | Selected/discovered engine preserved end to end | Implemented |
+| SQL portable execution | Planned compiler executes without native fallback | Implemented |
 
 ## Quantified Exit Scorecard
 
 | # | Measure | Required | Current |
 |---|---|---:|---|
-| 1 | Package metadata, optional dependency boundary, manifest, and clean install/import pass | Pass | **Not started** |
-| 2 | Discovery authorizes before import and production allowlists are enforced | Pass | **Not started** |
-| 3 | Engine/compiler/version/config identity is stable and artifacts contain no secrets or backend objects | Pass | **Not started** |
-| 4 | Run-scoped/thread-local connections, explicit transactions, rollback, cleanup, and retry diagnostics pass | Pass | **Not started** |
-| 5 | In-memory and file-backed read-only behavior is deterministic and policy-enforced | Pass | **Not started** |
-| 6 | SQL protocol handles remain lazy until declared fetch/materialization boundaries | Pass | **Not started** |
-| 7 | Bound parameters and validated identifiers are enforced; raw SQL and UDF escape hatches fail closed | Pass | **Not started** |
-| 8 | DuckDB dialect edge cases pass the declared semantic differential corpus | Pass | **Not started** |
-| 9 | Every advertised transform/compiler capability maps to mandatory public fixtures | 100% | **Not started** |
-| 10 | Partial, lowered, unsupported, unavailable, and unknown findings are stable, bounded, and fingerprinted | Pass | **Not started** |
-| 11 | Optional connectors pass ownership, schema, idempotency, atomicity, publication, and cleanup evidence or remain unclaimed | Pass | **Not started** |
-| 12 | Extension installation/loading, arbitrary file access, and unsupported dialect features fail before I/O | Pass | **Not started** |
-| 13 | Isolated CI covers supported DuckDB versions and dependency leakage into core | Pass | **Not started** |
-| 14 | Phase 0.50 portable and phase 0.51 adaptive handoff fixtures prove exact candidate evidence and replan-on-drift | Pass | **Not started** |
-| 15 | No unresolved critical/high correctness, security, compatibility, or data-loss finding | 0 | **Not started** |
-| 16 | Fake non-`sql` SQL engine proves capability-driven plan/source/step/sink/hybrid routing | Pass | **Not started** |
-| 17 | Additive support-evidence changes preserve frozen `/1` compatibility for existing plugins | Pass | **Not started** |
-| 18 | SQL `portable_compiled` execution uses the planned compiler and selected engine with no native fallback | Pass | **Not started** |
-| 19 | Run-specific cleanup isolates concurrent connection, relation, parameter, and staging state | Pass | **Not started** |
-| 20 | Security settings are verified before work and unknown/tampered compiled statements are rejected | Pass | **Not started** |
+| 1 | Package metadata, optional dependency boundary, manifest, and clean install/import pass | Pass | **Pass** |
+| 2 | Discovery authorizes before import and production allowlists are enforced | Pass | **Pass** |
+| 3 | Engine/compiler/version/config identity is stable and artifacts contain no secrets or backend objects | Pass | **Pass** |
+| 4 | Run-scoped/thread-local connections, explicit transactions, rollback, cleanup, and retry diagnostics pass | Pass | **Pass** |
+| 5 | In-memory and file-backed read-only behavior is deterministic and policy-enforced | Pass | **Partial; file qualification pending** |
+| 6 | SQL protocol handles remain lazy until declared fetch/materialization boundaries | Pass | **Pass** |
+| 7 | Bound parameters and validated identifiers are enforced; raw SQL and UDF escape hatches fail closed | Pass | **Pass** |
+| 8 | DuckDB dialect edge cases pass the declared semantic differential corpus | Pass | **Qualified subset** |
+| 9 | Every advertised transform/compiler capability maps to mandatory public fixtures | 100% | **Qualified subset** |
+| 10 | Partial, lowered, unsupported, unavailable, and unknown findings are stable, bounded, and fingerprinted | Pass | **Pass** |
+| 11 | Optional connectors pass ownership, schema, idempotency, atomicity, publication, and cleanup evidence or remain unclaimed | Pass | **Unclaimed / fail-closed** |
+| 12 | Extension installation/loading, arbitrary file access, and unsupported dialect features fail before I/O | Pass | **Pass** |
+| 13 | Isolated CI covers supported DuckDB versions and dependency leakage into core | Pass | **CI wired; version matrix pending** |
+| 14 | Phase 0.50 portable and phase 0.51 adaptive handoff fixtures prove exact candidate evidence and replan-on-drift | Pass | **Pass** |
+| 15 | No unresolved critical/high correctness, security, compatibility, or data-loss finding | 0 | **Pass for qualified subset** |
+| 16 | Fake non-`sql` SQL engine proves capability-driven plan/source/step/sink/hybrid routing | Pass | **Generic routing implemented; fixture pending** |
+| 17 | Additive support-evidence changes preserve frozen `/1` compatibility for existing plugins | Pass | **Pass** |
+| 18 | SQL `portable_compiled` execution uses the planned compiler and selected engine with no native fallback | Pass | **Pass** |
+| 19 | Run-specific cleanup isolates concurrent connection, relation, parameter, and staging state | Pass | **Pass** |
+| 20 | Security settings are verified before work and unknown/tampered compiled statements are rejected | Pass | **Pass** |
 
 ## Required Evidence Manifest
 
 | Artifact | Required content | Status |
 |---|---|---|
-| `duckdb_package_manifest_0_49.json` | Package, protocol, engine/version, dependency, trust, and capability identity | Planned |
-| `duckdb_sql_conformance_0_49.json` | SQL protocol, relation handles, parameters, writes, fetch boundaries, and dialect cases | Planned |
-| `duckdb_transform_conformance_0_49.json` | Portable transform support findings and semantic differential results | Planned |
-| `duckdb_connection_lifecycle_0_49.json` | Connection, transaction, cleanup, retry, read-only, thread, and process fixtures | Planned |
-| `duckdb_security_policy_0_49.json` | Extension, file-access, raw-SQL, UDF, identifier, secret, and redaction checks | Planned |
-| `duckdb_requirement_support_0_49.json` | Exact, lowered, partial, unsupported, unavailable, unknown, and evidence fingerprints | Planned |
-| `duckdb_adaptive_handoff_0_49.json` | Per-node eligibility, lowering effects, candidate rejection, and drift/replan fixtures | Planned |
+| `duckdb_package_manifest_0_49.json` | Package, protocol, engine/version, dependency, trust, and capability identity | Generated |
+| `duckdb_sql_conformance_0_49.json` | SQL protocol, relation handles, parameters, writes, fetch boundaries, and dialect cases | Generated |
+| `duckdb_transform_conformance_0_49.json` | Portable transform support findings and semantic differential results | Generated |
+| `duckdb_connection_lifecycle_0_49.json` | Connection, transaction, cleanup, retry, read-only, thread, and process fixtures | Generated |
+| `duckdb_security_policy_0_49.json` | Extension, file-access, raw-SQL, UDF, identifier, secret, and redaction checks | Generated |
+| `duckdb_requirement_support_0_49.json` | Exact, lowered, partial, unsupported, unavailable, unknown, and evidence fingerprints | Generated |
+| `duckdb_adaptive_handoff_0_49.json` | Per-node eligibility, lowering effects, candidate rejection, and drift/replan fixtures | Generated |
 
 All seven artifacts must be generated by the checked-in 0.49 evidence command,
 schema-validated, deterministic for the same environment, and traceable to the

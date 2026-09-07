@@ -27,6 +27,7 @@ ContractModel / Python):
 | Polars plugin | `etlantic-polars==0.48.0` |
 | Pandas plugin | `etlantic-pandas==0.48.0` |
 | SQL plugin | `etlantic-sql==0.48.0` |
+| DuckDB plugin | `etlantic-duckdb==0.48.0` (optional) |
 | PySpark plugin | `etlantic-pyspark==0.48.0` |
 | Airflow plugin | `etlantic-airflow==0.48.0` |
 | Prefect scheduler | `etlantic-prefect==0.48.0` |
@@ -85,6 +86,7 @@ Package metadata declares these backend dependency ranges:
 | `etlantic-pandas` | `pandas>=2.2,<3`; optional `pyarrow>=14` |
 | `etlantic-pyspark` | `pyspark>=3.5,<4`; optional `delta-spark>=3.0,<4` |
 | `etlantic-sql` | `sqlalchemy>=2.0,<3`, `psycopg[binary]>=3.1,<4` |
+| `etlantic-duckdb` | `duckdb>=1.0,<2` |
 | `etlantic-sqlmodel` | `sqlmodel>=0.0.22,<1` |
 | `etlantic-keyring` | `keyring` (no narrower range declared) |
 | `etlantic-airflow` | No Apache Airflow runtime dependency; it compiles DAG source |

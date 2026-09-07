@@ -663,6 +663,7 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-pyspark",
         "etlantic-sql",
         "etlantic-sqlmodel",
+        "etlantic-duckdb",
         "medallantic",
     )
     for package in current_package_readmes:
@@ -2187,6 +2188,7 @@ def main() -> None:
         ROOT / "packages/etlantic-sparkforge/pyproject.toml",
         ROOT / "packages/etlantic-fastapi/pyproject.toml",
         ROOT / "packages/etlantic-datafusion/pyproject.toml",
+        ROOT / "packages/etlantic-duckdb/pyproject.toml",
     ):
         plugin_version = version_from(plugin_pyproject, r'(?m)^version = "([^"]+)"')
         if plugin_version != package_version:
@@ -2214,6 +2216,7 @@ def main() -> None:
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/__init__.py",
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+        ROOT / "packages/etlantic-duckdb/src/etlantic_duckdb/__init__.py",
     ):
         text = component.read_text(encoding="utf-8")
         match = re.search(r'__version__\s*=\s*"([^"]+)"', text)

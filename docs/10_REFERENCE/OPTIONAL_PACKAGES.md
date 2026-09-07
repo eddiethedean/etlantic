@@ -58,6 +58,7 @@ Experimental)([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)).
 | [`etlantic-polars`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-polars/README.md) | `etlantic_polars` | Polars dataframe engine + portable compiler |
 | [`etlantic-pandas`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-pandas/README.md) | `etlantic_pandas` | Pandas dataframe engine + eager portable compiler |
 | [`etlantic-sql`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-sql/README.md) | `etlantic_sql` | Native SQL engine + portable SQL lowering |
+| [`etlantic-duckdb`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-duckdb/README.md) | `etlantic_duckdb` | Optional DuckDB SQL engine + portable compiler |
 | [`etlantic-pyspark`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-pyspark/README.md) | `etlantic_pyspark` | PySpark engine + portable compiler |
 | [`etlantic-airflow`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-airflow/README.md) | `etlantic_airflow` | Airflow DAG compiler (`etlantic compile --target airflow`) |
 | [`etlantic-prefect`](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-prefect/README.md) | `etlantic_prefect` | Prefect direct-execution scheduler (`Profile(orchestrator="prefect")`) |

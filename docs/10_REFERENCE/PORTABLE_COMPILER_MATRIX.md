@@ -13,6 +13,7 @@ This matrix records the portable transformation claims shipped in ETLantic
 | `etlantic-pyspark==0.48.0` | PySpark | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
 | `etlantic-pandas==0.48.0` | Pandas | kernel `/1`, relational `/1` | Eager only (`lazy=False`) | `fail` only |
 | `etlantic-sql==0.48.0` | SQL | kernel `/1`, relational `/1` | Eager (relation/SQL) | `fail` only |
+| `etlantic-duckdb==0.48.0` | DuckDB | kernel `/1`, relational `/1` (qualified subset) | Lazy relation handles | `fail` only |
 
 Full profile identifiers use the `dtcs:profile/` prefix (for example
 `dtcs:profile/portable-window/1`). Compilers read `dtcs.transform-plan/2` and

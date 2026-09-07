@@ -83,10 +83,13 @@ def should_discover_spark_plugins(spark_engine: str | None) -> bool:
 def should_include_transform_compilers(
     dataframe_engine: str,
     spark_engine: str | None,
+    sql_engine: str | None = None,
 ) -> bool:
-    """True when a non-local dataframe or any Spark engine needs compilers."""
-    return should_discover_dataframe_plugins(dataframe_engine) or (
-        should_discover_spark_plugins(spark_engine)
+    """True when a selected engine needs a portable transform compiler."""
+    return (
+        should_discover_dataframe_plugins(dataframe_engine)
+        or (should_discover_spark_plugins(spark_engine))
+        or should_discover_sql_plugins(sql_engine)
     )
 
 
@@ -366,7 +369,7 @@ def discover_planning_plugins(
     """Discover plugins required for planning based on profile engines."""
     coordinator = PluginDiscoveryCoordinator()
     include_compilers = should_include_transform_compilers(
-        dataframe_engine, spark_engine
+        dataframe_engine, spark_engine, sql_engine
     )
     result = coordinator.discover_for_profile(
         profile,

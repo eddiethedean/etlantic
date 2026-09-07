@@ -97,6 +97,13 @@ def default_frame_factory(engine: str) -> FrameFactory:
             return SqlRelationFrame(rows=list(rows))
 
         return _sql
+    if engine == "duckdb":
+        from etlantic_duckdb.frame import DuckDBFrame
+
+        def _duckdb(rows: list[dict[str, Any]]) -> Any:
+            return DuckDBFrame(rows=list(rows))
+
+        return _duckdb
     raise ValueError(f"No default frame factory for engine {engine!r}")
 
 

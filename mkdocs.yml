@@ -154,6 +154,7 @@ not_in_nav: |
   10_REFERENCE/api_optional/etlantic_polars.md
   10_REFERENCE/api_optional/etlantic_pandas.md
   10_REFERENCE/api_optional/etlantic_sql.md
+  10_REFERENCE/api_optional/etlantic_duckdb.md
   10_REFERENCE/api_optional/etlantic_pyspark.md
   10_REFERENCE/api_optional/etlantic_airflow.md
   10_REFERENCE/api_optional/etlantic_prefect.md

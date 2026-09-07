@@ -85,6 +85,7 @@ from etlantic.runtime.spark_exec import (
     resolve_spark_provider,
 )
 from etlantic.runtime.sql_exec import (
+    execute_portable_sql_step,
     execute_sql_sink,
     execute_sql_source,
     execute_sql_step,
@@ -266,6 +267,28 @@ class LocalOrchestrator:
             for node_name in region.node_names:
                 mapping[node_name] = region.identity
         return mapping
+
+    def _execution_profile(self) -> Any | None:
+        snapshot = self.plan.profile_snapshot
+        if not isinstance(snapshot, Mapping):
+            return None
+        from etlantic.profile import Profile
+
+        return Profile.from_plan_snapshot(dict(snapshot))
+
+    def _is_sql_engine(self, engine: str) -> bool:
+        return is_sql_engine(
+            engine,
+            getattr(self.runtime, "sql_plugins", None),
+            profile=self._execution_profile(),
+        )
+
+    def _resolve_sql_plugin(self, engine: str) -> Any:
+        return resolve_sql_plugin(
+            engine,
+            plugins=getattr(self.runtime, "sql_plugins", None),
+            profile=self._execution_profile(),
+        )
 
     def _physical_unit_for_node(self, name: str | None) -> str | None:
         if not name:
@@ -859,6 +882,15 @@ class LocalOrchestrator:
         finally:
             # Real cleanup first; CLEANUP injection must not skip it.
             for plugin in getattr(self.runtime, "sql_plugins", {}).values():
+                cleanup_run = getattr(plugin, "cleanup_run", None)
+                if callable(cleanup_run):
+                    with contextlib.suppress(Exception):
+                        cleanup_run(
+                            run_id=run_id,
+                            pipeline_id=self.plan.pipeline_id,
+                            plan_id=self.plan.plan_id,
+                        )
+                    continue
                 cleanup = getattr(plugin, "cleanup_staging", None)
                 if callable(cleanup):
                     with contextlib.suppress(Exception):
@@ -1455,11 +1487,9 @@ class LocalOrchestrator:
                 state.records_out = 0
                 state.metadata["spark"] = {"source_kind": "dataset_ref"}
                 return
-            if is_sql_engine(self._engine_for(node.name)):
-                plugin = resolve_sql_plugin(
-                    "sql",
-                    plugins=getattr(self.runtime, "sql_plugins", None),
-                )
+            if self._is_sql_engine(self._engine_for(node.name)):
+                engine = self._engine_for(node.name)
+                plugin = self._resolve_sql_plugin(engine)
                 binding_name = node.binding or node.name
                 binding_name = self.request.binding_overrides.get(
                     node.name, binding_name
@@ -1474,6 +1504,7 @@ class LocalOrchestrator:
                     attempt=attempt,
                     location=location,
                     binding=binding_name,
+                    engine=engine,
                 )
                 self._append_validation(
                     validations,
@@ -1602,13 +1633,11 @@ class LocalOrchestrator:
                     state.metadata["spark_schema"] = result.schema_observation
                 self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                 return
-            if is_sql_engine(self._engine_for(node.name)) and not isinstance(
+            if self._is_sql_engine(self._engine_for(node.name)) and not isinstance(
                 payload, list
             ):
-                plugin = resolve_sql_plugin(
-                    "sql",
-                    plugins=getattr(self.runtime, "sql_plugins", None),
-                )
+                engine = self._engine_for(node.name)
+                plugin = self._resolve_sql_plugin(engine)
                 binding_name = node.binding or node.name
                 binding_name = self.request.binding_overrides.get(
                     node.name, binding_name
@@ -1635,6 +1664,7 @@ class LocalOrchestrator:
                     target_location=location,
                     write_intent=write_intent,
                     allow_trusted_sql=allow_trusted,
+                    engine=engine,
                 )
                 for diag in result.diagnostics:
                     self._append_diagnostic(
@@ -1674,7 +1704,10 @@ class LocalOrchestrator:
                 self._mark_publication()
                 return
             # SQL-region sink with Python list payload: load directly into target.
-            if is_sql_engine(self._engine_for(node.name)) and isinstance(payload, list):
+            if self._is_sql_engine(self._engine_for(node.name)) and isinstance(
+                payload, list
+            ):
+                engine = self._engine_for(node.name)
                 binding_name = node.binding or node.name
                 binding_name = self.request.binding_overrides.get(
                     node.name, binding_name
@@ -1689,10 +1722,7 @@ class LocalOrchestrator:
                         stage=FailureStage.WRITE.value,
                         code="PMEXEC437",
                     )
-                plugin = resolve_sql_plugin(
-                    "sql",
-                    plugins=getattr(self.runtime, "sql_plugins", None),
-                )
+                plugin = self._resolve_sql_plugin(engine)
                 location = descriptor.location if descriptor is not None else None
                 allow_trusted = self._effective_allow_trusted_sql()
                 target = plugin.relation_from_binding(
@@ -1704,6 +1734,7 @@ class LocalOrchestrator:
                     pipeline_id=self.plan.pipeline_id,
                     plan_id=self.plan.plan_id,
                     step_name=node.name,
+                    engine=engine,
                     allow_trusted_sql=allow_trusted,
                 )
                 if write_mode_for_request(self.request).value == "no_write":
@@ -1784,11 +1815,15 @@ class LocalOrchestrator:
                 impl = None
                 engine = descriptor.engine
                 state.implementation = descriptor.identity
-                if not is_dataframe_engine(engine) and not is_spark_engine(engine):
+                if (
+                    not is_dataframe_engine(engine)
+                    and not is_spark_engine(engine)
+                    and not self._is_sql_engine(engine)
+                ):
                     raise NodeExecutionError(
                         redact_message(
                             f"portable_compiled step {node.name!r} requires a "
-                            f"dataframe or spark engine, got {engine!r}"
+                            f"dataframe, SQL, or Spark engine, got {engine!r}"
                         ),
                         node_name=node.name,
                         stage=FailureStage.TRANSFORM.value,
@@ -1799,6 +1834,60 @@ class LocalOrchestrator:
                 engine = impl.engine
                 state.implementation = impl.identity
 
+            if (
+                descriptor is not None
+                and descriptor.kind == "portable_compiled"
+                and self._is_sql_engine(engine)
+            ):
+                plugin = self._resolve_sql_plugin(engine)
+                for _port_name in inputs:
+                    self._append_validation(
+                        validations,
+                        ValidationResult(
+                            node_name=node.name,
+                            boundary="input_validation",
+                            status="skipped",
+                            message="delegated to portable SQL compiler",
+                        ),
+                    )
+                result = await execute_portable_sql_step(
+                    plugin=plugin,
+                    descriptor=descriptor,
+                    node=node,
+                    inputs=inputs,
+                    params=params,
+                    plan=self.plan,
+                    run_id=run_id,
+                    attempt=attempt,
+                )
+                output_ports = [p.name for p in node.outputs] or ["result"]
+                values = (
+                    result if isinstance(result, dict) else {output_ports[0]: result}
+                )
+                consumers_sql = all(
+                    self._is_sql_engine(self._engine_for(edge.consumer_node))
+                    for edge in graph.edges_from(node.name)
+                )
+                for port_name in output_ports:
+                    value = values.get(port_name)
+                    if value is None:
+                        continue
+                    ref = ArtifactRef(
+                        identity=self._artifact_identity(
+                            node_name=node.name, port_name=port_name
+                        ),
+                        logical_output=f"{node.name}.{port_name}",
+                        strategy=self._strategy_for(node.name, port_name),
+                        security_domain=self.plan.security_domain,
+                    )
+                    artifacts.put(ref, value, durable=False)
+                state.records_out = 0
+                state.metadata["sql"] = {
+                    "portable_compiled": True,
+                    "consumers_sql": consumers_sql,
+                    "rows_fetched": plugin.rows_fetched_total(),
+                }
+                return
             if (
                 descriptor is not None
                 and descriptor.kind == "portable_compiled"
@@ -1946,11 +2035,8 @@ class LocalOrchestrator:
                 state.metadata["dataframe"] = bundle.metrics.to_dict()
                 return
 
-            if is_sql_engine(impl.engine):
-                plugin = resolve_sql_plugin(
-                    impl.engine,
-                    plugins=getattr(self.runtime, "sql_plugins", None),
-                )
+            if self._is_sql_engine(impl.engine):
+                plugin = self._resolve_sql_plugin(impl.engine)
                 allow_trusted = self._effective_allow_trusted_sql()
                 # Hybrid: fetch SQL handles into records when feeding local engines
                 # is handled in _gather_inputs; here inputs should already be
@@ -1984,7 +2070,7 @@ class LocalOrchestrator:
                 stored: Any = result
                 consumers_sql = True
                 for edge in graph.edges_from(node.name):
-                    if not is_sql_engine(self._engine_for(edge.consumer_node)):
+                    if not self._is_sql_engine(self._engine_for(edge.consumer_node)):
                         consumers_sql = False
                         break
                 if consumers_sql and isinstance(result, SqlQuery):
@@ -2000,6 +2086,7 @@ class LocalOrchestrator:
                         run_id=run_id,
                         attempt=attempt,
                         allow_trusted_sql=allow_trusted,
+                        engine=engine,
                     )
                 strategy = self._strategy_for(node.name, port_name)
                 logical = f"{node.name}.{port_name}"
@@ -2220,19 +2307,18 @@ class LocalOrchestrator:
             key = f"{edge.producer_node}.{edge.producer_port}"
             value = artifacts.get_raw(key)
             # Hybrid boundary: SQL handle → Python/dataframe records.
-            if not is_sql_engine(consumer_engine) and isinstance(
+            if not self._is_sql_engine(consumer_engine) and isinstance(
                 value, (RelationRef, SqlQuery)
             ):
-                plugin = resolve_sql_plugin(
-                    "sql",
-                    plugins=getattr(self.runtime, "sql_plugins", None),
-                )
+                producer_engine = self._engine_for(edge.producer_node)
+                plugin = self._resolve_sql_plugin(producer_engine)
                 allow_trusted = self._effective_allow_trusted_sql()
                 ctx = SqlExecutionContext(
                     run_id="hybrid",
                     pipeline_id=self.plan.pipeline_id,
                     plan_id=self.plan.plan_id,
                     step_name=node.name,
+                    engine=producer_engine,
                     allow_trusted_sql=allow_trusted,
                 )
                 fetched = plugin.fetch_records(

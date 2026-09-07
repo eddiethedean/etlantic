@@ -63,6 +63,7 @@ dataframes = [
     "etlantic-polars==0.48.0",
     "etlantic-pandas==0.48.0",
 ]
+duckdb = ["etlantic-duckdb==0.48.0"]
 
 [project.scripts]
 etlantic = "etlantic.cli:run"
@@ -131,6 +132,9 @@ medallantic = [
 ]
 datafusion = [
     "etlantic-datafusion",
+]
+duckdb = [
+    "etlantic-duckdb",
 ]
 s3 = [
     "etlantic-s3",
@@ -212,6 +216,7 @@ members = [
     "packages/etlantic-openlineage",
     "packages/etlantic-mcp",
     "packages/etlantic-lsp",
+    "packages/etlantic-duckdb",
 ]
 
 [tool.uv.sources]
@@ -238,6 +243,7 @@ etlantic-snowflake = { workspace = true }
 etlantic-openlineage = { workspace = true }
 etlantic-mcp = { workspace = true }
 etlantic-lsp = { workspace = true }
+etlantic-duckdb = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -258,6 +264,7 @@ pythonpath = [
     "packages/etlantic-s3/src",
     "packages/etlantic-kafka/src",
     "packages/etlantic-k8s/src",
+    "packages/etlantic-duckdb/src",
     "packages/etlantic-spark-connect/src",
     "packages/etlantic-schemaregistry/src",
     "packages/etlantic-iceberg/src",
@@ -288,6 +295,7 @@ markers = [
     "snowflake: tests for the experimental Snowflake connector package",
     "openlineage: tests for the experimental OpenLineage export package",
     "mcp: tests for the experimental read-only MCP extra",
+    "duckdb: tests requiring the optional DuckDB plugin",
 ]
 
 [tool.ruff]

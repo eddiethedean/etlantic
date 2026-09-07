@@ -2,7 +2,7 @@
 title: ETLantic 0.49 Implementation Plan
 description: Implementation-grade plan for the full optional DuckDB engine package.
 plan_status: current
-plan_last_reviewed: 0.48.0
+plan_last_reviewed: 0.49 implementation review
 ---
 
 # ETLantic 0.49 Implementation Plan
@@ -18,6 +18,41 @@ definitions whose complete requirement vectors it can prove, while rejecting
 unsupported, unavailable, or unknown requirements before execution or I/O. The
 portable seven-engine baseline and pushdown contract move to phase 0.50;
 adaptive physical-DAG work moves to phase 0.51.
+
+## Implementation Review Findings
+
+The implementation now delivers the qualified 0.49 subset and keeps all
+unproven surfaces fail-closed:
+
+- Core SQL dispatch preserves the selected engine through discovery, planning,
+  source/step/sink/materialization, hybrid fetches, portable SQL execution, and
+  run-specific cleanup. SQL portable steps execute through the planned
+  compiler; native transformation callables are not a fallback.
+- Transform support and implementation records carry optional evidence and
+  compiler fingerprints. Missing fingerprints serialize exactly as the prior
+  `/1` records, while a planned fingerprint mismatch raises `PMXFORM306`
+  before execution.
+- `etlantic-duckdb` is an optional, independently built package. Core has no
+  DuckDB import or dependency. Discovery, production allowlists, manifest
+  digests, wheel isolation, and release inventories include the package.
+- The DuckDB plugin uses explicit run-scoped connections, verified default-deny
+  settings, sealed closed-IR statements, bound parameters, safe identifiers,
+  transactions, rollback, lazy relation handles, and deterministic cleanup.
+- The portable compiler qualifies filter/project/field, distinct, limit, sort,
+  join, and aggregate lowering. Union, raw SQL, Python UDFs, and connectors
+  remain explicitly unqualified and are rejected before I/O.
+- A deterministic `scripts/check_duckdb_0_49.py` command generates and checks
+  seven redacted evidence artifacts under
+  `docs/11_DEVELOPMENT/evidence/duckdb_0_49/` for the 0.50 handoff.
+- Validation at review: 1,532 tests passed and 27 were skipped with all
+  optional compiler groups installed; DuckDB targeted tests (including public
+  conformance) passed; Ruff, documentation, manifest, release, and compiler
+  drift gates passed.
+
+The remaining phase boundary is intentional: bounded file/table connectors and
+full dialect differential qualification are not advertised until their own
+evidence exists. They are phase follow-ups, not silently inferred from DuckDB
+being installed.
 
 The governing backlog is [epic #110](https://github.com/eddiethedean/etlantic/issues/110),
 with stories #111–#117, and the [0.49 exit gate](EXIT_GATE_0_49.md).

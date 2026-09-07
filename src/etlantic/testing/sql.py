@@ -15,10 +15,13 @@ from etlantic.testing.capability_truthfulness import (
 )
 
 
-def assert_sql_plugin_info(plugin: SqlPlugin) -> None:
+def assert_sql_plugin_info(
+    plugin: SqlPlugin, *, expected_engine: str | None = None
+) -> None:
     """Assert a SQL plugin advertises protocol version and core capabilities."""
     info = plugin.info
-    assert info.engine == "sql"
+    if expected_engine is not None:
+        assert info.engine == expected_engine
     assert info.protocol_version == SQL_PROTOCOL_VERSION
     caps = plugin.capabilities()
     assert caps.supports("sql")
@@ -27,14 +30,17 @@ def assert_sql_plugin_info(plugin: SqlPlugin) -> None:
     assert_capability_claims_consistent(caps)
 
 
-def run_sql_conformance_suite(plugin: SqlPlugin) -> None:
+def run_sql_conformance_suite(
+    plugin: SqlPlugin, *, expected_engine: str | None = None
+) -> None:
     """Minimal conformance checks for SQL plugins (driver-backed)."""
-    assert_sql_plugin_info(plugin)
+    assert_sql_plugin_info(plugin, expected_engine=expected_engine)
     ctx = SqlExecutionContext(
         run_id="conformance",
         pipeline_id="conformance",
         plan_id="plan",
         step_name="step",
+        engine=plugin.info.engine,
     )
     # Identifier policy
     quoted = plugin.quote_identifier("customers")

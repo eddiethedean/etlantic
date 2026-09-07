@@ -42,6 +42,14 @@ def test_suite_passes_sql() -> None:
     run_portable_transform_conformance_suite(create_transform_compiler())
 
 
+@pytest.mark.duckdb
+def test_suite_passes_duckdb() -> None:
+    pytest.importorskip("duckdb")
+    from etlantic_duckdb import create_transform_compiler
+
+    run_portable_transform_conformance_suite(create_transform_compiler())
+
+
 def test_module_export_surface() -> None:
     assert hasattr(
         portable_transform_conformance, "run_portable_transform_conformance_suite"

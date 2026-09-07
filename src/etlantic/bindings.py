@@ -260,7 +260,7 @@ class AssetBindingRef:
         )
 
 
-def asset_descriptor_to_storage_key(value: str | dict[str, Any]) -> AssetValue:
+def asset_descriptor_to_storage_key(value: str | Mapping[str, Any]) -> AssetValue:
     """Normalize an asset descriptor to profile storage form.
 
     Legacy provider/location-only descriptors remain strings. Structured
@@ -270,11 +270,11 @@ def asset_descriptor_to_storage_key(value: str | dict[str, Any]) -> AssetValue:
     return parsed.to_canonical()
 
 
-def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor:
+def parse_asset_descriptor(value: str | Mapping[str, Any]) -> ParsedAssetDescriptor:
     """Parse a profile asset value into provider, location, and connector fields."""
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         metadata_raw = value.get("metadata")
-        if isinstance(metadata_raw, dict) and metadata_raw:
+        if isinstance(metadata_raw, Mapping) and metadata_raw:
             # Reject opaque metadata bags; connector fields are first-class.
             unknown_meta = set(metadata_raw) - _CONNECTOR_STRUCTURED_KEYS
             if unknown_meta:
@@ -286,7 +286,7 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
         location_text = str(location) if location is not None else None
         _reject_location_userinfo(location_text)
         config_raw = value.get("config")
-        config = dict(config_raw) if isinstance(config_raw, dict) else None
+        config = dict(config_raw) if isinstance(config_raw, Mapping) else None
         if config is not None:
             # Lazy import: avoid connectors package during Profile bootstrap.
             from etlantic.connectors.cdk.config import reject_secret_like_keys
@@ -356,7 +356,7 @@ def parse_asset_descriptor(value: str | dict[str, Any]) -> ParsedAssetDescriptor
     return ParsedAssetDescriptor(provider=text or "memory", location=None)
 
 
-def normalize_assets_map(raw: dict[str, Any]) -> dict[str, AssetValue]:
+def normalize_assets_map(raw: Mapping[str, Any]) -> dict[str, AssetValue]:
     """Normalize profile assets from JSON into canonical storage form.
 
     Every value is validated through :func:`parse_asset_descriptor` so credential
@@ -365,7 +365,7 @@ def normalize_assets_map(raw: dict[str, Any]) -> dict[str, AssetValue]:
     """
     normalized: dict[str, AssetValue] = {}
     for key, value in dict(raw or {}).items():
-        if isinstance(value, (str, dict)):
+        if isinstance(value, (str, Mapping)):
             normalized[str(key)] = asset_descriptor_to_storage_key(value)
         else:
             raise ValueError(

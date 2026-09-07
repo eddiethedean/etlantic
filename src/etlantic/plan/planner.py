@@ -767,6 +767,7 @@ def _select_implementations_from_definition(
                     compiler_name=info.name,
                     compiler_version=info.version,
                     compiler_protocol=info.compiler_protocol or COMPILER_PROTOCOL,
+                    compiler_evidence_fingerprint=info.evidence_fingerprint,
                     requirements=requirements,
                     support_summary=report.to_dict(),
                     portable_plan=portable_plan,
@@ -948,6 +949,7 @@ def _select_implementations(
                     compiler_name=info.name,
                     compiler_version=info.version,
                     compiler_protocol=info.compiler_protocol or COMPILER_PROTOCOL,
+                    compiler_evidence_fingerprint=info.evidence_fingerprint,
                     requirements={
                         k: list(v) for k, v in portable_def.requirements.items()
                     },

@@ -290,6 +290,37 @@ jobs:
           uv run python examples/sql_boundary_hybrid.py
           uv run python examples/sql_failure_recovery.py
 
+  duckdb:
+    name: DuckDB optional plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with DuckDB plugin
+        run: uv sync --locked --group duckdb
+
+      - name: Discovery and security smoke
+        run: |
+          uv run python -c "from etlantic.sql.discovery import discover_sql_plugins; assert 'duckdb' in discover_sql_plugins()"
+          uv run pytest -q tests/duckdb
+
+      - name: Public portable conformance
+        run: uv run pytest -q tests/portable_conformance -m duckdb
+
+      - name: DuckDB examples and manifest checks
+        run: |
+          uv run python scripts/check_duckdb_0_49.py
+          uv run python scripts/check_plugin_manifests.py
+          uv run python scripts/check_release.py
+
   spark:
     name: PySpark plugin (sparkless)
     runs-on: ubuntu-latest
@@ -537,7 +568,7 @@ jobs:
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
             medallantic etlantic-sparkforge etlantic-fastapi etlantic-lsp etlantic-datafusion \
             etlantic-s3 etlantic-kafka etlantic-k8s etlantic-spark-connect etlantic-schemaregistry etlantic-iceberg etlantic-snowflake \
-            etlantic-openlineage etlantic-mcp; do
+            etlantic-openlineage etlantic-mcp etlantic-duckdb; do
             uv build --package "$pkg" --out-dir dist
           done
           ls -la dist/
@@ -561,6 +592,10 @@ jobs:
           fi
           WHEEL="${core_wheels[0]}"
           echo "Testing wheel: $WHEEL"
+          if unzip -l "$WHEEL" | grep -q "etlantic_duckdb"; then
+            echo "Core wheel must not contain optional DuckDB implementation files"
+            exit 1
+          fi
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
             python -m pytest -q tests/unit tests/cli
 

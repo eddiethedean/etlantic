@@ -21,6 +21,7 @@ install and narrative home.
 - [etlantic-polars](api_optional/etlantic_polars.md) — Polars dataframe plugin + portable compiler
 - [etlantic-pandas](api_optional/etlantic_pandas.md) — Pandas dataframe plugin + portable compiler
 - [etlantic-sql](api_optional/etlantic_sql.md) — SQL plugin (SQLite + PostgreSQL)
+- [etlantic-duckdb](api_optional/etlantic_duckdb.md) — Optional DuckDB SQL plugin + portable compiler
 - [etlantic-pyspark](api_optional/etlantic_pyspark.md) — PySpark plugin + portable compiler
 - [etlantic-airflow](api_optional/etlantic_airflow.md) — Airflow DAG compiler
 - [etlantic-prefect](api_optional/etlantic_prefect.md) — Prefect local scheduler MVP
