@@ -7,6 +7,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from etlantic.runtime.logging import is_sensitive_key
+
 
 @dataclass(frozen=True, slots=True)
 class DuckDBConfig:
@@ -32,7 +34,7 @@ class DuckDBConfig:
     allow_unredacted_secrets: bool = False
     max_result_rows: int = 1_000_000
     max_statements: int = 10_000
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, str] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         if self.read_only and self.database == ":memory:":
@@ -49,11 +51,7 @@ class DuckDBConfig:
             raise ValueError("DuckDB community/unsigned extensions are disabled")
         if self.allow_persistent_secrets or self.allow_unredacted_secrets:
             raise ValueError("DuckDB persistent/unredacted secrets are disabled")
-        secret_markers = ("password", "secret", "token", "credential", "private_key")
-        if any(
-            any(marker in str(key).lower() for marker in secret_markers)
-            for key in self.metadata
-        ):
+        if any(is_sensitive_key(key) for key in self.metadata):
             raise ValueError("DuckDB metadata keys must not identify secrets")
 
     @classmethod

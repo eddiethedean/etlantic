@@ -10,6 +10,7 @@ pytestmark = pytest.mark.duckdb
 
 from etlantic_duckdb import create_plugin  # noqa: E402
 from etlantic_duckdb.config import DuckDBConfig  # noqa: E402
+from etlantic_duckdb.frame import DuckDBFrame  # noqa: E402
 from etlantic_duckdb.plugin import DuckDBSqlPlugin  # noqa: E402
 from etlantic_duckdb.transform_compiler import DuckDBTransformCompiler  # noqa: E402
 
@@ -154,6 +155,11 @@ def test_duckdb_config_fingerprints_distinguish_logical_paths() -> None:
     ).resolve_temp_directory() == str(Path("/tmp/spill").resolve())
     with pytest.raises(ValueError):
         DuckDBConfig(metadata={"password": "TOP-SECRET"})
+    with pytest.raises(ValueError):
+        DuckDBConfig(metadata={"api_key": "TOP-SECRET"})
+    DuckDBConfig(metadata={"author": "alice"})
+    safe_metadata = DuckDBConfig(metadata={"label": "TOP-SECRET"})
+    assert "TOP-SECRET" not in repr(safe_metadata)
 
 
 def test_duckdb_cte_lowering_is_explicit() -> None:
@@ -360,6 +366,168 @@ def test_duckdb_portable_empty_frame_requires_schema() -> None:
                 ),
             )
         )
+
+
+def test_duckdb_portable_empty_input_uses_declared_types_and_preserves_schema() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {
+            "input": {"schema": {"fields": [{"name": "id", "type": "integer"}]}}
+        },
+        "actions": [
+            {
+                "id": "filter",
+                "kind": {
+                    "id": "filter",
+                    "action": "dtcs:filter",
+                    "target": "input",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "gt",
+                            "left": {"kind": "fieldRef", "target": "id"},
+                            "right": {"kind": "literal", "value": 1},
+                        }
+                    },
+                },
+            }
+        ],
+        "outputs": {"result": {}},
+        "requirements": {"dependencies": [{"from": "filter", "to": "result"}]},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    output = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"input": []},
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="empty-typed",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    )
+    frame = output.valid["result"]
+    assert frame.to_dicts() == []
+    assert frame.columns == ["id"]
+    assert frame.column_types["id"] == "BIGINT"
+
+
+def test_duckdb_empty_frame_explicit_types_can_be_chained() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"input": {}},
+        "actions": [],
+        "outputs": {"result": {}},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    first = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"input": DuckDBFrame([], ["id"], {"id": "HUGEINT"})},
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="empty-chain-a",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    ).valid["result"]
+    second = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"input": first},
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="empty-chain-b",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    ).valid["result"]
+    assert second.columns == ["id"]
+    assert second.column_types["id"] == "HUGEINT"
+
+
+def test_duckdb_portable_null_only_rows_keep_declared_types() -> None:
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"input": {}},
+        "actions": [
+            {
+                "id": "filter",
+                "kind": {
+                    "id": "filter",
+                    "action": "dtcs:filter",
+                    "target": "input",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "gt",
+                            "left": {"kind": "fieldRef", "target": "total"},
+                            "right": {"kind": "literal", "value": 1},
+                        }
+                    },
+                },
+            }
+        ],
+        "outputs": {"result": {}},
+        "requirements": {"dependencies": [{"from": "filter", "to": "result"}]},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext(
+            pipeline_id="p",
+            plan_id="plan",
+            step_name="step",
+            profile_name="test",
+            engine="duckdb",
+        ),
+    )
+    output = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={
+                "input": DuckDBFrame([{"total": None}], ["total"], {"total": "HUGEINT"})
+            },
+            parameters={},
+            context=TransformExecutionContext(
+                run_id="null-only",
+                pipeline_id="p",
+                plan_id="plan",
+                step_name="step",
+                engine="duckdb",
+            ),
+        )
+    )
+    frame = output.valid["result"]
+    assert frame.to_dicts() == []
+    assert frame.column_types["total"] == "HUGEINT"
 
 
 def test_security_defaults_reject_unsafe_configuration() -> None:

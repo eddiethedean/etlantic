@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any
@@ -277,6 +278,7 @@ class DuckDBSqlPlugin:
         *,
         target: RelationRef,
         context: SqlExecutionContext,
+        column_types: Mapping[str, str] | None = None,
     ) -> SqlExecutionResult:
         rows = [
             item.model_dump() if hasattr(item, "model_dump") else dict(item)
@@ -290,6 +292,10 @@ class DuckDBSqlPlugin:
             for key in row:
                 require_safe_identifier(str(key))
         columns = list(rows[0])
+        declared_types = {
+            str(column): _validate_duck_type(type_name)
+            for column, type_name in (column_types or {}).items()
+        }
         session = self.connections.session(context.run_id)
         table = ".".join(
             quote_identifier(part)
@@ -297,7 +303,8 @@ class DuckDBSqlPlugin:
             if part
         )
         defs = ", ".join(
-            f"{quote_identifier(c)} {_duck_type(rows, c)}" for c in columns
+            f"{quote_identifier(c)} {declared_types.get(c) or _duck_type(rows, c)}"
+            for c in columns
         )
         placeholders = ", ".join("?" for _ in columns)
         try:
@@ -368,10 +375,20 @@ class DuckDBSqlPlugin:
         self, relation: RelationRef, *, context: SqlExecutionContext
     ) -> dict[str, Any]:
         session = self.connections.session(context.run_id)
-        name = relation.name.replace("'", "''")
+        predicates = ["table_name = ?"]
+        params: list[str] = [relation.name]
+        if relation.namespace:
+            predicates.append("table_schema = ?")
+            params.append(relation.namespace)
+        if relation.catalog:
+            predicates.append("table_catalog = ?")
+            params.append(relation.catalog)
         rows = session.execute(
-            "SELECT column_name, column_type, is_nullable FROM information_schema.columns WHERE table_name = ? ORDER BY ordinal_position",
-            [name],
+            "SELECT column_name, data_type, is_nullable "
+            "FROM information_schema.columns WHERE "
+            + " AND ".join(predicates)
+            + " ORDER BY ordinal_position",
+            params,
         ).fetchall()
         return {
             "identity": relation.qualified_name,
@@ -409,3 +426,44 @@ def _duck_type(rows: list[dict[str, Any]], column: str) -> str:
     if all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
         return "DOUBLE"
     return "VARCHAR"
+
+
+_DUCKDB_TYPES = frozenset(
+    {
+        "BOOLEAN",
+        "TINYINT",
+        "SMALLINT",
+        "INTEGER",
+        "BIGINT",
+        "HUGEINT",
+        "UTINYINT",
+        "USMALLINT",
+        "UINTEGER",
+        "UBIGINT",
+        "UHUGEINT",
+        "FLOAT",
+        "DOUBLE",
+        "REAL",
+        "DECIMAL",
+        "DATE",
+        "TIME",
+        "TIMESTAMP",
+        "TIMESTAMPTZ",
+        "TIMESTAMP WITH TIME ZONE",
+        "INTERVAL",
+        "VARCHAR",
+        "TEXT",
+        "JSON",
+        "UUID",
+        "BLOB",
+    }
+)
+
+
+def _validate_duck_type(type_name: str) -> str:
+    text = str(type_name).strip().upper()
+    if text in _DUCKDB_TYPES or re.fullmatch(
+        r"DECIMAL\s*\(\s*\d+\s*,\s*\d+\s*\)", text
+    ):
+        return text
+    raise ValueError(f"unsupported DuckDB declared type {type_name!r}")

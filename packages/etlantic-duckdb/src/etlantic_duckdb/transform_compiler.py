@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -206,7 +207,11 @@ class DuckDBTransformCompiler:
         session = plugin.connections.session(context.run_id)
         relations: dict[str, RelationRef] = {}
         columns: dict[str, list[str]] = {}
+        input_specs = plan.get("inputs") or {}
         for name, value in inputs.items():
+            declared_spec = input_specs.get(str(name))
+            if declared_spec is None and len(inputs) == 1 and len(input_specs) == 1:
+                declared_spec = next(iter(input_specs.values()))
             relation, names = _input_relation(
                 plugin,
                 session,
@@ -214,6 +219,7 @@ class DuckDBTransformCompiler:
                 value,
                 step_name=context.step_name,
                 attempt=context.attempt,
+                declared_spec=declared_spec,
             )
             relations[str(name)] = relation
             columns[str(name)] = names
@@ -309,7 +315,25 @@ class DuckDBTransformCompiler:
                         raise RuntimeError(
                             detail or "DuckDB portable fetch did not commit"
                         )
-                    frame_cache[cache_key] = _ResultFrame(fetched.records or [])
+                    fields = (
+                        plugin.inspect_relation(relation, context=fetch_context).get(
+                            "fields"
+                        )
+                        or ()
+                    )
+                    frame_columns = [str(field["name"]) for field in fields]
+                    frame_types = {
+                        str(field["name"]): str(field["type"])
+                        for field in fields
+                        if field.get("name") is not None and field.get("type")
+                    }
+                    if not frame_columns and fetched.records:
+                        frame_columns = list(fetched.records[0])
+                    frame_cache[cache_key] = _ResultFrame(
+                        fetched.records or [],
+                        columns=frame_columns,
+                        column_types=frame_types,
+                    )
             outputs = {
                 output_name: frame_cache[relation.qualified_name]
                 for output_name, relation in output_relations.items()
@@ -332,6 +356,7 @@ def _input_relation(
     *,
     step_name: str,
     attempt: int,
+    declared_spec: Any = None,
 ) -> tuple[RelationRef, list[str]]:
     if isinstance(value, RelationRef):
         info = plugin.inspect_relation(
@@ -354,11 +379,24 @@ def _input_relation(
     )
     if rows is None:
         raise TypeError(f"Unsupported DuckDB portable input {type(value)!r}")
+    schema_fields = _schema_fields(declared_spec)
     declared_columns = list(getattr(value, "columns", ()) or ())
+    if not declared_columns:
+        declared_columns = [str(field["name"]) for field in schema_fields]
     if not rows and not declared_columns:
         raise ValueError(
             f"DuckDB portable input {name!r} is empty and has no declared schema"
         )
+    column_types = _declared_column_types(value, schema_fields)
+    if not rows:
+        missing_types = [
+            column for column in declared_columns if column not in column_types
+        ]
+        if missing_types:
+            raise ValueError(
+                f"DuckDB portable input {name!r} is empty and lacks declared types "
+                f"for: {', '.join(missing_types)}"
+            )
     relation = RelationRef(
         name=(
             f"pl_in_{_safe(session.run_id)}_{_safe(step_name)}"
@@ -375,17 +413,102 @@ def _input_relation(
             step_name=name,
             engine="duckdb",
         ),
+        column_types=column_types,
     )
     if not rows:
         session.execute(
             f"CREATE TEMP TABLE {plugin.quote_identifier(relation.name)} ("
             + ", ".join(
-                f"{plugin.quote_identifier(column)} VARCHAR"
+                f"{plugin.quote_identifier(column)} {column_types[column]}"
                 for column in declared_columns
             )
             + ")"
         )
     return relation, list(rows[0]) if rows else declared_columns
+
+
+def _schema_fields(spec: Any) -> list[dict[str, Any]]:
+    if not isinstance(spec, Mapping):
+        return []
+    schema = spec.get("schema") if isinstance(spec.get("schema"), Mapping) else spec
+    fields = schema.get("fields") if isinstance(schema, Mapping) else None
+    return [
+        field
+        for field in fields or ()
+        if isinstance(field, Mapping) and field.get("name")
+    ]
+
+
+def _declared_column_types(
+    value: Any, schema_fields: list[dict[str, Any]]
+) -> dict[str, str]:
+    types: dict[str, str] = {
+        str(field["name"]): _duck_type_for_schema(field.get("type"))
+        for field in schema_fields
+        if _duck_type_for_schema(field.get("type")) is not None
+    }
+    explicit = getattr(value, "column_types", None)
+    if isinstance(explicit, Mapping):
+        for name, type_name in explicit.items():
+            duck_type = _duck_type_for_schema(type_name)
+            if duck_type is not None:
+                types[str(name)] = duck_type
+    schema = getattr(value, "schema", None)
+    if isinstance(schema, Mapping):
+        for name, type_name in schema.items():
+            duck_type = _duck_type_for_schema(type_name)
+            if duck_type is not None:
+                types[str(name)] = duck_type
+    return types
+
+
+def _duck_type_for_schema(type_name: Any) -> str | None:
+    if type_name is None:
+        return None
+    text = str(type_name).strip().lower()
+    if not text:
+        return None
+    if text in {"bool", "boolean"} or text.startswith("bool"):
+        return "BOOLEAN"
+    if text in {
+        "int",
+        "integer",
+        "long",
+        "bigint",
+        "smallint",
+        "tinyint",
+    } or text.startswith("int"):
+        return "BIGINT"
+    if text in {
+        "hugeint",
+        "uhugeint",
+        "utinyint",
+        "usmallint",
+        "uinteger",
+        "ubigint",
+    }:
+        return text.upper()
+    if text in {"float", "double", "number", "real"} or text.startswith(
+        ("float", "double")
+    ):
+        return "DOUBLE"
+    if text in {"datetime", "timestamp"} or text.startswith(("datetime", "timestamp")):
+        return "TIMESTAMP"
+    if text == "date" or text.startswith("date"):
+        return "DATE"
+    if text in {"time", "time64"} or text.startswith("time"):
+        return "TIME"
+    if re.fullmatch(r"decimal(?:\s*\(\s*\d+\s*,\s*\d+\s*\))?", text):
+        return text.upper().replace(" ", "")
+    if text in {"json", "object", "map", "array", "list"} or text.startswith(
+        ("list", "struct", "map")
+    ):
+        return "JSON"
+    if text in {"str", "string", "varchar", "text", "utf8"} or text.startswith(
+        ("string", "varchar")
+    ):
+        return "VARCHAR"
+    return None
 
 
 _ResultFrame = DuckDBFrame
