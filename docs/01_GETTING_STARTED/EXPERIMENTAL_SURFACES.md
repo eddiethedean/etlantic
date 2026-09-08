@@ -7,7 +7,7 @@
 | Surface | Package / area | Bound |
 |---|---|---|
 | Structured Streaming | `etlantic-pyspark` / streaming foundation | Experimental — batch Spark is the production path |
-| DataFusion | `etlantic-datafusion` | Experimental Gate B stub — not recommended for pilots |
+| DataFusion | `etlantic-datafusion` | Provisional 0.50 portable implementation — baseline qualification pending |
 | OpenLineage outbound | `etlantic-openlineage` | Experimental CP2 export — cannot mutate registry; not production multi-tenant |
 | Prefect deployment / serve | `etlantic-prefect` | Local direct-execution MVP only; deployment/serve remain future |
 | FastAPI HTTP API | `etlantic-fastapi` | Embeddable `ETLanticAPI` is Available; `create_reference_app` is a thin non-CP demo |

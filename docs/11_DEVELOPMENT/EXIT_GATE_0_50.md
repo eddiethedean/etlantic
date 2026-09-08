@@ -22,7 +22,7 @@ See the [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md),
 | Pandas | Baseline Available for declared eager mode | Runs; public claim coverage incomplete |
 | SQL | Baseline Available through normal runtime for SQLite and PostgreSQL | Generic `portable_compiled` dispatch shipped in 0.49; complete real-dialect and handle evidence is incomplete |
 | PySpark | Baseline Available on real JVM Spark with canonical engine identity | Runs as `pyspark`; real-JVM coverage and alias behavior incomplete |
-| DataFusion | Baseline Available through native expressions | Discoverable zero-capability stub |
+| DataFusion | Baseline Available through native expressions | Provisional implementation; baseline qualification incomplete |
 | DuckDB | Baseline Available through the qualified native package and pushdown contract | 0.49 package delivered; seven-engine conformance not yet passed |
 | Advanced profiles | Engine-specific, separately claimed | Uneven by design |
 | Native implementation bodies | Explicit escape hatch only | Available; must not become implicit fallback |
@@ -92,6 +92,7 @@ source rows, resolved secrets, executable objects, or absolute host paths.
 | `portable_datafusion_conformance_0_50.json` | Native analysis/lowering/runtime and Arrow-boundary evidence | Planned |
 | `portable_duckdb_pushdown_0_50.json` | DuckDB baseline, pushdown matrix, accepted/rejected boundaries, explain evidence, and physical effects | Planned |
 | `portable_cross_engine_0_50.json` | Canonical pipeline plus normalized differential and pushdown corpus across the seven baseline engines | Planned |
+| `portable_canonical_pipeline_0_50.json` | Engine-neutral canonical pipeline shape with no source rows or engine-specific bodies | Checked in; execution evidence remains provisional |
 | `portable_adaptive_handoff_0_50.json` | 0.51-style partial-engine per-node eligibility, hard-failure, preferred-unknown, lowering-effect, and drift fixtures | Planned |
 | `portable_dependency_security_0_50.json` | Isolated installs, core dependency boundary, fail-closed and redaction scans | Planned |
 | `FINDINGS_0_50.md` | Triaged findings with zero unresolved critical/high at decision time | Planned |

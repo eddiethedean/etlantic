@@ -1,0 +1,14 @@
+{
+  "schema": "etlantic.portable-pushdown/1",
+  "repository_commit": "working-tree",
+  "result": "provisional",
+  "outcomes": ["pushed_exact", "pushed_with_lowering", "not_pushed", "not_applicable", "unknown"],
+  "boundaries": [
+    {"kind": "source", "obligation": "preferred"},
+    {"kind": "relational", "obligation": "required"},
+    {"kind": "sink", "obligation": "preferred"}
+  ],
+  "findings": [],
+  "evidence": [],
+  "notes": "Boundary-specific evidence is populated by engine qualification jobs."
+}

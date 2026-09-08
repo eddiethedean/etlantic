@@ -1,0 +1,41 @@
+{
+  "schema": "etlantic.portable-baseline/1",
+  "repository_commit": "working-tree",
+  "result": "provisional",
+  "manifest": {
+    "plan": "dtcs.transform-plan/2",
+    "profiles": [
+      "dtcs:profile/portable-relational-kernel/1",
+      "dtcs:profile/portable-relational/1"
+    ],
+    "actions": [
+      "dtcs:filter", "dtcs:project", "dtcs:with_fields",
+      "dtcs:drop_fields", "dtcs:rename_fields", "dtcs:join",
+      "dtcs:union", "dtcs:aggregate", "dtcs:sort", "dtcs:distinct",
+      "dtcs:deduplicate", "dtcs:limit"
+    ],
+    "scalar_functions": [
+      "dtcs:lower", "dtcs:upper", "dtcs:concat", "dtcs:concat_ws",
+      "dtcs:substr", "dtcs:replace", "dtcs:length", "dtcs:contains",
+      "dtcs:starts_with", "dtcs:ends_with", "dtcs:case_when",
+      "dtcs:coalesce", "dtcs:if_null", "dtcs:null_if", "dtcs:is_null",
+      "dtcs:abs", "dtcs:round", "dtcs:floor", "dtcs:ceil", "dtcs:power",
+      "dtcs:sqrt", "dtcs:least", "dtcs:greatest"
+    ],
+    "aggregate_functions": [
+      "dtcs:sum", "dtcs:average", "dtcs:min", "dtcs:max", "dtcs:count",
+      "dtcs:count_all", "dtcs:count_distinct"
+    ],
+    "operators": [
+      "eq", "not_eq", "lt", "lte", "gt", "gte", "null_safe_eq",
+      "and", "or", "not", "add", "subtract", "multiply", "divide",
+      "modulo", "negate", "in"
+    ],
+    "types": ["null", "boolean", "integer", "decimal", "string", "missing", "invalid"],
+    "join_modes": ["inner", "left", "right", "full", "semi", "anti", "cross"],
+    "collision_policy": "fail",
+    "union_modes": ["byName", "byPosition"],
+    "semantic_modes": ["three_state_distinct"]
+  },
+  "notes": "Contract vocabulary is frozen; engine qualification and release evidence remain pending."
+}

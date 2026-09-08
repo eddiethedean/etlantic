@@ -30,6 +30,7 @@ from etlantic.transform.compiler import (
     TransformSupportFinding,
     TransformSupportReport,
 )
+from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 from etlantic_duckdb.dialect import DuckDBCompiler
 from etlantic_duckdb.frame import DuckDBFrame
@@ -68,6 +69,8 @@ class DuckDBTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=_ACTIONS,
             functions=_FUNCTIONS,
+            operators=frozenset(BASELINE_OPERATORS),
+            types=frozenset(BASELINE_TYPES),
             lazy=True,
             eager=False,
         )
@@ -131,7 +134,9 @@ class DuckDBTransformCompiler:
             definition, evidence_fingerprint=self._info.evidence_fingerprint
         )
         try:
-            inferred_requirements = requirements_from_plan(dict(definition))
+            inferred_requirements = requirements_from_plan(
+                dict(definition), include_extended=True
+            )
         except (AttributeError, TypeError, ValueError):
             # Shape findings retain the precise path. Requirement extraction
             # must not turn malformed IR into an unstructured exception.

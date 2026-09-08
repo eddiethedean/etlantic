@@ -1,0 +1,1 @@
+{"schema":"etlantic.portable-conformance/1","repository_commit":"working-tree","result":"pass","engine":"local","command":"uv run pytest tests/portable_conformance/test_public_suite.py::test_suite_passes_local","tests":"public baseline suite"}

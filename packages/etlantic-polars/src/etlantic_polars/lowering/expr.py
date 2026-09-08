@@ -281,7 +281,9 @@ def lower_agg_expr(node: Any, *, parameters: dict[str, Any]) -> pl.Expr:
             return pl.len()
         return args[0].count()
     if callee == "dtcs:count_distinct":
-        return args[0].n_unique()
+        # DTCS count_distinct follows SQL aggregate semantics: null does not
+        # contribute a distinct value.
+        return args[0].drop_nulls().n_unique()
     if callee == "dtcs:variance":
         return args[0].var(ddof=1)
     if callee == "dtcs:stddev":

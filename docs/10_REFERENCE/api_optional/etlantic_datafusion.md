@@ -1,5 +1,5 @@
 ---
-status: available
+status: provisional
 since: "0.43.0"
 current_minor: "0.49"
 audience: developer
@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-datafusion API
 
-> **Status: Available in ETLantic 0.49.0.** DataFusion dataframe and portable compiler plugin.
+> **Status: Provisional implementation.** DataFusion dataframe and portable compiler plugin; 0.50 baseline qualification is pending.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

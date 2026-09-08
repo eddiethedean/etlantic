@@ -10,6 +10,7 @@ from etlantic.transform.compiler import (
     TransformSupportFinding,
     TransformSupportReport,
 )
+from etlantic.transform.portable_baseline import normalize_action, normalize_operator
 from etlantic.transform.protocol import (
     DEFAULT_PROFILE,
     KERNEL_PROFILE_V1,
@@ -41,6 +42,8 @@ def extract_requirements(
     actions: set[str],
     functions: set[str],
     profiles: set[str],
+    operators: set[str] | None = None,
+    types: set[str] | None = None,
 ) -> dict[str, list[str]]:
     """Return sorted requirement lists for a portable definition."""
     profile_set = set(profiles) | {
@@ -52,24 +55,30 @@ def extract_requirements(
         "profiles": sorted(profile_set),
         "actions": sorted(actions),
         "functions": sorted(functions),
+        "operators": sorted(operators or set()),
+        "types": sorted(types or set()),
     }
 
 
-def requirements_from_plan(plan: dict[str, Any]) -> dict[str, list[str]]:
+def requirements_from_plan(
+    plan: dict[str, Any], *, include_extended: bool = False
+) -> dict[str, list[str]]:
     """Best-effort extraction from an exported portable plan."""
     from etlantic.transform.protocol import PROFILE_WINDOW_V1, PROFILE_WINDOW_V2
 
     actions: set[str] = set()
     functions: set[str] = set()
     profiles: set[str] = set()
+    operators: set[str] = set()
+    types: set[str] = set()
     if plan.get("profile"):
         profiles.add(str(plan["profile"]))
     for item in plan.get("actions") or []:
         kind = item.get("kind") or {}
         action = kind.get("action")
         if isinstance(action, str):
-            actions.add(action)
-        _collect_call_callees(item, functions)
+            actions.add(normalize_action(action))
+        _collect_expression_requirements(item, functions, operators, types)
         if _plan_has_window(item):
             profiles.add(PROFILE_WINDOW_V1)
             # V2 is only required when V2-only functions appear.
@@ -77,7 +86,7 @@ def requirements_from_plan(plan: dict[str, Any]) -> dict[str, list[str]]:
                 profiles.add(PROFILE_WINDOW_V2)
     for output in (plan.get("outputs") or {}).values():
         if isinstance(output, dict):
-            _collect_call_callees(output, functions)
+            _collect_expression_requirements(output, functions, operators, types)
             if _plan_has_window(output):
                 profiles.add(PROFILE_WINDOW_V1)
                 if _plan_requires_window_v2(output):
@@ -87,11 +96,17 @@ def requirements_from_plan(plan: dict[str, Any]) -> dict[str, list[str]]:
     if functions & v2_only:
         profiles.add(PROFILE_WINDOW_V2)
         profiles.add(PROFILE_WINDOW_V1)
-    return extract_requirements(
+    result = extract_requirements(
         actions=actions,
         functions=functions,
         profiles=profiles,
+        operators=operators,
+        types=types,
     )
+    if not include_extended:
+        result.pop("operators", None)
+        result.pop("types", None)
+    return result
 
 
 _WINDOW_V2_CALLEES = frozenset({"dtcs:ntile", "dtcs:percent_rank"})
@@ -122,6 +137,38 @@ def _collect_call_callees(node: Any, functions: set[str]) -> None:
     elif isinstance(node, list):
         for item in node:
             _collect_call_callees(item, functions)
+
+
+def _collect_expression_requirements(
+    node: Any,
+    functions: set[str],
+    operators: set[str],
+    types: set[str],
+) -> None:
+    """Collect governed expression vocabulary without losing dimensions."""
+    if isinstance(node, Mapping):
+        kind = node.get("kind")
+        if kind == "call" and isinstance(node.get("callee"), str):
+            callee = str(node["callee"])
+            if callee == "dtcs:in":
+                operators.add("in")
+            else:
+                functions.add(callee)
+        elif (
+            isinstance(kind, str)
+            and kind in {"binary", "unary"}
+            and isinstance(node.get("op"), str)
+        ):
+            operators.add(normalize_operator(str(node["op"])))
+        elif kind == "literal":
+            value = node.get("value")
+            if isinstance(value, Mapping) and isinstance(value.get("type"), str):
+                types.add(str(value["type"]))
+        for value in node.values():
+            _collect_expression_requirements(value, functions, operators, types)
+    elif isinstance(node, list):
+        for item in node:
+            _collect_expression_requirements(item, functions, operators, types)
 
 
 def merge_requirements(
@@ -234,6 +281,7 @@ def match_requirements(
             )
 
     for action in req.get("actions") or ():
+        action = normalize_action(str(action))
         if action not in capabilities.actions:
             findings.append(
                 TransformSupportFinding(
@@ -256,6 +304,7 @@ def match_requirements(
             )
 
     for operator in req.get("operators") or ():
+        operator = normalize_operator(str(operator))
         if operator not in capabilities.operators:
             findings.append(
                 TransformSupportFinding(
@@ -352,6 +401,110 @@ def three_state_findings(
             expression_path=None,
         )
     ]
+
+
+def portable_shape_findings(
+    definition: Mapping[str, Any],
+) -> list[TransformSupportFinding]:
+    """Validate baseline action policies that are not capability-set members."""
+    findings: list[TransformSupportFinding] = []
+    for index, item in enumerate(definition.get("actions") or ()):
+        if not isinstance(item, Mapping):
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    "action",
+                    "action must be an object",
+                    f"actions[{index}]",
+                )
+            )
+            continue
+        kind = item.get("kind") or {}
+        if not isinstance(kind, Mapping):
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    f"action[{index}]",
+                    "action kind must be an object",
+                    f"actions[{index}].kind",
+                )
+            )
+            continue
+        raw_action = kind.get("action")
+        if not isinstance(raw_action, str) or not raw_action:
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    "action",
+                    "action kind must contain a non-empty string action",
+                    f"actions[{index}].kind.action",
+                )
+            )
+            continue
+        action = normalize_action(raw_action)
+        params = kind.get("parameters") or {}
+        if not isinstance(params, Mapping):
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    f"action:{action}:parameters",
+                    "action parameters must be an object",
+                    f"actions[{index}].kind.parameters",
+                )
+            )
+            continue
+        if (
+            action == "dtcs:join"
+            and str(params.get("collisionPolicy", "fail")).lower() != "fail"
+        ):
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    "join:collisionPolicy",
+                    "only collisionPolicy=fail is portable",
+                    f"actions[{index}].kind.parameters.collisionPolicy",
+                )
+            )
+        if action == "dtcs:union" and str(params.get("mode", "byName")).lower() not in {
+            "byname",
+            "byposition",
+        }:
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    "union:mode",
+                    "union mode must be byName or byPosition",
+                    f"actions[{index}].kind.parameters.mode",
+                )
+            )
+
+        def _walk_expression(node: Any, path: str) -> None:
+            if isinstance(node, Mapping):
+                node_kind = node.get("kind")
+                if isinstance(node_kind, str) and node_kind not in {
+                    "fieldRef",
+                    "literal",
+                    "binary",
+                    "unary",
+                    "call",
+                }:
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            f"expression_kind:{node_kind}",
+                            "expression kind is outside the portable vocabulary",
+                            path,
+                        )
+                    )
+                    return
+                for key, value in node.items():
+                    _walk_expression(value, f"{path}.{key}" if path else key)
+            elif isinstance(node, list):
+                for child_index, value in enumerate(node):
+                    _walk_expression(value, f"{path}[{child_index}]")
+
+        _walk_expression(params, f"actions[{index}].kind.parameters")
+    return findings
 
 
 _WINDOWED_AGGREGATE_CALLEES = frozenset(

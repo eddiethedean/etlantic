@@ -639,7 +639,7 @@ them in the core project's optional-dependency table.
 | Polars | Separate plugin | Adopt as reference backend |
 | Pandas | Separate plugin | Adopt as compatibility backend |
 | PyArrow | Plugin/interchange extra | Adopt where interchange requires it; formal Gate A in 0.19.0 |
-| DataFusion | Separate experimental plugin | Evaluate in `etlantic-datafusion` after Gate A (0.19+); graduate only with measured value |
+| DataFusion | Separate optional plugin | Provisional portable implementation; graduate only after the 0.50 baseline and pushdown gates |
 | SQLAlchemy Core | SQL plugin | Adopt |
 | SQLModel | Separate integration | Adopt for typed persistence and model generation, not SQL execution |
 | Alembic | SQLModel/SQL provider extra | Adopt for explicit reviewed migrations |

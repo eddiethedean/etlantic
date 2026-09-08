@@ -1,0 +1,1 @@
+{"schema":"etlantic.portable-conformance/1","repository_commit":"working-tree","result":"provisional","engine":"pyspark","command":"uv run --group pyspark pytest tests/portable_conformance/test_public_suite.py::test_suite_passes_pyspark","note":"Real JVM and alias evidence pending"}

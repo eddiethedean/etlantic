@@ -285,7 +285,7 @@ markers = [
     "sqlmodel: tests requiring the SQLModel integration package",
     "fastapi: tests requiring the FastAPI control-plane / reference adapter",
     "medallantic: tests for the Medallantic package",
-    "datafusion: tests for the experimental DataFusion plugin stub",
+    "datafusion: tests for the provisional DataFusion portable implementation",
     "s3: tests for the experimental S3 connector package",
     "kafka: tests for the experimental Kafka connector package",
     "k8s: tests for the experimental Kubernetes resource provider",

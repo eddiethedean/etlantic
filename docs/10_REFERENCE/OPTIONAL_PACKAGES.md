@@ -42,7 +42,7 @@ Keep core and plugins on the same minor (pin all to `0.49.0` for pilots).
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 
 DataFusion: `pip install 'etlantic[datafusion]==0.49.0'` or
-`etlantic-datafusion==0.49.0` — portable dataframe/compiler execution.
+`etlantic-datafusion==0.49.0` — provisional portable dataframe/compiler implementation (0.50 qualification pending).
 
 Optional FastAPI package: `pip install 'etlantic-fastapi==0.49.0'` or
 `etlantic[fastapi]==0.49.0` — **dual surface**: CP1 (`ETLanticAPI` /

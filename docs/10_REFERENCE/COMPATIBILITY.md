@@ -36,7 +36,7 @@ ContractModel / Python):
 | FastAPI reference adapter | `etlantic-fastapi==0.49.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
 | Medallantic (facade) | `medallantic==0.49.0` |
 | SparkForge redirect | `etlantic-sparkforge==0.49.0` (compatibility shim; prefer `medallantic`) |
-| DataFusion plugin | `etlantic-datafusion==0.49.0` (**Experimental** Gate B stub; no graduated claims) |
+| DataFusion plugin | `etlantic-datafusion==0.49.0` (provisional 0.50 implementation; baseline qualification pending) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |

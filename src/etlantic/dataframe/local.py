@@ -109,6 +109,9 @@ class LocalDataframePlugin:
         valid, invalid, diagnostics = split_valid_invalid_records(
             list(value), contract_type=contract_type
         )
+        valid = [
+            item.model_dump() if hasattr(item, "model_dump") else item for item in valid
+        ]
         if not invalid:
             return value, ValidationDecision.PASSED, diagnostics, None
         outcome = (
@@ -154,7 +157,16 @@ class LocalDataframePlugin:
         ownership: ArtifactOwnership,
         context: DataframeExecutionContext,
     ) -> Any:
-        return [dict(row) for row in value] if isinstance(value, list) else value
+        if not isinstance(value, list):
+            return value
+        return [
+            dict(row)
+            if isinstance(row, Mapping)
+            else row.model_dump()
+            if hasattr(row, "model_dump")
+            else dict(row)
+            for row in value
+        ]
 
     def collect_if_needed(
         self, value: Any, *, context: DataframeExecutionContext

@@ -8,6 +8,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from etlantic.testing.portable_fixtures.corpus import (
+    FIXTURES,
     FixtureCase,
     covered_capability_keys,
     fixtures_for_capabilities,
@@ -18,7 +19,11 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformPlanningContext,
 )
-from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
+from etlantic.transform.portable_baseline import (
+    BASELINE_FUNCTIONS,
+    KERNEL_ACTIONS,
+    RELATIONAL_ACTIONS,
+)
 
 FrameFactory = Callable[[list[dict[str, Any]]], Any]
 
@@ -51,6 +56,20 @@ def normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def default_frame_factory(engine: str) -> FrameFactory:
     """Build an input frame factory for a known reference engine."""
     engine = engine.lower()
+    if engine == "local":
+        return lambda rows: list(rows)
+    if engine == "datafusion":
+        import pyarrow as pa
+
+        from datafusion import SessionContext
+
+        session = SessionContext()
+
+        def _datafusion(rows: list[dict[str, Any]]) -> Any:
+            return session.from_arrow(pa.Table.from_pylist(rows))
+
+        _datafusion._etlantic_session = session  # type: ignore[attr-defined]
+        return _datafusion
     if engine == "polars":
         import polars as pl
 
@@ -109,6 +128,15 @@ def default_frame_factory(engine: str) -> FrameFactory:
 
 def rows_from_frame(frame: Any) -> list[dict[str, Any]]:
     """Convert a compiler output frame to list[dict]."""
+    if isinstance(frame, list):
+        return [
+            dict(row)
+            if isinstance(row, Mapping)
+            else row.model_dump()
+            if hasattr(row, "model_dump")
+            else dict(row)
+            for row in frame
+        ]
     if hasattr(frame, "to_dicts"):
         return list(frame.to_dicts())
     if hasattr(frame, "to_dict") and hasattr(frame, "columns"):
@@ -116,6 +144,8 @@ def rows_from_frame(frame: Any) -> list[dict[str, Any]]:
         return list(frame.to_dict(orient="records"))
     if hasattr(frame, "collect"):
         collected = frame.collect()
+        if collected and hasattr(collected[0], "to_pylist"):
+            return [row for batch in collected for row in batch.to_pylist()]
         return [
             row.asDict() if hasattr(row, "asDict") else dict(row) for row in collected
         ]
@@ -149,74 +179,51 @@ def run_portable_transform_conformance_suite(
         functions=claimed_functions,
     )
     if enforce_fixture_coverage:
-        from etlantic.transform.protocol import (
-            PROFILE_COMPLEX_TYPES,
-            PROFILE_COMPLEX_VALUES,
-            PROFILE_CONVERSION,
-            PROFILE_RESHAPE,
-            PROFILE_STATISTICS,
-            PROFILE_STRING_ADVANCED,
-            PROFILE_WINDOW_V1,
-        )
-
         covered_profiles = {
-            KERNEL_PROFILE_V1,
-            RELATIONAL_PROFILE_V1,
-            PROFILE_STRING_ADVANCED,
-            PROFILE_CONVERSION,
-            PROFILE_STATISTICS,
-            PROFILE_WINDOW_V1,
-            PROFILE_COMPLEX_VALUES,
-            PROFILE_COMPLEX_TYPES,
-            PROFILE_RESHAPE,
+            profile for case in FIXTURES for profile in case.required_profiles
         }
+        known_actions = {
+            action for case in FIXTURES for action in case.required_actions
+        } | set(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
+        known_functions = {
+            function for case in FIXTURES for function in case.required_functions
+        } | set(BASELINE_FUNCTIONS)
+        if info.engine in {"local", "datafusion"}:
+            unknown = sorted(
+                [f"action:{x}" for x in claimed_actions if x not in known_actions]
+                + [
+                    f"function:{x}"
+                    for x in claimed_functions
+                    if x not in known_functions
+                ]
+            )
+            if unknown:
+                raise AssertionError(
+                    "Claims have no recognized contract vocabulary: "
+                    + ", ".join(unknown)
+                )
         covered_actions = frozenset(
-            {
-                "dtcs:filter",
-                "dtcs:project",
-                "dtcs:with_fields",
-                "dtcs:join",
-                "dtcs:aggregate",
-                "dtcs:sort",
-                "dtcs:limit",
-                "dtcs:explode",
-            }
+            action for case in FIXTURES for action in case.required_actions
         )
         covered_functions = frozenset(
-            {
-                "dtcs:lower",
-                "dtcs:substr",
-                "dtcs:replace",
-                "dtcs:coalesce",
-                "dtcs:sum",
-                "dtcs:count_all",
-                "dtcs:trim",
-                "dtcs:ltrim",
-                "dtcs:rtrim",
-                "dtcs:regex_extract",
-                "dtcs:regex_replace",
-                "dtcs:split",
-                "dtcs:to_string",
-                "dtcs:try_cast",
-                "dtcs:cast",
-                "dtcs:to_integer",
-                "dtcs:variance",
-                "dtcs:stddev",
-                "dtcs:row_number",
-                "dtcs:lag",
-                "dtcs:array",
-                "dtcs:size",
-                "dtcs:object",
-                "dtcs:field",
-                "dtcs:index",
-                "dtcs:element_at",
-            }
+            function for case in FIXTURES for function in case.required_functions
         )
-        required = mandatory_capability_keys(
-            profiles=claimed_profiles & covered_profiles,
-            actions=claimed_actions & covered_actions,
-            functions=claimed_functions & covered_functions,
-        )
+        # The 0.50 baseline is a closed claim surface: Local and DataFusion
+        # advertise the entire baseline, so every one of their claims must be
+        # represented by an executable fixture.  Other engines may advertise
+        # graduated profiles whose fixture corpus is intentionally narrower.
+        if info.engine in {"local", "datafusion"}:
+            required = mandatory_capability_keys(
+                profiles=claimed_profiles,
+                actions=claimed_actions,
+                functions=claimed_functions,
+            )
+        else:
+            required = mandatory_capability_keys(
+                profiles=claimed_profiles & covered_profiles,
+                actions=claimed_actions & covered_actions,
+                functions=claimed_functions & covered_functions,
+            )
         covered = covered_capability_keys(selected)
         missing = sorted(required - covered)
         if missing:

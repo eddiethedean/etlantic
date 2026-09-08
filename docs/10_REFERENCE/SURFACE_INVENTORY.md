@@ -169,7 +169,7 @@ Pin to the same minor as core (`==0.49.0`). Details:
 | `medallantic` | Engine-agnostic medallion facade and SparkForge migration adapter |
 | `etlantic-fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
 | `etlantic-lsp` | Editor-neutral language server (`etlantic[lsp]`) |
-| `etlantic-datafusion` | **Experimental** DataFusion stub (Gate B; not graduated) |
+| `etlantic-datafusion` | Provisional DataFusion portable implementation (0.50 baseline qualification pending) |
 | `etlantic-s3` | **Experimental** S3 connector (Alpha) |
 | `etlantic-kafka` | **Experimental** Kafka connector (fake-first; Alpha) |
 | `etlantic-k8s` | **Experimental** Kubernetes resource provider (FakeKubernetes; Alpha) |

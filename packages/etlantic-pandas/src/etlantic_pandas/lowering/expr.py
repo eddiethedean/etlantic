@@ -253,7 +253,7 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
         return lambda df: arg_fns[0](df).abs()
     if callee == "dtcs:round":
         scale = constant_python(raw_args[1], parameters=parameters)
-        return lambda df: arg_fns[0](df).round(int(scale))
+        return lambda df: arg_fns[0](df).astype("float64").round(int(scale))
     if callee == "dtcs:floor":
         return lambda df: np.floor(arg_fns[0](df).astype("float64"))
     if callee == "dtcs:ceil":

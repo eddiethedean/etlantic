@@ -93,6 +93,8 @@ class StubKernelCompiler:
                 }
             ),
             functions=frozenset({"dtcs:lower"}),
+            operators=frozenset({"gte"}),
+            types=frozenset({"integer"}),
         )
         self._info = TransformCompilerInfo(
             name="stub-polars",

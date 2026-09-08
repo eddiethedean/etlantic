@@ -20,6 +20,7 @@ from etlantic.transform.compiler import (
     TransformSupportFinding,
     TransformSupportReport,
 )
+from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 from etlantic_pandas.lowering.actions import (
     CLAIMED_ACTIONS,
@@ -92,6 +93,8 @@ class PandasTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=CLAIMED_ACTIONS,
             functions=CLAIMED_FUNCTIONS,
+            operators=frozenset(BASELINE_OPERATORS),
+            types=frozenset(BASELINE_TYPES),
             lazy=False,
             eager=True,
         )
@@ -121,7 +124,10 @@ class PandasTransformCompiler:
         )
 
         del context
-        req = merge_requirements(requirements, requirements_from_plan(dict(definition)))
+        req = merge_requirements(
+            requirements,
+            requirements_from_plan(dict(definition), include_extended=True),
+        )
         report = match_requirements(req, self._info.capabilities)
         findings = list(report.findings)
         # Eager-only: reject explicit lazy requirements when present.

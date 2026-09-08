@@ -144,25 +144,22 @@ def test_sf_14_gate_a_polars_pandas_arrow_interchange_with_diagnosed_fallback() 
     assert result.ok
 
 
-def test_sf_15_datafusion_experimental_no_foundation_obligation() -> None:
-    """Item 15: DataFusion is experimental; no stable-foundation obligation."""
+def test_sf_15_datafusion_graduated_baseline() -> None:
+    """Item 15: DataFusion exposes the graduated portable baseline."""
     try:
         import etlantic_datafusion as df_pkg
     except ImportError:
-        pytest.skip(
-            "etlantic-datafusion not installed — disposition: experimental / "
-            "no stable-foundation compatibility obligation (item 15)"
-        )
+        pytest.skip("etlantic-datafusion not installed — optional engine")
 
-    assert getattr(df_pkg, "STREAMING_STABILITY", None) == "experimental"
+    assert getattr(df_pkg, "STREAMING_STABILITY", None) == "stable"
     plugin = df_pkg.create_plugin()
     caps = plugin.info.capabilities
-    assert "experimental" in caps.extras
-    assert caps.dataframe is False
-    assert caps.arrow_import is False
-    assert caps.arrow_export is False
-    with pytest.raises(NotImplementedError, match="experimental"):
-        plugin.materialize()
+    assert "datafusion" in caps.extras
+    assert caps.dataframe is True
+    assert caps.arrow_import is True
+    assert caps.arrow_export is True
+    frame = plugin.from_records([{"id": 1}])
+    assert frame is not None
 
 
 def test_sf_16_reject_bad_plans_before_plugin_loading() -> None:

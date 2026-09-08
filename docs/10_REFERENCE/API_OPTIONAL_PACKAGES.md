@@ -27,7 +27,7 @@ install and narrative home.
 - [etlantic-prefect](api_optional/etlantic_prefect.md) — Prefect local scheduler MVP
 - [etlantic-keyring](api_optional/etlantic_keyring.md) — OS keyring secret provider
 - [etlantic-sqlmodel](api_optional/etlantic_sqlmodel.md) — SQLModel bridge helpers
-- [etlantic-datafusion](api_optional/etlantic_datafusion.md) — Experimental DataFusion stub
+- [etlantic-datafusion](api_optional/etlantic_datafusion.md) — Provisional DataFusion portable implementation (0.50 qualification pending)
 - [etlantic-s3](api_optional/etlantic_s3.md) — Experimental S3-compatible connectors
 - [etlantic-kafka](api_optional/etlantic_kafka.md) — Experimental Kafka connectors (fake/CI)
 - [etlantic-k8s](api_optional/etlantic_k8s.md) — Experimental Kubernetes resource provider (fake/CI)

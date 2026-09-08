@@ -1,0 +1,11 @@
+{
+  "schema": "etlantic.portable-requirement-support/1",
+  "repository_commit": "working-tree",
+  "result": "provisional",
+  "support_states": ["supported_exact", "supported_with_lowering", "unsupported", "unavailable", "unknown"],
+  "obligations": ["required", "preferred", "informational"],
+  "requirements": [],
+  "findings": [],
+  "evidence": [],
+  "notes": "Empty arrays are intentional until engine-specific qualification jobs populate bounded records."
+}

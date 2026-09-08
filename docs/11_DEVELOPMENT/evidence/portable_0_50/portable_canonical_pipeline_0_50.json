@@ -1,0 +1,21 @@
+{
+  "schema": "etlantic.portable-canonical-pipeline/1",
+  "repository_commit": "working-tree",
+  "result": "provisional",
+  "plan": "dtcs.transform-plan/2",
+  "engine_neutral": true,
+  "stages": [
+    "filter",
+    "project",
+    "join",
+    "aggregate",
+    "union",
+    "sort",
+    "deduplicate",
+    "limit",
+    "contract_validation"
+  ],
+  "source_rows": false,
+  "engine_specific_bodies": false,
+  "note": "Definition shape is frozen; execution evidence is produced by engine qualification jobs."
+}

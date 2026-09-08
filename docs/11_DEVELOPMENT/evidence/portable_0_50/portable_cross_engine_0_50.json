@@ -1,0 +1,1 @@
+{"schema":"etlantic.portable-cross-engine/1","repository_commit":"working-tree","result":"provisional","engines":["local","polars","pandas","sql","pyspark","datafusion","duckdb"],"canonical_pipeline":null,"note":"Canonical 7/7 differential job pending"}

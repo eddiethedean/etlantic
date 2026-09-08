@@ -763,7 +763,7 @@ jobs:
         run: uv run python scripts/check_benchmarks.py
 
   datafusion:
-    name: DataFusion plugin (experimental)
+    name: DataFusion portable baseline
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -791,7 +791,7 @@ jobs:
           print('discovered', sorted(df), sorted(compilers))
           "
 
-      - name: Pytest datafusion stub suite
+      - name: Pytest datafusion portable suite
         run: uv run pytest -q tests/datafusion -m datafusion
 
   fastapi:

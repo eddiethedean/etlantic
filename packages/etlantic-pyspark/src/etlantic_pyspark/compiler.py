@@ -18,6 +18,7 @@ from etlantic.transform.compiler import (
     TransformSupportFinding,
     TransformSupportReport,
 )
+from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import (
     KERNEL_PROFILE_V1,
     PROFILE_COMPLEX_TYPES,
@@ -144,6 +145,8 @@ class PySparkTransformCompiler:
             ),
             actions=CLAIMED_ACTIONS,
             functions=CLAIMED_FUNCTIONS,
+            operators=frozenset(BASELINE_OPERATORS),
+            types=frozenset(BASELINE_TYPES),
             lazy=True,
             eager=True,
         )
@@ -174,7 +177,10 @@ class PySparkTransformCompiler:
             windowed_aggregate_findings,
         )
 
-        req = merge_requirements(requirements, requirements_from_plan(dict(definition)))
+        req = merge_requirements(
+            requirements,
+            requirements_from_plan(dict(definition), include_extended=True),
+        )
         report = match_requirements(req, self._info.capabilities)
         findings = list(report.findings)
         findings.extend(_analyze_modes(definition))

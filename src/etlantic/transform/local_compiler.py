@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
+    portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
 )
@@ -23,59 +25,25 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportReport,
 )
-from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
+from etlantic.transform.portable_baseline import (
+    BASELINE_FUNCTIONS,
+    BASELINE_OPERATORS,
+    BASELINE_TYPES,
+    KERNEL_ACTIONS,
+    RELATIONAL_ACTIONS,
+    baseline_manifest,
+    normalize_action,
+    normalize_operator,
+)
+from etlantic.transform.protocol import (
+    INVALID,
+    KERNEL_PROFILE_V1,
+    MISSING,
+    RELATIONAL_PROFILE_V1,
+)
 
-_ACTIONS = frozenset(
-    {
-        "dtcs:filter",
-        "dtcs:project",
-        "dtcs:with_fields",
-        "dtcs:drop",
-        "dtcs:rename",
-        "dtcs:limit",
-        "dtcs:sort",
-        "dtcs:aggregate",
-        "dtcs:join",
-        "dtcs:union",
-        "dtcs:distinct",
-        "dtcs:deduplicate",
-    }
-)
-_FUNCTIONS = frozenset(
-    {
-        "dtcs:lower",
-        "dtcs:upper",
-        "dtcs:concat",
-        "dtcs:concat_ws",
-        "dtcs:substr",
-        "dtcs:replace",
-        "dtcs:length",
-        "dtcs:contains",
-        "dtcs:starts_with",
-        "dtcs:ends_with",
-        "dtcs:case_when",
-        "dtcs:coalesce",
-        "dtcs:if_null",
-        "dtcs:null_if",
-        "dtcs:is_null",
-        "dtcs:abs",
-        "dtcs:round",
-        "dtcs:floor",
-        "dtcs:ceil",
-        "dtcs:power",
-        "dtcs:sqrt",
-        "dtcs:least",
-        "dtcs:greatest",
-        "dtcs:sum",
-        "dtcs:average",
-        "dtcs:min",
-        "dtcs:max",
-        "dtcs:count",
-        "dtcs:count_all",
-        "dtcs:count_distinct",
-        "dtcs:in",
-    }
-)
+_ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
+_FUNCTIONS = frozenset(BASELINE_FUNCTIONS)
 
 
 class LocalTransformCompiler:
@@ -84,28 +52,11 @@ class LocalTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=_ACTIONS,
             functions=_FUNCTIONS,
-            operators=frozenset(
-                {
-                    "eq",
-                    "neq",
-                    "gt",
-                    "gte",
-                    "lt",
-                    "lte",
-                    "and",
-                    "or",
-                    "add",
-                    "sub",
-                    "mul",
-                    "div",
-                    "mod",
-                    "neg",
-                    "not",
-                    "in",
-                    "null_safe_eq",
-                }
-            ),
-            semantic_modes=frozenset({"three_state_distinct"}),
+            operators=frozenset(BASELINE_OPERATORS),
+            types=frozenset(BASELINE_TYPES),
+            # Missing/invalid values are rejected by the baseline analyser;
+            # Local does not claim to preserve the distinct state in rows.
+            semantic_modes=frozenset(),
             lazy=False,
             eager=True,
         )
@@ -115,7 +66,14 @@ class LocalTransformCompiler:
             engine="local",
             capabilities=caps,
             evidence_fingerprint=hashlib.sha256(
-                json.dumps(caps.to_dict(), sort_keys=True).encode()
+                json.dumps(
+                    {
+                        "baseline": baseline_manifest(),
+                        "capabilities": caps.to_dict(),
+                        "implementation": "python-records/1",
+                    },
+                    sort_keys=True,
+                ).encode()
             ).hexdigest(),
         )
 
@@ -130,11 +88,15 @@ class LocalTransformCompiler:
         context: TransformPlanningContext,
         requirements: Mapping[str, Sequence[str]] | None = None,
     ) -> TransformSupportReport:
-        req = merge_requirements(requirements, requirements_from_plan(dict(definition)))
+        req = merge_requirements(
+            requirements,
+            requirements_from_plan(dict(definition), include_extended=True),
+        )
         report = match_requirements(req, self.info.capabilities)
         findings = list(report.findings) + three_state_findings(
             definition, self.info.capabilities
         )
+        findings.extend(portable_shape_findings(definition))
         return TransformSupportReport(
             not findings, tuple(findings), self.info.evidence_fingerprint
         )
@@ -185,7 +147,9 @@ class LocalTransformCompiler:
         context: TransformExecutionContext,
     ) -> TransformOutputBundle:
         plan = compiled.native_plan
-        relations = {str(k): _rows(v) for k, v in inputs.items()}
+        relations: dict[str, list[dict[str, Any]]] = {
+            str(k): _rows(v) for k, v in inputs.items()
+        }
         input_ids = list((plan.get("inputs") or {}).keys())
         if len(relations) == 1 and input_ids and input_ids[0] not in relations:
             relations[input_ids[0]] = next(iter(relations.values()))
@@ -193,7 +157,9 @@ class LocalTransformCompiler:
             kind = action.get("kind") or {}
             target = str(kind.get("target") or "")
             source = (
-                relations.get(target) if target else next(iter(relations.values()), [])
+                relations.get(target, [])
+                if target
+                else next(iter(relations.values()), [])
             )
             out = _apply(
                 source,
@@ -214,7 +180,9 @@ class LocalTransformCompiler:
             name = next(
                 (str(d.get("from")) for d in deps if d.get("to") == port), fallback
             )
-            outputs[port] = relations.get(name, relations.get(fallback, []))
+            if name not in relations:
+                raise ValueError(f"unresolved output dependency: {name}")
+            outputs[port] = relations[name]
         return TransformOutputBundle(
             valid=outputs,
             metrics={
@@ -225,15 +193,24 @@ class LocalTransformCompiler:
         )
 
 
-def _rows(value):
+def _rows(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, list):
-        return [dict(x) if isinstance(x, Mapping) else x for x in value]
-    if hasattr(value, "to_dicts"):
+        values = value
+    elif hasattr(value, "to_dicts"):
         return value.to_dicts()
-    return list(value) if value is not None else []
+    else:
+        values = list(value) if value is not None else []
+    return [
+        dict(x)
+        if isinstance(x, Mapping)
+        else x.model_dump()
+        if hasattr(x, "model_dump")
+        else dict(x)
+        for x in values
+    ]
 
 
-def _eval(node, row, params):
+def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
     if not isinstance(node, Mapping):
         return node
     k = node.get("kind")
@@ -244,36 +221,74 @@ def _eval(node, row, params):
             else row.get(str(node.get("target")))
         )
     if k == "literal":
-        v = node.get("value")
-        return v.get("value") if isinstance(v, Mapping) else v
+        value = node.get("value")
+        if isinstance(value, Mapping):
+            kind = value.get("type")
+            if kind == "missing":
+                return MISSING
+            if kind == "invalid":
+                return INVALID
+            return value.get("value")
+        return value
     if k == "unary":
         v = _eval(node.get("operand"), row, params)
-        return -v if node.get("op") == "neg" else not bool(v)
+        op = normalize_operator(str(node.get("op")))
+        if op == "negate":
+            return None if v is None else -v
+        if op == "not":
+            return None if v is None else not bool(v)
+        raise ValueError(f"unsupported unary operator: {op}")
     if k == "binary":
         a, b = (
             _eval(node.get("left"), row, params),
             _eval(node.get("right"), row, params),
         )
-        op = node.get("op")
-        if op == "and":
-            return bool(a) and bool(b)
-        if op == "or":
-            return bool(a) or bool(b)
+        op = normalize_operator(str(node.get("op")))
         if op == "null_safe_eq":
-            return (a == b) or (a is None and b is None)
-        return {
+            return a == b
+        if op in {"and", "or"}:
+            if op == "and":
+                return (
+                    False
+                    if a is False or b is False
+                    else None
+                    if a is None or b is None
+                    else bool(a and b)
+                )
+            return (
+                True
+                if a is True or b is True
+                else None
+                if a is None or b is None
+                else bool(a or b)
+            )
+        if (
+            a is None
+            or b is None
+            or a is MISSING
+            or b is MISSING
+            or a is INVALID
+            or b is INVALID
+        ):
+            return None
+        operations = {
             "eq": lambda: a == b,
-            "neq": lambda: a != b,
+            "not_eq": lambda: a != b,
             "gt": lambda: a > b,
             "gte": lambda: a >= b,
             "lt": lambda: a < b,
             "lte": lambda: a <= b,
             "add": lambda: a + b,
-            "sub": lambda: a - b,
-            "mul": lambda: a * b,
-            "div": lambda: a / b,
-            "mod": lambda: a % b,
-        }.get(op, lambda: False)()
+            "subtract": lambda: a - b,
+            "multiply": lambda: a * b,
+            "divide": lambda: a / b,
+            "modulo": lambda: a % b,
+        }
+        if op == "in":
+            return a in b if isinstance(b, (list, tuple, set, frozenset)) else False
+        if op not in operations:
+            raise ValueError(f"unsupported binary operator: {op}")
+        return operations[op]()
     if k == "call":
         n = node.get("callee")
         a = [_eval(x, row, params) for x in node.get("args") or []]
@@ -298,7 +313,7 @@ def _eval(node, row, params):
         if n == "dtcs:concat_ws":
             return str(a[0]).join(str(x) for x in a[1:] if x is not None)
         if n == "dtcs:replace":
-            return str(a[0]).replace(str(a[1]), str(a[2]))
+            return None if a[0] is None else str(a[0]).replace(str(a[1]), str(a[2]))
         if n == "dtcs:substr":
             return (
                 str(a[0])[int(a[1]) : int(a[1]) + int(a[2])]
@@ -314,26 +329,67 @@ def _eval(node, row, params):
             return a[-1] if a else None
         if n == "dtcs:null_if":
             return None if a[0] == a[1] else a[0]
-        import math
+        if n == "dtcs:abs":
+            return abs(a[0]) if a and a[0] is not None else None
+        if n == "dtcs:round":
+            return round(a[0], int(a[1])) if a and a[0] is not None else None
+        if n == "dtcs:floor":
+            return math.floor(a[0]) if a and a[0] is not None else None
+        if n == "dtcs:ceil":
+            return math.ceil(a[0]) if a and a[0] is not None else None
+        if n == "dtcs:power":
+            return (
+                pow(a[0], a[1])
+                if len(a) > 1 and a[0] is not None and a[1] is not None
+                else None
+            )
+        if n == "dtcs:sqrt":
+            return math.sqrt(a[0]) if a and a[0] is not None else None
+        if n == "dtcs:least":
+            values = [x for x in a if x is not None]
+            return min(values) if values else None
+        if n == "dtcs:greatest":
+            values = [x for x in a if x is not None]
+            return max(values) if values else None
+        if n in {
+            "dtcs:sum",
+            "dtcs:average",
+            "dtcs:min",
+            "dtcs:max",
+            "dtcs:count",
+            "dtcs:count_all",
+            "dtcs:count_distinct",
+        }:
+            raise ValueError(
+                f"aggregate function is not valid in scalar expression: {n}"
+            )
+        raise ValueError(f"unsupported function: {n}")
+    raise ValueError(f"unsupported expression kind: {k}")
 
-        return {
-            "dtcs:abs": abs,
-            "dtcs:round": round,
-            "dtcs:floor": math.floor,
-            "dtcs:ceil": math.ceil,
-            "dtcs:power": pow,
-            "dtcs:sqrt": math.sqrt,
-            "dtcs:least": min,
-            "dtcs:greatest": max,
-        }.get(n, lambda *x: None)(*a)
-    return None
 
-
-def _apply(rows, action, p, relations, params):
+def _apply(
+    rows: list[dict[str, Any]],
+    action: str,
+    p: Mapping[str, Any],
+    relations: Mapping[str, list[dict[str, Any]]],
+    params: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    action = normalize_action(action)
     if action == "dtcs:filter":
-        return [r for r in rows if _eval(p.get("predicate"), r, params)]
+        return [r for r in rows if _eval(p.get("predicate"), r, params) is True]
     if action == "dtcs:project":
-        return [{str(k): r.get(str(k)) for k in p.get("fields") or []} for r in rows]
+        out = []
+        for row in rows:
+            projected: dict[str, Any] = {}
+            for field in p.get("fields") or []:
+                if isinstance(field, Mapping):
+                    name = str(field.get("name") or field.get("alias"))
+                    projected[name] = _eval(field.get("expression"), row, params)
+                else:
+                    name = str(field)
+                    projected[name] = row.get(name)
+            out.append(projected)
+        return out
     if action == "dtcs:with_fields":
         return [
             {
@@ -345,7 +401,7 @@ def _apply(rows, action, p, relations, params):
             }
             for r in rows
         ]
-    if action == "dtcs:drop":
+    if action == "dtcs:drop_fields":
         return [
             {
                 k: v
@@ -354,16 +410,22 @@ def _apply(rows, action, p, relations, params):
             }
             for r in rows
         ]
-    if action == "dtcs:rename":
+    if action == "dtcs:rename_fields":
         m = p.get("mapping") or {}
         return [{str(m.get(k, k)): v for k, v in r.items()} for r in rows]
     if action == "dtcs:limit":
         return rows[: int(p.get("count", p.get("n", 0)))]
     if action in {"dtcs:distinct", "dtcs:deduplicate"}:
+        fields = p.get("keys") or p.get("fields") or p.get("subset")
+        key_fields = [
+            str(x.get("field") or x.get("column")) if isinstance(x, Mapping) else str(x)
+            for x in fields or []
+        ]
         out = []
         seen = set()
         for r in rows:
-            key = tuple(sorted(r.items()))
+            values = (key_fields and [r.get(k) for k in key_fields]) or list(r.items())
+            key = repr(values)
             if key not in seen:
                 seen.add(key)
                 out.append(r)
@@ -372,39 +434,124 @@ def _apply(rows, action, p, relations, params):
         keys = p.get("keys") or p.get("fields") or []
         out = list(rows)
         for key in reversed(keys if isinstance(keys, list) else [keys]):
-            name = key.get("field") if isinstance(key, Mapping) else key
+            name = (
+                (key.get("field") or key.get("column") or key.get("name"))
+                if isinstance(key, Mapping)
+                else key
+            )
             desc = (
                 isinstance(key, Mapping)
                 and str(key.get("direction", "asc")).lower() == "desc"
             )
-            out.sort(
-                key=lambda r: (r.get(str(name)) is None, r.get(str(name))), reverse=desc
+            nulls = (
+                str(key.get("nulls", "last")) if isinstance(key, Mapping) else "last"
             )
+            if nulls == "first":
+                non_null = [r for r in out if r.get(str(name)) is not None]
+                null_rows = [r for r in out if r.get(str(name)) is None]
+                non_null.sort(key=lambda r: cast(Any, r.get(str(name))), reverse=desc)
+                out = null_rows + non_null
+            else:
+                non_null = [r for r in out if r.get(str(name)) is not None]
+                null_rows = [r for r in out if r.get(str(name)) is None]
+                non_null.sort(key=lambda r: cast(Any, r.get(str(name))), reverse=desc)
+                out = non_null + null_rows
         return out
     if action == "dtcs:union":
-        return rows + _rows(relations.get(str(p.get("other")), []))
+        right = relations.get(str(p.get("other")), [])
+        if str(p.get("mode", "byName")).lower() == "byposition":
+            names = list(rows[0]) if rows else list(right[0]) if right else []
+            return rows + [
+                {name: value for name, value in zip(names, r.values(), strict=False)}
+                for r in right
+            ]
+        names: list[str] = list(
+            dict.fromkeys(
+                [
+                    *([str(name) for name in rows[0]] if rows else []),
+                    *([str(name) for name in right[0]] if right else []),
+                ]
+            )
+        )
+        if (
+            not bool(p.get("allowMissingColumns", True))
+            and rows
+            and right
+            and set(rows[0]) != set(right[0])
+        ):
+            raise ValueError("union inputs have incompatible fields")
+        return rows + [{name: r.get(name) for name in names} for r in right]
     if action == "dtcs:join":
-        right = _rows(relations.get(str(p.get("right")), []))
-        lk = str(p.get("leftKey"))
-        rk = str(p.get("rightKey") or lk)
-        out = []
+        right = relations.get(str(p.get("right")), [])
+        how = str(p.get("type", "inner")).lower()
+        if how == "outer":
+            how = "full"
+        if how not in {"inner", "left", "right", "full", "semi", "anti", "cross"}:
+            raise ValueError(f"unsupported join type: {how}")
+        left_keys = p.get("leftKey") or p.get("leftKeys")
+        right_keys = p.get("rightKey") or p.get("rightKeys") or left_keys
+        left_keys = [left_keys] if isinstance(left_keys, str) else list(left_keys or [])
+        right_keys = (
+            [right_keys] if isinstance(right_keys, str) else list(right_keys or [])
+        )
+        null_safe = bool(p.get("nullSafe", False))
+
+        def matches(left_row: Mapping[str, Any], right_row: Mapping[str, Any]) -> bool:
+            if how == "cross":
+                return True
+            if len(left_keys) != len(right_keys):
+                raise ValueError("join key arity mismatch")
+            pairs = zip(left_keys, right_keys, strict=True)
+            for left_key, right_key in pairs:
+                a, b = left_row.get(str(left_key)), right_row.get(str(right_key))
+                if a is None or b is None:
+                    if not (null_safe and a is None and b is None):
+                        return False
+                elif a != b:
+                    return False
+            return True
+
+        collision = str(p.get("collisionPolicy", "fail")).lower()
+        collisions = set(rows[0] if rows else ()) & set(right[0] if right else ())
+        if collision != "fail":
+            raise ValueError("only collisionPolicy=fail is supported")
+        collisions -= {str(k) for k in right_keys}
+        if collisions and how not in {"semi", "anti"}:
+            raise ValueError(f"join field collision: {sorted(collisions)}")
+        out: list[dict[str, Any]] = []
+        matched_right: set[int] = set()
         for left_row in rows:
-            for right_row in right:
-                if left_row.get(lk) == right_row.get(rk):
+            matches_for_left = [
+                (i, rr) for i, rr in enumerate(right) if matches(left_row, rr)
+            ]
+            if (how == "semi" and matches_for_left) or (
+                how == "anti" and not matches_for_left
+            ):
+                out.append(dict(left_row))
+            elif how not in {"semi", "anti"}:
+                for i, right_row in matches_for_left:
+                    matched_right.add(i)
+                    out.append({**left_row, **right_row})
+                if how in {"left", "full"} and not matches_for_left:
                     out.append(
-                        {
-                            **left_row,
-                            **{k: v for k, v in right_row.items() if k not in left_row},
-                        }
+                        {**left_row, **{k: None for k in (right[0] if right else [])}}
+                    )
+        if how in {"right", "full"}:
+            for i, right_row in enumerate(right):
+                if i not in matched_right:
+                    out.append(
+                        {**{k: None for k in (rows[0] if rows else [])}, **right_row}
                     )
         return out
     if action == "dtcs:aggregate":
         groups = p.get("groupBy") or []
-        aggs = p.get("aggregates") or []
-        buckets = {}
+        aggs = p.get("aggregates") or p.get("aggregations") or []
+        buckets: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
         for r in rows:
             buckets.setdefault(tuple(r.get(str(g)) for g in groups), []).append(r)
-        out = []
+        if not buckets and not groups:
+            buckets[()] = []
+        out: list[dict[str, Any]] = []
         for key, members in buckets.items():
             item = {str(g): v for g, v in zip(groups, key, strict=True)}
             for a in aggs:
@@ -425,13 +572,19 @@ def _apply(rows, action, p, relations, params):
                         else None
                     )
                 )
-                vals = [m.get(str(field)) for m in members] if field else members
+                vals: list[Any] = list(
+                    [_eval(args[0], m, params) for m in members]
+                    if args
+                    else ([m.get(str(field)) for m in members] if field else members)
+                )
                 vals = [v for v in vals if v is not None]
                 item[str(a.get("name") or fn.split(":")[-1])] = (
                     len(members)
                     if fn == "dtcs:count_all"
                     else len(vals)
-                    if fn in {"dtcs:count", "dtcs:count_distinct"}
+                    if fn == "dtcs:count"
+                    else len(set(repr(v) for v in vals))
+                    if fn == "dtcs:count_distinct"
                     else sum(vals)
                     if fn == "dtcs:sum"
                     else (
@@ -446,4 +599,4 @@ def _apply(rows, action, p, relations, params):
                 )
             out.append(item)
         return out
-    return rows
+    raise ValueError(f"unsupported action: {action}")

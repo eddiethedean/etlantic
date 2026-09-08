@@ -40,7 +40,7 @@ characteristics remain engine-specific and separately claimed.
 | Pandas | Baseline claims | Runs portable descriptors | Partial public coverage | Exact eager/null/dtype/index qualification |
 | SQL | Baseline analysis/compile plus selected-engine routing | `portable_compiled` dispatch shipped in 0.49 | Partial direct-compiler and generic-routing evidence | Complete SQLite/PostgreSQL runtime qualification and prove typed-handle preservation |
 | PySpark | Baseline and advanced claims | Runs with `pyspark` identity | Partial real-JVM coverage | Full real-Spark gate and canonical alias resolution |
-| DataFusion | Zero-capability stub | Not implemented | None | Native compiler and dataframe/runtime implementation |
+| DataFusion | Provisional compiler/dataframe implementation | Partial baseline execution | Contract artifacts only | Complete native baseline and qualification evidence |
 | DuckDB | Seven-action/four-function 0.49 package subset | Runs through the optional native package | Reproducible 0.49 package evidence and 0.50 handoff | Complete the frozen baseline and pass independent pushdown qualification |
 
 This table is a planning baseline, not an availability claim. The exit gate

@@ -1491,6 +1491,273 @@ def _reject_missing_literal_without_three_state() -> FixtureCase:
     )
 
 
+def _baseline_scalar_functions() -> FixtureCase:
+    """Exercise every scalar function in the portable 0.50 baseline."""
+
+    def lit(type_: str, value: Any) -> dict[str, Any]:
+        return {"kind": "literal", "value": {"type": type_, "value": value}}
+
+    def field(name: str) -> dict[str, Any]:
+        return {"kind": "fieldRef", "scope": "field", "target": name}
+
+    def call(name: str, *args: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "call", "callee": name, "args": list(args)}
+
+    neg = {"kind": "unary", "op": "negate", "operand": field("n")}
+    predicate = {
+        "kind": "binary",
+        "op": "eq",
+        "left": field("n"),
+        "right": lit("integer", 4),
+    }
+    fields = [
+        ("lower", call("dtcs:lower", field("s"))),
+        ("upper", call("dtcs:upper", field("s"))),
+        ("concat", call("dtcs:concat", field("s"), lit("string", "!"))),
+        (
+            "concat_ws",
+            call("dtcs:concat_ws", lit("string", "-"), field("s"), lit("string", "x")),
+        ),
+        (
+            "substr",
+            call("dtcs:substr", field("s"), lit("integer", 0), lit("integer", 2)),
+        ),
+        (
+            "replace",
+            call("dtcs:replace", field("s"), lit("string", "b"), lit("string", "B")),
+        ),
+        ("length", call("dtcs:length", field("s"))),
+        ("contains", call("dtcs:contains", field("s"), lit("string", "A"))),
+        ("starts_with", call("dtcs:starts_with", field("s"), lit("string", "A"))),
+        ("ends_with", call("dtcs:ends_with", field("s"), lit("string", "C"))),
+        (
+            "case_when",
+            call(
+                "dtcs:case_when", predicate, lit("string", "yes"), lit("string", "no")
+            ),
+        ),
+        ("coalesce", call("dtcs:coalesce", lit("null", None), field("s"))),
+        ("if_null", call("dtcs:if_null", lit("null", None), field("s"))),
+        ("null_if", call("dtcs:null_if", field("s"), field("s"))),
+        ("is_null", call("dtcs:is_null", lit("null", None))),
+        ("abs", call("dtcs:abs", neg)),
+        ("round", call("dtcs:round", lit("decimal", 3.6), lit("integer", 0))),
+        ("floor", call("dtcs:floor", lit("decimal", 3.6))),
+        ("ceil", call("dtcs:ceil", lit("decimal", 3.2))),
+        ("power", call("dtcs:power", lit("integer", 2), lit("integer", 3))),
+        ("sqrt", call("dtcs:sqrt", lit("decimal", 9.0))),
+        ("least", call("dtcs:least", field("n"), lit("integer", 2))),
+        ("greatest", call("dtcs:greatest", field("n"), lit("integer", 2))),
+    ]
+    return FixtureCase(
+        name="baseline_scalar_functions",
+        required_profiles=frozenset({KERNEL_PROFILE_V1}),
+        required_actions=frozenset({"dtcs:project"}),
+        required_functions=frozenset({f"dtcs:{name}" for name, _ in fields}),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "p1",
+                    "kind": {
+                        "action": "dtcs:project",
+                        "id": "p1",
+                        "parameters": {
+                            "fields": [
+                                {"name": name, "expression": expr}
+                                for name, expr in fields
+                            ]
+                        },
+                        "target": "t",
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "p1", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"t": [{"s": "AbC", "n": 4}]},
+        expected=[
+            {
+                "lower": "abc",
+                "upper": "ABC",
+                "concat": "AbC!",
+                "concat_ws": "AbC-x",
+                "substr": "Ab",
+                "replace": "ABC",
+                "length": 3,
+                "contains": True,
+                "starts_with": True,
+                "ends_with": True,
+                "case_when": "yes",
+                "coalesce": "AbC",
+                "if_null": "AbC",
+                "null_if": None,
+                "is_null": True,
+                "abs": 4,
+                "round": 4.0,
+                "floor": 3.0,
+                "ceil": 4.0,
+                "power": 8.0,
+                "sqrt": 3.0,
+                "least": 2,
+                "greatest": 4,
+            }
+        ],
+    )
+
+
+def _baseline_aggregate_functions() -> FixtureCase:
+    """Exercise every aggregate function in the portable 0.50 baseline."""
+    names = ("sum", "average", "min", "max", "count", "count_all", "count_distinct")
+    aggregates = [
+        {
+            "name": name,
+            "expression": {
+                "kind": "call",
+                "callee": f"dtcs:{name}",
+                "args": []
+                if name == "count_all"
+                else [{"kind": "fieldRef", "scope": "field", "target": "v"}],
+            },
+        }
+        for name in names
+    ]
+    return FixtureCase(
+        name="baseline_aggregate_functions",
+        required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+        required_actions=frozenset({"dtcs:aggregate"}),
+        required_functions=frozenset({f"dtcs:{name}" for name in names}),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "a1",
+                    "kind": {
+                        "action": "dtcs:aggregate",
+                        "id": "a1",
+                        "parameters": {"aggregates": aggregates},
+                        "target": "t",
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "a1", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"t": [{"v": 1}, {"v": 1}, {"v": 2}]},
+        expected=[
+            {
+                "sum": 4,
+                "average": 4 / 3,
+                "min": 1,
+                "max": 2,
+                "count": 3,
+                "count_all": 3,
+                "count_distinct": 2,
+            }
+        ],
+    )
+
+
+def _baseline_field_actions() -> FixtureCase:
+    return FixtureCase(
+        name="baseline_field_actions",
+        required_profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
+        required_actions=frozenset(
+            {
+                "dtcs:distinct",
+                "dtcs:deduplicate",
+                "dtcs:drop_fields",
+                "dtcs:rename_fields",
+            }
+        ),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "d1",
+                    "kind": {
+                        "action": "dtcs:distinct",
+                        "id": "d1",
+                        "parameters": {},
+                        "target": "t",
+                    },
+                },
+                {
+                    "id": "d2",
+                    "kind": {
+                        "action": "dtcs:deduplicate",
+                        "id": "d2",
+                        "parameters": {},
+                        "target": "d1",
+                    },
+                },
+                {
+                    "id": "d3",
+                    "kind": {
+                        "action": "dtcs:drop_fields",
+                        "id": "d3",
+                        "parameters": {"fields": ["b"]},
+                        "target": "d2",
+                    },
+                },
+                {
+                    "id": "d4",
+                    "kind": {
+                        "action": "dtcs:rename_fields",
+                        "id": "d4",
+                        "parameters": {"mapping": {"a": "id"}},
+                        "target": "d3",
+                    },
+                },
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "d4", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"t": [{"a": 1, "b": "x"}, {"a": 1, "b": "x"}, {"a": 2, "b": "y"}]},
+        expected=[{"id": 1}, {"id": 2}],
+    )
+
+
+def _baseline_union() -> FixtureCase:
+    return FixtureCase(
+        name="baseline_union",
+        required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+        required_actions=frozenset({"dtcs:union"}),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"left": {"id": "left"}, "right": {"id": "right"}},
+            "actions": [
+                {
+                    "id": "u1",
+                    "kind": {
+                        "action": "dtcs:union",
+                        "id": "u1",
+                        "parameters": {"other": "right", "mode": "byName"},
+                        "target": "left",
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "u1", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"left": [{"a": 1}], "right": [{"a": 2}]},
+        expected=[{"a": 1}, {"a": 2}],
+    )
+
+
 FIXTURES: tuple[FixtureCase, ...] = (
     _kernel_filter_project(),
     _substr_literal_replace(),
@@ -1515,6 +1782,10 @@ FIXTURES: tuple[FixtureCase, ...] = (
     _reshape_explode(),
     _reshape_explode_empty(),
     _reject_missing_literal_without_three_state(),
+    _baseline_scalar_functions(),
+    _baseline_aggregate_functions(),
+    _baseline_field_actions(),
+    _baseline_union(),
 )
 
 

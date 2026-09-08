@@ -90,11 +90,9 @@ class DataFusionPlugin:
         return self._info
 
     def materialize(self, *args: Any, **kwargs: Any) -> Any:
-        """Compatibility alias for callers of the pre-0.50 stub API."""
+        """Compatibility alias for callers of the dataframe protocol."""
         if not args and not kwargs:
-            raise NotImplementedError(
-                "experimental stub compatibility: materialize requires a value"
-            )
+            raise TypeError("materialize requires a value")
         return self.materialize_input(*args, **kwargs)
 
     def from_records(
@@ -134,8 +132,11 @@ class DataFusionPlugin:
             return value
         if hasattr(value, "to_arrow"):
             value = value.to_arrow()
-        elif hasattr(value, "collect") and hasattr(value, "to_arrow"):
-            value = value.collect().to_arrow()
+        elif hasattr(value, "collect"):
+            collected = value.collect()
+            value = (
+                collected.to_arrow() if hasattr(collected, "to_arrow") else collected
+            )
         if not isinstance(value, pa.Table):
             rows = records_to_dicts(as_records(value, None))
             fields = list(getattr(contract_type, "model_fields", {}) or {})
@@ -188,6 +189,21 @@ class DataFusionPlugin:
     ) -> tuple[Any, ValidationDecision, list[dict[str, Any]], Any | None]:
         if contract_type is None:
             return value, ValidationDecision.SKIPPED, [], None
+        # DataFusion relations are lazy logical plans.  Collecting them merely
+        # to run row validation defeats the native-plan contract; validation
+        # is deferred to the declared collection boundary.
+        if type(value).__module__.startswith("datafusion"):
+            return (
+                value,
+                ValidationDecision.OBSERVED,
+                [
+                    {
+                        "code": "PMDF411",
+                        "message": "validation deferred to native collection boundary",
+                    }
+                ],
+                None,
+            )
         rows = self.to_records(value, contract_type=None)
         valid, invalid, diagnostics = split_valid_invalid_records(
             rows, contract_type=contract_type

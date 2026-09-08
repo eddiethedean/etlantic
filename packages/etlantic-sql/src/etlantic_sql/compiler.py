@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 from uuid import uuid4
 
@@ -79,7 +80,13 @@ class SqlCompiler:
     def next_param(self, params: dict[str, Any], value: Any) -> str:
         self._param_counter += 1
         name = f"p{self._param_counter}"
-        params[name] = value
+        # sqlite's DB-API adapter does not bind Decimal instances.  Convert
+        # only at this backend boundary; PostgreSQL retains exact numerics.
+        params[name] = (
+            float(value)
+            if self.dialect == "sqlite" and isinstance(value, Decimal)
+            else value
+        )
         return f":{name}"
 
     def compile_expr(
@@ -258,9 +265,23 @@ class SqlCompiler:
         elif callee == "dtcs:sqrt":
             body = f"SQRT({args[0]})"
         elif callee == "dtcs:least":
-            body = f"LEAST({', '.join(args)})"
+            if self.dialect == "sqlite":
+                if not args:
+                    raise ValueError("dtcs:least requires at least one argument")
+                body = args[0]
+                for candidate in args[1:]:
+                    body = f"(CASE WHEN {body} <= {candidate} THEN {body} ELSE {candidate} END)"
+            else:
+                body = f"LEAST({', '.join(args)})"
         elif callee == "dtcs:greatest":
-            body = f"GREATEST({', '.join(args)})"
+            if self.dialect == "sqlite":
+                if not args:
+                    raise ValueError("dtcs:greatest requires at least one argument")
+                body = args[0]
+                for candidate in args[1:]:
+                    body = f"(CASE WHEN {body} >= {candidate} THEN {body} ELSE {candidate} END)"
+            else:
+                body = f"GREATEST({', '.join(args)})"
         elif callee == "dtcs:sum":
             body = f"SUM({args[0]})"
         elif callee == "dtcs:average":
@@ -403,7 +424,12 @@ class SqlCompiler:
             for old_name, value in bound.items():
                 new_name = self.next_param(params, value).removeprefix(":")
                 remapped = remapped.replace(f":{old_name}", f":{new_name}")
-            sql = f"({sql}) {union_kw} ({remapped})"
+            if self.dialect == "sqlite":
+                # SQLite rejects parenthesized SELECT operands in CREATE TABLE
+                # AS statements; the unparenthesized UNION is equivalent here.
+                sql = f"{sql} {union_kw} {remapped}"
+            else:
+                sql = f"({sql}) {union_kw} ({remapped})"
         if not _inner:
             sql = cte_sql + sql
         return CompiledSql(

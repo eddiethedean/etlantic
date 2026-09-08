@@ -7,6 +7,16 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 COMPILER_PROTOCOL = "etlantic.transform-compiler/1"
+SUPPORT_STATES = frozenset(
+    {
+        "supported_exact",
+        "supported_with_lowering",
+        "unsupported",
+        "unavailable",
+        "unknown",
+    }
+)
+OBLIGATIONS = frozenset({"required", "preferred", "informational"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,12 +119,35 @@ class TransformSupportFinding:
 
 
 @dataclass(frozen=True, slots=True)
+class TransformPushdownFinding:
+    """Boundary-scoped pushdown outcome kept separate from support failures."""
+
+    boundary: str
+    outcome: str
+    reason: str
+    physical_effects: tuple[str, ...] = ()
+    evidence_fingerprint: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "boundary": self.boundary,
+            "outcome": self.outcome,
+            "reason": self.reason,
+            "physical_effects": list(self.physical_effects),
+        }
+        if self.evidence_fingerprint is not None:
+            payload["evidence_fingerprint"] = self.evidence_fingerprint
+        return payload
+
+
+@dataclass(frozen=True, slots=True)
 class TransformSupportReport:
     """Deterministic support analysis for a transformation plan."""
 
     supported: bool
     findings: tuple[TransformSupportFinding, ...] = ()
     evidence_fingerprint: str | None = None
+    pushdown: tuple[TransformPushdownFinding, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -123,7 +156,33 @@ class TransformSupportReport:
         }
         if self.evidence_fingerprint is not None:
             payload["evidence_fingerprint"] = self.evidence_fingerprint
+        if self.pushdown:
+            payload["pushdown"] = [p.to_dict() for p in self.pushdown]
         return payload
+
+    def to_requirement_support(
+        self, *, target: Mapping[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Serialize the additive requirement-level support protocol."""
+        return {
+            "schema": "etlantic.portable-requirement-support/1",
+            "target": dict(target or {}),
+            "requirements": [],
+            "findings": [
+                {
+                    "requirement": finding.requirement,
+                    "support": finding.support
+                    or ("unsupported" if not self.supported else "supported_exact"),
+                    "reason": finding.reason,
+                    "evidence": finding.evidence_fingerprint
+                    or self.evidence_fingerprint,
+                    "path": finding.expression_path,
+                    "obligation": finding.obligation or "required",
+                }
+                for finding in self.findings
+            ],
+            "evidence": [],
+        }
 
 
 @dataclass(frozen=True, slots=True)

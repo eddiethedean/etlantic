@@ -1,0 +1,1 @@
+{"schema":"etlantic.portable-conformance/1","repository_commit":"working-tree","result":"provisional","engine":"polars","command":"uv run --group polars pytest tests/portable_conformance/test_public_suite.py::test_suite_passes_polars","note":"Full 0.50 evidence job pending"}

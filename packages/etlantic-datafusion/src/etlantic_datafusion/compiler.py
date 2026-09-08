@@ -10,6 +10,7 @@ from typing import Any
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
+    portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
     window_frame_findings,
@@ -24,85 +25,27 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformOutputBundle,
     TransformPlanningContext,
+    TransformPushdownFinding,
     TransformSupportFinding,
     TransformSupportReport,
+)
+from etlantic.transform.portable_baseline import (
+    BASELINE_FUNCTIONS,
+    BASELINE_OPERATORS,
+    BASELINE_TYPES,
+    KERNEL_ACTIONS,
+    RELATIONAL_ACTIONS,
+    baseline_manifest,
+    normalize_action,
+    normalize_operator,
 )
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 
 __version__ = "0.49.0"
 
-_ACTIONS = frozenset(
-    {
-        "dtcs:filter",
-        "dtcs:project",
-        "dtcs:with_fields",
-        "dtcs:drop",
-        "dtcs:rename",
-        "dtcs:limit",
-        "dtcs:sort",
-        "dtcs:aggregate",
-        "dtcs:join",
-        "dtcs:union",
-        "dtcs:distinct",
-        "dtcs:deduplicate",
-    }
-)
-_FUNCTIONS = frozenset(
-    {
-        "dtcs:lower",
-        "dtcs:upper",
-        "dtcs:concat",
-        "dtcs:concat_ws",
-        "dtcs:substr",
-        "dtcs:replace",
-        "dtcs:length",
-        "dtcs:contains",
-        "dtcs:starts_with",
-        "dtcs:ends_with",
-        "dtcs:case_when",
-        "dtcs:coalesce",
-        "dtcs:if_null",
-        "dtcs:null_if",
-        "dtcs:is_null",
-        "dtcs:abs",
-        "dtcs:round",
-        "dtcs:floor",
-        "dtcs:ceil",
-        "dtcs:power",
-        "dtcs:sqrt",
-        "dtcs:least",
-        "dtcs:greatest",
-        "dtcs:sum",
-        "dtcs:average",
-        "dtcs:min",
-        "dtcs:max",
-        "dtcs:count",
-        "dtcs:count_all",
-        "dtcs:count_distinct",
-        "dtcs:in",
-    }
-)
-_OPERATORS = frozenset(
-    {
-        "eq",
-        "neq",
-        "gt",
-        "gte",
-        "lt",
-        "lte",
-        "and",
-        "or",
-        "add",
-        "sub",
-        "mul",
-        "div",
-        "mod",
-        "neg",
-        "not",
-        "in",
-        "null_safe_eq",
-    }
-)
+_ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
+_FUNCTIONS = frozenset(BASELINE_FUNCTIONS)
+_OPERATORS = frozenset(BASELINE_OPERATORS)
 
 
 class DataFusionTransformCompiler:
@@ -114,12 +57,22 @@ class DataFusionTransformCompiler:
             actions=_ACTIONS,
             functions=_FUNCTIONS,
             operators=_OPERATORS,
-            semantic_modes=frozenset({"three_state_distinct"}),
+            types=frozenset(BASELINE_TYPES),
+            # DataFusion cannot represent the distinct missing/invalid states
+            # in its scalar columns, so those requirements fail closed.
+            semantic_modes=frozenset(),
             lazy=True,
             eager=True,
         )
         evidence = hashlib.sha256(
-            json.dumps(caps.to_dict(), sort_keys=True).encode()
+            json.dumps(
+                {
+                    "baseline": baseline_manifest(),
+                    "capabilities": caps.to_dict(),
+                    "implementation": "datafusion-native/1",
+                },
+                sort_keys=True,
+            ).encode()
         ).hexdigest()
         self._info = TransformCompilerInfo(
             name="etlantic-datafusion",
@@ -142,7 +95,7 @@ class DataFusionTransformCompiler:
         requirements: Mapping[str, Sequence[str]] | None = None,
     ) -> TransformSupportReport:
         try:
-            inferred = requirements_from_plan(dict(definition))
+            inferred = requirements_from_plan(dict(definition), include_extended=True)
         except (TypeError, ValueError, AttributeError):
             inferred = None
         req = merge_requirements(requirements, inferred)
@@ -151,6 +104,7 @@ class DataFusionTransformCompiler:
         findings.extend(three_state_findings(definition, self.info.capabilities))
         findings.extend(window_frame_findings(definition))
         findings.extend(windowed_aggregate_findings(definition))
+        findings.extend(portable_shape_findings(definition))
         findings = [
             TransformSupportFinding(
                 code=f.code,
@@ -166,8 +120,41 @@ class DataFusionTransformCompiler:
             )
             for f in findings
         ]
+        pushdown_findings: list[TransformPushdownFinding] = []
+        for index, _ in enumerate(definition.get("actions") or ()):
+            pushdown_findings.extend(
+                (
+                    TransformPushdownFinding(
+                        boundary=f"relational:{index}",
+                        outcome="pushed_exact" if not findings else "unknown",
+                        reason=(
+                            "lowered to a DataFusion native logical plan"
+                            if not findings
+                            else "pushdown unavailable until support failures are resolved"
+                        ),
+                        physical_effects=("native_logical_plan",),
+                        evidence_fingerprint=self.info.evidence_fingerprint,
+                    ),
+                    TransformPushdownFinding(
+                        boundary=f"source:{index}",
+                        outcome="not_applicable",
+                        reason="connector source pushdown is outside the native plan contract",
+                        evidence_fingerprint=self.info.evidence_fingerprint,
+                    ),
+                    TransformPushdownFinding(
+                        boundary=f"sink:{index}",
+                        outcome="not_applicable",
+                        reason="sink pushdown is outside the native plan contract",
+                        evidence_fingerprint=self.info.evidence_fingerprint,
+                    ),
+                )
+            )
+        pushdown = tuple(pushdown_findings)
         return TransformSupportReport(
-            not findings, tuple(findings), self.info.evidence_fingerprint
+            not findings,
+            tuple(findings),
+            self.info.evidence_fingerprint,
+            pushdown,
         )
 
     def compile(
@@ -297,34 +284,54 @@ def _expr(
         )
     if kind == "literal":
         value = node.get("value")
-        return lit(value.get("value") if isinstance(value, Mapping) else value)
+        if isinstance(value, Mapping):
+            if value.get("type") in {"missing", "invalid"}:
+                raise ValueError("DataFusion cannot preserve missing/invalid literals")
+            value = value.get("value")
+        return lit(value)
     if kind == "binary":
         left, right = (
             _expr(node.get("left"), col, f, lit, params),
             _expr(node.get("right"), col, f, lit, params),
         )
-        op = str(node.get("op"))
-        return {
-            "eq": left == right,
-            "neq": left != right,
-            "gt": left > right,
-            "gte": left >= right,
-            "lt": left < right,
-            "lte": left <= right,
-            "and": left & right,
-            "or": left | right,
-            "add": left + right,
-            "sub": left - right,
-            "mul": left * right,
-            "div": left / right,
-            "mod": left % right,
-            "null_safe_eq": (
-                (left == right).fill_null(False) | (left.is_null() & right.is_null())
-            ),
-        }.get(op, left == right)
+        op = normalize_operator(str(node.get("op")))
+        if op == "eq":
+            return left == right
+        if op == "not_eq":
+            return left != right
+        if op == "gt":
+            return left > right
+        if op == "gte":
+            return left >= right
+        if op == "lt":
+            return left < right
+        if op == "lte":
+            return left <= right
+        if op == "and":
+            return left & right
+        if op == "or":
+            return left | right
+        if op == "add":
+            return left + right
+        if op == "subtract":
+            return left - right
+        if op == "multiply":
+            return left * right
+        if op == "divide":
+            return left / right
+        if op == "modulo":
+            return left % right
+        if op == "null_safe_eq":
+            return (left == right).fill_null(False) | (left.is_null() & right.is_null())
+        raise ValueError(f"unsupported binary operator: {op}")
     if kind == "unary":
         value = _expr(node.get("operand"), col, f, lit, params)
-        return -value if node.get("op") == "neg" else ~value
+        op = normalize_operator(str(node.get("op")))
+        if op == "negate":
+            return lit(0) - value
+        if op == "not":
+            return ~value
+        raise ValueError(f"unsupported unary operator: {op}")
     if kind == "call":
         name = str(node.get("callee"))
         args = [_expr(a, col, f, lit, params) for a in node.get("args") or []]
@@ -351,11 +358,35 @@ def _expr(
             "dtcs:count": f.count,
         }.get(name)
         if name == "dtcs:substr":
-            return f.substring(*args) if len(args) >= 3 else f.substr(*args)
+            if len(args) < 2:
+                raise ValueError("dtcs:substr requires value and start")
+            # DTCS uses a zero-based start; DataFusion substring is one-based.
+            start = args[1] + lit(1)
+            return (
+                f.substring(args[0], start, args[2])
+                if len(args) >= 3
+                else f.substring(args[0], start)
+            )
+        if name == "dtcs:concat_ws":
+            if len(args) < 2:
+                raise ValueError("dtcs:concat_ws requires a separator and value")
+            separator_node = (node.get("args") or [])[0]
+            separator_value = (
+                separator_node.get("value", {}).get("value")
+                if isinstance(separator_node, Mapping)
+                and separator_node.get("kind") == "literal"
+                and isinstance(separator_node.get("value"), Mapping)
+                else None
+            )
+            if not isinstance(separator_value, str):
+                raise ValueError("DataFusion concat_ws requires a literal separator")
+            return f.concat_ws(separator_value, *args[1:])
         if name in {"dtcs:if_null", "dtcs:coalesce"}:
             return f.coalesce(*args)
         if name == "dtcs:is_null":
             return args[0].is_null()
+        if name == "dtcs:null_if":
+            return f.when(args[0] == args[1], lit(None)).otherwise(args[0])
         if name == "dtcs:contains":
             return f.instr(*args) > lit(0)
         if name == "dtcs:in":
@@ -370,14 +401,18 @@ def _expr(
                 )
             return result
         if name == "dtcs:case_when":
+            if len(args) < 3 or len(args) % 2 == 0:
+                raise ValueError(
+                    "dtcs:case_when requires condition/value pairs and an else value"
+                )
             result = args[-1]
-            for i in range(len(args) - 2, -1, -2):
+            for i in range(len(args) - 3, -1, -2):
                 result = f.when(args[i], args[i + 1]).otherwise(result)
             return result
         if fn is not None:
             return fn(*args)
-        return lit(None)
-    return lit(None)
+        raise ValueError(f"unsupported function: {name}")
+    raise ValueError(f"unsupported expression kind: {kind}")
 
 
 def _apply_action(
@@ -390,10 +425,21 @@ def _apply_action(
     lit: Any,
     params: Mapping[str, Any] | None = None,
 ) -> Any:
+    action = normalize_action(action)
     if action == "dtcs:filter":
         return source.filter(_expr(p.get("predicate"), col, f, lit, params))
     if action == "dtcs:project":
-        return source.select(*[col(str(x)) for x in p.get("fields") or []])
+        expressions = []
+        for item in p.get("fields") or []:
+            if isinstance(item, Mapping):
+                expressions.append(
+                    _expr(item.get("expression"), col, f, lit, params).alias(
+                        str(item.get("name") or item.get("alias"))
+                    )
+                )
+            else:
+                expressions.append(col(str(item)))
+        return source.select(*expressions)
     if action == "dtcs:with_fields":
         out = source
         for assignment in p.get("assignments") or []:
@@ -402,9 +448,9 @@ def _apply_action(
                 _expr(assignment.get("expression"), col, f, lit, params),
             )
         return out
-    if action == "dtcs:drop":
+    if action == "dtcs:drop_fields":
         return source.drop(*[str(x) for x in p.get("fields") or p.get("columns") or []])
-    if action == "dtcs:rename":
+    if action == "dtcs:rename_fields":
         names = p.get("mapping") or p.get("fields") or {}
         schema = source.schema()
         return source.select(
@@ -418,9 +464,15 @@ def _apply_action(
         for key in keys:
             if isinstance(key, Mapping):
                 exprs.append(
-                    col(str(key.get("field") or key.get("name"))).sort(
+                    col(
+                        str(key.get("field") or key.get("column") or key.get("name"))
+                    ).sort(
                         ascending=str(key.get("direction", "asc")).lower() != "desc",
-                        nulls_first=bool(key.get("nullsFirst", True)),
+                        nulls_first=(
+                            bool(key.get("nullsFirst"))
+                            if "nullsFirst" in key
+                            else str(key.get("nulls", "last")).lower() == "first"
+                        ),
                     )
                 )
             else:
@@ -429,8 +481,16 @@ def _apply_action(
     if action == "dtcs:distinct":
         return source.distinct()
     if action == "dtcs:deduplicate":
+        fields = p.get("keys") or p.get("fields") or p.get("subset")
+        if fields:
+            raise ValueError(
+                "DataFusion deduplicate key subsets require native support"
+            )
         return source.distinct()
     if action == "dtcs:union":
+        mode = str(p.get("mode", "byName")).lower()
+        if mode not in {"byname", "byposition"}:
+            raise ValueError(f"unsupported union mode: {mode}")
         return source.union(
             relations[str(p.get("other"))], distinct=bool(p.get("distinct", False))
         )
@@ -446,6 +506,16 @@ def _apply_action(
         right_tmp = right.select(
             *[col(n).alias("__etl_right_" + n) for n in right_names]
         )
+        if isinstance(left_key, list) or isinstance(right_key, list):
+            if (
+                not isinstance(left_key, list)
+                or not isinstance(right_key, list)
+                or len(left_key) != len(right_key)
+            ):
+                raise ValueError("join key arity mismatch")
+            raise ValueError("DataFusion composite joins require native support")
+        if str(p.get("collisionPolicy", "fail")).lower() != "fail":
+            raise ValueError("only collisionPolicy=fail is supported")
         if left_key and right_key:
             joined = left_tmp.join(
                 right_tmp,
@@ -456,8 +526,9 @@ def _apply_action(
         else:
             joined = left_tmp.join(right_tmp, on=[], how=how)
         expressions = [col("__etl_left_" + n).alias(n) for n in left_names]
+        join_right_key = str(right_key) if right_key else None
         for n in right_names:
-            if n not in left_names:
+            if n not in left_names and n != join_right_key:
                 expressions.append(col("__etl_right_" + n).alias(n))
         return joined.select(*expressions)
     if action == "dtcs:aggregate":
@@ -482,17 +553,24 @@ def _apply_action(
                 )
             )
             arg = col(str(field)) if field else None
-            fn = {
-                "dtcs:sum": f.sum,
-                "dtcs:average": f.avg,
-                "dtcs:min": f.min,
-                "dtcs:max": f.max,
-                "dtcs:count": f.count,
-            }.get(name, f.count)
-            aggs.append(
-                (fn(arg) if arg is not None else fn()).alias(
-                    str(item.get("name") or name.split(":")[-1])
-                )
-            )
+            if name == "dtcs:count_distinct":
+                if arg is None:
+                    raise ValueError("count_distinct requires an expression")
+                aggregate = f.count(arg, distinct=True)
+            else:
+                fn = {
+                    "dtcs:sum": f.sum,
+                    "dtcs:average": f.avg,
+                    "dtcs:min": f.min,
+                    "dtcs:max": f.max,
+                    "dtcs:count": f.count,
+                    "dtcs:count_all": f.count,
+                }.get(name)
+                if fn is None:
+                    raise ValueError(f"unsupported aggregate function: {name}")
+                aggregate = fn(arg) if arg is not None else fn()
+            if aggregate is None:
+                raise ValueError(f"unsupported aggregate function: {name}")
+            aggs.append(aggregate.alias(str(item.get("name") or name.split(":")[-1])))
         return source.aggregate(group, aggs)
-    return source
+    raise ValueError(f"unsupported action: {action}")

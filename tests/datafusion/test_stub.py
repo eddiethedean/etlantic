@@ -1,4 +1,4 @@
-"""Experimental DataFusion plugin stub smoke tests."""
+"""DataFusion portable baseline smoke tests."""
 
 from __future__ import annotations
 
@@ -17,20 +17,20 @@ def test_datafusion_plugin_discovered() -> None:
 
 
 @pytest.mark.datafusion
-def test_materialize_stub_raises_not_implemented() -> None:
+def test_materialize_requires_value_but_is_implemented() -> None:
     plugin = create_plugin()
-    with pytest.raises(NotImplementedError, match="experimental stub"):
+    with pytest.raises(TypeError, match="requires a value"):
         plugin.materialize()
 
 
 @pytest.mark.datafusion
-def test_datafusion_capabilities_ungraduated() -> None:
+def test_datafusion_capabilities_graduated() -> None:
     plugin = create_plugin()
     caps = plugin.info.capabilities
-    assert caps.dataframe is False
-    assert caps.lazy is False
-    assert caps.eager is False
-    assert caps.arrow_import is False
-    assert caps.arrow_export is False
-    assert not caps.interchange_mechanisms
-    assert "experimental" in caps.extras
+    assert caps.dataframe is True
+    assert caps.lazy is True
+    assert caps.eager is True
+    assert caps.arrow_import is True
+    assert caps.arrow_export is True
+    assert caps.interchange_mechanisms
+    assert "datafusion" in caps.extras
