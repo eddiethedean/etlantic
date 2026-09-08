@@ -8,7 +8,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
@@ -132,7 +132,7 @@ def validate_adaptive_lowering_binding(
         not isinstance(item, dict) for item in raw_lowerings
     ):
         raise SystemExit("adaptive lowering evidence is incomplete")
-    actual = [dict(item) for item in raw_lowerings]
+    actual = [dict(item) for item in cast(list[dict[str, object]], raw_lowerings)]
     if candidate.get("lowering") is not None and len(expected) != 1:
         raise SystemExit("adaptive lowering evidence is not evidence-backed")
     if candidate.get("lowering") is not None and len(expected) == 1:
@@ -143,6 +143,31 @@ def validate_adaptive_lowering_binding(
         expected, key=lambda item: json.dumps(item, sort_keys=True)
     ):
         raise SystemExit("adaptive lowering evidence is not evidence-backed")
+
+
+def validate_adaptive_target_binding(
+    candidate: dict[str, object],
+    *,
+    node: str,
+    seen_targets: set[tuple[str, str]],
+) -> None:
+    """Require each candidate to bind to one unique support-report target."""
+    support_report = candidate.get("support_report")
+    target = candidate.get("target")
+    report_target = (
+        support_report.get("target") if isinstance(support_report, dict) else None
+    )
+    if (
+        not isinstance(target, dict)
+        or not isinstance(report_target, dict)
+        or target != report_target
+    ):
+        raise SystemExit("adaptive candidate target is not evidence-backed")
+    target_key = json.dumps(target, sort_keys=True, separators=(",", ":"))
+    target_identity = (node, target_key)
+    if target_identity in seen_targets:
+        raise SystemExit("adaptive placement target is ambiguous")
+    seen_targets.add(target_identity)
 
 
 def main() -> int:
@@ -597,6 +622,7 @@ def main() -> int:
                 raise SystemExit(
                     "adaptive scenario lacks candidate evaluation evidence"
                 )
+            seen_targets: set[tuple[str, str]] = set()
             for candidate in evaluation["candidates"]:
                 if (
                     not isinstance(candidate, dict)
@@ -622,6 +648,11 @@ def main() -> int:
                 support_report = candidate.get("support_report")
                 if not isinstance(support_report, dict):
                     raise SystemExit("adaptive candidate support evidence is missing")
+                validate_adaptive_target_binding(
+                    candidate,
+                    node=str(candidate["node"]),
+                    seen_targets=seen_targets,
+                )
                 try:
                     validate_requirement_support_payload(support_report)
                 except ValueError as exc:

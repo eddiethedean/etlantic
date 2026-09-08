@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from scripts.check_portable_0_50 import (
     validate_adaptive_lowering_binding,
+    validate_adaptive_target_binding,
     validate_artifact_schema,
     validate_cross_engine_digests,
 )
@@ -57,3 +58,19 @@ def test_adaptive_lowering_mutation_is_rejected() -> None:
         validate_adaptive_lowering_binding(
             candidate, candidate["requirements"], support_findings, resolved
         )
+
+
+def test_adaptive_target_binding_mutation_is_rejected() -> None:
+    candidate = {
+        "node": "orders",
+        "target": {"engine": "local", "compiler": "fixture", "version": "1"},
+        "support_report": {
+            "target": {
+                "engine": "local",
+                "compiler": "fixture",
+                "version": "2",
+            }
+        },
+    }
+    with pytest.raises(SystemExit, match="target is not evidence-backed"):
+        validate_adaptive_target_binding(candidate, node="orders", seen_targets=set())

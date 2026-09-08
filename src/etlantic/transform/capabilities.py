@@ -441,6 +441,7 @@ def evaluate_adaptive_candidates(
 
     decisions: list[dict[str, Any]] = []
     seen_ids: set[tuple[str, str]] = set()
+    seen_targets: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             raise TypeError("adaptive candidates must be mappings")
@@ -460,6 +461,16 @@ def evaluate_adaptive_candidates(
         if not isinstance(support_report, Mapping):
             raise ValueError("adaptive candidate requires validated support evidence")
         validate_requirement_support_payload(support_report)
+        target = support_report.get("target")
+        if not isinstance(target, Mapping):
+            raise ValueError("adaptive candidate requires a placement target")
+        target_key = tuple(
+            sorted((str(key), str(value)) for key, value in target.items())
+        )
+        target_identity = (node_id, target_key)
+        if target_identity in seen_targets:
+            raise ValueError("adaptive placement target must be unique per node")
+        seen_targets.add(target_identity)
         report_requirements = {
             str(item["id"]): item for item in support_report["requirements"]
         }
@@ -558,6 +569,7 @@ def evaluate_adaptive_candidates(
                     "node": node_id,
                     "requirements": normalized,
                     "support_report": dict(support_report),
+                    "target": dict(target),
                     "eligible": False,
                     "decision": "eliminated_before_preference_scoring",
                     "required_failures": required_failures,
@@ -580,6 +592,7 @@ def evaluate_adaptive_candidates(
                 "node": node_id,
                 "requirements": normalized,
                 "support_report": dict(support_report),
+                "target": dict(target),
                 "eligible": True,
                 "decision": "eligible",
                 "required_failures": [],
@@ -587,22 +600,147 @@ def evaluate_adaptive_candidates(
                 **lowering_payload,
             }
         )
-    selected_by_node: dict[str, str | None] = {}
-    for node_id in sorted({item["node"] for item in decisions}):
-        eligible = [
-            item for item in decisions if item["node"] == node_id and item["eligible"]
-        ]
-        selected_by_node[node_id] = (
-            max(eligible, key=lambda item: (item["preferred_score"], item["id"]))["id"]
-            if eligible
-            else None
+    edge_specs: list[tuple[str, str, tuple[str, ...]]] = []
+    for edge in edges:
+        if not isinstance(edge, Mapping):
+            raise TypeError("adaptive edges must be mappings")
+        producer = str(edge.get("producer") or edge.get("producer_node") or "")
+        consumer = str(edge.get("consumer") or edge.get("consumer_node") or "")
+        raw_requirements = edge.get("requirements") or ()
+        if not producer or not consumer or isinstance(raw_requirements, (str, bytes)):
+            raise ValueError(
+                "adaptive edge requires producer, consumer, and requirements"
+            )
+        edge_specs.append(
+            (
+                producer,
+                consumer,
+                tuple(str(requirement) for requirement in raw_requirements),
+            )
         )
+
+    node_ids = sorted({item["node"] for item in decisions})
+    eligible_by_node = {
+        node_id: sorted(
+            (
+                item
+                for item in decisions
+                if item["node"] == node_id and item["eligible"]
+            ),
+            key=lambda item: item["id"],
+        )
+        for node_id in node_ids
+    }
+
+    def graph_failures_for(
+        selected_candidates: Mapping[str, Mapping[str, Any] | None],
+    ) -> list[dict[str, str]]:
+        failures: list[dict[str, str]] = []
+        for producer, consumer, requirements in edge_specs:
+            producer_candidate = selected_candidates.get(producer)
+            consumer_candidate = selected_candidates.get(consumer)
+            for requirement_id in requirements:
+                producer_state = (
+                    producer_candidate["requirements"].get(requirement_id)
+                    if producer_candidate
+                    else None
+                )
+                consumer_state = (
+                    consumer_candidate["requirements"].get(requirement_id)
+                    if consumer_candidate
+                    else None
+                )
+                if producer_state not in {
+                    "supported_exact",
+                    "supported_with_lowering",
+                } or consumer_state not in {
+                    "supported_exact",
+                    "supported_with_lowering",
+                }:
+                    failures.append(
+                        {
+                            "producer": producer,
+                            "consumer": consumer,
+                            "requirement": requirement_id,
+                        }
+                    )
+        return failures
+
+    def edge_failures_for_partial(
+        selected_candidates: Mapping[str, Mapping[str, Any]],
+        node_id: str,
+    ) -> bool:
+        for producer, consumer, requirements in edge_specs:
+            if node_id not in {producer, consumer}:
+                continue
+            producer_candidate = selected_candidates.get(producer)
+            consumer_candidate = selected_candidates.get(consumer)
+            if producer_candidate is None or consumer_candidate is None:
+                continue
+            if any(
+                producer_candidate["requirements"].get(requirement)
+                not in {
+                    "supported_exact",
+                    "supported_with_lowering",
+                }
+                or consumer_candidate["requirements"].get(requirement)
+                not in {"supported_exact", "supported_with_lowering"}
+                for requirement in requirements
+            ):
+                return True
+        return False
+
+    # Required edge constraints are hard feasibility constraints. Search the
+    # product of eligible candidates and score only complete graph-valid
+    # assignments; this avoids selecting a locally preferred but incompatible
+    # candidate and discovering the failure after the fact.
+    best_assignment: dict[str, Mapping[str, Any]] | None = None
+    best_score: tuple[int, tuple[str, ...]] | None = None
+    partial_assignment: dict[str, Mapping[str, Any]] = {}
+
+    def search(index: int, score: int) -> None:
+        nonlocal best_assignment, best_score
+        if index == len(node_ids):
+            if graph_failures_for(partial_assignment):
+                return
+            candidate_ids = tuple(
+                str(partial_assignment[node]["id"]) for node in node_ids
+            )
+            assignment_score = (score, candidate_ids)
+            if best_score is None or assignment_score > best_score:
+                best_score = assignment_score
+                best_assignment = dict(partial_assignment)
+            return
+        node_id = node_ids[index]
+        for item in eligible_by_node[node_id]:
+            partial_assignment[node_id] = item
+            if not edge_failures_for_partial(partial_assignment, node_id):
+                search(index + 1, score + int(item["preferred_score"]))
+            partial_assignment.pop(node_id, None)
+
+    if all(eligible_by_node[node_id] for node_id in node_ids):
+        search(0, 0)
+
+    # Preserve a deterministic diagnostic selection when no complete graph
+    # assignment exists, while ensuring any valid assignment wins when one is
+    # available.
+    selected_by_node: dict[str, str | None] = {
+        node_id: (
+            str(best_assignment[node_id]["id"])
+            if best_assignment is not None
+            else (
+                str(eligible_by_node[node_id][0]["id"])
+                if eligible_by_node[node_id]
+                else None
+            )
+        )
+        for node_id in node_ids
+    }
     selected: str | dict[str, str | None] | None = (
         next(iter(selected_by_node.values()))
         if len(selected_by_node) == 1
         else selected_by_node
     )
-    graph_failures: list[dict[str, str]] = []
     selected_candidates = {
         node_id: next(
             (
@@ -615,41 +753,7 @@ def evaluate_adaptive_candidates(
         for node_id, candidate_id in selected_by_node.items()
         if candidate_id is not None
     }
-    for edge in edges:
-        if not isinstance(edge, Mapping):
-            raise TypeError("adaptive edges must be mappings")
-        producer = str(edge.get("producer") or edge.get("producer_node") or "")
-        consumer = str(edge.get("consumer") or edge.get("consumer_node") or "")
-        requirements = edge.get("requirements") or ()
-        if not producer or not consumer or isinstance(requirements, (str, bytes)):
-            raise ValueError(
-                "adaptive edge requires producer, consumer, and requirements"
-            )
-        producer_candidate = selected_candidates.get(producer)
-        consumer_candidate = selected_candidates.get(consumer)
-        for requirement in requirements:
-            requirement_id = str(requirement)
-            producer_state = (
-                producer_candidate["requirements"].get(requirement_id)
-                if producer_candidate
-                else None
-            )
-            consumer_state = (
-                consumer_candidate["requirements"].get(requirement_id)
-                if consumer_candidate
-                else None
-            )
-            if producer_state not in {
-                "supported_exact",
-                "supported_with_lowering",
-            } or consumer_state not in {"supported_exact", "supported_with_lowering"}:
-                graph_failures.append(
-                    {
-                        "producer": producer,
-                        "consumer": consumer,
-                        "requirement": requirement_id,
-                    }
-                )
+    graph_failures = graph_failures_for(selected_candidates)
     return {
         "nodes": sorted(selected_by_node),
         "candidates": decisions,

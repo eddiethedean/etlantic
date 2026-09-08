@@ -171,7 +171,9 @@ ADAPTIVE_COMMAND = (
 def _adaptive_scenarios() -> list[dict[str, Any]]:
     """Build adaptive handoff records from the production evaluator."""
 
-    def support_report(states: dict[str, str]) -> dict[str, Any]:
+    def support_report(
+        states: dict[str, str], *, target_variant: str = "default"
+    ) -> dict[str, Any]:
         evidence = "adaptive-fixture-evidence"
         requirements = requirement_records_from_mapping({"actions": list(states)})
         requirement_ids = {
@@ -216,6 +218,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 "compiler": "adaptive-fixture",
                 "version": "1",
                 "protocol": COMPILER_PROTOCOL,
+                "package": f"etlantic-adaptive-fixture/{target_variant}",
             }
         )
 
@@ -237,7 +240,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "unknown",
                 },
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"}
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"},
+                    target_variant="orders-partial",
                 ),
             },
             {
@@ -248,7 +252,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "supported_exact",
                 },
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
+                    target_variant="orders-complete",
                 ),
             },
             {
@@ -259,7 +264,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "supported_exact",
                 },
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
+                    target_variant="customers-complete",
                 ),
             },
         ],
@@ -276,7 +282,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:sort": "unknown",
                 },
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"}
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"},
+                    target_variant="orders-unknown-preference",
                 ),
             },
             {
@@ -287,7 +294,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:sort": "supported_exact",
                 },
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:sort": "supported_exact"}
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "supported_exact"},
+                    target_variant="customers-known-preference",
                 ),
             },
         ],
@@ -307,14 +315,18 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 "id": "lowered",
                 "requirements": {"dtcs:filter": "supported_with_lowering"},
                 "support_report": support_report(
-                    {"dtcs:filter": "supported_with_lowering"}
+                    {"dtcs:filter": "supported_with_lowering"},
+                    target_variant="orders-lowered",
                 ),
             },
             {
                 "node": "customers",
                 "id": "exact",
                 "requirements": {"dtcs:filter": "supported_exact"},
-                "support_report": support_report({"dtcs:filter": "supported_exact"}),
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact"},
+                    target_variant="customers-exact",
+                ),
             },
         ],
         required_requirements={
@@ -355,7 +367,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                         "id": "native",
                         "requirements": {"dtcs:join": "supported_exact"},
                         "support_report": support_report(
-                            {"dtcs:join": "supported_exact"}
+                            {"dtcs:join": "supported_exact"},
+                            target_variant="orders-native",
                         ),
                     },
                     {
@@ -363,7 +376,8 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                         "id": "native",
                         "requirements": {"dtcs:join": "supported_exact"},
                         "support_report": support_report(
-                            {"dtcs:join": "supported_exact"}
+                            {"dtcs:join": "supported_exact"},
+                            target_variant="customers-native",
                         ),
                     },
                 ],

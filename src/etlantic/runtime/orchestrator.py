@@ -686,6 +686,11 @@ class LocalOrchestrator:
             intent=self.request.intent.value,
         )
 
+        # Admission must complete before emitting lifecycle events or creating
+        # run-history state.  A rejected portable plan must not enter the
+        # execution try/finally block, whose cleanup callbacks are themselves
+        # externally observable mutations.
+        self._preflight_portable_plan(selected)
         self.runtime.events.emit(
             self._lifecycle_event(
                 kind="run_started",
@@ -781,11 +786,6 @@ class LocalOrchestrator:
 
         cancel_exc = anyio.get_cancelled_exc_class()
         try:
-            # Validate before entering the run resource scope: scope setup may
-            # itself acquire resources, and source nodes read inputs in the
-            # node runner.  A per-step check alone is therefore too late to
-            # guarantee the fail-closed no-I/O handoff contract.
-            self._preflight_portable_plan(selected)
             async with run_lifespan(self.runtime, run_id):
                 timeout = self.request.timeout.run_seconds
                 if timeout is not None:

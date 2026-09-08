@@ -509,6 +509,8 @@ def _adaptive_support_report(states: dict[str, str]) -> dict[str, object]:
             "compiler": "adaptive-fixture",
             "version": "1",
             "protocol": COMPILER_PROTOCOL,
+            "package": "etlantic-adaptive-fixture/"
+            + ",".join(f"{key}={states[key]}" for key in sorted(states)),
         }
     )
 
@@ -797,6 +799,93 @@ def test_adaptive_graph_edge_requires_producer_and_consumer_support() -> None:
     ]
 
 
+def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "node": "source",
+                "id": "z-fast",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "unknown",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        "interchange:arrow": "unknown",
+                    }
+                ),
+            },
+            {
+                "node": "source",
+                "id": "a-valid",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "supported_exact",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        "interchange:arrow": "supported_exact",
+                    }
+                ),
+            },
+            {
+                "node": "sink",
+                "id": "sink",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "supported_exact",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        "interchange:arrow": "supported_exact",
+                    }
+                ),
+            },
+        ],
+        required_requirements={"source": ("dtcs:filter",), "sink": ()},
+        preferred_requirements={"source": ("dtcs:filter",)},
+        edges=(
+            {
+                "producer": "source",
+                "consumer": "sink",
+                "requirements": ("interchange:arrow",),
+            },
+        ),
+    )
+    assert result["selected"] == {"sink": "sink", "source": "a-valid"}
+    assert result["graph_valid"] is True
+    assert result["graph_failures"] == []
+
+
+def test_adaptive_candidate_target_must_be_unique_per_node() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    report = _adaptive_support_report({"dtcs:filter": "supported_exact"})
+    with pytest.raises(ValueError, match="placement target must be unique"):
+        evaluate_adaptive_candidates(
+            [
+                {
+                    "node": "source",
+                    "id": "one",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": report,
+                },
+                {
+                    "node": "source",
+                    "id": "two",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": report,
+                },
+            ],
+            required_requirements=("dtcs:filter",),
+        )
+
+
 def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:
     from types import SimpleNamespace
     from typing import Any, cast
@@ -826,6 +915,79 @@ def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:
     )
     orchestrator._preflight_portable_plan({"native", "source"})
     assert calls == ["source"]
+
+
+def test_orchestrator_rejects_before_lifecycle_or_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from etlantic.exceptions import NodeExecutionError
+    from etlantic.lifecycle.runtime import PipelineRuntime
+    from etlantic.model import LogicalGraph, Node, NodeKind
+    from etlantic.plan.model import PLAN_SCHEMA
+    from etlantic.runtime.orchestrator import LocalOrchestrator
+    from etlantic.runtime.request import RunRequest
+
+    graph = LogicalGraph(
+        pipeline_id="pipeline:preflight",
+        pipeline_name="Preflight",
+        nodes=(Node(name="source", kind=NodeKind.SOURCE, identity="source"),),
+    )
+    plan = SimpleNamespace(
+        schema=PLAN_SCHEMA,
+        plan_id="plan:preflight",
+        pipeline_id=graph.pipeline_id,
+        pipeline_name=graph.pipeline_name,
+        profile_name="test",
+        fingerprint="test",
+        logical_graph=graph,
+        selected_nodes=None,
+        execution_settings={},
+        implementations={},
+        profile_snapshot={},
+        regions=(),
+        logical_to_physical={},
+        physical_units=(),
+        intents={},
+        metadata={},
+    )
+    runtime = PipelineRuntime()
+    events: list[object] = []
+    runtime.events.subscribe(events.append)
+    starts: list[str] = []
+    cleanups: list[str] = []
+
+    class Bridge:
+        def start_run(self, **kwargs: object) -> None:
+            starts.append(str(kwargs["run_id"]))
+
+    class Plugin:
+        def cleanup_run(self, **kwargs: object) -> None:
+            cleanups.append(str(kwargs["run_id"]))
+
+    runtime._observability_bridge = Bridge()
+    runtime.sql_plugins["fake"] = Plugin()
+    orchestrator = LocalOrchestrator(runtime, plan, RunRequest())
+
+    monkeypatch.setattr(
+        "etlantic.plan.serialize.verify_plan_fingerprint", lambda ignored: None
+    )
+
+    def reject(_selected: set[str]) -> None:
+        raise NodeExecutionError(
+            "portable compiler evidence is stale",
+            node_name="source",
+            code="PMXFORM306",
+        )
+
+    monkeypatch.setattr(orchestrator, "_preflight_portable_plan", reject)
+    with pytest.raises(NodeExecutionError, match="stale"):
+        asyncio.run(orchestrator.execute())
+    assert events == []
+    assert starts == []
+    assert cleanups == []
 
 
 def test_adaptive_evidence_drift_rejects_before_io() -> None:
