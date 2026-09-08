@@ -18,7 +18,7 @@
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "201aa976d54be9d8a2bb28833fc89721f373da4b",
+  "repository_commit": "43a05be530a7111e062183c28c12fe02d11342a7",
   "result": "pass",
   "scenarios": [
     {
@@ -838,5 +838,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "d699172ac04163ee734c6644aca26cd46b95d62735dc353e28925b8d704aa838"
+  "source_tree_digest": "a17fed445734b4032d4d01cd6dc1cd2243eb0144a534e4711e025e7d8a4141c2"
 }
