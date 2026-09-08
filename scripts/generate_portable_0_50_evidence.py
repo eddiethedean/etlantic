@@ -1273,7 +1273,8 @@ def main() -> int:
         "| SOL-050-014 | High | resolved by fail-fast campaign execution |\n"
         "| SOL-050-015 | High | resolved by action-correlated EXPLAIN evidence |\n"
         "| SOL-050-016 | High | resolved by executable adaptive candidate evaluation |\n"
-        "| SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |\n\n"
+        "| SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |\n"
+        "| SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",
