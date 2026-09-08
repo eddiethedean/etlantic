@@ -111,6 +111,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "relational_empty_count_all",
         "relational_join_aggregate",
         "relational_sort_nulls_limit"
@@ -229,6 +230,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -385,6 +391,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "reject_window_frame",
         "relational_empty_count_all",
         "relational_join_aggregate",
@@ -542,6 +549,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -737,6 +749,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "relational_empty_count_all",
         "relational_join_aggregate",
         "relational_sort_nulls_limit"
@@ -855,6 +868,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -1005,6 +1023,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "relational_empty_count_all",
         "relational_join_aggregate",
         "relational_sort_nulls_limit"
@@ -1123,6 +1142,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -1279,6 +1303,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "reject_window_frame",
         "relational_empty_count_all",
         "relational_join_aggregate",
@@ -1436,6 +1461,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -1631,6 +1661,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "relational_empty_count_all",
         "relational_join_aggregate",
         "relational_sort_nulls_limit"
@@ -1749,6 +1780,11 @@
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
           "result": "pass"
         },
         {
@@ -1899,6 +1935,7 @@
         "qualified_string_functions",
         "qualified_with_fields_action",
         "reject_join_collision_suffix",
+        "reject_missing_literal_without_three_state",
         "relational_empty_count_all",
         "relational_join_aggregate",
         "relational_sort_nulls_limit"
@@ -2021,6 +2058,11 @@
         },
         {
           "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_missing_literal_without_three_state",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
           "fixture_id": "relational_empty_count_all",
           "result": "pass"
         },
@@ -2070,7 +2112,7 @@
     "unknown"
   ],
   "policy": "Every frozen baseline claim is selected by the public conformance suite; semantic and eager/lazy dimensions are recorded per engine.",
-  "repository_commit": "f39e04824a772d93f5e1aaefa5d3aafdb6259a5a",
+  "repository_commit": "54474487495404bffaa44eeabfb096bccf1645d7",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2090,5 +2132,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "0f083eac972ba2130846e8c58af6fcc9d1a6098685ccfa53c32dc34d023d270c"
+  "source_tree_digest": "e44d4f5d48e9f705683a251f248e9ffeac0e599598897cfc0526c3b272129012"
 }

@@ -3,11 +3,11 @@
   "engine_neutral": true,
   "engine_specific_bodies": false,
   "plan": "dtcs.transform-plan/2",
-  "repository_commit": "f39e04824a772d93f5e1aaefa5d3aafdb6259a5a",
+  "repository_commit": "54474487495404bffaa44eeabfb096bccf1645d7",
   "result": "pass",
   "schema": "etlantic.portable-canonical-pipeline/1",
   "source_rows": false,
-  "source_tree_digest": "0f083eac972ba2130846e8c58af6fcc9d1a6098685ccfa53c32dc34d023d270c",
+  "source_tree_digest": "e44d4f5d48e9f705683a251f248e9ffeac0e599598897cfc0526c3b272129012",
   "stages": [
     "filter",
     "project",

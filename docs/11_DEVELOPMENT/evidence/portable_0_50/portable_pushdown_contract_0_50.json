@@ -2852,89 +2852,89 @@
         "a": {
           "action": "dtcs:aggregate",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:a",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "d": {
           "action": "dtcs:drop_fields",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:d",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "f": {
           "action": "dtcs:filter",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:f",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "j": {
           "action": "dtcs:join",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:j",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "k": {
           "action": "dtcs:deduplicate",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:k",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "l": {
           "action": "dtcs:limit",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:l",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "n": {
           "action": "dtcs:rename_fields",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:n",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "p": {
           "action": "dtcs:project",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:p",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "s": {
           "action": "dtcs:sort",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:s",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "u": {
           "action": "dtcs:union",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:u",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "w": {
           "action": "dtcs:with_fields",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:w",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "x": {
           "action": "dtcs:distinct",
           "host_fallback": false,
-          "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+          "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
           "proof_id": "native-execution:datafusion:x",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         }
       },
-      "native_explain_digest": "bb7271993deff225e250c33f3e9ffc680ff1286269de2dd97ce63706048091be",
+      "native_explain_digest": "9d298c4994f1e0827563b4032a9954b70009517da3551c5961ccaf4a82765117",
       "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
     },
     "duckdb": {
@@ -3223,8 +3223,8 @@
       "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
     }
   },
-  "repository_commit": "f39e04824a772d93f5e1aaefa5d3aafdb6259a5a",
+  "repository_commit": "54474487495404bffaa44eeabfb096bccf1645d7",
   "result": "pass",
   "schema": "etlantic.portable-pushdown/1",
-  "source_tree_digest": "0f083eac972ba2130846e8c58af6fcc9d1a6098685ccfa53c32dc34d023d270c"
+  "source_tree_digest": "e44d4f5d48e9f705683a251f248e9ffeac0e599598897cfc0526c3b272129012"
 }
