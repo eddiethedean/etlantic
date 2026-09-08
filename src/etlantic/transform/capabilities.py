@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -441,7 +442,8 @@ def evaluate_adaptive_candidates(
 
     decisions: list[dict[str, Any]] = []
     seen_ids: set[tuple[str, str]] = set()
-    seen_targets: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    seen_targets: set[tuple[str, str]] = set()
+    targets_by_node: dict[str, set[str]] = {}
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             raise TypeError("adaptive candidates must be mappings")
@@ -464,13 +466,29 @@ def evaluate_adaptive_candidates(
         target = support_report.get("target")
         if not isinstance(target, Mapping):
             raise ValueError("adaptive candidate requires a placement target")
-        target_key = tuple(
-            sorted((str(key), str(value)) for key, value in target.items())
-        )
+        placement = target.get("placement")
+        if not isinstance(placement, Mapping):
+            raise ValueError(
+                "adaptive candidate requires a complete placement target identity"
+            )
+        if not isinstance(target.get("package"), str) or not target["package"]:
+            raise ValueError(
+                "adaptive candidate requires a complete placement target identity"
+            )
+        declared_target = candidate.get("target")
+        if declared_target is not None:
+            if not isinstance(declared_target, Mapping):
+                raise ValueError("adaptive candidate target must be a mapping")
+            if dict(declared_target) != dict(target):
+                raise ValueError(
+                    "adaptive candidate target disagrees with support evidence"
+                )
+        target_key = json.dumps(target, sort_keys=True, separators=(",", ":"))
         target_identity = (node_id, target_key)
         if target_identity in seen_targets:
             raise ValueError("adaptive placement target must be unique per node")
         seen_targets.add(target_identity)
+        targets_by_node.setdefault(node_id, set()).add(target_key)
         report_requirements = {
             str(item["id"]): item for item in support_report["requirements"]
         }
@@ -619,18 +637,37 @@ def evaluate_adaptive_candidates(
             )
         )
 
-    node_ids = sorted({item["node"] for item in decisions})
-    eligible_by_node = {
-        node_id: sorted(
-            (
-                item
-                for item in decisions
-                if item["node"] == node_id and item["eligible"]
-            ),
-            key=lambda item: item["id"],
+    expected_nodes = set(targets_by_node)
+    for specification in (required_requirements, preferred_requirements):
+        if isinstance(specification, Mapping):
+            expected_nodes.update(str(node_id) for node_id in specification)
+    for producer, consumer, _requirements in edge_specs:
+        expected_nodes.update((producer, consumer))
+    if expected_nodes != set(targets_by_node):
+        raise ValueError(
+            "adaptive candidates must cover every node and placement target"
         )
-        for node_id in node_ids
+    target_inventories = list(targets_by_node.values())
+    if target_inventories and any(
+        inventory != target_inventories[0] for inventory in target_inventories[1:]
+    ):
+        raise ValueError(
+            "adaptive candidates must cover every node and placement target"
+        )
+
+    node_ids = sorted({item["node"] for item in decisions})
+    eligible_by_node: dict[str, list[dict[str, Any]]] = {
+        node_id: [] for node_id in node_ids
     }
+    candidates_by_identity: dict[tuple[str, str], dict[str, Any]] = {}
+    for item in decisions:
+        node_id = str(item["node"])
+        candidate_id = str(item["id"])
+        candidates_by_identity[(node_id, candidate_id)] = item
+        if item["eligible"]:
+            eligible_by_node[node_id].append(item)
+    for items in eligible_by_node.values():
+        items.sort(key=lambda item: item["id"])
 
     def graph_failures_for(
         selected_candidates: Mapping[str, Mapping[str, Any] | None],
@@ -666,60 +703,43 @@ def evaluate_adaptive_candidates(
                     )
         return failures
 
-    def edge_failures_for_partial(
-        selected_candidates: Mapping[str, Mapping[str, Any]],
-        node_id: str,
-    ) -> bool:
-        for producer, consumer, requirements in edge_specs:
-            if node_id not in {producer, consumer}:
-                continue
-            producer_candidate = selected_candidates.get(producer)
-            consumer_candidate = selected_candidates.get(consumer)
-            if producer_candidate is None or consumer_candidate is None:
-                continue
-            if any(
-                producer_candidate["requirements"].get(requirement)
-                not in {
-                    "supported_exact",
-                    "supported_with_lowering",
-                }
-                or consumer_candidate["requirements"].get(requirement)
-                not in {"supported_exact", "supported_with_lowering"}
-                for requirement in requirements
-            ):
-                return True
-        return False
+    # Every current edge constraint is a hard requirement on both incident
+    # nodes. Fold those constraints into each node's eligibility before ranking.
+    # The additive preference objective can then be optimized independently per
+    # node, which is equivalent to solving every disconnected component without
+    # enumerating any Cartesian product or using recursion.
+    edge_requirements_by_node: dict[str, set[str]] = {
+        node_id: set() for node_id in node_ids
+    }
+    for producer, consumer, requirements in edge_specs:
+        edge_requirements_by_node[producer].update(requirements)
+        edge_requirements_by_node[consumer].update(requirements)
 
-    # Required edge constraints are hard feasibility constraints. Search the
-    # product of eligible candidates and score only complete graph-valid
-    # assignments; this avoids selecting a locally preferred but incompatible
-    # candidate and discovering the failure after the fact.
     best_assignment: dict[str, Mapping[str, Any]] | None = None
-    best_score: tuple[int, tuple[str, ...]] | None = None
-    partial_assignment: dict[str, Mapping[str, Any]] = {}
-
-    def search(index: int, score: int) -> None:
-        nonlocal best_assignment, best_score
-        if index == len(node_ids):
-            if graph_failures_for(partial_assignment):
-                return
-            candidate_ids = tuple(
-                str(partial_assignment[node]["id"]) for node in node_ids
-            )
-            assignment_score = (score, candidate_ids)
-            if best_score is None or assignment_score > best_score:
-                best_score = assignment_score
-                best_assignment = dict(partial_assignment)
-            return
-        node_id = node_ids[index]
-        for item in eligible_by_node[node_id]:
-            partial_assignment[node_id] = item
-            if not edge_failures_for_partial(partial_assignment, node_id):
-                search(index + 1, score + int(item["preferred_score"]))
-            partial_assignment.pop(node_id, None)
-
     if all(eligible_by_node[node_id] for node_id in node_ids):
-        search(0, 0)
+        graph_eligible_by_node = {
+            node_id: [
+                item
+                for item in eligible_by_node[node_id]
+                if all(
+                    item["requirements"].get(requirement)
+                    in {"supported_exact", "supported_with_lowering"}
+                    for requirement in edge_requirements_by_node[node_id]
+                )
+            ]
+            for node_id in node_ids
+        }
+        if all(graph_eligible_by_node[node_id] for node_id in node_ids):
+            best_assignment = {
+                node_id: max(
+                    graph_eligible_by_node[node_id],
+                    key=lambda item: (
+                        int(item["preferred_score"]),
+                        str(item["id"]),
+                    ),
+                )
+                for node_id in node_ids
+            }
 
     # Preserve a deterministic diagnostic selection when no complete graph
     # assignment exists, while ensuring any valid assignment wins when one is
@@ -742,14 +762,7 @@ def evaluate_adaptive_candidates(
         else selected_by_node
     )
     selected_candidates = {
-        node_id: next(
-            (
-                item
-                for item in decisions
-                if item["node"] == node_id and item["id"] == candidate_id
-            ),
-            None,
-        )
+        node_id: candidates_by_identity[(node_id, candidate_id)]
         for node_id, candidate_id in selected_by_node.items()
         if candidate_id is not None
     }

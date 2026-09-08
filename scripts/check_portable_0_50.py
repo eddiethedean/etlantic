@@ -150,7 +150,7 @@ def validate_adaptive_target_binding(
     *,
     node: str,
     seen_targets: set[tuple[str, str]],
-) -> None:
+) -> str:
     """Require each candidate to bind to one unique support-report target."""
     support_report = candidate.get("support_report")
     target = candidate.get("target")
@@ -168,6 +168,21 @@ def validate_adaptive_target_binding(
     if target_identity in seen_targets:
         raise SystemExit("adaptive placement target is ambiguous")
     seen_targets.add(target_identity)
+    return target_key
+
+
+def validate_adaptive_target_matrix(
+    targets_by_node: dict[str, set[str]], nodes: list[object]
+) -> None:
+    """Require every logical node to retain the same target inventory."""
+    node_ids = {str(node) for node in nodes if isinstance(node, str) and node}
+    if not node_ids or node_ids != set(targets_by_node):
+        raise SystemExit("adaptive target matrix does not cover every node")
+    inventories = [targets_by_node[node] for node in sorted(node_ids)]
+    if not inventories[0] or any(
+        inventory != inventories[0] for inventory in inventories[1:]
+    ):
+        raise SystemExit("adaptive target matrix does not cover every node and target")
 
 
 def main() -> int:
@@ -592,6 +607,7 @@ def main() -> int:
         "partial-required-unknown",
         "preferred-unknown",
         "lowering-effects",
+        "graph-valid-alternative",
         "graph-invalid",
         "evidence-drift",
     }
@@ -623,6 +639,7 @@ def main() -> int:
                     "adaptive scenario lacks candidate evaluation evidence"
                 )
             seen_targets: set[tuple[str, str]] = set()
+            targets_by_node: dict[str, set[str]] = {}
             for candidate in evaluation["candidates"]:
                 if (
                     not isinstance(candidate, dict)
@@ -648,10 +665,13 @@ def main() -> int:
                 support_report = candidate.get("support_report")
                 if not isinstance(support_report, dict):
                     raise SystemExit("adaptive candidate support evidence is missing")
-                validate_adaptive_target_binding(
+                target_key = validate_adaptive_target_binding(
                     candidate,
                     node=str(candidate["node"]),
                     seen_targets=seen_targets,
+                )
+                targets_by_node.setdefault(str(candidate["node"]), set()).add(
+                    target_key
                 )
                 try:
                     validate_requirement_support_payload(support_report)
@@ -706,11 +726,17 @@ def main() -> int:
                 raise SystemExit(
                     "adaptive evaluation must cover multiple logical nodes"
                 )
+            validate_adaptive_target_matrix(targets_by_node, nodes)
             if scenario["id"] == "graph-invalid" and (
                 evaluation.get("graph_valid") is not False
                 or not evaluation.get("graph_failures")
             ):
                 raise SystemExit("adaptive graph-invalid fixture is not rejected")
+            if scenario["id"] == "graph-valid-alternative" and (
+                evaluation.get("graph_valid") is not True
+                or evaluation.get("graph_failures")
+            ):
+                raise SystemExit("adaptive graph-valid alternative is not selected")
             selected = evaluation.get("selected")
             if isinstance(selected, dict):
                 if set(selected) != set(nodes) or any(

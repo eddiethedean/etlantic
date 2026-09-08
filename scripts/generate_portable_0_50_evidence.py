@@ -151,20 +151,21 @@ ADAPTIVE_FIXTURES = (
     "test_adaptive_lowering_is_derived_from_support_evidence",
     "test_adaptive_evaluation_retains_per_node_selection",
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
+    "test_adaptive_graph_selection_prefers_complete_feasible_assignment",
+    "test_adaptive_candidate_target_must_be_unique_per_node",
+    "test_adaptive_candidate_target_must_match_support_report",
+    "test_adaptive_target_matrix_requires_every_node_target_pair",
+    "test_adaptive_target_matrix_rejects_logical_node_without_candidates",
+    "test_adaptive_edge_free_selection_scales_linearly_by_node",
+    "test_adaptive_disconnected_components_are_solved_independently",
     "test_adaptive_evidence_drift_rejects_before_io",
+    "test_orchestrator_rejects_before_lifecycle_or_cleanup",
 )
 ADAPTIVE_COMMAND = (
     "uv run pytest -q tests/unit/transform/test_portable_planning.py "
-    "tests/portable_conformance/test_public_suite.py -k "
-    "'test_requirement_support_serializes_unknown_requirements_fail_closed or "
-    "test_runtime_preflight_rejects_evidence_free_descriptor or "
-    "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or "
-    "test_adaptive_preferred_unknown_has_no_positive_preference or "
-    "test_adaptive_lowering_records_effects_and_identity or "
-    "test_adaptive_lowering_is_derived_from_support_evidence or "
-    "test_adaptive_evaluation_retains_per_node_selection or "
-    "test_adaptive_graph_edge_requirement_invalidates_assignment or "
-    "test_adaptive_evidence_drift_rejects_before_io'"
+    "tests/portable_conformance/test_public_suite.py -k '"
+    + " or ".join(ADAPTIVE_FIXTURES)
+    + "'"
 )
 
 
@@ -172,7 +173,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     """Build adaptive handoff records from the production evaluator."""
 
     def support_report(
-        states: dict[str, str], *, target_variant: str = "default"
+        states: dict[str, str], *, target_id: str = "default"
     ) -> dict[str, Any]:
         evidence = "adaptive-fixture-evidence"
         requirements = requirement_records_from_mapping({"actions": list(states)})
@@ -218,9 +219,28 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 "compiler": "adaptive-fixture",
                 "version": "1",
                 "protocol": COMPILER_PROTOCOL,
-                "package": f"etlantic-adaptive-fixture/{target_variant}",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                    "resource": f"fixture-resource-{target_id}",
+                    "location": "local",
+                    "security_domain": "qualification",
+                    "connector": "memory",
+                    "policy": "portable-qualification",
+                },
             }
         )
+
+    def candidate(
+        node: str, candidate_id: str, states: dict[str, str], *, target_id: str
+    ) -> dict[str, Any]:
+        report = support_report(states, target_id=target_id)
+        return {
+            "node": node,
+            "id": candidate_id,
+            "target": dict(report["target"]),
+            "requirements": states,
+            "support_report": report,
+        }
 
     required = {
         "orders": ("dtcs:join",),
@@ -232,72 +252,66 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     }
     required_result = evaluate_adaptive_candidates(
         [
-            {
-                "node": "orders",
-                "id": "partial",
-                "requirements": {
+            candidate(
+                "orders",
+                "partial",
+                {
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "unknown",
                 },
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"},
-                    target_variant="orders-partial",
-                ),
-            },
-            {
-                "node": "orders",
-                "id": "complete",
-                "requirements": {
+                target_id="partial",
+            ),
+            candidate(
+                "orders",
+                "complete",
+                {
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "supported_exact",
                 },
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
-                    target_variant="orders-complete",
-                ),
-            },
-            {
-                "node": "customers",
-                "id": "complete",
-                "requirements": {
+                target_id="complete",
+            ),
+            candidate(
+                "customers",
+                "partial",
+                {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "unknown",
+                },
+                target_id="partial",
+            ),
+            candidate(
+                "customers",
+                "complete",
+                {
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "supported_exact",
                 },
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
-                    target_variant="customers-complete",
-                ),
-            },
+                target_id="complete",
+            ),
         ],
         required_requirements=required,
         preferred_requirements=preferred,
     )
     preference_result = evaluate_adaptive_candidates(
         [
-            {
-                "node": "orders",
-                "id": "unknown-preference",
-                "requirements": {
+            candidate(
+                "orders",
+                "unknown-preference",
+                {
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "unknown",
                 },
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"},
-                    target_variant="orders-unknown-preference",
-                ),
-            },
-            {
-                "node": "customers",
-                "id": "known-preference",
-                "requirements": {
+                target_id="primary",
+            ),
+            candidate(
+                "customers",
+                "known-preference",
+                {
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "supported_exact",
                 },
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:sort": "supported_exact"},
-                    target_variant="customers-known-preference",
-                ),
-            },
+                target_id="primary",
+            ),
         ],
         required_requirements={
             "orders": ("dtcs:filter",),
@@ -310,29 +324,66 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     )
     lowering_result = evaluate_adaptive_candidates(
         [
-            {
-                "node": "orders",
-                "id": "lowered",
-                "requirements": {"dtcs:filter": "supported_with_lowering"},
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_with_lowering"},
-                    target_variant="orders-lowered",
-                ),
-            },
-            {
-                "node": "customers",
-                "id": "exact",
-                "requirements": {"dtcs:filter": "supported_exact"},
-                "support_report": support_report(
-                    {"dtcs:filter": "supported_exact"},
-                    target_variant="customers-exact",
-                ),
-            },
+            candidate(
+                "orders",
+                "lowered",
+                {"dtcs:filter": "supported_with_lowering"},
+                target_id="primary",
+            ),
+            candidate(
+                "customers",
+                "exact",
+                {"dtcs:filter": "supported_exact"},
+                target_id="primary",
+            ),
         ],
         required_requirements={
             "orders": ("dtcs:filter",),
             "customers": ("dtcs:filter",),
         },
+    )
+    graph_valid_result = evaluate_adaptive_candidates(
+        [
+            candidate(
+                "source",
+                "fast",
+                {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "unknown",
+                },
+                target_id="fast",
+            ),
+            candidate(
+                "source",
+                "compatible",
+                {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "supported_exact",
+                },
+                target_id="compatible",
+            ),
+            candidate(
+                "sink",
+                "fast",
+                {"interchange:arrow": "supported_exact"},
+                target_id="fast",
+            ),
+            candidate(
+                "sink",
+                "compatible",
+                {"interchange:arrow": "supported_exact"},
+                target_id="compatible",
+            ),
+        ],
+        required_requirements={"source": ("dtcs:filter",), "sink": ()},
+        preferred_requirements={"source": ("dtcs:filter",)},
+        edges=(
+            {
+                "producer": "source",
+                "consumer": "sink",
+                "requirements": ("interchange:arrow",),
+            },
+        ),
     )
     return [
         {
@@ -357,29 +408,30 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
             "result": "pass",
         },
         {
+            "id": "graph-valid-alternative",
+            "fixture": "test_adaptive_graph_selection_prefers_complete_feasible_assignment",
+            "requirements": ["interchange:arrow"],
+            "candidate_evaluation": graph_valid_result,
+            "result": "pass",
+        },
+        {
             "id": "graph-invalid",
-            "fixture": ADAPTIVE_FIXTURES[7],
+            "fixture": "test_adaptive_graph_edge_requirement_invalidates_assignment",
             "requirements": ["interchange:arrow"],
             "candidate_evaluation": evaluate_adaptive_candidates(
                 [
-                    {
-                        "node": "orders",
-                        "id": "native",
-                        "requirements": {"dtcs:join": "supported_exact"},
-                        "support_report": support_report(
-                            {"dtcs:join": "supported_exact"},
-                            target_variant="orders-native",
-                        ),
-                    },
-                    {
-                        "node": "customers",
-                        "id": "native",
-                        "requirements": {"dtcs:join": "supported_exact"},
-                        "support_report": support_report(
-                            {"dtcs:join": "supported_exact"},
-                            target_variant="customers-native",
-                        ),
-                    },
+                    candidate(
+                        "orders",
+                        "native",
+                        {"dtcs:join": "supported_exact"},
+                        target_id="primary",
+                    ),
+                    candidate(
+                        "customers",
+                        "native",
+                        {"dtcs:join": "supported_exact"},
+                        target_id="primary",
+                    ),
                 ],
                 required_requirements={
                     "orders": ("dtcs:join",),
@@ -397,7 +449,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
         },
         {
             "id": "evidence-drift",
-            "fixture": ADAPTIVE_FIXTURES[8],
+            "fixture": "test_orchestrator_rejects_before_lifecycle_or_cleanup",
             "preflight": "reject_stale_fingerprint_before_io",
             "result": "rejected_before_io",
         },
@@ -1286,9 +1338,11 @@ def main() -> int:
         "| SOL-050-013 | Medium | resolved by source and artifact digest linkage |\n"
         "| SOL-050-014 | High | resolved by fail-fast campaign execution |\n"
         "| SOL-050-015 | High | resolved by action-correlated EXPLAIN evidence |\n"
-        "| SOL-050-016 | High | resolved by executable adaptive candidate evaluation |\n"
+        "| SOL-050-016 | High | resolved by complete target-matrix candidate evaluation |\n"
         "| SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |\n"
-        "| SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |\n\n"
+        "| SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |\n"
+        "| SOL-050-019 | Medium | resolved by focused Pyright validation |\n"
+        "| SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",

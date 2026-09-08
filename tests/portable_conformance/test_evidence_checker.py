@@ -6,6 +6,7 @@ import pytest
 from scripts.check_portable_0_50 import (
     validate_adaptive_lowering_binding,
     validate_adaptive_target_binding,
+    validate_adaptive_target_matrix,
     validate_artifact_schema,
     validate_cross_engine_digests,
 )
@@ -74,3 +75,24 @@ def test_adaptive_target_binding_mutation_is_rejected() -> None:
     }
     with pytest.raises(SystemExit, match="target is not evidence-backed"):
         validate_adaptive_target_binding(candidate, node="orders", seen_targets=set())
+
+
+def test_adaptive_duplicate_target_is_rejected() -> None:
+    target = {"engine": "local", "compiler": "fixture", "version": "1"}
+    candidate = {"target": target, "support_report": {"target": target}}
+    seen_targets: set[tuple[str, str]] = set()
+    validate_adaptive_target_binding(
+        candidate, node="orders", seen_targets=seen_targets
+    )
+    with pytest.raises(SystemExit, match="placement target is ambiguous"):
+        validate_adaptive_target_binding(
+            candidate, node="orders", seen_targets=seen_targets
+        )
+
+
+def test_adaptive_incomplete_target_matrix_is_rejected() -> None:
+    with pytest.raises(SystemExit, match="every node and target"):
+        validate_adaptive_target_matrix(
+            {"orders": {"target-a", "target-b"}, "customers": {"target-a"}},
+            ["orders", "customers"],
+        )

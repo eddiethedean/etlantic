@@ -461,7 +461,21 @@ def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
     assert all(item["support"] == "unknown" for item in payload["findings"])
 
 
-def _adaptive_support_report(states: dict[str, str]) -> dict[str, object]:
+def test_requirement_support_rejects_incomplete_placement_identity() -> None:
+    from etlantic.transform.compiler import TransformSupportReport
+
+    with pytest.raises(ValueError, match="complete resource, location"):
+        TransformSupportReport(supported=False).to_requirement_support(
+            target={
+                "engine": "local",
+                "placement": {"resource": "resource-only"},
+            }
+        )
+
+
+def _adaptive_support_report(
+    states: dict[str, str], *, target_id: str = "default"
+) -> dict[str, object]:
     from etlantic.transform.compiler import (
         COMPILER_PROTOCOL,
         TransformSupportFinding,
@@ -509,8 +523,14 @@ def _adaptive_support_report(states: dict[str, str]) -> dict[str, object]:
             "compiler": "adaptive-fixture",
             "version": "1",
             "protocol": COMPILER_PROTOCOL,
-            "package": "etlantic-adaptive-fixture/"
-            + ",".join(f"{key}={states[key]}" for key in sorted(states)),
+            "package": "etlantic-adaptive-fixture",
+            "placement": {
+                "resource": f"fixture-resource-{target_id}",
+                "location": "local",
+                "security_domain": "qualification",
+                "connector": "memory",
+                "policy": "portable-qualification",
+            },
         }
     )
 
@@ -527,7 +547,8 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                     "dtcs:join": "unknown",
                 },
                 "support_report": _adaptive_support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"}
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"},
+                    target_id="partial",
                 ),
             },
             {
@@ -537,7 +558,8 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                     "dtcs:join": "supported_exact",
                 },
                 "support_report": _adaptive_support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
+                    target_id="complete",
                 ),
             },
         ],
@@ -681,14 +703,24 @@ def test_adaptive_evaluation_retains_per_node_selection() -> None:
                 "node": "orders",
                 "id": "partial",
                 "requirements": {"dtcs:join": "unknown"},
-                "support_report": _adaptive_support_report({"dtcs:join": "unknown"}),
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "unknown"}, target_id="partial"
+                ),
             },
             {
                 "node": "orders",
                 "id": "complete",
                 "requirements": {"dtcs:join": "supported_exact"},
                 "support_report": _adaptive_support_report(
-                    {"dtcs:join": "supported_exact"}
+                    {"dtcs:join": "supported_exact"}, target_id="complete"
+                ),
+            },
+            {
+                "node": "customers",
+                "id": "partial",
+                "requirements": {"dtcs:join": "unknown"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "unknown"}, target_id="partial"
                 ),
             },
             {
@@ -696,7 +728,7 @@ def test_adaptive_evaluation_retains_per_node_selection() -> None:
                 "id": "complete",
                 "requirements": {"dtcs:join": "supported_exact"},
                 "support_report": _adaptive_support_report(
-                    {"dtcs:join": "supported_exact"}
+                    {"dtcs:join": "supported_exact"}, target_id="complete"
                 ),
             },
         ],
@@ -815,7 +847,8 @@ def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None
                     {
                         "dtcs:filter": "supported_exact",
                         "interchange:arrow": "unknown",
-                    }
+                    },
+                    target_id="fast",
                 ),
             },
             {
@@ -829,12 +862,13 @@ def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None
                     {
                         "dtcs:filter": "supported_exact",
                         "interchange:arrow": "supported_exact",
-                    }
+                    },
+                    target_id="valid",
                 ),
             },
             {
                 "node": "sink",
-                "id": "sink",
+                "id": "z-fast",
                 "requirements": {
                     "dtcs:filter": "supported_exact",
                     "interchange:arrow": "supported_exact",
@@ -843,7 +877,23 @@ def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None
                     {
                         "dtcs:filter": "supported_exact",
                         "interchange:arrow": "supported_exact",
-                    }
+                    },
+                    target_id="fast",
+                ),
+            },
+            {
+                "node": "sink",
+                "id": "a-valid",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "supported_exact",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        "interchange:arrow": "supported_exact",
+                    },
+                    target_id="valid",
                 ),
             },
         ],
@@ -857,7 +907,7 @@ def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None
             },
         ),
     )
-    assert result["selected"] == {"sink": "sink", "source": "a-valid"}
+    assert result["selected"] == {"sink": "z-fast", "source": "a-valid"}
     assert result["graph_valid"] is True
     assert result["graph_failures"] == []
 
@@ -884,6 +934,154 @@ def test_adaptive_candidate_target_must_be_unique_per_node() -> None:
             ],
             required_requirements=("dtcs:filter",),
         )
+
+
+def test_adaptive_candidate_target_must_match_support_report() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    report = _adaptive_support_report({"dtcs:filter": "supported_exact"})
+    target = dict(report["target"])
+    target["engine"] = "invented"
+    with pytest.raises(ValueError, match="disagrees with support evidence"):
+        evaluate_adaptive_candidates(
+            [
+                {
+                    "node": "source",
+                    "id": "candidate",
+                    "target": target,
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": report,
+                }
+            ],
+            required_requirements=("dtcs:filter",),
+        )
+
+
+def test_adaptive_target_matrix_requires_every_node_target_pair() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    with pytest.raises(ValueError, match="every node and placement target"):
+        evaluate_adaptive_candidates(
+            [
+                {
+                    "node": "source",
+                    "id": "source-a",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_exact"}, target_id="a"
+                    ),
+                },
+                {
+                    "node": "source",
+                    "id": "source-b",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_exact"}, target_id="b"
+                    ),
+                },
+                {
+                    "node": "sink",
+                    "id": "sink-a",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_exact"}, target_id="a"
+                    ),
+                },
+            ]
+        )
+
+
+def test_adaptive_target_matrix_rejects_logical_node_without_candidates() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    with pytest.raises(ValueError, match="every node and placement target"):
+        evaluate_adaptive_candidates(
+            [
+                {
+                    "node": "source",
+                    "id": "source-a",
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_exact"}, target_id="a"
+                    ),
+                }
+            ],
+            required_requirements={
+                "source": ("dtcs:filter",),
+                "unrepresented": (),
+            },
+        )
+
+
+def test_adaptive_edge_free_selection_scales_linearly_by_node() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    candidates = []
+    for index in range(100):
+        for target_id in ("a", "b", "c"):
+            candidates.append(
+                {
+                    "node": f"node-{index:03d}",
+                    "id": target_id,
+                    "requirements": {"dtcs:filter": "supported_exact"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_exact"}, target_id=target_id
+                    ),
+                }
+            )
+
+    result = evaluate_adaptive_candidates(
+        candidates, preferred_requirements=("dtcs:filter",)
+    )
+
+    assert len(result["nodes"]) == 100
+    assert result["selected"] == {f"node-{index:03d}": "c" for index in range(100)}
+    assert result["graph_valid"] is True
+
+
+def test_adaptive_disconnected_components_are_solved_independently() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    candidates = []
+    edges = []
+    for index in range(20):
+        source = f"source-{index:02d}"
+        sink = f"sink-{index:02d}"
+        for target_id in ("a", "b"):
+            source_state = "unknown" if target_id == "a" else "supported_exact"
+            candidates.extend(
+                [
+                    {
+                        "node": source,
+                        "id": target_id,
+                        "requirements": {"interchange:arrow": source_state},
+                        "support_report": _adaptive_support_report(
+                            {"interchange:arrow": source_state}, target_id=target_id
+                        ),
+                    },
+                    {
+                        "node": sink,
+                        "id": target_id,
+                        "requirements": {"interchange:arrow": "supported_exact"},
+                        "support_report": _adaptive_support_report(
+                            {"interchange:arrow": "supported_exact"},
+                            target_id=target_id,
+                        ),
+                    },
+                ]
+            )
+        edges.append(
+            {
+                "producer": source,
+                "consumer": sink,
+                "requirements": ("interchange:arrow",),
+            }
+        )
+
+    result = evaluate_adaptive_candidates(candidates, edges=edges)
+
+    assert result["graph_valid"] is True
+    assert all(result["selected"][f"source-{index:02d}"] == "b" for index in range(20))
 
 
 def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:

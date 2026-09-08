@@ -36,7 +36,12 @@ MAX_FINDINGS = 100_000
 MAX_REPORT_BYTES = 8 * 1024 * 1024
 MAX_CONDITIONS = 64
 MAX_REASON_BYTES = 1_024
-_TARGET_KEYS = frozenset({"engine", "compiler", "version", "protocol", "package"})
+_TARGET_KEYS = frozenset(
+    {"engine", "compiler", "version", "protocol", "package", "placement"}
+)
+_PLACEMENT_TARGET_KEYS = frozenset(
+    {"resource", "location", "security_domain", "connector", "policy"}
+)
 _REQUIREMENT_KEYS = frozenset(
     {
         "id",
@@ -613,6 +618,22 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             raise ValueError(f"requirement-support target.{key} must be non-empty")
     if target.get("protocol") != COMPILER_PROTOCOL:
         raise ValueError("requirement-support target.protocol is unsupported")
+    placement = target.get("placement")
+    if placement is not None:
+        if not isinstance(placement, Mapping):
+            raise ValueError("requirement-support target.placement must be an object")
+        if set(placement) != _PLACEMENT_TARGET_KEYS:
+            raise ValueError(
+                "requirement-support target.placement must contain the complete "
+                "resource, location, security_domain, connector, and policy identity"
+            )
+        if any(
+            not isinstance(placement.get(key), str) or not placement[key]
+            for key in _PLACEMENT_TARGET_KEYS
+        ):
+            raise ValueError(
+                "requirement-support target.placement values must be non-empty strings"
+            )
     requirements = payload.get("requirements")
     findings = payload.get("findings")
     if not isinstance(requirements, list) or not isinstance(findings, list):
