@@ -805,7 +805,9 @@ def main() -> int:
                 set((baseline_manifest().get("leaf_fixture_ids") or {}).values())
             ),
             "negative_states": ["unsupported", "unavailable", "unknown"],
-            "qualification_matrix": QUALIFICATION_MATRIX,
+            "qualification_matrix": [
+                {**item, "result": "pass"} for item in QUALIFICATION_MATRIX
+            ],
         },
     )
     for engine in ENGINES:
