@@ -15,7 +15,7 @@
     "test_adaptive_lowering_records_effects_and_identity",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "a941f1984016b9c4752d2f36077a473603aaa5b2",
+  "repository_commit": "ac6c595b6773af43f70a9fbd0193086d2f79331c",
   "result": "pass",
   "scenarios": [
     {
@@ -47,5 +47,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "165057301f6343087b45ee99d3061f6367f733037ea0b4d015c3e0d1a8b10cbe"
+  "source_tree_digest": "fb171379f5cd7517a1dd791d89f0efca8b897006384370b4503e4e8ca7624008"
 }
