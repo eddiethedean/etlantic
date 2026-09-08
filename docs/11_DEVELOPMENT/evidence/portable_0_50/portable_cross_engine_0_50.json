@@ -21,8 +21,8 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "normalized_result_digest": "5839979f63478f262f1d9f8b095e6a0b00bbcd4b247e2a2da59dfe30127aebcf",
-  "repository_commit": "1f446be6bc888cf32da7299f4e67f4dce7e396da",
+  "repository_commit": "fa5ba79ca4ca6c65040b1115c237b88e4890142e",
   "result": "pass",
   "schema": "etlantic.portable-cross-engine/1",
-  "source_tree_digest": "68071881530a93e7e08d606ae168123113bed0daab8552e7630886cf0cdffb99"
+  "source_tree_digest": "3cdd80d64bc1debd377d8241820afac79d31fffb3aecd3cf36f23c9d33abb9ed"
 }
