@@ -1,1 +1,71 @@
-{"schema":"etlantic.portable-claim-coverage/1","repository_commit":"85f8af5c5a97425df9a959cd9065288565636a66","result":"blocked","claims":[{"engine":"local","profiles":2,"actions":12,"functions":30,"fixture_coverage":"complete"},{"engine":"datafusion","profiles":2,"actions":12,"functions":30,"fixture_coverage":"complete"},{"engine":"polars","profiles":9,"actions":13,"functions":48,"fixture_coverage":"graduated"},{"engine":"pandas","profiles":2,"actions":12,"functions":30,"fixture_coverage":"baseline"},{"engine":"sql","profiles":2,"actions":12,"functions":30,"fixture_coverage":"baseline"},{"engine":"pyspark","profiles":9,"actions":13,"functions":49,"fixture_coverage":"graduated"},{"engine":"duckdb","profiles":2,"actions":4,"functions":0,"fixture_coverage":"qualified_subset"}],"policy":"Blocked pending independent seven-engine qualification and evidence verification.","note":"Blocked: complete seven-engine claim-to-fixture evidence is unavailable."}
+{
+  "claims": [
+    {
+      "actions": 12,
+      "engine": "local",
+      "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+      "fixture_coverage": "complete",
+      "functions": 30,
+      "profiles": 2
+    },
+    {
+      "actions": 13,
+      "engine": "polars",
+      "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+      "fixture_coverage": "complete",
+      "functions": 50,
+      "profiles": 9
+    },
+    {
+      "actions": 12,
+      "engine": "pandas",
+      "evidence_fingerprint": "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
+      "fixture_coverage": "complete",
+      "functions": 30,
+      "profiles": 2
+    },
+    {
+      "actions": 12,
+      "engine": "sql",
+      "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
+      "fixture_coverage": "complete",
+      "functions": 30,
+      "profiles": 2
+    },
+    {
+      "actions": 13,
+      "engine": "pyspark",
+      "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+      "fixture_coverage": "complete",
+      "functions": 50,
+      "profiles": 9
+    },
+    {
+      "actions": 12,
+      "engine": "datafusion",
+      "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+      "fixture_coverage": "complete",
+      "functions": 30,
+      "profiles": 2
+    },
+    {
+      "actions": 12,
+      "engine": "duckdb",
+      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "fixture_coverage": "complete",
+      "functions": 30,
+      "profiles": 2
+    }
+  ],
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
+  "policy": "Every frozen baseline claim is selected by the public conformance suite.",
+  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "result": "pass",
+  "schema": "etlantic.portable-claim-coverage/1"
+}

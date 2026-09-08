@@ -1,1 +1,15 @@
-{"schema":"etlantic.portable-conformance/1","repository_commit":"85f8af5c5a97425df9a959cd9065288565636a66","result":"pass","engine":"local","command":"uv run pytest tests/portable_conformance/test_public_suite.py::test_suite_passes_local","tests":"public baseline suite"}
+{
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+  "engine": "local",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
+  "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "result": "pass",
+  "schema": "etlantic.portable-conformance/1",
+  "tests": "frozen public conformance corpus"
+}

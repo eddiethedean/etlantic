@@ -1,10 +1,5 @@
 # What's new in 0.50
 
-**Status: No-go (blocked).**
+> **Status: Technical qualification complete; Sol review pending.**
 
-The 0.50 portable baseline defines one versioned vocabulary for the seven
-first-party engines. The implementation now provides bounded requirement
-reports, strict conformance selection, and corrected Local/DataFusion runtime
-semantics. Availability remains blocked until the exit gate records complete
-differential, pushdown, and real-backend evidence; this release does not claim
-seven-engine qualification.
+The Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB portable compilers have qualified the frozen baseline in the recorded evidence campaign. Advanced, adaptive, remote, streaming, and federated execution remain separate claims. This technical result remains subject to Sol's independent release review.

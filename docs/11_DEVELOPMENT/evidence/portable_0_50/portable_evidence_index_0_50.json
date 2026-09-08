@@ -1,7 +1,4 @@
 {
-  "schema": "etlantic.portable-evidence-index/1",
-  "repository_commit": "85f8af5c5a97425df9a959cd9065288565636a66",
-  "result": "blocked",
   "artifacts": [
     "portable_baseline_contract_0_50.json",
     "portable_pushdown_contract_0_50.json",
@@ -22,26 +19,35 @@
     "MIGRATION_0_49_TO_0_50.md",
     "WHATS_NEW_0_50.md"
   ],
-  "qualification": "no-go",
   "digests": {
-    "FINDINGS_0_50.md": "9111acfe1890ed72036a57d24615cdb08b47119cd0171941e5bf3456420bf1e5",
-    "MIGRATION_0_49_TO_0_50.md": "808e8b8bf09eb65160d8ca505068505d768a8305baad8b23e3fea7d6b2a15c20",
-    "WHATS_NEW_0_50.md": "5af292cdc27d178a0ede325187d36110df50130434b7b77085bc179670fcce05",
-    "portable_adaptive_handoff_0_50.json": "6f7c874e363447eea0311b23aabab85a120e1ea291a172121abb8cb3b31dba55",
-    "portable_baseline_contract_0_50.json": "4ca2bdfe25d777adb49c745d52d385abdae7ec03bfec944ad28ec1fb630b733a",
-    "portable_canonical_pipeline_0_50.json": "30e161423ba4da92c42b32bbadc688285261265b5d8796731f025b591e3b0b61",
-    "portable_claim_coverage_0_50.json": "a45d110807cb7263882522e3004971796e631c5decb68bb666b6375d9abd10b3",
-    "portable_cross_engine_0_50.json": "de6b8ae4c56998dd67a2e068beca68e803a797d78d57a0028709afcd9d7a4622",
-    "portable_datafusion_conformance_0_50.json": "3fefcc36d032413a71bca9e875b8e5002894df19b688559b5d86004d32f333cf",
-    "portable_dependency_security_0_50.json": "2ec8238a82752f5135f70fcaf13340fdb93c8b5d85f15ec6f3472e6e8bc66da2",
-    "portable_duckdb_pushdown_0_50.json": "f715c6e5b2f63f87e74a3bce6c79ef59d4191881c767a31757aa2501fdaa10e3",
-    "portable_local_conformance_0_50.json": "a0270c9ef29dfcb4c81af28f495ef09a3282568dbf6d3e0647ccd1f308499617",
-    "portable_pandas_conformance_0_50.json": "dc2b82c66efe474c0b5ada55f3c150d715e5fdcb3df047bc57a5627572ca2908",
-    "portable_polars_conformance_0_50.json": "ab24900ead5d5649b872573c88e1c2d9f2e9373d4d333e33028b2a3e94410618",
-    "portable_pushdown_contract_0_50.json": "473f03d15313b739f4b79ffac06e34c5ddb6d341bc54df04b638f4740a5de052",
-    "portable_pyspark_conformance_0_50.json": "36e2b0432074a0340b6637df094ff29bed54f2750aaa42ec601b407241a3c1bf",
-    "portable_requirement_support_0_50.json": "e36a743aa62c7958fcfb227ccd2a163e8dea4738d2a4a0d1266a316684b5dc99",
-    "portable_sql_conformance_0_50.json": "f3c9630d00d9bdc5f53d95d97e184889745d4e2b81a5def3b14ab68bf979d37f"
+    "FINDINGS_0_50.md": "e49fd92e6567f1cdad6c9a799e75056b31d58716ae4afd2e33b8d07591569e4b",
+    "MIGRATION_0_49_TO_0_50.md": "6f93adaa428882f668ad3a8f689fa01cfef25ca45c2461ab6967af3fedd5d336",
+    "WHATS_NEW_0_50.md": "f9fea15610932abcd6ccf1f0ae855fa51ebc754f262d39f6c5f693498ae30a05",
+    "portable_adaptive_handoff_0_50.json": "dc97576ecccdc365b5a519d95d2642dc6f4a38901eae56ded6ab94e31fcdb76f",
+    "portable_baseline_contract_0_50.json": "b8f1705fc65b5e1baf70a77eda23d19ba1b6303415c3e890e75667a2812d428f",
+    "portable_canonical_pipeline_0_50.json": "39e2c7752424295c20d14195b6ff561abdfd2807bbca262169abbb083bf5cd3c",
+    "portable_claim_coverage_0_50.json": "8bcbfb3e45e6565f4fbee575d5c4f5929e191bde82362c8070be6794ba0618ff",
+    "portable_cross_engine_0_50.json": "6a284bfea9492cb790439e30b0c14a4f828b1e64547420470858a98c62166be0",
+    "portable_datafusion_conformance_0_50.json": "392ee34854e22b6697d2426541c5d755c7a137bf7154884358b8aa17622d903b",
+    "portable_dependency_security_0_50.json": "c2a16d2fcca2bf11206b889c4f05db7c8217bcd5eaf05d67f14520112461a470",
+    "portable_duckdb_pushdown_0_50.json": "cde34e6d7ed9120f308c6e6a731fa9734340e1d00be980dff2f27aafecddfb00",
+    "portable_local_conformance_0_50.json": "3018f399e7369841226c20f3794c56773cb11a7006c865af62ef133cb33bfd57",
+    "portable_pandas_conformance_0_50.json": "e6a445c3f52b65b86bbc613aa61b6b6aa9d775084e9033e315d178d6e9259ea1",
+    "portable_polars_conformance_0_50.json": "a5f6fbce5033f89a7a5baf853cbd34945747a3d6d3ea38cc03682b880d22f549",
+    "portable_pushdown_contract_0_50.json": "9b35e9a88d9ca4c0bd66c441e19e4b6434fb9b1ca7aad5cd60970695b2c12fe9",
+    "portable_pyspark_conformance_0_50.json": "3e7c42fc44b56dc0a7863403480c77435bb60a84f69e58b04a7cd83b644d9157",
+    "portable_requirement_support_0_50.json": "e7e573252afc5dbbc28d305e886f166fa8478b0187d812298882e35efe357bac",
+    "portable_sql_conformance_0_50.json": "44484b9a245cebc264de805217a22b2893f32cb207f44e9be79f035b3145c9ca"
   },
-  "notes": "No-go: required real-backend, cross-engine, and dependency/security evidence is unavailable."
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
+  "notes": "Generated from real backend qualification commands; sensitive connection values are not recorded.",
+  "qualification": "qualified",
+  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "result": "pass",
+  "schema": "etlantic.portable-evidence-index/1"
 }

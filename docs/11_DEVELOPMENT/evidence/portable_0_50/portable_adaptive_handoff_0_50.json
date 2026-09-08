@@ -1,1 +1,10 @@
-{"schema":"etlantic.portable-adaptive-handoff/1","repository_commit":"85f8af5c5a97425df9a959cd9065288565636a66","result":"blocked","fixtures":[],"note":"Blocked: 0.51 handoff fixtures depend on complete requirement evidence."}
+{
+  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py",
+  "fixtures": [
+    "requirement_evidence_preflight",
+    "evidence_drift"
+  ],
+  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "result": "pass",
+  "schema": "etlantic.portable-adaptive-handoff/1"
+}

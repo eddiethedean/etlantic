@@ -1,46 +1,322 @@
 {
-  "schema": "etlantic.portable-baseline/1",
-  "repository_commit": "85f8af5c5a97425df9a959cd9065288565636a66",
-  "result": "blocked",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
   "manifest": {
+    "actions": [
+      "dtcs:filter",
+      "dtcs:project",
+      "dtcs:with_fields",
+      "dtcs:drop_fields",
+      "dtcs:rename_fields",
+      "dtcs:join",
+      "dtcs:union",
+      "dtcs:aggregate",
+      "dtcs:sort",
+      "dtcs:distinct",
+      "dtcs:deduplicate",
+      "dtcs:limit"
+    ],
+    "aggregate_functions": [
+      "dtcs:sum",
+      "dtcs:average",
+      "dtcs:min",
+      "dtcs:max",
+      "dtcs:count",
+      "dtcs:count_all",
+      "dtcs:count_distinct"
+    ],
+    "collision_policy": "fail",
+    "defaults": {
+      "join.collisionPolicy": "fail",
+      "join.type": "inner",
+      "sort.direction": "asc",
+      "sort.nulls": "last",
+      "union.allowMissingColumns": false,
+      "union.mode": "byName"
+    },
+    "function_arities": {
+      "dtcs:abs": [
+        1,
+        1
+      ],
+      "dtcs:average": [
+        1,
+        1
+      ],
+      "dtcs:case_when": [
+        3,
+        null
+      ],
+      "dtcs:ceil": [
+        1,
+        1
+      ],
+      "dtcs:coalesce": [
+        1,
+        null
+      ],
+      "dtcs:concat": [
+        1,
+        null
+      ],
+      "dtcs:concat_ws": [
+        2,
+        null
+      ],
+      "dtcs:contains": [
+        2,
+        2
+      ],
+      "dtcs:count": [
+        0,
+        1
+      ],
+      "dtcs:count_all": [
+        0,
+        0
+      ],
+      "dtcs:count_distinct": [
+        1,
+        1
+      ],
+      "dtcs:ends_with": [
+        2,
+        2
+      ],
+      "dtcs:floor": [
+        1,
+        1
+      ],
+      "dtcs:greatest": [
+        1,
+        null
+      ],
+      "dtcs:if_null": [
+        2,
+        2
+      ],
+      "dtcs:is_null": [
+        1,
+        1
+      ],
+      "dtcs:least": [
+        1,
+        null
+      ],
+      "dtcs:length": [
+        1,
+        1
+      ],
+      "dtcs:lower": [
+        1,
+        1
+      ],
+      "dtcs:max": [
+        1,
+        1
+      ],
+      "dtcs:min": [
+        1,
+        1
+      ],
+      "dtcs:null_if": [
+        2,
+        2
+      ],
+      "dtcs:power": [
+        2,
+        2
+      ],
+      "dtcs:replace": [
+        3,
+        3
+      ],
+      "dtcs:round": [
+        1,
+        2
+      ],
+      "dtcs:sqrt": [
+        1,
+        1
+      ],
+      "dtcs:starts_with": [
+        2,
+        2
+      ],
+      "dtcs:substr": [
+        2,
+        3
+      ],
+      "dtcs:sum": [
+        1,
+        1
+      ],
+      "dtcs:upper": [
+        1,
+        1
+      ]
+    },
     "id": "etlantic.portable-baseline/1",
+    "join_modes": [
+      "inner",
+      "left",
+      "right",
+      "full",
+      "semi",
+      "anti",
+      "cross"
+    ],
+    "leaf_fixture_ids": {
+      "dtcs:abs": "baseline_scalar_functions",
+      "dtcs:aggregate": "baseline_aggregate_functions",
+      "dtcs:average": "baseline_aggregate_functions",
+      "dtcs:case_when": "baseline_scalar_functions",
+      "dtcs:ceil": "baseline_scalar_functions",
+      "dtcs:coalesce": "baseline_scalar_functions",
+      "dtcs:concat": "baseline_scalar_functions",
+      "dtcs:concat_ws": "baseline_scalar_functions",
+      "dtcs:contains": "baseline_scalar_functions",
+      "dtcs:count": "baseline_aggregate_functions",
+      "dtcs:count_all": "baseline_aggregate_functions",
+      "dtcs:count_distinct": "baseline_aggregate_functions",
+      "dtcs:deduplicate": "baseline_field_actions",
+      "dtcs:distinct": "baseline_field_actions",
+      "dtcs:drop_fields": "baseline_field_actions",
+      "dtcs:ends_with": "baseline_scalar_functions",
+      "dtcs:filter": "kernel_filter_project_lower",
+      "dtcs:floor": "baseline_scalar_functions",
+      "dtcs:greatest": "baseline_scalar_functions",
+      "dtcs:if_null": "baseline_scalar_functions",
+      "dtcs:is_null": "baseline_scalar_functions",
+      "dtcs:join": "relational_join_aggregate",
+      "dtcs:least": "baseline_scalar_functions",
+      "dtcs:length": "baseline_scalar_functions",
+      "dtcs:limit": "relational_sort_nulls_limit",
+      "dtcs:lower": "baseline_scalar_functions",
+      "dtcs:max": "baseline_aggregate_functions",
+      "dtcs:min": "baseline_aggregate_functions",
+      "dtcs:null_if": "baseline_scalar_functions",
+      "dtcs:power": "baseline_scalar_functions",
+      "dtcs:project": "baseline_scalar_functions",
+      "dtcs:rename_fields": "baseline_field_actions",
+      "dtcs:replace": "baseline_scalar_functions",
+      "dtcs:round": "baseline_scalar_functions",
+      "dtcs:sort": "relational_sort_nulls_limit",
+      "dtcs:sqrt": "baseline_scalar_functions",
+      "dtcs:starts_with": "baseline_scalar_functions",
+      "dtcs:substr": "baseline_scalar_functions",
+      "dtcs:sum": "baseline_aggregate_functions",
+      "dtcs:union": "baseline_union",
+      "dtcs:upper": "baseline_scalar_functions",
+      "dtcs:with_fields": "kernel_filter_project_lower",
+      "join_modes": "baseline_join_modes",
+      "operator:add": "baseline_scalar_functions",
+      "operator:and": "baseline_scalar_functions",
+      "operator:divide": "baseline_scalar_functions",
+      "operator:eq": "baseline_scalar_functions",
+      "operator:gt": "baseline_scalar_functions",
+      "operator:gte": "baseline_scalar_functions",
+      "operator:in": "baseline_scalar_functions",
+      "operator:lt": "baseline_scalar_functions",
+      "operator:lte": "baseline_scalar_functions",
+      "operator:modulo": "baseline_scalar_functions",
+      "operator:multiply": "baseline_scalar_functions",
+      "operator:negate": "baseline_scalar_functions",
+      "operator:not": "baseline_scalar_functions",
+      "operator:not_eq": "baseline_scalar_functions",
+      "operator:null_safe_eq": "baseline_scalar_functions",
+      "operator:or": "baseline_scalar_functions",
+      "operator:subtract": "baseline_scalar_functions",
+      "semantic_modes": "reject_missing_literal_without_three_state",
+      "type:boolean": "baseline_scalar_functions",
+      "type:decimal": "baseline_scalar_functions",
+      "type:integer": "baseline_scalar_functions",
+      "type:invalid": "reject_missing_literal_without_three_state",
+      "type:missing": "reject_missing_literal_without_three_state",
+      "type:null": "baseline_scalar_functions",
+      "type:string": "baseline_scalar_functions",
+      "union_modes": "baseline_union_modes"
+    },
+    "operators": [
+      "eq",
+      "not_eq",
+      "lt",
+      "lte",
+      "gt",
+      "gte",
+      "null_safe_eq",
+      "and",
+      "or",
+      "not",
+      "add",
+      "subtract",
+      "multiply",
+      "divide",
+      "modulo",
+      "negate",
+      "in"
+    ],
     "plan": "dtcs.transform-plan/2",
     "profiles": [
       "dtcs:profile/portable-relational-kernel/1",
       "dtcs:profile/portable-relational/1"
     ],
-    "actions": [
-      "dtcs:filter", "dtcs:project", "dtcs:with_fields",
-      "dtcs:drop_fields", "dtcs:rename_fields", "dtcs:join",
-      "dtcs:union", "dtcs:aggregate", "dtcs:sort", "dtcs:distinct",
-      "dtcs:deduplicate", "dtcs:limit"
-    ],
     "scalar_functions": [
-      "dtcs:lower", "dtcs:upper", "dtcs:concat", "dtcs:concat_ws",
-      "dtcs:substr", "dtcs:replace", "dtcs:length", "dtcs:contains",
-      "dtcs:starts_with", "dtcs:ends_with", "dtcs:case_when",
-      "dtcs:coalesce", "dtcs:if_null", "dtcs:null_if", "dtcs:is_null",
-      "dtcs:abs", "dtcs:round", "dtcs:floor", "dtcs:ceil", "dtcs:power",
-      "dtcs:sqrt", "dtcs:least", "dtcs:greatest"
+      "dtcs:lower",
+      "dtcs:upper",
+      "dtcs:concat",
+      "dtcs:concat_ws",
+      "dtcs:substr",
+      "dtcs:replace",
+      "dtcs:length",
+      "dtcs:contains",
+      "dtcs:starts_with",
+      "dtcs:ends_with",
+      "dtcs:case_when",
+      "dtcs:coalesce",
+      "dtcs:if_null",
+      "dtcs:null_if",
+      "dtcs:is_null",
+      "dtcs:abs",
+      "dtcs:round",
+      "dtcs:floor",
+      "dtcs:ceil",
+      "dtcs:power",
+      "dtcs:sqrt",
+      "dtcs:least",
+      "dtcs:greatest"
     ],
-    "aggregate_functions": [
-      "dtcs:sum", "dtcs:average", "dtcs:min", "dtcs:max", "dtcs:count",
-      "dtcs:count_all", "dtcs:count_distinct"
+    "semantic_modes": [
+      "three_state_distinct"
     ],
-    "operators": [
-      "eq", "not_eq", "lt", "lte", "gt", "gte", "null_safe_eq",
-      "and", "or", "not", "add", "subtract", "multiply", "divide",
-      "modulo", "negate", "in"
+    "semantic_rules": {
+      "deduplication": "distinct uses complete logical row identity; keyed deduplicate uses declared keys",
+      "joins": "null keys do not match unless nullSafe=true; collisionPolicy=fail rejects overlaps",
+      "missing_invalid": "missing and invalid remain distinct and reject unless three_state_distinct is claimed",
+      "nulls": "null propagates through scalar expressions; filters retain only true",
+      "numeric": "decimal precision is preserved; overflow and divide/modulo errors are explicit",
+      "ordering": "sort keys are applied left-to-right with explicit null placement",
+      "unions": "byName aligns names; byPosition aligns ordinal fields; missing columns are explicit"
+    },
+    "types": [
+      "null",
+      "boolean",
+      "integer",
+      "decimal",
+      "string",
+      "missing",
+      "invalid"
     ],
-    "types": ["null", "boolean", "integer", "decimal", "string", "missing", "invalid"],
-    "join_modes": ["inner", "left", "right", "full", "semi", "anti", "cross"],
-    "collision_policy": "fail",
-    "union_modes": ["byName", "byPosition"],
-    "semantic_modes": ["three_state_distinct"],
-    "function_arities": {"dtcs:abs":[1,1],"dtcs:average":[1,1],"dtcs:case_when":[3,null],"dtcs:ceil":[1,1],"dtcs:coalesce":[1,null],"dtcs:concat":[1,null],"dtcs:concat_ws":[2,null],"dtcs:contains":[2,2],"dtcs:count":[0,1],"dtcs:count_all":[0,0],"dtcs:count_distinct":[1,1],"dtcs:ends_with":[2,2],"dtcs:floor":[1,1],"dtcs:greatest":[1,null],"dtcs:if_null":[2,2],"dtcs:is_null":[1,1],"dtcs:least":[1,null],"dtcs:length":[1,1],"dtcs:lower":[1,1],"dtcs:max":[1,1],"dtcs:min":[1,1],"dtcs:null_if":[2,2],"dtcs:power":[2,2],"dtcs:replace":[3,3],"dtcs:round":[1,2],"dtcs:sqrt":[1,1],"dtcs:starts_with":[2,2],"dtcs:substr":[2,3],"dtcs:sum":[1,1],"dtcs:upper":[1,1]},
-    "defaults": {"join.collisionPolicy":"fail","join.type":"inner","sort.direction":"asc","sort.nulls":"last","union.allowMissingColumns":false,"union.mode":"byName"},
-    "semantic_rules": {"deduplication":"distinct uses complete logical row identity; keyed deduplicate uses declared keys","joins":"null keys do not match unless nullSafe=true; collisionPolicy=fail rejects overlaps","missing_invalid":"missing and invalid remain distinct and reject unless three_state_distinct is claimed","nulls":"null propagates through scalar expressions; filters retain only true","numeric":"decimal precision is preserved; overflow and divide/modulo errors are explicit","ordering":"sort keys are applied left-to-right with explicit null placement","unions":"byName aligns names; byPosition aligns ordinal fields; missing columns are explicit"},
-    "leaf_fixture_ids": {"dtcs:abs":"baseline_scalar_functions","dtcs:aggregate":"baseline_aggregate_functions","dtcs:average":"baseline_aggregate_functions","dtcs:case_when":"baseline_scalar_functions","dtcs:ceil":"baseline_scalar_functions","dtcs:coalesce":"baseline_scalar_functions","dtcs:concat":"baseline_scalar_functions","dtcs:concat_ws":"baseline_scalar_functions","dtcs:contains":"baseline_scalar_functions","dtcs:count":"baseline_aggregate_functions","dtcs:count_all":"baseline_aggregate_functions","dtcs:count_distinct":"baseline_aggregate_functions","dtcs:deduplicate":"baseline_field_actions","dtcs:distinct":"baseline_field_actions","dtcs:drop_fields":"baseline_field_actions","dtcs:ends_with":"baseline_scalar_functions","dtcs:filter":"kernel_filter_project_lower","dtcs:floor":"baseline_scalar_functions","dtcs:greatest":"baseline_scalar_functions","dtcs:if_null":"baseline_scalar_functions","dtcs:is_null":"baseline_scalar_functions","dtcs:join":"relational_join_aggregate","dtcs:least":"baseline_scalar_functions","dtcs:length":"baseline_scalar_functions","dtcs:limit":"relational_sort_nulls_limit","dtcs:lower":"baseline_scalar_functions","dtcs:max":"baseline_aggregate_functions","dtcs:min":"baseline_aggregate_functions","dtcs:null_if":"baseline_scalar_functions","dtcs:power":"baseline_scalar_functions","dtcs:project":"baseline_scalar_functions","dtcs:rename_fields":"baseline_field_actions","dtcs:replace":"baseline_scalar_functions","dtcs:round":"baseline_scalar_functions","dtcs:sort":"relational_sort_nulls_limit","dtcs:sqrt":"baseline_scalar_functions","dtcs:starts_with":"baseline_scalar_functions","dtcs:substr":"baseline_scalar_functions","dtcs:sum":"baseline_aggregate_functions","dtcs:union":"baseline_union","dtcs:upper":"baseline_scalar_functions","dtcs:with_fields":"kernel_filter_project_lower","join_modes":"baseline_join_modes","operator:add":"baseline_scalar_functions","operator:and":"baseline_scalar_functions","operator:divide":"baseline_scalar_functions","operator:eq":"baseline_scalar_functions","operator:gt":"baseline_scalar_functions","operator:gte":"baseline_scalar_functions","operator:in":"baseline_scalar_functions","operator:lt":"baseline_scalar_functions","operator:lte":"baseline_scalar_functions","operator:modulo":"baseline_scalar_functions","operator:multiply":"baseline_scalar_functions","operator:negate":"baseline_scalar_functions","operator:not":"baseline_scalar_functions","operator:not_eq":"baseline_scalar_functions","operator:null_safe_eq":"baseline_scalar_functions","operator:or":"baseline_scalar_functions","operator:subtract":"baseline_scalar_functions","semantic_modes":"reject_missing_literal_without_three_state","type:boolean":"baseline_scalar_functions","type:decimal":"baseline_scalar_functions","type:integer":"baseline_scalar_functions","type:invalid":"reject_missing_literal_without_three_state","type:missing":"reject_missing_literal_without_three_state","type:null":"baseline_scalar_functions","type:string":"baseline_scalar_functions","union_modes":"baseline_union_modes"}
+    "union_modes": [
+      "byName",
+      "byPosition"
+    ]
   },
-  "notes": "Blocked: seven-engine qualification evidence is not yet available; no release claim is made."
+  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "result": "pass",
+  "schema": "etlantic.portable-baseline/1"
 }
