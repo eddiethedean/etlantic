@@ -1,5 +1,5 @@
 {
-  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_lowering_is_derived_from_support_evidence or test_adaptive_evaluation_retains_per_node_selection or test_adaptive_graph_edge_requirement_invalidates_assignment or test_adaptive_evidence_drift_rejects_before_io'",
+  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_lowering_is_derived_from_support_evidence or test_adaptive_evaluation_retains_per_node_selection or test_adaptive_graph_edge_requirement_invalidates_assignment or test_adaptive_graph_selection_prefers_complete_feasible_assignment or test_adaptive_candidate_target_must_be_unique_per_node or test_adaptive_candidate_target_must_match_support_report or test_adaptive_target_matrix_requires_every_node_target_pair or test_adaptive_target_matrix_rejects_logical_node_without_candidates or test_adaptive_edge_free_selection_scales_linearly_by_node or test_adaptive_disconnected_components_are_solved_independently or test_adaptive_evidence_drift_rejects_before_io or test_orchestrator_rejects_before_lifecycle_or_cleanup'",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -16,9 +16,17 @@
     "test_adaptive_lowering_is_derived_from_support_evidence",
     "test_adaptive_evaluation_retains_per_node_selection",
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
-    "test_adaptive_evidence_drift_rejects_before_io"
+    "test_adaptive_graph_selection_prefers_complete_feasible_assignment",
+    "test_adaptive_candidate_target_must_be_unique_per_node",
+    "test_adaptive_candidate_target_must_match_support_report",
+    "test_adaptive_target_matrix_requires_every_node_target_pair",
+    "test_adaptive_target_matrix_rejects_logical_node_without_candidates",
+    "test_adaptive_edge_free_selection_scales_linearly_by_node",
+    "test_adaptive_disconnected_components_are_solved_independently",
+    "test_adaptive_evidence_drift_rejects_before_io",
+    "test_orchestrator_rejects_before_lifecycle_or_cleanup"
   ],
-  "repository_commit": "862a1575eb23124ab8055e4dc370433c77b4188e",
+  "repository_commit": "efec52986ad3e9006e1b0af2f48080401239a624",
   "result": "pass",
   "scenarios": [
     {
@@ -76,7 +84,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "b15dca2d49831823553adb68d86d319961b2a24663c1f81c32590d631b8108a2",
+              "fingerprint": "4c467704974d3752c4ace87e46d79c4f60be486f6bd6461600285bfdda16c88f",
               "pushdown": [],
               "requirements": [
                 {
@@ -108,7 +116,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/orders-partial",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-partial",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -116,7 +131,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/orders-partial",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-partial",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -171,7 +193,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "7dad4587d3710de2d3b45ae43ab8de031cae9625f9776cf4baf14311672cca1f",
+              "fingerprint": "0e9986b7a443639a9b99e279b6643d51a674ec1255d25077b44ee577bf5fb6f7",
               "pushdown": [],
               "requirements": [
                 {
@@ -203,7 +225,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/orders-complete",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-complete",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -211,7 +240,125 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/orders-complete",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-complete",
+                "security_domain": "qualification"
+              },
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
+            }
+          },
+          {
+            "decision": "eliminated_before_preference_scoring",
+            "eligible": false,
+            "id": "partial",
+            "node": "customers",
+            "preferred_score": null,
+            "required_failures": [
+              "dtcs:join"
+            ],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:join": "unknown"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "unknown"
+                }
+              ],
+              "fingerprint": "4c467704974d3752c4ace87e46d79c4f60be486f6bd6461600285bfdda16c88f",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-partial",
+                  "security_domain": "qualification"
+                },
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-partial",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -266,7 +413,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "c59680dda79450336d2fad21869cc295fcfb7d4ee4f7f27629a3cf50965208a6",
+              "fingerprint": "0e9986b7a443639a9b99e279b6643d51a674ec1255d25077b44ee577bf5fb6f7",
               "pushdown": [],
               "requirements": [
                 {
@@ -298,7 +445,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/customers-complete",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-complete",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -306,7 +460,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/customers-complete",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-complete",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -383,7 +544,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "13c9b888eb018c22a87988e13b2ccb795fbecf143d564b71d23f5682c8917210",
+              "fingerprint": "a9706cbbb2c8479d7366cf8d9a3023921dd5d60dcbd8bceec3ea30233fb9c3f3",
               "pushdown": [],
               "requirements": [
                 {
@@ -415,7 +576,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/orders-unknown-preference",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -423,7 +591,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/orders-unknown-preference",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -478,7 +653,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "ea36ca76b892a14da2e8307a76dc8a44239c56d42f3379fee1aac21a8e02bf2b",
+              "fingerprint": "9af7c53e4a5fcf12c1c54f51871e51dce51de41fca08618c4f95e45072eb8a0c",
               "pushdown": [],
               "requirements": [
                 {
@@ -510,7 +685,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/customers-known-preference",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -518,7 +700,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/customers-known-preference",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -617,7 +806,7 @@
                   "support": "supported_with_lowering"
                 }
               ],
-              "fingerprint": "912884afaad44042f0849af8e3961f4a316ca0931433d79f938258d0d5e08a41",
+              "fingerprint": "5af891f62e079cc5608ce4db91da731183a49126698ca69dd31c52b88b99884f",
               "pushdown": [],
               "requirements": [
                 {
@@ -637,7 +826,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/orders-lowered",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -645,7 +841,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/orders-lowered",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -685,7 +888,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "43bc30f4df757595fd1dbb85068e1750210c53a2fc4a79baba420a083b607a9a",
+              "fingerprint": "b201cad1fa5aa395195f5396d735531a4798c3657df18d1e411a74e8a1d28051",
               "pushdown": [],
               "requirements": [
                 {
@@ -705,7 +908,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/customers-exact",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -713,7 +923,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/customers-exact",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -734,6 +951,410 @@
       "id": "lowering-effects",
       "requirements": [
         "dtcs:filter"
+      ],
+      "result": "pass"
+    },
+    {
+      "candidate_evaluation": {
+        "candidates": [
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "fast",
+            "node": "source",
+            "preferred_score": 1,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "interchange:arrow": "unknown"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/interchange:arrow#actions",
+                  "support": "unknown"
+                }
+              ],
+              "fingerprint": "7b5be06b34ac9912cfae1de2909911c5167742506bbc023a84c67968f7d1aa9f",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/interchange:arrow#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "interchange:arrow"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-fast",
+                  "security_domain": "qualification"
+                },
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-fast",
+                "security_domain": "qualification"
+              },
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "compatible",
+            "node": "source",
+            "preferred_score": 1,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "interchange:arrow": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/interchange:arrow#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "8e527d5f616fffb5b17bc8217e72664dbc1d9aa842f109d3743cb4918e782e35",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/interchange:arrow#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "interchange:arrow"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-compatible",
+                  "security_domain": "qualification"
+                },
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-compatible",
+                "security_domain": "qualification"
+              },
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "fast",
+            "node": "sink",
+            "preferred_score": 0,
+            "required_failures": [],
+            "requirements": {
+              "interchange:arrow": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/interchange:arrow#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "1d91d6794a4fea54661f8365fbc191e79efbdb507ef1bdacd3dd5d5481366ec8",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/interchange:arrow#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "interchange:arrow"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-fast",
+                  "security_domain": "qualification"
+                },
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-fast",
+                "security_domain": "qualification"
+              },
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "compatible",
+            "node": "sink",
+            "preferred_score": 0,
+            "required_failures": [],
+            "requirements": {
+              "interchange:arrow": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/interchange:arrow#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "06f347bdf9be0accc08327515d32f84a5d326f3068863e0d2434e83d61dad365",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/interchange:arrow#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "interchange:arrow"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-compatible",
+                  "security_domain": "qualification"
+                },
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-compatible",
+                "security_domain": "qualification"
+              },
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
+            }
+          }
+        ],
+        "graph_failures": [],
+        "graph_valid": true,
+        "nodes": [
+          "sink",
+          "source"
+        ],
+        "selected": {
+          "sink": "fast",
+          "source": "compatible"
+        }
+      },
+      "fixture": "test_adaptive_graph_selection_prefers_complete_feasible_assignment",
+      "id": "graph-valid-alternative",
+      "requirements": [
+        "interchange:arrow"
       ],
       "result": "pass"
     },
@@ -775,7 +1396,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "be42f2a2a80302bf34c683533f59d8b42d21307e0827215cb8b2ec88fc9d4559",
+              "fingerprint": "d99bd45ee69528144dfb310e6d44fd4b05c83db1ea3b735ce16f823560c50f95",
               "pushdown": [],
               "requirements": [
                 {
@@ -795,7 +1416,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/orders-native",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -803,7 +1431,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/orders-native",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -843,7 +1478,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "365a8c137410f6f8fa27a4c149875362dd77c9ee19876cd3b63068afa1b0364f",
+              "fingerprint": "d99bd45ee69528144dfb310e6d44fd4b05c83db1ea3b735ce16f823560c50f95",
               "pushdown": [],
               "requirements": [
                 {
@@ -863,7 +1498,14 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
-                "package": "etlantic-adaptive-fixture/customers-native",
+                "package": "etlantic-adaptive-fixture",
+                "placement": {
+                  "connector": "memory",
+                  "location": "local",
+                  "policy": "portable-qualification",
+                  "resource": "fixture-resource-primary",
+                  "security_domain": "qualification"
+                },
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
@@ -871,7 +1513,14 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
-              "package": "etlantic-adaptive-fixture/customers-native",
+              "package": "etlantic-adaptive-fixture",
+              "placement": {
+                "connector": "memory",
+                "location": "local",
+                "policy": "portable-qualification",
+                "resource": "fixture-resource-primary",
+                "security_domain": "qualification"
+              },
               "protocol": "etlantic.transform-compiler/1",
               "version": "1"
             }
@@ -902,7 +1551,7 @@
       "result": "rejected_graph_invalid"
     },
     {
-      "fixture": "test_adaptive_evidence_drift_rejects_before_io",
+      "fixture": "test_orchestrator_rejects_before_lifecycle_or_cleanup",
       "id": "evidence-drift",
       "preflight": "reject_stale_fingerprint_before_io",
       "result": "rejected_before_io"
@@ -910,5 +1559,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "a7f941812b87a443f171785fd9f6d8888f43c4c5dfd3ce3c2efed58b113bb8f7"
+  "source_tree_digest": "7bc095be7aa44309b6c6f7a0d4ebbe49e5e812d412b536633c0af4f38de1b04e"
 }

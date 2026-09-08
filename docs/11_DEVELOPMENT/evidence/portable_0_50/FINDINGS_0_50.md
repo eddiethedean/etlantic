@@ -19,8 +19,10 @@
 | SOL-050-013 | Medium | resolved by source and artifact digest linkage |
 | SOL-050-014 | High | resolved by fail-fast campaign execution |
 | SOL-050-015 | High | resolved by action-correlated EXPLAIN evidence |
-| SOL-050-016 | High | resolved by executable adaptive candidate evaluation |
+| SOL-050-016 | High | resolved by complete target-matrix candidate evaluation |
 | SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |
 | SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |
+| SOL-050-019 | Medium | resolved by focused Pyright validation |
+| SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |
 
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.
