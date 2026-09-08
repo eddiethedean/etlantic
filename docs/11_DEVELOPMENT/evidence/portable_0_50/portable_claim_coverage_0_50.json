@@ -2184,50 +2184,59 @@
     {
       "dialect": null,
       "engine": "local",
-      "mode": "host"
+      "mode": "host",
+      "result": "pass"
     },
     {
       "dialect": null,
       "engine": "polars",
-      "mode": "eager"
+      "mode": "eager",
+      "result": "pass"
     },
     {
       "dialect": null,
       "engine": "polars",
-      "mode": "lazy"
+      "mode": "lazy",
+      "result": "pass"
     },
     {
       "dialect": null,
       "engine": "pandas",
-      "mode": "eager"
+      "mode": "eager",
+      "result": "pass"
     },
     {
       "dialect": "sqlite",
       "engine": "sql",
-      "mode": "relation"
+      "mode": "relation",
+      "result": "pass"
     },
     {
       "dialect": "postgresql",
       "engine": "sql",
-      "mode": "relation"
+      "mode": "relation",
+      "result": "pass"
     },
     {
       "dialect": "jvm",
       "engine": "pyspark",
-      "mode": "native"
+      "mode": "native",
+      "result": "pass"
     },
     {
       "dialect": "native",
       "engine": "datafusion",
-      "mode": "lazy"
+      "mode": "lazy",
+      "result": "pass"
     },
     {
       "dialect": "native",
       "engine": "duckdb",
-      "mode": "lazy"
+      "mode": "lazy",
+      "result": "pass"
     }
   ],
-  "repository_commit": "c229b14f3e072677e5d3aae4757ea0f479d56a3c",
+  "repository_commit": "a941f1984016b9c4752d2f36077a473603aaa5b2",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2247,5 +2256,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "6e20111cc582e5547107e84e32ba42c5ad507f46623e2d5f9be064767912a5d6"
+  "source_tree_digest": "165057301f6343087b45ee99d3061f6367f733037ea0b4d015c3e0d1a8b10cbe"
 }
