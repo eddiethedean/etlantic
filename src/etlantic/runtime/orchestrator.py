@@ -2050,6 +2050,19 @@ class LocalOrchestrator:
                 state.metadata["dataframe"] = bundle.metrics.to_dict()
                 return
 
+            # Every portable-compiled descriptor returns through its dedicated
+            # dataframe/SQL/Spark branch above.  Reaching this generic dispatch
+            # without a callable implementation is an invalid plan state.
+            if impl is None:
+                raise NodeExecutionError(
+                    redact_message(
+                        f"step {node.name!r} has no executable implementation"
+                    ),
+                    node_name=node.name,
+                    stage=FailureStage.TRANSFORM.value,
+                    code="PMXFORM302",
+                )
+
             if self._is_sql_engine(impl.engine):
                 plugin = self._resolve_sql_plugin(impl.engine)
                 allow_trusted = self._effective_allow_trusted_sql()
@@ -2786,7 +2799,7 @@ class LocalOrchestrator:
             from etlantic.connectors.compatibility import StorageBindingAdapter
 
             adapter = StorageBindingAdapter(storage, provider=provider_name)
-        if not hasattr(adapter, "reconcile"):
+        if adapter is None or not hasattr(adapter, "reconcile"):
             return receipt
         try:
             result = await adapter.reconcile(receipt, context=context)

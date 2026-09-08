@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from typing import Any, Protocol, runtime_checkable
 
 
@@ -44,10 +45,17 @@ def as_records(data: Any, contract_type: type[Any] | None) -> list[Any]:
         # a declared materialization boundary.  Normalize that view before
         # validating a public Data contract rather than treating the frame
         # object itself as one record.
-        items = list(data.to_dicts())
+        converted = data.to_dicts()
+        items = list(converted) if isinstance(converted, Iterable) else [converted]
     elif hasattr(data, "to_dict") and callable(data.to_dict):
         try:
-            items = list(data.to_dict(orient="records"))
+            converted = data.to_dict(orient="records")
+            items = (
+                list(converted)
+                if isinstance(converted, Iterable)
+                and not isinstance(converted, Mapping)
+                else [converted]
+            )
         except TypeError:
             items = [data]
     else:

@@ -381,7 +381,7 @@ def _input_relation(
     step_name: str,
     attempt: int,
     declared_spec: Any = None,
-) -> tuple[RelationRef, list[str], str]:
+) -> tuple[RelationRef, list[str]]:
     if isinstance(value, RelationRef):
         info = plugin.inspect_relation(
             value,
@@ -1547,7 +1547,7 @@ def _apply_action(
     relations: dict[str, RelationRef],
     relation_columns: dict[str, list[str]],
     relation_prefix: str,
-) -> tuple[RelationRef, list[str]]:
+) -> tuple[RelationRef, list[str], str]:
     kind = action.get("kind") or {}
     name = kind.get("action")
     params = kind.get("parameters") or {}

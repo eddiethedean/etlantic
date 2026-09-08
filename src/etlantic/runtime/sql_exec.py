@@ -51,7 +51,11 @@ def is_sql_engine(
         )
         if isinstance(plugins, dict):
             if engine in plugins:
-                return bool(plugins[engine].capabilities().supports("sql"))
+                capabilities = getattr(plugins[engine], "capabilities", None)
+                if not callable(capabilities):
+                    return False
+                supports = getattr(capabilities(), "supports", None)
+                return bool(callable(supports) and supports("sql"))
             # An explicitly supplied runtime map is authoritative.  Do not
             # silently fall back to an unauthorized global discovery result.
             if engines is not None:
