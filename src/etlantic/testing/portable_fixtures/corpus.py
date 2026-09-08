@@ -22,6 +22,9 @@ class FixtureCase:
     expect_unsupported: bool = False
     unsupported_requirement_substr: str | None = None
     parameters: dict[str, Any] | None = None
+    required_operators: frozenset[str] = frozenset()
+    required_types: frozenset[str] = frozenset()
+    required_semantic_modes: frozenset[str] = frozenset()
 
 
 def _kernel_filter_project() -> FixtureCase:
@@ -30,6 +33,8 @@ def _kernel_filter_project() -> FixtureCase:
         required_profiles=frozenset({KERNEL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:filter", "dtcs:project", "dtcs:with_fields"}),
         required_functions=frozenset({"dtcs:lower"}),
+        required_operators=frozenset({"gte"}),
+        required_types=frozenset({"integer", "string"}),
         plan={
             "planIdentity": "dtcs.transform-plan/2",
             "inputs": {"customers": {"id": "customers"}},
@@ -107,6 +112,33 @@ def _kernel_filter_project() -> FixtureCase:
             ]
         },
         expected=[{"customer_id": 1, "email": "a@x.com", "age": 30}],
+    )
+
+
+def _kernel_project_identity() -> FixtureCase:
+    return FixtureCase(
+        name="kernel_project_identity",
+        required_profiles=frozenset({KERNEL_PROFILE_V1}),
+        required_actions=frozenset({"dtcs:project"}),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "p1",
+                    "kind": {
+                        "action": "dtcs:project",
+                        "id": "p1",
+                        "parameters": {"fields": ["id"]},
+                        "target": "t",
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+        },
+        inputs={"t": [{"id": 1}]},
+        expected=[{"id": 1}],
     )
 
 
@@ -332,6 +364,8 @@ def _empty_ungrouped_count() -> FixtureCase:
         required_profiles=frozenset({RELATIONAL_PROFILE_V1, KERNEL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:filter", "dtcs:aggregate"}),
         required_functions=frozenset({"dtcs:count_all"}),
+        required_operators=frozenset({"eq"}),
+        required_types=frozenset({"integer"}),
         plan={
             "planIdentity": "dtcs.transform-plan/2",
             "inputs": {"t": {"id": "t"}},
@@ -1459,6 +1493,8 @@ def _reject_missing_literal_without_three_state() -> FixtureCase:
         required_profiles=frozenset({KERNEL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:project"}),
         required_functions=frozenset(),
+        required_types=frozenset({"missing", "invalid"}),
+        required_semantic_modes=frozenset({"three_state_distinct"}),
         plan={
             "planIdentity": "dtcs.transform-plan/2",
             "inputs": {"t": {"id": "t"}},
@@ -1554,6 +1590,28 @@ def _baseline_scalar_functions() -> FixtureCase:
         required_profiles=frozenset({KERNEL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:project"}),
         required_functions=frozenset({f"dtcs:{name}" for name, _ in fields}),
+        required_operators=frozenset(
+            {
+                "eq",
+                "not_eq",
+                "lt",
+                "lte",
+                "gt",
+                "gte",
+                "null_safe_eq",
+                "and",
+                "or",
+                "not",
+                "add",
+                "subtract",
+                "multiply",
+                "divide",
+                "modulo",
+                "negate",
+                "in",
+            }
+        ),
+        required_types=frozenset({"null", "boolean", "integer", "decimal", "string"}),
         plan={
             "planIdentity": "dtcs.transform-plan/2",
             "inputs": {"t": {"id": "t"}},
@@ -1760,6 +1818,7 @@ def _baseline_union() -> FixtureCase:
 
 FIXTURES: tuple[FixtureCase, ...] = (
     _kernel_filter_project(),
+    _kernel_project_identity(),
     _substr_literal_replace(),
     _decimal_extremes(),
     _relational_aggregate(),
@@ -1794,6 +1853,9 @@ def fixtures_for_capabilities(
     profiles: frozenset[str],
     actions: frozenset[str],
     functions: frozenset[str],
+    operators: frozenset[str] = frozenset(),
+    types: frozenset[str] = frozenset(),
+    semantic_modes: frozenset[str] = frozenset(),
 ) -> list[FixtureCase]:
     """Return fixtures whose required claims are covered by the compiler."""
     selected: list[FixtureCase] = []
@@ -1804,6 +1866,13 @@ def fixtures_for_capabilities(
             continue
         if not case.required_functions.issubset(functions):
             continue
+        if not case.expect_unsupported:
+            if not case.required_operators.issubset(operators):
+                continue
+            if not case.required_types.issubset(types):
+                continue
+            if not case.required_semantic_modes.issubset(semantic_modes):
+                continue
         selected.append(case)
     return selected
 
@@ -1813,6 +1882,9 @@ def mandatory_capability_keys(
     profiles: frozenset[str],
     actions: frozenset[str],
     functions: frozenset[str],
+    operators: frozenset[str] = frozenset(),
+    types: frozenset[str] = frozenset(),
+    semantic_modes: frozenset[str] = frozenset(),
 ) -> set[str]:
     """Capability keys that must have at least one selected fixture."""
     keys: set[str] = set()
@@ -1822,6 +1894,12 @@ def mandatory_capability_keys(
         keys.add(f"action:{action}")
     for function in functions:
         keys.add(f"function:{function}")
+    for operator in operators:
+        keys.add(f"operator:{operator}")
+    for type_name in types:
+        keys.add(f"type:{type_name}")
+    for mode in semantic_modes:
+        keys.add(f"semantic_mode:{mode}")
     return keys
 
 
@@ -1834,4 +1912,10 @@ def covered_capability_keys(cases: list[FixtureCase]) -> set[str]:
             keys.add(f"action:{action}")
         for function in case.required_functions:
             keys.add(f"function:{function}")
+        for operator in case.required_operators:
+            keys.add(f"operator:{operator}")
+        for type_name in case.required_types:
+            keys.add(f"type:{type_name}")
+        for mode in case.required_semantic_modes:
+            keys.add(f"semantic_mode:{mode}")
     return keys

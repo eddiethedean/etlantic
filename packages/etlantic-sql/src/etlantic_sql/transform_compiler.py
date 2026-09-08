@@ -23,6 +23,7 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
@@ -150,6 +151,7 @@ class SqlTransformCompiler:
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),
+            requirements=requirement_records_from_mapping(req),
         )
 
     def compile(

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +52,25 @@ def main() -> int:
     ):
         raise SystemExit("baseline function inventory is incomplete")
     index = json.loads((EVIDENCE / "portable_evidence_index_0_50.json").read_text())
+    repository_commit = str(index.get("repository_commit") or "")
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
+    if (
+        not re.fullmatch(r"[0-9a-f]{40}", repository_commit)
+        or repository_commit != head
+    ):
+        raise SystemExit(
+            "evidence index repository_commit is not the checked-out commit"
+        )
+    if index.get("result") not in {"pass", "blocked"}:
+        raise SystemExit(
+            "evidence index result must be pass or an explicit blocked no-go"
+        )
+    if index.get("result") == "pass" and index.get("qualification") != "qualified":
+        raise SystemExit("passing evidence requires qualification=qualified")
+    if index.get("result") == "blocked" and index.get("qualification") != "no-go":
+        raise SystemExit("blocked evidence requires qualification=no-go")
     listed = set(index.get("artifacts") or [])
     if listed != REQUIRED - {"portable_evidence_index_0_50.json"}:
         raise SystemExit("evidence index does not enumerate the frozen artifact set")
@@ -70,6 +91,20 @@ def main() -> int:
                 or "result" not in payload
             ):
                 raise SystemExit(f"artifact metadata is incomplete: {name}")
+            result = payload.get("result")
+            if result not in {"pass", "blocked"}:
+                raise SystemExit(f"artifact has non-final result: {name}")
+            if (
+                result == "blocked"
+                and not str(payload.get("notes") or payload.get("note") or "").strip()
+            ):
+                raise SystemExit(
+                    f"blocked artifact lacks a blocker explanation: {name}"
+                )
+            if index.get("result") == "pass" and result != "pass":
+                raise SystemExit(
+                    f"qualified index references non-passing artifact: {name}"
+                )
         digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
         if digests.get(name) != digest:
             raise SystemExit(f"evidence digest mismatch: {name}")

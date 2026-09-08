@@ -24,6 +24,7 @@ from etlantic.transform.compiler import (
     TransformOutputBundle,
     TransformPlanningContext,
     TransformSupportReport,
+    requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
@@ -98,7 +99,10 @@ class LocalTransformCompiler:
         )
         findings.extend(portable_shape_findings(definition))
         return TransformSupportReport(
-            not findings, tuple(findings), self.info.evidence_fingerprint
+            not findings,
+            tuple(findings),
+            self.info.evidence_fingerprint,
+            requirements=requirement_records_from_mapping(req),
         )
 
     def compile(
@@ -424,7 +428,11 @@ def _apply(
         out = []
         seen = set()
         for r in rows:
-            values = (key_fields and [r.get(k) for k in key_fields]) or list(r.items())
+            values = (
+                tuple((k, repr(r.get(k))) for k in key_fields)
+                if key_fields
+                else tuple((k, repr(v)) for k, v in sorted(r.items()))
+            )
             key = repr(values)
             if key not in seen:
                 seen.add(key)
@@ -459,28 +467,28 @@ def _apply(
         return out
     if action == "dtcs:union":
         right = relations.get(str(p.get("other")), [])
-        if str(p.get("mode", "byName")).lower() == "byposition":
-            names = list(rows[0]) if rows else list(right[0]) if right else []
+        mode = str(p.get("mode", "byName")).lower()
+        left_names = list(dict.fromkeys(k for row in rows for k in row))
+        right_names = list(dict.fromkeys(k for row in right for k in row))
+        allow_missing = bool(p.get("allowMissingColumns", False))
+        if mode == "byposition":
+            if allow_missing:
+                raise ValueError(
+                    "allowMissingColumns is not supported for byPosition unions"
+                )
+            if left_names and right_names and len(left_names) != len(right_names):
+                raise ValueError(
+                    "byPosition union inputs have incompatible field counts"
+                )
+            names = left_names or right_names
             return rows + [
                 {name: value for name, value in zip(names, r.values(), strict=False)}
                 for r in right
             ]
-        names: list[str] = list(
-            dict.fromkeys(
-                [
-                    *([str(name) for name in rows[0]] if rows else []),
-                    *([str(name) for name in right[0]] if right else []),
-                ]
-            )
-        )
-        if (
-            not bool(p.get("allowMissingColumns", True))
-            and rows
-            and right
-            and set(rows[0]) != set(right[0])
-        ):
+        names = list(dict.fromkeys([*left_names, *right_names]))
+        if not allow_missing and rows and right and set(left_names) != set(right_names):
             raise ValueError("union inputs have incompatible fields")
-        return rows + [{name: r.get(name) for name in names} for r in right]
+        return [{name: r.get(name) for name in names} for r in [*rows, *right]]
     if action == "dtcs:join":
         right = relations.get(str(p.get("right")), [])
         how = str(p.get("type", "inner")).lower()
@@ -512,7 +520,9 @@ def _apply(
             return True
 
         collision = str(p.get("collisionPolicy", "fail")).lower()
-        collisions = set(rows[0] if rows else ()) & set(right[0] if right else ())
+        left_fields = {k for row in rows for k in row}
+        right_fields = {k for row in right for k in row}
+        collisions = left_fields & right_fields
         if collision != "fail":
             raise ValueError("only collisionPolicy=fail is supported")
         collisions -= {str(k) for k in right_keys}
@@ -533,15 +543,13 @@ def _apply(
                     matched_right.add(i)
                     out.append({**left_row, **right_row})
                 if how in {"left", "full"} and not matches_for_left:
-                    out.append(
-                        {**left_row, **{k: None for k in (right[0] if right else [])}}
-                    )
+                    right_only = right_fields - left_fields
+                    out.append({**left_row, **{k: None for k in right_only}})
         if how in {"right", "full"}:
             for i, right_row in enumerate(right):
                 if i not in matched_right:
-                    out.append(
-                        {**{k: None for k in (rows[0] if rows else [])}, **right_row}
-                    )
+                    left_only = left_fields - right_fields
+                    out.append({**{k: None for k in left_only}, **right_row})
         return out
     if action == "dtcs:aggregate":
         groups = p.get("groupBy") or []

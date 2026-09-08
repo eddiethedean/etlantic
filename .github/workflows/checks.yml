@@ -64,6 +64,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run --group polars --group pandas --group sql --group pyspark --group datafusion --group duckdb python scripts/check_transform_compiler_drift.py
 
+      - name: Portable 0.50 evidence verifier
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_portable_0_50.py
+
       - name: Release readiness check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_release.py
@@ -792,7 +796,7 @@ jobs:
           "
 
       - name: Pytest datafusion portable suite
-        run: uv run pytest -q tests/datafusion -m datafusion
+        run: uv run pytest -q tests/datafusion tests/portable_conformance -m datafusion
 
   fastapi:
     name: FastAPI reference adapter

@@ -189,21 +189,6 @@ class DataFusionPlugin:
     ) -> tuple[Any, ValidationDecision, list[dict[str, Any]], Any | None]:
         if contract_type is None:
             return value, ValidationDecision.SKIPPED, [], None
-        # DataFusion relations are lazy logical plans.  Collecting them merely
-        # to run row validation defeats the native-plan contract; validation
-        # is deferred to the declared collection boundary.
-        if type(value).__module__.startswith("datafusion"):
-            return (
-                value,
-                ValidationDecision.OBSERVED,
-                [
-                    {
-                        "code": "PMDF411",
-                        "message": "validation deferred to native collection boundary",
-                    }
-                ],
-                None,
-            )
         rows = self.to_records(value, contract_type=None)
         valid, invalid, diagnostics = split_valid_invalid_records(
             rows, contract_type=contract_type

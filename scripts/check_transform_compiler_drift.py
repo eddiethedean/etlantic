@@ -148,7 +148,6 @@ def main() -> int:
             functions = set(compiler.info.capabilities.functions)
             for token in (
                 "dtcs:profile/portable-string-advanced/1",
-                "dtcs:profile/portable-window/1",
                 "dtcs:profile/portable-reshape/1",
             ):
                 if token not in profiles:

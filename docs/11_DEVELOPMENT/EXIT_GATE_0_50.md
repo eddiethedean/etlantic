@@ -1,6 +1,6 @@
 # Exit Gate 0.50 — Seven-Engine Portable Execution and Pushdown Conformance
 
-> **Status: Not started.** This document defines the evidence contract before
+> **Status: No-go (blocked).** This document defines the evidence contract before
 > implementation. It does not upgrade any current engine capability claim. The
 > final decision is recorded by
 > [task #109](https://github.com/eddiethedean/etlantic/issues/109).

@@ -17,6 +17,14 @@ SUPPORT_STATES = frozenset(
     }
 )
 OBLIGATIONS = frozenset({"required", "preferred", "informational"})
+PUSHDOWN_OUTCOMES = frozenset(
+    {"pushed_exact", "pushed_with_lowering", "not_pushed", "not_applicable", "unknown"}
+)
+MAX_REQUIREMENTS = 100_000
+MAX_FINDINGS = 100_000
+MAX_REPORT_BYTES = 8 * 1024 * 1024
+MAX_CONDITIONS = 64
+MAX_REASON_BYTES = 1_024
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +156,9 @@ class TransformSupportReport:
     findings: tuple[TransformSupportFinding, ...] = ()
     evidence_fingerprint: str | None = None
     pushdown: tuple[TransformPushdownFinding, ...] = ()
+    # Normalized requirement records are additive to the /1 aggregate fields.
+    # Keep this last so existing positional construction remains compatible.
+    requirements: tuple[Mapping[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -164,25 +175,164 @@ class TransformSupportReport:
         self, *, target: Mapping[str, Any] | None = None
     ) -> dict[str, Any]:
         """Serialize the additive requirement-level support protocol."""
-        return {
-            "schema": "etlantic.portable-requirement-support/1",
-            "target": dict(target or {}),
-            "requirements": [],
-            "findings": [
+        requirements = [dict(item) for item in self.requirements]
+        findings = []
+        for finding in self.findings:
+            item = finding.to_dict()
+            item["support"] = finding.support or (
+                "unsupported" if not self.supported else "supported_exact"
+            )
+            item["obligation"] = finding.obligation or "required"
+            item["evidence"] = finding.evidence_fingerprint or self.evidence_fingerprint
+            item["path"] = finding.expression_path
+            findings.append(item)
+        # Legacy compilers may only provide aggregate findings. Preserve those
+        # records while making successful reports explicit about their target.
+        if not requirements:
+            requirements = [
                 {
-                    "requirement": finding.requirement,
-                    "support": finding.support
-                    or ("unsupported" if not self.supported else "supported_exact"),
-                    "reason": finding.reason,
-                    "evidence": finding.evidence_fingerprint
-                    or self.evidence_fingerprint,
-                    "path": finding.expression_path,
+                    "id": finding.requirement,
+                    "scope": "legacy",
+                    "path": finding.expression_path or "",
                     "obligation": finding.obligation or "required",
+                    "applicability": "applicable",
+                    "parameters": {},
                 }
                 for finding in self.findings
-            ],
+            ]
+        finding_ids = {item.get("requirement") for item in findings}
+        if self.supported and requirements:
+            evidence = self.evidence_fingerprint
+            findings.extend(
+                {
+                    "requirement": item.get("id") or item.get("requirement"),
+                    "support": "supported_exact",
+                    "reason": "supported by the analyzed compiler target",
+                    "evidence": evidence,
+                    "path": item.get("path"),
+                    "obligation": item.get("obligation", "required"),
+                }
+                for item in requirements
+                if (item.get("id") or item.get("requirement")) not in finding_ids
+            )
+        payload = {
+            "schema": "etlantic.portable-requirement-support/1",
+            "target": dict(target or {}),
+            "requirements": requirements,
+            "findings": findings,
             "evidence": [],
         }
+        validate_requirement_support_payload(payload)
+        return payload
+
+
+def requirement_records_from_mapping(
+    requirements: Mapping[str, Any] | None,
+) -> tuple[dict[str, Any], ...]:
+    """Convert legacy requirement lists into stable bounded protocol records."""
+    records: list[dict[str, Any]] = []
+    prefixes = {
+        "profiles": "profile",
+        "actions": "action",
+        "functions": "function",
+        "operators": "operator",
+        "types": "type",
+        "semantic_modes": "semantic_mode",
+        "lazy": "mode",
+        "eager": "mode",
+    }
+    for scope in sorted((requirements or {}).keys()):
+        value = (requirements or {}).get(scope)
+        values = (
+            value
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes))
+            else [value]
+        )
+        for item in values:
+            if item is None:
+                continue
+            semantic_id = str(item)
+            records.append(
+                {
+                    "id": f"{prefixes.get(scope, scope)}:{semantic_id}",
+                    "scope": scope,
+                    "path": scope,
+                    "obligation": "required",
+                    "applicability": "applicable",
+                    "parameters": {"value": semantic_id},
+                }
+            )
+    return tuple(records)
+
+
+def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
+    """Validate the bounded requirement/support wire representation."""
+    import json
+
+    if payload.get("schema") != "etlantic.portable-requirement-support/1":
+        raise ValueError("invalid requirement-support schema")
+    if not isinstance(payload.get("target"), Mapping):
+        raise ValueError("requirement-support target must be an object")
+    requirements = payload.get("requirements")
+    findings = payload.get("findings")
+    if not isinstance(requirements, list) or not isinstance(findings, list):
+        raise ValueError("requirements and findings must be arrays")
+    if len(requirements) > MAX_REQUIREMENTS or len(findings) > MAX_FINDINGS:
+        raise ValueError("requirement-support report exceeds record limit")
+    requirement_ids: set[str] = set()
+    for item in requirements:
+        if not isinstance(item, Mapping):
+            raise ValueError("requirement record must be an object")
+        identifier = item.get("id")
+        if (
+            not isinstance(identifier, str)
+            or not identifier
+            or identifier in requirement_ids
+        ):
+            raise ValueError("requirement IDs must be non-empty and unique")
+        requirement_ids.add(identifier)
+        if item.get("obligation") not in OBLIGATIONS:
+            raise ValueError("invalid requirement obligation")
+        if item.get("applicability") not in {"applicable", "not_applicable"}:
+            raise ValueError("invalid requirement applicability")
+    finding_ids: set[str] = set()
+    for item in findings:
+        if not isinstance(item, Mapping):
+            raise ValueError("support finding must be an object")
+        identifier = item.get("requirement")
+        if (
+            not isinstance(identifier, str)
+            or not identifier
+            or identifier in finding_ids
+        ):
+            raise ValueError("finding requirement IDs must be non-empty and unique")
+        finding_ids.add(identifier)
+        if item.get("support") not in SUPPORT_STATES:
+            raise ValueError("invalid support state")
+        if item.get("obligation") not in OBLIGATIONS:
+            raise ValueError("invalid finding obligation")
+        reason = item.get("reason")
+        if (
+            not isinstance(reason, str)
+            or len(reason.encode("utf-8")) > MAX_REASON_BYTES
+        ):
+            raise ValueError("finding reason exceeds 1024 UTF-8 bytes")
+        for key in ("conditions", "physical_effects"):
+            values = item.get(key, [])
+            if not isinstance(values, list) or len(values) > MAX_CONDITIONS:
+                raise ValueError(f"{key} exceeds 64 entries")
+    applicable = {
+        str(item["id"])
+        for item in requirements
+        if item.get("applicability") == "applicable"
+    }
+    if applicable != finding_ids:
+        raise ValueError("every applicable requirement needs exactly one finding")
+    serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    if len(serialized) > MAX_REPORT_BYTES:
+        raise ValueError("serialized support report exceeds 8 MiB")
 
 
 @dataclass(frozen=True, slots=True)

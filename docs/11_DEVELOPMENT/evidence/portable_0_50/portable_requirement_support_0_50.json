@@ -1,11 +1,11 @@
 {
   "schema": "etlantic.portable-requirement-support/1",
-  "repository_commit": "working-tree",
-  "result": "provisional",
+  "repository_commit": "62b7bca90007f60274b7ec4078aa0164c876baca",
+  "result": "blocked",
   "support_states": ["supported_exact", "supported_with_lowering", "unsupported", "unavailable", "unknown"],
   "obligations": ["required", "preferred", "informational"],
   "requirements": [],
   "findings": [],
   "evidence": [],
-  "notes": "Empty arrays are intentional until engine-specific qualification jobs populate bounded records."
+  "notes": "Blocked: complete engine-specific requirement evidence has not been generated."
 }

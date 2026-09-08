@@ -1,1 +1,1 @@
-{"schema":"etlantic.portable-pushdown-evidence/1","repository_commit":"working-tree","result":"provisional","engine":"duckdb","boundaries":[],"note":"Independent 0.50 DuckDB qualification pending"}
+{"schema":"etlantic.portable-pushdown-evidence/1","repository_commit":"62b7bca90007f60274b7ec4078aa0164c876baca","result":"blocked","engine":"duckdb","boundaries":[],"note":"Blocked: independent 0.50 DuckDB pushdown qualification evidence is unavailable."}

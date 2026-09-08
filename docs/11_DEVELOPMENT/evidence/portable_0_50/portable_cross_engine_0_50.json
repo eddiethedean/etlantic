@@ -1,1 +1,1 @@
-{"schema":"etlantic.portable-cross-engine/1","repository_commit":"working-tree","result":"provisional","engines":["local","polars","pandas","sql","pyspark","datafusion","duckdb"],"canonical_pipeline":null,"note":"Canonical 7/7 differential job pending"}
+{"schema":"etlantic.portable-cross-engine/1","repository_commit":"62b7bca90007f60274b7ec4078aa0164c876baca","result":"blocked","engines":["local","polars","pandas","sql","pyspark","datafusion","duckdb"],"canonical_pipeline":null,"note":"Blocked: canonical 7/7 differential evidence is unavailable."}

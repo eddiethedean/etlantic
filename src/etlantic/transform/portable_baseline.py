@@ -90,6 +90,43 @@ BASELINE_TYPES = (
     "invalid",
 )
 BASELINE_JOIN_MODES = ("inner", "left", "right", "full", "semi", "anti", "cross")
+BASELINE_FUNCTION_ARITIES = {
+    **{
+        name: (1, 1)
+        for name in (
+            "dtcs:lower",
+            "dtcs:upper",
+            "dtcs:length",
+            "dtcs:is_null",
+            "dtcs:abs",
+            "dtcs:floor",
+            "dtcs:ceil",
+            "dtcs:sqrt",
+        )
+    },
+    "dtcs:concat": (1, None),
+    "dtcs:concat_ws": (2, None),
+    "dtcs:substr": (2, 3),
+    "dtcs:replace": (3, 3),
+    "dtcs:contains": (2, 2),
+    "dtcs:starts_with": (2, 2),
+    "dtcs:ends_with": (2, 2),
+    "dtcs:case_when": (3, None),
+    "dtcs:coalesce": (1, None),
+    "dtcs:if_null": (2, 2),
+    "dtcs:null_if": (2, 2),
+    "dtcs:round": (1, 2),
+    "dtcs:power": (2, 2),
+    "dtcs:least": (1, None),
+    "dtcs:greatest": (1, None),
+    "dtcs:sum": (1, 1),
+    "dtcs:average": (1, 1),
+    "dtcs:min": (1, 1),
+    "dtcs:max": (1, 1),
+    "dtcs:count": (0, 1),
+    "dtcs:count_all": (0, 0),
+    "dtcs:count_distinct": (1, 1),
+}
 SupportState = Literal[
     "supported_exact",
     "supported_with_lowering",
@@ -136,6 +173,49 @@ def baseline_manifest() -> dict[str, Any]:
         "collision_policy": "fail",
         "union_modes": ["byName", "byPosition"],
         "semantic_modes": ["three_state_distinct"],
+        "function_arities": {
+            name: list(bounds)
+            for name, bounds in sorted(BASELINE_FUNCTION_ARITIES.items())
+        },
+        "defaults": {
+            "join.type": "inner",
+            "join.collisionPolicy": "fail",
+            "union.mode": "byName",
+            "union.allowMissingColumns": False,
+            "sort.direction": "asc",
+            "sort.nulls": "last",
+        },
+        "semantic_rules": {
+            "nulls": "null propagates through scalar expressions; filters retain only true",
+            "missing_invalid": "missing and invalid remain distinct and reject unless three_state_distinct is claimed",
+            "ordering": "sort keys are applied left-to-right with explicit null placement",
+            "numeric": "decimal precision is preserved; overflow and divide/modulo errors are explicit",
+            "joins": "null keys do not match unless nullSafe=true; collisionPolicy=fail rejects overlaps",
+            "unions": "byName aligns names; byPosition aligns ordinal fields; missing columns are explicit",
+            "deduplication": "distinct uses complete logical row identity; keyed deduplicate uses declared keys",
+        },
+        "leaf_fixture_ids": {
+            **{
+                action: "baseline_field_actions"
+                for action in KERNEL_ACTIONS + RELATIONAL_ACTIONS
+            },
+            **{function: "baseline_scalar_functions" for function in SCALAR_FUNCTIONS},
+            **{
+                function: "baseline_aggregate_functions"
+                for function in AGGREGATE_FUNCTIONS
+            },
+            **{
+                f"operator:{operator}": "baseline_scalar_functions"
+                for operator in BASELINE_OPERATORS
+            },
+            **{
+                f"type:{type_name}": "baseline_scalar_functions"
+                for type_name in BASELINE_TYPES
+            },
+            "join_modes": "baseline_join_modes",
+            "union_modes": "baseline_union_modes",
+            "semantic_modes": "reject_missing_literal_without_three_state",
+        },
     }
 
 

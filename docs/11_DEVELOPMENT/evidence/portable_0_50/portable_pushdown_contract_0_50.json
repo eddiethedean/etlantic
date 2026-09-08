@@ -1,7 +1,7 @@
 {
   "schema": "etlantic.portable-pushdown/1",
-  "repository_commit": "working-tree",
-  "result": "provisional",
+  "repository_commit": "62b7bca90007f60274b7ec4078aa0164c876baca",
+  "result": "blocked",
   "outcomes": ["pushed_exact", "pushed_with_lowering", "not_pushed", "not_applicable", "unknown"],
   "boundaries": [
     {"kind": "source", "obligation": "preferred"},
@@ -10,5 +10,5 @@
   ],
   "findings": [],
   "evidence": [],
-  "notes": "Boundary-specific evidence is populated by engine qualification jobs."
+  "notes": "Blocked: boundary-specific qualification evidence is unavailable."
 }

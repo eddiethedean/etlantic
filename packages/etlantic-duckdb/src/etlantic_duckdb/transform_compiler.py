@@ -29,8 +29,8 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    requirement_records_from_mapping,
 )
-from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 from etlantic_duckdb.dialect import DuckDBCompiler
 from etlantic_duckdb.frame import DuckDBFrame
@@ -69,8 +69,38 @@ class DuckDBTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=_ACTIONS,
             functions=_FUNCTIONS,
-            operators=frozenset(BASELINE_OPERATORS),
-            types=frozenset(BASELINE_TYPES),
+            operators=frozenset(
+                {
+                    "eq",
+                    "not_eq",
+                    "lt",
+                    "lte",
+                    "gt",
+                    "gte",
+                    "null_safe_eq",
+                    "and",
+                    "or",
+                    "not",
+                    "add",
+                    "subtract",
+                    "multiply",
+                    "divide",
+                    "modulo",
+                    "negate",
+                    "in",
+                }
+            ),
+            types=frozenset(
+                {
+                    "null",
+                    "boolean",
+                    "integer",
+                    "decimal",
+                    "string",
+                    "missing",
+                    "invalid",
+                }
+            ),
             lazy=True,
             eager=False,
         )
@@ -156,6 +186,7 @@ class DuckDBTransformCompiler:
             supported=not findings,
             findings=tuple(findings),
             evidence_fingerprint=self._info.evidence_fingerprint,
+            requirements=requirement_records_from_mapping(req),
         )
 
     def compile(

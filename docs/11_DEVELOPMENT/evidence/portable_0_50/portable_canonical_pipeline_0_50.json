@@ -1,7 +1,7 @@
 {
   "schema": "etlantic.portable-canonical-pipeline/1",
-  "repository_commit": "working-tree",
-  "result": "provisional",
+  "repository_commit": "62b7bca90007f60274b7ec4078aa0164c876baca",
+  "result": "blocked",
   "plan": "dtcs.transform-plan/2",
   "engine_neutral": true,
   "stages": [
@@ -17,5 +17,5 @@
   ],
   "source_rows": false,
   "engine_specific_bodies": false,
-  "note": "Definition shape is frozen; execution evidence is produced by engine qualification jobs."
+  "note": "Blocked: canonical execution evidence is unavailable for the required seven-engine matrix."
 }

@@ -172,16 +172,19 @@ def run_portable_transform_conformance_suite(
     claimed_profiles = frozenset(profiles or caps.profiles)
     claimed_actions = frozenset(caps.actions)
     claimed_functions = frozenset(caps.functions)
+    claimed_operators = frozenset(caps.operators)
+    claimed_types = frozenset(caps.types)
+    claimed_semantic_modes = frozenset(caps.semantic_modes)
 
     selected = fixtures_for_capabilities(
         profiles=claimed_profiles,
         actions=claimed_actions,
         functions=claimed_functions,
+        operators=claimed_operators,
+        types=claimed_types,
+        semantic_modes=claimed_semantic_modes,
     )
     if enforce_fixture_coverage:
-        covered_profiles = {
-            profile for case in FIXTURES for profile in case.required_profiles
-        }
         known_actions = {
             action for case in FIXTURES for action in case.required_actions
         } | set(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
@@ -202,28 +205,24 @@ def run_portable_transform_conformance_suite(
                     "Claims have no recognized contract vocabulary: "
                     + ", ".join(unknown)
                 )
-        covered_actions = frozenset(
-            action for case in FIXTURES for action in case.required_actions
+            # The 0.50 baseline is a closed claim surface: Local and DataFusion
+            # advertise the entire baseline, so every one of their claims must be
+            # represented by an executable fixture.  Other engines may advertise
+            # graduated profiles whose fixture corpus is intentionally narrower.
+        required = mandatory_capability_keys(
+            profiles=claimed_profiles,
+            actions=claimed_actions,
+            functions=claimed_functions,
+            operators=claimed_operators
+            if info.engine in {"local", "datafusion"}
+            else frozenset(),
+            types=claimed_types
+            if info.engine in {"local", "datafusion"}
+            else frozenset(),
+            semantic_modes=claimed_semantic_modes
+            if info.engine in {"local", "datafusion"}
+            else frozenset(),
         )
-        covered_functions = frozenset(
-            function for case in FIXTURES for function in case.required_functions
-        )
-        # The 0.50 baseline is a closed claim surface: Local and DataFusion
-        # advertise the entire baseline, so every one of their claims must be
-        # represented by an executable fixture.  Other engines may advertise
-        # graduated profiles whose fixture corpus is intentionally narrower.
-        if info.engine in {"local", "datafusion"}:
-            required = mandatory_capability_keys(
-                profiles=claimed_profiles,
-                actions=claimed_actions,
-                functions=claimed_functions,
-            )
-        else:
-            required = mandatory_capability_keys(
-                profiles=claimed_profiles & covered_profiles,
-                actions=claimed_actions & covered_actions,
-                functions=claimed_functions & covered_functions,
-            )
         covered = covered_capability_keys(selected)
         missing = sorted(required - covered)
         if missing:
@@ -265,6 +264,9 @@ def _run_case(
         "profiles": sorted(case.required_profiles),
         "actions": sorted(case.required_actions),
         "functions": sorted(case.required_functions),
+        "operators": sorted(case.required_operators),
+        "types": sorted(case.required_types),
+        "semantic_modes": sorted(case.required_semantic_modes),
     }
     report = compiler.analyze(case.plan, context=planning, requirements=requirements)
     if case.expect_unsupported:

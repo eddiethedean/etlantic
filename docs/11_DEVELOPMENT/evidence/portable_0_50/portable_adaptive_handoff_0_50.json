@@ -1,1 +1,1 @@
-{"schema":"etlantic.portable-adaptive-handoff/1","repository_commit":"working-tree","result":"provisional","fixtures":[],"note":"0.51 handoff fixtures pending complete requirement evidence"}
+{"schema":"etlantic.portable-adaptive-handoff/1","repository_commit":"62b7bca90007f60274b7ec4078aa0164c876baca","result":"blocked","fixtures":[],"note":"Blocked: 0.51 handoff fixtures depend on complete requirement evidence."}

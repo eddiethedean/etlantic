@@ -17,17 +17,14 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import (
     KERNEL_PROFILE_V1,
-    PROFILE_COMPLEX_TYPES,
-    PROFILE_COMPLEX_VALUES,
     PROFILE_CONVERSION,
     PROFILE_RESHAPE,
-    PROFILE_STATISTICS,
     PROFILE_STRING_ADVANCED,
-    PROFILE_WINDOW_V1,
     RELATIONAL_PROFILE_V1,
 )
 from etlantic_pyspark.lowering.actions import (
@@ -93,16 +90,9 @@ WAVE_FUNCTIONS = frozenset(
         "dtcs:to_integer",
         "dtcs:variance",
         "dtcs:stddev",
-        "dtcs:corr",
         "dtcs:row_number",
-        "dtcs:rank",
-        "dtcs:dense_rank",
         "dtcs:lag",
-        "dtcs:lead",
-        "dtcs:first_value",
-        "dtcs:last_value",
         "dtcs:array",
-        "dtcs:map",
         "dtcs:object",
         "dtcs:size",
         "dtcs:field",
@@ -136,10 +126,6 @@ class PySparkTransformCompiler:
                     RELATIONAL_PROFILE_V1,
                     PROFILE_STRING_ADVANCED,
                     PROFILE_CONVERSION,
-                    PROFILE_STATISTICS,
-                    PROFILE_WINDOW_V1,
-                    PROFILE_COMPLEX_VALUES,
-                    PROFILE_COMPLEX_TYPES,
                     PROFILE_RESHAPE,
                 }
             ),
@@ -190,6 +176,7 @@ class PySparkTransformCompiler:
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),
+            requirements=requirement_records_from_mapping(req),
         )
 
     def compile(

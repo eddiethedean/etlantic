@@ -28,6 +28,7 @@ from etlantic.transform.compiler import (
     TransformPushdownFinding,
     TransformSupportFinding,
     TransformSupportReport,
+    requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
@@ -126,13 +127,13 @@ class DataFusionTransformCompiler:
                 (
                     TransformPushdownFinding(
                         boundary=f"relational:{index}",
-                        outcome="pushed_exact" if not findings else "unknown",
+                        outcome="unknown",
                         reason=(
-                            "lowered to a DataFusion native logical plan"
+                            "native logical-plan pushdown is proven during compilation"
                             if not findings
                             else "pushdown unavailable until support failures are resolved"
                         ),
-                        physical_effects=("native_logical_plan",),
+                        physical_effects=(),
                         evidence_fingerprint=self.info.evidence_fingerprint,
                     ),
                     TransformPushdownFinding(
@@ -155,6 +156,7 @@ class DataFusionTransformCompiler:
             tuple(findings),
             self.info.evidence_fingerprint,
             pushdown,
+            requirement_records_from_mapping(req),
         )
 
     def compile(
@@ -483,20 +485,62 @@ def _apply_action(
     if action == "dtcs:deduplicate":
         fields = p.get("keys") or p.get("fields") or p.get("subset")
         if fields:
-            raise ValueError(
-                "DataFusion deduplicate key subsets require native support"
-            )
+            keys = [str(item) for item in fields]
+            names = list(source.schema().names)
+            missing = [name for name in keys if name not in names]
+            if missing:
+                raise ValueError("deduplicate keys are missing: " + ", ".join(missing))
+            # first_value is a native aggregate; keyed deduplication is
+            # intentionally allowed to choose any representative row.
+            aggregates = [
+                f.first_value(col(name)).alias(name)
+                for name in names
+                if name not in keys
+            ]
+            return source.aggregate([col(name) for name in keys], aggregates)
         return source.distinct()
     if action == "dtcs:union":
         mode = str(p.get("mode", "byName")).lower()
         if mode not in {"byname", "byposition"}:
             raise ValueError(f"unsupported union mode: {mode}")
-        return source.union(
-            relations[str(p.get("other"))], distinct=bool(p.get("distinct", False))
-        )
+        other = relations[str(p.get("other"))]
+        left_names = list(source.schema().names)
+        right_names = list(other.schema().names)
+        allow_missing = bool(p.get("allowMissingColumns", False))
+        if mode == "byname":
+            if not allow_missing and set(left_names) != set(right_names):
+                raise ValueError("union inputs have incompatible fields")
+            right = other.select(
+                *[
+                    col(name) if name in right_names else lit(None).alias(name)
+                    for name in left_names
+                ]
+            )
+        else:
+            if allow_missing:
+                raise ValueError(
+                    "allowMissingColumns is not supported for byPosition unions"
+                )
+            if len(left_names) != len(right_names):
+                raise ValueError(
+                    "byPosition union inputs have incompatible field counts"
+                )
+            right = other.select(
+                *[
+                    col(name).alias(left_name)
+                    for name, left_name in zip(right_names, left_names, strict=True)
+                ]
+            )
+        return source.union(right, distinct=bool(p.get("distinct", False)))
     if action == "dtcs:join":
         right = relations[str(p.get("right"))]
         how = str(p.get("type", "inner"))
+        if how == "outer":
+            how = "full"
+        if how == "cross":
+            how = "inner"  # an empty inner predicate is a native cross join
+        if how not in {"inner", "left", "right", "full", "semi", "anti"}:
+            raise ValueError(f"unsupported join type: {how}")
         left_key, right_key = p.get("leftKey"), p.get("rightKey")
         # Qualify both sides to avoid DataFusion's ambiguous duplicate-column
         # resolution, then restore the logical names deterministically.
@@ -506,21 +550,35 @@ def _apply_action(
         right_tmp = right.select(
             *[col(n).alias("__etl_right_" + n) for n in right_names]
         )
-        if isinstance(left_key, list) or isinstance(right_key, list):
-            if (
-                not isinstance(left_key, list)
-                or not isinstance(right_key, list)
-                or len(left_key) != len(right_key)
-            ):
-                raise ValueError("join key arity mismatch")
-            raise ValueError("DataFusion composite joins require native support")
+        left_keys = [left_key] if isinstance(left_key, str) else list(left_key or [])
+        right_keys = (
+            [right_key] if isinstance(right_key, str) else list(right_key or [])
+        )
+        if len(left_keys) != len(right_keys):
+            raise ValueError("join key arity mismatch")
         if str(p.get("collisionPolicy", "fail")).lower() != "fail":
             raise ValueError("only collisionPolicy=fail is supported")
-        if left_key and right_key:
+        collisions = (set(left_names) & set(right_names)) - set(right_keys)
+        if collisions and how not in {"semi", "anti"}:
+            raise ValueError("join field collision: " + ", ".join(sorted(collisions)))
+        if left_keys and right_keys and bool(p.get("nullSafe", False)):
+            predicates = []
+            for left_name, right_name in zip(left_keys, right_keys, strict=True):
+                left_expr = col("__etl_left_" + str(left_name))
+                right_expr = col("__etl_right_" + str(right_name))
+                predicates.append(
+                    (left_expr == right_expr).fill_null(False)
+                    | (left_expr.is_null() & right_expr.is_null())
+                )
+            predicate = predicates[0]
+            for candidate in predicates[1:]:
+                predicate = predicate & candidate
+            joined = left_tmp.join_on(right_tmp, predicate, how=how)
+        elif left_keys and right_keys:
             joined = left_tmp.join(
                 right_tmp,
-                left_on=["__etl_left_" + str(left_key)],
-                right_on=["__etl_right_" + str(right_key)],
+                left_on=["__etl_left_" + str(key) for key in left_keys],
+                right_on=["__etl_right_" + str(key) for key in right_keys],
                 how=how,
             )
         else:

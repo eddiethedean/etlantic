@@ -1,7 +1,7 @@
 {
   "schema": "etlantic.portable-baseline/1",
-  "repository_commit": "working-tree",
-  "result": "provisional",
+  "repository_commit": "62b7bca90007f60274b7ec4078aa0164c876baca",
+  "result": "blocked",
   "manifest": {
     "plan": "dtcs.transform-plan/2",
     "profiles": [
@@ -37,5 +37,5 @@
     "union_modes": ["byName", "byPosition"],
     "semantic_modes": ["three_state_distinct"]
   },
-  "notes": "Contract vocabulary is frozen; engine qualification and release evidence remain pending."
+  "notes": "Blocked: seven-engine qualification evidence is not yet available; no release claim is made."
 }

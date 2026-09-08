@@ -10,7 +10,11 @@ from etlantic.transform.compiler import (
     TransformSupportFinding,
     TransformSupportReport,
 )
-from etlantic.transform.portable_baseline import normalize_action, normalize_operator
+from etlantic.transform.portable_baseline import (
+    BASELINE_FUNCTION_ARITIES,
+    normalize_action,
+    normalize_operator,
+)
 from etlantic.transform.protocol import (
     DEFAULT_PROFILE,
     KERNEL_PROFILE_V1,
@@ -71,6 +75,7 @@ def requirements_from_plan(
     profiles: set[str] = set()
     operators: set[str] = set()
     types: set[str] = set()
+    semantic_modes: set[str] = set()
     if plan.get("profile"):
         profiles.add(str(plan["profile"]))
     for item in plan.get("actions") or []:
@@ -79,6 +84,8 @@ def requirements_from_plan(
         if isinstance(action, str):
             actions.add(normalize_action(action))
         _collect_expression_requirements(item, functions, operators, types)
+        if _contains_distinct_three_state(item):
+            semantic_modes.add("three_state_distinct")
         if _plan_has_window(item):
             profiles.add(PROFILE_WINDOW_V1)
             # V2 is only required when V2-only functions appear.
@@ -87,6 +94,8 @@ def requirements_from_plan(
     for output in (plan.get("outputs") or {}).values():
         if isinstance(output, dict):
             _collect_expression_requirements(output, functions, operators, types)
+            if _contains_distinct_three_state(output):
+                semantic_modes.add("three_state_distinct")
             if _plan_has_window(output):
                 profiles.add(PROFILE_WINDOW_V1)
                 if _plan_requires_window_v2(output):
@@ -103,6 +112,7 @@ def requirements_from_plan(
         operators=operators,
         types=types,
     )
+    result["semantic_modes"] = sorted(semantic_modes)
     if not include_extended:
         result.pop("operators", None)
         result.pop("types", None)
@@ -250,6 +260,27 @@ def match_requirements(
     req = requirements or {}
     findings: list[TransformSupportFinding] = []
 
+    known_keys = {
+        "profiles",
+        "actions",
+        "functions",
+        "operators",
+        "types",
+        "semantic_modes",
+        "lazy",
+        "eager",
+    }
+    for key in sorted(set(req) - known_keys):
+        findings.append(
+            TransformSupportFinding(
+                code="PMXFORM303",
+                requirement=f"requirement:{key}",
+                reason="requirement category is unknown to this protocol version",
+                expression_path=None,
+                support="unknown",
+            )
+        )
+
     claimed_profiles = set(capabilities.profiles)
     if allow_kernel_profile_alias and KERNEL_PROFILE_V1 in claimed_profiles:
         claimed_profiles |= _KERNEL_PROFILE_ALIASES
@@ -360,6 +391,21 @@ def match_requirements(
         supported=not findings,
         findings=tuple(findings),
     )
+
+
+def _contains_distinct_three_state(node: Any) -> bool:
+    if isinstance(node, Mapping):
+        value = node.get("value")
+        if (
+            node.get("kind") == "literal"
+            and isinstance(value, Mapping)
+            and value.get("type") in {"missing", "invalid"}
+        ):
+            return True
+        return any(_contains_distinct_three_state(item) for item in node.values())
+    if isinstance(node, list):
+        return any(_contains_distinct_three_state(item) for item in node)
+    return False
 
 
 def plan_requires_distinct_three_state(plan: Mapping[str, Any] | None) -> bool:
@@ -477,6 +523,60 @@ def portable_shape_findings(
                     f"actions[{index}].kind.parameters.mode",
                 )
             )
+        if action == "dtcs:union":
+            mode = str(params.get("mode", "byName")).lower()
+            if mode == "byposition" and bool(params.get("allowMissingColumns", False)):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "union:allowMissingColumns",
+                        "allowMissingColumns is not supported for byPosition unions",
+                        f"actions[{index}].kind.parameters.allowMissingColumns",
+                    )
+                )
+        if action == "dtcs:join":
+            join_type = str(params.get("type", "inner")).lower()
+            if join_type == "outer":
+                join_type = "full"
+            if join_type not in {
+                "inner",
+                "left",
+                "right",
+                "full",
+                "semi",
+                "anti",
+                "cross",
+            }:
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "join:type",
+                        "join type is outside the portable vocabulary",
+                        f"actions[{index}].kind.parameters.type",
+                    )
+                )
+            left_key = params.get("leftKey", params.get("leftKeys"))
+            right_key = params.get("rightKey", params.get("rightKeys"))
+            if isinstance(left_key, list) or isinstance(right_key, list):
+                left_count = (
+                    len(left_key)
+                    if isinstance(left_key, list)
+                    else (1 if left_key else 0)
+                )
+                right_count = (
+                    len(right_key)
+                    if isinstance(right_key, list)
+                    else (1 if right_key else 0)
+                )
+                if left_count != right_count:
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "join:key_arity",
+                            "left and right join key counts must match",
+                            f"actions[{index}].kind.parameters",
+                        )
+                    )
 
         def _walk_expression(node: Any, path: str) -> None:
             if isinstance(node, Mapping):
@@ -497,6 +597,38 @@ def portable_shape_findings(
                         )
                     )
                     return
+                if node_kind == "call" and isinstance(node.get("callee"), str):
+                    callee = str(node["callee"])
+                    bounds = BASELINE_FUNCTION_ARITIES.get(callee)
+                    args = node.get("args") or []
+                    if bounds is not None and (
+                        len(args) < bounds[0]
+                        or (bounds[1] is not None and len(args) > bounds[1])
+                    ):
+                        findings.append(
+                            TransformSupportFinding(
+                                "PMXFORM302",
+                                f"function:{callee}:arity",
+                                f"{callee} received {len(args)} arguments outside its portable arity",
+                                path,
+                            )
+                        )
+                    if callee == "dtcs:concat_ws" and args:
+                        separator = args[0]
+                        if not (
+                            isinstance(separator, Mapping)
+                            and separator.get("kind") == "literal"
+                            and isinstance(separator.get("value"), Mapping)
+                            and separator["value"].get("type") == "string"
+                        ):
+                            findings.append(
+                                TransformSupportFinding(
+                                    "PMXFORM302",
+                                    "function:dtcs:concat_ws:separator",
+                                    "concat_ws requires a literal string separator",
+                                    path,
+                                )
+                            )
                 for key, value in node.items():
                     _walk_expression(value, f"{path}.{key}" if path else key)
             elif isinstance(node, list):
