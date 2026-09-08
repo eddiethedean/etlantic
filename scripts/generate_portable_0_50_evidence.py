@@ -355,7 +355,8 @@ def main() -> int:
         },
     )
     (EVIDENCE / "FINDINGS_0_50.md").write_text(
-        "# 0.50 Findings\n\n**Status: Qualified evidence generated.**\n\n"
+        "# 0.50 Findings\n\n"
+        "**Status: Technical qualification complete; Sol review pending.**\n\n"
         "The frozen seven-engine corpus, the real PostgreSQL SQL path, the real "
         "PySpark JVM path, the canonical multistage pipeline, and required "
         "pushdown findings passed for the source commit recorded in the evidence index.\n",
@@ -373,7 +374,8 @@ def main() -> int:
         "# What's new in 0.50\n\n"
         "The Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB portable "
         "compilers have qualified the frozen baseline in the recorded evidence campaign. "
-        "Advanced, adaptive, remote, streaming, and federated execution remain separate claims.\n",
+        "Advanced, adaptive, remote, streaming, and federated execution remain separate claims. "
+        "This technical result remains subject to Sol's independent release review.\n",
         encoding="utf-8",
     )
     digests = {
