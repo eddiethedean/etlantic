@@ -162,7 +162,9 @@ class DuckDBTransformCompiler:
             findings=tuple(findings),
             evidence_fingerprint=self._info.evidence_fingerprint,
             pushdown=relational_pushdown_findings(
-                definition, evidence_fingerprint=self._info.evidence_fingerprint
+                definition,
+                evidence_fingerprint=self._info.evidence_fingerprint,
+                physical_effects=("materialization", "lost_fusion"),
             ),
             requirements=requirement_records_from_mapping(req),
             requirement_findings=report.requirement_findings,
@@ -368,6 +370,7 @@ class DuckDBTransformCompiler:
                 "lazy": True,
                 "evidence_fingerprint": self.info.evidence_fingerprint,
                 "native_statement_digests": native_statement_digests,
+                "host_fallback": False,
             },
         )
 

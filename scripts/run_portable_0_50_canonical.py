@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
+import json
 from typing import Any
 
 from etlantic import (
@@ -149,7 +152,7 @@ def _rows(value: Any) -> list[dict[str, Any]]:
     ]
 
 
-def _run(engine: str) -> None:
+def _run(engine: str) -> list[dict[str, Any]]:
     profile = _profile(engine)
     runtime = PipelineRuntime()
     _register_runtime_engine(runtime, engine)
@@ -179,10 +182,18 @@ def _run(engine: str) -> None:
     ]
     if actual != expected:
         raise AssertionError(f"{engine}: public runtime result diverged: {actual!r}")
+    return actual
 
 
 def main() -> int:
-    for engine in (
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--engines",
+        default="all",
+        help="comma-separated engines to qualify (default: all)",
+    )
+    args = parser.parse_args()
+    available = (
         "local",
         "polars",
         "pandas",
@@ -190,9 +201,26 @@ def main() -> int:
         "pyspark",
         "datafusion",
         "duckdb",
-    ):
-        _run(engine)
+    )
+    engines = (
+        available
+        if args.engines == "all"
+        else tuple(item.strip() for item in args.engines.split(",") if item.strip())
+    )
+    unknown = sorted(set(engines) - set(available))
+    if unknown:
+        raise SystemExit("unknown canonical engine(s): " + ", ".join(unknown))
+    results: list[list[dict[str, Any]]] = []
+    for engine in engines:
+        results.append(_run(engine))
         print(f"{engine}: pass")
+    if results:
+        print(
+            "canonical_result_digest:"
+            + hashlib.sha256(
+                json.dumps(results[0], sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
     return 0
 
 

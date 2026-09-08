@@ -10,6 +10,17 @@ from typing import Any, Literal
 BASELINE_ID = "etlantic.portable-baseline/1"
 SUPPORT_PROTOCOL_ID = "etlantic.portable-requirement-support/1"
 
+PROFILE_ALIASES = {
+    "dtcs:profile/portable-relational-kernel/2": {
+        "canonical": "dtcs:profile/portable-relational-kernel/1",
+        "proof": "exact-vocabulary-equivalence",
+    },
+    "dtcs:profile/portable-relational/2": {
+        "canonical": "dtcs:profile/portable-relational/1",
+        "proof": "exact-vocabulary-equivalence",
+    },
+}
+
 KERNEL_ACTIONS = (
     "dtcs:filter",
     "dtcs:project",
@@ -164,6 +175,9 @@ def baseline_manifest() -> dict[str, Any]:
             "dtcs:profile/portable-relational-kernel/1",
             "dtcs:profile/portable-relational/1",
         ],
+        "profile_aliases": {
+            alias: dict(details) for alias, details in sorted(PROFILE_ALIASES.items())
+        },
         "actions": list(KERNEL_ACTIONS + RELATIONAL_ACTIONS),
         "scalar_functions": list(SCALAR_FUNCTIONS),
         "aggregate_functions": list(AGGREGATE_FUNCTIONS),

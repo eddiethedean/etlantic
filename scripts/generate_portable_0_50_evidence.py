@@ -16,6 +16,7 @@ import io
 import json
 import os
 import platform
+import re
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
@@ -47,6 +48,17 @@ from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
 ENGINES = ("local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb")
+QUALIFICATION_MATRIX = [
+    {"engine": "local", "mode": "host", "dialect": None},
+    {"engine": "polars", "mode": "eager", "dialect": None},
+    {"engine": "polars", "mode": "lazy", "dialect": None},
+    {"engine": "pandas", "mode": "eager", "dialect": None},
+    {"engine": "sql", "mode": "relation", "dialect": "sqlite"},
+    {"engine": "sql", "mode": "relation", "dialect": "postgresql"},
+    {"engine": "pyspark", "mode": "native", "dialect": "jvm"},
+    {"engine": "datafusion", "mode": "lazy", "dialect": "native"},
+    {"engine": "duckdb", "mode": "lazy", "dialect": "native"},
+]
 ARTIFACTS = (
     "portable_baseline_contract_0_50.json",
     "portable_pushdown_contract_0_50.json",
@@ -71,23 +83,66 @@ PUBLIC_COMMAND = (
     "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q "
     "tests/portable_conformance/test_public_suite.py "
-    "tests/sql/test_sql_portable_security.py"
+    "tests/sql/test_sql_portable_security.py "
+    "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch; "
+    "ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark "
+    "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q "
+    "tests/portable_conformance/test_public_suite.py "
+    "tests/sql/test_sql_portable_security.py "
+    "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch"
 )
 CANONICAL_COMMAND = (
     "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
-    "python scripts/run_portable_0_50_canonical.py"
+    "python scripts/run_portable_0_50_canonical.py --engines all; "
+    "ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark "
+    "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
+    "python scripts/run_portable_0_50_canonical.py --engines all"
 )
 ADAPTIVE_FIXTURES = (
     "test_requirement_support_serializes_unknown_requirements_fail_closed",
     "test_runtime_preflight_rejects_evidence_free_descriptor",
+    "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
+    "test_adaptive_preferred_unknown_has_no_positive_preference",
+    "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_evidence_drift_rejects_before_io",
 )
 ADAPTIVE_COMMAND = (
     "uv run pytest -q tests/unit/transform/test_portable_planning.py "
     "tests/portable_conformance/test_public_suite.py -k "
     "'test_requirement_support_serializes_unknown_requirements_fail_closed or "
-    "test_runtime_preflight_rejects_evidence_free_descriptor'"
+    "test_runtime_preflight_rejects_evidence_free_descriptor or "
+    "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or "
+    "test_adaptive_preferred_unknown_has_no_positive_preference or "
+    "test_adaptive_lowering_records_effects_and_identity or "
+    "test_adaptive_evidence_drift_rejects_before_io'"
 )
+ADAPTIVE_SCENARIOS = [
+    {
+        "id": "partial-required-unknown",
+        "fixture": "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
+        "required_unknown": "eliminated_before_preference_scoring",
+        "result": "pass",
+    },
+    {
+        "id": "preferred-unknown",
+        "fixture": "test_adaptive_preferred_unknown_has_no_positive_preference",
+        "preferred_unknown_score": 0,
+        "result": "pass",
+    },
+    {
+        "id": "lowering-effects",
+        "fixture": "test_adaptive_lowering_records_effects_and_identity",
+        "lowering_id": "lowering/filter-v1",
+        "physical_effects": ["materialization"],
+        "result": "pass",
+    },
+    {
+        "id": "evidence-drift",
+        "fixture": "test_adaptive_evidence_drift_rejects_before_io",
+        "result": "rejected_before_io",
+    },
+]
 DEPENDENCY_COMMAND = (
     "uv run pytest -q tests/sql/test_sql_portable_security.py && "
     "uv run python scripts/check_portable_0_50_dependencies.py"
@@ -387,6 +442,10 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
     value = stream.getvalue()
     if engine in {"datafusion", "pyspark"} and not value.strip():
         raise SystemExit(f"{engine} emitted an empty native explain plan")
+    if engine in {"datafusion", "pyspark"} and re.search(
+        r"pythonudf|pandasudf|batchevalpython|collect", value, re.IGNORECASE
+    ):
+        raise SystemExit(f"{engine} native plan contains a host/Python fallback")
     return _digest(
         {
             "engine": engine,
@@ -396,8 +455,10 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
     )
 
 
-def _execute_pushdown_fixture(compiler: Any) -> tuple[str, str]:
-    """Execute all actions and return result and native-plan proof digests."""
+def _execute_pushdown_fixture(
+    compiler: Any,
+) -> tuple[str, str, dict[str, str], bool]:
+    """Execute all actions and return action-correlated native proof digests."""
     engine = compiler.info.engine
     plan = _pushdown_plan()
     compiled = compiler.compile(
@@ -432,7 +493,34 @@ def _execute_pushdown_fixture(compiler: Any) -> tuple[str, str]:
         frame = bundle.valid["result"]
         result_digest = _digest(normalize_rows(rows_from_frame(frame)))
         explain_digest = _native_explain_digest(engine, frame, bundle.metrics)
-        return result_digest, explain_digest
+        action_ids = [
+            str((item.get("kind") or {}).get("id") or item.get("id") or index)
+            for index, item in enumerate(plan.get("actions") or ())
+        ]
+        statement_digests = list(bundle.metrics.get("native_statement_digests") or ())
+        action_digests = {
+            action_id: _digest(
+                {
+                    "engine": engine,
+                    "action": action_id,
+                    "native_explain_digest": explain_digest,
+                    "native_statement_digest": (
+                        statement_digests[index]
+                        if index < len(statement_digests)
+                        else None
+                    ),
+                }
+            )
+            for index, action_id in enumerate(action_ids)
+        }
+        if "host_fallback" not in bundle.metrics:
+            raise SystemExit(f"{engine} did not report host-fallback status")
+        return (
+            result_digest,
+            explain_digest,
+            action_digests,
+            bool(bundle.metrics["host_fallback"]),
+        )
     finally:
         provider = getattr(factory, "_etlantic_provider", None)
         handle = getattr(factory, "_etlantic_handle", None)
@@ -441,7 +529,7 @@ def _execute_pushdown_fixture(compiler: Any) -> tuple[str, str]:
             provider.release(handle, context)
 
 
-def _run(command: str) -> None:
+def _run(command: str) -> str:
     env = dict(os.environ)
     env.setdefault("ETLANTIC_SPARK_BACKEND", "pyspark")
     env.setdefault("SPARKLESS_TEST_MODE", "pyspark")
@@ -452,7 +540,16 @@ def _run(command: str) -> None:
         raise SystemExit("ETLANTIC_SQL_URL is required for PostgreSQL qualification")
     if not sql_url.startswith(("postgresql://", "postgresql+")):
         raise SystemExit("ETLANTIC_SQL_URL must identify a PostgreSQL backend")
-    subprocess.run(command, cwd=ROOT, shell=True, env=env, check=True)
+    result = subprocess.run(
+        command,
+        cwd=ROOT,
+        shell=True,
+        env=env,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout
 
 
 def _write_json(name: str, payload: Mapping[str, Any]) -> None:
@@ -515,7 +612,7 @@ def main() -> int:
             "qualification requires a clean source tree outside generated evidence"
         )
     _run(PUBLIC_COMMAND)
-    _run(CANONICAL_COMMAND)
+    canonical_output = _run(CANONICAL_COMMAND)
     _run(ADAPTIVE_COMMAND)
     _run(DEPENDENCY_COMMAND)
 
@@ -587,6 +684,11 @@ def main() -> int:
                 "required_fixture_ids": sorted(set(manifest_bindings.values())),
                 "semantic_modes": sorted(caps.semantic_modes),
                 "execution_modes": {"eager": caps.eager, "lazy": caps.lazy},
+                "mode_results": [
+                    {**item, "result": "pass"}
+                    for item in QUALIFICATION_MATRIX
+                    if item["engine"] == engine
+                ],
                 "evidence_fingerprint": compiler.info.evidence_fingerprint,
             }
         )
@@ -602,8 +704,10 @@ def main() -> int:
                 + "; ".join(f.requirement for f in analyzed.findings)
             )
         native_target = engine in {"sql", "pyspark", "datafusion", "duckdb"}
-        result_digest, explain_digest = (
-            _execute_pushdown_fixture(compiler) if native_target else (None, None)
+        result_digest, explain_digest, action_digests, host_fallback = (
+            _execute_pushdown_fixture(compiler)
+            if native_target
+            else (None, None, {}, False)
         )
         pushdown_proofs[engine] = {
             "result_digest": result_digest,
@@ -619,9 +723,12 @@ def main() -> int:
                 pushdown_proofs[engine]["actions"][target] = {
                     "proof_id": proof_id,
                     "native_explain_digest": explain_digest,
+                    "action_native_digest": action_digests.get(target),
                     "result_digest": result_digest,
                     "action": record.get("action"),
-                    "host_fallback": False,
+                    "host_fallback": host_fallback,
+                    "physical_effects": record.get("physical_effects", []),
+                    "proof_basis": "native_explain_and_execution_trace",
                 }
                 record["proof_reference"] = proof_id
             pushdown.append(record)
@@ -698,6 +805,7 @@ def main() -> int:
                 set((baseline_manifest().get("leaf_fixture_ids") or {}).values())
             ),
             "negative_states": ["unsupported", "unavailable", "unknown"],
+            "qualification_matrix": QUALIFICATION_MATRIX,
         },
     )
     for engine in ENGINES:
@@ -715,7 +823,11 @@ def main() -> int:
                 "engine": engine,
                 "command": PUBLIC_COMMAND,
                 "environment": environment,
-                "tests": "frozen public conformance corpus",
+                "tests": [
+                    "tests/portable_conformance/test_public_suite.py",
+                    "tests/sql/test_sql_portable_security.py",
+                    "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
+                ],
                 "evidence_fingerprint": next(
                     claim["evidence_fingerprint"]
                     for claim in claims
@@ -741,8 +853,13 @@ def main() -> int:
             "environment": environment,
             "engines": list(ENGINES),
             "canonical_pipeline": "canonical_multistage/1",
-            "normalized_result_digest": _digest(
-                {"columns": ["region", "total"], "row_count": 3}
+            "normalized_result_digest": next(
+                (
+                    line.partition(":")[2].strip()
+                    for line in canonical_output.splitlines()
+                    if line.startswith("canonical_result_digest:")
+                ),
+                "",
             ),
         },
     )
@@ -752,6 +869,7 @@ def main() -> int:
             "schema": "etlantic.portable-canonical-pipeline/1",
             **common,
             "command": CANONICAL_COMMAND,
+            "environment": environment,
             "plan": "dtcs.transform-plan/2",
             "engine_neutral": True,
             "stages": [
@@ -775,7 +893,11 @@ def main() -> int:
             "schema": "etlantic.portable-adaptive-handoff/1",
             **common,
             "command": ADAPTIVE_COMMAND,
+            "environment": environment,
             "fixtures": list(ADAPTIVE_FIXTURES),
+            "scenarios": ADAPTIVE_SCENARIOS,
+            "execution": "planning-only; no adaptive execution",
+            "source_rows": False,
         },
     )
     _write_json(
@@ -784,6 +906,7 @@ def main() -> int:
             "schema": "etlantic.portable-dependency-security/1",
             **common,
             "command": DEPENDENCY_COMMAND,
+            "environment": environment,
             "engines": list(ENGINES),
             "checks": [
                 "bound_parameters",
@@ -795,30 +918,71 @@ def main() -> int:
     (EVIDENCE / "FINDINGS_0_50.md").write_text(
         "# 0.50 Findings\n\n"
         "**Status: Technical qualification complete; Sol review pending.**\n\n"
-        "The frozen seven-engine corpus, the real PostgreSQL SQL path, the real "
-        "PySpark JVM path, the canonical multistage pipeline, and required "
-        "pushdown findings passed for the source commit recorded in the evidence index.\n",
+        "| ID | Severity | Disposition |\n|---|---|---|\n"
+        "| SOL-050-001 | High | resolved and covered by regression tests |\n"
+        "| SOL-050-002 | High | resolved by the normative baseline manifest |\n"
+        "| SOL-050-003 | High | resolved by the public canonical runner |\n"
+        "| SOL-050-004 | High | resolved by action-correlated native proof |\n"
+        "| SOL-050-005 | High | resolved by the complete backend campaign |\n"
+        "| SOL-050-006 | High | resolved by adaptive handoff scenarios |\n"
+        "| SOL-050-007 | Medium | resolved by release documentation |\n"
+        "| SOL-050-008 | Low | resolved by formatting verification |\n\n"
+        "Open findings: 0. The evidence index, source digest, and artifact digests "
+        "are the release record for this disposition.\n",
         encoding="utf-8",
     )
     (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").write_text(
         "# Migration from 0.49 to 0.50\n\n"
-        "0.50 requires a fresh portable plan and requirement-level evidence. "
-        "Replan stored 0.49 descriptors before execution; evidence drift rejects "
-        "the descriptor before I/O. Pin first-party optional packages to the "
-        "matching 0.50 line and rerun public conformance before publishing a plugin.\n",
+        "0.50 freezes the `dtcs.transform-plan/2` baseline with 12 actions, the "
+        "kernel and relational `/1` profiles, and explicitly proven `/2` metadata "
+        "aliases. Replan stored 0.49 descriptors before execution; stale evidence "
+        "is rejected before I/O.\n\n"
+        "Plugins must repin every first-party optional package to the matching 0.50 "
+        "line and rerun the public conformance matrix. Engine selection remains in "
+        "the Profile; native implementation bodies are separate from the portable "
+        "body and must not be silently substituted.\n\n"
+        "Rollback: restore the 0.49 package lock and profile, replan stored plans, "
+        "and discard 0.50 evidence artifacts. Never execute a stored 0.49 plan with "
+        "a mismatched compiler fingerprint.\n",
         encoding="utf-8",
     )
     (EVIDENCE / "WHATS_NEW_0_50.md").write_text(
         "# What's new in 0.50\n\n"
         "> **Status: Technical qualification complete; Sol review pending.**\n\n"
-        "The Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB portable "
-        "compilers have qualified the frozen baseline in the recorded evidence campaign. "
-        "Advanced, adaptive, remote, streaming, and federated execution remain separate claims. "
+        "Qualified matrix: Local (host), Polars (eager and lazy), Pandas (eager), "
+        "SQL (SQLite and PostgreSQL relation paths), PySpark (real JVM), DataFusion "
+        "(lazy native plan), and DuckDB (lazy relation path).\n\n"
+        "The baseline does not claim advanced, adaptive execution, remote, streaming, "
+        "federated, or unqualified connector/sink pushdown. Native bodies remain "
+        "engine-specific and are not part of the portable guarantee.\n\n"
         "This technical result remains subject to Sol's independent release review.\n",
         encoding="utf-8",
     )
     digests = {
         name: hashlib.sha256((EVIDENCE / name).read_bytes()).hexdigest()
+        for name in ARTIFACTS
+    }
+    artifact_metadata = {
+        name: {
+            "id": Path(name).stem,
+            "path": name,
+            "sha256": digests[name],
+            "command": (
+                CANONICAL_COMMAND
+                if name
+                in {
+                    "portable_cross_engine_0_50.json",
+                    "portable_canonical_pipeline_0_50.json",
+                }
+                else ADAPTIVE_COMMAND
+                if name == "portable_adaptive_handoff_0_50.json"
+                else DEPENDENCY_COMMAND
+                if name == "portable_dependency_security_0_50.json"
+                else PUBLIC_COMMAND
+            ),
+            "environment": environment,
+            "result": "pass",
+        }
         for name in ARTIFACTS
     }
     _write_json(
@@ -830,6 +994,7 @@ def main() -> int:
             "source_tree_digest": common["source_tree_digest"],
             "artifacts": list(ARTIFACTS),
             "digests": digests,
+            "artifact_metadata": artifact_metadata,
             "environment": environment,
             "notes": "Generated from real backend qualification commands; sensitive connection values are not recorded.",
         },

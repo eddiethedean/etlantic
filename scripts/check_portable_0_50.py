@@ -54,6 +54,7 @@ def main() -> int:
     required_manifest_keys = {
         "plan",
         "profiles",
+        "profile_aliases",
         "actions",
         "scalar_functions",
         "aggregate_functions",
@@ -77,6 +78,24 @@ def main() -> int:
     }
     if not required_manifest_keys.issubset(manifest):
         raise SystemExit("baseline manifest is missing normative contract fields")
+    aliases = manifest.get("profile_aliases")
+    if not isinstance(aliases, dict):
+        raise SystemExit("baseline profile aliases must be an object")
+    expected_aliases = {
+        "dtcs:profile/portable-relational-kernel/2": "dtcs:profile/portable-relational-kernel/1",
+        "dtcs:profile/portable-relational/2": "dtcs:profile/portable-relational/1",
+    }
+    for alias, canonical in expected_aliases.items():
+        details = aliases.get(alias)
+        if (
+            not isinstance(details, dict)
+            or details.get("canonical") != canonical
+            or details.get("proof") != "exact-vocabulary-equivalence"
+            or canonical not in manifest.get("profiles", [])
+        ):
+            raise SystemExit(
+                f"profile alias lacks normative equivalence proof: {alias}"
+            )
     from etlantic.transform.portable_baseline import baseline_manifest
 
     if manifest != baseline_manifest():
@@ -153,6 +172,20 @@ def main() -> int:
     digests = index.get("digests")
     if not isinstance(digests, dict) or set(digests) != listed:
         raise SystemExit("evidence index must provide one digest per artifact")
+    metadata = index.get("artifact_metadata")
+    if not isinstance(metadata, dict) or set(metadata) != listed:
+        raise SystemExit("evidence index must provide metadata for every artifact")
+    for name in listed:
+        item = metadata.get(name)
+        if (
+            not isinstance(item, dict)
+            or item.get("path") != name
+            or not str(item.get("id") or "").strip()
+            or not str(item.get("command") or "").strip()
+            or not isinstance(item.get("environment"), dict)
+            or item.get("result") != "pass"
+        ):
+            raise SystemExit(f"evidence index metadata is incomplete: {name}")
     for name in REQUIRED - {"portable_evidence_index_0_50.json"}:
         artifact = EVIDENCE / name
         if artifact.suffix == ".json":
@@ -174,6 +207,8 @@ def main() -> int:
                 or not payload["command"].strip()
             ):
                 raise SystemExit(f"artifact command is missing: {name}")
+            if not isinstance(payload.get("environment"), dict):
+                raise SystemExit(f"artifact environment is missing: {name}")
             result = payload.get("result")
             if result not in {"pass", "blocked"}:
                 raise SystemExit(f"artifact has non-final result: {name}")
@@ -244,6 +279,31 @@ def main() -> int:
         raise SystemExit("claim coverage must contain exactly one claim per engine")
     if coverage.get("required_fixture_ids") != expected_fixtures:
         raise SystemExit("claim coverage fixture inventory differs from baseline")
+    expected_matrix = {
+        ("local", "host", None),
+        ("polars", "eager", None),
+        ("polars", "lazy", None),
+        ("pandas", "eager", None),
+        ("sql", "relation", "sqlite"),
+        ("sql", "relation", "postgresql"),
+        ("pyspark", "native", "jvm"),
+        ("datafusion", "lazy", "native"),
+        ("duckdb", "lazy", "native"),
+    }
+    matrix = coverage.get("qualification_matrix")
+    if (
+        not isinstance(matrix, list)
+        or {
+            (item.get("engine"), item.get("mode"), item.get("dialect"))
+            for item in matrix
+            if isinstance(item, dict)
+        }
+        != expected_matrix
+        or any(
+            item.get("result") != "pass" for item in matrix if isinstance(item, dict)
+        )
+    ):
+        raise SystemExit("qualification matrix is incomplete or not passing")
     from etlantic.testing.portable_fixtures import FIXTURES
 
     fixture_names = {case.name for case in FIXTURES}
@@ -284,6 +344,13 @@ def main() -> int:
             raise SystemExit("claim is missing eager/lazy execution dimensions")
         if not isinstance(claim.get("semantic_modes"), list):
             raise SystemExit("claim is missing semantic mode dimensions")
+        mode_results = claim.get("mode_results")
+        if not isinstance(mode_results, list) or any(
+            item.get("result") != "pass"
+            for item in mode_results
+            if isinstance(item, dict)
+        ):
+            raise SystemExit("claim is missing passing mode results")
     pushdown = json.loads(
         (EVIDENCE / "portable_pushdown_contract_0_50.json").read_text()
     )
@@ -304,10 +371,19 @@ def main() -> int:
             or not isinstance(action_proof, dict)
             or action_proof.get("proof_id") != expected
             or not action_proof.get("native_explain_digest")
+            or not action_proof.get("action_native_digest")
             or not action_proof.get("result_digest")
             or action_proof.get("host_fallback") is not False
+            or action_proof.get("proof_basis") != "native_explain_and_execution_trace"
         ):
             raise SystemExit("required pushdown finding lacks native execution proof")
+        if engine in {"sql", "duckdb"} and not {
+            "materialization",
+            "lost_fusion",
+        }.issubset(set(action_proof.get("physical_effects") or ())):
+            raise SystemExit(
+                "SQL/DuckDB pushdown proof omits temporary materialization effects"
+            )
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
     )
@@ -324,6 +400,31 @@ def main() -> int:
         raise SystemExit(
             "adaptive handoff must link each recorded fixture to its executed command"
         )
+    scenarios = adaptive.get("scenarios")
+    required_scenarios = {
+        "partial-required-unknown",
+        "preferred-unknown",
+        "lowering-effects",
+        "evidence-drift",
+    }
+    if (
+        not isinstance(scenarios, list)
+        or {item.get("id") for item in scenarios if isinstance(item, dict)}
+        != required_scenarios
+    ):
+        raise SystemExit("adaptive handoff scenario coverage is incomplete")
+    for scenario in scenarios:
+        if (
+            not isinstance(scenario, dict)
+            or scenario.get("result") not in {"pass", "rejected_before_io"}
+            or str(scenario.get("fixture") or "") not in adaptive_fixtures
+            or str(scenario.get("fixture") or "") not in adaptive_command
+        ):
+            raise SystemExit(
+                "adaptive handoff scenario is not tied to an executed fixture"
+            )
+    if adaptive.get("execution") != "planning-only; no adaptive execution":
+        raise SystemExit("adaptive handoff must declare planning-only execution")
     dependency = json.loads(
         (EVIDENCE / "portable_dependency_security_0_50.json").read_text()
     )
@@ -331,6 +432,24 @@ def main() -> int:
         dependency.get("command") or ""
     ):
         raise SystemExit("dependency evidence must run isolated wheel checks")
+    findings_doc = (EVIDENCE / "FINDINGS_0_50.md").read_text()
+    migration_doc = (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").read_text()
+    whats_new_doc = (EVIDENCE / "WHATS_NEW_0_50.md").read_text()
+    if "Open findings: 0" not in findings_doc or "SOL-050-008" not in findings_doc:
+        raise SystemExit("findings ledger is incomplete")
+    for phrase in ("baseline", "repin", "rollback", "native"):
+        if phrase not in migration_doc.lower():
+            raise SystemExit("migration guidance is incomplete")
+    for phrase in ("Qualified matrix", "Local", "Polars", "SQL", "does not claim"):
+        if phrase.lower() not in whats_new_doc.lower():
+            raise SystemExit("what's-new qualification matrix is incomplete")
+    cross_engine = json.loads(
+        (EVIDENCE / "portable_cross_engine_0_50.json").read_text()
+    )
+    if not re.fullmatch(
+        r"[0-9a-f]{64}", str(cross_engine.get("normalized_result_digest") or "")
+    ):
+        raise SystemExit("cross-engine digest must be derived from canonical output")
     print("0.50 evidence artifact set is complete and structurally valid")
     return 0
 

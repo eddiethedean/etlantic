@@ -51,6 +51,13 @@ def main() -> int:
                 package,
             )
             _run(str(python), "-c", f"import {module}; print({module}.__name__)")
+            if package == "etlantic":
+                _run(
+                    str(python),
+                    str(ROOT / "scripts/run_portable_0_50_canonical.py"),
+                    "--engines",
+                    "local",
+                )
     print(
         "isolated wheel build and import checks passed for all seven portable engines"
     )

@@ -48,3 +48,17 @@ def test_negative_three_state_fixture_is_selected_without_three_state_claim() ->
     assert "reject_missing_literal_without_three_state" in {
         case.name for case in selected
     }
+
+
+def test_profile_aliases_are_normative_and_proven() -> None:
+    from etlantic.transform.portable_baseline import baseline_manifest
+
+    aliases = baseline_manifest()["profile_aliases"]
+    assert aliases["dtcs:profile/portable-relational-kernel/2"] == {
+        "canonical": "dtcs:profile/portable-relational-kernel/1",
+        "proof": "exact-vocabulary-equivalence",
+    }
+    assert aliases["dtcs:profile/portable-relational/2"] == {
+        "canonical": "dtcs:profile/portable-relational/1",
+        "proof": "exact-vocabulary-equivalence",
+    }

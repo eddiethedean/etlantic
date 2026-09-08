@@ -149,6 +149,8 @@ def rows_from_frame(frame: Any) -> list[dict[str, Any]]:
         return list(frame.to_dict(orient="records"))
     if hasattr(frame, "collect"):
         collected = frame.collect()
+        if hasattr(collected, "to_dicts"):
+            return list(collected.to_dicts())
         if collected and hasattr(collected[0], "to_pylist"):
             return [row for batch in collected for row in batch.to_pylist()]
         return [

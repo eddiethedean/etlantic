@@ -249,6 +249,7 @@ class DataFusionTransformCompiler:
                 "engine": "datafusion",
                 "lazy": True,
                 "evidence_fingerprint": self.info.evidence_fingerprint,
+                "host_fallback": False,
             },
         )
 

@@ -461,6 +461,60 @@ def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
     assert all(item["support"] == "unknown" for item in payload["findings"])
 
 
+def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() -> None:
+    from etlantic.transform.capabilities import match_requirements
+    from etlantic.transform.compiler import TransformCapabilities
+
+    capabilities = TransformCapabilities(
+        profiles=frozenset(), actions=frozenset({"dtcs:filter"}), functions=frozenset()
+    )
+    report = match_requirements({"future_dimension": ["x"]}, capabilities)
+    assert report.supported is False
+    assert any(item.support == "unknown" for item in report.findings)
+
+
+def test_adaptive_preferred_unknown_has_no_positive_preference() -> None:
+    from etlantic.transform.compiler import TransformSupportFinding
+
+    finding = TransformSupportFinding(
+        code="PMXFORM999",
+        requirement="action:dtcs:sort",
+        reason="no evidence",
+        obligation="preferred",
+        support="unknown",
+    )
+    assert finding.support not in {"supported_exact", "supported_with_lowering"}
+
+
+def test_adaptive_lowering_records_effects_and_identity() -> None:
+    from etlantic.transform.compiler import TransformSupportFinding
+
+    finding = TransformSupportFinding(
+        code="PMXFORM200",
+        requirement="action:dtcs:filter",
+        reason="deterministic lowering",
+        support="supported_with_lowering",
+        lowering_id="lowering/filter-v1",
+        physical_effects=("materialization",),
+    )
+    payload = finding.to_dict()
+    assert payload["lowering_id"] == "lowering/filter-v1"
+    assert payload["physical_effects"] == ["materialization"]
+
+
+def test_adaptive_evidence_drift_rejects_before_io() -> None:
+    from etlantic.transform.compiler import preflight_portable_support
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    descriptor = type(
+        "Descriptor",
+        (),
+        {"compiler_evidence_fingerprint": "stale", "support_summary": {}},
+    )()
+    with pytest.raises(ValueError, match="evidence"):
+        preflight_portable_support(descriptor, LocalTransformCompiler(), engine="local")
+
+
 def test_runtime_preflight_rejects_evidence_free_descriptor() -> None:
     from types import SimpleNamespace
 
@@ -962,6 +1016,19 @@ def test_suite_passes_polars() -> None:
     from etlantic_polars import create_transform_compiler
 
     run_portable_transform_conformance_suite(create_transform_compiler())
+
+
+@pytest.mark.polars
+def test_suite_passes_polars_lazy() -> None:
+    pytest.importorskip("polars")
+    import polars as pl
+
+    from etlantic_polars import create_transform_compiler
+
+    run_portable_transform_conformance_suite(
+        create_transform_compiler(),
+        to_frame=lambda rows: pl.DataFrame(rows).lazy(),
+    )
 
 
 @pytest.mark.pandas

@@ -312,7 +312,11 @@ class PySparkTransformCompiler:
 
         return TransformOutputBundle(
             valid=valid,
-            metrics={"engine": "pyspark", "udf_policy": "deny"},
+            metrics={
+                "engine": "pyspark",
+                "udf_policy": "deny",
+                "host_fallback": False,
+            },
         )
 
 

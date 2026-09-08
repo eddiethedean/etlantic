@@ -12,33 +12,28 @@ from etlantic.transform.compiler import (
 )
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTION_ARITIES,
+    PROFILE_ALIASES,
     normalize_action,
     normalize_operator,
 )
 from etlantic.transform.protocol import (
     DEFAULT_PROFILE,
     KERNEL_PROFILE_V1,
-    KERNEL_PROFILE_V2,
-    RELATIONAL_PROFILE_V1,
-    RELATIONAL_PROFILE_V2,
 )
 
-# Profiles that are plan-shape / metadata aliases of the kernel claim.
-_KERNEL_PROFILE_ALIASES = frozenset(
-    {
-        KERNEL_PROFILE_V1,
-        KERNEL_PROFILE_V2,
-        DEFAULT_PROFILE,
-    }
-)
 
-# Candidate relational /2 is treated as a metadata alias of claimed /1.
-_RELATIONAL_PROFILE_ALIASES = frozenset(
-    {
-        RELATIONAL_PROFILE_V1,
-        RELATIONAL_PROFILE_V2,
-    }
-)
+def _claimed_profiles_with_aliases(profiles: set[str]) -> set[str]:
+    """Expand only aliases explicitly proven by the normative manifest."""
+    claimed = set(profiles)
+    claimed.add(DEFAULT_PROFILE)
+    for alias, details in PROFILE_ALIASES.items():
+        canonical = details.get("canonical")
+        if (
+            canonical in claimed
+            and details.get("proof") == "exact-vocabulary-equivalence"
+        ):
+            claimed.add(alias)
+    return claimed
 
 
 def extract_requirements(
@@ -50,11 +45,7 @@ def extract_requirements(
     types: set[str] | None = None,
 ) -> dict[str, list[str]]:
     """Return sorted requirement lists for a portable definition."""
-    profile_set = set(profiles) | {
-        KERNEL_PROFILE_V1,
-        KERNEL_PROFILE_V2,
-        DEFAULT_PROFILE,
-    }
+    profile_set = _claimed_profiles_with_aliases(set(profiles) | {KERNEL_PROFILE_V1})
     return {
         "profiles": sorted(profile_set),
         "actions": sorted(actions),
@@ -322,25 +313,16 @@ def match_requirements(
         )
 
     claimed_profiles = set(capabilities.profiles)
-    if allow_kernel_profile_alias and KERNEL_PROFILE_V1 in claimed_profiles:
-        claimed_profiles |= _KERNEL_PROFILE_ALIASES
-    if allow_kernel_profile_alias and RELATIONAL_PROFILE_V1 in claimed_profiles:
-        claimed_profiles |= _RELATIONAL_PROFILE_ALIASES
+    if allow_kernel_profile_alias:
+        claimed_profiles = _claimed_profiles_with_aliases(claimed_profiles)
 
     for profile in req.get("profiles") or ():
         if profile not in claimed_profiles:
             # Kernel-only compilers may see only kernel aliases as required.
             if (
                 allow_kernel_profile_alias
-                and profile in _KERNEL_PROFILE_ALIASES
-                and KERNEL_PROFILE_V1 in capabilities.profiles
-            ):
-                record(f"profile:{profile}", True, "")
-                continue
-            if (
-                allow_kernel_profile_alias
-                and profile in _RELATIONAL_PROFILE_ALIASES
-                and RELATIONAL_PROFILE_V1 in capabilities.profiles
+                and profile in PROFILE_ALIASES
+                and PROFILE_ALIASES[profile].get("canonical") in capabilities.profiles
             ):
                 record(f"profile:{profile}", True, "")
                 continue

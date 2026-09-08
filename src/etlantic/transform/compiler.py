@@ -530,7 +530,10 @@ def host_pushdown_findings(
 
 
 def relational_pushdown_findings(
-    definition: Mapping[str, Any], *, evidence_fingerprint: str | None
+    definition: Mapping[str, Any],
+    *,
+    evidence_fingerprint: str | None,
+    physical_effects: tuple[str, ...] = (),
 ) -> tuple[TransformPushdownFinding, ...]:
     """Emit the planned pushdown matrix for native relational compilers.
 
@@ -563,6 +566,7 @@ def relational_pushdown_findings(
                     action=action,
                     target=target,
                     proof_reference=f"runtime-required:{target}",
+                    physical_effects=physical_effects,
                     obligation="required",
                     evidence_fingerprint=evidence_fingerprint,
                 ),
