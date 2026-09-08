@@ -8,5 +8,7 @@ build:
     - pip install --upgrade pip setuptools wheel
     - pip install -r docs/requirements.txt
     - pip install .
+    # The optional DuckDB API page is part of the strict documentation nav.
+    - pip install packages/etlantic-duckdb
     # Build docs with strict validation (suppresses Material MkDocs 2.0 advisory).
     - python scripts/build_docs.py --site-dir $READTHEDOCS_OUTPUT/html
