@@ -704,11 +704,6 @@ class LocalOrchestrator:
 
         async def run_body() -> None:
             nonlocal status
-            # Validate every selected portable implementation before scheduling
-            # any node.  Source nodes acquire/read their inputs in the node
-            # runner, so a per-step check alone is too late to guarantee the
-            # fail-closed no-I/O handoff contract.
-            self._preflight_portable_plan(selected)
             concurrency = (
                 self.plan.execution_settings.get("concurrency")
                 or self.request.metadata.get("concurrency")
@@ -786,6 +781,11 @@ class LocalOrchestrator:
 
         cancel_exc = anyio.get_cancelled_exc_class()
         try:
+            # Validate before entering the run resource scope: scope setup may
+            # itself acquire resources, and source nodes read inputs in the
+            # node runner.  A per-step check alone is therefore too late to
+            # guarantee the fail-closed no-I/O handoff contract.
+            self._preflight_portable_plan(selected)
             async with run_lifespan(self.runtime, run_id):
                 timeout = self.request.timeout.run_seconds
                 if timeout is not None:
