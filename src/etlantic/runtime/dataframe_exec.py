@@ -62,6 +62,7 @@ def resolve_dataframe_plugin(
     engine: str,
     *,
     plugins: dict[str, DataframePlugin] | None = None,
+    node_name: str = "<unknown>",
 ) -> DataframePlugin:
     if plugins and engine in plugins:
         return plugins[engine]
@@ -71,6 +72,7 @@ def resolve_dataframe_plugin(
     raise NodeExecutionError(
         f"No dataframe plugin available for engine {engine!r}. "
         f"Install etlantic-{engine}.",
+        node_name=node_name,
         stage=FailureStage.TRANSFORM.value,
         code="PMEXEC420",
     )

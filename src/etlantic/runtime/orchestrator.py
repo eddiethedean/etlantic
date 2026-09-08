@@ -1959,7 +1959,10 @@ class LocalOrchestrator:
                 }
                 return
 
-            if is_dataframe_engine(engine, registry=self.runtime.registry) or (
+            if (
+                is_dataframe_engine(engine, registry=self.runtime.registry)
+                and not is_spark_engine(engine)
+            ) or (
                 descriptor is not None
                 and descriptor.kind == "portable_compiled"
                 and engine == "local"
@@ -1967,6 +1970,7 @@ class LocalOrchestrator:
                 plugin = resolve_dataframe_plugin(
                     engine,
                     plugins=getattr(self.runtime, "dataframe_plugins", None),
+                    node_name=node.name,
                 )
                 # Skip record-oriented input validation; plugin validates.
                 for _port_name in inputs:

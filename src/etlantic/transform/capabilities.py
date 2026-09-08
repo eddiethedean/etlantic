@@ -415,8 +415,9 @@ def match_requirements(
 def evaluate_adaptive_candidates(
     candidates: Sequence[Mapping[str, Any]],
     *,
-    required_requirements: Sequence[str] = (),
-    preferred_requirements: Sequence[str] = (),
+    required_requirements: Sequence[str] | Mapping[str, Sequence[str]] = (),
+    preferred_requirements: Sequence[str] | Mapping[str, Sequence[str]] = (),
+    edges: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Evaluate candidate support vectors before preference scoring.
 
@@ -425,15 +426,32 @@ def evaluate_adaptive_candidates(
     preferred requirements contribute no score. The returned decision record is
     data-only so it can be persisted as qualification evidence.
     """
-    required = {str(item) for item in required_requirements}
-    preferred = {str(item) for item in preferred_requirements}
+
+    def _requirements_for(
+        specification: Sequence[str] | Mapping[str, Sequence[str]], node_id: str
+    ) -> set[str]:
+        values = (
+            specification.get(node_id, ())
+            if isinstance(specification, Mapping)
+            else specification
+        )
+        if isinstance(values, (str, bytes)):
+            raise TypeError("adaptive requirement lists must be sequences")
+        return {str(item) for item in values}
+
     decisions: list[dict[str, Any]] = []
+    seen_ids: set[tuple[str, str]] = set()
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             raise TypeError("adaptive candidates must be mappings")
         candidate_id = str(candidate.get("id") or "")
         if not candidate_id:
             raise ValueError("adaptive candidate id is required")
+        node_id = str(candidate.get("node") or candidate.get("node_id") or "node")
+        identity = (node_id, candidate_id)
+        if identity in seen_ids:
+            raise ValueError("adaptive candidate id must be unique per node")
+        seen_ids.add(identity)
         vectors = candidate.get("requirements")
         if not isinstance(vectors, Mapping):
             raise ValueError("adaptive candidate requirements must be a mapping")
@@ -441,6 +459,8 @@ def evaluate_adaptive_candidates(
         invalid = set(normalized.values()) - SUPPORT_STATES
         if invalid:
             raise ValueError("adaptive candidate contains an invalid support state")
+        required = _requirements_for(required_requirements, node_id)
+        preferred = _requirements_for(preferred_requirements, node_id)
         required_failures = [
             requirement
             for requirement in sorted(required)
@@ -449,25 +469,53 @@ def evaluate_adaptive_candidates(
         ]
         lowering = candidate.get("lowering")
         lowering_record: dict[str, Any] | None = None
+        lowered_requirements = sorted(
+            requirement
+            for requirement, state in normalized.items()
+            if state == "supported_with_lowering"
+        )
         if lowering is not None:
             if not isinstance(lowering, Mapping):
                 raise ValueError("adaptive lowering must be a mapping")
             lowering_id = str(lowering.get("id") or "")
             effects = lowering.get("physical_effects") or []
+            proof = str(lowering.get("proof") or "")
+            resolved_conditions = lowering.get("resolved_conditions")
+            lowering_requirements = lowering.get("requirements")
             if (
                 not lowering_id
                 or not isinstance(effects, Sequence)
                 or isinstance(effects, (str, bytes))
+                or not effects
+                or not proof
+                or not isinstance(resolved_conditions, Mapping)
+                or not isinstance(lowering_requirements, Sequence)
+                or isinstance(lowering_requirements, (str, bytes))
+                or set(map(str, lowering_requirements)) != set(lowered_requirements)
+                or lowering.get("approved") is not True
             ):
-                raise ValueError("adaptive lowering requires id and physical effects")
+                raise ValueError(
+                    "adaptive lowering requires approved id, requirements, proof, "
+                    "resolved conditions, and physical effects"
+                )
             lowering_record = {
                 "id": lowering_id,
+                "approved": True,
+                "requirements": lowered_requirements,
+                "proof": proof,
+                "resolved_conditions": dict(resolved_conditions),
                 "physical_effects": [str(effect) for effect in effects],
             }
+        elif lowered_requirements:
+            raise ValueError(
+                "supported_with_lowering requires an approved lowering record"
+            )
         if required_failures:
             decisions.append(
                 {
                     "id": candidate_id,
+                    "node": node_id,
+                    "requirements": normalized,
                     "eligible": False,
                     "decision": "eliminated_before_preference_scoring",
                     "required_failures": required_failures,
@@ -485,6 +533,8 @@ def evaluate_adaptive_candidates(
         decisions.append(
             {
                 "id": candidate_id,
+                "node": node_id,
+                "requirements": normalized,
                 "eligible": True,
                 "decision": "eligible",
                 "required_failures": [],
@@ -492,13 +542,67 @@ def evaluate_adaptive_candidates(
                 **({"lowering": lowering_record} if lowering_record else {}),
             }
         )
-    eligible = [item for item in decisions if item["eligible"]]
-    selected = (
-        max(eligible, key=lambda item: (item["preferred_score"], item["id"]))["id"]
-        if eligible
-        else None
+    selected_by_node: dict[str, str | None] = {}
+    for node_id in sorted({item["node"] for item in decisions}):
+        eligible = [
+            item for item in decisions if item["node"] == node_id and item["eligible"]
+        ]
+        selected_by_node[node_id] = (
+            max(eligible, key=lambda item: (item["preferred_score"], item["id"]))["id"]
+            if eligible
+            else None
+        )
+    selected: str | dict[str, str | None] | None = (
+        next(iter(selected_by_node.values()))
+        if len(selected_by_node) == 1
+        else selected_by_node
     )
-    return {"candidates": decisions, "selected": selected}
+    graph_failures: list[dict[str, str]] = []
+    selected_candidates = {
+        node_id: next(
+            (
+                item
+                for item in decisions
+                if item["node"] == node_id and item["id"] == candidate_id
+            ),
+            None,
+        )
+        for node_id, candidate_id in selected_by_node.items()
+        if candidate_id is not None
+    }
+    for edge in edges:
+        if not isinstance(edge, Mapping):
+            raise TypeError("adaptive edges must be mappings")
+        producer = str(edge.get("producer") or edge.get("producer_node") or "")
+        consumer = str(edge.get("consumer") or edge.get("consumer_node") or "")
+        requirements = edge.get("requirements") or ()
+        if not producer or not consumer or isinstance(requirements, (str, bytes)):
+            raise ValueError(
+                "adaptive edge requires producer, consumer, and requirements"
+            )
+        consumer_candidate = selected_candidates.get(consumer)
+        for requirement in requirements:
+            requirement_id = str(requirement)
+            state = (
+                consumer_candidate["requirements"].get(requirement_id)
+                if consumer_candidate
+                else None
+            )
+            if state not in {"supported_exact", "supported_with_lowering"}:
+                graph_failures.append(
+                    {
+                        "producer": producer,
+                        "consumer": consumer,
+                        "requirement": requirement_id,
+                    }
+                )
+    return {
+        "nodes": sorted(selected_by_node),
+        "candidates": decisions,
+        "selected": selected,
+        "graph_valid": not graph_failures,
+        "graph_failures": graph_failures,
+    }
 
 
 def _contains_distinct_three_state(node: Any) -> bool:

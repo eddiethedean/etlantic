@@ -144,6 +144,7 @@ ADAPTIVE_FIXTURES = (
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
     "test_adaptive_preferred_unknown_has_no_positive_preference",
     "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io",
 )
 ADAPTIVE_COMMAND = (
@@ -154,17 +155,25 @@ ADAPTIVE_COMMAND = (
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or "
     "test_adaptive_preferred_unknown_has_no_positive_preference or "
     "test_adaptive_lowering_records_effects_and_identity or "
+    "test_adaptive_graph_edge_requirement_invalidates_assignment or "
     "test_adaptive_evidence_drift_rejects_before_io'"
 )
 
 
 def _adaptive_scenarios() -> list[dict[str, Any]]:
     """Build adaptive handoff records from the production evaluator."""
-    required = ("dtcs:join",)
-    preferred = ("dtcs:filter",)
+    required = {
+        "orders": ("dtcs:join",),
+        "customers": ("dtcs:join",),
+    }
+    preferred = {
+        "orders": ("dtcs:filter",),
+        "customers": ("dtcs:filter",),
+    }
     required_result = evaluate_adaptive_candidates(
         [
             {
+                "node": "orders",
                 "id": "partial",
                 "requirements": {
                     "dtcs:filter": "supported_exact",
@@ -172,6 +181,15 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 },
             },
             {
+                "node": "orders",
+                "id": "complete",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "supported_exact",
+                },
+            },
+            {
+                "node": "customers",
                 "id": "complete",
                 "requirements": {
                     "dtcs:filter": "supported_exact",
@@ -185,54 +203,113 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     preference_result = evaluate_adaptive_candidates(
         [
             {
+                "node": "orders",
                 "id": "unknown-preference",
                 "requirements": {
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "unknown",
                 },
-            }
+            },
+            {
+                "node": "customers",
+                "id": "known-preference",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:sort": "supported_exact",
+                },
+            },
         ],
-        required_requirements=("dtcs:filter",),
-        preferred_requirements=("dtcs:sort",),
+        required_requirements={
+            "orders": ("dtcs:filter",),
+            "customers": ("dtcs:filter",),
+        },
+        preferred_requirements={
+            "orders": ("dtcs:sort",),
+            "customers": ("dtcs:sort",),
+        },
     )
     lowering_result = evaluate_adaptive_candidates(
         [
             {
+                "node": "orders",
                 "id": "lowered",
                 "requirements": {"dtcs:filter": "supported_with_lowering"},
                 "lowering": {
                     "id": "lowering/filter-v1",
+                    "approved": True,
+                    "requirements": ["dtcs:filter"],
+                    "proof": "approved:filter-v1",
+                    "resolved_conditions": {"null_policy": "preserve"},
                     "physical_effects": ["materialization"],
                 },
-            }
+            },
+            {
+                "node": "customers",
+                "id": "exact",
+                "requirements": {"dtcs:filter": "supported_exact"},
+            },
         ],
-        required_requirements=("dtcs:filter",),
+        required_requirements={
+            "orders": ("dtcs:filter",),
+            "customers": ("dtcs:filter",),
+        },
     )
     return [
         {
             "id": "partial-required-unknown",
             "fixture": ADAPTIVE_FIXTURES[2],
-            "requirements": required,
+            "requirements": ["dtcs:join"],
             "candidate_evaluation": required_result,
             "result": "pass",
         },
         {
             "id": "preferred-unknown",
             "fixture": ADAPTIVE_FIXTURES[3],
-            "requirements": ("dtcs:filter", "dtcs:sort"),
+            "requirements": ["dtcs:filter", "dtcs:sort"],
             "candidate_evaluation": preference_result,
             "result": "pass",
         },
         {
             "id": "lowering-effects",
             "fixture": ADAPTIVE_FIXTURES[4],
-            "requirements": ("dtcs:filter",),
+            "requirements": ["dtcs:filter"],
             "candidate_evaluation": lowering_result,
             "result": "pass",
         },
         {
-            "id": "evidence-drift",
+            "id": "graph-invalid",
             "fixture": ADAPTIVE_FIXTURES[5],
+            "requirements": ["interchange:arrow"],
+            "candidate_evaluation": evaluate_adaptive_candidates(
+                [
+                    {
+                        "node": "orders",
+                        "id": "native",
+                        "requirements": {"dtcs:join": "supported_exact"},
+                    },
+                    {
+                        "node": "customers",
+                        "id": "native",
+                        "requirements": {"dtcs:join": "supported_exact"},
+                    },
+                ],
+                required_requirements={
+                    "orders": ("dtcs:join",),
+                    "customers": ("dtcs:join",),
+                },
+                edges=(
+                    {
+                        "producer": "orders",
+                        "consumer": "customers",
+                        "requirements": ("interchange:arrow",),
+                    },
+                ),
+            ),
+            "result": "rejected_graph_invalid",
+        },
+        {
+            "id": "evidence-drift",
+            "fixture": ADAPTIVE_FIXTURES[6],
             "preflight": "reject_stale_fingerprint_before_io",
             "result": "rejected_before_io",
         },

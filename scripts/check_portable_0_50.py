@@ -33,6 +33,28 @@ REQUIRED = {
     "WHATS_NEW_0_50.md",
 }
 
+EXPECTED_SCHEMAS = {
+    "portable_evidence_index_0_50.json": "etlantic.portable-evidence-index/1",
+    "portable_baseline_contract_0_50.json": "etlantic.portable-baseline/1",
+    "portable_requirement_support_0_50.json": "etlantic.portable-requirement-support/1",
+    "portable_pushdown_contract_0_50.json": "etlantic.portable-pushdown/1",
+    "portable_claim_coverage_0_50.json": "etlantic.portable-claim-coverage/1",
+    "portable_local_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_polars_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_pandas_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_sql_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_pyspark_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_datafusion_conformance_0_50.json": "etlantic.portable-conformance/1",
+    "portable_duckdb_pushdown_0_50.json": "etlantic.portable-pushdown-evidence/1",
+    "portable_cross_engine_0_50.json": "etlantic.portable-cross-engine/1",
+    "portable_canonical_pipeline_0_50.json": "etlantic.portable-canonical-pipeline/1",
+    "portable_adaptive_handoff_0_50.json": "etlantic.portable-adaptive-handoff/1",
+    "portable_dependency_security_0_50.json": "etlantic.portable-dependency-security/1",
+    "FINDINGS_0_50.md": "markdown/1",
+    "MIGRATION_0_49_TO_0_50.md": "markdown/1",
+    "WHATS_NEW_0_50.md": "markdown/1",
+}
+
 
 def main() -> int:
     missing = sorted(name for name in REQUIRED if not (EVIDENCE / name).is_file())
@@ -101,6 +123,8 @@ def main() -> int:
     if manifest != baseline_manifest():
         raise SystemExit("baseline evidence manifest differs from runtime manifest")
     index = json.loads((EVIDENCE / "portable_evidence_index_0_50.json").read_text())
+    if index.get("schema") != EXPECTED_SCHEMAS["portable_evidence_index_0_50.json"]:
+        raise SystemExit("invalid evidence index schema")
     repository_commit = str(index.get("repository_commit") or "")
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
@@ -177,7 +201,8 @@ def main() -> int:
         raise SystemExit("evidence index must provide metadata for every artifact")
     for name in listed:
         item = metadata.get(name)
-        schema = (
+        schema = EXPECTED_SCHEMAS[name]
+        artifact_schema = (
             json.loads((EVIDENCE / name).read_text()).get("schema")
             if name.endswith(".json")
             else "markdown/1"
@@ -187,6 +212,7 @@ def main() -> int:
             or item.get("path") != name
             or not str(item.get("id") or "").strip()
             or item.get("schema") != schema
+            or artifact_schema != schema
             or item.get("sha256") != digests.get(name)
             or not str(item.get("command") or "").strip()
             or not isinstance(item.get("environment"), dict)
@@ -198,7 +224,7 @@ def main() -> int:
         if artifact.suffix == ".json":
             payload = json.loads(artifact.read_text())
             if (
-                not payload.get("schema")
+                payload.get("schema") != EXPECTED_SCHEMAS[name]
                 or "repository_commit" not in payload
                 or "result" not in payload
             ):
@@ -451,6 +477,7 @@ def main() -> int:
         "partial-required-unknown",
         "preferred-unknown",
         "lowering-effects",
+        "graph-invalid",
         "evidence-drift",
     }
     if (
@@ -462,7 +489,8 @@ def main() -> int:
     for scenario in scenarios:
         if (
             not isinstance(scenario, dict)
-            or scenario.get("result") not in {"pass", "rejected_before_io"}
+            or scenario.get("result")
+            not in {"pass", "rejected_before_io", "rejected_graph_invalid"}
             or str(scenario.get("fixture") or "") not in adaptive_fixtures
             or str(scenario.get("fixture") or "") not in adaptive_command
         ):
@@ -496,6 +524,35 @@ def main() -> int:
                     )
                 ):
                     raise SystemExit("adaptive candidate evaluation is incomplete")
+                requirements = candidate.get("requirements")
+                if not isinstance(requirements, dict):
+                    raise SystemExit("adaptive candidate requirements are missing")
+                lowered = [
+                    key
+                    for key, value in requirements.items()
+                    if value == "supported_with_lowering"
+                ]
+                lowering = candidate.get("lowering")
+                if lowered and (
+                    not isinstance(lowering, dict)
+                    or lowering.get("approved") is not True
+                    or set(lowering.get("requirements") or ()) != set(lowered)
+                    or not str(lowering.get("id") or "")
+                    or not str(lowering.get("proof") or "")
+                    or not isinstance(lowering.get("resolved_conditions"), dict)
+                    or not lowering.get("physical_effects")
+                ):
+                    raise SystemExit("adaptive lowering evidence is incomplete")
+            nodes = evaluation.get("nodes")
+            if not isinstance(nodes, list) or len(nodes) < 2:
+                raise SystemExit(
+                    "adaptive evaluation must cover multiple logical nodes"
+                )
+            if scenario["id"] == "graph-invalid" and (
+                evaluation.get("graph_valid") is not False
+                or not evaluation.get("graph_failures")
+            ):
+                raise SystemExit("adaptive graph-invalid fixture is not rejected")
             if not isinstance(evaluation.get("selected"), (str, type(None))):
                 raise SystemExit("adaptive candidate selection is invalid")
     if adaptive.get("execution") != "planning-only; no adaptive execution":
@@ -541,6 +598,7 @@ def main() -> int:
         )
         or cross_engine.get("normalized_result_digest")
         != canonical_digests["postgresql"]
+        or canonical_digests["postgresql"] != canonical_digests["sqlite"]
     ):
         raise SystemExit("cross-engine canonical digests are incomplete")
     print("0.50 evidence artifact set is complete and structurally valid")

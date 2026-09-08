@@ -519,6 +519,10 @@ def test_adaptive_lowering_records_effects_and_identity() -> None:
                 "requirements": {"dtcs:filter": "supported_with_lowering"},
                 "lowering": {
                     "id": "lowering/filter-v1",
+                    "approved": True,
+                    "requirements": ["dtcs:filter"],
+                    "proof": "approved:filter-v1",
+                    "resolved_conditions": {"null_policy": "preserve"},
                     "physical_effects": ["materialization"],
                 },
             }
@@ -528,8 +532,95 @@ def test_adaptive_lowering_records_effects_and_identity() -> None:
     lowering = result["candidates"][0]["lowering"]
     assert lowering == {
         "id": "lowering/filter-v1",
+        "approved": True,
+        "requirements": ["dtcs:filter"],
+        "proof": "approved:filter-v1",
+        "resolved_conditions": {"null_policy": "preserve"},
         "physical_effects": ["materialization"],
     }
+
+
+def test_adaptive_lowering_requires_approved_proof() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    with pytest.raises(ValueError, match="approved lowering"):
+        evaluate_adaptive_candidates(
+            [
+                {
+                    "id": "unproven",
+                    "requirements": {"dtcs:filter": "supported_with_lowering"},
+                }
+            ],
+            required_requirements=("dtcs:filter",),
+        )
+
+
+def test_adaptive_evaluation_retains_per_node_selection() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "node": "orders",
+                "id": "partial",
+                "requirements": {"dtcs:join": "unknown"},
+            },
+            {
+                "node": "orders",
+                "id": "complete",
+                "requirements": {"dtcs:join": "supported_exact"},
+            },
+            {
+                "node": "customers",
+                "id": "complete",
+                "requirements": {"dtcs:join": "supported_exact"},
+            },
+        ],
+        required_requirements={"orders": ("dtcs:join",), "customers": ("dtcs:join",)},
+    )
+    assert result["nodes"] == ["customers", "orders"]
+    assert result["selected"] == {"customers": "complete", "orders": "complete"}
+    partial = next(item for item in result["candidates"] if item["id"] == "partial")
+    assert partial["node"] == "orders"
+    assert partial["required_failures"] == ["dtcs:join"]
+
+
+def test_adaptive_graph_edge_requirement_invalidates_assignment() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "node": "orders",
+                "id": "native",
+                "requirements": {"dtcs:join": "supported_exact"},
+            },
+            {
+                "node": "customers",
+                "id": "native",
+                "requirements": {"dtcs:join": "supported_exact"},
+            },
+        ],
+        required_requirements={
+            "orders": ("dtcs:join",),
+            "customers": ("dtcs:join",),
+        },
+        edges=(
+            {
+                "producer": "orders",
+                "consumer": "customers",
+                "requirements": ("interchange:arrow",),
+            },
+        ),
+    )
+    assert result["graph_valid"] is False
+    assert result["graph_failures"] == [
+        {
+            "producer": "orders",
+            "consumer": "customers",
+            "requirement": "interchange:arrow",
+        }
+    ]
 
 
 def test_adaptive_evidence_drift_rejects_before_io() -> None:
