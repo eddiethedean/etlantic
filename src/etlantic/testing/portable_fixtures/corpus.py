@@ -2325,8 +2325,8 @@ def fixtures_for_capabilities(
                 continue
             if not case.required_types.issubset(types):
                 continue
-        if not case.required_semantic_modes.issubset(semantic_modes):
-            continue
+            if not case.required_semantic_modes.issubset(semantic_modes):
+                continue
         if not case.required_join_modes.issubset(join_modes):
             continue
         if not case.required_union_modes.issubset(union_modes):

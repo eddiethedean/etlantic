@@ -24,3 +24,27 @@ def test_baseline_manifest_is_normative_and_fixture_complete() -> None:
     )
     fixture_names = {fixture.name for fixture in FIXTURES}
     assert set(manifest["leaf_fixture_ids"].values()).issubset(fixture_names)
+
+
+def test_negative_three_state_fixture_is_selected_without_three_state_claim() -> None:
+    """A baseline rejection must run when the feature is intentionally absent."""
+    from etlantic.testing.portable_fixtures import fixtures_for_capabilities
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    capabilities = LocalTransformCompiler().info.capabilities
+    selected = fixtures_for_capabilities(
+        profiles=capabilities.profiles,
+        actions=capabilities.actions,
+        functions=capabilities.functions,
+        operators=capabilities.operators,
+        types=capabilities.types,
+        semantic_modes=capabilities.semantic_modes,
+        join_modes=capabilities.join_modes,
+        union_modes=capabilities.union_modes,
+        collision_policies=capabilities.collision_policies,
+    )
+
+    assert "three_state_distinct" not in capabilities.semantic_modes
+    assert "reject_missing_literal_without_three_state" in {
+        case.name for case in selected
+    }
