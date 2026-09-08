@@ -553,7 +553,14 @@ def main() -> int:
                 or not evaluation.get("graph_failures")
             ):
                 raise SystemExit("adaptive graph-invalid fixture is not rejected")
-            if not isinstance(evaluation.get("selected"), (str, type(None))):
+            selected = evaluation.get("selected")
+            if isinstance(selected, dict):
+                if set(selected) != set(nodes) or any(
+                    not isinstance(value, (str, type(None)))
+                    for value in selected.values()
+                ):
+                    raise SystemExit("adaptive candidate selection is invalid")
+            elif not isinstance(selected, (str, type(None))):
                 raise SystemExit("adaptive candidate selection is invalid")
     if adaptive.get("execution") != "planning-only; no adaptive execution":
         raise SystemExit("adaptive handoff must declare planning-only execution")
