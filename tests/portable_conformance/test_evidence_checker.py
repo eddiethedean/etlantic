@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from scripts.check_portable_0_50 import (
     validate_adaptive_lowering_binding,
+    validate_adaptive_selection,
     validate_adaptive_target_binding,
     validate_adaptive_target_matrix,
     validate_artifact_schema,
@@ -96,3 +97,34 @@ def test_adaptive_incomplete_target_matrix_is_rejected() -> None:
             {"orders": {"target-a", "target-b"}, "customers": {"target-a"}},
             ["orders", "customers"],
         )
+
+
+def test_adaptive_selection_must_reference_an_evaluated_candidate() -> None:
+    evaluation = {
+        "nodes": ["orders", "customers"],
+        "candidates": [
+            {"id": "complete", "node": "orders", "eligible": True},
+            {"id": "complete", "node": "customers", "eligible": True},
+        ],
+        "selected": {"orders": "fabricated", "customers": "complete"},
+        "graph_valid": True,
+        "graph_failures": [],
+    }
+    with pytest.raises(SystemExit, match="unknown candidate"):
+        validate_adaptive_selection(evaluation)
+
+
+def test_adaptive_graph_valid_selection_cannot_choose_ineligible_candidate() -> None:
+    evaluation = {
+        "nodes": ["orders", "customers"],
+        "candidates": [
+            {"id": "partial", "node": "orders", "eligible": False},
+            {"id": "complete", "node": "orders", "eligible": True},
+            {"id": "complete", "node": "customers", "eligible": True},
+        ],
+        "selected": {"orders": "partial", "customers": "complete"},
+        "graph_valid": True,
+        "graph_failures": [],
+    }
+    with pytest.raises(SystemExit, match="ineligible"):
+        validate_adaptive_selection(evaluation)

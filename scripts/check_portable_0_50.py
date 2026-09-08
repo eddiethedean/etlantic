@@ -185,6 +185,65 @@ def validate_adaptive_target_matrix(
         raise SystemExit("adaptive target matrix does not cover every node and target")
 
 
+def validate_adaptive_selection(evaluation: dict[str, Any]) -> None:
+    """Require recorded selections to reference the evaluated candidates.
+
+    The handoff is evidence, so checking only the selected value's JSON type is
+    insufficient: a fabricated candidate id (or an ineligible candidate) would
+    otherwise pass the release verifier after the artifact digest is updated.
+    """
+    candidates = evaluation.get("candidates")
+    nodes = evaluation.get("nodes")
+    if not isinstance(candidates, list) or not isinstance(nodes, list):
+        raise SystemExit("adaptive candidate selection is incomplete")
+    node_ids = [node for node in nodes if isinstance(node, str) and node]
+    if len(node_ids) != len(nodes) or len(set(node_ids)) != len(node_ids):
+        raise SystemExit("adaptive candidate selection has duplicate or invalid nodes")
+
+    by_identity: dict[tuple[str, str], dict[str, Any]] = {}
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            raise SystemExit("adaptive candidate selection is incomplete")
+        node = candidate.get("node")
+        candidate_id = candidate.get("id")
+        if not isinstance(node, str) or not isinstance(candidate_id, str):
+            raise SystemExit("adaptive candidate selection is incomplete")
+        identity = (node, candidate_id)
+        if identity in by_identity:
+            raise SystemExit("adaptive candidate selection has duplicate ids")
+        by_identity[identity] = candidate
+
+    selected = evaluation.get("selected")
+    if len(node_ids) == 1 and not isinstance(selected, dict):
+        selected_by_node: dict[str, object] = {node_ids[0]: selected}
+    elif isinstance(selected, dict):
+        if set(selected) != set(node_ids):
+            raise SystemExit("adaptive candidate selection is invalid")
+        selected_by_node = selected
+    else:
+        raise SystemExit("adaptive candidate selection is invalid")
+
+    graph_valid = evaluation.get("graph_valid")
+    graph_failures = evaluation.get("graph_failures")
+    if graph_valid is True and graph_failures:
+        raise SystemExit("graph-valid adaptive selection records graph failures")
+    for node in node_ids:
+        candidate_id = selected_by_node.get(node)
+        if candidate_id is None:
+            if graph_valid is True:
+                raise SystemExit("graph-valid adaptive selection is incomplete")
+            continue
+        if not isinstance(candidate_id, str):
+            raise SystemExit("adaptive candidate selection is invalid")
+        candidate = by_identity.get((node, candidate_id))
+        if candidate is None:
+            raise SystemExit("adaptive selection references an unknown candidate")
+        if graph_valid is True and candidate.get("eligible") is not True:
+            raise SystemExit(
+                "graph-valid adaptive selection chose an ineligible candidate"
+            )
+
+
 def main() -> int:
     if set(EXPECTED_SCHEMAS) != REQUIRED:
         raise SystemExit("evidence schema map does not cover the frozen artifact set")
@@ -737,15 +796,7 @@ def main() -> int:
                 or evaluation.get("graph_failures")
             ):
                 raise SystemExit("adaptive graph-valid alternative is not selected")
-            selected = evaluation.get("selected")
-            if isinstance(selected, dict):
-                if set(selected) != set(nodes) or any(
-                    not isinstance(value, (str, type(None)))
-                    for value in selected.values()
-                ):
-                    raise SystemExit("adaptive candidate selection is invalid")
-            elif not isinstance(selected, (str, type(None))):
-                raise SystemExit("adaptive candidate selection is invalid")
+            validate_adaptive_selection(evaluation)
     if adaptive.get("execution") != "planning-only; no adaptive execution":
         raise SystemExit("adaptive handoff must declare planning-only execution")
     dependency = json.loads(
