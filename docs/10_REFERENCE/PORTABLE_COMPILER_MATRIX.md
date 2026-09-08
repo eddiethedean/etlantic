@@ -1,19 +1,21 @@
 # Portable Compiler Matrix
 
-> **Status: Available in ETLantic 0.49.0.**
+> **Status: ETLantic 0.50 technical qualification complete; Sol review pending.**
 
 This matrix records the portable transformation claims shipped in ETLantic
-0.38.0. It is narrower than each backend's native capabilities.
+0.50.0. It is narrower than each backend's native capabilities.
 
 ## Compiler claims
 
 | Package | Engine | Claimed profiles | Execution mode | Join collision policy |
 |---|---|---|---|---|
+| `etlantic` | Local | kernel `/1`, relational `/1` | Eager only | `fail` only |
 | `etlantic-polars==0.49.0` | Polars | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
 | `etlantic-pyspark==0.49.0` | PySpark | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
 | `etlantic-pandas==0.49.0` | Pandas | kernel `/1`, relational `/1` | Eager only (`lazy=False`) | `fail` only |
 | `etlantic-sql==0.49.0` | SQL | kernel `/1`, relational `/1` | Eager (relation/SQL) | `fail` only |
-| `etlantic-duckdb==0.49.0` | DuckDB | kernel `/1`, relational `/1` (qualified subset) | Lazy relation handles | `fail` only |
+| `etlantic-datafusion==0.49.0` | DataFusion | kernel `/1`, relational `/1` | Eager and lazy | `fail` only |
+| `etlantic-duckdb==0.49.0` | DuckDB | kernel `/1`, relational `/1` | Lazy relation handles | `fail` only |
 
 Full profile identifiers use the `dtcs:profile/` prefix (for example
 `dtcs:profile/portable-window/1`). Compilers read `dtcs.transform-plan/2` and
@@ -39,8 +41,8 @@ closed during planning on those engines.
 ## Claimed baseline operations
 
 The Local, Polars, Pandas, SQL, PySpark, and DataFusion baseline claims use this
-action surface. DuckDB advertises only its qualified subset until its remaining
-actions have complete executable evidence:
+action surface. The seven-engine baseline claim remains subject to the phase
+0.50 evidence gate and independent Sol review:
 
 | Profile group | Actions |
 |---|---|

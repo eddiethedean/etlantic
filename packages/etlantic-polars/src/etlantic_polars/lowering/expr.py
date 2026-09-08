@@ -142,7 +142,10 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
         sep = constant_python(raw_args[0], parameters=parameters)
         if not isinstance(sep, str):
             raise ValueError("dtcs:concat_ws separator must be a string constant")
-        return pl.concat_str(args[1:], separator=sep)
+        value = pl.concat_str(args[1:], separator=sep)
+        return pl.when(pl.any_horizontal([arg.is_null() for arg in args[1:]])).then(
+            pl.lit(None)
+        ).otherwise(value)
     if callee == "dtcs:length":
         return args[0].str.len_chars()
     if callee == "dtcs:substr":
@@ -191,9 +194,15 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
     if callee == "dtcs:sqrt":
         return args[0].sqrt()
     if callee == "dtcs:least":
-        return pl.min_horizontal(args)
+        value = pl.min_horizontal(args)
+        return pl.when(pl.any_horizontal([arg.is_null() for arg in args])).then(
+            pl.lit(None)
+        ).otherwise(value)
     if callee == "dtcs:greatest":
-        return pl.max_horizontal(args)
+        value = pl.max_horizontal(args)
+        return pl.when(pl.any_horizontal([arg.is_null() for arg in args])).then(
+            pl.lit(None)
+        ).otherwise(value)
     if callee == "dtcs:to_string":
         return args[0].cast(pl.Utf8)
     if callee == "dtcs:to_integer":

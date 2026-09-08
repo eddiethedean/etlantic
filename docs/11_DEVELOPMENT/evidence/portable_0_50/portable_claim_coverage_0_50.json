@@ -3,58 +3,177 @@
     {
       "actions": 12,
       "engine": "local",
-      "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+      "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
+      "execution_modes": {
+        "eager": true,
+        "lazy": false
+      },
       "fixture_coverage": "complete",
       "functions": 30,
-      "profiles": 2
+      "profiles": 2,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 13,
       "engine": "polars",
       "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+      "execution_modes": {
+        "eager": true,
+        "lazy": true
+      },
       "fixture_coverage": "complete",
       "functions": 50,
-      "profiles": 9
+      "profiles": 9,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 12,
       "engine": "pandas",
       "evidence_fingerprint": "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
+      "execution_modes": {
+        "eager": true,
+        "lazy": false
+      },
       "fixture_coverage": "complete",
       "functions": 30,
-      "profiles": 2
+      "profiles": 2,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 12,
       "engine": "sql",
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
+      "execution_modes": {
+        "eager": true,
+        "lazy": true
+      },
       "fixture_coverage": "complete",
       "functions": 30,
-      "profiles": 2
+      "profiles": 2,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 13,
       "engine": "pyspark",
       "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+      "execution_modes": {
+        "eager": true,
+        "lazy": true
+      },
       "fixture_coverage": "complete",
       "functions": 50,
-      "profiles": 9
+      "profiles": 9,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 12,
       "engine": "datafusion",
-      "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+      "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
+      "execution_modes": {
+        "eager": true,
+        "lazy": true
+      },
       "fixture_coverage": "complete",
       "functions": 30,
-      "profiles": 2
+      "profiles": 2,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     },
     {
       "actions": 12,
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
+      "execution_modes": {
+        "eager": true,
+        "lazy": true
+      },
       "fixture_coverage": "complete",
       "functions": 30,
-      "profiles": 2
+      "profiles": 2,
+      "required_fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_modes",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_modes",
+        "kernel_filter_project_lower",
+        "reject_missing_literal_without_three_state",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "semantic_modes": []
     }
   ],
   "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
@@ -64,8 +183,26 @@
     "spark_backend": "pyspark JVM",
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
-  "policy": "Every frozen baseline claim is selected by the public conformance suite.",
-  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "negative_states": [
+    "unsupported",
+    "unavailable",
+    "unknown"
+  ],
+  "policy": "Every frozen baseline claim is selected by the public conformance suite; semantic and eager/lazy dimensions are recorded per engine.",
+  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
+  "required_fixture_ids": [
+    "baseline_aggregate_functions",
+    "baseline_field_actions",
+    "baseline_join_modes",
+    "baseline_scalar_functions",
+    "baseline_union",
+    "baseline_union_modes",
+    "kernel_filter_project_lower",
+    "reject_missing_literal_without_three_state",
+    "relational_join_aggregate",
+    "relational_sort_nulls_limit"
+  ],
   "result": "pass",
-  "schema": "etlantic.portable-claim-coverage/1"
+  "schema": "etlantic.portable-claim-coverage/1",
+  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260"
 }

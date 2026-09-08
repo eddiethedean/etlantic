@@ -273,14 +273,16 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
 
         def _least(df: pd.DataFrame) -> pd.Series:
             stacked = pd.concat([fn(df) for fn in arg_fns], axis=1)
-            return stacked.min(axis=1)
+            result = stacked.min(axis=1, skipna=True)
+            return result.mask(stacked.isna().any(axis=1))
 
         return _least
     if callee == "dtcs:greatest":
 
         def _greatest(df: pd.DataFrame) -> pd.Series:
             stacked = pd.concat([fn(df) for fn in arg_fns], axis=1)
-            return stacked.max(axis=1)
+            result = stacked.max(axis=1, skipna=True)
+            return result.mask(stacked.isna().any(axis=1))
 
         return _greatest
     if callee == "dtcs:case_when":

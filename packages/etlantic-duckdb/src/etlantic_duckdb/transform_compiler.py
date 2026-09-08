@@ -15,6 +15,7 @@ from etlantic.sql.protocol import RelationRef, SqlExecutionContext, TransactionO
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
+    portable_arithmetic_findings,
     requirements_from_plan,
     three_state_findings,
 )
@@ -149,6 +150,7 @@ class DuckDBTransformCompiler:
         findings = list(report.findings)
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(shape_findings)
+        findings.extend(portable_arithmetic_findings(definition))
         findings = [
             finding
             if finding.evidence_fingerprint is not None
@@ -1838,7 +1840,14 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
             return "?"
         if kind == "call":
             callee = str(node.get("callee", "")).removeprefix("dtcs:").lower()
-            args = [_expr(arg, parameters, bindings) for arg in node.get("args") or ()]
+            arg_sql: list[str] = []
+            arg_binding_groups: list[list[Any]] = []
+            for arg in node.get("args") or ():
+                captured: list[Any] = []
+                arg_sql.append(_expr(arg, parameters, captured))
+                bindings.extend(captured)
+                arg_binding_groups.append(captured)
+            args = arg_sql
             if callee == "count_all":
                 return "COUNT(*)"
             if callee == "count_distinct":
@@ -1898,7 +1907,27 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
             function = names.get(callee)
             if function is None:
                 raise ValueError(f"unsupported DuckDB function {callee!r}")
-            return f"{function}({', '.join(args)})"
+            value = f"{function}({', '.join(args)})"
+            if callee not in {
+                "coalesce",
+                "if_null",
+                "null_if",
+                "is_null",
+                "sum",
+                "average",
+                "min",
+                "max",
+                "count",
+                "count_all",
+                "count_distinct",
+            }:
+                null_check = " OR ".join(f"({arg} IS NULL)" for arg in args)
+                # The argument placeholders occur once in the null check and
+                # once in the function call; bind each value for both uses.
+                for captured in arg_binding_groups:
+                    bindings.extend(captured)
+                value = f"CASE WHEN {null_check} THEN NULL ELSE {value} END"
+            return value
         if kind in {"binary", "operator"}:
             op = {
                 "eq": "=",

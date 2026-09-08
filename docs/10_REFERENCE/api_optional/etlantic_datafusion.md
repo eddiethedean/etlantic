@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-datafusion API
 
-> **Status: Provisional implementation.** DataFusion dataframe and portable compiler plugin; 0.50 baseline qualification is pending.
+> **Status: Technical qualification complete; Sol review pending.** DataFusion dataframe and portable compiler plugin; advanced claims remain separate.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

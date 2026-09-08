@@ -188,6 +188,27 @@ class SqlCompiler:
             self.compile_expr(a, params=params, relation_sql=relation_sql)
             for a in expr.args
         ]
+        if callee in {"dtcs:least", "dtcs:greatest"}:
+            # PostgreSQL rejects LEAST/GREATEST when a typed NULL (TEXT) is
+            # mixed with a numeric literal.  Re-type only literal NULLs to
+            # the first concrete literal's SQL type; dynamic expressions
+            # remain untouched and are checked by the backend schema.
+            fallback_type = next(
+                (
+                    arg.sql_type
+                    for arg in expr.args
+                    if isinstance(arg, LiteralExpr)
+                    and arg.value is not None
+                    and arg.sql_type
+                ),
+                None,
+            )
+            if fallback_type:
+                for index, arg in enumerate(expr.args):
+                    if isinstance(arg, LiteralExpr) and arg.value is None:
+                        args[index] = args[index].replace(
+                            " AS TEXT)", f" AS {fallback_type})", 1
+                        )
         body: str
         if callee == "dtcs:lower":
             body = f"LOWER({args[0]})"
@@ -315,6 +336,26 @@ class SqlCompiler:
             raise ValueError("dtcs:case_when must be lowered to CaseWhenExpr")
         else:
             raise ValueError(f"Unsupported SQL function {callee!r}")
+        if (
+            callee
+            not in {
+                "dtcs:coalesce",
+                "dtcs:if_null",
+                "dtcs:null_if",
+                "dtcs:is_null",
+                "dtcs:case_when",
+                "dtcs:sum",
+                "dtcs:average",
+                "dtcs:min",
+                "dtcs:max",
+                "dtcs:count",
+                "dtcs:count_all",
+                "dtcs:count_distinct",
+            }
+            and args
+        ):
+            null_check = " OR ".join(f"({arg} IS NULL)" for arg in args)
+            body = f"CASE WHEN {null_check} THEN NULL ELSE {body} END"
         if expr.alias:
             return f"{body} AS {self.quote(require_safe_identifier(expr.alias))}"
         return body

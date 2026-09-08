@@ -144,7 +144,12 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
         return _F().concat(*args)
     if callee == "dtcs:concat_ws":
         sep = constant_python(raw_args[0], parameters=parameters)
-        return _F().concat_ws(str(sep), *args[1:])
+        value = _F().concat_ws(str(sep), *args[1:])
+        null_args = [arg.isNull() for arg in args[1:]]
+        condition = null_args[0]
+        for null_arg in null_args[1:]:
+            condition = condition | null_arg
+        return _F().when(condition, _F().lit(None)).otherwise(value)
     if callee == "dtcs:length":
         return _F().length(args[0])
     if callee == "dtcs:substr":
@@ -212,9 +217,17 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     if callee == "dtcs:sqrt":
         return _F().sqrt(args[0])
     if callee == "dtcs:least":
-        return _F().least(*args)
+        value = _F().least(*args)
+        condition = args[0].isNull()
+        for arg in args[1:]:
+            condition = condition | arg.isNull()
+        return _F().when(condition, _F().lit(None)).otherwise(value)
     if callee == "dtcs:greatest":
-        return _F().greatest(*args)
+        value = _F().greatest(*args)
+        condition = args[0].isNull()
+        for arg in args[1:]:
+            condition = condition | arg.isNull()
+        return _F().when(condition, _F().lit(None)).otherwise(value)
     if callee == "dtcs:row_number":
         if args:
             raise ValueError("dtcs:row_number does not accept arguments")

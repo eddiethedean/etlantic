@@ -18,7 +18,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from etlantic.transform.compiler import TransformPlanningContext
+from etlantic.transform.compiler import (
+    TransformCompileContext,
+    TransformPlanningContext,
+)
 from etlantic.transform.local_compiler import LocalTransformCompiler
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
@@ -65,6 +68,11 @@ CANONICAL_COMMAND = (
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
     "python scripts/run_portable_0_50_canonical.py"
 )
+ADAPTIVE_COMMAND = "uv run pytest -q tests/unit/transform/test_portable_planning.py"
+DEPENDENCY_COMMAND = (
+    "uv run pytest -q tests/sql/test_sql_portable_security.py && "
+    "uv build --out-dir /tmp/etlantic-0-50-wheels"
+)
 
 
 def _compiler_factories() -> Mapping[str, Any]:
@@ -87,8 +95,10 @@ def _compiler_factories() -> Mapping[str, Any]:
     }
 
 
-def _requirements() -> dict[str, list[str]]:
-    return {
+def _requirements(
+    *, eager: bool | None = None, lazy: bool | None = None
+) -> dict[str, Any]:
+    requirements: dict[str, Any] = {
         "profiles": [KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1],
         "actions": list(KERNEL_ACTIONS + RELATIONAL_ACTIONS),
         "functions": list(BASELINE_FUNCTIONS),
@@ -97,23 +107,215 @@ def _requirements() -> dict[str, list[str]]:
         "join_modes": list(BASELINE_JOIN_MODES),
         "union_modes": ["byName", "byPosition"],
         "collision_policies": ["fail"],
+        # Keep every governed dimension explicit in the report.  Distinct
+        # missing/invalid values are a conditional requirement, not a claim
+        # that every engine preserves a three-state column.
+        "semantic_modes": [],
     }
+    if eager is not None:
+        requirements["eager"] = eager
+    if lazy is not None:
+        requirements["lazy"] = lazy
+    return requirements
 
 
 def _pushdown_plan() -> dict[str, Any]:
     return {
         "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {
+            "t": {
+                "schema": {
+                    "fields": [
+                        {"name": "id", "type": "integer"},
+                        {"name": "region", "type": "string"},
+                        {"name": "total", "type": "decimal"},
+                    ]
+                }
+            },
+            "r": {
+                "schema": {
+                    "fields": [
+                        {"name": "rid", "type": "integer"},
+                        {"name": "category", "type": "string"},
+                    ]
+                }
+            },
+            "bonus": {
+                "schema": {
+                    "fields": [
+                        {"name": "id", "type": "integer"},
+                        {"name": "region", "type": "string"},
+                        {"name": "amount", "type": "decimal"},
+                        {"name": "rid", "type": "integer"},
+                        {"name": "category", "type": "string"},
+                    ]
+                }
+            },
+        },
         "actions": [
             {
-                "id": action.split(":", 1)[1],
+                "id": "f",
                 "kind": {
-                    "id": action.split(":", 1)[1],
-                    "action": action,
+                    "id": "f",
+                    "action": "dtcs:filter",
+                    "target": "t",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "gt",
+                            "left": {
+                                "kind": "fieldRef",
+                                "scope": "field",
+                                "target": "id",
+                            },
+                            "right": {
+                                "kind": "literal",
+                                "value": {"type": "integer", "value": 0},
+                            },
+                        }
+                    },
+                },
+            },
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "f",
+                    "parameters": {"fields": ["id", "region", "total"]},
+                },
+            },
+            {
+                "id": "w",
+                "kind": {
+                    "id": "w",
+                    "action": "dtcs:with_fields",
+                    "target": "p",
+                    "parameters": {
+                        "assignments": [
+                            {
+                                "name": "x",
+                                "expression": {
+                                    "kind": "literal",
+                                    "value": {"type": "integer", "value": 1},
+                                },
+                            }
+                        ]
+                    },
+                },
+            },
+            {
+                "id": "d",
+                "kind": {
+                    "id": "d",
+                    "action": "dtcs:drop_fields",
+                    "target": "w",
+                    "parameters": {"fields": ["x"]},
+                },
+            },
+            {
+                "id": "n",
+                "kind": {
+                    "id": "n",
+                    "action": "dtcs:rename_fields",
+                    "target": "d",
+                    "parameters": {"mapping": {"total": "amount"}},
+                },
+            },
+            {
+                "id": "j",
+                "kind": {
+                    "id": "j",
+                    "action": "dtcs:join",
+                    "target": "n",
+                    "parameters": {
+                        "type": "left",
+                        "right": "r",
+                        "leftKey": "id",
+                        "rightKey": "rid",
+                        "collisionPolicy": "fail",
+                    },
+                },
+            },
+            {
+                "id": "u",
+                "kind": {
+                    "id": "u",
+                    "action": "dtcs:union",
+                    "target": "j",
+                    "parameters": {"other": "bonus", "mode": "byName"},
+                },
+            },
+            {
+                "id": "a",
+                "kind": {
+                    "id": "a",
+                    "action": "dtcs:aggregate",
+                    "target": "u",
+                    "parameters": {
+                        "groupBy": ["region"],
+                        "aggregates": [
+                            {
+                                "name": "total",
+                                "expression": {
+                                    "kind": "call",
+                                    "callee": "dtcs:sum",
+                                    "args": [
+                                        {
+                                            "kind": "fieldRef",
+                                            "scope": "field",
+                                            "target": "amount",
+                                        }
+                                    ],
+                                },
+                            }
+                        ],
+                    },
+                },
+            },
+            {
+                "id": "s",
+                "kind": {
+                    "id": "s",
+                    "action": "dtcs:sort",
+                    "target": "a",
+                    "parameters": {
+                        "keys": [
+                            {"column": "total", "direction": "asc", "nulls": "last"}
+                        ]
+                    },
+                },
+            },
+            {
+                "id": "x",
+                "kind": {
+                    "id": "x",
+                    "action": "dtcs:distinct",
+                    "target": "s",
                     "parameters": {},
                 },
-            }
-            for action in KERNEL_ACTIONS + RELATIONAL_ACTIONS
+            },
+            {
+                "id": "k",
+                "kind": {
+                    "id": "k",
+                    "action": "dtcs:deduplicate",
+                    "target": "x",
+                    "parameters": {"keys": ["region"]},
+                },
+            },
+            {
+                "id": "l",
+                "kind": {
+                    "id": "l",
+                    "action": "dtcs:limit",
+                    "target": "k",
+                    "parameters": {"count": 10},
+                },
+            },
         ],
+        "outputs": {"result": {"id": "result"}},
+        "requirements": {"dependencies": [{"from": "l", "to": "result"}]},
     }
 
 
@@ -123,8 +325,11 @@ def _run(command: str) -> None:
     env.setdefault("SPARKLESS_TEST_MODE", "pyspark")
     if not env.get("JAVA_HOME"):
         raise SystemExit("JAVA_HOME is required for real-PySpark qualification")
-    if not env.get("ETLANTIC_SQL_URL"):
+    sql_url = env.get("ETLANTIC_SQL_URL")
+    if not sql_url:
         raise SystemExit("ETLANTIC_SQL_URL is required for PostgreSQL qualification")
+    if not sql_url.startswith(("postgresql://", "postgresql+")):
+        raise SystemExit("ETLANTIC_SQL_URL must identify a PostgreSQL backend")
     subprocess.run(command, cwd=ROOT, shell=True, env=env, check=True)
 
 
@@ -140,6 +345,22 @@ def _digest(value: Any) -> str:
     ).hexdigest()
 
 
+def _source_tree_digest() -> str:
+    """Hash tracked source/config/docs outside the generated evidence tree."""
+    files = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
+    digest = hashlib.sha256()
+    evidence_prefix = "docs/11_DEVELOPMENT/evidence/portable_0_50/"
+    for raw in sorted(item for item in files if item):
+        relative = raw.decode("utf-8")
+        if relative.startswith(evidence_prefix):
+            continue
+        digest.update(raw)
+        digest.update(b"\0")
+        digest.update((ROOT / relative).read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository-commit", required=True)
@@ -150,14 +371,17 @@ def main() -> int:
     commit = args.repository_commit
     if len(commit) != 40 or any(char not in "0123456789abcdef" for char in commit):
         raise SystemExit("repository commit must be a lowercase 40-character SHA-1")
-    if args.run:
-        _run(PUBLIC_COMMAND)
-        _run(CANONICAL_COMMAND)
+    if not args.run:
+        raise SystemExit("--run is required to publish passing qualification evidence")
+    _run(PUBLIC_COMMAND)
+    _run(CANONICAL_COMMAND)
+    _run(ADAPTIVE_COMMAND)
+    _run(DEPENDENCY_COMMAND)
 
-    requirements = _requirements()
     reports: dict[str, Any] = {}
     claims: list[dict[str, Any]] = []
     pushdown: list[dict[str, Any]] = []
+    pushdown_proofs: dict[str, Any] = {}
     for engine, factory in _compiler_factories().items():
         compiler = factory()
         report = compiler.analyze(
@@ -165,7 +389,10 @@ def main() -> int:
             context=TransformPlanningContext(
                 "qualification", "baseline", "qualification", engine
             ),
-            requirements=requirements,
+            requirements=_requirements(
+                eager=compiler.info.capabilities.eager,
+                lazy=compiler.info.capabilities.lazy,
+            ),
         )
         if not report.supported:
             raise SystemExit(f"{engine} does not satisfy the frozen baseline")
@@ -184,6 +411,11 @@ def main() -> int:
                 "actions": len(caps.actions),
                 "functions": len(caps.functions),
                 "fixture_coverage": "complete",
+                "required_fixture_ids": sorted(
+                    set((baseline_manifest().get("leaf_fixture_ids") or {}).values())
+                ),
+                "semantic_modes": sorted(caps.semantic_modes),
+                "execution_modes": {"eager": caps.eager, "lazy": caps.lazy},
                 "evidence_fingerprint": compiler.info.evidence_fingerprint,
             }
         )
@@ -193,9 +425,27 @@ def main() -> int:
                 "qualification", "pushdown", "qualification", engine
             ),
         )
+        if not analyzed.supported:
+            raise SystemExit(
+                f"{engine} pushdown fixture is unsupported: "
+                + "; ".join(f.requirement for f in analyzed.findings)
+            )
+        compiled_pushdown = compiler.compile(
+            _pushdown_plan(),
+            context=TransformCompileContext(
+                "qualification", "qualification", "pushdown", "qualification", engine
+            ),
+        )
+        proof_digest = _digest(compiled_pushdown.explain)
+        pushdown_proofs[engine] = {
+            "digest": proof_digest,
+            "explain": compiled_pushdown.explain,
+        }
         for finding in analyzed.pushdown:
             record = finding.to_dict()
             record["engine"] = engine
+            if record.get("obligation") == "required":
+                record["proof_reference"] = f"compiler-explain:{proof_digest}"
             pushdown.append(record)
 
     environment = {
@@ -204,12 +454,17 @@ def main() -> int:
         "sql_backend": "postgresql (URL supplied at runtime; redacted)",
         "spark_backend": "pyspark JVM",
     }
-    common = {"repository_commit": commit, "result": "pass"}
+    common = {
+        "repository_commit": commit,
+        "source_tree_digest": _source_tree_digest(),
+        "result": "pass",
+    }
     _write_json(
         "portable_baseline_contract_0_50.json",
         {
             "schema": "etlantic.portable-baseline/1",
             **common,
+            "command": PUBLIC_COMMAND,
             "manifest": baseline_manifest(),
             "environment": environment,
         },
@@ -242,6 +497,7 @@ def main() -> int:
             "outcomes": ["pushed_exact", "pushed_with_lowering", "not_applicable"],
             "boundaries": ["source", "relational", "sink"],
             "findings": pushdown,
+            "proofs": pushdown_proofs,
             "evidence": sorted(
                 {
                     item["evidence_fingerprint"]
@@ -259,7 +515,11 @@ def main() -> int:
             "command": PUBLIC_COMMAND,
             "environment": environment,
             "claims": claims,
-            "policy": "Every frozen baseline claim is selected by the public conformance suite.",
+            "policy": "Every frozen baseline claim is selected by the public conformance suite; semantic and eager/lazy dimensions are recorded per engine.",
+            "required_fixture_ids": sorted(
+                set((baseline_manifest().get("leaf_fixture_ids") or {}).values())
+            ),
+            "negative_states": ["unsupported", "unavailable", "unknown"],
         },
     )
     for engine in ENGINES:
@@ -389,6 +649,7 @@ def main() -> int:
             "schema": "etlantic.portable-evidence-index/1",
             **common,
             "qualification": "qualified",
+            "source_tree_digest": common["source_tree_digest"],
             "artifacts": list(ARTIFACTS),
             "digests": digests,
             "environment": environment,

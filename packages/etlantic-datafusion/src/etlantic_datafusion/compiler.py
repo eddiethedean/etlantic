@@ -10,6 +10,7 @@ from typing import Any
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
+    portable_arithmetic_findings,
     portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
@@ -111,6 +112,7 @@ class DataFusionTransformCompiler:
         findings.extend(window_frame_findings(definition))
         findings.extend(windowed_aggregate_findings(definition))
         findings.extend(portable_shape_findings(definition))
+        findings.extend(portable_arithmetic_findings(definition))
         findings = [
             TransformSupportFinding(
                 code=f.code,
@@ -363,7 +365,17 @@ def _expr(
             )
             if not isinstance(separator_value, str):
                 raise ValueError("DataFusion concat_ws requires a literal separator")
-            return f.concat_ws(separator_value, *args[1:])
+            value = f.concat_ws(separator_value, *args[1:])
+            condition = args[1].is_null()
+            for arg in args[2:]:
+                condition = condition | arg.is_null()
+            return f.when(condition, lit(None)).otherwise(value)
+        if name == "dtcs:concat":
+            value = f.concat(*args)
+            condition = args[0].is_null()
+            for arg in args[1:]:
+                condition = condition | arg.is_null()
+            return f.when(condition, lit(None)).otherwise(value)
         if name in {"dtcs:if_null", "dtcs:coalesce"}:
             return f.coalesce(*args)
         if name == "dtcs:is_null":
@@ -382,7 +394,10 @@ def _expr(
                     if name.endswith("least")
                     else f.when(result >= candidate, result).otherwise(candidate)
                 )
-            return result
+            condition = args[0].is_null()
+            for arg in args[1:]:
+                condition = condition | arg.is_null()
+            return f.when(condition, lit(None)).otherwise(result)
         if name == "dtcs:case_when":
             if len(args) < 3 or len(args) % 2 == 0:
                 raise ValueError(

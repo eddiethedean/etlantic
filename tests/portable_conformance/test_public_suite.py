@@ -602,6 +602,113 @@ def test_local_round_default_and_null_scalar_semantics() -> None:
         assert _eval(node, {}, {}) is None
 
 
+def test_backend_null_propagation_for_variadic_scalars() -> None:
+    """Backends must not inherit skip-null semantics from native functions."""
+    import asyncio
+
+    from etlantic.testing.portable_transform_conformance import (
+        default_frame_factory,
+        normalize_rows,
+        rows_from_frame,
+    )
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+
+    def literal(type_: str, value: object) -> dict[str, object]:
+        return {"kind": "literal", "value": {"type": type_, "value": value}}
+
+    def call(name: str, *args: dict[str, object]) -> dict[str, object]:
+        return {"kind": "call", "callee": name, "args": list(args)}
+
+    fields = [
+        {"name": name, "expression": expression}
+        for name, expression in (
+            (
+                "concat",
+                call("dtcs:concat", literal("null", None), literal("string", "x")),
+            ),
+            (
+                "concat_ws",
+                call(
+                    "dtcs:concat_ws",
+                    literal("string", "-"),
+                    literal("null", None),
+                    literal("string", "x"),
+                ),
+            ),
+            ("least", call("dtcs:least", literal("null", None), literal("integer", 1))),
+            (
+                "greatest",
+                call("dtcs:greatest", literal("null", None), literal("integer", 1)),
+            ),
+        )
+    ]
+    plan = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "t",
+                    "parameters": {"fields": fields},
+                },
+            }
+        ],
+        "outputs": {"result": {}},
+        "requirements": {"dependencies": [{"from": "p", "to": "result"}]},
+    }
+    compilers = []
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_sql import create_transform_compiler as sql
+
+    compilers.extend((polars(), pandas(), sql(), datafusion(), duckdb()))
+    for compiler in compilers:
+        factory = default_frame_factory(compiler.info.engine)
+        try:
+            compiled = compiler.compile(
+                plan,
+                context=TransformCompileContext(
+                    "null-semantics",
+                    "null-semantics",
+                    "plan",
+                    "step",
+                    compiler.info.engine,
+                ),
+            )
+            bundle = asyncio.run(
+                compiler.execute(
+                    compiled,
+                    inputs={"t": factory([{"seed": 1}])},
+                    parameters={},
+                    context=TransformExecutionContext(
+                        "null-semantics",
+                        "null-semantics",
+                        "plan",
+                        "step",
+                        compiler.info.engine,
+                    ),
+                )
+            )
+            assert normalize_rows(rows_from_frame(bundle.valid["result"])) == [
+                {"concat": None, "concat_ws": None, "least": None, "greatest": None}
+            ]
+        finally:
+            provider = getattr(factory, "_etlantic_provider", None)
+            handle = getattr(factory, "_etlantic_handle", None)
+            context = getattr(factory, "_etlantic_ctx", None)
+            if provider and handle and context:
+                provider.release(handle, context)
+
+
 def test_local_by_position_union_rejects_heterogeneous_rows() -> None:
     from etlantic.transform.local_compiler import _apply
 
@@ -613,6 +720,59 @@ def test_local_by_position_union_rejects_heterogeneous_rows() -> None:
             {"right": [{"x": 3}, {"x": 4, "y": 5}]},
             {},
         )
+
+
+def test_all_compilers_reject_literal_zero_arithmetic() -> None:
+    """Portable arithmetic must not inherit backend-specific zero behavior."""
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_sql import create_transform_compiler as sql
+
+    expression = {
+        "kind": "binary",
+        "op": "divide",
+        "left": {"kind": "literal", "value": {"type": "integer", "value": 1}},
+        "right": {"kind": "literal", "value": {"type": "integer", "value": 0}},
+    }
+    plan = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "t",
+                    "parameters": {
+                        "fields": [{"name": "value", "expression": expression}]
+                    },
+                },
+            }
+        ],
+        "outputs": {"result": {}},
+        "requirements": {"dependencies": [{"from": "p", "to": "result"}]},
+    }
+    compilers = [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        datafusion(),
+        duckdb(),
+    ]
+    for compiler in compilers:
+        report = compiler.analyze(
+            plan,
+            context=TransformPlanningContext("p", "s", "profile", compiler.info.engine),
+        )
+        assert not report.supported
+        assert any(f.code == "PMXFORM302" for f in report.findings)
 
 
 @pytest.mark.polars

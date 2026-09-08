@@ -15,8 +15,8 @@
     "datafusion": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
-          "fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
+          "fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -27,7 +27,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -41,7 +41,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -55,7 +55,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -69,7 +69,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -83,7 +83,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -97,7 +97,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -111,7 +111,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -125,7 +125,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -139,7 +139,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -153,7 +153,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -167,7 +167,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -181,7 +181,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -195,7 +195,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -209,7 +209,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -223,7 +223,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -237,7 +237,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -251,7 +251,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -265,7 +265,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -279,7 +279,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -293,7 +293,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -307,7 +307,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -321,7 +321,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -335,7 +335,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -349,7 +349,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -363,7 +363,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -377,7 +377,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -391,7 +391,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -405,7 +405,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -419,7 +419,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -433,7 +433,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -447,7 +447,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -461,7 +461,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -475,7 +475,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -489,7 +489,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -503,7 +503,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -517,7 +517,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -531,7 +531,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -545,7 +545,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -559,7 +559,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -573,7 +573,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -587,7 +587,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -601,7 +601,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -615,7 +615,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -629,7 +629,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -643,7 +643,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -657,7 +657,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -671,7 +671,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -685,7 +685,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -699,7 +699,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -713,7 +713,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -727,7 +727,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -741,7 +741,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -755,7 +755,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -769,7 +769,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -783,7 +783,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -797,7 +797,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -811,7 +811,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -825,7 +825,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -839,7 +839,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -853,7 +853,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -867,7 +867,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -881,7 +881,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -895,7 +895,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -909,7 +909,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -923,7 +923,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -937,7 +937,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -951,7 +951,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -965,7 +965,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -979,7 +979,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -993,7 +993,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1007,7 +1007,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1021,7 +1021,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1035,7 +1035,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1049,7 +1049,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1063,7 +1063,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1077,7 +1077,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1091,7 +1091,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1105,7 +1105,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1119,7 +1119,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "028545fa0a6b34ab77da77e46e0277551672a6137aa0595d3279498e647432ab",
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -1127,9 +1127,57 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:lazy#findings",
+          "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/True#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "e49551ac758d8c201648892e3ec78a62021753cdcb52940c6ddac0afcf146836",
+      "fingerprint": "bd7666f69274ce5e8c4339338d260ef9c30ff9fe07d99f6588e47867cd08e4fe",
       "pushdown": [],
       "requirements": [
         {
@@ -1285,6 +1333,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -1734,6 +1794,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/True#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -2077,6 +2149,30 @@
           },
           "path": "union_modes",
           "scope": "union_modes",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:lazy#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:lazy"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
           "version": "1",
           "vocabulary": "dtcs"
         }
@@ -2092,8 +2188,8 @@
     "duckdb": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
-          "fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
+          "fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -2104,7 +2200,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2118,7 +2214,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2132,7 +2228,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2146,7 +2242,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2160,7 +2256,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2174,7 +2270,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2188,7 +2284,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2202,7 +2298,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2216,7 +2312,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2230,7 +2326,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2244,7 +2340,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2258,7 +2354,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2272,7 +2368,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2286,7 +2382,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2300,7 +2396,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2314,7 +2410,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2328,7 +2424,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2342,7 +2438,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2356,7 +2452,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2370,7 +2466,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2384,7 +2480,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2398,7 +2494,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2412,7 +2508,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2426,7 +2522,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2440,7 +2536,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2454,7 +2550,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2468,7 +2564,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2482,7 +2578,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2496,7 +2592,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2510,7 +2606,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2524,7 +2620,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2538,7 +2634,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2552,7 +2648,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2566,7 +2662,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2580,7 +2676,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2594,7 +2690,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2608,7 +2704,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2622,7 +2718,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2636,7 +2732,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2650,7 +2746,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2664,7 +2760,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2678,7 +2774,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2692,7 +2788,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2706,7 +2802,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2720,7 +2816,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2734,7 +2830,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2748,7 +2844,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2762,7 +2858,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2776,7 +2872,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2790,7 +2886,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2804,7 +2900,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2818,7 +2914,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2832,7 +2928,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2846,7 +2942,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2860,7 +2956,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2874,7 +2970,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2888,7 +2984,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2902,7 +2998,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2916,7 +3012,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2930,7 +3026,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2944,7 +3040,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2958,7 +3054,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2972,7 +3068,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2986,7 +3082,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3000,7 +3096,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3014,7 +3110,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3028,7 +3124,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3042,7 +3138,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3056,7 +3152,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3070,7 +3166,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3084,7 +3180,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3098,7 +3194,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3112,7 +3208,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3126,7 +3222,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3140,7 +3236,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3154,7 +3250,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3168,7 +3264,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3182,7 +3278,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3196,7 +3292,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3204,9 +3300,57 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:lazy#findings",
+          "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/True#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "43877f04abec101c004ab40b2d7c7cee4d0feb37027eb3e469b6122639de4b75",
+      "fingerprint": "48c891b8e6416a4f2f1a6f5d7ffe3e3ea6cdc0d8fbe77e3a8ac3a745055c06e6",
       "pushdown": [],
       "requirements": [
         {
@@ -3362,6 +3506,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -3811,6 +3967,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/True#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -4154,6 +4322,30 @@
           },
           "path": "union_modes",
           "scope": "union_modes",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:lazy#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:lazy"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
           "version": "1",
           "vocabulary": "dtcs"
         }
@@ -4169,8 +4361,8 @@
     "local": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
-          "fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
+          "fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -4181,7 +4373,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4195,7 +4387,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4209,7 +4401,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4223,7 +4415,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4237,7 +4429,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4251,7 +4443,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4265,7 +4457,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4279,7 +4471,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4293,7 +4485,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4307,7 +4499,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4321,7 +4513,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4335,7 +4527,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4349,7 +4541,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4363,7 +4555,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4377,7 +4569,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4391,7 +4583,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4405,7 +4597,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4419,7 +4611,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4433,7 +4625,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4447,7 +4639,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4461,7 +4653,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4475,7 +4667,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4489,7 +4681,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4503,7 +4695,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4517,7 +4709,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4531,7 +4723,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4545,7 +4737,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4559,7 +4751,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4573,7 +4765,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4587,7 +4779,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4601,7 +4793,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4615,7 +4807,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4629,7 +4821,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4643,7 +4835,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4657,7 +4849,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4671,7 +4863,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4685,7 +4877,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4699,7 +4891,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4713,7 +4905,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4727,7 +4919,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4741,7 +4933,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4755,7 +4947,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4769,7 +4961,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4783,7 +4975,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4797,7 +4989,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4811,7 +5003,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4825,7 +5017,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4839,7 +5031,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4853,7 +5045,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4867,7 +5059,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4881,7 +5073,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4895,7 +5087,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4909,7 +5101,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4923,7 +5115,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4937,7 +5129,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4951,7 +5143,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4965,7 +5157,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4979,7 +5171,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -4993,7 +5185,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5007,7 +5199,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5021,7 +5213,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5035,7 +5227,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5049,7 +5241,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5063,7 +5255,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5077,7 +5269,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5091,7 +5283,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5105,7 +5297,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5119,7 +5311,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5133,7 +5325,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5147,7 +5339,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5161,7 +5353,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5175,7 +5367,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5189,7 +5381,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5203,7 +5395,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5217,7 +5409,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5231,7 +5423,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5245,7 +5437,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5259,7 +5451,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5273,7 +5465,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -5281,9 +5473,43 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/False#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "6809879ecb59feecc9d00bdb7d05fe557cf396d8ee7f45ad695682294a421aa1",
+      "fingerprint": "f029546d4be73c4527a8bed1c5c843dab74582e7fccb23b5b4166eadfa1ffbc6",
       "pushdown": [],
       "requirements": [
         {
@@ -5439,6 +5665,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -5888,6 +6126,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/False#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "False"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -6233,6 +6483,18 @@
           "scope": "union_modes",
           "version": "1",
           "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
         }
       ],
       "schema": "etlantic.portable-requirement-support/1",
@@ -6246,7 +6508,7 @@
     "pandas": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
           "fingerprint": "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -7358,9 +7620,43 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/False#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "06f0fd32407e1e9c70f42fb09ada969d8dae91372436cc32c8ae19ec4a8e08e6",
+      "fingerprint": "6e663d542b5ddb5e311c221fb4733385a7c30d6faefc8430c1471426157b414e",
       "pushdown": [],
       "requirements": [
         {
@@ -7516,6 +7812,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -7965,6 +8273,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/False#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "False"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -8308,6 +8628,18 @@
           },
           "path": "union_modes",
           "scope": "union_modes",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
           "version": "1",
           "vocabulary": "dtcs"
         }
@@ -8323,7 +8655,7 @@
     "polars": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
           "fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -9435,9 +9767,57 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:lazy#findings",
+          "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/True#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "a3c8b354c3acb5f826fd086e9c7d446e1bd01922dc29e94a37072aa5be07b451",
+      "fingerprint": "9caf8d8d6939fd563dc380fd6cb6d2e32b43fa5f934e57cb3f4e60f24027b02b",
       "pushdown": [],
       "requirements": [
         {
@@ -9593,6 +9973,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -10042,6 +10434,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/True#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -10385,6 +10789,30 @@
           },
           "path": "union_modes",
           "scope": "union_modes",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:lazy#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:lazy"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
           "version": "1",
           "vocabulary": "dtcs"
         }
@@ -10400,7 +10828,7 @@
     "pyspark": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
           "fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -11512,9 +11940,57 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:lazy#findings",
+          "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/True#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "7eac25b1089fd61b52b8ecc66798deb97b60b9c09d7209c24b2adf2e4ed68419",
+      "fingerprint": "ac65c30a4e0a961dbeefe053710010ad5cfa6cf82adada56c16b7f0d26a8eed4",
       "pushdown": [],
       "requirements": [
         {
@@ -11670,6 +12146,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -12119,6 +12607,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/True#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -12464,6 +12964,30 @@
           "scope": "union_modes",
           "version": "1",
           "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:lazy#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:lazy"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
         }
       ],
       "schema": "etlantic.portable-requirement-support/1",
@@ -12477,7 +13001,7 @@
     "sql": {
       "evidence": [
         {
-          "baseline_digest": "c2d7d4ba3565abfd26fb647b7bba3768d13c228d44618e5681a5e5321e457f05",
+          "baseline_digest": "d6c9db2a1e641178bea3e0aa02e740cd4795af1d7929d5d54e19d936fabc87f7",
           "fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -13589,9 +14113,57 @@
           "reason_code": "PMXFORM301",
           "requirement": "dtcs@1/collision_policies/fail#collision_policies",
           "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:lazy#findings",
+          "support": "supported_exact"
+        },
+        {
+          "code": "PMXFORM301",
+          "evidence": [
+            "compiler"
+          ],
+          "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
+          "expression_path": null,
+          "obligation": "required",
+          "path": "findings",
+          "reason": "requirement is supported by the compiler",
+          "reason_code": "PMXFORM301",
+          "requirement": "dtcs@1/legacy/mode:eager#findings",
+          "support": "supported_exact"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "eager",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/eager/True#eager",
+          "support": "unknown"
+        },
+        {
+          "evidence": [],
+          "evidence_fingerprint": null,
+          "obligation": "required",
+          "path": "lazy",
+          "reason": "requirement has no independently verified support result",
+          "reason_code": "PMXFORM999",
+          "requirement": "dtcs@1/lazy/True#lazy",
+          "support": "unknown"
         }
       ],
-      "fingerprint": "bb0e6d21bac50038f7513c63a6acca1a7c707a0972bd7be245d99e75be4b83bd",
+      "fingerprint": "6495556160f9aee20c564722853af4d5e7d6b6e60681a50f22b21254c9df9198",
       "pushdown": [],
       "requirements": [
         {
@@ -13747,6 +14319,18 @@
           },
           "path": "collision_policies",
           "scope": "collision_policies",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/eager/True#eager",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "eager",
+          "scope": "eager",
           "version": "1",
           "vocabulary": "dtcs"
         },
@@ -14196,6 +14780,18 @@
         },
         {
           "applicability": "applicable",
+          "id": "dtcs@1/lazy/True#lazy",
+          "obligation": "required",
+          "parameters": {
+            "value": "True"
+          },
+          "path": "lazy",
+          "scope": "lazy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
           "id": "dtcs@1/operators/add#operators",
           "obligation": "required",
           "parameters": {
@@ -14541,6 +15137,30 @@
           "scope": "union_modes",
           "version": "1",
           "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:lazy#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:lazy"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
+        },
+        {
+          "applicability": "applicable",
+          "id": "dtcs@1/legacy/mode:eager#findings",
+          "obligation": "required",
+          "parameters": {
+            "legacy_requirement": "mode:eager"
+          },
+          "path": "findings",
+          "scope": "legacy",
+          "version": "1",
+          "vocabulary": "dtcs"
         }
       ],
       "schema": "etlantic.portable-requirement-support/1",
@@ -14552,9 +15172,10 @@
       }
     }
   },
-  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
   "result": "pass",
   "schema": "etlantic.portable-requirement-support/1",
+  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260",
   "support_states": [
     "supported_exact",
     "supported_with_lowering",

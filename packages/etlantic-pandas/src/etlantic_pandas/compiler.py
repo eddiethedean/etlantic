@@ -128,6 +128,7 @@ class PandasTransformCompiler:
     ) -> TransformSupportReport:
         from etlantic.transform.capabilities import (
             merge_requirements,
+            portable_arithmetic_findings,
             requirements_from_plan,
             three_state_findings,
         )
@@ -154,6 +155,7 @@ class PandasTransformCompiler:
             )
         findings.extend(_analyze_modes(definition))
         findings.extend(three_state_findings(definition, self._info.capabilities))
+        findings.extend(portable_arithmetic_findings(definition))
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),

@@ -4,409 +4,409 @@
       "action": "dtcs:filter",
       "boundary": "source:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "filter"
+      "target": "f"
     },
     {
       "action": "dtcs:filter",
       "boundary": "relational:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:filter",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "filter"
+      "target": "f"
     },
     {
       "action": "dtcs:filter",
       "boundary": "sink:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "filter"
+      "target": "f"
     },
     {
       "action": "dtcs:project",
       "boundary": "source:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "project"
+      "target": "p"
     },
     {
       "action": "dtcs:project",
       "boundary": "relational:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:project",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "project"
+      "target": "p"
     },
     {
       "action": "dtcs:project",
       "boundary": "sink:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "project"
+      "target": "p"
     },
     {
       "action": "dtcs:with_fields",
       "boundary": "source:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "with_fields"
+      "target": "w"
     },
     {
       "action": "dtcs:with_fields",
       "boundary": "relational:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:with_fields",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "with_fields"
+      "target": "w"
     },
     {
       "action": "dtcs:with_fields",
       "boundary": "sink:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "with_fields"
+      "target": "w"
     },
     {
       "action": "dtcs:drop_fields",
       "boundary": "source:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "drop_fields"
+      "target": "d"
     },
     {
       "action": "dtcs:drop_fields",
       "boundary": "relational:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:drop_fields",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "drop_fields"
+      "target": "d"
     },
     {
       "action": "dtcs:drop_fields",
       "boundary": "sink:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "drop_fields"
+      "target": "d"
     },
     {
       "action": "dtcs:rename_fields",
       "boundary": "source:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "rename_fields"
+      "target": "n"
     },
     {
       "action": "dtcs:rename_fields",
       "boundary": "relational:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:rename_fields",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "rename_fields"
+      "target": "n"
     },
     {
       "action": "dtcs:rename_fields",
       "boundary": "sink:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "rename_fields"
+      "target": "n"
     },
     {
       "action": "dtcs:join",
       "boundary": "source:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "join"
+      "target": "j"
     },
     {
       "action": "dtcs:join",
       "boundary": "relational:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:join",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "join"
+      "target": "j"
     },
     {
       "action": "dtcs:join",
       "boundary": "sink:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "join"
+      "target": "j"
     },
     {
       "action": "dtcs:union",
       "boundary": "source:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "union"
+      "target": "u"
     },
     {
       "action": "dtcs:union",
       "boundary": "relational:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:union",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "union"
+      "target": "u"
     },
     {
       "action": "dtcs:union",
       "boundary": "sink:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "union"
+      "target": "u"
     },
     {
       "action": "dtcs:aggregate",
       "boundary": "source:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "aggregate"
+      "target": "a"
     },
     {
       "action": "dtcs:aggregate",
       "boundary": "relational:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:aggregate",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "aggregate"
+      "target": "a"
     },
     {
       "action": "dtcs:aggregate",
       "boundary": "sink:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "aggregate"
+      "target": "a"
     },
     {
       "action": "dtcs:sort",
       "boundary": "source:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "sort"
+      "target": "s"
     },
     {
       "action": "dtcs:sort",
       "boundary": "relational:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:sort",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "sort"
+      "target": "s"
     },
     {
       "action": "dtcs:sort",
       "boundary": "sink:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "sort"
+      "target": "s"
     },
     {
       "action": "dtcs:distinct",
       "boundary": "source:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "distinct"
+      "target": "x"
     },
     {
       "action": "dtcs:distinct",
       "boundary": "relational:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:distinct",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "distinct"
+      "target": "x"
     },
     {
       "action": "dtcs:distinct",
       "boundary": "sink:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "distinct"
+      "target": "x"
     },
     {
       "action": "dtcs:deduplicate",
       "boundary": "source:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "deduplicate"
+      "target": "k"
     },
     {
       "action": "dtcs:deduplicate",
       "boundary": "relational:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:deduplicate",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "deduplicate"
+      "target": "k"
     },
     {
       "action": "dtcs:deduplicate",
       "boundary": "sink:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "deduplicate"
+      "target": "k"
     },
     {
       "action": "dtcs:limit",
       "boundary": "source:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "connector source pushdown is outside the native plan contract",
-      "target": "limit"
+      "target": "l"
     },
     {
       "action": "dtcs:limit",
       "boundary": "relational:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
-      "proof_reference": "explain:limit",
+      "proof_reference": "compiler-explain:a0a7a8fab7866989faf25224d597fddaf6c46e4306b2756c356d6b8ab796e2f0",
       "reason": "action lowered into the native relational plan",
-      "target": "limit"
+      "target": "l"
     },
     {
       "action": "dtcs:limit",
       "boundary": "sink:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
+      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
       "reason": "sink pushdown is outside the native plan contract",
-      "target": "limit"
+      "target": "l"
     }
   ],
   "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
@@ -417,9 +417,10 @@
     "spark_backend": "pyspark JVM",
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
-  "evidence_fingerprint": "7d39ae661b1de2f7a125b3261a0b7e81e4d810236ff81c378f6dc37bf5b3f11c",
-  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
+  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
   "result": "pass",
   "schema": "etlantic.portable-pushdown-evidence/1",
+  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260",
   "tests": "frozen public conformance corpus"
 }

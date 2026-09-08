@@ -134,6 +134,7 @@ class SqlTransformCompiler:
     ) -> TransformSupportReport:
         from etlantic.transform.capabilities import (
             merge_requirements,
+            portable_arithmetic_findings,
             requirements_from_plan,
             three_state_findings,
         )
@@ -146,6 +147,7 @@ class SqlTransformCompiler:
         findings = list(report.findings)
         findings.extend(_analyze_modes(definition))
         findings.extend(three_state_findings(definition, self._info.capabilities))
+        findings.extend(portable_arithmetic_findings(definition))
         # Reject trusted SQL fragments in portable definitions.
         blob = json.dumps(definition, sort_keys=True)
         if "trusted_fragment" in blob or "TrustedSqlFragment" in blob:

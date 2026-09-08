@@ -6,17 +6,77 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from etlantic import (
+    Data,
+    Extract,
+    Input,
+    Load,
+    Output,
+    Pipeline,
+    PipelineRuntime,
+    Profile,
+    Transformation,
+)
+from etlantic.plan import plan_pipeline
+from etlantic.registry import PlanningContext
+from etlantic.runtime import RunStatus
 from etlantic.testing.portable_transform_conformance import (
     default_frame_factory,
     normalize_rows,
     rows_from_frame,
 )
+from etlantic.transform import functions as F
 from etlantic.transform.compiler import (
     TransformCompileContext,
     TransformExecutionContext,
     TransformPlanningContext,
 )
 from etlantic.transform.local_compiler import LocalTransformCompiler
+from etlantic.transform.validate import report_or_raise, validate_plan_budgets
+
+
+class _ProbeRow(Data):
+    value: int
+
+
+class _ProbeOut(Data):
+    value: int
+
+
+class _ProbeTransform(Transformation):
+    rows: Input[_ProbeRow]
+    result: Output[_ProbeOut]
+
+
+@_ProbeTransform.portable
+def _probe_transform(rows):
+    return rows.filter(F.col("value") > 0).select("value")
+
+
+class _ProbePipeline(Pipeline):
+    raw: Extract[_ProbeRow] = Extract(asset="probe")
+    transformed = _ProbeTransform.step(rows=raw)
+    curated: Load[_ProbeOut] = Load(input=transformed.result, asset="probe_out")
+
+
+def _exercise_public_pipeline_path() -> None:
+    """Prove the campaign enters through authoring, planning, and runtime APIs."""
+    profile = Profile(
+        name="canonical-public-path",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+    )
+    runtime = PipelineRuntime()
+    runtime.memory.seed("probe", [_ProbeRow(value=1), _ProbeRow(value=-1)])
+    context = PlanningContext.create(profile=profile, registry=runtime.registry)
+    plan = plan_pipeline(_ProbePipeline, context=context)
+    report_or_raise(validate_plan_budgets(plan.to_dict()))
+    result = _ProbePipeline.run(profile=profile, runtime=runtime, context=context)
+    if result.status is not RunStatus.SUCCEEDED:
+        raise AssertionError(f"public canonical probe failed: {result}")
+    rows = runtime.memory.get("probe_out") or []
+    if [row.model_dump() for row in rows] != [{"value": 1}]:
+        raise AssertionError("public canonical probe returned an unexpected result")
 
 
 def _plan() -> dict[str, Any]:
@@ -180,6 +240,7 @@ def _compilers() -> list[Any]:
 
 
 def main() -> int:
+    _exercise_public_pipeline_path()
     plan = _plan()
     expected = normalize_rows(
         [
@@ -191,6 +252,23 @@ def main() -> int:
     for compiler in _compilers():
         factory = default_frame_factory(compiler.info.engine)
         try:
+            profile = Profile(
+                name=f"qualification-{compiler.info.engine}",
+                dataframe_engine=(
+                    compiler.info.engine
+                    if compiler.info.engine
+                    in {"local", "polars", "pandas", "duckdb", "datafusion"}
+                    else None
+                ),
+                sql_engine="sql" if compiler.info.engine == "sql" else None,
+                spark_engine="pyspark" if compiler.info.engine == "pyspark" else None,
+                portable_transform_policy="require",
+            )
+            if profile.portable_transform_policy != "require":
+                raise AssertionError(
+                    "canonical qualification must require portable execution"
+                )
+            report_or_raise(validate_plan_budgets(plan))
             planning = TransformPlanningContext(
                 "qualification", "canonical", "qualification", compiler.info.engine
             )
@@ -229,6 +307,10 @@ def main() -> int:
                 )
             )
             actual = normalize_rows(rows_from_frame(bundle.valid["result"]))
+            if any(set(row) != {"region", "total"} for row in actual):
+                raise AssertionError(
+                    f"{compiler.info.engine}: contract fields diverged"
+                )
             if actual != expected:
                 raise AssertionError(
                     f"{compiler.info.engine}: normalized canonical result diverged"

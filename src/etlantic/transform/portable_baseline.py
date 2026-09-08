@@ -194,6 +194,66 @@ def baseline_manifest() -> dict[str, Any]:
             "unions": "byName aligns names; byPosition aligns ordinal fields; missing columns are explicit",
             "deduplication": "distinct uses complete logical row identity; keyed deduplicate uses declared keys",
         },
+        # Machine-readable constraints supplement the human-readable rules
+        # above.  These fields are intentionally part of the frozen manifest
+        # so a compiler cannot qualify by merely advertising a name.
+        "obligations": {
+            "baseline": "required",
+            "advanced": "informational",
+            "preferred_pushdown": "preferred",
+        },
+        "applicability": {
+            "host_boundary": "not_applicable",
+            "native_relational_boundary": "applicable",
+        },
+        "function_constraints": {
+            name: {
+                "arity": list(bounds),
+                "null_policy": (
+                    "aware"
+                    if name in {
+                        "dtcs:coalesce",
+                        "dtcs:if_null",
+                        "dtcs:is_null",
+                        "dtcs:null_if",
+                        "dtcs:case_when",
+                    }
+                    else "propagate"
+                ),
+            }
+            for name, bounds in sorted(BASELINE_FUNCTION_ARITIES.items())
+        },
+        "aggregate_empty_results": {
+            "dtcs:sum": None,
+            "dtcs:average": None,
+            "dtcs:min": None,
+            "dtcs:max": None,
+            "dtcs:count": 0,
+            "dtcs:count_all": 0,
+            "dtcs:count_distinct": 0,
+        },
+        "numeric_rules": {
+            "integer": "signed_64_or_wider",
+            "decimal": "preserve_declared_precision_and_scale",
+            "overflow": "raise_portable_numeric_error",
+            "divide_by_zero": "raise_portable_arithmetic_error",
+            "modulo_by_zero": "raise_portable_arithmetic_error",
+        },
+        "union_policies": {
+            "byName": {"missing_fields": "reject", "duplicates": "reject"},
+            "byPosition": {"missing_fields": "reject", "duplicates": "reject"},
+        },
+        "determinism": {
+            "sort": "stable_left_to_right",
+            "limit": "requires_explicit_order_for_determinism",
+            "distinct": "complete_row_identity",
+            "deduplicate": "declared_keys_or_complete_row_identity",
+        },
+        "pushdown_boundaries": {
+            "source": "manifest_declared",
+            "relational": "required_for_native_targets",
+            "sink": "manifest_declared",
+        },
         "leaf_fixture_ids": {
             "dtcs:filter": "kernel_filter_project_lower",
             "dtcs:project": "baseline_scalar_functions",

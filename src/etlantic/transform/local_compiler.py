@@ -11,6 +11,7 @@ from typing import Any, cast
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
+    portable_arithmetic_findings,
     portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
@@ -104,6 +105,7 @@ class LocalTransformCompiler:
             definition, self.info.capabilities
         )
         findings.extend(portable_shape_findings(definition))
+        findings.extend(portable_arithmetic_findings(definition))
         return TransformSupportReport(
             not findings,
             tuple(findings),

@@ -675,6 +675,59 @@ def portable_shape_findings(
     return findings
 
 
+def portable_arithmetic_findings(
+    definition: Mapping[str, Any],
+) -> list[TransformSupportFinding]:
+    """Reject statically provable divide/modulo-by-zero expressions.
+
+    The portable baseline defines these as errors.  Native engines disagree
+    (NULL, infinity, or exceptions), so plans containing a literal zero
+    denominator must fail during analysis rather than silently diverge.
+    """
+    findings: list[TransformSupportFinding] = []
+
+    def walk(node: Any, path: str = "plan") -> None:
+        if isinstance(node, Mapping):
+            kind = node.get("kind")
+            if (
+                isinstance(kind, str)
+                and kind in {"binary", "operator"}
+                and normalize_operator(str(node.get("op")))
+                in {
+                    "divide",
+                    "modulo",
+                }
+            ):
+                right = node.get("right")
+                if isinstance(right, Mapping) and right.get("kind") == "literal":
+                    value = right.get("value")
+                    if isinstance(value, Mapping):
+                        value = value.get("value")
+                    if (
+                        isinstance(value, (int, float))
+                        and not isinstance(value, bool)
+                        and value == 0
+                    ):
+                        op = normalize_operator(str(node.get("op")))
+                        findings.append(
+                            TransformSupportFinding(
+                                code="PMXFORM302",
+                                requirement=f"arithmetic:{op}:nonzero-denominator",
+                                reason=f"{op} by a literal zero is an explicit portable arithmetic error",
+                                expression_path=f"{path}.right",
+                                support="unsupported",
+                            )
+                        )
+            for key, value in node.items():
+                walk(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+
+    walk(definition)
+    return findings
+
+
 _WINDOWED_AGGREGATE_CALLEES = frozenset(
     {
         "dtcs:sum",

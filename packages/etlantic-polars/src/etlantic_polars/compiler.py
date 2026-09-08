@@ -173,6 +173,7 @@ class PolarsTransformCompiler:
     ) -> TransformSupportReport:
         from etlantic.transform.capabilities import (
             merge_requirements,
+            portable_arithmetic_findings,
             requirements_from_plan,
             three_state_findings,
             window_frame_findings,
@@ -208,6 +209,7 @@ class PolarsTransformCompiler:
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(window_frame_findings(definition))
         findings.extend(windowed_aggregate_findings(definition))
+        findings.extend(portable_arithmetic_findings(definition))
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),

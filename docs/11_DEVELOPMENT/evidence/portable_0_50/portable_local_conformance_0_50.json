@@ -7,9 +7,10 @@
     "spark_backend": "pyspark JVM",
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
-  "evidence_fingerprint": "b47c2a6c2a1a0ce16cf909ebdb9883cff7333f0c36e1734de3e86da7ff0f8ef0",
-  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
+  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
+  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260",
   "tests": "frozen public conformance corpus"
 }

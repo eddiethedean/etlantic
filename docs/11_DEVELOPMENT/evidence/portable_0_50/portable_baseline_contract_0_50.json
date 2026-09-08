@@ -1,4 +1,5 @@
 {
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -20,6 +21,15 @@
       "dtcs:deduplicate",
       "dtcs:limit"
     ],
+    "aggregate_empty_results": {
+      "dtcs:average": null,
+      "dtcs:count": 0,
+      "dtcs:count_all": 0,
+      "dtcs:count_distinct": 0,
+      "dtcs:max": null,
+      "dtcs:min": null,
+      "dtcs:sum": null
+    },
     "aggregate_functions": [
       "dtcs:sum",
       "dtcs:average",
@@ -29,6 +39,10 @@
       "dtcs:count_all",
       "dtcs:count_distinct"
     ],
+    "applicability": {
+      "host_boundary": "not_applicable",
+      "native_relational_boundary": "applicable"
+    },
     "collision_policy": "fail",
     "defaults": {
       "join.collisionPolicy": "fail",
@@ -37,6 +51,12 @@
       "sort.nulls": "last",
       "union.allowMissingColumns": false,
       "union.mode": "byName"
+    },
+    "determinism": {
+      "deduplicate": "declared_keys_or_complete_row_identity",
+      "distinct": "complete_row_identity",
+      "limit": "requires_explicit_order_for_determinism",
+      "sort": "stable_left_to_right"
     },
     "function_arities": {
       "dtcs:abs": [
@@ -160,6 +180,218 @@
         1
       ]
     },
+    "function_constraints": {
+      "dtcs:abs": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:average": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:case_when": {
+        "arity": [
+          3,
+          null
+        ],
+        "null_policy": "aware"
+      },
+      "dtcs:ceil": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:coalesce": {
+        "arity": [
+          1,
+          null
+        ],
+        "null_policy": "aware"
+      },
+      "dtcs:concat": {
+        "arity": [
+          1,
+          null
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:concat_ws": {
+        "arity": [
+          2,
+          null
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:contains": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:count": {
+        "arity": [
+          0,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:count_all": {
+        "arity": [
+          0,
+          0
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:count_distinct": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:ends_with": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:floor": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:greatest": {
+        "arity": [
+          1,
+          null
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:if_null": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "aware"
+      },
+      "dtcs:is_null": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "aware"
+      },
+      "dtcs:least": {
+        "arity": [
+          1,
+          null
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:length": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:lower": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:max": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:min": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:null_if": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "aware"
+      },
+      "dtcs:power": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:replace": {
+        "arity": [
+          3,
+          3
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:round": {
+        "arity": [
+          1,
+          2
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:sqrt": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:starts_with": {
+        "arity": [
+          2,
+          2
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:substr": {
+        "arity": [
+          2,
+          3
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:sum": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      },
+      "dtcs:upper": {
+        "arity": [
+          1,
+          1
+        ],
+        "null_policy": "propagate"
+      }
+    },
     "id": "etlantic.portable-baseline/1",
     "join_modes": [
       "inner",
@@ -241,6 +473,18 @@
       "type:string": "baseline_scalar_functions",
       "union_modes": "baseline_union_modes"
     },
+    "numeric_rules": {
+      "decimal": "preserve_declared_precision_and_scale",
+      "divide_by_zero": "raise_portable_arithmetic_error",
+      "integer": "signed_64_or_wider",
+      "modulo_by_zero": "raise_portable_arithmetic_error",
+      "overflow": "raise_portable_numeric_error"
+    },
+    "obligations": {
+      "advanced": "informational",
+      "baseline": "required",
+      "preferred_pushdown": "preferred"
+    },
     "operators": [
       "eq",
       "not_eq",
@@ -265,6 +509,11 @@
       "dtcs:profile/portable-relational-kernel/1",
       "dtcs:profile/portable-relational/1"
     ],
+    "pushdown_boundaries": {
+      "relational": "required_for_native_targets",
+      "sink": "manifest_declared",
+      "source": "manifest_declared"
+    },
     "scalar_functions": [
       "dtcs:lower",
       "dtcs:upper",
@@ -314,9 +563,20 @@
     "union_modes": [
       "byName",
       "byPosition"
-    ]
+    ],
+    "union_policies": {
+      "byName": {
+        "duplicates": "reject",
+        "missing_fields": "reject"
+      },
+      "byPosition": {
+        "duplicates": "reject",
+        "missing_fields": "reject"
+      }
+    }
   },
-  "repository_commit": "8a79ea7666059257c06b62704361788db4b52a03",
+  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
   "result": "pass",
-  "schema": "etlantic.portable-baseline/1"
+  "schema": "etlantic.portable-baseline/1",
+  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260"
 }
