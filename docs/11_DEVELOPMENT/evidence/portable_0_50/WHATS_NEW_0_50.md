@@ -2,4 +2,8 @@
 
 > **Status: Technical qualification complete; Sol review pending.**
 
-The Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB portable compilers have qualified the frozen baseline in the recorded evidence campaign. Advanced, adaptive, remote, streaming, and federated execution remain separate claims. This technical result remains subject to Sol's independent release review.
+Qualified matrix: Local (host), Polars (eager and lazy), Pandas (eager), SQL (SQLite and PostgreSQL relation paths), PySpark (real JVM), DataFusion (lazy native plan), and DuckDB (lazy relation path).
+
+The baseline does not claim advanced, adaptive execution, remote, streaming, federated, or unqualified connector/sink pushdown. Native bodies remain engine-specific and are not part of the portable guarantee.
+
+This technical result remains subject to Sol's independent release review.

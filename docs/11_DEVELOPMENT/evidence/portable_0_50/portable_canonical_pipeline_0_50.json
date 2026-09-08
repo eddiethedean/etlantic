@@ -1,13 +1,19 @@
 {
-  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py",
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all; ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all",
   "engine_neutral": true,
   "engine_specific_bodies": false,
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
   "plan": "dtcs.transform-plan/2",
-  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
+  "repository_commit": "c229b14f3e072677e5d3aae4757ea0f479d56a3c",
   "result": "pass",
   "schema": "etlantic.portable-canonical-pipeline/1",
   "source_rows": false,
-  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6",
+  "source_tree_digest": "6e20111cc582e5547107e84e32ba42c5ad507f46623e2d5f9be064767912a5d6",
   "stages": [
     "filter",
     "project",

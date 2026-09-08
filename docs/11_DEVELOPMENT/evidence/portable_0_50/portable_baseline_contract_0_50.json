@@ -1,5 +1,5 @@
 {
-  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch; ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -681,6 +681,16 @@
       "validation": "runtime_contract_validation_required"
     },
     "plan": "dtcs.transform-plan/2",
+    "profile_aliases": {
+      "dtcs:profile/portable-relational-kernel/2": {
+        "canonical": "dtcs:profile/portable-relational-kernel/1",
+        "proof": "exact-vocabulary-equivalence"
+      },
+      "dtcs:profile/portable-relational/2": {
+        "canonical": "dtcs:profile/portable-relational/1",
+        "proof": "exact-vocabulary-equivalence"
+      }
+    },
     "profiles": [
       "dtcs:profile/portable-relational-kernel/1",
       "dtcs:profile/portable-relational/1"
@@ -759,8 +769,8 @@
       }
     }
   },
-  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
+  "repository_commit": "c229b14f3e072677e5d3aae4757ea0f479d56a3c",
   "result": "pass",
   "schema": "etlantic.portable-baseline/1",
-  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6"
+  "source_tree_digest": "6e20111cc582e5547107e84e32ba42c5ad507f46623e2d5f9be064767912a5d6"
 }

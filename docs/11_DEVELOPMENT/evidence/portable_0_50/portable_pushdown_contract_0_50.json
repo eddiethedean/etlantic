@@ -4,7 +4,7 @@
     "relational",
     "sink"
   ],
-  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch; ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -12,11 +12,11 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "evidence": [
-    "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+    "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
     "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
     "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
-    "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
-    "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+    "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
+    "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
     "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a"
   ],
   "findings": [
@@ -24,7 +24,7 @@
       "action": "dtcs:filter",
       "boundary": "source:0",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -35,7 +35,7 @@
       "action": "dtcs:filter",
       "boundary": "relational:0",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -46,7 +46,7 @@
       "action": "dtcs:filter",
       "boundary": "sink:0",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -57,7 +57,7 @@
       "action": "dtcs:project",
       "boundary": "source:1",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -68,7 +68,7 @@
       "action": "dtcs:project",
       "boundary": "relational:1",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -79,7 +79,7 @@
       "action": "dtcs:project",
       "boundary": "sink:1",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -90,7 +90,7 @@
       "action": "dtcs:with_fields",
       "boundary": "source:2",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -101,7 +101,7 @@
       "action": "dtcs:with_fields",
       "boundary": "relational:2",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -112,7 +112,7 @@
       "action": "dtcs:with_fields",
       "boundary": "sink:2",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -123,7 +123,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "source:3",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -134,7 +134,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "relational:3",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -145,7 +145,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "sink:3",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -156,7 +156,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "source:4",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -167,7 +167,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "relational:4",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -178,7 +178,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "sink:4",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -189,7 +189,7 @@
       "action": "dtcs:join",
       "boundary": "source:5",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -200,7 +200,7 @@
       "action": "dtcs:join",
       "boundary": "relational:5",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -211,7 +211,7 @@
       "action": "dtcs:join",
       "boundary": "sink:5",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -222,7 +222,7 @@
       "action": "dtcs:union",
       "boundary": "source:6",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -233,7 +233,7 @@
       "action": "dtcs:union",
       "boundary": "relational:6",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -244,7 +244,7 @@
       "action": "dtcs:union",
       "boundary": "sink:6",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -255,7 +255,7 @@
       "action": "dtcs:aggregate",
       "boundary": "source:7",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -266,7 +266,7 @@
       "action": "dtcs:aggregate",
       "boundary": "relational:7",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -277,7 +277,7 @@
       "action": "dtcs:aggregate",
       "boundary": "sink:7",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -288,7 +288,7 @@
       "action": "dtcs:sort",
       "boundary": "source:8",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -299,7 +299,7 @@
       "action": "dtcs:sort",
       "boundary": "relational:8",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -310,7 +310,7 @@
       "action": "dtcs:sort",
       "boundary": "sink:8",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -321,7 +321,7 @@
       "action": "dtcs:distinct",
       "boundary": "source:9",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -332,7 +332,7 @@
       "action": "dtcs:distinct",
       "boundary": "relational:9",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -343,7 +343,7 @@
       "action": "dtcs:distinct",
       "boundary": "sink:9",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -354,7 +354,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "source:10",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -365,7 +365,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "relational:10",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -376,7 +376,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "sink:10",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -387,7 +387,7 @@
       "action": "dtcs:limit",
       "boundary": "source:11",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -398,7 +398,7 @@
       "action": "dtcs:limit",
       "boundary": "relational:11",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -409,7 +409,7 @@
       "action": "dtcs:limit",
       "boundary": "sink:11",
       "engine": "local",
-      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
+      "evidence_fingerprint": "aa94a92d6ada2abbe0b2dbae7be888c3ebd56f7aeadd4c2877713c61ba527dfa",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -1226,7 +1226,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:f",
       "reason": "action lowered into the native relational plan",
       "target": "f"
@@ -1260,7 +1263,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:p",
       "reason": "action lowered into the native relational plan",
       "target": "p"
@@ -1294,7 +1300,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:w",
       "reason": "action lowered into the native relational plan",
       "target": "w"
@@ -1328,7 +1337,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:d",
       "reason": "action lowered into the native relational plan",
       "target": "d"
@@ -1362,7 +1374,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:n",
       "reason": "action lowered into the native relational plan",
       "target": "n"
@@ -1396,7 +1411,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:j",
       "reason": "action lowered into the native relational plan",
       "target": "j"
@@ -1430,7 +1448,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:u",
       "reason": "action lowered into the native relational plan",
       "target": "u"
@@ -1464,7 +1485,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:a",
       "reason": "action lowered into the native relational plan",
       "target": "a"
@@ -1498,7 +1522,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:s",
       "reason": "action lowered into the native relational plan",
       "target": "s"
@@ -1532,7 +1559,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:x",
       "reason": "action lowered into the native relational plan",
       "target": "x"
@@ -1566,7 +1596,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:k",
       "reason": "action lowered into the native relational plan",
       "target": "k"
@@ -1600,7 +1633,10 @@
       "evidence_fingerprint": "4558c96e9d3a6185476233bba7679241aa7cc114c74e278fa5dc40df874dd292",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:sql:l",
       "reason": "action lowered into the native relational plan",
       "target": "l"
@@ -2028,7 +2064,7 @@
       "action": "dtcs:filter",
       "boundary": "source:0",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2039,7 +2075,7 @@
       "action": "dtcs:filter",
       "boundary": "relational:0",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2051,7 +2087,7 @@
       "action": "dtcs:filter",
       "boundary": "sink:0",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2062,7 +2098,7 @@
       "action": "dtcs:project",
       "boundary": "source:1",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2073,7 +2109,7 @@
       "action": "dtcs:project",
       "boundary": "relational:1",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2085,7 +2121,7 @@
       "action": "dtcs:project",
       "boundary": "sink:1",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2096,7 +2132,7 @@
       "action": "dtcs:with_fields",
       "boundary": "source:2",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2107,7 +2143,7 @@
       "action": "dtcs:with_fields",
       "boundary": "relational:2",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2119,7 +2155,7 @@
       "action": "dtcs:with_fields",
       "boundary": "sink:2",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2130,7 +2166,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "source:3",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2141,7 +2177,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "relational:3",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2153,7 +2189,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "sink:3",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2164,7 +2200,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "source:4",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2175,7 +2211,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "relational:4",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2187,7 +2223,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "sink:4",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2198,7 +2234,7 @@
       "action": "dtcs:join",
       "boundary": "source:5",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2209,7 +2245,7 @@
       "action": "dtcs:join",
       "boundary": "relational:5",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2221,7 +2257,7 @@
       "action": "dtcs:join",
       "boundary": "sink:5",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2232,7 +2268,7 @@
       "action": "dtcs:union",
       "boundary": "source:6",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2243,7 +2279,7 @@
       "action": "dtcs:union",
       "boundary": "relational:6",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2255,7 +2291,7 @@
       "action": "dtcs:union",
       "boundary": "sink:6",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2266,7 +2302,7 @@
       "action": "dtcs:aggregate",
       "boundary": "source:7",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2277,7 +2313,7 @@
       "action": "dtcs:aggregate",
       "boundary": "relational:7",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2289,7 +2325,7 @@
       "action": "dtcs:aggregate",
       "boundary": "sink:7",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2300,7 +2336,7 @@
       "action": "dtcs:sort",
       "boundary": "source:8",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2311,7 +2347,7 @@
       "action": "dtcs:sort",
       "boundary": "relational:8",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2323,7 +2359,7 @@
       "action": "dtcs:sort",
       "boundary": "sink:8",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2334,7 +2370,7 @@
       "action": "dtcs:distinct",
       "boundary": "source:9",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2345,7 +2381,7 @@
       "action": "dtcs:distinct",
       "boundary": "relational:9",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2357,7 +2393,7 @@
       "action": "dtcs:distinct",
       "boundary": "sink:9",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2368,7 +2404,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "source:10",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2379,7 +2415,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "relational:10",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2391,7 +2427,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "sink:10",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2402,7 +2438,7 @@
       "action": "dtcs:limit",
       "boundary": "source:11",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2413,7 +2449,7 @@
       "action": "dtcs:limit",
       "boundary": "relational:11",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "required",
       "outcome": "pushed_exact",
       "physical_effects": [],
@@ -2425,7 +2461,7 @@
       "action": "dtcs:limit",
       "boundary": "sink:11",
       "engine": "datafusion",
-      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
+      "evidence_fingerprint": "3e487e0f79139a1fb63d104e625f10b8bcb62e343c82737e2f6117f82d670ea3",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2436,7 +2472,7 @@
       "action": "dtcs:filter",
       "boundary": "source:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2447,10 +2483,13 @@
       "action": "dtcs:filter",
       "boundary": "relational:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:f",
       "reason": "action lowered into the native relational plan",
       "target": "f"
@@ -2459,7 +2498,7 @@
       "action": "dtcs:filter",
       "boundary": "sink:0",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2470,7 +2509,7 @@
       "action": "dtcs:project",
       "boundary": "source:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2481,10 +2520,13 @@
       "action": "dtcs:project",
       "boundary": "relational:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:p",
       "reason": "action lowered into the native relational plan",
       "target": "p"
@@ -2493,7 +2535,7 @@
       "action": "dtcs:project",
       "boundary": "sink:1",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2504,7 +2546,7 @@
       "action": "dtcs:with_fields",
       "boundary": "source:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2515,10 +2557,13 @@
       "action": "dtcs:with_fields",
       "boundary": "relational:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:w",
       "reason": "action lowered into the native relational plan",
       "target": "w"
@@ -2527,7 +2572,7 @@
       "action": "dtcs:with_fields",
       "boundary": "sink:2",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2538,7 +2583,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "source:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2549,10 +2594,13 @@
       "action": "dtcs:drop_fields",
       "boundary": "relational:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:d",
       "reason": "action lowered into the native relational plan",
       "target": "d"
@@ -2561,7 +2609,7 @@
       "action": "dtcs:drop_fields",
       "boundary": "sink:3",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2572,7 +2620,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "source:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2583,10 +2631,13 @@
       "action": "dtcs:rename_fields",
       "boundary": "relational:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:n",
       "reason": "action lowered into the native relational plan",
       "target": "n"
@@ -2595,7 +2646,7 @@
       "action": "dtcs:rename_fields",
       "boundary": "sink:4",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2606,7 +2657,7 @@
       "action": "dtcs:join",
       "boundary": "source:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2617,10 +2668,13 @@
       "action": "dtcs:join",
       "boundary": "relational:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:j",
       "reason": "action lowered into the native relational plan",
       "target": "j"
@@ -2629,7 +2683,7 @@
       "action": "dtcs:join",
       "boundary": "sink:5",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2640,7 +2694,7 @@
       "action": "dtcs:union",
       "boundary": "source:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2651,10 +2705,13 @@
       "action": "dtcs:union",
       "boundary": "relational:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:u",
       "reason": "action lowered into the native relational plan",
       "target": "u"
@@ -2663,7 +2720,7 @@
       "action": "dtcs:union",
       "boundary": "sink:6",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2674,7 +2731,7 @@
       "action": "dtcs:aggregate",
       "boundary": "source:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2685,10 +2742,13 @@
       "action": "dtcs:aggregate",
       "boundary": "relational:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:a",
       "reason": "action lowered into the native relational plan",
       "target": "a"
@@ -2697,7 +2757,7 @@
       "action": "dtcs:aggregate",
       "boundary": "sink:7",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2708,7 +2768,7 @@
       "action": "dtcs:sort",
       "boundary": "source:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2719,10 +2779,13 @@
       "action": "dtcs:sort",
       "boundary": "relational:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:s",
       "reason": "action lowered into the native relational plan",
       "target": "s"
@@ -2731,7 +2794,7 @@
       "action": "dtcs:sort",
       "boundary": "sink:8",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2742,7 +2805,7 @@
       "action": "dtcs:distinct",
       "boundary": "source:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2753,10 +2816,13 @@
       "action": "dtcs:distinct",
       "boundary": "relational:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:x",
       "reason": "action lowered into the native relational plan",
       "target": "x"
@@ -2765,7 +2831,7 @@
       "action": "dtcs:distinct",
       "boundary": "sink:9",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2776,7 +2842,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "source:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2787,10 +2853,13 @@
       "action": "dtcs:deduplicate",
       "boundary": "relational:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:k",
       "reason": "action lowered into the native relational plan",
       "target": "k"
@@ -2799,7 +2868,7 @@
       "action": "dtcs:deduplicate",
       "boundary": "sink:10",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2810,7 +2879,7 @@
       "action": "dtcs:limit",
       "boundary": "source:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2821,10 +2890,13 @@
       "action": "dtcs:limit",
       "boundary": "relational:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "required",
       "outcome": "pushed_exact",
-      "physical_effects": [],
+      "physical_effects": [
+        "materialization",
+        "lost_fusion"
+      ],
       "proof_reference": "native-execution:duckdb:l",
       "reason": "action lowered into the native relational plan",
       "target": "l"
@@ -2833,7 +2905,7 @@
       "action": "dtcs:limit",
       "boundary": "sink:11",
       "engine": "duckdb",
-      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
+      "evidence_fingerprint": "9a97d61da2c3064a16832336e4f12e804a3990b6b09919020939e34b8957dbe1",
       "obligation": "informational",
       "outcome": "not_applicable",
       "physical_effects": [],
@@ -2851,175 +2923,283 @@
       "actions": {
         "a": {
           "action": "dtcs:aggregate",
+          "action_native_digest": "e76f747507e712235c82434d1b8f615254a2d800c3ab5b6f3cee771eb8848a0d",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:a",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "d": {
           "action": "dtcs:drop_fields",
+          "action_native_digest": "ac4c925ba5e90ab6873f5c975dd010cc71608df3bbc09c9598954cb877f688df",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:d",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "f": {
           "action": "dtcs:filter",
+          "action_native_digest": "62bf7ac518b11c3038a4e93deccfa24e480b26636655933466bb459fdcb0e951",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:f",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "j": {
           "action": "dtcs:join",
+          "action_native_digest": "89d62218954b2e80496d8b78fa6f1be572a99fe04d63d9833bc28cc066b3973e",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:j",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "k": {
           "action": "dtcs:deduplicate",
+          "action_native_digest": "9083d8a6632afc4c565cf37d550c07048b1794cef4e0f76d53a495078a07be0b",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:k",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "l": {
           "action": "dtcs:limit",
+          "action_native_digest": "f0a9894908492abd6f94486674472c0156ee65b73ba316570e1a8aa6c89937bd",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:l",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "n": {
           "action": "dtcs:rename_fields",
+          "action_native_digest": "34c8e2bfcfdd817f83971a876678f3fd44233a196c24387c8a0ade6d300fd34c",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:n",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "p": {
           "action": "dtcs:project",
+          "action_native_digest": "e772eb9ebc3c273a43e419dcfc750c9f75cbd90acb1f7c33cb76ce0879768f52",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:p",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "s": {
           "action": "dtcs:sort",
+          "action_native_digest": "0eb670197b9c994f1eb0ba9baf2183f3df50afa6e3b98f7be8008268851ed022",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:s",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "u": {
           "action": "dtcs:union",
+          "action_native_digest": "c40b85a728f808c8054ab00fa52ae922a6c843ec2028d65a0edfe4749e7b11d1",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:u",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "w": {
           "action": "dtcs:with_fields",
+          "action_native_digest": "42dfc47a2389110ba885f1583b05efd1c8f7452ed245c4e897d150153ee5815d",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:w",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "x": {
           "action": "dtcs:distinct",
+          "action_native_digest": "73217d237201cdc97ccc9d9b4fe3f70fe3eb01aea4d3c4121c99c3c44f4268d8",
           "host_fallback": false,
-          "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+          "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:datafusion:x",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         }
       },
-      "native_explain_digest": "afbadf3cc54d69d6f7000b2363e902083bc0154bcda616caf583fcab9ccb9f95",
+      "native_explain_digest": "f33d0c492c162ea2c48bc237da8e2156e9c9dedc9c880a7ff87798d1cf731227",
       "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
     },
     "duckdb": {
       "actions": {
         "a": {
           "action": "dtcs:aggregate",
+          "action_native_digest": "df145c288548d90b3dc3e4cd84376065be5c2bc608c38d719427ecbe79e7289f",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:a",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "d": {
           "action": "dtcs:drop_fields",
+          "action_native_digest": "320ce5d57f9d95e192f476ccc23704672f8a904958b0367f6d3c78a16a2b63f9",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:d",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "f": {
           "action": "dtcs:filter",
+          "action_native_digest": "bc2509c60a273ec8953434d5bdc13efa230b6e6511408baa4d0c1543c8b7575b",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:f",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "j": {
           "action": "dtcs:join",
+          "action_native_digest": "c71272e657c1495dfbd2790b7fdedf713c0c57317cbc74d27006c6807b5c1f67",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:j",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "k": {
           "action": "dtcs:deduplicate",
+          "action_native_digest": "f277ddbf6e6f15b98a30bdcf8742347e7de6c13d0caea0d037adf165844e1df2",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:k",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "l": {
           "action": "dtcs:limit",
+          "action_native_digest": "38bc1addac8153c74c7f920429cc236dc2cbf115a5002d68d908e0f421dc0914",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:l",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "n": {
           "action": "dtcs:rename_fields",
+          "action_native_digest": "9bb8ecc55f3211742890234f54195ab3c71c78433fa617d64adfbd950c2e0973",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:n",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "p": {
           "action": "dtcs:project",
+          "action_native_digest": "729ceaf0cec2fb6b0a6d1bb3eda477b0a374f9591d45690c5fbfa5663602479d",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:p",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "s": {
           "action": "dtcs:sort",
+          "action_native_digest": "918d153da77e767d7b8015e18a24a1f487109041b4d960ef243b8e0f82665cf3",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:s",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "u": {
           "action": "dtcs:union",
+          "action_native_digest": "109622cad9c1f7f39a4af9a1df9dc76428bb6dd1d151a956fff41a8b45b4eb02",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:u",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "w": {
           "action": "dtcs:with_fields",
+          "action_native_digest": "7d1df52b4357aa49374291d92b268b313e358509b2193077c45a5c0a22e59719",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:w",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         },
         "x": {
           "action": "dtcs:distinct",
+          "action_native_digest": "d2b5c8b8bcabbd801bafbbb7f899a3b8e8ff1469750e85e9aa113db0e9104ec3",
           "host_fallback": false,
           "native_explain_digest": "6270c9b7d43ba46250a49b58b1ab195f8ef6342ab2f3e4490df73344ad0fd5e5",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:duckdb:x",
           "result_digest": "7d67bacc29f16e201a6c80776dc945f53f026f3d88af50bdb59d5eba44f51bd9"
         }
@@ -3046,85 +3226,121 @@
       "actions": {
         "a": {
           "action": "dtcs:aggregate",
+          "action_native_digest": "c4d8607156e7ea602d21735e434feb93f2de4269e9c1af8c81b6f5d46710470c",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:a",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "d": {
           "action": "dtcs:drop_fields",
+          "action_native_digest": "c98d66f8ea797dcf7685b8fed32585dd3d68ceea92ba7e99a9e4e818e9601c29",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:d",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "f": {
           "action": "dtcs:filter",
+          "action_native_digest": "dd763bbb4aee68ab688ff7b34649318ccb22b283ef91632a86b26f0b99df014a",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:f",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "j": {
           "action": "dtcs:join",
+          "action_native_digest": "13c8037d345046757c24eed4826aef7b4a281696d4732011a03c2835d4e18b12",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:j",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "k": {
           "action": "dtcs:deduplicate",
+          "action_native_digest": "353ea2ced823d30c3d5e47fcb8e6404561ff7794b762a6fa30b19b9a62f29fd5",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:k",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "l": {
           "action": "dtcs:limit",
+          "action_native_digest": "22f4d1f4d6b2488fc8862bc74028830b5730592d486903de80598fb7d1d1e138",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:l",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "n": {
           "action": "dtcs:rename_fields",
+          "action_native_digest": "3fd2355036ec055522cc00aab4bbcfcd6c012e13ad1a743deb55d8471267d72b",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:n",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "p": {
           "action": "dtcs:project",
+          "action_native_digest": "96bf307d5522724df7344d7449f07e29acfa2bc7292357b7b933858cf200b440",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:p",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "s": {
           "action": "dtcs:sort",
+          "action_native_digest": "348e7110391418836547e97a3c4fcce77decc6e35ecaffb7240c5f19c38f4177",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:s",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "u": {
           "action": "dtcs:union",
+          "action_native_digest": "083a7ba447540ef33ea08d749e5fc57ba52fb928d0abd18c8297772ec00f1f11",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:u",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "w": {
           "action": "dtcs:with_fields",
+          "action_native_digest": "4eff4ff79b75c59a08287be96f97e89394ca3818b19b1bbeddbe0360e04a03b8",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:w",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "x": {
           "action": "dtcs:distinct",
+          "action_native_digest": "f3221fe2f5074136dce3241de01091477fa7db8ef020ef304b50db7cb2c40cf0",
           "host_fallback": false,
           "native_explain_digest": "edae338c8effa445534b933fd209b86f0139cf86fef1b398d7a558cf78a914df",
+          "physical_effects": [],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:pyspark:x",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         }
@@ -3136,85 +3352,157 @@
       "actions": {
         "a": {
           "action": "dtcs:aggregate",
+          "action_native_digest": "d3a62878eaeb79fa5d0b2e6097ab6e2094ff4ba92fea86d99ebe818c0801543e",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:a",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "d": {
           "action": "dtcs:drop_fields",
+          "action_native_digest": "2df259c16b740e0e20dcfed5dbf38ae07a8493b11d6848ff8c440260b24bdda8",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:d",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "f": {
           "action": "dtcs:filter",
+          "action_native_digest": "9710515f6bd37230fb88d9c5d0179f9028a808da3cb0613f0fc62ae0f31c81b4",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:f",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "j": {
           "action": "dtcs:join",
+          "action_native_digest": "e84c98e7743aae3d8190d6e737cc6610f45f2bf4b9833f8b607b9c9cddfefda3",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:j",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "k": {
           "action": "dtcs:deduplicate",
+          "action_native_digest": "3a649d187f42e4a60750828ddcc9c48da9d3853f93ffb32109238431284f18cc",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:k",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "l": {
           "action": "dtcs:limit",
+          "action_native_digest": "e443d02198c22de7a9e8c095ec158dfff92d80f5f1c0291b74cbcce86c17d2a6",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:l",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "n": {
           "action": "dtcs:rename_fields",
+          "action_native_digest": "343919a05438d48495ccae183cfdfcf1cbbb46a77fb39fa15d61f528cd9ea48c",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:n",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "p": {
           "action": "dtcs:project",
+          "action_native_digest": "58e9f33d1eef5b28623ab1d01d2a65217accead779ce1843d5c4d6c4ec87cbf1",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:p",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "s": {
           "action": "dtcs:sort",
+          "action_native_digest": "aee5a31f0b9200ec256ad886ab903edd55ecb1dba64d2e1298deedb6bd378285",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:s",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "u": {
           "action": "dtcs:union",
+          "action_native_digest": "1af4988e5cb036e616a28bf7cf2f4ce1cdda0fdd8f3ecc6729ed8f470f636df4",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:u",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "w": {
           "action": "dtcs:with_fields",
+          "action_native_digest": "12d16eb6dc621f050b9f9b690a8c7574d6646ffb477c77e1865aa439b570212a",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:w",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         },
         "x": {
           "action": "dtcs:distinct",
+          "action_native_digest": "0efbb0710c7395639a7dec705439d7e9b481b00cf0267b57db2298be3064161b",
           "host_fallback": false,
           "native_explain_digest": "8977987a746c5e5b3bc248f601136b53c6e05af9c1a3845009d9639a15df6e56",
+          "physical_effects": [
+            "materialization",
+            "lost_fusion"
+          ],
+          "proof_basis": "native_explain_and_execution_trace",
           "proof_id": "native-execution:sql:x",
           "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
         }
@@ -3223,8 +3511,8 @@
       "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
     }
   },
-  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
+  "repository_commit": "c229b14f3e072677e5d3aae4757ea0f479d56a3c",
   "result": "pass",
   "schema": "etlantic.portable-pushdown/1",
-  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6"
+  "source_tree_digest": "6e20111cc582e5547107e84e32ba42c5ad507f46623e2d5f9be064767912a5d6"
 }

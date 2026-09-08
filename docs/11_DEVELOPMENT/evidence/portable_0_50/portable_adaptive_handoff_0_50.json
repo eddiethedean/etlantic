@@ -1,11 +1,51 @@
 {
-  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor'",
+  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_evidence_drift_rejects_before_io'",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.11.15",
+    "spark_backend": "pyspark JVM",
+    "sql_backend": "postgresql (URL supplied at runtime; redacted)"
+  },
+  "execution": "planning-only; no adaptive execution",
   "fixtures": [
     "test_requirement_support_serializes_unknown_requirements_fail_closed",
-    "test_runtime_preflight_rejects_evidence_free_descriptor"
+    "test_runtime_preflight_rejects_evidence_free_descriptor",
+    "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
+    "test_adaptive_preferred_unknown_has_no_positive_preference",
+    "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
+  "repository_commit": "c229b14f3e072677e5d3aae4757ea0f479d56a3c",
   "result": "pass",
+  "scenarios": [
+    {
+      "fixture": "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
+      "id": "partial-required-unknown",
+      "required_unknown": "eliminated_before_preference_scoring",
+      "result": "pass"
+    },
+    {
+      "fixture": "test_adaptive_preferred_unknown_has_no_positive_preference",
+      "id": "preferred-unknown",
+      "preferred_unknown_score": 0,
+      "result": "pass"
+    },
+    {
+      "fixture": "test_adaptive_lowering_records_effects_and_identity",
+      "id": "lowering-effects",
+      "lowering_id": "lowering/filter-v1",
+      "physical_effects": [
+        "materialization"
+      ],
+      "result": "pass"
+    },
+    {
+      "fixture": "test_adaptive_evidence_drift_rejects_before_io",
+      "id": "evidence-drift",
+      "result": "rejected_before_io"
+    }
+  ],
   "schema": "etlantic.portable-adaptive-handoff/1",
-  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6"
+  "source_rows": false,
+  "source_tree_digest": "6e20111cc582e5547107e84e32ba42c5ad507f46623e2d5f9be064767912a5d6"
 }
