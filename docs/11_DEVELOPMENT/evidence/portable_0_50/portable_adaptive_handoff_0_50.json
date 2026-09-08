@@ -1,5 +1,5 @@
 {
-  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_graph_edge_requirement_invalidates_assignment or test_adaptive_evidence_drift_rejects_before_io'",
+  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_lowering_is_derived_from_support_evidence or test_adaptive_evaluation_retains_per_node_selection or test_adaptive_graph_edge_requirement_invalidates_assignment or test_adaptive_evidence_drift_rejects_before_io'",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -13,10 +13,12 @@
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
     "test_adaptive_preferred_unknown_has_no_positive_preference",
     "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_lowering_is_derived_from_support_evidence",
+    "test_adaptive_evaluation_retains_per_node_selection",
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "c72f8838f7f23bc1f9d654647093dae0555cfdfc",
+  "repository_commit": "6160e07dff8f120be338d7a571152d2b54b6d2d0",
   "result": "pass",
   "scenarios": [
     {
@@ -34,6 +36,81 @@
             "requirements": {
               "dtcs:filter": "supported_exact",
               "dtcs:join": "unknown"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "unknown"
+                }
+              ],
+              "fingerprint": "c4ef1c6276637b58f7809fe4cd42bce7aa27d30f38bcf3dd2d422d4959c26d19",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           },
           {
@@ -46,6 +123,81 @@
             "requirements": {
               "dtcs:filter": "supported_exact",
               "dtcs:join": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "5b9645021343bbda24147dd87db7e6782b424a5e5949259533719ddb7662b1e1",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           },
           {
@@ -58,6 +210,81 @@
             "requirements": {
               "dtcs:filter": "supported_exact",
               "dtcs:join": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "5b9645021343bbda24147dd87db7e6782b424a5e5949259533719ddb7662b1e1",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           }
         ],
@@ -92,6 +319,81 @@
             "requirements": {
               "dtcs:filter": "supported_exact",
               "dtcs:sort": "unknown"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:sort#actions",
+                  "support": "unknown"
+                }
+              ],
+              "fingerprint": "df69148cfdd4ae837d03acb53032d33bfff72c5573279b3e28b03d45b375ebae",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:sort#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:sort"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           },
           {
@@ -104,6 +406,81 @@
             "requirements": {
               "dtcs:filter": "supported_exact",
               "dtcs:sort": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                },
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:sort#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "b88827a895784a2e554b61453ba844cea18ced07ed2dd5b1db6c1d8c7d0c47b1",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                },
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:sort#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:sort"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           }
         ],
@@ -134,24 +511,80 @@
             "eligible": true,
             "id": "lowered",
             "lowering": {
-              "approved": true,
-              "id": "lowering/filter-v1",
+              "conditions": [
+                "preserve-null"
+              ],
+              "id": "lowering/fixture-v1",
               "physical_effects": [
                 "materialization"
               ],
-              "proof": "approved:filter-v1",
+              "proof": "proof/fixture-v1",
               "requirements": [
                 "dtcs:filter"
-              ],
-              "resolved_conditions": {
-                "null_policy": "preserve"
-              }
+              ]
             },
             "node": "orders",
             "preferred_score": 0,
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_with_lowering"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "conditions": [
+                    "preserve-null"
+                  ],
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "lowering_id": "lowering/fixture-v1",
+                  "obligation": "required",
+                  "path": "findings",
+                  "physical_effects": [
+                    "materialization"
+                  ],
+                  "proof_reference": "proof/fixture-v1",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_with_lowering"
+                }
+              ],
+              "fingerprint": "02c61e7d72ae48aea429678673b9be86deb0d3f9b6dc305c7a96dc358ff23dd3",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           },
           {
@@ -163,6 +596,55 @@
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:filter#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "144d91c9290ab656ff625565aea088267cdd24be834a7b15db9dce3e5fc6a005",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:filter#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:filter"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           }
         ],
@@ -196,6 +678,55 @@
             "required_failures": [],
             "requirements": {
               "dtcs:join": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "0bdac709baeb10f52df50494b671d2d48ee1da587a3058e82024c95592d7dcfa",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           },
           {
@@ -207,6 +738,55 @@
             "required_failures": [],
             "requirements": {
               "dtcs:join": "supported_exact"
+            },
+            "support_report": {
+              "evidence": [
+                {
+                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "fingerprint": "adaptive-fixture-evidence",
+                  "id": "compiler",
+                  "kind": "compiler_capability"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "PMXFORM000",
+                  "evidence": [
+                    "compiler"
+                  ],
+                  "evidence_fingerprint": "adaptive-fixture-evidence",
+                  "expression_path": null,
+                  "obligation": "required",
+                  "path": "findings",
+                  "reason": "fixture support result",
+                  "reason_code": "PMXFORM000",
+                  "requirement": "dtcs@1/actions/dtcs:join#actions",
+                  "support": "supported_exact"
+                }
+              ],
+              "fingerprint": "0bdac709baeb10f52df50494b671d2d48ee1da587a3058e82024c95592d7dcfa",
+              "pushdown": [],
+              "requirements": [
+                {
+                  "applicability": "applicable",
+                  "id": "dtcs@1/actions/dtcs:join#actions",
+                  "obligation": "required",
+                  "parameters": {
+                    "value": "dtcs:join"
+                  },
+                  "path": "actions",
+                  "scope": "actions",
+                  "version": "1",
+                  "vocabulary": "dtcs"
+                }
+              ],
+              "schema": "etlantic.portable-requirement-support/1",
+              "target": {
+                "compiler": "adaptive-fixture",
+                "engine": "local",
+                "protocol": "etlantic.transform-compiler/1",
+                "version": "1"
+              }
             }
           }
         ],
@@ -243,5 +823,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "80e5fe34c94390c56cd7c2d64a8328c11b7c6c2fe6e68ece5887823e268f9631"
+  "source_tree_digest": "1257e31243abb37d4edf886f47650ef2e748fc96421a4723a499e8ddac99f5cd"
 }
