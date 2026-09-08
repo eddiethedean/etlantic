@@ -372,6 +372,7 @@ def main() -> int:
     )
     (EVIDENCE / "WHATS_NEW_0_50.md").write_text(
         "# What's new in 0.50\n\n"
+        "> **Status: Technical qualification complete; Sol review pending.**\n\n"
         "The Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB portable "
         "compilers have qualified the frozen baseline in the recorded evidence campaign. "
         "Advanced, adaptive, remote, streaming, and federated execution remain separate claims. "
