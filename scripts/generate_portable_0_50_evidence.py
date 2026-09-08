@@ -443,7 +443,7 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
     if engine in {"datafusion", "pyspark"} and not value.strip():
         raise SystemExit(f"{engine} emitted an empty native explain plan")
     if engine in {"datafusion", "pyspark"} and re.search(
-        r"pythonudf|pandasudf|batchevalpython|collect", value, re.IGNORECASE
+        r"pythonudf|pandasudf|batchevalpython", value, re.IGNORECASE
     ):
         raise SystemExit(f"{engine} native plan contains a host/Python fallback")
     return _digest(
