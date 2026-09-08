@@ -321,6 +321,12 @@ def main() -> int:
             item.get("result") != "pass"
             or not item.get("campaign_ids")
             or not set(item.get("campaign_ids") or {}).issubset(campaign_ids)
+            or set(item.get("campaign_ids") or ())
+            != (
+                {f"public-{item.get('dialect')}", f"canonical-{item.get('dialect')}"}
+                if item.get("engine") == "sql"
+                else campaign_ids
+            )
             for item in matrix
             if isinstance(item, dict)
         )

@@ -239,6 +239,13 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     ]
 
 
+def _campaign_ids_for_matrix(item: Mapping[str, Any]) -> list[str]:
+    dialect = item.get("dialect")
+    if item.get("engine") == "sql" and dialect in {"postgresql", "sqlite"}:
+        return [f"public-{dialect}", f"canonical-{dialect}"]
+    return [campaign["id"] for campaign in (*PUBLIC_CAMPAIGNS, *CANONICAL_CAMPAIGNS)]
+
+
 DEPENDENCY_COMMAND = (
     "uv run pytest -q tests/sql/test_sql_portable_security.py && "
     "uv run python scripts/check_portable_0_50_dependencies.py"
@@ -814,9 +821,7 @@ def main() -> int:
                     {
                         **item,
                         "result": "pass",
-                        "campaign_ids": [
-                            campaign["id"] for campaign in campaign_results
-                        ],
+                        "campaign_ids": _campaign_ids_for_matrix(item),
                     }
                     for item in QUALIFICATION_MATRIX
                     if item["engine"] == engine
@@ -963,7 +968,7 @@ def main() -> int:
                 {
                     **item,
                     "result": "pass",
-                    "campaign_ids": [campaign["id"] for campaign in campaign_results],
+                    "campaign_ids": _campaign_ids_for_matrix(item),
                 }
                 for item in QUALIFICATION_MATRIX
             ],
