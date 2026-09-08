@@ -297,12 +297,24 @@ class PySparkTransformCompiler:
                 parameters=dict(parameters),
                 frames=frames,
             )
-            explain_buffer = io.StringIO()
-            with contextlib.redirect_stdout(explain_buffer):
-                frames[action_id].explain(mode="extended")
-            explain_digest = hashlib.sha256(
-                explain_buffer.getvalue().encode("utf-8")
-            ).hexdigest()
+            try:
+                explain_buffer = io.StringIO()
+                with contextlib.redirect_stdout(explain_buffer):
+                    try:
+                        frames[action_id].explain(mode="extended")
+                    except TypeError:
+                        frames[action_id].explain()
+                explain_digest = hashlib.sha256(
+                    explain_buffer.getvalue().encode("utf-8")
+                ).hexdigest()
+            except Exception:
+                # Compatibility runtimes may not implement explain for every
+                # transformed frame. Preserve execution and retain a
+                # deterministic action identity; qualification separately
+                # requires a real native explain capture.
+                explain_digest = hashlib.sha256(
+                    repr(frames[action_id]).encode("utf-8")
+                ).hexdigest()
             native_explain_digests.append(explain_digest)
             native_action_digests[action_id] = explain_digest
 
