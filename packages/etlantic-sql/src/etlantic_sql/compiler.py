@@ -230,6 +230,10 @@ class SqlCompiler:
                 body = f"(INSTR({args[0]}, {args[1]}) > 0)"
             else:
                 body = f"(STRPOS({args[0]}, {args[1]}) > 0)"
+        elif callee == "dtcs:in":
+            if len(args) < 2:
+                raise ValueError("dtcs:in requires a value and at least one candidate")
+            body = f"({args[0]} IN ({', '.join(args[1:])}))"
         elif callee == "dtcs:starts_with":
             if self.dialect == "sqlite":
                 body = f"(INSTR({args[0]}, {args[1]}) = 1)"
@@ -251,7 +255,7 @@ class SqlCompiler:
         elif callee == "dtcs:abs":
             body = f"ABS({args[0]})"
         elif callee == "dtcs:round":
-            body = f"ROUND({args[0]}, {args[1]})"
+            body = f"ROUND({args[0]}, {args[1] if len(args) > 1 else '0'})"
         elif callee == "dtcs:floor":
             body = f"FLOOR({args[0]})"
         elif callee == "dtcs:ceil":

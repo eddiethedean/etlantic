@@ -51,20 +51,44 @@ def main() -> int:
         or len(manifest.get("aggregate_functions", [])) != 7
     ):
         raise SystemExit("baseline function inventory is incomplete")
+    required_manifest_keys = {
+        "plan",
+        "profiles",
+        "actions",
+        "scalar_functions",
+        "aggregate_functions",
+        "operators",
+        "types",
+        "join_modes",
+        "collision_policy",
+        "union_modes",
+        "semantic_modes",
+        "function_arities",
+        "defaults",
+        "semantic_rules",
+        "leaf_fixture_ids",
+    }
+    if not required_manifest_keys.issubset(manifest):
+        raise SystemExit("baseline manifest is missing normative contract fields")
+    from etlantic.transform.portable_baseline import baseline_manifest
+
+    if manifest != baseline_manifest():
+        raise SystemExit("baseline evidence manifest differs from runtime manifest")
     index = json.loads((EVIDENCE / "portable_evidence_index_0_50.json").read_text())
     repository_commit = str(index.get("repository_commit") or "")
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
-    parent = subprocess.check_output(
-        ["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True
-    ).strip()
     if (
         not re.fullmatch(r"[0-9a-f]{40}", repository_commit)
-        or repository_commit not in {head, parent}
+        or subprocess.run(
+            ["git", "merge-base", "--is-ancestor", repository_commit, head],
+            cwd=ROOT,
+        ).returncode
+        != 0
     ):
         raise SystemExit(
-            "evidence index repository_commit is not the checked-out commit or its evidence snapshot parent"
+            "evidence index repository_commit is not an ancestor of the checked-out commit"
         )
     if index.get("result") not in {"pass", "blocked"}:
         raise SystemExit(
@@ -74,6 +98,8 @@ def main() -> int:
         raise SystemExit("passing evidence requires qualification=qualified")
     if index.get("result") == "blocked" and index.get("qualification") != "no-go":
         raise SystemExit("blocked evidence requires qualification=no-go")
+    if index.get("result") == "pass" and repository_commit != head:
+        raise SystemExit("qualified evidence must be generated from current HEAD")
     listed = set(index.get("artifacts") or [])
     if listed != REQUIRED - {"portable_evidence_index_0_50.json"}:
         raise SystemExit("evidence index does not enumerate the frozen artifact set")
@@ -94,6 +120,8 @@ def main() -> int:
                 or "result" not in payload
             ):
                 raise SystemExit(f"artifact metadata is incomplete: {name}")
+            if payload.get("repository_commit") != repository_commit:
+                raise SystemExit(f"artifact commit differs from evidence index: {name}")
             result = payload.get("result")
             if result not in {"pass", "blocked"}:
                 raise SystemExit(f"artifact has non-final result: {name}")

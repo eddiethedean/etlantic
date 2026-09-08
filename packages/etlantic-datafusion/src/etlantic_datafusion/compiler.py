@@ -337,6 +337,8 @@ def _expr(
     if kind == "call":
         name = str(node.get("callee"))
         args = [_expr(a, col, f, lit, params) for a in node.get("args") or []]
+        if name == "dtcs:round" and len(args) == 1:
+            args.append(lit(0))
         fn = {
             "dtcs:lower": f.lower,
             "dtcs:upper": f.upper,
@@ -510,10 +512,17 @@ def _apply_action(
         if mode == "byname":
             if not allow_missing and set(left_names) != set(right_names):
                 raise ValueError("union inputs have incompatible fields")
+            names = list(dict.fromkeys([*left_names, *right_names]))
             right = other.select(
                 *[
                     col(name) if name in right_names else lit(None).alias(name)
-                    for name in left_names
+                    for name in names
+                ]
+            )
+            source = source.select(
+                *[
+                    col(name) if name in left_names else lit(None).alias(name)
+                    for name in names
                 ]
             )
         else:
@@ -558,7 +567,12 @@ def _apply_action(
             raise ValueError("join key arity mismatch")
         if str(p.get("collisionPolicy", "fail")).lower() != "fail":
             raise ValueError("only collisionPolicy=fail is supported")
-        collisions = (set(left_names) & set(right_names)) - set(right_keys)
+        collisions = set(left_names) & set(right_names)
+        collisions -= {
+            str(left_name)
+            for left_name, right_name in zip(left_keys, right_keys, strict=True)
+            if str(left_name) == str(right_name)
+        }
         if collisions and how not in {"semi", "anti"}:
             raise ValueError("join field collision: " + ", ".join(sorted(collisions)))
         if left_keys and right_keys and bool(p.get("nullSafe", False)):
@@ -583,10 +597,30 @@ def _apply_action(
             )
         else:
             joined = left_tmp.join(right_tmp, on=[], how=how)
-        expressions = [col("__etl_left_" + n).alias(n) for n in left_names]
-        join_right_key = str(right_key) if right_key else None
+        join_key_pairs = {
+            (str(left_name), str(right_name))
+            for left_name, right_name in zip(left_keys, right_keys, strict=True)
+        }
+        expressions = []
+        for name in left_names:
+            matching_right = next(
+                (
+                    right_name
+                    for left_name, right_name in join_key_pairs
+                    if left_name == name and right_name == name
+                ),
+                None,
+            )
+            if matching_right is not None and how in {"right", "full"}:
+                expressions.append(
+                    f.coalesce(
+                        col("__etl_left_" + name), col("__etl_right_" + matching_right)
+                    ).alias(name)
+                )
+            else:
+                expressions.append(col("__etl_left_" + name).alias(name))
         for n in right_names:
-            if n not in left_names and n != join_right_key:
+            if n not in left_names:
                 expressions.append(col("__etl_right_" + n).alias(n))
         return joined.select(*expressions)
     if action == "dtcs:aggregate":

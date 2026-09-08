@@ -195,10 +195,18 @@ def baseline_manifest() -> dict[str, Any]:
             "deduplication": "distinct uses complete logical row identity; keyed deduplicate uses declared keys",
         },
         "leaf_fixture_ids": {
-            **{
-                action: "baseline_field_actions"
-                for action in KERNEL_ACTIONS + RELATIONAL_ACTIONS
-            },
+            "dtcs:filter": "kernel_filter_project_lower",
+            "dtcs:project": "baseline_scalar_functions",
+            "dtcs:with_fields": "kernel_filter_project_lower",
+            "dtcs:drop_fields": "baseline_field_actions",
+            "dtcs:rename_fields": "baseline_field_actions",
+            "dtcs:join": "relational_join_aggregate",
+            "dtcs:union": "baseline_union",
+            "dtcs:aggregate": "baseline_aggregate_functions",
+            "dtcs:sort": "relational_sort_nulls_limit",
+            "dtcs:distinct": "baseline_field_actions",
+            "dtcs:deduplicate": "baseline_field_actions",
+            "dtcs:limit": "relational_sort_nulls_limit",
             **{function: "baseline_scalar_functions" for function in SCALAR_FUNCTIONS},
             **{
                 function: "baseline_aggregate_functions"
@@ -208,10 +216,13 @@ def baseline_manifest() -> dict[str, Any]:
                 f"operator:{operator}": "baseline_scalar_functions"
                 for operator in BASELINE_OPERATORS
             },
-            **{
-                f"type:{type_name}": "baseline_scalar_functions"
-                for type_name in BASELINE_TYPES
-            },
+            "type:null": "baseline_scalar_functions",
+            "type:boolean": "baseline_scalar_functions",
+            "type:integer": "baseline_scalar_functions",
+            "type:decimal": "baseline_scalar_functions",
+            "type:string": "baseline_scalar_functions",
+            "type:missing": "reject_missing_literal_without_three_state",
+            "type:invalid": "reject_missing_literal_without_three_state",
             "join_modes": "baseline_join_modes",
             "union_modes": "baseline_union_modes",
             "semantic_modes": "reject_missing_literal_without_three_state",

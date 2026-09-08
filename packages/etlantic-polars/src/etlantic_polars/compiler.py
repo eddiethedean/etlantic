@@ -22,9 +22,13 @@ from etlantic.transform.compiler import (
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import (
     KERNEL_PROFILE_V1,
+    PROFILE_COMPLEX_TYPES,
+    PROFILE_COMPLEX_VALUES,
     PROFILE_CONVERSION,
     PROFILE_RESHAPE,
+    PROFILE_STATISTICS,
     PROFILE_STRING_ADVANCED,
+    PROFILE_WINDOW_V1,
     RELATIONAL_PROFILE_V1,
 )
 from etlantic_polars.lowering.actions import (
@@ -125,6 +129,10 @@ class PolarsTransformCompiler:
                     RELATIONAL_PROFILE_V1,
                     PROFILE_STRING_ADVANCED,
                     PROFILE_CONVERSION,
+                    PROFILE_STATISTICS,
+                    PROFILE_WINDOW_V1,
+                    PROFILE_COMPLEX_VALUES,
+                    PROFILE_COMPLEX_TYPES,
                     PROFILE_RESHAPE,
                 }
             ),

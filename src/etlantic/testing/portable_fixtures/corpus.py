@@ -1539,6 +1539,12 @@ def _baseline_scalar_functions() -> FixtureCase:
     def call(name: str, *args: dict[str, Any]) -> dict[str, Any]:
         return {"kind": "call", "callee": name, "args": list(args)}
 
+    def binary(op: str, left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "binary", "op": op, "left": left, "right": right}
+
+    def unary(op: str, operand: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "unary", "op": op, "operand": operand}
+
     neg = {"kind": "unary", "op": "negate", "operand": field("n")}
     predicate = {
         "kind": "binary",
@@ -1578,18 +1584,47 @@ def _baseline_scalar_functions() -> FixtureCase:
         ("is_null", call("dtcs:is_null", lit("null", None))),
         ("abs", call("dtcs:abs", neg)),
         ("round", call("dtcs:round", lit("decimal", 3.6), lit("integer", 0))),
+        ("round_default", call("dtcs:round", lit("decimal", 3.6))),
         ("floor", call("dtcs:floor", lit("decimal", 3.6))),
         ("ceil", call("dtcs:ceil", lit("decimal", 3.2))),
         ("power", call("dtcs:power", lit("integer", 2), lit("integer", 3))),
         ("sqrt", call("dtcs:sqrt", lit("decimal", 9.0))),
         ("least", call("dtcs:least", field("n"), lit("integer", 2))),
         ("greatest", call("dtcs:greatest", field("n"), lit("integer", 2))),
+        ("op_eq", binary("eq", field("n"), lit("integer", 4))),
+        ("op_not_eq", binary("not_eq", field("n"), lit("integer", 3))),
+        ("op_lt", binary("lt", field("n"), lit("integer", 5))),
+        ("op_lte", binary("lte", field("n"), lit("integer", 4))),
+        ("op_gt", binary("gt", field("n"), lit("integer", 3))),
+        ("op_gte", binary("gte", field("n"), lit("integer", 4))),
+        ("op_null_safe_eq", binary("null_safe_eq", field("n"), lit("integer", 4))),
+        ("op_and", binary("and", lit("boolean", True), lit("boolean", True))),
+        ("op_or", binary("or", lit("boolean", False), lit("boolean", True))),
+        ("op_not", unary("not", lit("boolean", False))),
+        ("op_add", binary("add", field("n"), lit("integer", 2))),
+        ("op_subtract", binary("subtract", field("n"), lit("integer", 2))),
+        ("op_multiply", binary("multiply", field("n"), lit("integer", 2))),
+        ("op_divide", binary("divide", field("n"), lit("integer", 2))),
+        ("op_modulo", binary("modulo", field("n"), lit("integer", 3))),
+        ("op_negate", unary("negate", field("n"))),
+        (
+            "op_in",
+            call("dtcs:in", field("n"), lit("integer", 3), lit("integer", 4)),
+        ),
+        ("boolean_literal", lit("boolean", True)),
     ]
     return FixtureCase(
         name="baseline_scalar_functions",
         required_profiles=frozenset({KERNEL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:project"}),
-        required_functions=frozenset({f"dtcs:{name}" for name, _ in fields}),
+        required_functions=frozenset(
+            {
+                f"dtcs:{name}"
+                for name, _ in fields
+                if not name.startswith("op_")
+                and name not in {"boolean_literal", "round_default"}
+            }
+        ),
         required_operators=frozenset(
             {
                 "eq",
@@ -1656,12 +1691,31 @@ def _baseline_scalar_functions() -> FixtureCase:
                 "is_null": True,
                 "abs": 4,
                 "round": 4.0,
+                "round_default": 4.0,
                 "floor": 3.0,
                 "ceil": 4.0,
                 "power": 8.0,
                 "sqrt": 3.0,
                 "least": 2,
                 "greatest": 4,
+                "op_eq": True,
+                "op_not_eq": True,
+                "op_lt": True,
+                "op_lte": True,
+                "op_gt": True,
+                "op_gte": True,
+                "op_null_safe_eq": True,
+                "op_and": True,
+                "op_or": True,
+                "op_not": True,
+                "op_add": 6,
+                "op_subtract": 2,
+                "op_multiply": 8,
+                "op_divide": 2.0,
+                "op_modulo": 1,
+                "op_negate": -4,
+                "op_in": True,
+                "boolean_literal": True,
             }
         ],
     )
@@ -1719,6 +1773,253 @@ def _baseline_aggregate_functions() -> FixtureCase:
                 "count_distinct": 2,
             }
         ],
+    )
+
+
+def _qualified_action_smokes() -> tuple[FixtureCase, ...]:
+    """Small action-only fixtures keep qualified subsets honest."""
+    base = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {"t": {"id": "t"}},
+        "outputs": {"result": {"id": "result"}},
+    }
+    filter_plan = {
+        **base,
+        "actions": [
+            {
+                "id": "f1",
+                "kind": {
+                    "action": "dtcs:filter",
+                    "id": "f1",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "literal",
+                            "value": {"type": "boolean", "value": True},
+                        }
+                    },
+                    "target": "t",
+                },
+            }
+        ],
+    }
+    with_fields_plan = {
+        **base,
+        "actions": [
+            {
+                "id": "w1",
+                "kind": {
+                    "action": "dtcs:with_fields",
+                    "id": "w1",
+                    "parameters": {
+                        "assignments": [
+                            {
+                                "name": "value",
+                                "expression": {
+                                    "kind": "literal",
+                                    "value": {"type": "integer", "value": 1},
+                                },
+                            },
+                            {
+                                "name": "eq",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": "eq",
+                                    "left": {"kind": "fieldRef", "target": "id"},
+                                    "right": {
+                                        "kind": "literal",
+                                        "value": {"type": "integer", "value": 1},
+                                    },
+                                },
+                            },
+                            {
+                                "name": "lt",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": "lt",
+                                    "left": {"kind": "fieldRef", "target": "id"},
+                                    "right": {
+                                        "kind": "literal",
+                                        "value": {"type": "integer", "value": 2},
+                                    },
+                                },
+                            },
+                            {
+                                "name": "gt",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": "gt",
+                                    "left": {"kind": "fieldRef", "target": "id"},
+                                    "right": {
+                                        "kind": "literal",
+                                        "value": {"type": "integer", "value": 0},
+                                    },
+                                },
+                            },
+                        ]
+                    },
+                    "target": "t",
+                },
+            }
+        ],
+    }
+    aggregate_plan = {
+        **base,
+        "actions": [
+            {
+                "id": "a1",
+                "kind": {
+                    "action": "dtcs:aggregate",
+                    "id": "a1",
+                    "parameters": {
+                        "aggregates": [
+                            {
+                                "name": "count",
+                                "expression": {
+                                    "kind": "call",
+                                    "callee": "dtcs:count_all",
+                                    "args": [],
+                                },
+                            }
+                        ]
+                    },
+                    "target": "t",
+                },
+            }
+        ],
+    }
+    return (
+        FixtureCase(
+            name="qualified_filter_action",
+            required_profiles=frozenset({KERNEL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:filter"}),
+            required_functions=frozenset(),
+            required_types=frozenset({"boolean"}),
+            plan=filter_plan,
+            inputs={"t": [{"id": 1}]},
+            expected=[{"id": 1}],
+        ),
+        FixtureCase(
+            name="qualified_with_fields_action",
+            required_profiles=frozenset({KERNEL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:with_fields"}),
+            required_functions=frozenset(),
+            required_types=frozenset({"integer"}),
+            required_operators=frozenset({"eq", "lt", "gt"}),
+            plan=with_fields_plan,
+            inputs={"t": [{"id": 1}]},
+            expected=[{"eq": True, "gt": True, "id": 1, "lt": True, "value": 1}],
+        ),
+        FixtureCase(
+            name="qualified_count_all_aggregate",
+            required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:aggregate"}),
+            required_functions=frozenset({"dtcs:count_all"}),
+            plan=aggregate_plan,
+            inputs={"t": [{"id": 1}, {"id": 2}]},
+            expected=[{"count": 2}],
+        ),
+    )
+
+
+def _qualified_function_smokes() -> tuple[FixtureCase, ...]:
+    def literal(type_: str, value: Any) -> dict[str, Any]:
+        return {"kind": "literal", "value": {"type": type_, "value": value}}
+
+    field = {"kind": "fieldRef", "scope": "field", "target": "s"}
+    return (
+        FixtureCase(
+            name="qualified_string_functions",
+            required_profiles=frozenset({KERNEL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:project"}),
+            required_functions=frozenset({"dtcs:lower", "dtcs:coalesce"}),
+            required_types=frozenset({"null", "string"}),
+            plan={
+                "planIdentity": "dtcs.transform-plan/2",
+                "inputs": {"t": {"id": "t"}},
+                "actions": [
+                    {
+                        "id": "p1",
+                        "kind": {
+                            "action": "dtcs:project",
+                            "id": "p1",
+                            "parameters": {
+                                "fields": [
+                                    {
+                                        "name": "lower",
+                                        "expression": {
+                                            "kind": "call",
+                                            "callee": "dtcs:lower",
+                                            "args": [field],
+                                        },
+                                    },
+                                    {
+                                        "name": "coalesced",
+                                        "expression": {
+                                            "kind": "call",
+                                            "callee": "dtcs:coalesce",
+                                            "args": [literal("null", None), field],
+                                        },
+                                    },
+                                ]
+                            },
+                            "target": "t",
+                        },
+                    }
+                ],
+                "outputs": {"result": {"id": "result"}},
+            },
+            inputs={"t": [{"s": "AbC"}]},
+            expected=[{"coalesced": "AbC", "lower": "abc"}],
+        ),
+        FixtureCase(
+            name="qualified_aggregate_functions",
+            required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:aggregate"}),
+            required_functions=frozenset({"dtcs:sum", "dtcs:count_all"}),
+            plan={
+                "planIdentity": "dtcs.transform-plan/2",
+                "inputs": {"t": {"id": "t"}},
+                "actions": [
+                    {
+                        "id": "a1",
+                        "kind": {
+                            "action": "dtcs:aggregate",
+                            "id": "a1",
+                            "parameters": {
+                                "aggregates": [
+                                    {
+                                        "name": "total",
+                                        "expression": {
+                                            "kind": "call",
+                                            "callee": "dtcs:sum",
+                                            "args": [
+                                                {
+                                                    "kind": "fieldRef",
+                                                    "scope": "field",
+                                                    "target": "n",
+                                                }
+                                            ],
+                                        },
+                                    },
+                                    {
+                                        "name": "count",
+                                        "expression": {
+                                            "kind": "call",
+                                            "callee": "dtcs:count_all",
+                                            "args": [],
+                                        },
+                                    },
+                                ]
+                            },
+                            "target": "t",
+                        },
+                    }
+                ],
+                "outputs": {"result": {"id": "result"}},
+            },
+            inputs={"t": [{"n": 1}, {"n": 3}]},
+            expected=[{"count": 2, "total": 4}],
+        ),
     )
 
 
@@ -1845,6 +2146,8 @@ FIXTURES: tuple[FixtureCase, ...] = (
     _baseline_aggregate_functions(),
     _baseline_field_actions(),
     _baseline_union(),
+    *_qualified_action_smokes(),
+    *_qualified_function_smokes(),
 )
 
 

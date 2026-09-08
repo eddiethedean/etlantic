@@ -221,6 +221,9 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
             .astype("string")
             .str.contains(str(needle), regex=False, na=False)
         )
+    if callee == "dtcs:in":
+        values = [constant_python(raw, parameters=parameters) for raw in raw_args[1:]]
+        return lambda df: arg_fns[0](df).isin(values)
     if callee == "dtcs:starts_with":
         prefix = constant_python(raw_args[1], parameters=parameters)
         return lambda df: (
@@ -252,7 +255,11 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
     if callee == "dtcs:abs":
         return lambda df: arg_fns[0](df).abs()
     if callee == "dtcs:round":
-        scale = constant_python(raw_args[1], parameters=parameters)
+        scale = (
+            constant_python(raw_args[1], parameters=parameters)
+            if len(raw_args) > 1
+            else 0
+        )
         return lambda df: arg_fns[0](df).astype("float64").round(int(scale))
     if callee == "dtcs:floor":
         return lambda df: np.floor(arg_fns[0](df).astype("float64"))

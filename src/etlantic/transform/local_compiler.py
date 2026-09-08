@@ -296,6 +296,15 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
     if k == "call":
         n = node.get("callee")
         a = [_eval(x, row, params) for x in node.get("args") or []]
+        # The portable baseline uses SQL-style null propagation for scalar
+        # functions.  Null-aware functions are the explicit exceptions.
+        if n not in {
+            "dtcs:coalesce",
+            "dtcs:if_null",
+            "dtcs:is_null",
+            "dtcs:case_when",
+        } and any(value is None for value in a):
+            return None
         if n == "dtcs:lower":
             return str(a[0]).lower() if a[0] is not None else None
         if n == "dtcs:upper":
@@ -305,7 +314,7 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
         if n == "dtcs:is_null":
             return a[0] is None
         if n == "dtcs:contains":
-            return a[1] in a[0] if a[0] is not None and a[1] is not None else False
+            return a[1] in a[0]
         if n == "dtcs:starts_with":
             return str(a[0]).startswith(str(a[1]))
         if n == "dtcs:ends_with":
@@ -336,7 +345,7 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
         if n == "dtcs:abs":
             return abs(a[0]) if a and a[0] is not None else None
         if n == "dtcs:round":
-            return round(a[0], int(a[1])) if a and a[0] is not None else None
+            return round(a[0]) if len(a) == 1 else round(a[0], int(a[1]))
         if n == "dtcs:floor":
             return math.floor(a[0]) if a and a[0] is not None else None
         if n == "dtcs:ceil":
@@ -350,11 +359,9 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
         if n == "dtcs:sqrt":
             return math.sqrt(a[0]) if a and a[0] is not None else None
         if n == "dtcs:least":
-            values = [x for x in a if x is not None]
-            return min(values) if values else None
+            return min(a)
         if n == "dtcs:greatest":
-            values = [x for x in a if x is not None]
-            return max(values) if values else None
+            return max(a)
         if n in {
             "dtcs:sum",
             "dtcs:average",
@@ -481,8 +488,10 @@ def _apply(
                     "byPosition union inputs have incompatible field counts"
                 )
             names = left_names or right_names
+            if any(len(row) != len(names) for row in [*rows, *right]):
+                raise ValueError("byPosition union rows have incompatible field counts")
             return rows + [
-                {name: value for name, value in zip(names, r.values(), strict=False)}
+                {name: value for name, value in zip(names, r.values(), strict=True)}
                 for r in right
             ]
         names = list(dict.fromkeys([*left_names, *right_names]))
@@ -525,7 +534,11 @@ def _apply(
         collisions = left_fields & right_fields
         if collision != "fail":
             raise ValueError("only collisionPolicy=fail is supported")
-        collisions -= {str(k) for k in right_keys}
+        collisions -= {
+            str(left_key)
+            for left_key, right_key in zip(left_keys, right_keys, strict=True)
+            if str(left_key) == str(right_key)
+        }
         if collisions and how not in {"semi", "anti"}:
             raise ValueError(f"join field collision: {sorted(collisions)}")
         out: list[dict[str, Any]] = []

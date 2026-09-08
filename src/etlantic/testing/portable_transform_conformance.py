@@ -36,9 +36,10 @@ def normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             return None
         if isinstance(value, float) and math.isnan(value):
             return None
-        if hasattr(value, "item"):
+        item_method = getattr(value, "item", None)
+        if callable(item_method):
             try:
-                return _norm_value(value.item())
+                return _norm_value(item_method())
             except Exception:
                 pass
         return value
@@ -191,37 +192,21 @@ def run_portable_transform_conformance_suite(
         known_functions = {
             function for case in FIXTURES for function in case.required_functions
         } | set(BASELINE_FUNCTIONS)
-        if info.engine in {"local", "datafusion"}:
-            unknown = sorted(
-                [f"action:{x}" for x in claimed_actions if x not in known_actions]
-                + [
-                    f"function:{x}"
-                    for x in claimed_functions
-                    if x not in known_functions
-                ]
+        unknown = sorted(
+            [f"action:{x}" for x in claimed_actions if x not in known_actions]
+            + [f"function:{x}" for x in claimed_functions if x not in known_functions]
+        )
+        if unknown:
+            raise AssertionError(
+                "Claims have no recognized contract vocabulary: " + ", ".join(unknown)
             )
-            if unknown:
-                raise AssertionError(
-                    "Claims have no recognized contract vocabulary: "
-                    + ", ".join(unknown)
-                )
-            # The 0.50 baseline is a closed claim surface: Local and DataFusion
-            # advertise the entire baseline, so every one of their claims must be
-            # represented by an executable fixture.  Other engines may advertise
-            # graduated profiles whose fixture corpus is intentionally narrower.
         required = mandatory_capability_keys(
             profiles=claimed_profiles,
             actions=claimed_actions,
             functions=claimed_functions,
-            operators=claimed_operators
-            if info.engine in {"local", "datafusion"}
-            else frozenset(),
-            types=claimed_types
-            if info.engine in {"local", "datafusion"}
-            else frozenset(),
-            semantic_modes=claimed_semantic_modes
-            if info.engine in {"local", "datafusion"}
-            else frozenset(),
+            operators=claimed_operators,
+            types=claimed_types,
+            semantic_modes=claimed_semantic_modes,
         )
         covered = covered_capability_keys(selected)
         missing = sorted(required - covered)

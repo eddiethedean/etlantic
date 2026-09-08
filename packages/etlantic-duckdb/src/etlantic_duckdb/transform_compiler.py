@@ -69,38 +69,10 @@ class DuckDBTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=_ACTIONS,
             functions=_FUNCTIONS,
-            operators=frozenset(
-                {
-                    "eq",
-                    "not_eq",
-                    "lt",
-                    "lte",
-                    "gt",
-                    "gte",
-                    "null_safe_eq",
-                    "and",
-                    "or",
-                    "not",
-                    "add",
-                    "subtract",
-                    "multiply",
-                    "divide",
-                    "modulo",
-                    "negate",
-                    "in",
-                }
-            ),
-            types=frozenset(
-                {
-                    "null",
-                    "boolean",
-                    "integer",
-                    "decimal",
-                    "string",
-                    "missing",
-                    "invalid",
-                }
-            ),
+            # Only the literal types exercised by the qualified subset are
+            # advertised; the remaining baseline types stay fail-closed.
+            operators=frozenset({"eq", "lt", "gt", "gte"}),
+            types=frozenset({"null", "boolean", "integer", "string"}),
             lazy=True,
             eager=False,
         )

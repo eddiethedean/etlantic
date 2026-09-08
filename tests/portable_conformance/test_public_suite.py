@@ -188,6 +188,87 @@ def test_datafusion_null_safe_join_matches_null_keys() -> None:
     ]
 
 
+@pytest.mark.datafusion
+def test_datafusion_union_and_full_join_preserve_schema_and_keys() -> None:
+    pytest.importorskip("datafusion")
+    import asyncio
+
+    import pyarrow as pa
+
+    from datafusion import SessionContext
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+    from etlantic_datafusion import create_transform_compiler
+
+    async def execute(action: str, parameters: dict, left: list, right: list) -> list:
+        plan = {
+            "inputs": {"left": {}, "right": {}},
+            "actions": [
+                {
+                    "id": "a",
+                    "kind": {
+                        "id": "a",
+                        "action": action,
+                        "target": "left",
+                        "parameters": parameters,
+                    },
+                }
+            ],
+            "outputs": {"result": {}},
+            "requirements": {"dependencies": [{"from": "a", "to": "result"}]},
+        }
+        compiler = create_transform_compiler()
+        compiled = compiler.compile(
+            plan,
+            context=TransformCompileContext("p", "pl", "s", "profile", "datafusion"),
+        )
+        session = SessionContext()
+        output = await compiler.execute(
+            compiled,
+            inputs={
+                "left": session.from_arrow(pa.Table.from_pylist(left)),
+                "right": session.from_arrow(pa.Table.from_pylist(right)),
+            },
+            parameters={},
+            context=TransformExecutionContext("r", "p", "pl", "s", "datafusion"),
+        )
+        return [
+            row
+            for batch in output.valid["result"].collect()
+            for row in batch.to_pylist()
+        ]
+
+    unioned = asyncio.run(
+        execute(
+            "dtcs:union",
+            {"mode": "byName", "allowMissingColumns": True, "other": "right"},
+            [{"a": 1}],
+            [{"b": 2}],
+        )
+    )
+    assert {tuple(sorted(row.items())) for row in unioned} == {
+        (("a", 1), ("b", None)),
+        (("a", None), ("b", 2)),
+    }
+    joined = asyncio.run(
+        execute(
+            "dtcs:join",
+            {
+                "type": "full",
+                "right": "right",
+                "leftKey": "id",
+                "rightKey": "id",
+                "collisionPolicy": "fail",
+            },
+            [{"id": 1, "l": "L"}],
+            [{"id": 2, "r": "R"}],
+        )
+    )
+    assert {row["id"] for row in joined} == {1, 2}
+
+
 def test_local_unknown_operator_fails_closed() -> None:
     from etlantic.transform.compiler import TransformPlanningContext
     from etlantic.transform.local_compiler import LocalTransformCompiler
@@ -279,6 +360,65 @@ def test_requirement_support_serializes_positive_records() -> None:
     payload = report.to_requirement_support(target={"engine": "local"})
     assert payload["requirements"]
     assert payload["findings"][0]["support"] == "supported_exact"
+
+
+def test_requirement_support_serializes_unknown_requirements_fail_closed() -> None:
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    report = LocalTransformCompiler().analyze(
+        {},
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+        requirements={"future_dimension": ["x"]},
+    )
+    payload = report.to_requirement_support(target={"engine": "local"})
+    assert all(item["id"].startswith("dtcs@1/") for item in payload["requirements"])
+    assert {item["requirement"] for item in payload["findings"]} == {
+        item["id"] for item in payload["requirements"]
+    }
+    assert all(item["support"] == "unknown" for item in payload["findings"])
+
+
+def test_local_round_default_and_null_scalar_semantics() -> None:
+    from etlantic.transform.local_compiler import _eval
+
+    def literal(type_: str, value: object) -> dict[str, object]:
+        return {"kind": "literal", "value": {"type": type_, "value": value}}
+
+    assert (
+        _eval(
+            {"kind": "call", "callee": "dtcs:round", "args": [literal("decimal", 3.6)]},
+            {},
+            {},
+        )
+        == 4
+    )
+    for callee, args in (
+        ("dtcs:contains", [None, "x"]),
+        ("dtcs:concat", [None, "x"]),
+        ("dtcs:least", [None, 1]),
+    ):
+        node = {
+            "kind": "call",
+            "callee": callee,
+            "args": [
+                literal("null" if value is None else "string", value) for value in args
+            ],
+        }
+        assert _eval(node, {}, {}) is None
+
+
+def test_local_by_position_union_rejects_heterogeneous_rows() -> None:
+    from etlantic.transform.local_compiler import _apply
+
+    with pytest.raises(ValueError, match="incompatible field counts"):
+        _apply(
+            [{"a": 1, "b": 2}],
+            "dtcs:union",
+            {"mode": "byPosition", "other": "right"},
+            {"right": [{"x": 3}, {"x": 4, "y": 5}]},
+            {},
+        )
 
 
 @pytest.mark.polars

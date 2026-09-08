@@ -26,9 +26,9 @@ alias of the corresponding `/1` claim.
 |---|---|
 | `portable-string-advanced/1` | `trim`, `ltrim`, `rtrim`, `regex_extract`, `regex_replace`, `split` |
 | `portable-conversion/1` | `to_string`, `try_cast`, `cast`, `to_integer` |
-| `portable-statistics/1` | `variance`, `stddev`, `corr` (sample semantics) |
-| `portable-window/1` | `row_number`, `rank`, `dense_rank`, `lag`, `lead`, `first_value`, `last_value` |
-| `portable-complex-values/1` | `array`, `object`, `size` (`map` on PySpark; Polars rejects `map`) |
+| `portable-statistics/1` | `variance`, `stddev` (sample semantics) |
+| `portable-window/1` | `row_number`, `lag` |
+| `portable-complex-values/1` | `array`, `object`, `size` |
 | `portable-complex-types/1` | `field`, `index`, `element_at` |
 | `portable-reshape/1` | `explode` |
 
@@ -38,7 +38,9 @@ closed during planning on those engines.
 
 ## Claimed baseline operations
 
-All four compilers advertise the same baseline action surface:
+The Local, Polars, Pandas, SQL, PySpark, and DataFusion baseline claims use this
+action surface. DuckDB advertises only its qualified subset until its remaining
+actions have complete executable evidence:
 
 | Profile group | Actions |
 |---|---|

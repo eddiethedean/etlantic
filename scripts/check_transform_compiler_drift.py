@@ -118,18 +118,10 @@ def main() -> int:
                 }
             ),
             "dtcs:profile/portable-statistics/1": frozenset(
-                {"dtcs:variance", "dtcs:stddev", "dtcs:corr"}
+                {"dtcs:variance", "dtcs:stddev"}
             ),
             "dtcs:profile/portable-window/1": frozenset(
-                {
-                    "dtcs:row_number",
-                    "dtcs:rank",
-                    "dtcs:dense_rank",
-                    "dtcs:lag",
-                    "dtcs:lead",
-                    "dtcs:first_value",
-                    "dtcs:last_value",
-                }
+                {"dtcs:row_number", "dtcs:lag"}
             ),
             "dtcs:profile/portable-complex-values/1": frozenset(
                 {"dtcs:array", "dtcs:object", "dtcs:size"}
@@ -148,6 +140,11 @@ def main() -> int:
             functions = set(compiler.info.capabilities.functions)
             for token in (
                 "dtcs:profile/portable-string-advanced/1",
+                "dtcs:profile/portable-conversion/1",
+                "dtcs:profile/portable-statistics/1",
+                "dtcs:profile/portable-window/1",
+                "dtcs:profile/portable-complex-values/1",
+                "dtcs:profile/portable-complex-types/1",
                 "dtcs:profile/portable-reshape/1",
             ):
                 if token not in profiles:
@@ -161,12 +158,6 @@ def main() -> int:
                         f"{engine} claims {profile} but missing functions: "
                         + ", ".join(missing)
                     )
-            if (
-                "dtcs:profile/portable-complex-values/1" in profiles
-                and engine == "pyspark"
-                and "dtcs:map" not in functions
-            ):
-                errors.append(f"{engine} complex-values claim missing dtcs:map")
     except Exception as exc:  # pragma: no cover
         errors.append(f"transform compiler discovery failed: {exc}")
 

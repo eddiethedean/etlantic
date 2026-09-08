@@ -167,6 +167,9 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     if callee == "dtcs:contains":
         needle = constant_python(raw_args[1], parameters=parameters)
         return args[0].contains(str(needle))
+    if callee == "dtcs:in":
+        values = [constant_python(raw, parameters=parameters) for raw in raw_args[1:]]
+        return args[0].isin(*values)
     if callee == "dtcs:starts_with":
         prefix = constant_python(raw_args[1], parameters=parameters)
         return args[0].startswith(str(prefix))
@@ -194,7 +197,11 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     if callee == "dtcs:abs":
         return _F().abs(args[0])
     if callee == "dtcs:round":
-        scale = constant_python(raw_args[1], parameters=parameters)
+        scale = (
+            constant_python(raw_args[1], parameters=parameters)
+            if len(raw_args) > 1
+            else 0
+        )
         return _F().round(args[0], int(scale))
     if callee == "dtcs:floor":
         return _F().floor(args[0])
