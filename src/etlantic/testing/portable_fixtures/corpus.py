@@ -25,6 +25,9 @@ class FixtureCase:
     required_operators: frozenset[str] = frozenset()
     required_types: frozenset[str] = frozenset()
     required_semantic_modes: frozenset[str] = frozenset()
+    required_join_modes: frozenset[str] = frozenset()
+    required_union_modes: frozenset[str] = frozenset()
+    required_collision_policies: frozenset[str] = frozenset()
 
 
 def _kernel_filter_project() -> FixtureCase:
@@ -237,6 +240,7 @@ def _relational_aggregate() -> FixtureCase:
         required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
         required_actions=frozenset({"dtcs:join", "dtcs:aggregate"}),
         required_functions=frozenset({"dtcs:sum"}),
+        required_collision_policies=frozenset({"fail"}),
         plan={
             "planIdentity": "dtcs.transform-plan/2",
             "inputs": {
@@ -2117,6 +2121,148 @@ def _baseline_union() -> FixtureCase:
     )
 
 
+def _baseline_join_modes() -> tuple[FixtureCase, ...]:
+    """Exercise every declared relational join mode with a small corpus."""
+    inputs = {
+        "left": [{"id": 1, "left": "a"}, {"id": 2, "left": "b"}],
+        "right": [{"id": 2, "right": "x"}, {"id": 3, "right": "y"}],
+    }
+    expected_by_mode = {
+        "inner": [{"id": 2, "left": "b", "right": "x"}],
+        "left": [
+            {"id": 1, "left": "a", "right": None},
+            {"id": 2, "left": "b", "right": "x"},
+        ],
+        "right": [
+            {"id": 2, "left": "b", "right": "x"},
+            {"id": 3, "left": None, "right": "y"},
+        ],
+        "full": [
+            {"id": 1, "left": "a", "right": None},
+            {"id": 2, "left": "b", "right": "x"},
+            {"id": 3, "left": None, "right": "y"},
+        ],
+        "semi": [{"id": 2, "left": "b"}],
+        "anti": [{"id": 1, "left": "a"}],
+    }
+    cases: list[FixtureCase] = []
+    for mode, expected in expected_by_mode.items():
+        cases.append(
+            FixtureCase(
+                name=f"baseline_join_{mode}",
+                required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+                required_actions=frozenset({"dtcs:join"}),
+                required_functions=frozenset(),
+                required_join_modes=frozenset({mode}),
+                required_collision_policies=frozenset({"fail"}),
+                plan={
+                    "planIdentity": "dtcs.transform-plan/2",
+                    "inputs": {"left": {"id": "left"}, "right": {"id": "right"}},
+                    "actions": [
+                        {
+                            "id": "j1",
+                            "kind": {
+                                "action": "dtcs:join",
+                                "id": "j1",
+                                "parameters": {
+                                    "type": mode,
+                                    "right": "right",
+                                    "leftKey": "id",
+                                    "rightKey": "id",
+                                    "collisionPolicy": "fail",
+                                },
+                                "target": "left",
+                            },
+                        }
+                    ],
+                    "outputs": {"result": {"id": "result"}},
+                },
+                inputs=inputs,
+                expected=expected,
+            )
+        )
+    # A cross join has no key predicate and therefore uses a two-row corpus.
+    cases.append(
+        FixtureCase(
+            name="baseline_join_cross",
+            required_profiles=frozenset({RELATIONAL_PROFILE_V1}),
+            required_actions=frozenset({"dtcs:join"}),
+            required_functions=frozenset(),
+            required_join_modes=frozenset({"cross"}),
+            required_collision_policies=frozenset({"fail"}),
+            plan={
+                "planIdentity": "dtcs.transform-plan/2",
+                "inputs": {"left": {"id": "left"}, "right": {"id": "right"}},
+                "actions": [
+                    {
+                        "id": "j1",
+                        "kind": {
+                            "action": "dtcs:join",
+                            "id": "j1",
+                            "parameters": {
+                                "type": "cross",
+                                "right": "right",
+                                "collisionPolicy": "fail",
+                            },
+                            "target": "left",
+                        },
+                    }
+                ],
+                "outputs": {"result": {"id": "result"}},
+            },
+            inputs={
+                "left": inputs["left"],
+                "right": [{"rid": 2, "right": "x"}, {"rid": 3, "right": "y"}],
+            },
+            expected=[
+                {"id": 1, "left": "a", "rid": 2, "right": "x"},
+                {"id": 1, "left": "a", "rid": 3, "right": "y"},
+                {"id": 2, "left": "b", "rid": 2, "right": "x"},
+                {"id": 2, "left": "b", "rid": 3, "right": "y"},
+            ],
+        )
+    )
+    return tuple(cases)
+
+
+def _baseline_union_modes() -> tuple[FixtureCase, ...]:
+    """Exercise both declared relational union modes."""
+    case = _baseline_union()
+    by_name = FixtureCase(
+        name="baseline_union_by_name",
+        required_profiles=case.required_profiles,
+        required_actions=case.required_actions,
+        required_functions=case.required_functions,
+        plan=case.plan,
+        inputs=case.inputs,
+        expected=case.expected,
+        required_union_modes=frozenset({"byName"}),
+    )
+    by_position_plan = {
+        **case.plan,
+        "actions": [
+            {
+                **case.plan["actions"][0],
+                "kind": {
+                    **case.plan["actions"][0]["kind"],
+                    "parameters": {"other": "right", "mode": "byPosition"},
+                },
+            }
+        ],
+    }
+    by_position = FixtureCase(
+        name="baseline_union_by_position",
+        required_profiles=case.required_profiles,
+        required_actions=case.required_actions,
+        required_functions=case.required_functions,
+        plan=by_position_plan,
+        inputs={"left": [{"a": 1}], "right": [{"b": 2}]},
+        expected=[{"a": 1}, {"a": 2}],
+        required_union_modes=frozenset({"byPosition"}),
+    )
+    return by_name, by_position
+
+
 FIXTURES: tuple[FixtureCase, ...] = (
     _kernel_filter_project(),
     _kernel_project_identity(),
@@ -2146,6 +2292,8 @@ FIXTURES: tuple[FixtureCase, ...] = (
     _baseline_aggregate_functions(),
     _baseline_field_actions(),
     _baseline_union(),
+    *_baseline_join_modes(),
+    *_baseline_union_modes(),
     *_qualified_action_smokes(),
     *_qualified_function_smokes(),
 )
@@ -2159,11 +2307,14 @@ def fixtures_for_capabilities(
     operators: frozenset[str] = frozenset(),
     types: frozenset[str] = frozenset(),
     semantic_modes: frozenset[str] = frozenset(),
+    join_modes: frozenset[str] = frozenset(),
+    union_modes: frozenset[str] = frozenset(),
+    collision_policies: frozenset[str] = frozenset(),
 ) -> list[FixtureCase]:
     """Return fixtures whose required claims are covered by the compiler."""
     selected: list[FixtureCase] = []
     for case in FIXTURES:
-        if not case.required_profiles.issubset(profiles):
+        if profiles and not case.required_profiles.issubset(profiles):
             continue
         if not case.required_actions.issubset(actions):
             continue
@@ -2174,8 +2325,14 @@ def fixtures_for_capabilities(
                 continue
             if not case.required_types.issubset(types):
                 continue
-            if not case.required_semantic_modes.issubset(semantic_modes):
-                continue
+        if not case.required_semantic_modes.issubset(semantic_modes):
+            continue
+        if not case.required_join_modes.issubset(join_modes):
+            continue
+        if not case.required_union_modes.issubset(union_modes):
+            continue
+        if not case.required_collision_policies.issubset(collision_policies):
+            continue
         selected.append(case)
     return selected
 
@@ -2188,6 +2345,9 @@ def mandatory_capability_keys(
     operators: frozenset[str] = frozenset(),
     types: frozenset[str] = frozenset(),
     semantic_modes: frozenset[str] = frozenset(),
+    join_modes: frozenset[str] = frozenset(),
+    union_modes: frozenset[str] = frozenset(),
+    collision_policies: frozenset[str] = frozenset(),
 ) -> set[str]:
     """Capability keys that must have at least one selected fixture."""
     keys: set[str] = set()
@@ -2203,6 +2363,12 @@ def mandatory_capability_keys(
         keys.add(f"type:{type_name}")
     for mode in semantic_modes:
         keys.add(f"semantic_mode:{mode}")
+    for mode in join_modes:
+        keys.add(f"join_mode:{mode}")
+    for mode in union_modes:
+        keys.add(f"union_mode:{mode}")
+    for policy in collision_policies:
+        keys.add(f"collision_policy:{policy}")
     return keys
 
 
@@ -2221,4 +2387,10 @@ def covered_capability_keys(cases: list[FixtureCase]) -> set[str]:
             keys.add(f"type:{type_name}")
         for mode in case.required_semantic_modes:
             keys.add(f"semantic_mode:{mode}")
+        for mode in case.required_join_modes:
+            keys.add(f"join_mode:{mode}")
+        for mode in case.required_union_modes:
+            keys.add(f"union_mode:{mode}")
+        for policy in case.required_collision_policies:
+            keys.add(f"collision_policy:{policy}")
     return keys

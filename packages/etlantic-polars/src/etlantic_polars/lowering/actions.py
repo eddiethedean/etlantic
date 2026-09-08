@@ -294,7 +294,13 @@ def _apply_union(
             raise ValueError(
                 "allowMissingColumns is not supported for byPosition unions"
             )
-        return pl.concat([left, other], how="vertical")
+        other_cols = _frame_columns(other)
+        if len(left_cols := _frame_columns(left)) != len(other_cols):
+            raise ValueError("byPosition union requires equal column counts")
+        return pl.concat(
+            [left, other.rename(dict(zip(other_cols, left_cols, strict=True)))],
+            how="vertical",
+        )
     if allow_missing:
         return pl.concat([left, other], how="diagonal")
     left_cols = _frame_columns(left)

@@ -330,11 +330,7 @@ def _phase_policy(
         )
         # Portable-capable steps may satisfy prefer/require without a native
         # callable when a transform compiler exists for the engine.
-        if (
-            has_portable
-            and portable_policy in {"prefer", "require"}
-            and engine != "local"
-        ):
+        if has_portable and portable_policy in {"prefer", "require"}:
             from etlantic.transform.compiler import TransformPlanningContext
             from etlantic.transform.discovery import (
                 discover_transform_compilers_for_profile,
@@ -360,7 +356,35 @@ def _phase_policy(
                     ),
                     requirements=portable_def.requirements,
                 )
-                if report.supported:
+                try:
+                    summary = report.to_requirement_support(
+                        target={
+                            "engine": compiler.info.engine,
+                            "compiler": compiler.info.name,
+                            "version": compiler.info.version,
+                            "protocol": compiler.info.compiler_protocol,
+                        }
+                    )
+                except ValueError as exc:
+                    diagnostics.append(
+                        Diagnostic(
+                            code="PMXFORM301",
+                            severity=Severity.ERROR,
+                            message=f'Step "{node.name}": invalid portable support evidence — {exc}',
+                            path=("pipeline", node.name),
+                        )
+                    )
+                    continue
+                support_by_id = {
+                    item.get("requirement"): item.get("support")
+                    for item in summary.get("findings", ())
+                }
+                if all(
+                    item.get("applicability") != "applicable"
+                    or support_by_id.get(item.get("id"))
+                    in {"supported_exact", "supported_with_lowering"}
+                    for item in summary.get("requirements", ())
+                ):
                     continue
                 for finding in report.findings:
                     diagnostics.append(

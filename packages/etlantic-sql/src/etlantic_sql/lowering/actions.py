@@ -6,6 +6,7 @@ from typing import Any
 
 from etlantic.sql.protocol import (
     AliasedExpr,
+    CallExpr,
     ColumnRef,
     JoinClause,
     OrderByItem,
@@ -342,7 +343,29 @@ def _apply_join(
         cols = tuple(ColumnRef(c, relation=left.name) for c in left_cols)
     else:
         out_cols = list(left_cols)
-        col_exprs: list[Any] = [ColumnRef(c, relation=left.name) for c in left_cols]
+        col_exprs: list[Any] = []
+        for c in left_cols:
+            if (
+                how in {"right", "full"}
+                and c in left_on
+                and c in left_set
+                and c in right_set
+            ):
+                right_key = right_on[left_on.index(c)] if c in left_on else c
+                col_exprs.append(
+                    AliasedExpr(
+                        expr=CallExpr(
+                            callee="dtcs:coalesce",
+                            args=(
+                                ColumnRef(c, relation=left.name),
+                                ColumnRef(right_key, relation=right.name),
+                            ),
+                        ),
+                        alias=c,
+                    )
+                )
+            else:
+                col_exprs.append(ColumnRef(c, relation=left.name))
         for c in right_cols:
             if c in key_overlap or c in left_set:
                 continue

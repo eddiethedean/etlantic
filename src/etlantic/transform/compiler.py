@@ -21,13 +21,66 @@ SUPPORT_STATES = frozenset(
 )
 OBLIGATIONS = frozenset({"required", "preferred", "informational"})
 PUSHDOWN_OUTCOMES = frozenset(
-    {"pushed_exact", "pushed_with_lowering", "not_pushed", "not_applicable", "unknown"}
+    {
+        "pushed_exact",
+        "pushed_with_lowering",
+        "not_pushed",
+        "not_applicable",
+        "unsupported",
+        "unavailable",
+        "unknown",
+    }
 )
 MAX_REQUIREMENTS = 100_000
 MAX_FINDINGS = 100_000
 MAX_REPORT_BYTES = 8 * 1024 * 1024
 MAX_CONDITIONS = 64
 MAX_REASON_BYTES = 1_024
+_TARGET_KEYS = frozenset({"engine", "compiler", "version", "protocol", "package"})
+_REQUIREMENT_KEYS = frozenset(
+    {
+        "id",
+        "vocabulary",
+        "version",
+        "scope",
+        "path",
+        "obligation",
+        "applicability",
+        "parameters",
+    }
+)
+_FINDING_KEYS = frozenset(
+    {
+        "code",
+        "requirement",
+        "reason",
+        "expression_path",
+        "obligation",
+        "support",
+        "lowering_id",
+        "proof_reference",
+        "conditions",
+        "physical_effects",
+        "evidence_fingerprint",
+        "reason_code",
+        "evidence",
+        "path",
+    }
+)
+_EVIDENCE_KEYS = frozenset({"id", "kind", "fingerprint", "baseline_digest"})
+_PUSHDOWN_KEYS = frozenset(
+    {
+        "boundary",
+        "action",
+        "target",
+        "proof_reference",
+        "outcome",
+        "reason",
+        "obligation",
+        "physical_effects",
+        "evidence_fingerprint",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,15 +96,24 @@ class TransformCapabilities:
     lazy: bool = True
     eager: bool = True
     max_plan_nodes: int | None = None
+    # Additive dimensions; kept last for positional /1 compatibility.
+    partial_profiles: frozenset[str] = frozenset()
+    join_modes: frozenset[str] = frozenset()
+    union_modes: frozenset[str] = frozenset()
+    collision_policies: frozenset[str] = frozenset()
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "profiles": sorted(self.profiles),
+            "partial_profiles": sorted(self.partial_profiles),
             "actions": sorted(self.actions),
             "functions": sorted(self.functions),
             "operators": sorted(self.operators),
             "types": sorted(self.types),
             "semantic_modes": sorted(self.semantic_modes),
+            "join_modes": sorted(self.join_modes),
+            "union_modes": sorted(self.union_modes),
+            "collision_policies": sorted(self.collision_policies),
             "lazy": self.lazy,
             "eager": self.eager,
             "max_plan_nodes": self.max_plan_nodes,
@@ -139,8 +201,12 @@ class TransformPushdownFinding:
     boundary: str
     outcome: str
     reason: str
+    action: str | None = None
+    target: str | None = None
+    proof_reference: str | None = None
     physical_effects: tuple[str, ...] = ()
     evidence_fingerprint: str | None = None
+    obligation: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -149,6 +215,14 @@ class TransformPushdownFinding:
             "reason": self.reason,
             "physical_effects": list(self.physical_effects),
         }
+        if self.action is not None:
+            payload["action"] = self.action
+        if self.target is not None:
+            payload["target"] = self.target
+        if self.proof_reference is not None:
+            payload["proof_reference"] = self.proof_reference
+        if self.obligation is not None:
+            payload["obligation"] = self.obligation
         if self.evidence_fingerprint is not None:
             payload["evidence_fingerprint"] = self.evidence_fingerprint
         return payload
@@ -165,6 +239,10 @@ class TransformSupportReport:
     # Normalized requirement records are additive to the /1 aggregate fields.
     # Keep this last so existing positional construction remains compatible.
     requirements: tuple[Mapping[str, Any], ...] = ()
+    # Complete requirement vector produced by capability matching.  Kept
+    # separate from ``findings`` for /1 compatibility, where findings were
+    # traditionally failures only.
+    requirement_findings: tuple[TransformSupportFinding, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -183,30 +261,79 @@ class TransformSupportReport:
         self, *, target: Mapping[str, Any] | None = None
     ) -> dict[str, Any]:
         """Serialize the additive requirement-level support protocol."""
+        supplied_target = dict(target or {})
+        unknown_target = set(supplied_target) - _TARGET_KEYS
+        if unknown_target:
+            raise ValueError(
+                "requirement-support target contains unsupported fields: "
+                + ", ".join(sorted(unknown_target))
+            )
         requirements = [dict(item) for item in self.requirements]
+        evidence_fingerprints: list[str] = []
+        for candidate in [
+            self.evidence_fingerprint,
+            *(finding.evidence_fingerprint for finding in self.findings),
+        ]:
+            if candidate and candidate not in evidence_fingerprints:
+                evidence_fingerprints.append(candidate)
+        evidence_ids = {
+            fingerprint: ("compiler" if index == 0 else f"compiler-{index + 1}")
+            for index, fingerprint in enumerate(evidence_fingerprints)
+        }
+        requirement_by_legacy: dict[str, str] = {}
+        for record in requirements:
+            identifier = record.get("id")
+            value = (record.get("parameters") or {}).get("value")
+            scope = str(record.get("scope") or "")
+            if isinstance(identifier, str) and value is not None:
+                singular = {
+                    "profiles": "profile",
+                    "actions": "action",
+                    "functions": "function",
+                    "operators": "operator",
+                    "types": "type",
+                    "semantic_modes": "semantic_mode",
+                    "join_modes": "join_mode",
+                    "union_modes": "union_mode",
+                    "collision_policies": "collision_policy",
+                }.get(scope, scope.rstrip("s"))
+                requirement_by_legacy.setdefault(f"{singular}:{value}", identifier)
         findings = []
+        canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
-        for index, finding in enumerate(self.findings):
+        serialized_by_requirement: dict[str, dict[str, Any]] = {}
+        for index, finding in enumerate((*canonical_findings, *self.findings)):
             item = finding.to_dict()
             requirement_id = item.get("requirement")
             if requirement_id not in {r.get("id") for r in requirements}:
-                remaining = [
-                    r.get("id") for r in requirements if r.get("id") not in used_ids
-                ]
-                if remaining:
-                    requirement_id = remaining[0]
+                requirement_id = requirement_by_legacy.get(str(requirement_id))
+            if requirement_id is None and isinstance(requirement_id, str):
+                # Unknown-category findings use ``requirement:<category>``;
+                # bind them to the corresponding normalized record when one
+                # exists rather than creating a second synthetic requirement.
+                category = requirement_id.removeprefix("requirement:")
+                for record in requirements:
+                    if record.get("scope") == category:
+                        requirement_id = record.get("id")
+                        break
             if requirement_id is None:
                 requirement_id = _canonical_requirement_id(
-                    "legacy", f"finding-{index}", "findings"
+                    "legacy",
+                    str(item.get("requirement") or f"finding-{index}"),
+                    "findings",
                 )
                 requirements.append(
                     {
                         "id": requirement_id,
+                        "vocabulary": "dtcs",
+                        "version": "1",
                         "scope": "legacy",
                         "path": "findings",
                         "obligation": finding.obligation or "required",
                         "applicability": "applicable",
-                        "parameters": {},
+                        "parameters": {
+                            "legacy_requirement": str(item.get("requirement") or "")
+                        },
                     }
                 )
             item["requirement"] = requirement_id
@@ -216,11 +343,24 @@ class TransformSupportReport:
             item["obligation"] = finding.obligation or "required"
             fingerprint = finding.evidence_fingerprint or self.evidence_fingerprint
             item["evidence_fingerprint"] = fingerprint
-            item["evidence"] = ["compiler"] if fingerprint else []
-            item["reason_code"] = finding.code
+            item["evidence"] = [evidence_ids[fingerprint]] if fingerprint else []
+            if (
+                item["support"] in {"supported_exact", "supported_with_lowering"}
+                and not fingerprint
+            ):
+                # Positive records without compiler evidence are legacy
+                # omissions, not proof; preserve inspectability as unknown.
+                item["support"] = "unknown"
+                item["reason"] = (
+                    "requirement has no independently verified support evidence"
+                )
+                item["reason_code"] = "PMXFORM999"
+            if item.get("reason_code") != "PMXFORM999":
+                item["reason_code"] = finding.code
             item["path"] = finding.expression_path or "findings"
             used_ids.add(requirement_id)
-            findings.append(item)
+            serialized_by_requirement[requirement_id] = item
+        findings.extend(serialized_by_requirement.values())
         # Legacy compilers may only provide aggregate findings. Preserve those
         # records while making successful reports explicit about their target.
         if not requirements:
@@ -229,6 +369,8 @@ class TransformSupportReport:
                     "id": _canonical_requirement_id(
                         "legacy", finding.requirement, "findings"
                     ),
+                    "vocabulary": "dtcs",
+                    "version": "1",
                     "scope": "legacy",
                     "path": finding.expression_path or "",
                     "obligation": finding.obligation or "required",
@@ -237,26 +379,9 @@ class TransformSupportReport:
                 }
                 for finding in self.findings
             ]
-        finding_ids = {item.get("requirement") for item in findings}
-        if self.supported and requirements:
-            evidence = self.evidence_fingerprint
-            findings.extend(
-                {
-                    "requirement": item.get("id") or item.get("requirement"),
-                    "support": "supported_exact",
-                    "reason": "supported by the analyzed compiler target",
-                    "reason_code": "PMXFORM000",
-                    "evidence": ["compiler"] if evidence else [],
-                    "evidence_fingerprint": evidence,
-                    "path": item.get("path") or "requirements",
-                    "obligation": item.get("obligation", "required"),
-                }
-                for item in requirements
-                if (item.get("id") or item.get("requirement")) not in finding_ids
-            )
-        elif requirements:
-            # An aggregate unsupported/unknown report still needs one explicit
-            # fail-closed finding for every applicable requirement.
+        if requirements:
+            # Missing vector entries are always unknown.  Aggregate success is
+            # deliberately never converted into positive requirement evidence.
             represented = {item.get("requirement") for item in findings}
             findings.extend(
                 {
@@ -273,14 +398,24 @@ class TransformSupportReport:
                 if (item.get("id") or item.get("requirement")) not in represented
             )
         evidence = []
-        if self.evidence_fingerprint:
+        for fingerprint, evidence_id in evidence_ids.items():
             evidence.append(
                 {
-                    "id": "compiler",
+                    "id": evidence_id,
                     "kind": "compiler_capability",
-                    "fingerprint": self.evidence_fingerprint,
+                    "fingerprint": fingerprint,
+                    "baseline_digest": _baseline_digest(),
                 }
             )
+        unique_requirements: list[dict[str, Any]] = []
+        seen_requirement_ids: set[str] = set()
+        for record in requirements:
+            identifier = record.get("id")
+            if identifier in seen_requirement_ids:
+                continue
+            seen_requirement_ids.add(str(identifier))
+            unique_requirements.append(record)
+        requirements = unique_requirements
         payload = {
             "schema": "etlantic.portable-requirement-support/1",
             "target": {
@@ -288,11 +423,12 @@ class TransformSupportReport:
                 "compiler": "unknown",
                 "version": "unknown",
                 "protocol": COMPILER_PROTOCOL,
-                **dict(target or {}),
+                **supplied_target,
             },
             "requirements": requirements,
             "findings": findings,
             "evidence": evidence,
+            "pushdown": [item.to_dict() for item in self.pushdown],
         }
         payload["fingerprint"] = _support_fingerprint(payload)
         validate_requirement_support_payload(payload)
@@ -304,6 +440,7 @@ def requirement_records_from_mapping(
 ) -> tuple[dict[str, Any], ...]:
     """Convert legacy requirement lists into stable bounded protocol records."""
     records: list[dict[str, Any]] = []
+    seen: set[str] = set()
     for scope in sorted((requirements or {}).keys()):
         value = (requirements or {}).get(scope)
         values = (
@@ -316,6 +453,9 @@ def requirement_records_from_mapping(
                 continue
             semantic_id = str(item)
             requirement_id = _canonical_requirement_id(scope, semantic_id, scope)
+            if requirement_id in seen:
+                continue
+            seen.add(requirement_id)
             records.append(
                 {
                     "id": requirement_id,
@@ -346,6 +486,104 @@ def _support_fingerprint(payload: Mapping[str, Any]) -> str:
     ).hexdigest()
 
 
+def capabilities_fingerprint(capabilities: TransformCapabilities) -> str:
+    """Stable evidence identity for an advertised capability set."""
+    return sha256(
+        json.dumps(
+            capabilities.to_dict(), sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+
+
+def host_pushdown_findings(
+    definition: Mapping[str, Any], *, evidence_fingerprint: str | None
+) -> tuple[TransformPushdownFinding, ...]:
+    """Describe host-owned boundaries for non-relational dataframe engines.
+
+    Local, Pandas, and Polars execute their portable plans in the host runtime;
+    recording explicit applicability prevents consumers from interpreting an
+    omitted pushdown result as an optimistic success.
+    """
+    findings: list[TransformPushdownFinding] = []
+    for index, _ in enumerate(definition.get("actions") or ()):
+        for boundary in (f"source:{index}", f"relational:{index}", f"sink:{index}"):
+            findings.append(
+                TransformPushdownFinding(
+                    boundary=boundary,
+                    outcome="not_applicable",
+                    reason="host-owned execution has no backend pushdown boundary",
+                    action=str(
+                        (definition.get("actions") or ())[index]
+                        .get("kind", {})
+                        .get("action", "")
+                    ),
+                    target=str(
+                        (definition.get("actions") or ())[index].get("id", index)
+                    ),
+                    obligation="informational",
+                    evidence_fingerprint=evidence_fingerprint,
+                )
+            )
+    return tuple(findings)
+
+
+def relational_pushdown_findings(
+    definition: Mapping[str, Any], *, evidence_fingerprint: str | None
+) -> tuple[TransformPushdownFinding, ...]:
+    """Emit the bounded pushdown matrix for native relational compilers."""
+    findings: list[TransformPushdownFinding] = []
+    actions = definition.get("actions") or ()
+    for index, action_item in enumerate(actions):
+        kind = action_item.get("kind") if isinstance(action_item, Mapping) else {}
+        action = str((kind or {}).get("action") or "")
+        target = str((action_item or {}).get("id") or index)
+        findings.extend(
+            (
+                TransformPushdownFinding(
+                    boundary=f"source:{index}",
+                    outcome="not_applicable",
+                    reason="connector source pushdown is outside the native plan contract",
+                    action=action,
+                    target=target,
+                    obligation="informational",
+                    evidence_fingerprint=evidence_fingerprint,
+                ),
+                TransformPushdownFinding(
+                    boundary=f"relational:{index}",
+                    outcome="pushed_exact",
+                    reason="action lowered into the native relational plan",
+                    action=action,
+                    target=target,
+                    proof_reference=f"explain:{target}",
+                    obligation="required",
+                    evidence_fingerprint=evidence_fingerprint,
+                ),
+                TransformPushdownFinding(
+                    boundary=f"sink:{index}",
+                    outcome="not_applicable",
+                    reason="sink pushdown is outside the native plan contract",
+                    action=action,
+                    target=target,
+                    obligation="informational",
+                    evidence_fingerprint=evidence_fingerprint,
+                ),
+            )
+        )
+    return tuple(findings)
+
+
+def _baseline_digest() -> str:
+    try:
+        from etlantic.transform.portable_baseline import baseline_manifest
+
+        value = json.dumps(
+            baseline_manifest(), sort_keys=True, separators=(",", ":")
+        ).encode()
+    except Exception:
+        value = b"etlantic.portable-baseline/1"
+    return sha256(value).hexdigest()
+
+
 def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     """Validate the bounded requirement/support wire representation."""
     import json
@@ -355,9 +593,14 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     if not isinstance(payload.get("target"), Mapping):
         raise ValueError("requirement-support target must be an object")
     target = payload["target"]
+    unknown_target = set(target) - _TARGET_KEYS
+    if unknown_target:
+        raise ValueError("requirement-support target contains unsupported fields")
     for key in ("engine", "compiler", "version", "protocol"):
         if not isinstance(target.get(key), str) or not target[key]:
             raise ValueError(f"requirement-support target.{key} must be non-empty")
+    if target.get("protocol") != COMPILER_PROTOCOL:
+        raise ValueError("requirement-support target.protocol is unsupported")
     requirements = payload.get("requirements")
     findings = payload.get("findings")
     if not isinstance(requirements, list) or not isinstance(findings, list):
@@ -368,6 +611,8 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     for item in requirements:
         if not isinstance(item, Mapping):
             raise ValueError("requirement record must be an object")
+        if set(item) - _REQUIREMENT_KEYS:
+            raise ValueError("requirement record contains unsupported fields")
         identifier = item.get("id")
         if (
             not isinstance(identifier, str)
@@ -378,6 +623,8 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         requirement_ids.add(identifier)
         if not identifier.startswith("dtcs@1/") or "#" not in identifier:
             raise ValueError("requirement IDs must use canonical dtcs@1 form")
+        if item.get("vocabulary") != "dtcs" or item.get("version") != "1":
+            raise ValueError("requirement vocabulary/version are required")
         if not isinstance(item.get("scope"), str) or not isinstance(
             item.get("path"), str
         ):
@@ -392,6 +639,8 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     for item in findings:
         if not isinstance(item, Mapping):
             raise ValueError("support finding must be an object")
+        if set(item) - _FINDING_KEYS:
+            raise ValueError("support finding contains unsupported fields")
         identifier = item.get("requirement")
         if (
             not isinstance(identifier, str)
@@ -416,7 +665,10 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         if not isinstance(evidence_refs, list):
             raise ValueError("finding evidence must be an array")
         if item["support"] in {"supported_exact", "supported_with_lowering"}:
-            if not isinstance(item.get("evidence_fingerprint"), str):
+            if (
+                not isinstance(item.get("evidence_fingerprint"), str)
+                or not item["evidence_fingerprint"]
+            ):
                 raise ValueError("supported finding requires evidence fingerprint")
             if not evidence_refs:
                 raise ValueError("supported finding requires evidence reference")
@@ -444,15 +696,85 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     if not isinstance(evidence, list):
         raise ValueError("evidence must be an array")
     evidence_ids = set()
+    evidence_fingerprints: dict[str, str] = {}
     for record in evidence:
         if not isinstance(record, Mapping) or not isinstance(record.get("id"), str):
             raise ValueError("evidence records require string IDs")
+        if set(record) - _EVIDENCE_KEYS:
+            raise ValueError("evidence record contains unsupported fields")
         if record["id"] in evidence_ids:
             raise ValueError("evidence IDs must be unique")
+        if not isinstance(record.get("kind"), str) or not record["kind"]:
+            raise ValueError("evidence records require a kind")
+        if not isinstance(record.get("fingerprint"), str) or not record["fingerprint"]:
+            raise ValueError("evidence records require a fingerprint")
+        if (
+            not isinstance(record.get("baseline_digest"), str)
+            or not record["baseline_digest"]
+        ):
+            raise ValueError("evidence records require baseline digest")
+        if record["baseline_digest"] != _baseline_digest():
+            raise ValueError("evidence baseline digest is stale")
         evidence_ids.add(record["id"])
+        evidence_fingerprints[record["id"]] = record["fingerprint"]
     for finding in findings:
         if not set(finding.get("evidence", [])).issubset(evidence_ids):
             raise ValueError("finding references unknown evidence")
+        if finding.get("evidence_fingerprint"):
+            references = finding.get("evidence", [])
+            if not references or not any(
+                evidence_fingerprints[reference] == finding["evidence_fingerprint"]
+                for reference in references
+            ):
+                raise ValueError("finding evidence fingerprint does not match evidence")
+    pushdown = payload.get("pushdown", [])
+    if not isinstance(pushdown, list):
+        raise ValueError("pushdown findings must be an array")
+    pushdown_boundaries: set[str] = set()
+    for item in pushdown:
+        if not isinstance(item, Mapping):
+            raise ValueError("pushdown finding must be an object")
+        if set(item) - _PUSHDOWN_KEYS:
+            raise ValueError("pushdown finding contains unsupported fields")
+        if item.get("outcome") not in PUSHDOWN_OUTCOMES:
+            raise ValueError("invalid pushdown outcome")
+        if (
+            item.get("obligation") is not None
+            and item.get("obligation") not in OBLIGATIONS
+        ):
+            raise ValueError("invalid pushdown obligation")
+        if not isinstance(item.get("boundary"), str) or not item["boundary"]:
+            raise ValueError("pushdown boundary is required")
+        if item["boundary"] in pushdown_boundaries:
+            raise ValueError("pushdown boundaries must be unique")
+        pushdown_boundaries.add(item["boundary"])
+        if not isinstance(item.get("reason"), str) or not item["reason"]:
+            raise ValueError("pushdown reason is required")
+        if item.get("obligation") == "required":
+            if not isinstance(item.get("action"), str) or not item["action"]:
+                raise ValueError("required pushdown finding requires action")
+            if not isinstance(item.get("target"), str) or not item["target"]:
+                raise ValueError("required pushdown finding requires target")
+            if item.get("outcome") in {"pushed_exact", "pushed_with_lowering"}:
+                if (
+                    not isinstance(item.get("evidence_fingerprint"), str)
+                    or not item["evidence_fingerprint"]
+                ):
+                    raise ValueError("pushed finding requires evidence fingerprint")
+                if (
+                    not isinstance(item.get("proof_reference"), str)
+                    or not item["proof_reference"]
+                ):
+                    raise ValueError("pushed finding requires proof reference")
+                if item.get("outcome") == "pushed_with_lowering" and not item.get(
+                    "proof_reference"
+                ):
+                    raise ValueError("lowered pushdown requires proof reference")
+            if item.get("evidence_fingerprint") and not any(
+                record.get("fingerprint") == item["evidence_fingerprint"]
+                for record in evidence
+            ):
+                raise ValueError("pushdown evidence fingerprint is unbound")
     serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
         "utf-8"
     )
@@ -461,6 +783,45 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     fingerprint = payload.get("fingerprint")
     if not isinstance(fingerprint, str) or fingerprint != _support_fingerprint(payload):
         raise ValueError("support report fingerprint is invalid")
+
+
+def preflight_portable_support(descriptor: Any, compiler: Any, *, engine: str) -> None:
+    """Fail closed before portable execution uses resources or input data."""
+    expected_evidence = getattr(compiler.info, "evidence_fingerprint", None)
+    planned_evidence = getattr(descriptor, "compiler_evidence_fingerprint", None)
+    if (
+        not planned_evidence
+        or not expected_evidence
+        or planned_evidence != expected_evidence
+    ):
+        raise ValueError(
+            "portable compiler evidence is missing or stale; replan required"
+        )
+    payload = getattr(descriptor, "support_summary", None)
+    if not isinstance(payload, Mapping):
+        raise ValueError("portable support evidence is missing; replan required")
+    validate_requirement_support_payload(payload)
+    target = payload.get("target")
+    if not isinstance(target, Mapping) or target.get("engine") != engine:
+        raise ValueError("portable support evidence targets a different engine")
+    if (
+        target.get("compiler") != compiler.info.name
+        or target.get("version") != compiler.info.version
+    ):
+        raise ValueError("portable support evidence targets a different compiler")
+    evidence = payload.get("evidence") or []
+    if not any(record.get("fingerprint") == expected_evidence for record in evidence):
+        raise ValueError("portable support evidence does not match installed compiler")
+    support_by_id = {
+        item.get("requirement"): item.get("support") for item in payload["findings"]
+    }
+    if not all(
+        item.get("applicability") != "applicable"
+        or support_by_id.get(item.get("id"))
+        in {"supported_exact", "supported_with_lowering"}
+        for item in payload["requirements"]
+    ):
+        raise ValueError("portable support evidence contains unsupported requirements")
 
 
 @dataclass(frozen=True, slots=True)

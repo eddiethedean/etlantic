@@ -76,6 +76,9 @@ def requirements_from_plan(
     operators: set[str] = set()
     types: set[str] = set()
     semantic_modes: set[str] = set()
+    join_modes: set[str] = set()
+    union_modes: set[str] = set()
+    collision_policies: set[str] = set()
     if plan.get("profile"):
         profiles.add(str(plan["profile"]))
     for item in plan.get("actions") or []:
@@ -83,6 +86,15 @@ def requirements_from_plan(
         action = kind.get("action")
         if isinstance(action, str):
             actions.add(normalize_action(action))
+        params = kind.get("parameters") if isinstance(kind, Mapping) else {}
+        if isinstance(params, Mapping):
+            if action == "dtcs:join":
+                if params.get("type") is not None:
+                    join_modes.add(str(params["type"]))
+                if params.get("collisionPolicy") is not None:
+                    collision_policies.add(str(params["collisionPolicy"]))
+            elif action == "dtcs:union" and params.get("mode") is not None:
+                union_modes.add(str(params["mode"]))
         _collect_expression_requirements(item, functions, operators, types)
         if _contains_distinct_three_state(item):
             semantic_modes.add("three_state_distinct")
@@ -113,6 +125,9 @@ def requirements_from_plan(
         types=types,
     )
     result["semantic_modes"] = sorted(semantic_modes)
+    result["join_modes"] = sorted(join_modes)
+    result["union_modes"] = sorted(union_modes)
+    result["collision_policies"] = sorted(collision_policies)
     if not include_extended:
         result.pop("operators", None)
         result.pop("types", None)
@@ -202,6 +217,9 @@ def merge_requirements(
         "operators",
         "types",
         "semantic_modes",
+        "join_modes",
+        "union_modes",
+        "collision_policies",
     )
     merged: dict[str, set[str]] = {key: set() for key in list_keys}
     boolean_values: dict[str, bool] = {}
@@ -259,6 +277,27 @@ def match_requirements(
     """
     req = requirements or {}
     findings: list[TransformSupportFinding] = []
+    canonical: list[TransformSupportFinding] = []
+
+    def record(
+        requirement: str,
+        ok: bool,
+        reason: str,
+        *,
+        code: str = "PMXFORM301",
+        support: str | None = None,
+    ) -> None:
+        state = support or ("supported_exact" if ok else "unsupported")
+        finding = TransformSupportFinding(
+            code=code,
+            requirement=requirement,
+            reason=("requirement is supported by the compiler" if ok else reason),
+            expression_path=None,
+            support=state,
+        )
+        canonical.append(finding)
+        if not ok or state not in {"supported_exact", "supported_with_lowering"}:
+            findings.append(finding)
 
     known_keys = {
         "profiles",
@@ -267,18 +306,19 @@ def match_requirements(
         "operators",
         "types",
         "semantic_modes",
+        "join_modes",
+        "union_modes",
+        "collision_policies",
         "lazy",
         "eager",
     }
     for key in sorted(set(req) - known_keys):
-        findings.append(
-            TransformSupportFinding(
-                code="PMXFORM303",
-                requirement=f"requirement:{key}",
-                reason="requirement category is unknown to this protocol version",
-                expression_path=None,
-                support="unknown",
-            )
+        record(
+            f"requirement:{key}",
+            False,
+            "requirement category is unknown to this protocol version",
+            code="PMXFORM303",
+            support="unknown",
         )
 
     claimed_profiles = set(capabilities.profiles)
@@ -295,101 +335,97 @@ def match_requirements(
                 and profile in _KERNEL_PROFILE_ALIASES
                 and KERNEL_PROFILE_V1 in capabilities.profiles
             ):
+                record(f"profile:{profile}", True, "")
                 continue
             if (
                 allow_kernel_profile_alias
                 and profile in _RELATIONAL_PROFILE_ALIASES
                 and RELATIONAL_PROFILE_V1 in capabilities.profiles
             ):
+                record(f"profile:{profile}", True, "")
                 continue
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"profile:{profile}",
-                    reason="profile is not claimed by the compiler",
-                    expression_path=None,
-                )
+            record(
+                f"profile:{profile}", False, "profile is not claimed by the compiler"
             )
+        else:
+            record(f"profile:{profile}", True, "")
 
     for action in req.get("actions") or ():
         action = normalize_action(str(action))
         if action not in capabilities.actions:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"action:{action}",
-                    reason="action is not implemented",
-                    expression_path=None,
-                )
-            )
+            record(f"action:{action}", False, "action is not implemented")
+        else:
+            record(f"action:{action}", True, "")
 
     for function in req.get("functions") or ():
         if function not in capabilities.functions:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"function:{function}",
-                    reason="function is not implemented",
-                    expression_path=None,
-                )
-            )
+            record(f"function:{function}", False, "function is not implemented")
+        else:
+            record(f"function:{function}", True, "")
 
     for operator in req.get("operators") or ():
         operator = normalize_operator(str(operator))
         if operator not in capabilities.operators:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"operator:{operator}",
-                    reason="operator is not implemented",
-                    expression_path=None,
-                )
-            )
+            record(f"operator:{operator}", False, "operator is not implemented")
+        else:
+            record(f"operator:{operator}", True, "")
 
     for type_id in req.get("types") or ():
         if type_id not in capabilities.types:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"type:{type_id}",
-                    reason="type is not claimed by the compiler",
-                    expression_path=None,
-                )
-            )
+            record(f"type:{type_id}", False, "type is not claimed by the compiler")
+        else:
+            record(f"type:{type_id}", True, "")
 
     for mode in req.get("semantic_modes") or ():
         if mode not in capabilities.semantic_modes:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM301",
-                    requirement=f"semantic_mode:{mode}",
-                    reason="semantic mode is not claimed by the compiler",
-                    expression_path=None,
-                )
+            record(
+                f"semantic_mode:{mode}",
+                False,
+                "semantic mode is not claimed by the compiler",
             )
+        else:
+            record(f"semantic_mode:{mode}", True, "")
+
+    for mode in req.get("join_modes") or ():
+        if mode not in capabilities.join_modes:
+            record(
+                f"join_mode:{mode}", False, "join mode is not claimed by the compiler"
+            )
+        else:
+            record(f"join_mode:{mode}", True, "")
+    for mode in req.get("union_modes") or ():
+        if mode not in capabilities.union_modes:
+            record(
+                f"union_mode:{mode}", False, "union mode is not claimed by the compiler"
+            )
+        else:
+            record(f"union_mode:{mode}", True, "")
+    for policy in req.get("collision_policies") or ():
+        if policy not in capabilities.collision_policies:
+            record(
+                f"collision_policy:{policy}",
+                False,
+                "collision policy is not claimed by the compiler",
+            )
+        else:
+            record(f"collision_policy:{policy}", True, "")
 
     if req.get("lazy") is True and not capabilities.lazy:
-        findings.append(
-            TransformSupportFinding(
-                code="PMXFORM301",
-                requirement="mode:lazy",
-                reason="lazy execution is not claimed by the compiler",
-                expression_path=None,
+        record("mode:lazy", False, "lazy execution is not claimed by the compiler")
+    elif req.get("lazy") is True:
+        record("mode:lazy", True, "")
+    if req.get("eager") is True:
+        if not capabilities.eager:
+            record(
+                "mode:eager", False, "eager execution is not claimed by the compiler"
             )
-        )
-    if req.get("eager") is False and not capabilities.lazy:
-        findings.append(
-            TransformSupportFinding(
-                code="PMXFORM301",
-                requirement="mode:lazy",
-                reason="eager-only compilers cannot satisfy lazy=false requirements",
-                expression_path=None,
-            )
-        )
+        else:
+            record("mode:eager", True, "")
 
     return TransformSupportReport(
         supported=not findings,
         findings=tuple(findings),
+        requirement_findings=tuple(canonical),
     )
 
 

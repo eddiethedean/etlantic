@@ -128,3 +128,21 @@ def test_hostile_identifier_sanitized_for_temp_tables() -> None:
     require_safe_identifier(cleaned)
     with pytest.raises(ValueError):
         require_safe_identifier('evil"; DROP TABLE t;--')
+
+
+def test_postgresql_portable_literals_preserve_their_declared_type() -> None:
+    """Typed portable literals avoid PostgreSQL polymorphic bind ambiguity."""
+    from etlantic_sql.compiler import SqlCompiler
+    from etlantic_sql.lowering.expr import lower_expr
+
+    expression = lower_expr(
+        {"kind": "literal", "value": {"type": "null", "value": None}},
+        parameters={},
+    )
+    params: dict[str, object] = {}
+    rendered = SqlCompiler(dialect="postgresql", supports_merge=True).compile_expr(
+        expression, params=params, relation_sql='"t"'
+    )
+
+    assert rendered == "CAST(:p1 AS TEXT)"
+    assert params == {"p1": None}

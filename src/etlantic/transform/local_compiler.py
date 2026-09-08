@@ -24,6 +24,7 @@ from etlantic.transform.compiler import (
     TransformOutputBundle,
     TransformPlanningContext,
     TransformSupportReport,
+    host_pushdown_findings,
     requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import (
@@ -58,6 +59,11 @@ class LocalTransformCompiler:
             # Missing/invalid values are rejected by the baseline analyser;
             # Local does not claim to preserve the distinct state in rows.
             semantic_modes=frozenset(),
+            join_modes=frozenset(
+                {"inner", "left", "right", "full", "semi", "anti", "cross"}
+            ),
+            union_modes=frozenset({"byName", "byPosition"}),
+            collision_policies=frozenset({"fail"}),
             lazy=False,
             eager=True,
         )
@@ -102,7 +108,11 @@ class LocalTransformCompiler:
             not findings,
             tuple(findings),
             self.info.evidence_fingerprint,
+            host_pushdown_findings(
+                definition, evidence_fingerprint=self.info.evidence_fingerprint
+            ),
             requirements=requirement_records_from_mapping(req),
+            requirement_findings=report.requirement_findings,
         )
 
     def compile(

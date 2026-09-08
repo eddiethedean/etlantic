@@ -134,7 +134,7 @@ def test_analyze_rejects_unknown_join_type_with_path() -> None:
         },
     )
     assert report.supported is False
-    finding = next(f for f in report.findings if "bogus" in f.requirement)
+    finding = next(f for f in report.findings if f.requirement == "join_mode:bogus")
     assert finding.expression_path == "j1"
 
 

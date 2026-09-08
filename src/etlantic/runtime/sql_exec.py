@@ -224,6 +224,7 @@ async def execute_portable_sql_step(
     from etlantic.transform.compiler import (
         TransformCompileContext,
         TransformExecutionContext,
+        preflight_portable_support,
     )
     from etlantic.transform.discovery import load_transform_compiler
 
@@ -284,15 +285,15 @@ async def execute_portable_sql_step(
             stage=FailureStage.TRANSFORM.value,
             code="PMXFORM307",
         )
-    planned_evidence = descriptor.compiler_evidence_fingerprint
-    installed_evidence = getattr(compiler.info, "evidence_fingerprint", None)
-    if planned_evidence and planned_evidence != installed_evidence:
+    try:
+        preflight_portable_support(descriptor, compiler, engine=engine)
+    except ValueError as exc:
         raise NodeExecutionError(
-            f"Portable compiler evidence drift for {node.name!r}; replan required",
+            str(exc),
             node_name=node.name,
             stage=FailureStage.TRANSFORM.value,
             code="PMXFORM306",
-        )
+        ) from exc
     compiled = compiler.compile(
         definition,
         context=TransformCompileContext(

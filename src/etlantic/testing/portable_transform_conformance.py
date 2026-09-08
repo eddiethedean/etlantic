@@ -21,9 +21,13 @@ from etlantic.transform.compiler import (
 )
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
+    BASELINE_JOIN_MODES,
+    BASELINE_OPERATORS,
+    BASELINE_TYPES,
     KERNEL_ACTIONS,
     RELATIONAL_ACTIONS,
 )
+from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 
 FrameFactory = Callable[[list[dict[str, Any]]], Any]
 
@@ -170,12 +174,67 @@ def run_portable_transform_conformance_suite(
     """
     info = compiler.info
     caps = info.capabilities
+    if caps.profiles & caps.partial_profiles:
+        raise AssertionError("a profile cannot be both qualified and partial")
     claimed_profiles = frozenset(profiles or caps.profiles)
     claimed_actions = frozenset(caps.actions)
     claimed_functions = frozenset(caps.functions)
     claimed_operators = frozenset(caps.operators)
     claimed_types = frozenset(caps.types)
     claimed_semantic_modes = frozenset(caps.semantic_modes)
+    claimed_join_modes = frozenset(caps.join_modes)
+    claimed_union_modes = frozenset(caps.union_modes)
+    claimed_collision_policies = frozenset(caps.collision_policies)
+
+    # A frozen baseline profile is a complete claim, not a label for a small
+    # subset.  Partial implementations must use ``partial_profiles`` and may
+    # still advertise their concrete action/function subset.
+    if (
+        KERNEL_PROFILE_V1 in claimed_profiles
+        or RELATIONAL_PROFILE_V1 in claimed_profiles
+    ):
+        required_actions: set[str] = set(KERNEL_ACTIONS)
+        if RELATIONAL_PROFILE_V1 in claimed_profiles:
+            required_actions.update(RELATIONAL_ACTIONS)
+        missing = sorted(
+            [f"action:{item}" for item in required_actions - claimed_actions]
+            + [
+                f"function:{item}"
+                for item in set(BASELINE_FUNCTIONS) - claimed_functions
+            ]
+            + [
+                f"operator:{item}"
+                for item in set(BASELINE_OPERATORS) - claimed_operators
+            ]
+            # ``missing``/``invalid`` are only meaningful with the explicit
+            # three-state semantic claim and are covered by the negative
+            # fixture below rather than a positive baseline fixture.
+            + [
+                f"type:{item}"
+                for item in (set(BASELINE_TYPES) - {"missing", "invalid"})
+                - claimed_types
+            ]
+            + [
+                f"join_mode:{item}"
+                for item in BASELINE_JOIN_MODES
+                if item not in claimed_join_modes
+            ]
+            + [
+                f"union_mode:{item}"
+                for item in ("byName", "byPosition")
+                if item not in claimed_union_modes
+            ]
+            + [
+                "collision_policy:fail"
+                if "fail" not in claimed_collision_policies
+                else ""
+            ]
+        )
+        missing = [item for item in missing if item]
+        if missing:
+            raise AssertionError(
+                "Baseline profile claim is incomplete: " + ", ".join(missing)
+            )
 
     selected = fixtures_for_capabilities(
         profiles=claimed_profiles,
@@ -184,6 +243,9 @@ def run_portable_transform_conformance_suite(
         operators=claimed_operators,
         types=claimed_types,
         semantic_modes=claimed_semantic_modes,
+        join_modes=claimed_join_modes,
+        union_modes=claimed_union_modes,
+        collision_policies=claimed_collision_policies,
     )
     if enforce_fixture_coverage:
         known_actions = {
@@ -205,8 +267,15 @@ def run_portable_transform_conformance_suite(
             actions=claimed_actions,
             functions=claimed_functions,
             operators=claimed_operators,
-            types=claimed_types,
+            types=(
+                claimed_types
+                if "three_state_distinct" in claimed_semantic_modes
+                else claimed_types - {"missing", "invalid"}
+            ),
             semantic_modes=claimed_semantic_modes,
+            join_modes=claimed_join_modes,
+            union_modes=claimed_union_modes,
+            collision_policies=claimed_collision_policies,
         )
         covered = covered_capability_keys(selected)
         missing = sorted(required - covered)
@@ -245,13 +314,25 @@ def _run_case(
     planning: TransformPlanningContext,
     to_frame: FrameFactory,
 ) -> None:
+    required_profiles = sorted(case.required_profiles)
+    if (
+        case.required_profiles
+        and case.required_profiles.issubset(compiler.info.capabilities.partial_profiles)
+        and not compiler.info.capabilities.profiles
+    ):
+        # Partial implementations are selected by concrete claims; the
+        # baseline profile itself is not a requirement of a subset fixture.
+        required_profiles = []
     requirements: Mapping[str, Sequence[str]] = {
-        "profiles": sorted(case.required_profiles),
+        "profiles": required_profiles,
         "actions": sorted(case.required_actions),
         "functions": sorted(case.required_functions),
         "operators": sorted(case.required_operators),
         "types": sorted(case.required_types),
         "semantic_modes": sorted(case.required_semantic_modes),
+        "join_modes": sorted(case.required_join_modes),
+        "union_modes": sorted(case.required_union_modes),
+        "collision_policies": sorted(case.required_collision_policies),
     }
     report = compiler.analyze(case.plan, context=planning, requirements=requirements)
     if case.expect_unsupported:

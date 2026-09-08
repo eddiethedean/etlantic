@@ -23,6 +23,8 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    capabilities_fingerprint,
+    relational_pushdown_findings,
     requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
@@ -100,6 +102,11 @@ class SqlTransformCompiler:
             functions=CLAIMED_FUNCTIONS,
             operators=frozenset(BASELINE_OPERATORS),
             types=frozenset(BASELINE_TYPES),
+            join_modes=frozenset(
+                {"inner", "left", "right", "full", "semi", "anti", "cross"}
+            ),
+            union_modes=frozenset({"byName", "byPosition"}),
+            collision_policies=frozenset({"fail"}),
             # Relational kernels stay as SqlQuery / relation handles (lazy).
             # Callable / row materialization remains available (eager).
             lazy=True,
@@ -111,6 +118,7 @@ class SqlTransformCompiler:
             engine="sql",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
+            evidence_fingerprint=capabilities_fingerprint(caps),
         )
 
     @property
@@ -151,7 +159,12 @@ class SqlTransformCompiler:
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),
+            evidence_fingerprint=self._info.evidence_fingerprint,
+            pushdown=relational_pushdown_findings(
+                definition, evidence_fingerprint=self._info.evidence_fingerprint
+            ),
             requirements=requirement_records_from_mapping(req),
+            requirement_findings=report.requirement_findings,
         )
 
     def compile(

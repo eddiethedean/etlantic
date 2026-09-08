@@ -25,9 +25,9 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformOutputBundle,
     TransformPlanningContext,
-    TransformPushdownFinding,
     TransformSupportFinding,
     TransformSupportReport,
+    relational_pushdown_findings,
     requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import (
@@ -62,6 +62,11 @@ class DataFusionTransformCompiler:
             # DataFusion cannot represent the distinct missing/invalid states
             # in its scalar columns, so those requirements fail closed.
             semantic_modes=frozenset(),
+            join_modes=frozenset(
+                {"inner", "left", "right", "full", "semi", "anti", "cross"}
+            ),
+            union_modes=frozenset({"byName", "byPosition"}),
+            collision_policies=frozenset({"fail"}),
             lazy=True,
             eager=True,
         )
@@ -121,42 +126,16 @@ class DataFusionTransformCompiler:
             )
             for f in findings
         ]
-        pushdown_findings: list[TransformPushdownFinding] = []
-        for index, _ in enumerate(definition.get("actions") or ()):
-            pushdown_findings.extend(
-                (
-                    TransformPushdownFinding(
-                        boundary=f"relational:{index}",
-                        outcome="unknown",
-                        reason=(
-                            "native logical-plan pushdown is proven during compilation"
-                            if not findings
-                            else "pushdown unavailable until support failures are resolved"
-                        ),
-                        physical_effects=(),
-                        evidence_fingerprint=self.info.evidence_fingerprint,
-                    ),
-                    TransformPushdownFinding(
-                        boundary=f"source:{index}",
-                        outcome="not_applicable",
-                        reason="connector source pushdown is outside the native plan contract",
-                        evidence_fingerprint=self.info.evidence_fingerprint,
-                    ),
-                    TransformPushdownFinding(
-                        boundary=f"sink:{index}",
-                        outcome="not_applicable",
-                        reason="sink pushdown is outside the native plan contract",
-                        evidence_fingerprint=self.info.evidence_fingerprint,
-                    ),
-                )
-            )
-        pushdown = tuple(pushdown_findings)
+        pushdown = relational_pushdown_findings(
+            definition, evidence_fingerprint=self.info.evidence_fingerprint
+        )
         return TransformSupportReport(
             not findings,
             tuple(findings),
             self.info.evidence_fingerprint,
             pushdown,
             requirement_records_from_mapping(req),
+            report.requirement_findings,
         )
 
     def compile(
@@ -619,9 +598,13 @@ def _apply_action(
                 )
             else:
                 expressions.append(col("__etl_left_" + name).alias(name))
-        for n in right_names:
-            if n not in left_names:
-                expressions.append(col("__etl_right_" + n).alias(n))
+        # Semi/anti joins return only the left relation's schema.  Referencing
+        # right-only columns in the projection causes DataFusion execution to
+        # fail even though planning succeeds.
+        if how not in {"semi", "anti"}:
+            for n in right_names:
+                if n not in left_names:
+                    expressions.append(col("__etl_right_" + n).alias(n))
         return joined.select(*expressions)
     if action == "dtcs:aggregate":
         group = [col(str(x)) for x in p.get("groupBy") or p.get("group_by") or []]

@@ -377,6 +377,25 @@ def test_prefer_falls_back_when_unsupported(monkeypatch: pytest.MonkeyPatch) -> 
     assert impl.kind == "native"
     assert impl.fallback_reason is not None
     assert "portable unsupported" in impl.fallback_reason
+    assert impl.support_summary["schema"] == "etlantic.portable-requirement-support/1"
+
+
+def test_required_not_applicable_pushdown_is_a_planning_failure() -> None:
+    from etlantic.plan.planner import _required_pushdown_failures
+    from etlantic.transform.compiler import TransformPushdownFinding
+
+    report = TransformSupportReport(
+        supported=True,
+        pushdown=(
+            TransformPushdownFinding(
+                boundary="source:0",
+                outcome="not_applicable",
+                reason="source pushdown is outside the contract",
+                obligation="required",
+            ),
+        ),
+    )
+    assert len(_required_pushdown_failures(report)) == 1
 
 
 def test_require_ignores_registry_native_bypass(
@@ -434,6 +453,21 @@ def test_validate_require_respects_plugin_allowlist() -> None:
     report = KernelPipeline.validate(profile=profile, policy=STRICT_POLICY)
     assert not report.valid
     assert "PMXFORM302" in report.codes()
+
+
+def test_validate_require_accepts_local_portable_compiler() -> None:
+    """Local is a first-class portable target when policy=require is set."""
+    from etlantic.policy import STRICT_POLICY
+
+    profile = Profile(
+        name="local-portable",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+        assets={"customers": "customers", "out": "out"},
+        validation_policy="strict",
+    )
+    report = KernelPipeline.validate(profile=profile, policy=STRICT_POLICY)
+    assert report.valid, [(d.code, d.message) for d in report.diagnostics]
 
 
 def test_explode_emits_reshape_only() -> None:

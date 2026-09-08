@@ -16,6 +16,30 @@ def test_suite_passes_local() -> None:
     run_portable_transform_conformance_suite(LocalTransformCompiler())
 
 
+def test_conformance_rejects_incomplete_baseline_profile_claim() -> None:
+    from etlantic.transform.compiler import (
+        COMPILER_PROTOCOL,
+        TransformCapabilities,
+        TransformCompilerInfo,
+    )
+    from etlantic.transform.protocol import KERNEL_PROFILE_V1
+
+    class IncompleteCompiler:
+        info = TransformCompilerInfo(
+            name="incomplete",
+            version="0",
+            engine="local",
+            compiler_protocol=COMPILER_PROTOCOL,
+            capabilities=TransformCapabilities(
+                profiles=frozenset({KERNEL_PROFILE_V1}),
+                actions=frozenset({"dtcs:project"}),
+            ),
+        )
+
+    with pytest.raises(AssertionError, match="Baseline profile claim is incomplete"):
+        run_portable_transform_conformance_suite(IncompleteCompiler())
+
+
 @pytest.mark.datafusion
 def test_suite_passes_datafusion() -> None:
     pytest.importorskip("datafusion")
@@ -35,7 +59,7 @@ def test_datafusion_analysis_reports_native_pushdown_boundaries() -> None:
         context=TransformPlanningContext("p", "s", "profile", "datafusion"),
     )
     assert report.pushdown
-    assert report.pushdown[0].outcome == "unknown"
+    assert report.pushdown[0].outcome == "not_applicable"
     assert report.pushdown[0].physical_effects == ()
 
 
@@ -359,7 +383,26 @@ def test_requirement_support_serializes_positive_records() -> None:
     )
     payload = report.to_requirement_support(target={"engine": "local"})
     assert payload["requirements"]
-    assert payload["findings"][0]["support"] == "supported_exact"
+    assert payload["findings"][0]["support"] == "unknown"
+
+
+def test_requirement_support_uses_explicit_canonical_positive_evidence() -> None:
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    compiler = LocalTransformCompiler()
+    report = compiler.analyze(
+        {"actions": [{"kind": {"action": "dtcs:filter"}}]},
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": compiler.info.name,
+            "version": compiler.info.version,
+        }
+    )
+    assert any(item["support"] == "supported_exact" for item in payload["findings"])
 
 
 def test_requirement_support_serializes_unknown_requirements_fail_closed() -> None:
@@ -376,7 +419,158 @@ def test_requirement_support_serializes_unknown_requirements_fail_closed() -> No
     assert {item["requirement"] for item in payload["findings"]} == {
         item["id"] for item in payload["requirements"]
     }
+    assert any(item["support"] == "unknown" for item in payload["findings"])
+
+
+def test_requirement_support_maps_legacy_findings_and_rejects_unknown_target_fields() -> (
+    None
+):
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    report = LocalTransformCompiler().analyze(
+        {},
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+        requirements={"actions": ["dtcs:filter"], "functions": ["dtcs:not_real"]},
+    )
+    payload = report.to_requirement_support(target={"engine": "local"})
+    function_id = next(
+        item["id"] for item in payload["requirements"] if "/functions/" in item["id"]
+    )
+    assert function_id == "dtcs@1/functions/dtcs:not_real#functions"
+    function_finding = next(
+        item for item in payload["findings"] if item["requirement"] == function_id
+    )
+    assert function_finding["reason_code"] == "PMXFORM301"
+    assert function_finding["reason"] == "function is not implemented"
+    with pytest.raises(ValueError, match="unsupported fields"):
+        report.to_requirement_support(target={"engine": "local", "secret": "value"})
+
+
+def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    report = TransformSupportReport(
+        supported=True,
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    )
+    payload = report.to_requirement_support(target={"engine": "local"})
     assert all(item["support"] == "unknown" for item in payload["findings"])
+
+
+def test_runtime_preflight_rejects_evidence_free_descriptor() -> None:
+    from types import SimpleNamespace
+
+    from etlantic.transform.compiler import preflight_portable_support
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    compiler = LocalTransformCompiler()
+    descriptor = SimpleNamespace(
+        compiler_evidence_fingerprint=None,
+        support_summary={},
+    )
+    with pytest.raises(ValueError, match="evidence"):
+        preflight_portable_support(descriptor, compiler, engine="local")
+
+
+def test_host_compiler_reports_explicit_non_pushdown_boundaries() -> None:
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    report = LocalTransformCompiler().analyze(
+        {"actions": [{"kind": {"action": "dtcs:project"}}]},
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+    assert report.pushdown
+    assert {item.outcome for item in report.pushdown} == {"not_applicable"}
+    assert all(item.obligation == "informational" for item in report.pushdown)
+
+
+def test_requirement_support_rejects_nested_provenance_and_source_rows() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        _support_fingerprint,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    payload = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence",
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    ).to_requirement_support(target={"engine": "local"})
+    payload["evidence"][0]["timestamp"] = "volatile"
+    payload["evidence"][0]["source_rows"] = [{"secret": "redacted"}]
+    payload["fingerprint"] = _support_fingerprint(payload)
+    with pytest.raises(ValueError, match="unsupported fields"):
+        validate_requirement_support_payload(payload)
+
+
+def test_requirement_support_rejects_mismatched_evidence_fingerprint() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        _support_fingerprint,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    payload = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence-a",
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    ).to_requirement_support(target={"engine": "local"})
+    payload["findings"][0]["evidence_fingerprint"] = "evidence-b"
+    payload["fingerprint"] = _support_fingerprint(payload)
+    with pytest.raises(ValueError, match="does not match evidence"):
+        validate_requirement_support_payload(payload)
+
+
+@pytest.mark.duckdb
+def test_duckdb_satisfies_explicit_relational_profile_requirement() -> None:
+    pytest.importorskip("duckdb")
+    from etlantic_duckdb import create_transform_compiler
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.protocol import RELATIONAL_PROFILE_V1
+
+    report = create_transform_compiler().analyze(
+        {"actions": []},
+        context=TransformPlanningContext("p", "s", "profile", "duckdb"),
+        requirements={"profiles": [RELATIONAL_PROFILE_V1]},
+    )
+    assert report.supported is True
+    assert any(
+        finding.requirement == f"profile:{RELATIONAL_PROFILE_V1}"
+        and finding.support == "supported_exact"
+        for finding in report.requirement_findings
+    )
+
+
+def test_requirement_support_does_not_reassign_unmatched_legacy_findings() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    report = TransformSupportReport(
+        supported=False,
+        findings=(
+            TransformSupportFinding(
+                code="PMXFORM301",
+                requirement="capability:lazy",
+                reason="lazy execution is not claimed by the compiler",
+            ),
+        ),
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    )
+    payload = report.to_requirement_support(target={"engine": "local"})
+    legacy = next(item for item in payload["requirements"] if item["scope"] == "legacy")
+    assert legacy["parameters"]["legacy_requirement"] == "capability:lazy"
+    assert payload["findings"][0]["requirement"] == legacy["id"]
 
 
 def test_local_round_default_and_null_scalar_semantics() -> None:
@@ -553,3 +747,68 @@ def test_local_distinct_ignores_mapping_insertion_order() -> None:
         )
     ).valid["result"]
     assert len(result) == 1
+
+
+@pytest.mark.datafusion
+def test_datafusion_semi_and_anti_join_ignore_right_only_columns() -> None:
+    pytest.importorskip("datafusion")
+    import asyncio
+
+    import pyarrow as pa
+
+    from datafusion import SessionContext
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+    from etlantic_datafusion import create_transform_compiler
+
+    compiler = create_transform_compiler()
+    for join_type, expected in (
+        ("semi", [{"id": 1, "left": "a"}]),
+        ("anti", [{"id": 2, "left": "b"}]),
+    ):
+        plan = {
+            "inputs": {"left": {}, "right": {}},
+            "actions": [
+                {
+                    "id": "j",
+                    "kind": {
+                        "action": "dtcs:join",
+                        "target": "left",
+                        "parameters": {
+                            "right": "right",
+                            "type": join_type,
+                            "leftKey": "id",
+                            "rightKey": "id",
+                            "collisionPolicy": "fail",
+                        },
+                    },
+                }
+            ],
+            "outputs": {"result": {}},
+            "requirements": {"dependencies": [{"from": "j", "to": "result"}]},
+        }
+        compiled = compiler.compile(
+            plan,
+            context=TransformCompileContext("p", "pl", "s", "profile", "datafusion"),
+        )
+        session = SessionContext()
+        bundle = asyncio.run(
+            compiler.execute(
+                compiled,
+                inputs={
+                    "left": session.from_arrow(
+                        pa.Table.from_pylist(
+                            [{"id": 1, "left": "a"}, {"id": 2, "left": "b"}]
+                        )
+                    ),
+                    "right": session.from_arrow(
+                        pa.Table.from_pylist([{"id": 1, "right": "x"}])
+                    ),
+                },
+                parameters={},
+                context=TransformExecutionContext("r", "p", "pl", "s", "datafusion"),
+            )
+        )
+        assert bundle.valid["result"].collect()[0].to_pylist() == expected

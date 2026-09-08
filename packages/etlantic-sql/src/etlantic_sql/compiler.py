@@ -100,7 +100,10 @@ class SqlCompiler:
         if isinstance(expr, str):
             return self.quote(require_safe_identifier(expr))
         if isinstance(expr, LiteralExpr):
-            return self.next_param(params, expr.value)
+            parameter = self.next_param(params, expr.value)
+            if expr.sql_type:
+                return f"CAST({parameter} AS {expr.sql_type})"
+            return parameter
         if isinstance(expr, BinaryExpr):
             op = str(expr.op)
             if op == "null_safe_eq":
@@ -289,7 +292,15 @@ class SqlCompiler:
         elif callee == "dtcs:sum":
             body = f"SUM({args[0]})"
         elif callee == "dtcs:average":
-            body = f"AVG({args[0]})"
+            # PostgreSQL returns NUMERIC for AVG(integer), while the portable
+            # baseline normalizes average to the common floating result used
+            # by the local, dataframe, and SQLite compilers.
+            average = f"AVG({args[0]})"
+            body = (
+                f"CAST({average} AS DOUBLE PRECISION)"
+                if self.dialect == "postgresql"
+                else average
+            )
         elif callee == "dtcs:min":
             body = f"MIN({args[0]})"
         elif callee == "dtcs:max":

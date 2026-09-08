@@ -29,7 +29,18 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    relational_pushdown_findings,
     requirement_records_from_mapping,
+)
+from etlantic.transform.portable_baseline import (
+    BASELINE_FUNCTION_ARITIES,
+    BASELINE_FUNCTIONS,
+    BASELINE_JOIN_MODES,
+    BASELINE_OPERATORS,
+    BASELINE_TYPES,
+    KERNEL_ACTIONS,
+    RELATIONAL_ACTIONS,
+    normalize_operator,
 )
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 from etlantic_duckdb.dialect import DuckDBCompiler
@@ -38,25 +49,8 @@ from etlantic_duckdb.plugin import DuckDBSqlPlugin
 
 __version__ = "0.49.0"
 
-_ACTIONS = frozenset(
-    {
-        "dtcs:filter",
-        "dtcs:project",
-        "dtcs:with_fields",
-        "dtcs:limit",
-        "dtcs:sort",
-        "dtcs:aggregate",
-        "dtcs:join",
-    }
-)
-_FUNCTIONS = frozenset(
-    {
-        "dtcs:lower",
-        "dtcs:coalesce",
-        "dtcs:sum",
-        "dtcs:count_all",
-    }
-)
+_ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
+_FUNCTIONS = frozenset(BASELINE_FUNCTIONS)
 
 
 def create_transform_compiler() -> DuckDBTransformCompiler:
@@ -69,12 +63,13 @@ class DuckDBTransformCompiler:
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=_ACTIONS,
             functions=_FUNCTIONS,
-            # Only the literal types exercised by the qualified subset are
-            # advertised; the remaining baseline types stay fail-closed.
-            operators=frozenset({"eq", "lt", "gt", "gte"}),
-            types=frozenset({"null", "boolean", "integer", "string"}),
+            operators=frozenset(BASELINE_OPERATORS),
+            types=frozenset(BASELINE_TYPES),
+            join_modes=frozenset(BASELINE_JOIN_MODES),
+            union_modes=frozenset({"byName", "byPosition"}),
+            collision_policies=frozenset({"fail"}),
             lazy=True,
-            eager=False,
+            eager=True,
         )
         evidence_payload = {
             "capabilities": caps.to_dict(),
@@ -144,6 +139,12 @@ class DuckDBTransformCompiler:
             # must not turn malformed IR into an unstructured exception.
             inferred_requirements = None
         req = merge_requirements(requirements, inferred_requirements)
+        if not self._info.capabilities.profiles:
+            # Inferred baseline profiles describe the plan vocabulary, not a
+            # claim by this partial compiler. Preserve explicitly supplied
+            # profile requirements so callers still get a fail-closed result.
+            req = dict(req)
+            req["profiles"] = list((requirements or {}).get("profiles") or ())
         report = match_requirements(req, self._info.capabilities)
         findings = list(report.findings)
         findings.extend(three_state_findings(definition, self._info.capabilities))
@@ -158,7 +159,11 @@ class DuckDBTransformCompiler:
             supported=not findings,
             findings=tuple(findings),
             evidence_fingerprint=self._info.evidence_fingerprint,
+            pushdown=relational_pushdown_findings(
+                definition, evidence_fingerprint=self._info.evidence_fingerprint
+            ),
             requirements=requirement_records_from_mapping(req),
+            requirement_findings=report.requirement_findings,
         )
 
     def compile(
@@ -602,15 +607,8 @@ def _duck_type_for_schema(type_name: Any) -> str | None:
     return None
 
 
-_SUPPORTED_EXPR_OPERATORS = frozenset(
-    {"eq", "neq", "gt", "gte", "lt", "lte", "and", "or"}
-)
-_FUNCTION_ARITIES: dict[str, tuple[int, int | None]] = {
-    "dtcs:lower": (1, 1),
-    "dtcs:coalesce": (1, None),
-    "dtcs:sum": (1, 1),
-    "dtcs:count_all": (0, 0),
-}
+_SUPPORTED_EXPR_OPERATORS = frozenset(BASELINE_OPERATORS)
+_FUNCTION_ARITIES = dict(BASELINE_FUNCTION_ARITIES)
 
 
 def _finding(
@@ -627,7 +625,9 @@ def _finding(
         requirement=requirement,
         reason=reason,
         expression_path=path,
-        obligation=obligation or requirement,
+        obligation=obligation
+        if obligation in {"required", "preferred", "informational"}
+        else "required",
         support="unsupported",
         evidence_fingerprint=evidence_fingerprint,
     )
@@ -743,7 +743,7 @@ def _analyze_expression(
                     evidence_fingerprint,
                 )
             )
-        elif callee not in _FUNCTIONS:
+        elif callee not in _FUNCTIONS and callee != "dtcs:in":
             findings.append(
                 _finding(
                     f"function:{callee}",
@@ -787,7 +787,7 @@ def _analyze_expression(
         return findings
     if kind in {"binary", "operator"}:
         findings = []
-        operator = str(node.get("op") or "")
+        operator = normalize_operator(str(node.get("op") or ""))
         if operator not in _SUPPORTED_EXPR_OPERATORS:
             findings.append(
                 _finding(
@@ -806,6 +806,27 @@ def _analyze_expression(
                     available_fields=available_fields,
                 )
             )
+        return findings
+    if kind == "unary":
+        operator = normalize_operator(str(node.get("op") or ""))
+        findings = []
+        if operator not in {"not", "negate"}:
+            findings.append(
+                _finding(
+                    f"operator:{operator or '<missing>'}",
+                    "expression operator is not implemented by the DuckDB compiler",
+                    f"{path}.op",
+                    evidence_fingerprint,
+                )
+            )
+        findings.extend(
+            _analyze_expression(
+                node.get("operand"),
+                path=f"{path}.operand",
+                evidence_fingerprint=evidence_fingerprint,
+                available_fields=available_fields,
+            )
+        )
         return findings
     return [
         _finding(
@@ -899,18 +920,6 @@ def _analyze_definition(
                 )
             )
             continue
-        if name == "dtcs:union":
-            findings.append(
-                _finding(
-                    f"action:{name}",
-                    "DuckDB phase 0.49 compiler requires explicit relation lowering for joins/unions",
-                    action_path,
-                    evidence_fingerprint,
-                    code="PMDUCK301",
-                    obligation=str(name),
-                )
-            )
-            continue
         if name not in _ACTIONS:
             findings.append(
                 _finding(
@@ -994,7 +1003,13 @@ def _action_output_fields(
     """Approximate output columns for subsequent static resolution."""
     if source_columns is None:
         return None
-    if name in {"dtcs:filter", "dtcs:limit", "dtcs:sort"}:
+    if name in {
+        "dtcs:filter",
+        "dtcs:limit",
+        "dtcs:sort",
+        "dtcs:distinct",
+        "dtcs:deduplicate",
+    }:
         return set(source_columns)
     if name == "dtcs:project":
         return {
@@ -1030,6 +1045,15 @@ def _action_output_fields(
         return set(source_columns) | {
             column for column in right_columns if column != right_key
         }
+    if name == "dtcs:union":
+        other = params.get("other")
+        other_columns = relation_columns.get(str(other)) if other else None
+        if other_columns is None:
+            return None
+        mode = str(params.get("mode") or "byName").lower()
+        if mode == "byposition":
+            return set(source_columns)
+        return set(source_columns) | set(other_columns)
     return set(source_columns)
 
 
@@ -1241,7 +1265,7 @@ def _analyze_action(
                     action_path,
                     evidence_fingerprint,
                     code="PMDUCK302",
-                    obligation="join.collisionPolicy",
+                    obligation="required",
                 )
             )
         right_relation = params.get("right")
@@ -1266,18 +1290,23 @@ def _analyze_action(
         right_columns = (
             relation_columns.get(str(right_relation)) if right_relation else None
         )
-        for key in ("leftKey", "rightKey"):
-            identifier = _column_findings(
-                params.get(key),
-                path=f"{base}.{key}",
-                available_fields=(
-                    source_columns if key == "leftKey" else right_columns
-                ),
-                evidence_fingerprint=evidence_fingerprint,
-            )
-            findings.extend(identifier)
+        join_type = str(params.get("type") or "inner").lower()
+        if join_type == "outer":
+            join_type = "full"
+        if join_type != "cross":
+            for key in ("leftKey", "rightKey"):
+                identifier = _column_findings(
+                    params.get(key),
+                    path=f"{base}.{key}",
+                    available_fields=(
+                        source_columns if key == "leftKey" else right_columns
+                    ),
+                    evidence_fingerprint=evidence_fingerprint,
+                )
+                findings.extend(identifier)
         if (
             collision == "fail"
+            and join_type not in {"semi", "anti"}
             and source_columns is not None
             and right_columns is not None
         ):
@@ -1294,16 +1323,56 @@ def _analyze_action(
                         f"{base}.collisionPolicy",
                         evidence_fingerprint,
                         code="PMDUCK302",
-                        obligation="join.collisionPolicy",
+                        obligation="required",
                     )
                 )
-        join_type = str(params.get("type") or "inner").lower()
-        if join_type not in {"inner", "left", "right", "full", "outer"}:
+        if join_type not in BASELINE_JOIN_MODES:
             findings.append(
                 _finding(
                     f"join.type:{join_type}",
                     "join type is not implemented by the DuckDB compiler",
                     f"{base}.type",
+                    evidence_fingerprint,
+                )
+            )
+        return findings
+    if name == "dtcs:union":
+        findings = []
+        other = params.get("other")
+        if not isinstance(other, str) or not other:
+            findings.append(
+                _finding(
+                    "union.other",
+                    "union requires an other relation identity",
+                    f"{base}.other",
+                    evidence_fingerprint,
+                )
+            )
+        elif other not in available_relations:
+            findings.append(
+                _finding(
+                    f"union.other:{other}",
+                    "union other side does not identify an available relation",
+                    f"{base}.other",
+                    evidence_fingerprint,
+                )
+            )
+        mode = str(params.get("mode") or "byName")
+        if mode.lower() not in {"byname", "byposition"}:
+            findings.append(
+                _finding(
+                    f"union.mode:{mode}",
+                    "union mode is not implemented by the DuckDB compiler",
+                    f"{base}.mode",
+                    evidence_fingerprint,
+                )
+            )
+        if mode.lower() == "byposition" and params.get("allowMissingColumns"):
+            findings.append(
+                _finding(
+                    "union.allowMissingColumns",
+                    "byPosition union cannot allow missing columns",
+                    f"{base}.allowMissingColumns",
                     evidence_fingerprint,
                 )
             )
@@ -1432,7 +1501,9 @@ def _analyze_outputs(
                     evidence_fingerprint,
                 )
             )
-        if not isinstance(target, str) or target not in outputs:
+        if not isinstance(target, str) or (
+            target not in outputs and target not in available_relations
+        ):
             findings.append(
                 _finding(
                     f"output.target:{target or '<missing>'}",
@@ -1521,6 +1592,26 @@ def _apply_action(
         )
     elif name == "dtcs:distinct":
         query = f"SELECT DISTINCT * FROM {source}"
+    elif name == "dtcs:deduplicate":
+        keys = params.get("keys") or params.get("fields") or params.get("subset") or ()
+        key_names = [
+            str(item.get("field") or item.get("column"))
+            if isinstance(item, Mapping)
+            else str(item)
+            for item in keys
+        ]
+        if not key_names:
+            query = f"SELECT DISTINCT * FROM {source}"
+        else:
+            partition = ", ".join(
+                plugin.quote_identifier(column) for column in key_names
+            )
+            columns = ", ".join(plugin.quote_identifier(column) for column in names)
+            query = (
+                f"SELECT {columns} FROM (SELECT *, ROW_NUMBER() OVER "
+                f"(PARTITION BY {partition}) AS __etlantic_row_number FROM {source}) "
+                "WHERE __etlantic_row_number = 1"
+            )
     elif name == "dtcs:limit":
         count = int(params.get("count", params.get("n", 0)))
         if count < 0:
@@ -1531,13 +1622,70 @@ def _apply_action(
         order = []
         for item in items:
             col = str(item.get("column") if isinstance(item, dict) else item)
-            desc = bool(item.get("descending")) if isinstance(item, dict) else False
-            order.append(f"{plugin.quote_identifier(col)} {'DESC' if desc else 'ASC'}")
+            desc = (
+                bool(item.get("descending"))
+                if isinstance(item, Mapping) and "descending" in item
+                else isinstance(item, Mapping)
+                and str(item.get("direction", "asc")).lower() == "desc"
+            )
+            nulls = (
+                str(item.get("nulls", "last")).upper()
+                if isinstance(item, Mapping)
+                else "LAST"
+            )
+            if nulls not in {"FIRST", "LAST"}:
+                raise ValueError(f"unsupported DuckDB null ordering {nulls!r}")
+            order.append(
+                f"{plugin.quote_identifier(col)} {'DESC' if desc else 'ASC'} NULLS {nulls}"
+            )
         query = (
             f"SELECT * FROM {source} ORDER BY {', '.join(order)}"
             if order
             else f"SELECT * FROM {source}"
         )
+    elif name == "dtcs:union":
+        other_name = str(params.get("other") or "")
+        if other_name not in relations:
+            raise ValueError(f"missing DuckDB union relation {other_name!r}")
+        other = relations[other_name]
+        other_columns = relation_columns.get(other_name, [])
+        mode = str(params.get("mode") or "byName").lower()
+        allow_missing = bool(params.get("allowMissingColumns", False))
+        if mode == "byposition":
+            if allow_missing:
+                raise ValueError("byPosition union cannot allow missing columns")
+            if len(names) != len(other_columns):
+                raise ValueError(
+                    "byPosition union inputs have incompatible field counts"
+                )
+            right_projection = ", ".join(
+                f"{plugin.quote_identifier(column)} AS {plugin.quote_identifier(alias)}"
+                for column, alias in zip(other_columns, names, strict=True)
+            )
+            query = (
+                f"SELECT * FROM {source} UNION ALL SELECT {right_projection} "
+                f"FROM {plugin.quote_identifier(other.name)}"
+            )
+        elif mode == "byname":
+            if not allow_missing and set(names) != set(other_columns):
+                raise ValueError("union inputs have incompatible fields")
+            out_names = list(dict.fromkeys([*names, *other_columns]))
+
+            def projection(columns: Sequence[str]) -> str:
+                known = set(columns)
+                return ", ".join(
+                    plugin.quote_identifier(column)
+                    if column in known
+                    else f"NULL AS {plugin.quote_identifier(column)}"
+                    for column in out_names
+                )
+
+            query = (
+                f"SELECT {projection(names)} FROM {source} UNION ALL SELECT "
+                f"{projection(other_columns)} FROM {plugin.quote_identifier(other.name)}"
+            )
+        else:
+            raise ValueError(f"unsupported DuckDB union mode {mode!r}")
     elif name == "dtcs:join":
         right_name = str(params.get("right"))
         if right_name not in relations:
@@ -1546,29 +1694,81 @@ def _apply_action(
         right_columns = relation_columns.get(right_name, [])
         left_key = params.get("leftKey")
         right_key = params.get("rightKey")
-        if not left_key or not right_key:
-            raise ValueError("DuckDB joins require leftKey and rightKey")
-        join_type = str(params.get("type") or "inner").upper()
-        if join_type == "OUTER":
-            join_type = "FULL"
-        if join_type not in {"INNER", "LEFT", "RIGHT", "FULL"}:
+        join_type = str(params.get("type") or "inner").lower()
+        if join_type == "outer":
+            join_type = "full"
+        if join_type not in BASELINE_JOIN_MODES:
             raise ValueError(f"unsupported DuckDB join type {join_type!r}")
+        if join_type != "cross" and (not left_key or not right_key):
+            raise ValueError("DuckDB joins require leftKey and rightKey")
         overlap = set(names) & set(right_columns) - {str(left_key), str(right_key)}
-        if overlap and str(params.get("collisionPolicy") or "fail") == "fail":
+        if (
+            overlap
+            and join_type not in {"semi", "anti"}
+            and str(params.get("collisionPolicy") or "fail") == "fail"
+        ):
             raise ValueError(f"join column collision: {sorted(overlap)}")
-        left_exprs = [f"l.{plugin.quote_identifier(col)}" for col in names]
-        right_exprs = [
-            f"r.{plugin.quote_identifier(col)}"
-            for col in right_columns
-            if col not in names
-        ]
-        out_names = list(names) + [col for col in right_columns if col not in names]
-        query = (
-            f"SELECT {', '.join(left_exprs + right_exprs)} FROM {source} AS l "
-            f"{join_type} JOIN {plugin.quote_identifier(right.name)} AS r ON "
-            f"l.{plugin.quote_identifier(str(left_key))} = "
-            f"r.{plugin.quote_identifier(str(right_key))}"
-        )
+        if join_type in {"semi", "anti"}:
+            condition = _join_condition(
+                plugin,
+                left_key=str(left_key),
+                right_key=str(right_key),
+                null_safe=bool(params.get("nullSafe", False)),
+            )
+            keyword = "EXISTS" if join_type == "semi" else "NOT EXISTS"
+            query = (
+                f"SELECT l.* FROM {source} AS l WHERE {keyword} "
+                f"(SELECT 1 FROM {plugin.quote_identifier(right.name)} AS r WHERE {condition})"
+            )
+            out_names = list(names)
+        elif join_type == "cross":
+            left_exprs = [f"l.{plugin.quote_identifier(column)}" for column in names]
+            right_exprs = [
+                f"r.{plugin.quote_identifier(column)}"
+                for column in right_columns
+                if column not in names
+            ]
+            out_names = list(names) + [
+                column for column in right_columns if column not in names
+            ]
+            query = (
+                f"SELECT {', '.join(left_exprs + right_exprs)} FROM {source} AS l "
+                f"CROSS JOIN {plugin.quote_identifier(right.name)} AS r"
+            )
+        else:
+            left_exprs = [f"l.{plugin.quote_identifier(column)}" for column in names]
+            if join_type in {"right", "full"} and left_key == right_key:
+                key = plugin.quote_identifier(str(left_key))
+                left_exprs = [
+                    f"COALESCE(l.{key}, r.{key}) AS {key}"
+                    if column == left_key
+                    else expression
+                    for column, expression in zip(names, left_exprs, strict=True)
+                ]
+            right_exprs = [
+                f"r.{plugin.quote_identifier(column)}"
+                for column in right_columns
+                if column not in names
+            ]
+            out_names = list(names) + [
+                column for column in right_columns if column not in names
+            ]
+            join_sql = {
+                "inner": "INNER",
+                "left": "LEFT",
+                "right": "RIGHT",
+                "full": "FULL",
+            }[join_type]
+            condition = _join_condition(
+                plugin,
+                left_key=str(left_key),
+                right_key=str(right_key),
+                null_safe=bool(params.get("nullSafe", False)),
+            )
+            query = (
+                f"SELECT {', '.join(left_exprs + right_exprs)} FROM {source} AS l "
+                f"{join_sql} JOIN {plugin.quote_identifier(right.name)} AS r ON {condition}"
+            )
     elif name == "dtcs:aggregate":
         group_by = [str(item) for item in params.get("groupBy") or ()]
         aggregate_items = params.get("aggregates") or params.get("aggregations") or ()
@@ -1592,6 +1792,20 @@ def _apply_action(
     statement = f"CREATE TEMP TABLE {plugin.quote_identifier(target.name)} AS {query}"
     session.execute(statement, bound_params if bound_params else None)
     return target, out_names
+
+
+def _join_condition(
+    plugin: DuckDBSqlPlugin,
+    *,
+    left_key: str,
+    right_key: str,
+    null_safe: bool,
+) -> str:
+    operator = "IS NOT DISTINCT FROM" if null_safe else "="
+    return (
+        f"l.{plugin.quote_identifier(left_key)} {operator} "
+        f"r.{plugin.quote_identifier(right_key)}"
+    )
 
 
 def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
@@ -1624,13 +1838,39 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
             return "?"
         if kind == "call":
             callee = str(node.get("callee", "")).removeprefix("dtcs:").lower()
-            args = ", ".join(
-                _expr(arg, parameters, bindings) for arg in node.get("args") or ()
-            )
+            args = [_expr(arg, parameters, bindings) for arg in node.get("args") or ()]
             if callee == "count_all":
                 return "COUNT(*)"
             if callee == "count_distinct":
-                return f"COUNT(DISTINCT {args})"
+                return f"COUNT(DISTINCT {', '.join(args)})"
+            if callee == "in":
+                if len(args) < 2:
+                    raise ValueError(
+                        "dtcs:in requires a value and at least one candidate"
+                    )
+                return f"({args[0]} IN ({', '.join(args[1:])}))"
+            if callee == "substr":
+                if len(args) == 2:
+                    return f"SUBSTR({args[0]}, {args[1]} + 1)"
+                return f"SUBSTR({args[0]}, {args[1]} + 1, {args[2]})"
+            if callee == "case_when":
+                if len(args) < 3 or len(args) % 2 == 0:
+                    raise ValueError(
+                        "dtcs:case_when requires condition/value pairs and an else"
+                    )
+                clauses = " ".join(
+                    f"WHEN {condition} THEN {value}"
+                    for condition, value in zip(args[::2][:-1], args[1::2], strict=True)
+                )
+                return f"CASE {clauses} ELSE {args[-1]} END"
+            if callee == "is_null":
+                return f"({args[0]} IS NULL)"
+            if callee == "contains":
+                return f"CONTAINS({args[0]}, {args[1]})"
+            if callee == "starts_with":
+                return f"STARTS_WITH({args[0]}, {args[1]})"
+            if callee == "ends_with":
+                return f"ENDS_WITH({args[0]}, {args[1]})"
             names = {
                 "sum": "SUM",
                 "average": "AVG",
@@ -1639,12 +1879,18 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
                 "count": "COUNT",
                 "lower": "LOWER",
                 "upper": "UPPER",
+                "concat": "CONCAT",
+                "concat_ws": "CONCAT_WS",
+                "replace": "REPLACE",
                 "length": "LENGTH",
                 "abs": "ABS",
                 "round": "ROUND",
                 "floor": "FLOOR",
                 "ceil": "CEIL",
                 "sqrt": "SQRT",
+                "power": "POWER",
+                "least": "LEAST",
+                "greatest": "GREATEST",
                 "coalesce": "COALESCE",
                 "if_null": "COALESCE",
                 "null_if": "NULLIF",
@@ -1652,24 +1898,42 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
             function = names.get(callee)
             if function is None:
                 raise ValueError(f"unsupported DuckDB function {callee!r}")
-            return f"{function}({args})"
+            return f"{function}({', '.join(args)})"
         if kind in {"binary", "operator"}:
             op = {
                 "eq": "=",
-                "neq": "<>",
+                "not_eq": "<>",
                 "gt": ">",
                 "gte": ">=",
                 "lt": "<",
                 "lte": "<=",
                 "and": "AND",
                 "or": "OR",
-            }.get(str(node.get("op")))
+                "add": "+",
+                "subtract": "-",
+                "multiply": "*",
+                "divide": "/",
+                "modulo": "%",
+            }.get(normalize_operator(str(node.get("op"))))
+            if normalize_operator(str(node.get("op"))) == "null_safe_eq":
+                return (
+                    f"({_expr(node.get('left'), parameters, bindings)} IS NOT DISTINCT FROM "
+                    f"{_expr(node.get('right'), parameters, bindings)})"
+                )
             if op is None:
                 raise ValueError(f"unsupported expression operator {node.get('op')!r}")
             return (
                 f"({_expr(node.get('left'), parameters, bindings)} {op} "
                 f"{_expr(node.get('right'), parameters, bindings)})"
             )
+        if kind == "unary":
+            op = normalize_operator(str(node.get("op") or ""))
+            operand = _expr(node.get("operand"), parameters, bindings)
+            if op == "not":
+                return f"(NOT {operand})"
+            if op == "negate":
+                return f"(-{operand})"
+            raise ValueError(f"unsupported expression operator {node.get('op')!r}")
     raise ValueError(f"unsupported DuckDB expression {node!r}")
 
 

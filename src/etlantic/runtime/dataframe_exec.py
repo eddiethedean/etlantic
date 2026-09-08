@@ -451,6 +451,7 @@ async def _execute_portable(
     from etlantic.transform.compiler import (
         TransformCompileContext,
         TransformExecutionContext,
+        preflight_portable_support,
     )
     from etlantic.transform.discovery import (
         discover_transform_compilers_for_profile,
@@ -540,6 +541,15 @@ async def _execute_portable(
             stage=FailureStage.TRANSFORM.value,
             code="PMXFORM302",
         )
+    try:
+        preflight_portable_support(descriptor, compiler, engine=descriptor.engine)
+    except ValueError as exc:
+        raise NodeExecutionError(
+            redact_message(str(exc)),
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM306",
+        ) from exc
     if compiler.info.engine and compiler.info.engine != descriptor.engine:
         raise NodeExecutionError(
             redact_message(

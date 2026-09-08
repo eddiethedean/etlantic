@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from typing import Any
 
 from etlantic._version import __version__
@@ -51,6 +52,92 @@ from etlantic.registry import (
     PlanningContext,
 )
 from etlantic.transformation import Step
+
+
+def _support_summary(report: Any, compiler: Any) -> dict[str, Any]:
+    """Return the canonical requirement-level support payload for a plan."""
+    info = compiler.info
+    try:
+        return report.to_requirement_support(
+            target={
+                "engine": info.engine,
+                "compiler": info.name,
+                "version": info.version,
+                "protocol": info.compiler_protocol,
+            }
+        )
+    except ValueError as exc:
+        raise PipelineValidationError(
+            f"Portable compiler support evidence is invalid for engine {info.engine!r}: {exc}",
+            report=ValidationReport.from_diagnostics(
+                [
+                    Diagnostic(
+                        code="PMXFORM301",
+                        severity=Severity.ERROR,
+                        message=str(exc),
+                        path=("portable_support",),
+                        phase="policy",
+                    )
+                ],
+                phases=("policy",),
+            ),
+        ) from exc
+
+
+def _support_is_eligible(summary: dict[str, Any]) -> bool:
+    """Require an explicit positive result for every required requirement."""
+    findings = {item.get("requirement"): item for item in summary.get("findings", ())}
+    return all(
+        item.get("applicability") != "applicable"
+        or findings.get(item.get("id"), {}).get("support")
+        in {"supported_exact", "supported_with_lowering"}
+        for item in summary.get("requirements", ())
+    )
+
+
+def _required_pushdown_failures(
+    report: Any, definition: dict[str, Any] | None = None, engine: str | None = None
+) -> list[Any]:
+    """Return required boundaries that are not proven executable."""
+    failures = [
+        finding
+        for finding in getattr(report, "pushdown", ())
+        if getattr(finding, "obligation", None) == "required"
+        and finding.outcome
+        in {
+            "unknown",
+            "not_pushed",
+            "unsupported",
+            "unavailable",
+            "not_applicable",
+        }
+    ]
+    if definition is not None and engine in {
+        "sql",
+        "duckdb",
+        "pyspark",
+        "spark",
+        "datafusion",
+    }:
+        from etlantic.transform.compiler import TransformPushdownFinding
+
+        actual = {
+            getattr(item, "boundary", None) for item in getattr(report, "pushdown", ())
+        }
+        for index, _ in enumerate(definition.get("actions") or ()):
+            boundary = f"relational:{index}"
+            if boundary not in actual:
+                failures.append(
+                    TransformPushdownFinding(
+                        boundary=boundary,
+                        outcome="unknown",
+                        reason="required relational pushdown finding is missing",
+                        action=str(index),
+                        target=str(index),
+                        obligation="required",
+                    )
+                )
+    return failures
 
 
 def plan_pipeline(
@@ -706,6 +793,7 @@ def _select_implementations_from_definition(
         explicit_override = node.name in context.profile.implementation_overrides
         requested_engine = engine
         compiler = compilers.get(requested_engine)
+        portable_support_summary: dict[str, Any] = {}
 
         _assert_quality_capabilities_for_step(
             transform=None,
@@ -756,7 +844,16 @@ def _select_implementations_from_definition(
                 context=plan_ctx,
                 requirements=requirements or None,
             )
-            if report.supported:
+            portable_support_summary = _support_summary(report, compiler)
+            pushdown_failures = _required_pushdown_failures(
+                report, portable_plan, requested_engine
+            )
+            portable_ok = _support_is_eligible(portable_support_summary)
+            if policy != "require" and report.supported:
+                # Legacy compilers remain usable for prefer/auto selection;
+                # their evidence-free payload cannot satisfy require.
+                portable_ok = True
+            if portable_ok and not pushdown_failures:
                 info = compiler.info
                 fp = str(portable_plan.get("fingerprint") or "")[:16]
                 selected[node.name] = ImplementationDescriptor(
@@ -771,11 +868,11 @@ def _select_implementations_from_definition(
                     compiler_protocol=info.compiler_protocol or COMPILER_PROTOCOL,
                     compiler_evidence_fingerprint=info.evidence_fingerprint,
                     requirements=requirements,
-                    support_summary=report.to_dict(),
+                    support_summary=_support_summary(report, compiler),
                     portable_plan=portable_plan,
                     metadata={
                         "compiler_capabilities": info.capabilities.to_dict(),
-                        "support_summary": report.to_dict(),
+                        "support_summary": _support_summary(report, compiler),
                         "selection_reason": "portable_compiled",
                     },
                 )
@@ -783,6 +880,7 @@ def _select_implementations_from_definition(
             if policy == "require":
                 findings_msg = (
                     "; ".join(f"{f.requirement}: {f.reason}" for f in report.findings)
+                    or "; ".join(f"{f.boundary}: {f.reason}" for f in pushdown_failures)
                     or "unsupported portable requirements"
                 )
                 raise PipelineValidationError(
@@ -812,6 +910,7 @@ def _select_implementations_from_definition(
                 identity=record.identity,
                 is_async=record.is_async,
                 kind="native",
+                support_summary=portable_support_summary,
             )
             continue
         if native_ref is not None:
@@ -821,10 +920,13 @@ def _select_implementations_from_definition(
                 identity=native_ref.identity,
                 is_async=native_ref.is_async,
                 kind=native_ref.kind,
+                support_summary=portable_support_summary,
             )
             continue
         if registry_impl is not None:
-            selected[node.name] = registry_impl
+            selected[node.name] = replace(
+                registry_impl, support_summary=portable_support_summary
+            )
             continue
         if (
             xf is not None
@@ -841,6 +943,7 @@ def _select_implementations_from_definition(
                 identity=ref.identity,
                 is_async=ref.is_async,
                 kind=ref.kind,
+                support_summary=portable_support_summary,
             )
             continue
         _missing_implementation_error(node.name, requested_engine)
@@ -939,7 +1042,14 @@ def _select_implementations(
                 context=plan_ctx,
                 requirements=portable_def.requirements,
             )
-            if report.supported:
+            portable_support_summary = _support_summary(report, compiler)
+            pushdown_failures = _required_pushdown_failures(
+                report, portable_def.plan, requested_engine
+            )
+            portable_ok = _support_is_eligible(portable_support_summary)
+            if policy != "require" and report.supported:
+                portable_ok = True
+            if portable_ok and not pushdown_failures:
                 info = compiler.info
                 selected[node.name] = ImplementationDescriptor(
                     transformation_id=transform_id,
@@ -955,11 +1065,11 @@ def _select_implementations(
                     requirements={
                         k: list(v) for k, v in portable_def.requirements.items()
                     },
-                    support_summary=report.to_dict(),
+                    support_summary=_support_summary(report, compiler),
                     portable_plan=dict(portable_def.plan),
                     metadata={
                         "compiler_capabilities": info.capabilities.to_dict(),
-                        "support_summary": report.to_dict(),
+                        "support_summary": _support_summary(report, compiler),
                         "selection_reason": "portable_compiled",
                     },
                 )
@@ -968,6 +1078,7 @@ def _select_implementations(
             # Unsupported portable requirements
             findings_msg = (
                 "; ".join(f"{f.requirement}: {f.reason}" for f in report.findings)
+                or "; ".join(f"{f.boundary}: {f.reason}" for f in pushdown_failures)
                 or "unsupported portable requirements"
             )
             if policy == "require":
@@ -1026,7 +1137,7 @@ def _select_implementations(
                     if portable_def is not None
                     else {}
                 ),
-                support_summary=report.to_dict(),
+                support_summary=portable_support_summary,
             )
             continue
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from typing import Any
 
 from etlantic.transform.capabilities import match_requirements
@@ -17,6 +18,8 @@ from etlantic.transform.compiler import (
     TransformPlanningContext,
     TransformSupportFinding,
     TransformSupportReport,
+    capabilities_fingerprint,
+    host_pushdown_findings,
     requirement_records_from_mapping,
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
@@ -140,6 +143,11 @@ class PolarsTransformCompiler:
             functions=CLAIMED_FUNCTIONS,
             operators=frozenset(BASELINE_OPERATORS),
             types=frozenset(BASELINE_TYPES),
+            join_modes=frozenset(
+                {"inner", "left", "right", "full", "semi", "anti", "cross"}
+            ),
+            union_modes=frozenset({"byName", "byPosition"}),
+            collision_policies=frozenset({"fail"}),
             lazy=True,
             eager=True,
         )
@@ -149,6 +157,7 @@ class PolarsTransformCompiler:
             engine="polars",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
+            evidence_fingerprint=capabilities_fingerprint(caps),
         )
 
     @property
@@ -176,6 +185,25 @@ class PolarsTransformCompiler:
         )
         report = match_requirements(req, self._info.capabilities)
         findings = list(report.findings)
+        # Bind capability failures to the concrete action path when the plan
+        # carries an unsupported join mode.
+        for index, action_item in enumerate(definition.get("actions") or ()):
+            kind = action_item.get("kind") or {}
+            params = kind.get("parameters") or {}
+            mode = str(params.get("type") or "")
+            for pos, finding in enumerate(findings):
+                if (
+                    finding.requirement == f"join_mode:{mode}"
+                    and mode not in _JOIN_TYPES
+                ):
+                    findings[pos] = replace(
+                        finding,
+                        expression_path=str(
+                            kind.get("id")
+                            or action_item.get("id")
+                            or f"actions[{index}]"
+                        ),
+                    )
         findings.extend(_analyze_modes(definition))
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(window_frame_findings(definition))
@@ -183,7 +211,12 @@ class PolarsTransformCompiler:
         return TransformSupportReport(
             supported=not findings,
             findings=tuple(findings),
+            evidence_fingerprint=self._info.evidence_fingerprint,
+            pushdown=host_pushdown_findings(
+                definition, evidence_fingerprint=self._info.evidence_fingerprint
+            ),
             requirements=requirement_records_from_mapping(req),
+            requirement_findings=report.requirement_findings,
         )
 
     def compile(

@@ -370,6 +370,7 @@ async def execute_portable_spark_step(
     from etlantic.transform.compiler import (
         TransformCompileContext,
         TransformExecutionContext,
+        preflight_portable_support,
     )
     from etlantic.transform.discovery import (
         discover_transform_compilers_for_profile,
@@ -417,6 +418,15 @@ async def execute_portable_spark_step(
             stage=FailureStage.TRANSFORM.value,
             code="PMXFORM302",
         )
+    try:
+        preflight_portable_support(descriptor, compiler, engine=descriptor.engine)
+    except ValueError as exc:
+        raise NodeExecutionError(
+            redact_message(str(exc)),
+            node_name=node.name,
+            stage=FailureStage.TRANSFORM.value,
+            code="PMXFORM306",
+        ) from exc
     portable_plan = descriptor.portable_plan
     if not portable_plan:
         raise NodeExecutionError(

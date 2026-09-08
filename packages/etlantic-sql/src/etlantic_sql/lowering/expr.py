@@ -49,12 +49,40 @@ def unwrap_literal_value(value: Any) -> Any:
     if lit_type == "boolean":
         return bool(payload)
     if lit_type == "integer":
+        if payload is None:
+            raise ValueError("integer literal requires a value")
         return int(payload)
     if lit_type == "decimal":
+        if payload is None:
+            raise ValueError("decimal literal requires a value")
         return Decimal(str(payload))
     if lit_type == "string":
         return str(payload)
     raise ValueError(f"Unsupported DTCS literal type {lit_type!r}")
+
+
+def lower_literal(value: Any) -> LiteralExpr:
+    """Lower a DTCS literal with enough SQL type information for PostgreSQL.
+
+    PostgreSQL cannot infer the type of a bound ``NULL`` or an argument to a
+    polymorphic variadic function such as ``CONCAT_WS``.  The closed portable
+    literal envelope already carries this information, so keep it through the
+    SQL IR instead of relying on driver-specific inference.
+    """
+    if not isinstance(value, dict) or "type" not in value:
+        return LiteralExpr(value=value)
+    literal_type = str(value.get("type") or "")
+    sql_type = {
+        "null": "TEXT",
+        "boolean": "BOOLEAN",
+        # PostgreSQL's SUBSTRING/ROUND overloads use ``integer`` rather than
+        # ``bigint``; the portable integer literals used by this baseline fit
+        # the shared SQL ``INTEGER`` type.
+        "integer": "INTEGER",
+        "decimal": "NUMERIC",
+        "string": "TEXT",
+    }.get(literal_type)
+    return LiteralExpr(value=unwrap_literal_value(value), sql_type=sql_type)
 
 
 def constant_python(node: Any, *, parameters: dict[str, Any]) -> Any:
@@ -84,7 +112,7 @@ def lower_expr(node: Any, *, parameters: dict[str, Any]) -> Any:
             return LiteralExpr(value=parameters[target])
         return ColumnRef(column=str(target))
     if kind == "literal":
-        return LiteralExpr(value=unwrap_literal_value(node.get("value")))
+        return lower_literal(node.get("value"))
     if kind == "binary":
         op = node.get("op")
         if op not in _BINARY_OPS:
@@ -112,7 +140,8 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     raw_args = list(node.get("args") or [])
     if callee == "dtcs:case_when":
         return _lower_case_when(node, parameters=parameters)
-    # Force constant folding for string search args where SQL needs bound params.
+    # Preserve closed literal type envelopes for PostgreSQL's polymorphic
+    # functions; all values still lower to bound parameters.
     if callee in {
         "dtcs:replace",
         "dtcs:contains",
@@ -132,9 +161,7 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
                 )
                 or (callee == "dtcs:round" and i == 1)
             ):
-                args.append(
-                    LiteralExpr(value=constant_python(raw, parameters=parameters))
-                )
+                args.append(lower_expr(raw, parameters=parameters))
             else:
                 args.append(lower_expr(raw, parameters=parameters))
         return CallExpr(callee=callee, args=tuple(args))
