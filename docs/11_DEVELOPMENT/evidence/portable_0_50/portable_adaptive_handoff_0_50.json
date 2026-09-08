@@ -18,7 +18,7 @@
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "43a05be530a7111e062183c28c12fe02d11342a7",
+  "repository_commit": "862a1575eb23124ab8055e4dc370433c77b4188e",
   "result": "pass",
   "scenarios": [
     {
@@ -76,7 +76,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "c4ef1c6276637b58f7809fe4cd42bce7aa27d30f38bcf3dd2d422d4959c26d19",
+              "fingerprint": "b15dca2d49831823553adb68d86d319961b2a24663c1f81c32590d631b8108a2",
               "pushdown": [],
               "requirements": [
                 {
@@ -108,9 +108,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/orders-partial",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/orders-partial",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           },
           {
@@ -163,7 +171,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "5b9645021343bbda24147dd87db7e6782b424a5e5949259533719ddb7662b1e1",
+              "fingerprint": "7dad4587d3710de2d3b45ae43ab8de031cae9625f9776cf4baf14311672cca1f",
               "pushdown": [],
               "requirements": [
                 {
@@ -195,9 +203,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/orders-complete",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/orders-complete",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           },
           {
@@ -250,7 +266,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "5b9645021343bbda24147dd87db7e6782b424a5e5949259533719ddb7662b1e1",
+              "fingerprint": "c59680dda79450336d2fad21869cc295fcfb7d4ee4f7f27629a3cf50965208a6",
               "pushdown": [],
               "requirements": [
                 {
@@ -282,9 +298,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/customers-complete",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/customers-complete",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           }
         ],
@@ -359,7 +383,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "df69148cfdd4ae837d03acb53032d33bfff72c5573279b3e28b03d45b375ebae",
+              "fingerprint": "13c9b888eb018c22a87988e13b2ccb795fbecf143d564b71d23f5682c8917210",
               "pushdown": [],
               "requirements": [
                 {
@@ -391,9 +415,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/orders-unknown-preference",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/orders-unknown-preference",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           },
           {
@@ -446,7 +478,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "b88827a895784a2e554b61453ba844cea18ced07ed2dd5b1db6c1d8c7d0c47b1",
+              "fingerprint": "ea36ca76b892a14da2e8307a76dc8a44239c56d42f3379fee1aac21a8e02bf2b",
               "pushdown": [],
               "requirements": [
                 {
@@ -478,9 +510,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/customers-known-preference",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/customers-known-preference",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           }
         ],
@@ -577,7 +617,7 @@
                   "support": "supported_with_lowering"
                 }
               ],
-              "fingerprint": "02c61e7d72ae48aea429678673b9be86deb0d3f9b6dc305c7a96dc358ff23dd3",
+              "fingerprint": "912884afaad44042f0849af8e3961f4a316ca0931433d79f938258d0d5e08a41",
               "pushdown": [],
               "requirements": [
                 {
@@ -597,9 +637,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/orders-lowered",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/orders-lowered",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           },
           {
@@ -637,7 +685,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "144d91c9290ab656ff625565aea088267cdd24be834a7b15db9dce3e5fc6a005",
+              "fingerprint": "43bc30f4df757595fd1dbb85068e1750210c53a2fc4a79baba420a083b607a9a",
               "pushdown": [],
               "requirements": [
                 {
@@ -657,9 +705,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/customers-exact",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/customers-exact",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           }
         ],
@@ -719,7 +775,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "0bdac709baeb10f52df50494b671d2d48ee1da587a3058e82024c95592d7dcfa",
+              "fingerprint": "be42f2a2a80302bf34c683533f59d8b42d21307e0827215cb8b2ec88fc9d4559",
               "pushdown": [],
               "requirements": [
                 {
@@ -739,9 +795,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/orders-native",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/orders-native",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           },
           {
@@ -779,7 +843,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "0bdac709baeb10f52df50494b671d2d48ee1da587a3058e82024c95592d7dcfa",
+              "fingerprint": "365a8c137410f6f8fa27a4c149875362dd77c9ee19876cd3b63068afa1b0364f",
               "pushdown": [],
               "requirements": [
                 {
@@ -799,9 +863,17 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "package": "etlantic-adaptive-fixture/customers-native",
                 "protocol": "etlantic.transform-compiler/1",
                 "version": "1"
               }
+            },
+            "target": {
+              "compiler": "adaptive-fixture",
+              "engine": "local",
+              "package": "etlantic-adaptive-fixture/customers-native",
+              "protocol": "etlantic.transform-compiler/1",
+              "version": "1"
             }
           }
         ],
@@ -838,5 +910,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "a17fed445734b4032d4d01cd6dc1cd2243eb0144a534e4711e025e7d8a4141c2"
+  "source_tree_digest": "a7f941812b87a443f171785fd9f6d8888f43c4c5dfd3ce3c2efed58b113bb8f7"
 }

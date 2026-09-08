@@ -21,8 +21,8 @@
     "spark_backend": "pyspark JVM",
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
-  "repository_commit": "43a05be530a7111e062183c28c12fe02d11342a7",
+  "repository_commit": "862a1575eb23124ab8055e4dc370433c77b4188e",
   "result": "pass",
   "schema": "etlantic.portable-dependency-security/1",
-  "source_tree_digest": "a17fed445734b4032d4d01cd6dc1cd2243eb0144a534e4711e025e7d8a4141c2"
+  "source_tree_digest": "a7f941812b87a443f171785fd9f6d8888f43c4c5dfd3ce3c2efed58b113bb8f7"
 }
