@@ -11,13 +11,13 @@ must never mutate registry authority.
 ## Install
 
 ```bash
-pip install 'etlantic-openlineage==0.49.0'
+pip install 'etlantic-openlineage==0.50.0'
 # Optional vendor client (not required for fake/CI):
-# pip install 'etlantic-openlineage[openlineage]==0.49.0'
-# pip install 'etlantic==0.49.0'
+# pip install 'etlantic-openlineage[openlineage]==0.50.0'
+# pip install 'etlantic==0.50.0'
 ```
 
-Core dependency: `etlantic>=0.49.0,<0.50`.
+Core dependency: `etlantic>=0.50.0,<0.51`.
 
 ## Behavior
 

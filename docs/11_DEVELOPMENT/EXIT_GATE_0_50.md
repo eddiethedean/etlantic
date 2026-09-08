@@ -152,10 +152,20 @@ secret/source-row leak.
 
 ## Go / No-Go
 
-**Not decided.** #109 records the dated decision only after all 28 scorecard
-rows link to passing evidence. Missing or skipped evidence, any engine below the
-baseline, any required applicable pushdown failure, misuse of `not_applicable`,
-or any unresolved critical/high phase finding is a no-go for the seven-engine
+| Field | Record |
+|---|---|
+| Decision | **Pending independent Sol approval** |
+| Approver | Sol final release gate |
+| Review date | Pending |
+| Technical outcome | All 28 scorecard rows and the canonical real-backend campaign pass; Luna does not grant release approval |
+| Reproduction | `uv run python scripts/check_portable_0_50.py`; `uv run pytest`; `uv run pyright`; `uv run ruff check .`; `uv run ruff format --check .`; `uv run python scripts/check_release.py`; `uv build`; `uv run python scripts/check_docs.py` |
+| Evidence | `docs/11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json` and its digest-bound artifact set |
+| Limitations | Beta/community non-SLA; no common advanced, adaptive, streaming, remote, federated, or unqualified connector/sink claim |
+
+#109 records the dated approval or rejection after Sol independently verifies
+the repository. Missing or skipped evidence, any engine below the baseline,
+any required applicable pushdown failure, misuse of `not_applicable`, or any
+unresolved substantive finding is a no-go for the seven-engine
 portable-baseline claim.
 
 ## Explicit Non-Claims

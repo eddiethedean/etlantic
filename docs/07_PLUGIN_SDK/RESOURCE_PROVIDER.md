@@ -1,6 +1,6 @@
 # Resource Provider
 
-> **Status: Available in ETLantic 0.49.0** as a discoverable core protocol
+> **Status: Available in ETLantic 0.50.0** as a discoverable core protocol
 > (`etlantic.resource/1`). The Kubernetes extra is **Experimental**.
 
 `etlantic.resource_providers` is the entry-point group. Production profiles

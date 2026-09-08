@@ -1,6 +1,6 @@
 # Pipeline
 
-> **Status: Available in ETLantic 0.49.0.** Typed topology: extracts, steps, and loads.
+> **Status: Available in ETLantic 0.50.0.** Typed topology: extracts, steps, and loads.
 
 A `Pipeline` defines the logical composition of a complete data workflow.
 

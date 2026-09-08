@@ -16,7 +16,10 @@ from etlantic_duckdb import create_plugin  # noqa: E402
 from etlantic_duckdb.config import DuckDBConfig  # noqa: E402
 from etlantic_duckdb.frame import DuckDBFrame  # noqa: E402
 from etlantic_duckdb.plugin import DuckDBSqlPlugin  # noqa: E402
-from etlantic_duckdb.transform_compiler import DuckDBTransformCompiler  # noqa: E402
+from etlantic_duckdb.transform_compiler import (  # noqa: E402
+    DuckDBTransformCompiler,
+    _explain_query,
+)
 
 from etlantic import (  # noqa: E402
     Data,
@@ -733,6 +736,58 @@ def test_duckdb_portable_parameters_are_bound_and_input_names_are_scoped() -> No
         )
     )
     assert output.valid["result"].to_dicts() == [{"id": 2}]
+
+
+def test_duckdb_explain_never_embeds_bound_parameter_values() -> None:
+    sensitive_value = "before\x00after-'secret'"
+    diagnostic = _explain_query("SELECT ? AS value", [sensitive_value])
+
+    assert sensitive_value not in diagnostic
+    assert "secret" not in diagnostic
+    assert "\x00" not in diagnostic
+    assert duckdb.connect().execute(diagnostic).fetchall()
+
+
+def test_duckdb_portable_nul_parameter_executes_without_explain_inlining() -> None:
+    sensitive_value = "before\x00after"
+    compiler = DuckDBTransformCompiler()
+    definition = {
+        "inputs": {"input": {}},
+        "actions": [
+            {
+                "kind": {
+                    "id": "filter",
+                    "action": "dtcs:filter",
+                    "parameters": {
+                        "predicate": {
+                            "kind": "binary",
+                            "op": "eq",
+                            "left": {"kind": "fieldRef", "target": "value"},
+                            "right": {
+                                "kind": "fieldRef",
+                                "scope": "parameter",
+                                "target": "needle",
+                            },
+                        }
+                    },
+                }
+            }
+        ],
+        "outputs": {"result": {}},
+    }
+    compiled = compiler.compile(
+        definition,
+        context=TransformCompileContext("p", "plan", "step", "test", "duckdb"),
+    )
+    output = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"input": [{"value": sensitive_value}, {"value": "other"}]},
+            parameters={"needle": sensitive_value},
+            context=TransformExecutionContext("nul", "p", "plan", "step", "duckdb"),
+        )
+    )
+    assert output.valid["result"].to_dicts() == [{"value": sensitive_value}]
 
 
 @pytest.mark.parametrize("fail_execution", [False, True])

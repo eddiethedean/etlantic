@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sparkforge"
-version = "0.49.0"
+version = "0.50.0"
 description = "Final compatibility redirect to Medallantic (deprecated)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "medallantic>=0.49.0,<0.50",
+    "medallantic>=0.50.0,<0.51",
 ]
 
 [project.urls]

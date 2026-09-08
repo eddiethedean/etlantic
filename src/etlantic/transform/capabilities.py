@@ -525,8 +525,27 @@ def evaluate_adaptive_candidates(
             raise ValueError(
                 "adaptive candidate must retain the complete support vector"
             )
-        required = _requirements_for(required_requirements, node_id)
-        preferred = _requirements_for(preferred_requirements, node_id)
+        # The validated support report is authoritative.  The legacy caller
+        # lists remain accepted for API compatibility and node-inventory
+        # declaration, but cannot add, remove, or downgrade obligations.
+        _requirements_for(required_requirements, node_id)
+        _requirements_for(preferred_requirements, node_id)
+        keys_by_id = {
+            requirement_id: requirement
+            for requirement, requirement_id in resolved_ids.items()
+        }
+        required = {
+            keys_by_id[identifier]
+            for identifier, item in report_requirements.items()
+            if item.get("applicability") == "applicable"
+            and item.get("obligation") == "required"
+        }
+        preferred = {
+            keys_by_id[identifier]
+            for identifier, item in report_requirements.items()
+            if item.get("applicability") == "applicable"
+            and item.get("obligation") == "preferred"
+        }
         required_failures = [
             requirement
             for requirement in sorted(required)
@@ -771,7 +790,7 @@ def evaluate_adaptive_candidates(
         "nodes": sorted(selected_by_node),
         "candidates": decisions,
         "selected": selected,
-        "graph_valid": not graph_failures,
+        "graph_valid": best_assignment is not None and not graph_failures,
         "graph_failures": graph_failures,
     }
 

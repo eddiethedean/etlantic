@@ -2,7 +2,7 @@
 title: Forward Implementation Plans
 description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.55.
 plan_status: current
-plan_last_reviewed: 0.49.0
+plan_last_reviewed: 0.50.0
 ---
 
 # Forward Implementation Plans

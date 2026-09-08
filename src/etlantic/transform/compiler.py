@@ -36,6 +36,10 @@ MAX_FINDINGS = 100_000
 MAX_REPORT_BYTES = 8 * 1024 * 1024
 MAX_CONDITIONS = 64
 MAX_REASON_BYTES = 1_024
+MAX_PARAMETER_BYTES = 1_024
+PHYSICAL_EFFECTS = frozenset(
+    {"collection", "transfer", "materialization", "lost_fusion"}
+)
 _TARGET_KEYS = frozenset(
     {"engine", "compiler", "version", "protocol", "package", "placement"}
 )
@@ -309,24 +313,34 @@ class TransformSupportReport:
         canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
         serialized_by_requirement: dict[str, dict[str, Any]] = {}
+        requirements_by_id = {
+            str(record["id"]): record
+            for record in requirements
+            if isinstance(record.get("id"), str)
+        }
+        requirement_ids = set(requirements_by_id)
         for index, finding in enumerate((*canonical_findings, *self.findings)):
             item = finding.to_dict()
-            requirement_id = item.get("requirement")
-            if requirement_id not in {r.get("id") for r in requirements}:
-                requirement_id = requirement_by_legacy.get(str(requirement_id))
-            if requirement_id is None and isinstance(requirement_id, str):
-                # Unknown-category findings use ``requirement:<category>``;
-                # bind them to the corresponding normalized record when one
-                # exists rather than creating a second synthetic requirement.
-                category = requirement_id.removeprefix("requirement:")
-                for record in requirements:
-                    if record.get("scope") == category:
-                        requirement_id = record.get("id")
-                        break
-            if requirement_id is None:
+            original_requirement = str(item.get("requirement") or f"finding-{index}")
+            matched_requirement_ids: list[str] = []
+            if original_requirement in requirement_ids:
+                matched_requirement_ids.append(original_requirement)
+            else:
+                legacy_match = requirement_by_legacy.get(original_requirement)
+                if legacy_match is not None:
+                    matched_requirement_ids.append(legacy_match)
+                elif original_requirement.startswith("requirement:"):
+                    category = original_requirement.removeprefix("requirement:")
+                    matched_requirement_ids.extend(
+                        str(record["id"])
+                        for record in requirements
+                        if record.get("scope") == category
+                        and isinstance(record.get("id"), str)
+                    )
+            if not matched_requirement_ids:
                 requirement_id = _canonical_requirement_id(
                     "legacy",
-                    str(item.get("requirement") or f"finding-{index}"),
+                    original_requirement,
                     "findings",
                 )
                 requirements.append(
@@ -338,35 +352,44 @@ class TransformSupportReport:
                         "path": "findings",
                         "obligation": finding.obligation or "required",
                         "applicability": "applicable",
-                        "parameters": {
-                            "legacy_requirement": str(item.get("requirement") or "")
-                        },
+                        "parameters": {"legacy_requirement": original_requirement},
                     }
                 )
-            item["requirement"] = requirement_id
-            item["support"] = finding.support or (
-                "unsupported" if not self.supported else "supported_exact"
-            )
-            item["obligation"] = finding.obligation or "required"
-            fingerprint = finding.evidence_fingerprint or self.evidence_fingerprint
-            item["evidence_fingerprint"] = fingerprint
-            item["evidence"] = [evidence_ids[fingerprint]] if fingerprint else []
-            if (
-                item["support"] in {"supported_exact", "supported_with_lowering"}
-                and not fingerprint
-            ):
-                # Positive records without compiler evidence are legacy
-                # omissions, not proof; preserve inspectability as unknown.
-                item["support"] = "unknown"
-                item["reason"] = (
-                    "requirement has no independently verified support evidence"
+                requirement_ids.add(requirement_id)
+                requirements_by_id[requirement_id] = requirements[-1]
+                matched_requirement_ids.append(requirement_id)
+            for requirement_id in matched_requirement_ids:
+                serialized = dict(item)
+                serialized["requirement"] = requirement_id
+                serialized["support"] = finding.support or (
+                    "unsupported" if not self.supported else "supported_exact"
                 )
-                item["reason_code"] = "PMXFORM999"
-            if item.get("reason_code") != "PMXFORM999":
-                item["reason_code"] = finding.code
-            item["path"] = finding.expression_path or "findings"
-            used_ids.add(requirement_id)
-            serialized_by_requirement[requirement_id] = item
+                requirement = requirements_by_id[requirement_id]
+                serialized["obligation"] = str(
+                    requirement.get("obligation") or "required"
+                )
+                fingerprint = finding.evidence_fingerprint or self.evidence_fingerprint
+                serialized["evidence_fingerprint"] = fingerprint
+                serialized["evidence"] = (
+                    [evidence_ids[fingerprint]] if fingerprint else []
+                )
+                if (
+                    serialized["support"]
+                    in {"supported_exact", "supported_with_lowering"}
+                    and not fingerprint
+                ):
+                    # Positive records without compiler evidence are legacy
+                    # omissions, not proof; preserve inspectability as unknown.
+                    serialized["support"] = "unknown"
+                    serialized["reason"] = (
+                        "requirement has no independently verified support evidence"
+                    )
+                    serialized["reason_code"] = "PMXFORM999"
+                if serialized.get("reason_code") != "PMXFORM999":
+                    serialized["reason_code"] = finding.code
+                serialized["path"] = finding.expression_path or "findings"
+                used_ids.add(requirement_id)
+                serialized_by_requirement[requirement_id] = serialized
         findings.extend(serialized_by_requirement.values())
         # Legacy compilers may only provide aggregate findings. Preserve those
         # records while making successful reports explicit about their target.
@@ -379,10 +402,10 @@ class TransformSupportReport:
                     "vocabulary": "dtcs",
                     "version": "1",
                     "scope": "legacy",
-                    "path": finding.expression_path or "",
+                    "path": "findings",
                     "obligation": finding.obligation or "required",
                     "applicability": "applicable",
-                    "parameters": {},
+                    "parameters": {"legacy_requirement": finding.requirement},
                 }
                 for finding in self.findings
             ]
@@ -491,6 +514,24 @@ def _support_fingerprint(payload: Mapping[str, Any]) -> str:
             semantic, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode("utf-8")
     ).hexdigest()
+
+
+def required_support_failures(payload: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return applicable required requirements without positive support."""
+    findings = {
+        item.get("requirement"): item.get("support")
+        for item in payload.get("findings", ())
+        if isinstance(item, Mapping)
+    }
+    return tuple(
+        str(item.get("id"))
+        for item in payload.get("requirements", ())
+        if isinstance(item, Mapping)
+        and item.get("applicability") == "applicable"
+        and item.get("obligation") == "required"
+        and findings.get(item.get("id"))
+        not in {"supported_exact", "supported_with_lowering"}
+    )
 
 
 def capabilities_fingerprint(capabilities: TransformCapabilities) -> str:
@@ -605,6 +646,31 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     """Validate the bounded requirement/support wire representation."""
     import json
 
+    def validate_bounded_string(value: Any, *, field_name: str) -> None:
+        if (
+            not isinstance(value, str)
+            or not value
+            or len(value.encode("utf-8")) > MAX_PARAMETER_BYTES
+            or any(ord(character) < 32 for character in value)
+        ):
+            raise ValueError(f"{field_name} must be a bounded string")
+
+    def validate_bounded_strings(
+        values: Any, *, field_name: str, allowed: frozenset[str] | None = None
+    ) -> None:
+        if not isinstance(values, list) or len(values) > MAX_CONDITIONS:
+            raise ValueError(f"{field_name} exceeds 64 entries")
+        for value in values:
+            if (
+                not isinstance(value, str)
+                or not value
+                or len(value.encode("utf-8")) > MAX_PARAMETER_BYTES
+                or any(ord(character) < 32 for character in value)
+            ):
+                raise ValueError(f"{field_name} entries must be bounded strings")
+            if allowed is not None and value not in allowed:
+                raise ValueError(f"invalid {field_name} value")
+
     if payload.get("schema") != "etlantic.portable-requirement-support/1":
         raise ValueError("invalid requirement-support schema")
     if not isinstance(payload.get("target"), Mapping):
@@ -647,23 +713,43 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         if set(item) - _REQUIREMENT_KEYS:
             raise ValueError("requirement record contains unsupported fields")
         identifier = item.get("id")
-        if (
-            not isinstance(identifier, str)
-            or not identifier
-            or identifier in requirement_ids
-        ):
+        if not isinstance(identifier, str) or identifier in requirement_ids:
             raise ValueError("requirement IDs must be non-empty and unique")
+        validate_bounded_string(identifier, field_name="requirement ID")
         requirement_ids.add(identifier)
         if not identifier.startswith("dtcs@1/") or "#" not in identifier:
             raise ValueError("requirement IDs must use canonical dtcs@1 form")
         if item.get("vocabulary") != "dtcs" or item.get("version") != "1":
             raise ValueError("requirement vocabulary/version are required")
-        if not isinstance(item.get("scope"), str) or not isinstance(
-            item.get("path"), str
-        ):
-            raise ValueError("requirement scope and path are required")
-        if not isinstance(item.get("parameters"), Mapping):
+        validate_bounded_string(item.get("scope"), field_name="requirement scope")
+        validate_bounded_string(item.get("path"), field_name="requirement path")
+        parameters = item.get("parameters")
+        if not isinstance(parameters, Mapping):
             raise ValueError("requirement parameters must be an object")
+        if set(parameters) - {"value", "legacy_requirement"}:
+            raise ValueError("requirement parameters contain unsupported fields")
+        if set(parameters) == {"value", "legacy_requirement"}:
+            raise ValueError("requirement parameters are ambiguous")
+        if item.get("scope") == "legacy":
+            if set(parameters) != {"legacy_requirement"}:
+                raise ValueError("legacy requirement needs legacy_requirement")
+        elif set(parameters) != {"value"}:
+            raise ValueError("requirement parameters require a value")
+        for value in parameters.values():
+            if (
+                not isinstance(value, str)
+                or not value
+                or len(value.encode("utf-8")) > MAX_PARAMETER_BYTES
+                or any(ord(character) < 32 for character in value)
+            ):
+                raise ValueError("requirement parameter values must be bounded strings")
+        semantic_value = parameters.get(
+            "legacy_requirement" if item.get("scope") == "legacy" else "value"
+        )
+        if identifier != _canonical_requirement_id(
+            str(item.get("scope")), str(semantic_value), str(item.get("path"))
+        ):
+            raise ValueError("requirement ID does not match its typed parameters")
         if item.get("obligation") not in OBLIGATIONS:
             raise ValueError("invalid requirement obligation")
         if item.get("applicability") not in {"applicable", "not_applicable"}:
@@ -675,12 +761,9 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         if set(item) - _FINDING_KEYS:
             raise ValueError("support finding contains unsupported fields")
         identifier = item.get("requirement")
-        if (
-            not isinstance(identifier, str)
-            or not identifier
-            or identifier in finding_ids
-        ):
+        if not isinstance(identifier, str) or identifier in finding_ids:
             raise ValueError("finding requirement IDs must be non-empty and unique")
+        validate_bounded_string(identifier, field_name="finding requirement ID")
         finding_ids.add(identifier)
         if item.get("support") not in SUPPORT_STATES:
             raise ValueError("invalid support state")
@@ -692,11 +775,17 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             or len(reason.encode("utf-8")) > MAX_REASON_BYTES
         ):
             raise ValueError("finding reason exceeds 1024 UTF-8 bytes")
-        if not isinstance(item.get("reason_code"), str) or not item["reason_code"]:
-            raise ValueError("support finding requires a stable reason code")
+        validate_bounded_string(
+            item.get("reason_code"), field_name="finding reason code"
+        )
+        validate_bounded_string(item.get("path"), field_name="finding path")
         evidence_refs = item.get("evidence", [])
-        if not isinstance(evidence_refs, list):
-            raise ValueError("finding evidence must be an array")
+        validate_bounded_strings(evidence_refs, field_name="finding evidence")
+        evidence_fingerprint = item.get("evidence_fingerprint")
+        if evidence_fingerprint is not None:
+            validate_bounded_string(
+                evidence_fingerprint, field_name="finding evidence fingerprint"
+            )
         if item["support"] in {"supported_exact", "supported_with_lowering"}:
             if (
                 not isinstance(item.get("evidence_fingerprint"), str)
@@ -706,18 +795,22 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             if not evidence_refs:
                 raise ValueError("supported finding requires evidence reference")
         if item["support"] == "supported_with_lowering":
-            if not item.get("lowering_id"):
-                raise ValueError("lowered finding requires lowering identity")
-            if not isinstance(item.get("proof_reference"), str):
-                raise ValueError("lowered finding requires proof reference")
+            validate_bounded_string(
+                item.get("lowering_id"), field_name="lowering identity"
+            )
+            validate_bounded_string(
+                item.get("proof_reference"), field_name="lowering proof reference"
+            )
             if not isinstance(item.get("conditions"), list) or not isinstance(
                 item.get("physical_effects"), list
             ):
                 raise ValueError("lowered finding requires conditions and effects")
-        for key in ("conditions", "physical_effects"):
-            values = item.get(key, [])
-            if not isinstance(values, list) or len(values) > MAX_CONDITIONS:
-                raise ValueError(f"{key} exceeds 64 entries")
+        validate_bounded_strings(item.get("conditions", []), field_name="conditions")
+        validate_bounded_strings(
+            item.get("physical_effects", []),
+            field_name="physical_effects",
+            allowed=PHYSICAL_EFFECTS,
+        )
     applicable = {
         str(item["id"])
         for item in requirements
@@ -725,27 +818,31 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     }
     if applicable != finding_ids:
         raise ValueError("every applicable requirement needs exactly one finding")
+    requirement_by_id = {str(item["id"]): item for item in requirements}
+    for finding in findings:
+        requirement = requirement_by_id[str(finding["requirement"])]
+        if finding.get("obligation") != requirement.get("obligation"):
+            raise ValueError("finding obligation must match requirement obligation")
     evidence = payload.get("evidence")
     if not isinstance(evidence, list):
         raise ValueError("evidence must be an array")
     evidence_ids = set()
     evidence_fingerprints: dict[str, str] = {}
     for record in evidence:
-        if not isinstance(record, Mapping) or not isinstance(record.get("id"), str):
-            raise ValueError("evidence records require string IDs")
+        if not isinstance(record, Mapping):
+            raise ValueError("evidence record must be an object")
         if set(record) - _EVIDENCE_KEYS:
             raise ValueError("evidence record contains unsupported fields")
+        validate_bounded_string(record.get("id"), field_name="evidence ID")
         if record["id"] in evidence_ids:
             raise ValueError("evidence IDs must be unique")
-        if not isinstance(record.get("kind"), str) or not record["kind"]:
-            raise ValueError("evidence records require a kind")
-        if not isinstance(record.get("fingerprint"), str) or not record["fingerprint"]:
-            raise ValueError("evidence records require a fingerprint")
-        if (
-            not isinstance(record.get("baseline_digest"), str)
-            or not record["baseline_digest"]
-        ):
-            raise ValueError("evidence records require baseline digest")
+        validate_bounded_string(record.get("kind"), field_name="evidence kind")
+        validate_bounded_string(
+            record.get("fingerprint"), field_name="evidence fingerprint"
+        )
+        validate_bounded_string(
+            record.get("baseline_digest"), field_name="evidence baseline digest"
+        )
         if record["baseline_digest"] != _baseline_digest():
             raise ValueError("evidence baseline digest is stale")
         evidence_ids.add(record["id"])
@@ -776,13 +873,26 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             and item.get("obligation") not in OBLIGATIONS
         ):
             raise ValueError("invalid pushdown obligation")
-        if not isinstance(item.get("boundary"), str) or not item["boundary"]:
-            raise ValueError("pushdown boundary is required")
+        validate_bounded_string(item.get("boundary"), field_name="pushdown boundary")
         if item["boundary"] in pushdown_boundaries:
             raise ValueError("pushdown boundaries must be unique")
         pushdown_boundaries.add(item["boundary"])
-        if not isinstance(item.get("reason"), str) or not item["reason"]:
-            raise ValueError("pushdown reason is required")
+        validate_bounded_string(item.get("reason"), field_name="pushdown reason")
+        for optional_field in (
+            "action",
+            "target",
+            "proof_reference",
+            "evidence_fingerprint",
+        ):
+            if item.get(optional_field) is not None:
+                validate_bounded_string(
+                    item[optional_field], field_name=f"pushdown {optional_field}"
+                )
+        validate_bounded_strings(
+            item.get("physical_effects", []),
+            field_name="pushdown physical_effects",
+            allowed=PHYSICAL_EFFECTS,
+        )
         if item.get("obligation") == "required":
             if not isinstance(item.get("action"), str) or not item["action"]:
                 raise ValueError("required pushdown finding requires action")
@@ -845,15 +955,7 @@ def preflight_portable_support(descriptor: Any, compiler: Any, *, engine: str) -
     evidence = payload.get("evidence") or []
     if not any(record.get("fingerprint") == expected_evidence for record in evidence):
         raise ValueError("portable support evidence does not match installed compiler")
-    support_by_id = {
-        item.get("requirement"): item.get("support") for item in payload["findings"]
-    }
-    if not all(
-        item.get("applicability") != "applicable"
-        or support_by_id.get(item.get("id"))
-        in {"supported_exact", "supported_with_lowering"}
-        for item in payload["requirements"]
-    ):
+    if required_support_failures(payload):
         raise ValueError("portable support evidence contains unsupported requirements")
 
 

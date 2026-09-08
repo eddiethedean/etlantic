@@ -1,6 +1,7 @@
 # Planning Hub
 
-> **Status: Shipped product docs describe ETLantic 0.49.0 (gate-ready Beta).
+> **Status: ETLantic 0.50.0 is a technically qualified Beta release candidate;
+> independent Sol approval remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
@@ -12,7 +13,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.49 can do now**, use
+    - To learn what **ETLantic 0.50 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -29,9 +30,9 @@ release gates. They are **not** a substitute for current product documentation.
       [findings](FINDINGS_0_48.md), and the
       [main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
       § 0.48.
-    - To evaluate the **planned 0.50 portable-engine baseline**, use the
+    - To evaluate the **0.50 portable-engine baseline**, use the
       [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md), the
-      [not-started exit gate](EXIT_GATE_0_50.md), and
+      [exit gate](EXIT_GATE_0_50.md), and
       [epic #102](https://github.com/eddiethedean/etlantic/issues/102).
     - To evaluate **0.46 streaming/dynamic-control evidence**, use the
       [0.46 exit gate](EXIT_GATE_0_46.md), [ADR-022](adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md),
@@ -64,7 +65,7 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.48** human-governed AI line.
+Status is relative to the **0.50** portable-engine release candidate.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
 in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;
@@ -73,7 +74,7 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.48 Human-governed AI gate-ready; next 0.49 full DuckDB package development | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) § 0.49 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.50 portable-engine baseline technically qualified; 0.51 adaptive planning next | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) § 0.50 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Technical qualification complete; review pending | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Planned following milestone | Frozen Profile contract, bounded node placement, connected target regions, authoritative `/2` physical DAGs, and a local Polars↔Pandas launch matrix with DuckDB as a future candidate | [Exit gate 0.51](EXIT_GATE_0_51.md) (Not started) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |

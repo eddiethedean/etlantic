@@ -2,7 +2,7 @@
 title: ETLantic 0.50 Implementation Plan
 description: Implementation-grade plan for baseline portable execution across seven first-party engines and pushdown conformance.
 plan_status: current
-plan_last_reviewed: 0.49.0
+plan_last_reviewed: 0.50.0
 ---
 
 # ETLantic 0.50 Implementation Plan

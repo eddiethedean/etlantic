@@ -1,11 +1,11 @@
 # ETLantic 0.49 User Guide
 
-> **Status: Available in ETLantic 0.49.0 (shipped Beta).**
+> **Status: Available in ETLantic 0.50.0 (shipped Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.49.0** is a **Beta** release for documented
+ETLantic **0.50.0** is a **Beta** release for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported**
 isolation profiles (`isolated-deployment`, `dedicated-schema`). There is no
 hosted multi-tenant SaaS. The line includes **human-governed AI**

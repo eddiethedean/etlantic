@@ -10,6 +10,7 @@ from scripts.check_portable_0_50 import (
     validate_adaptive_target_matrix,
     validate_artifact_schema,
     validate_cross_engine_digests,
+    validate_findings_ledger,
 )
 
 
@@ -128,3 +129,37 @@ def test_adaptive_graph_valid_selection_cannot_choose_ineligible_candidate() -> 
     }
     with pytest.raises(SystemExit, match="ineligible"):
         validate_adaptive_selection(evaluation)
+
+
+@pytest.mark.parametrize("missing", ["SOL-050-019", "SOL-050-020", "FINAL-050-006"])
+def test_findings_ledger_rejects_missing_historical_finding(missing: str) -> None:
+    from scripts.check_portable_0_50 import (
+        EXPECTED_FINAL_FINDINGS,
+        EXPECTED_SOL_FINDINGS,
+    )
+
+    findings = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
+    document = "\n".join(
+        f"| {finding_id} | High | resolved by regression evidence |"
+        for finding_id in sorted(findings - {missing})
+    )
+    document += "\nSol re-review pending\n"
+    with pytest.raises(SystemExit, match="ledger is incomplete"):
+        validate_findings_ledger(document)
+
+
+def test_findings_ledger_rejects_unresolved_disposition() -> None:
+    from scripts.check_portable_0_50 import (
+        EXPECTED_FINAL_FINDINGS,
+        EXPECTED_SOL_FINDINGS,
+    )
+
+    findings = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
+    document = "\n".join(
+        f"| {finding_id} | High | "
+        f"{'pending' if finding_id == 'SOL-050-020' else 'resolved'} |"
+        for finding_id in sorted(findings)
+    )
+    document += "\nSol re-review pending\n"
+    with pytest.raises(SystemExit, match="does not resolve SOL-050-020"):
+        validate_findings_ledger(document)

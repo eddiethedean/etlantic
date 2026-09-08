@@ -496,7 +496,7 @@ nav:
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
       - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
-      - Current 0.49 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.50 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -582,7 +582,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.49.0: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.50.0: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -631,6 +631,8 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - What's new in 0.50: 01_GETTING_STARTED/WHATS_NEW_0_50.md
+          - Migration from 0.49 to 0.50: 11_DEVELOPMENT/MIGRATION_0_49_TO_0_50.md
           - What's new in 0.49: 01_GETTING_STARTED/WHATS_NEW_0_49.md
           - Earlier releases: 01_GETTING_STARTED/EARLIER_RELEASES.md
           - Upgrade: 01_GETTING_STARTED/UPGRADE.md

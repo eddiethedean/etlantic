@@ -1,6 +1,6 @@
 # Validation Everywhere
 
-> **Status: Available in ETLantic 0.49.0.**
+> **Status: Available in ETLantic 0.50.0.**
 
 ETLantic models ETL with validation at every meaningful boundary.
 

@@ -1,6 +1,6 @@
 # Diagnostics catalog (generated)
 
-> **Status: Available in ETLantic 0.49.0.** Machine-readable inventory of
+> **Status: Available in ETLantic 0.50.0.** Machine-readable inventory of
 > diagnostic code literals found under `src/etlantic`. Regenerate with:
 >
 > ```bash

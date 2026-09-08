@@ -70,7 +70,7 @@ class LocalTransformCompiler:
         )
         self._info = TransformCompilerInfo(
             name="etlantic-local",
-            version="0.49.0",
+            version="0.50.0",
             engine="local",
             capabilities=caps,
             evidence_fingerprint=hashlib.sha256(

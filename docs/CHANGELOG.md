@@ -1,5 +1,5 @@
 # Changelog
 
-> **Status: Available in ETLantic 0.49.0.**
+> **Status: ETLantic 0.50.0 release candidate; Sol approval pending.**
 
 --8<-- "../CHANGELOG.md"

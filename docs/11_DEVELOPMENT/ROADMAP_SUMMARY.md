@@ -4,9 +4,11 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.49.0** is the current gate-ready DuckDB line (**Beta**): qualified
-optional DuckDB SQL/portable transforms, fail-closed preflight, and release
-evidence. Prior **0.48** closed human-governed AI context/proposals; prior
+**0.50.0** is the current technically qualified portable-engine line
+(**Beta**): seven-engine baseline execution, requirement-level evidence, and
+pushdown conformance; independent Sol release review remains pending. Prior
+**0.49** qualified optional DuckDB; prior **0.48** closed human-governed AI
+context/proposals; prior
 **0.47** closed the scheduler/runner
 and remote-federation line. Prior
 **0.46** closed Streaming and event-driven pipelines. Prior **0.45** closed
@@ -33,7 +35,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | [Gate-ready / shipped evidence](EXIT_GATE_0_40.md) |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
-| Current | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
+| Previous | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
 | Current | 0.50 | Seven-engine portable execution and pushdown conformance | Technical qualification complete; [plan](IMPLEMENTATION_PLAN_0_50.md), [evidence gate](EXIT_GATE_0_50.md), and [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json); review pending |
 | Later | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [plan](IMPLEMENTATION_PLAN_0_51.md), [exit gate](EXIT_GATE_0_51.md) (Not started), [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Later | 0.52 | Brownfield adoption bridges | Planning freeze |
@@ -41,7 +43,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.55 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.49 qualified DuckDB subset; 0.50 portable-engine baseline next) |
+| Post-foundation | 0.38–0.55 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.50 technically qualified; review pending) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

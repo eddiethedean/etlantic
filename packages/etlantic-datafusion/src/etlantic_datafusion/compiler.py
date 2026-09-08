@@ -45,7 +45,7 @@ from etlantic.transform.portable_baseline import (
 )
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 
-__version__ = "0.49.0"
+__version__ = "0.50.0"
 
 _ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
 _FUNCTIONS = frozenset(BASELINE_FUNCTIONS)

@@ -1,6 +1,6 @@
 # ETLantic Manifesto
 
-> **Status: Available in ETLantic 0.49.0.**
+> **Status: Available in ETLantic 0.50.0.**
 
 
 ## Data Engineering Deserves a Typed Interface

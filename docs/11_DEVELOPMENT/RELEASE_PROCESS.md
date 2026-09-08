@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.49.0,<0.50`.
+Official plugins declare `etlantic>=0.50.0,<0.51`.
 
 ## Package categories
 
@@ -111,7 +111,7 @@ wheel). Build with `npm run package` after `npm install`.
    existing projects. Prefer Trusted Publishing / OIDC when configured;
    otherwise use the least-privilege token documented for this repository.
    Treat long-lived user tokens and first-project bootstrap as exceptional.
-   For 0.49.0, `etlantic-duckdb` is a brand-new PyPI name and
+   For 0.50.0, `etlantic-duckdb` is a brand-new PyPI name and
    `etlantic-spark-connect` is still unpublished from the 0.47 rate-limit
    window—pace new-project creates accordingly.
 8. **New distribution bootstrap only:** if introducing a brand-new PyPI name,
@@ -221,7 +221,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.49** plugins, `etlantic>=0.49.0,<0.50`). A core
+**0.49** plugins, `etlantic>=0.50.0,<0.51`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

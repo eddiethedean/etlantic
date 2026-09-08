@@ -1,6 +1,6 @@
 # etlantic-duckdb
 
-Optional DuckDB support for ETLantic 0.49. The package is driver-free from core and
+Optional DuckDB support for ETLantic 0.50. The package is driver-free from core and
 is selected explicitly with `Profile(sql_engine="duckdb")`.
 
 The plugin uses one explicit DuckDB connection per run, keeps backend relation

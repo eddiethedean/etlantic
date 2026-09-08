@@ -426,7 +426,7 @@ def test_requirement_support_serializes_unknown_requirements_fail_closed() -> No
     report = LocalTransformCompiler().analyze(
         {},
         context=TransformPlanningContext("p", "s", "profile", "local"),
-        requirements={"future_dimension": ["x"]},
+        requirements={"future_dimension": ["x", "y"]},
     )
     payload = report.to_requirement_support(target={"engine": "local"})
     assert all(item["id"].startswith("dtcs@1/") for item in payload["requirements"])
@@ -434,6 +434,18 @@ def test_requirement_support_serializes_unknown_requirements_fail_closed() -> No
         item["id"] for item in payload["requirements"]
     }
     assert any(item["support"] == "unknown" for item in payload["findings"])
+    assert not any(item["scope"] == "legacy" for item in payload["requirements"])
+    future_ids = {
+        item["id"]
+        for item in payload["requirements"]
+        if item["scope"] == "future_dimension"
+    }
+    assert len(future_ids) == 2
+    assert all(
+        item["reason_code"] == "PMXFORM303"
+        for item in payload["findings"]
+        if item["requirement"] in future_ids
+    )
 
 
 def test_requirement_support_maps_legacy_findings_and_rejects_unknown_target_fields() -> (
@@ -488,7 +500,10 @@ def test_requirement_support_rejects_incomplete_placement_identity() -> None:
 
 
 def _adaptive_support_report(
-    states: dict[str, str], *, target_id: str = "default"
+    states: dict[str, str],
+    *,
+    target_id: str = "default",
+    obligations: dict[str, str] | None = None,
 ) -> dict[str, object]:
     from etlantic.transform.compiler import (
         COMPILER_PROTOCOL,
@@ -498,7 +513,15 @@ def _adaptive_support_report(
     )
 
     evidence = "adaptive-fixture-evidence"
-    requirements = requirement_records_from_mapping({"actions": list(states)})
+    requirements = tuple(
+        {
+            **record,
+            "obligation": (obligations or {}).get(
+                str((record.get("parameters") or {}).get("value")), "required"
+            ),
+        }
+        for record in requirement_records_from_mapping({"actions": list(states)})
+    )
     requirement_ids = {
         str((record.get("parameters") or {}).get("value")): str(record["id"])
         for record in requirements
@@ -508,6 +531,7 @@ def _adaptive_support_report(
             code="PMXFORM000",
             requirement=requirement_ids[requirement],
             reason="fixture support result",
+            obligation=(obligations or {}).get(requirement, "required"),
             support=state,
             evidence_fingerprint=evidence,
             lowering_id="lowering/fixture-v1"
@@ -563,6 +587,7 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                 "support_report": _adaptive_support_report(
                     {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"},
                     target_id="partial",
+                    obligations={"dtcs:filter": "preferred"},
                 ),
             },
             {
@@ -574,6 +599,7 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                 "support_report": _adaptive_support_report(
                     {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"},
                     target_id="complete",
+                    obligations={"dtcs:filter": "preferred"},
                 ),
             },
         ],
@@ -598,7 +624,8 @@ def test_adaptive_preferred_unknown_has_no_positive_preference() -> None:
                     "dtcs:sort": "unknown",
                 },
                 "support_report": _adaptive_support_report(
-                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"}
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"},
+                    obligations={"dtcs:sort": "preferred"},
                 ),
             }
         ],
@@ -606,6 +633,46 @@ def test_adaptive_preferred_unknown_has_no_positive_preference() -> None:
         preferred_requirements=("dtcs:sort",),
     )
     assert result["candidates"][0]["preferred_score"] == 0
+
+
+def test_adaptive_required_unknown_is_authoritative_without_caller_hint() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "unknown",
+                "requirements": {"dtcs:filter": "unknown"},
+                "support_report": _adaptive_support_report({"dtcs:filter": "unknown"}),
+            }
+        ]
+    )
+
+    assert result["candidates"][0]["eligible"] is False
+    assert result["selected"] is None
+    assert result["graph_valid"] is False
+
+
+def test_adaptive_caller_hints_cannot_override_evidence_obligation() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "candidate",
+                "requirements": {"dtcs:filter": "unknown"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "unknown"},
+                    obligations={"dtcs:filter": "preferred"},
+                ),
+            }
+        ],
+        required_requirements=("dtcs:filter",),
+    )
+
+    assert result["candidates"][0]["eligible"] is True
+    assert result["candidates"][0]["preferred_score"] == 0
+    assert result["graph_valid"] is True
 
 
 def test_adaptive_lowering_records_effects_and_identity() -> None:
@@ -645,7 +712,7 @@ def test_adaptive_lowering_preserves_independent_identities() -> None:
     support_report["findings"][1]["lowering_id"] = "lowering/other-v1"
     support_report["findings"][1]["proof_reference"] = "proof/other-v1"
     support_report["findings"][1]["conditions"] = ["preserve-order"]
-    support_report["findings"][1]["physical_effects"] = ["shuffle"]
+    support_report["findings"][1]["physical_effects"] = ["transfer"]
     from etlantic.transform.compiler import _support_fingerprint
 
     support_report["fingerprint"] = _support_fingerprint(support_report)
@@ -677,7 +744,7 @@ def test_adaptive_lowering_preserves_independent_identities() -> None:
             "requirements": ["dtcs:join"],
             "proof": "proof/other-v1",
             "conditions": ["preserve-order"],
-            "physical_effects": ["shuffle"],
+            "physical_effects": ["transfer"],
         },
     ]
     assert "lowering" not in candidate
@@ -1230,6 +1297,35 @@ def test_runtime_preflight_rejects_evidence_free_descriptor() -> None:
         preflight_portable_support(descriptor, compiler, engine="local")
 
 
+@pytest.mark.parametrize("obligation", ["preferred", "informational"])
+def test_planner_and_runtime_allow_unknown_non_required_support(
+    obligation: str,
+) -> None:
+    from types import SimpleNamespace
+
+    from etlantic.plan.planner import _support_is_eligible
+    from etlantic.transform.compiler import preflight_portable_support
+
+    payload = _adaptive_support_report(
+        {"dtcs:filter": "unknown"},
+        obligations={"dtcs:filter": obligation},
+    )
+    assert _support_is_eligible(payload) is True
+
+    compiler = SimpleNamespace(
+        info=SimpleNamespace(
+            evidence_fingerprint="adaptive-fixture-evidence",
+            name="adaptive-fixture",
+            version="1",
+        )
+    )
+    descriptor = SimpleNamespace(
+        compiler_evidence_fingerprint="adaptive-fixture-evidence",
+        support_summary=payload,
+    )
+    preflight_portable_support(descriptor, compiler, engine="local")
+
+
 def test_host_compiler_reports_explicit_non_pushdown_boundaries() -> None:
     from etlantic.transform.compiler import TransformPlanningContext
     from etlantic.transform.local_compiler import LocalTransformCompiler
@@ -1261,6 +1357,68 @@ def test_requirement_support_rejects_nested_provenance_and_source_rows() -> None
     payload["fingerprint"] = _support_fingerprint(payload)
     with pytest.raises(ValueError, match="unsupported fields"):
         validate_requirement_support_payload(payload)
+
+
+def test_requirement_support_rejects_nested_requirement_parameters() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        _support_fingerprint,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    payload = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence",
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    ).to_requirement_support(target={"engine": "local"})
+    payload["requirements"][0]["parameters"]["source_rows"] = [
+        {"password": "plain-secret"}
+    ]
+    payload["fingerprint"] = _support_fingerprint(payload)
+    with pytest.raises(ValueError, match="parameters contain unsupported fields"):
+        validate_requirement_support_payload(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("conditions", [{"runtime": "unresolved"}], "bounded strings"),
+        ("physical_effects", ["network_side_effect"], "invalid physical_effects"),
+    ],
+)
+def test_requirement_support_rejects_untyped_finding_metadata(
+    field: str, value: object, message: str
+) -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        _support_fingerprint,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    payload = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence",
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    ).to_requirement_support(target={"engine": "local"})
+    payload["findings"][0][field] = value
+    payload["fingerprint"] = _support_fingerprint(payload)
+    with pytest.raises(ValueError, match=message):
+        validate_requirement_support_payload(payload)
+
+
+def test_portable_requirement_uses_public_wire_schema() -> None:
+    from etlantic.transform.portable_baseline import PortableRequirement
+
+    requirement = PortableRequirement(
+        "dtcs@1/actions/dtcs:filter#actions",
+        "actions",
+        "actions",
+        parameters={"value": "dtcs:filter"},
+    ).to_dict()
+    assert requirement["vocabulary"] == "dtcs"
+    assert requirement["version"] == "1"
 
 
 def test_requirement_support_rejects_mismatched_evidence_fingerprint() -> None:

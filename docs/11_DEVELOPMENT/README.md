@@ -21,13 +21,15 @@ released.
 
 ## Current migrations and exit gates
 
+- [0.50 portable-baseline plan](IMPLEMENTATION_PLAN_0_50.md),
+  [exit gate](EXIT_GATE_0_50.md),
+  [Migration 0.49 → 0.50](MIGRATION_0_49_TO_0_50.md), and
+  [What's new in 0.50](../01_GETTING_STARTED/WHATS_NEW_0_50.md)
 - [0.49 DuckDB engine-package plan](IMPLEMENTATION_PLAN_0_49.md) (Implemented qualified subset)
 - [Exit gate 0.49](EXIT_GATE_0_49.md) (Qualified subset; release matrix tracked)
 - [Findings ledger 0.49](FINDINGS_0_49.md)
 - [Migration 0.48 → 0.49](MIGRATION_0_48_TO_0_49.md)
 - [What's new in 0.49](../01_GETTING_STARTED/WHATS_NEW_0_49.md)
-- [0.50 portable-baseline plan](IMPLEMENTATION_PLAN_0_50.md) and
-  [exit gate](EXIT_GATE_0_50.md) ([epic #102](https://github.com/eddiethedean/etlantic/issues/102))
 - [0.51 adaptive-execution plan](IMPLEMENTATION_PLAN_0_51.md) and
   [exit gate](EXIT_GATE_0_51.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30))
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)

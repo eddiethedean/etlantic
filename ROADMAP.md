@@ -6,9 +6,10 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.49.0** (Beta) — qualified optional DuckDB:
-embedded SQL, portable transforms, fail-closed preflight, and release evidence.
-Prior **0.48** human-governed AI context/proposals and Experimental `etlantic-mcp`
+**Current release:** ETLantic **0.50.0** (Beta) — seven-engine portable
+execution and pushdown conformance with fail-closed requirement evidence.
+Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
+context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
 federation, **0.46** Streaming, **0.45** Planner and Optimization SDK, **0.44** Developer Intelligence,
 **0.43** CP-GA, **0.42** CP4, **0.41** CP3, **0.40** CP2, and **0.39** CP1
@@ -17,7 +18,8 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.49 | Qualified optional DuckDB engine package | Gate-ready for tag/publish |
+| Current | 0.50 | Seven-engine portable execution and pushdown conformance | Gate-ready for tag/publish |
+| Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |
 | Previous | 0.46 | Streaming and event-driven pipelines | Gate-ready / shipped evidence |
@@ -29,15 +31,13 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.49 | Full optional DuckDB engine package development | Planned — [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
-| Later | 0.50 | Seven-engine portable execution and pushdown conformance | Planned — [epic #102](https://github.com/eddiethedean/etlantic/issues/102) |
-| Later | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
+| Next | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Later | 0.52 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.53 | Operator Console | Planned |
 | Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.55 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.48 human-governed AI gate-ready; 0.49 DuckDB package next) |
+| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.50 portable-engine baseline technically qualified; review pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

@@ -1,6 +1,6 @@
 # Data Contracts
 
-> **Status: Available in ETLantic 0.49.0.** Hub for typed `Data` contracts.
+> **Status: Available in ETLantic 0.50.0.** Hub for typed `Data` contracts.
 
 Data contracts are the foundation of every ETLantic pipeline.
 

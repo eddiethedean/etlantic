@@ -1,6 +1,6 @@
 # Embeddable HTTP API
 
-> **Status: Available in ETLantic 0.49.0.** Embed `etlantic-fastapi` in a host
+> **Status: Available in ETLantic 0.50.0.** Embed `etlantic-fastapi` in a host
 > application. Isolation is **Supported** for `isolated-deployment` and
 > `dedicated-schema` (since 0.43). `shared-service` remains Experimental.
 > There is no hosted SaaS.
@@ -34,11 +34,11 @@ mapping. See [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 ## Install
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.49.0'
-# or: python -m pip install 'etlantic[fastapi]==0.49.0'
+python -m pip install 'etlantic-fastapi==0.50.0'
+# or: python -m pip install 'etlantic[fastapi]==0.50.0'
 ```
 
-Pin the same minor as core (`etlantic==0.49.0`). Package README:
+Pin the same minor as core (`etlantic==0.50.0`). Package README:
 [`packages/etlantic-fastapi`](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-fastapi).
 
 ## Embed: `include_router` vs `create_app`

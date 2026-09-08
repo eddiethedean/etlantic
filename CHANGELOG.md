@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-09-08
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Anyone pinning the 0.49 lockstep line or relying on aggregate-only portable support claims |
+| Breaking | First-party packages move to `etlantic>=0.50.0,<0.51`; evidence-free or stale portable plans must be replanned |
+| Upgrade | Install `etlantic==0.50.0` with matching first-party plugins and replan stored portable descriptors |
+| Rollback | Re-pin the complete 0.49.x lockstep set and restore 0.49 plans |
+| Security | Requirement/support reports reject row-like, secret-bearing, executable, and unbounded nested metadata |
+
+### Added
+
+- Frozen `etlantic.portable-baseline/1` contract across Local, Polars, Pandas,
+  SQL, PySpark, DataFusion, and DuckDB.
+- Requirement-level applicability, obligation, support, lowering, pushdown,
+  provenance, and fingerprint evidence.
+- Reproducible real-backend qualification campaign and canonical cross-engine
+  result evidence.
+
+### Changed
+
+- Portable planning, runtime preflight, and adaptive qualification now use the
+  same obligation-authoritative, fail-closed eligibility rules.
+- DuckDB 1.0-compatible `EXPLAIN` diagnostics use value-free type
+  representatives while execution remains parameterized.
+- All first-party packages and optional dependency pins move to the 0.50.0
+  lockstep line (`etlantic>=0.50.0,<0.51`).
+
 ## [0.49.0] - 2026-09-07
 
 ### Adopter summary
@@ -1882,7 +1912,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.49.0...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.50.0...HEAD
+[0.50.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.0
 [0.49.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.49.0
 [0.48.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.48.0
 [0.47.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.47.0

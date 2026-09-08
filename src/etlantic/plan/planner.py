@@ -86,13 +86,9 @@ def _support_summary(report: Any, compiler: Any) -> dict[str, Any]:
 
 def _support_is_eligible(summary: dict[str, Any]) -> bool:
     """Require an explicit positive result for every required requirement."""
-    findings = {item.get("requirement"): item for item in summary.get("findings", ())}
-    return all(
-        item.get("applicability") != "applicable"
-        or findings.get(item.get("id"), {}).get("support")
-        in {"supported_exact", "supported_with_lowering"}
-        for item in summary.get("requirements", ())
-    )
+    from etlantic.transform.compiler import required_support_failures
+
+    return not required_support_failures(summary)
 
 
 def _required_pushdown_failures(

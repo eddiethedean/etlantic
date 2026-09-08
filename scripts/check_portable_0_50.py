@@ -56,6 +56,26 @@ EXPECTED_SCHEMAS = {
     "WHATS_NEW_0_50.md": "markdown/1",
 }
 
+EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 21))
+EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 7))
+
+
+def validate_findings_ledger(findings_doc: str) -> None:
+    """Require every known review finding to have an explicit resolution."""
+    expected = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
+    found = set(re.findall(r"(?:SOL|FINAL)-050-\d{3}", findings_doc))
+    if found != expected:
+        raise SystemExit("findings ledger is incomplete")
+    for finding_id in sorted(expected):
+        row = next(
+            (line for line in findings_doc.splitlines() if f"| {finding_id} |" in line),
+            "",
+        )
+        if not row or "resolved" not in row.lower():
+            raise SystemExit(f"findings ledger does not resolve {finding_id}")
+    if "Sol re-review pending" not in findings_doc:
+        raise SystemExit("findings ledger must retain the independent review status")
+
 
 def validate_artifact_schema(name: str, schema: object) -> None:
     """Require the frozen schema assigned to an evidence artifact."""
@@ -811,12 +831,7 @@ def main() -> int:
     findings_doc = (EVIDENCE / "FINDINGS_0_50.md").read_text()
     migration_doc = (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").read_text()
     whats_new_doc = (EVIDENCE / "WHATS_NEW_0_50.md").read_text()
-    required_findings = {f"SOL-050-{index:03d}" for index in range(1, 19)}
-    if (
-        not required_findings.issubset(set(re.findall(r"SOL-050-\d{3}", findings_doc)))
-        or "Sol re-review pending" not in findings_doc
-    ):
-        raise SystemExit("findings ledger is incomplete")
+    validate_findings_ledger(findings_doc)
     for phrase in ("baseline", "repin", "rollback", "native"):
         if phrase not in migration_doc.lower():
             raise SystemExit("migration guidance is incomplete")

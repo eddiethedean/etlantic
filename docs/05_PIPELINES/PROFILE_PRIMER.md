@@ -1,6 +1,6 @@
 # Profile primer
 
-> **Status: Available in ETLantic 0.49.0.** Bind a portable pipeline to an environment.
+> **Status: Available in ETLantic 0.50.0.** Bind a portable pipeline to an environment.
 
 Profiles bind a portable pipeline to a concrete environment: engines, assets,
 trust policy, and validation strictness. This page helps you pick the right
@@ -34,7 +34,7 @@ the 0.38 S3, Iceberg, and Snowflake connector packages remain Experimental:
 from etlantic.profile import load_profile, write_profile, production_profile
 
 profile = production_profile(
-    plugin_allowlist={"etlantic-polars": "==0.49.0", "local": None},
+    plugin_allowlist={"etlantic-polars": "==0.50.0", "local": None},
     assets={"raw": "json", "curated": "json"},
 )
 write_profile(profile, "profiles/prod.json")
@@ -63,8 +63,8 @@ In production, an empty allowlist rejects every discovered plugin. Example:
 
 ```json
 "plugin_allowlist": {
-  "etlantic-polars": "==0.49.0",
-  "etlantic-sql": "==0.49.0"
+  "etlantic-polars": "==0.50.0",
+  "etlantic-sql": "==0.50.0"
 }
 ```
 
@@ -86,7 +86,7 @@ Legacy **`bindings`** keys fail closed with `PMCFG111` unless
 - `orchestrator`: `local`, `airflow`, `prefect`, etc.
 
 Keep plugin package versions on the **same minor** as core (for example
-`etlantic-polars==0.49.0` with `etlantic==0.49.0`).
+`etlantic-polars==0.50.0` with `etlantic==0.50.0`).
 
 ### Optional 0.20 trust controls
 

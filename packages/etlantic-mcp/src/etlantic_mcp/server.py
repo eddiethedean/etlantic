@@ -15,7 +15,7 @@ from etlantic.agents.proposal import validate_proposal
 from etlantic.profile import Profile
 from etlantic.runtime.logging import redact_value
 
-_PKG_VERSION = "0.49.0"
+_PKG_VERSION = "0.50.0"
 
 READ_ONLY_METHODS = frozenset(
     {

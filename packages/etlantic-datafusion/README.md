@@ -1,6 +1,6 @@
 # etlantic-datafusion
 
-Version **0.49.0** (provisional implementation; lockstep with ETLantic core).
+Version **0.50.0** (provisional implementation; lockstep with ETLantic core).
 
 This package provides a capability-gated DataFusion dataframe plugin and a
 portable DTCS transform compiler. Native dependencies are installed with the
@@ -19,6 +19,6 @@ analysis before execution.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.49.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.50.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

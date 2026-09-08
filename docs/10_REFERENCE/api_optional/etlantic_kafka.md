@@ -1,20 +1,20 @@
 ---
 status: available
-since: "0.49.0"
-current_minor: "0.49"
+since: "0.50.0"
+current_minor: "0.50"
 audience: developer
 ---
 
 # etlantic-kafka API
 
-> **Status: Experimental in ETLantic 0.49.0.** Kafka source and sink connectors
+> **Status: Experimental in ETLantic 0.50.0.** Kafka source and sink connectors
 > with fake/CI conformance evidence. Live brokers are opt-in. Hub:
 > [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-kafka==0.49.0'
+pip install 'etlantic-kafka==0.50.0'
 ```
 
 ```python

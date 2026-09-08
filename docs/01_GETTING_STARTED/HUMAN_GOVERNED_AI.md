@@ -1,6 +1,6 @@
 # Human-governed AI
 
-> **Status: Available in ETLantic 0.49.0.** Budget ~15 minutes after
+> **Status: Available in ETLantic 0.50.0.** Budget ~15 minutes after
 > [Quickstart](QUICKSTART.md). PyPI only — no MCP extra and no clone.
 
 Treat every proposal as untrusted. This tutorial **validates** a proposal; it

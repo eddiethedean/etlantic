@@ -401,11 +401,15 @@ class PortableRequirement:
     path: str
     obligation: Obligation = "required"
     applicability: str = "applicable"
-    parameters: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, str] = field(default_factory=dict)
+    vocabulary: str = "dtcs"
+    version: str = "1"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.requirement_id,
+            "vocabulary": self.vocabulary,
+            "version": self.version,
             "scope": self.scope,
             "path": self.path,
             "obligation": self.obligation,

@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.49"
+current_minor: "0.50"
 audience: developer
 ---
 
@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-snowflake==0.49.0'
+pip install 'etlantic-snowflake==0.50.0'
 ```
 
 ```python

@@ -11,7 +11,7 @@ frontmatter (preferred) and/or a visible status banner:
 ---
 status: available   # available | experimental | partial | future | normative | plan
 since: "0.37.0"
-current_minor: "0.49"
+current_minor: "0.50"
 audience: adopter   # adopter | developer | maintainer | evaluator
 ---
 ```

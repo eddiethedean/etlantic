@@ -173,10 +173,21 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
     """Build adaptive handoff records from the production evaluator."""
 
     def support_report(
-        states: dict[str, str], *, target_id: str = "default"
+        states: dict[str, str],
+        *,
+        target_id: str = "default",
+        obligations: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         evidence = "adaptive-fixture-evidence"
-        requirements = requirement_records_from_mapping({"actions": list(states)})
+        requirements = tuple(
+            {
+                **record,
+                "obligation": (obligations or {}).get(
+                    str((record.get("parameters") or {}).get("value")), "required"
+                ),
+            }
+            for record in requirement_records_from_mapping({"actions": list(states)})
+        )
         requirement_ids = {
             str((record.get("parameters") or {}).get("value")): str(record["id"])
             for record in requirements
@@ -186,6 +197,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 code="PMXFORM000",
                 requirement=requirement_ids[requirement],
                 reason="fixture support result",
+                obligation=(obligations or {}).get(requirement, "required"),
                 support=state,
                 evidence_fingerprint=evidence,
                 lowering_id=(
@@ -231,9 +243,14 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
         )
 
     def candidate(
-        node: str, candidate_id: str, states: dict[str, str], *, target_id: str
+        node: str,
+        candidate_id: str,
+        states: dict[str, str],
+        *,
+        target_id: str,
+        obligations: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        report = support_report(states, target_id=target_id)
+        report = support_report(states, target_id=target_id, obligations=obligations)
         return {
             "node": node,
             "id": candidate_id,
@@ -260,6 +277,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "unknown",
                 },
                 target_id="partial",
+                obligations={"dtcs:filter": "preferred"},
             ),
             candidate(
                 "orders",
@@ -269,6 +287,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "supported_exact",
                 },
                 target_id="complete",
+                obligations={"dtcs:filter": "preferred"},
             ),
             candidate(
                 "customers",
@@ -278,6 +297,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "unknown",
                 },
                 target_id="partial",
+                obligations={"dtcs:filter": "preferred"},
             ),
             candidate(
                 "customers",
@@ -287,6 +307,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:join": "supported_exact",
                 },
                 target_id="complete",
+                obligations={"dtcs:filter": "preferred"},
             ),
         ],
         required_requirements=required,
@@ -302,6 +323,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:sort": "unknown",
                 },
                 target_id="primary",
+                obligations={"dtcs:sort": "preferred"},
             ),
             candidate(
                 "customers",
@@ -311,6 +333,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:sort": "supported_exact",
                 },
                 target_id="primary",
+                obligations={"dtcs:sort": "preferred"},
             ),
         ],
         required_requirements={
@@ -1343,6 +1366,12 @@ def main() -> int:
         "| SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |\n"
         "| SOL-050-019 | Medium | resolved by focused Pyright validation |\n"
         "| SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |\n\n"
+        "| FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |\n"
+        "| FINAL-050-002 | High | resolved by nested support-payload validation |\n"
+        "| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |\n"
+        "| FINAL-050-004 | Medium | resolved by complete unknown-category serialization |\n"
+        "| FINAL-050-005 | Medium | resolved by the 0.50 release-surface update |\n"
+        "| FINAL-050-006 | Medium | resolved by complete ledger verification |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",

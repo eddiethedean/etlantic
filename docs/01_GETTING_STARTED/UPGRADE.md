@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.49.0 (shipped Beta).**
+> **Status: Available in ETLantic 0.50.0 (shipped Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -13,11 +13,12 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.49.0** (shipped Beta) — choose your guide:
+**ETLantic 0.50.0** (shipped Beta) — choose your guide:
 
-| From version | Ordered path to 0.49 |
+| From version | Ordered path to 0.50 |
 |---|---|
-| 0.49.x | Already current |
+| 0.50.x | Already current |
+| 0.49.x | [Migration 0.49 → 0.50](../11_DEVELOPMENT/MIGRATION_0_49_TO_0_50.md) |
 | 0.48.x | [0.48 → 0.49](../11_DEVELOPMENT/MIGRATION_0_48_TO_0_49.md) |
 | 0.47.x | [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
 | 0.46.x | [0.46 → 0.47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) → [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
@@ -292,15 +293,15 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
-## 0.49 configuration cheat sheet
+## 0.50 configuration cheat sheet
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.49.0` and matching plugins / `medallantic==0.49.0` | Mix 0.48 plugins with a 0.49 core |
-| Select DuckDB explicitly with `Profile(sql_engine="duckdb")` and install `etlantic-duckdb==0.49.0` only when needed | Add database drivers to core or assume DuckDB is selected implicitly |
+| Pin `etlantic==0.50.0` and matching plugins / `medallantic==0.50.0` | Mix 0.49 plugins with a 0.50 core |
+| Replan 0.49 portable descriptors and retain requirement-level evidence | Reuse stale or evidence-free plans |
 | Keep production plugin and resource allowlists explicit | Embed secrets, rows, or payloads in plans or evidence |
 
-See [Migration 0.48 → 0.49](../11_DEVELOPMENT/MIGRATION_0_48_TO_0_49.md).
+See [Migration 0.49 → 0.50](../11_DEVELOPMENT/MIGRATION_0_49_TO_0_50.md).
 
 
 ## 0.48 configuration cheat sheet

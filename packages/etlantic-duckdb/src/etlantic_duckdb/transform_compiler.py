@@ -50,7 +50,7 @@ from etlantic_duckdb.dialect import DuckDBCompiler
 from etlantic_duckdb.frame import DuckDBFrame
 from etlantic_duckdb.plugin import DuckDBSqlPlugin
 
-__version__ = "0.49.0"
+__version__ = "0.50.0"
 
 _ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
 _FUNCTIONS = frozenset(BASELINE_FUNCTIONS)
@@ -1853,11 +1853,12 @@ def _explain_query(query: str, bound_params: Sequence[Any]) -> str:
 
 
 def _inline_sql_parameters(query: str, bound_params: Sequence[Any]) -> str:
-    """Inline safe SQL literals into a compiler-generated diagnostic query.
+    """Inline redacted type representatives into a diagnostic query.
 
-    This is used only for EXPLAIN, never for data execution. Quoted identifiers
-    and literals are left untouched so a ``?`` in a field name cannot consume a
-    binding accidentally.
+    DuckDB 1.0 cannot bind parameters to ``EXPLAIN``.  Diagnostic SQL therefore
+    uses fixed values selected only from each binding's type; user values never
+    enter the rendered statement. Quoted identifiers and literals are left
+    untouched so a ``?`` in a field name cannot consume a binding accidentally.
     """
     values = iter(bound_params)
     rendered: list[str] = []
@@ -1896,35 +1897,32 @@ def _inline_sql_parameters(query: str, bound_params: Sequence[Any]) -> str:
 
 
 def _sql_literal(value: Any) -> str:
-    """Render a scalar binding as a safely quoted SQL literal."""
+    """Render a type-compatible redacted literal without inspecting content."""
     if value is None:
         return "NULL"
     if isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
+        return "FALSE"
     if isinstance(value, int):
-        return str(value)
+        return "CAST(0 AS INTEGER)"
     if isinstance(value, Decimal):
-        return str(value)
+        return "CAST(0 AS DECIMAL(38, 18))"
     if isinstance(value, float):
-        if value != value:
-            return "CAST('nan' AS DOUBLE)"
-        if value == float("inf"):
-            return "CAST('inf' AS DOUBLE)"
-        if value == float("-inf"):
-            return "CAST('-inf' AS DOUBLE)"
-        return repr(value)
+        return "CAST(0 AS DOUBLE)"
     if isinstance(value, datetime):
-        return f"TIMESTAMP '{value.isoformat(sep=' ', timespec='microseconds')}'"
+        return "TIMESTAMP '1970-01-01 00:00:00'"
     if isinstance(value, date):
-        return f"DATE '{value.isoformat()}'"
+        return "DATE '1970-01-01'"
     if isinstance(value, time):
-        return f"TIME '{value.isoformat(timespec='microseconds')}'"
+        return "TIME '00:00:00'"
     if isinstance(value, (list, tuple)):
         return "[" + ", ".join(_sql_literal(item) for item in value) + "]"
     if isinstance(value, bytes):
-        return "X'" + value.hex() + "'"
-    escaped = str(value).replace("'", "''")
-    return f"'{escaped}'"
+        return "BLOB ''"
+    if isinstance(value, str):
+        return "CAST('' AS VARCHAR)"
+    raise TypeError(
+        f"DuckDB EXPLAIN cannot redact parameter type {type(value).__name__!r}"
+    )
 
 
 def _join_condition(
