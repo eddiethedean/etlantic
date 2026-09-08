@@ -462,44 +462,74 @@ def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
 
 
 def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() -> None:
-    from etlantic.transform.capabilities import match_requirements
-    from etlantic.transform.compiler import TransformCapabilities
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
-    capabilities = TransformCapabilities(
-        profiles=frozenset(), actions=frozenset({"dtcs:filter"}), functions=frozenset()
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "partial",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "unknown",
+                },
+            },
+            {
+                "id": "complete",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "supported_exact",
+                },
+            },
+        ],
+        required_requirements=("dtcs:join",),
+        preferred_requirements=("dtcs:filter",),
     )
-    report = match_requirements({"future_dimension": ["x"]}, capabilities)
-    assert report.supported is False
-    assert any(item.support == "unknown" for item in report.findings)
+    partial = next(item for item in result["candidates"] if item["id"] == "partial")
+    assert partial["eligible"] is False
+    assert partial["decision"] == "eliminated_before_preference_scoring"
+    assert result["selected"] == "complete"
 
 
 def test_adaptive_preferred_unknown_has_no_positive_preference() -> None:
-    from etlantic.transform.compiler import TransformSupportFinding
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
-    finding = TransformSupportFinding(
-        code="PMXFORM999",
-        requirement="action:dtcs:sort",
-        reason="no evidence",
-        obligation="preferred",
-        support="unknown",
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "unknown-preference",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:sort": "unknown",
+                },
+            }
+        ],
+        required_requirements=("dtcs:filter",),
+        preferred_requirements=("dtcs:sort",),
     )
-    assert finding.support not in {"supported_exact", "supported_with_lowering"}
+    assert result["candidates"][0]["preferred_score"] == 0
 
 
 def test_adaptive_lowering_records_effects_and_identity() -> None:
-    from etlantic.transform.compiler import TransformSupportFinding
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
-    finding = TransformSupportFinding(
-        code="PMXFORM200",
-        requirement="action:dtcs:filter",
-        reason="deterministic lowering",
-        support="supported_with_lowering",
-        lowering_id="lowering/filter-v1",
-        physical_effects=("materialization",),
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "lowered",
+                "requirements": {"dtcs:filter": "supported_with_lowering"},
+                "lowering": {
+                    "id": "lowering/filter-v1",
+                    "physical_effects": ["materialization"],
+                },
+            }
+        ],
+        required_requirements=("dtcs:filter",),
     )
-    payload = finding.to_dict()
-    assert payload["lowering_id"] == "lowering/filter-v1"
-    assert payload["physical_effects"] == ["materialization"]
+    lowering = result["candidates"][0]["lowering"]
+    assert lowering == {
+        "id": "lowering/filter-v1",
+        "physical_effects": ["materialization"],
+    }
 
 
 def test_adaptive_evidence_drift_rejects_before_io() -> None:

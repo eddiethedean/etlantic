@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import io
 import json
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -201,6 +203,8 @@ class DataFusionTransformCompiler:
         input_ids = list((plan.get("inputs") or {}).keys())
         if len(relations) == 1 and input_ids and input_ids[0] not in relations:
             relations[input_ids[0]] = next(iter(relations.values()))
+        native_explain_digests: list[str] = []
+        native_action_digests: dict[str, str] = {}
         for index, action in enumerate(plan.get("actions") or ()):
             kind = action.get("kind") or {}
             action_name = str(kind.get("action") or "")
@@ -224,6 +228,15 @@ class DataFusionTransformCompiler:
             )
             action_id = str(kind.get("id") or action.get("id") or f"a{index}")
             relations[action_id] = out
+            explain_value = out.explain()
+            if not isinstance(explain_value, str):
+                explain_buffer = io.StringIO()
+                with contextlib.redirect_stdout(explain_buffer):
+                    out.explain()
+                explain_value = explain_buffer.getvalue()
+            explain_digest = hashlib.sha256(explain_value.encode("utf-8")).hexdigest()
+            native_explain_digests.append(explain_digest)
+            native_action_digests[action_id] = explain_digest
         actions = plan.get("actions") or []
         fallback = str(
             ((actions[-1].get("kind") or {}).get("id") if actions else None)
@@ -249,7 +262,9 @@ class DataFusionTransformCompiler:
                 "engine": "datafusion",
                 "lazy": True,
                 "evidence_fingerprint": self.info.evidence_fingerprint,
-                "host_fallback": False,
+                "fallback_events": [],
+                "native_explain_digests": native_explain_digests,
+                "native_action_digests": native_action_digests,
             },
         )
 

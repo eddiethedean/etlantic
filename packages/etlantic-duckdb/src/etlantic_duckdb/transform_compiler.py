@@ -255,6 +255,8 @@ class DuckDBTransformCompiler:
         current = relations[current_name]
         current_columns = columns[current_name]
         native_statement_digests: list[str] = []
+        native_explain_digests: list[str] = []
+        native_action_digests: dict[str, str] = {}
         for index, action in enumerate(plan.get("actions") or ()):
             kind = action.get("kind") or {}
             target_name = str(kind.get("target") or "")
@@ -262,7 +264,7 @@ class DuckDBTransformCompiler:
                 raise ValueError(f"missing DuckDB action relation {target_name!r}")
             source = relations[target_name] if target_name else current
             source_columns = columns[target_name] if target_name else current_columns
-            current, out_cols, statement_digest = _apply_action(
+            current, out_cols, statement_digest, explain_digest = _apply_action(
                 plugin,
                 session,
                 source,
@@ -277,11 +279,15 @@ class DuckDBTransformCompiler:
                 ),
             )
             native_statement_digests.append(statement_digest)
+            native_explain_digests.append(explain_digest)
             action_id = str(
                 (action.get("kind") or {}).get("id") or action.get("id") or f"a{index}"
             )
             relations[action_id] = current
             columns[action_id] = out_cols
+            native_action_digests[action_id] = hashlib.sha256(
+                f"{statement_digest}:{explain_digest}".encode()
+            ).hexdigest()
             current_columns = out_cols
         lineage = (plan.get("requirements") or {}).get("dependencies") or []
         actions = plan.get("actions") or []
@@ -370,7 +376,9 @@ class DuckDBTransformCompiler:
                 "lazy": True,
                 "evidence_fingerprint": self.info.evidence_fingerprint,
                 "native_statement_digests": native_statement_digests,
-                "host_fallback": False,
+                "native_explain_digests": native_explain_digests,
+                "native_action_digests": native_action_digests,
+                "fallback_events": [],
             },
         )
 
@@ -1550,7 +1558,7 @@ def _apply_action(
     relations: dict[str, RelationRef],
     relation_columns: dict[str, list[str]],
     relation_prefix: str,
-) -> tuple[RelationRef, list[str], str]:
+) -> tuple[RelationRef, list[str], str, str]:
     kind = action.get("kind") or {}
     name = kind.get("action")
     params = kind.get("parameters") or {}
@@ -1815,9 +1823,20 @@ def _apply_action(
     else:
         raise ValueError(f"DuckDB action {name!r} is not implemented")
     target = RelationRef(name=f"{relation_prefix}_{_safe(str(kind.get('id') or name))}")
+    explain_rows = session.execute(
+        f"EXPLAIN {query}", bound_params if bound_params else None
+    ).fetchall()
+    explain_digest = hashlib.sha256(
+        repr([tuple(row) for row in explain_rows]).encode("utf-8")
+    ).hexdigest()
     statement = f"CREATE TEMP TABLE {plugin.quote_identifier(target.name)} AS {query}"
     session.execute(statement, bound_params if bound_params else None)
-    return target, out_names, hashlib.sha256(statement.encode("utf-8")).hexdigest()
+    return (
+        target,
+        out_names,
+        hashlib.sha256(statement.encode("utf-8")).hexdigest(),
+        explain_digest,
+    )
 
 
 def _join_condition(

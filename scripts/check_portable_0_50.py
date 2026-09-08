@@ -177,10 +177,17 @@ def main() -> int:
         raise SystemExit("evidence index must provide metadata for every artifact")
     for name in listed:
         item = metadata.get(name)
+        schema = (
+            json.loads((EVIDENCE / name).read_text()).get("schema")
+            if name.endswith(".json")
+            else "markdown/1"
+        )
         if (
             not isinstance(item, dict)
             or item.get("path") != name
             or not str(item.get("id") or "").strip()
+            or item.get("schema") != schema
+            or item.get("sha256") != digests.get(name)
             or not str(item.get("command") or "").strip()
             or not isinstance(item.get("environment"), dict)
             or item.get("result") != "pass"
@@ -291,8 +298,19 @@ def main() -> int:
         ("duckdb", "lazy", "native"),
     }
     matrix = coverage.get("qualification_matrix")
+    campaigns = coverage.get("campaign_results")
+    campaign_ids = {
+        item.get("id")
+        for item in campaigns
+        if isinstance(item, dict)
+        and item.get("result") == "pass"
+        and item.get("exit_code") == 0
+    }
     if (
         not isinstance(matrix, list)
+        or not isinstance(campaigns, list)
+        or len(campaign_ids) != len(campaigns)
+        or len(campaign_ids) < 4
         or {
             (item.get("engine"), item.get("mode"), item.get("dialect"))
             for item in matrix
@@ -300,7 +318,11 @@ def main() -> int:
         }
         != expected_matrix
         or any(
-            item.get("result") != "pass" for item in matrix if isinstance(item, dict)
+            item.get("result") != "pass"
+            or not item.get("campaign_ids")
+            or not set(item.get("campaign_ids") or {}).issubset(campaign_ids)
+            for item in matrix
+            if isinstance(item, dict)
         )
     ):
         raise SystemExit("qualification matrix is incomplete or not passing")
@@ -371,6 +393,7 @@ def main() -> int:
             or not isinstance(action_proof, dict)
             or action_proof.get("proof_id") != expected
             or not action_proof.get("native_explain_digest")
+            or not action_proof.get("action_explain_digest")
             or not action_proof.get("action_native_digest")
             or not action_proof.get("result_digest")
             or action_proof.get("host_fallback") is not False
@@ -384,6 +407,23 @@ def main() -> int:
             raise SystemExit(
                 "SQL/DuckDB pushdown proof omits temporary materialization effects"
             )
+        if engine == "sql":
+            sqlite_execution = (proofs.get(engine) or {}).get("sqlite_execution")
+            if (
+                not isinstance(sqlite_execution, dict)
+                or not re.fullmatch(
+                    r"[0-9a-f]{64}",
+                    str(sqlite_execution.get("result_digest") or ""),
+                )
+                or not re.fullmatch(
+                    r"[0-9a-f]{64}",
+                    str(sqlite_execution.get("native_explain_digest") or ""),
+                )
+                or sqlite_execution.get("host_fallback") is not False
+                or not isinstance(sqlite_execution.get("action_native_digests"), dict)
+                or not isinstance(sqlite_execution.get("action_explain_digests"), dict)
+            ):
+                raise SystemExit("SQL pushdown proof lacks SQLite execution evidence")
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
     )
@@ -423,6 +463,35 @@ def main() -> int:
             raise SystemExit(
                 "adaptive handoff scenario is not tied to an executed fixture"
             )
+        if scenario["id"] != "evidence-drift":
+            evaluation = scenario.get("candidate_evaluation")
+            if (
+                not isinstance(evaluation, dict)
+                or not isinstance(evaluation.get("candidates"), list)
+                or not evaluation["candidates"]
+            ):
+                raise SystemExit(
+                    "adaptive scenario lacks candidate evaluation evidence"
+                )
+            for candidate in evaluation["candidates"]:
+                if (
+                    not isinstance(candidate, dict)
+                    or not isinstance(candidate.get("id"), str)
+                    or not isinstance(candidate.get("eligible"), bool)
+                    or candidate.get("decision")
+                    not in {"eligible", "eliminated_before_preference_scoring"}
+                    or (
+                        candidate["eligible"]
+                        and not isinstance(candidate.get("preferred_score"), int)
+                    )
+                    or (
+                        not candidate["eligible"]
+                        and candidate.get("preferred_score") is not None
+                    )
+                ):
+                    raise SystemExit("adaptive candidate evaluation is incomplete")
+            if not isinstance(evaluation.get("selected"), (str, type(None))):
+                raise SystemExit("adaptive candidate selection is invalid")
     if adaptive.get("execution") != "planning-only; no adaptive execution":
         raise SystemExit("adaptive handoff must declare planning-only execution")
     dependency = json.loads(
@@ -432,10 +501,16 @@ def main() -> int:
         dependency.get("command") or ""
     ):
         raise SystemExit("dependency evidence must run isolated wheel checks")
+    if "isolated_local_conformance" not in set(dependency.get("checks") or ()):
+        raise SystemExit("dependency evidence must run isolated Local conformance")
     findings_doc = (EVIDENCE / "FINDINGS_0_50.md").read_text()
     migration_doc = (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").read_text()
     whats_new_doc = (EVIDENCE / "WHATS_NEW_0_50.md").read_text()
-    if "Open findings: 0" not in findings_doc or "SOL-050-008" not in findings_doc:
+    required_findings = {f"SOL-050-{index:03d}" for index in range(1, 18)}
+    if (
+        not required_findings.issubset(set(re.findall(r"SOL-050-\d{3}", findings_doc)))
+        or "Sol re-review pending" not in findings_doc
+    ):
         raise SystemExit("findings ledger is incomplete")
     for phrase in ("baseline", "repin", "rollback", "native"):
         if phrase not in migration_doc.lower():
@@ -450,6 +525,18 @@ def main() -> int:
         r"[0-9a-f]{64}", str(cross_engine.get("normalized_result_digest") or "")
     ):
         raise SystemExit("cross-engine digest must be derived from canonical output")
+    canonical_digests = cross_engine.get("canonical_result_digests")
+    if (
+        not isinstance(canonical_digests, dict)
+        or set(canonical_digests) != {"postgresql", "sqlite"}
+        or any(
+            not re.fullmatch(r"[0-9a-f]{64}", str(value))
+            for value in canonical_digests.values()
+        )
+        or cross_engine.get("normalized_result_digest")
+        != canonical_digests["postgresql"]
+    ):
+        raise SystemExit("cross-engine canonical digests are incomplete")
     print("0.50 evidence artifact set is complete and structurally valid")
     return 0
 

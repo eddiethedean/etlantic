@@ -248,6 +248,8 @@ class SqlTransformCompiler:
             relations: dict[str, RelationRef] = {}
             relation_columns: dict[str, list[str]] = {}
             native_statement_digests: list[str] = []
+            native_explain_digests: list[str] = []
+            native_action_digests: dict[str, str] = {}
             for name, frame in frames.items():
                 table = _safe_table(name)
                 _materialize_table(conn, table, frame.rows, dialect=dialect)
@@ -299,14 +301,25 @@ class SqlTransformCompiler:
                     ),
                 )
                 bound = dict(compiled_sql.metadata.get("_bound_params") or {})
+                explain_rows = conn.execute(
+                    _text(f"EXPLAIN {compiled_sql.text}"), bound
+                ).fetchall()
+                explain_digest = hashlib.sha256(
+                    repr([tuple(row) for row in explain_rows]).encode("utf-8")
+                ).hexdigest()
                 create_sql = (
                     f"CREATE TEMP TABLE {compiler.quote(step_table)} AS "
                     f"{compiled_sql.text}"
                 )
                 conn.execute(_text(create_sql), bound)
-                native_statement_digests.append(
-                    hashlib.sha256(create_sql.encode("utf-8")).hexdigest()
-                )
+                statement_digest = hashlib.sha256(
+                    create_sql.encode("utf-8")
+                ).hexdigest()
+                native_statement_digests.append(statement_digest)
+                native_explain_digests.append(explain_digest)
+                native_action_digests[action_id] = hashlib.sha256(
+                    f"{statement_digest}:{explain_digest}".encode()
+                ).hexdigest()
                 current_rel = RelationRef(name=step_table)
                 current_cols = out_cols
                 relations[action_id] = current_rel
@@ -343,7 +356,9 @@ class SqlTransformCompiler:
                 "logical_nodes": logical_nodes,
                 "dialect": dialect,
                 "native_statement_digests": native_statement_digests,
-                "host_fallback": False,
+                "native_explain_digests": native_explain_digests,
+                "native_action_digests": native_action_digests,
+                "fallback_events": [],
             },
         )
 

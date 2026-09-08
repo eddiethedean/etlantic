@@ -54,6 +54,14 @@ def main() -> int:
             if package == "etlantic":
                 _run(
                     str(python),
+                    "-c",
+                    "from etlantic.testing import run_portable_transform_conformance_suite; "
+                    "from etlantic.transform.local_compiler import LocalTransformCompiler; "
+                    "run_portable_transform_conformance_suite(LocalTransformCompiler()); "
+                    "print('local_conformance: pass')",
+                )
+                _run(
+                    str(python),
                     str(ROOT / "scripts/run_portable_0_50_canonical.py"),
                     "--engines",
                     "local",

@@ -28,6 +28,7 @@ from etlantic.testing.portable_transform_conformance import (
     normalize_rows,
     rows_from_frame,
 )
+from etlantic.transform.capabilities import evaluate_adaptive_candidates
 from etlantic.transform.compiler import (
     TransformCompileContext,
     TransformExecutionContext,
@@ -79,25 +80,63 @@ ARTIFACTS = (
     "MIGRATION_0_49_TO_0_50.md",
     "WHATS_NEW_0_50.md",
 )
-PUBLIC_COMMAND = (
+PUBLIC_POSTGRES_COMMAND = (
     "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q "
     "tests/portable_conformance/test_public_suite.py "
     "tests/sql/test_sql_portable_security.py "
-    "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch; "
+    "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch"
+)
+PUBLIC_SQLITE_COMMAND = (
     "ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q "
     "tests/portable_conformance/test_public_suite.py "
     "tests/sql/test_sql_portable_security.py "
     "tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch"
 )
-CANONICAL_COMMAND = (
+PUBLIC_COMMAND = f"{PUBLIC_POSTGRES_COMMAND} && {PUBLIC_SQLITE_COMMAND}"
+CANONICAL_POSTGRES_COMMAND = (
     "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
-    "python scripts/run_portable_0_50_canonical.py --engines all; "
+    "python scripts/run_portable_0_50_canonical.py --engines all"
+)
+CANONICAL_SQLITE_COMMAND = (
     "ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
     "python scripts/run_portable_0_50_canonical.py --engines all"
+)
+CANONICAL_COMMAND = f"{CANONICAL_POSTGRES_COMMAND} && {CANONICAL_SQLITE_COMMAND}"
+PUBLIC_CAMPAIGNS = (
+    {
+        "id": "public-postgresql",
+        "engine": "all",
+        "mode": "conformance",
+        "dialect": "postgresql",
+        "command": PUBLIC_POSTGRES_COMMAND,
+    },
+    {
+        "id": "public-sqlite",
+        "engine": "all",
+        "mode": "conformance",
+        "dialect": "sqlite",
+        "command": PUBLIC_SQLITE_COMMAND,
+    },
+)
+CANONICAL_CAMPAIGNS = (
+    {
+        "id": "canonical-postgresql",
+        "engine": "all",
+        "mode": "canonical",
+        "dialect": "postgresql",
+        "command": CANONICAL_POSTGRES_COMMAND,
+    },
+    {
+        "id": "canonical-sqlite",
+        "engine": "all",
+        "mode": "canonical",
+        "dialect": "sqlite",
+        "command": CANONICAL_SQLITE_COMMAND,
+    },
 )
 ADAPTIVE_FIXTURES = (
     "test_requirement_support_serializes_unknown_requirements_fail_closed",
@@ -117,32 +156,89 @@ ADAPTIVE_COMMAND = (
     "test_adaptive_lowering_records_effects_and_identity or "
     "test_adaptive_evidence_drift_rejects_before_io'"
 )
-ADAPTIVE_SCENARIOS = [
-    {
-        "id": "partial-required-unknown",
-        "fixture": "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
-        "required_unknown": "eliminated_before_preference_scoring",
-        "result": "pass",
-    },
-    {
-        "id": "preferred-unknown",
-        "fixture": "test_adaptive_preferred_unknown_has_no_positive_preference",
-        "preferred_unknown_score": 0,
-        "result": "pass",
-    },
-    {
-        "id": "lowering-effects",
-        "fixture": "test_adaptive_lowering_records_effects_and_identity",
-        "lowering_id": "lowering/filter-v1",
-        "physical_effects": ["materialization"],
-        "result": "pass",
-    },
-    {
-        "id": "evidence-drift",
-        "fixture": "test_adaptive_evidence_drift_rejects_before_io",
-        "result": "rejected_before_io",
-    },
-]
+
+
+def _adaptive_scenarios() -> list[dict[str, Any]]:
+    """Build adaptive handoff records from the production evaluator."""
+    required = ("dtcs:join",)
+    preferred = ("dtcs:filter",)
+    required_result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "partial",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "unknown",
+                },
+            },
+            {
+                "id": "complete",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:join": "supported_exact",
+                },
+            },
+        ],
+        required_requirements=required,
+        preferred_requirements=preferred,
+    )
+    preference_result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "unknown-preference",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "dtcs:sort": "unknown",
+                },
+            }
+        ],
+        required_requirements=("dtcs:filter",),
+        preferred_requirements=("dtcs:sort",),
+    )
+    lowering_result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "lowered",
+                "requirements": {"dtcs:filter": "supported_with_lowering"},
+                "lowering": {
+                    "id": "lowering/filter-v1",
+                    "physical_effects": ["materialization"],
+                },
+            }
+        ],
+        required_requirements=("dtcs:filter",),
+    )
+    return [
+        {
+            "id": "partial-required-unknown",
+            "fixture": ADAPTIVE_FIXTURES[2],
+            "requirements": required,
+            "candidate_evaluation": required_result,
+            "result": "pass",
+        },
+        {
+            "id": "preferred-unknown",
+            "fixture": ADAPTIVE_FIXTURES[3],
+            "requirements": ("dtcs:filter", "dtcs:sort"),
+            "candidate_evaluation": preference_result,
+            "result": "pass",
+        },
+        {
+            "id": "lowering-effects",
+            "fixture": ADAPTIVE_FIXTURES[4],
+            "requirements": ("dtcs:filter",),
+            "candidate_evaluation": lowering_result,
+            "result": "pass",
+        },
+        {
+            "id": "evidence-drift",
+            "fixture": ADAPTIVE_FIXTURES[5],
+            "preflight": "reject_stale_fingerprint_before_io",
+            "result": "rejected_before_io",
+        },
+    ]
+
+
 DEPENDENCY_COMMAND = (
     "uv run pytest -q tests/sql/test_sql_portable_security.py && "
     "uv run python scripts/check_portable_0_50_dependencies.py"
@@ -428,11 +524,8 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
             elif engine == "pyspark":
                 frame.explain(mode="extended")
             elif engine in {"sql", "duckdb"}:
-                # SQL/DuckDB execute sealed native statements.  Their metrics
-                # contain digests of those statements, never statement text or
-                # bound values, which keeps evidence secret-free.
-                if not metrics.get("native_statement_digests"):
-                    raise ValueError("native statement digest was not emitted")
+                if not metrics.get("native_explain_digests"):
+                    raise ValueError("native EXPLAIN digest was not emitted")
             else:
                 raise ValueError("host-owned engine has no native pushdown boundary")
     except Exception as exc:
@@ -451,13 +544,16 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
             "engine": engine,
             "native_explain": value,
             "native_statement_digests": metrics.get("native_statement_digests"),
+            "native_explain_digests": metrics.get("native_explain_digests"),
         }
     )
 
 
 def _execute_pushdown_fixture(
     compiler: Any,
-) -> tuple[str, str, dict[str, str], bool]:
+    *,
+    database_url: str | None = None,
+) -> tuple[str, str, dict[str, str], dict[str, str], bool]:
     """Execute all actions and return action-correlated native proof digests."""
     engine = compiler.info.engine
     plan = _pushdown_plan()
@@ -470,6 +566,8 @@ def _execute_pushdown_fixture(
     factory = default_frame_factory(engine)
     try:
         metadata: dict[str, Any] = {}
+        if database_url is not None:
+            metadata["database_url"] = database_url
         session = getattr(getattr(factory, "_etlantic_handle", None), "session", None)
         if session is not None:
             metadata["spark_session"] = session
@@ -498,12 +596,21 @@ def _execute_pushdown_fixture(
             for index, item in enumerate(plan.get("actions") or ())
         ]
         statement_digests = list(bundle.metrics.get("native_statement_digests") or ())
+        explain_digests = list(bundle.metrics.get("native_explain_digests") or ())
+        observed_action_digests = dict(
+            bundle.metrics.get("native_action_digests") or {}
+        )
         action_digests = {
-            action_id: _digest(
+            action_id: observed_action_digests.get(action_id)
+            or _digest(
                 {
                     "engine": engine,
                     "action": action_id,
-                    "native_explain_digest": explain_digest,
+                    "native_explain_digest": (
+                        explain_digests[index]
+                        if index < len(explain_digests)
+                        else explain_digest
+                    ),
                     "native_statement_digest": (
                         statement_digests[index]
                         if index < len(statement_digests)
@@ -513,13 +620,23 @@ def _execute_pushdown_fixture(
             )
             for index, action_id in enumerate(action_ids)
         }
-        if "host_fallback" not in bundle.metrics:
-            raise SystemExit(f"{engine} did not report host-fallback status")
+        action_explain_digests = {
+            action_id: (
+                explain_digests[index]
+                if index < len(explain_digests)
+                else explain_digest
+            )
+            for index, action_id in enumerate(action_ids)
+        }
+        fallback_events = bundle.metrics.get("fallback_events")
+        if not isinstance(fallback_events, list):
+            raise SystemExit(f"{engine} did not report host-fallback events")
         return (
             result_digest,
             explain_digest,
             action_digests,
-            bool(bundle.metrics["host_fallback"]),
+            action_explain_digests,
+            bool(fallback_events),
         )
     finally:
         provider = getattr(factory, "_etlantic_provider", None)
@@ -611,8 +728,14 @@ def main() -> int:
         raise SystemExit(
             "qualification requires a clean source tree outside generated evidence"
         )
-    _run(PUBLIC_COMMAND)
-    canonical_output = _run(CANONICAL_COMMAND)
+    campaign_results: list[dict[str, Any]] = []
+    for campaign in PUBLIC_CAMPAIGNS:
+        _run(str(campaign["command"]))
+        campaign_results.append({**campaign, "result": "pass", "exit_code": 0})
+    canonical_outputs: list[str] = []
+    for campaign in CANONICAL_CAMPAIGNS:
+        canonical_outputs.append(_run(str(campaign["command"])))
+        campaign_results.append({**campaign, "result": "pass", "exit_code": 0})
     _run(ADAPTIVE_COMMAND)
     _run(DEPENDENCY_COMMAND)
 
@@ -685,7 +808,13 @@ def main() -> int:
                 "semantic_modes": sorted(caps.semantic_modes),
                 "execution_modes": {"eager": caps.eager, "lazy": caps.lazy},
                 "mode_results": [
-                    {**item, "result": "pass"}
+                    {
+                        **item,
+                        "result": "pass",
+                        "campaign_ids": [
+                            campaign["id"] for campaign in campaign_results
+                        ],
+                    }
                     for item in QUALIFICATION_MATRIX
                     if item["engine"] == engine
                 ],
@@ -704,16 +833,37 @@ def main() -> int:
                 + "; ".join(f.requirement for f in analyzed.findings)
             )
         native_target = engine in {"sql", "pyspark", "datafusion", "duckdb"}
-        result_digest, explain_digest, action_digests, host_fallback = (
+        (
+            result_digest,
+            explain_digest,
+            action_digests,
+            action_explain_digests,
+            host_fallback,
+        ) = (
             _execute_pushdown_fixture(compiler)
             if native_target
-            else (None, None, {}, False)
+            else (None, None, {}, {}, False)
         )
         pushdown_proofs[engine] = {
             "result_digest": result_digest,
             "native_explain_digest": explain_digest,
             "actions": {},
         }
+        sqlite_pushdown = (
+            _execute_pushdown_fixture(
+                compiler, database_url="sqlite+pysqlite:///:memory:"
+            )
+            if engine == "sql"
+            else None
+        )
+        if sqlite_pushdown is not None:
+            pushdown_proofs[engine]["sqlite_execution"] = {
+                "result_digest": sqlite_pushdown[0],
+                "native_explain_digest": sqlite_pushdown[1],
+                "action_native_digests": sqlite_pushdown[2],
+                "action_explain_digests": sqlite_pushdown[3],
+                "host_fallback": sqlite_pushdown[4],
+            }
         for finding in analyzed.pushdown:
             record = finding.to_dict()
             record["engine"] = engine
@@ -723,6 +873,7 @@ def main() -> int:
                 pushdown_proofs[engine]["actions"][target] = {
                     "proof_id": proof_id,
                     "native_explain_digest": explain_digest,
+                    "action_explain_digest": action_explain_digests.get(target),
                     "action_native_digest": action_digests.get(target),
                     "result_digest": result_digest,
                     "action": record.get("action"),
@@ -806,8 +957,14 @@ def main() -> int:
             ),
             "negative_states": ["unsupported", "unavailable", "unknown"],
             "qualification_matrix": [
-                {**item, "result": "pass"} for item in QUALIFICATION_MATRIX
+                {
+                    **item,
+                    "result": "pass",
+                    "campaign_ids": [campaign["id"] for campaign in campaign_results],
+                }
+                for item in QUALIFICATION_MATRIX
             ],
+            "campaign_results": campaign_results,
         },
     )
     for engine in ENGINES:
@@ -858,11 +1015,30 @@ def main() -> int:
             "normalized_result_digest": next(
                 (
                     line.partition(":")[2].strip()
-                    for line in canonical_output.splitlines()
+                    for output in canonical_outputs
+                    for line in output.splitlines()
                     if line.startswith("canonical_result_digest:")
                 ),
                 "",
             ),
+            "canonical_result_digests": {
+                "postgresql": next(
+                    (
+                        line.partition(":")[2].strip()
+                        for line in canonical_outputs[0].splitlines()
+                        if line.startswith("canonical_result_digest:")
+                    ),
+                    "",
+                ),
+                "sqlite": next(
+                    (
+                        line.partition(":")[2].strip()
+                        for line in canonical_outputs[1].splitlines()
+                        if line.startswith("canonical_result_digest:")
+                    ),
+                    "",
+                ),
+            },
         },
     )
     _write_json(
@@ -897,7 +1073,7 @@ def main() -> int:
             "command": ADAPTIVE_COMMAND,
             "environment": environment,
             "fixtures": list(ADAPTIVE_FIXTURES),
-            "scenarios": ADAPTIVE_SCENARIOS,
+            "scenarios": _adaptive_scenarios(),
             "execution": "planning-only; no adaptive execution",
             "source_rows": False,
         },
@@ -914,6 +1090,7 @@ def main() -> int:
                 "bound_parameters",
                 "trusted_fragment_rejection",
                 "isolated_wheel_builds",
+                "isolated_local_conformance",
             ],
         },
     )
@@ -928,9 +1105,19 @@ def main() -> int:
         "| SOL-050-005 | High | resolved by the complete backend campaign |\n"
         "| SOL-050-006 | High | resolved by adaptive handoff scenarios |\n"
         "| SOL-050-007 | Medium | resolved by release documentation |\n"
-        "| SOL-050-008 | Low | resolved by formatting verification |\n\n"
-        "Open findings: 0. The evidence index, source digest, and artifact digests "
-        "are the release record for this disposition.\n",
+        "| SOL-050-008 | Low | resolved by formatting verification |\n"
+        "| SOL-050-009 | High | resolved by action-level native evidence |\n"
+        "| SOL-050-010 | Medium | resolved by independent backend campaigns |\n"
+        "| SOL-050-011 | High | resolved by candidate evaluation evidence |\n"
+        "| SOL-050-012 | Medium | resolved by canonical digest and metadata checks |\n"
+        "| SOL-050-013 | Medium | resolved by source and artifact digest linkage |\n"
+        "| SOL-050-014 | High | resolved by fail-fast campaign execution |\n"
+        "| SOL-050-015 | High | resolved by action-correlated EXPLAIN evidence |\n"
+        "| SOL-050-016 | High | resolved by executable adaptive candidate evaluation |\n"
+        "| SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |\n\n"
+        "Implementation resolutions are complete; Sol re-review pending. The "
+        "evidence index, source digest, and artifact digests are the release record "
+        "for this disposition.\n",
         encoding="utf-8",
     )
     (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").write_text(
@@ -964,10 +1151,19 @@ def main() -> int:
         name: hashlib.sha256((EVIDENCE / name).read_bytes()).hexdigest()
         for name in ARTIFACTS
     }
+    artifact_schemas = {
+        name: (
+            json.loads((EVIDENCE / name).read_text()).get("schema")
+            if name.endswith(".json")
+            else "markdown/1"
+        )
+        for name in ARTIFACTS
+    }
     artifact_metadata = {
         name: {
             "id": Path(name).stem,
             "path": name,
+            "schema": artifact_schemas[name],
             "sha256": digests[name],
             "command": (
                 CANONICAL_COMMAND

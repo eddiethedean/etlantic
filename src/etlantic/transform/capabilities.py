@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from etlantic.transform.compiler import (
+    SUPPORT_STATES,
     TransformCapabilities,
     TransformSupportFinding,
     TransformSupportReport,
@@ -409,6 +410,95 @@ def match_requirements(
         findings=tuple(findings),
         requirement_findings=tuple(canonical),
     )
+
+
+def evaluate_adaptive_candidates(
+    candidates: Sequence[Mapping[str, Any]],
+    *,
+    required_requirements: Sequence[str] = (),
+    preferred_requirements: Sequence[str] = (),
+) -> dict[str, Any]:
+    """Evaluate candidate support vectors before preference scoring.
+
+    Adaptive selection must eliminate a candidate with an unknown or negative
+    required requirement before considering preferred capabilities. Unknown
+    preferred requirements contribute no score. The returned decision record is
+    data-only so it can be persisted as qualification evidence.
+    """
+    required = {str(item) for item in required_requirements}
+    preferred = {str(item) for item in preferred_requirements}
+    decisions: list[dict[str, Any]] = []
+    for candidate in candidates:
+        if not isinstance(candidate, Mapping):
+            raise TypeError("adaptive candidates must be mappings")
+        candidate_id = str(candidate.get("id") or "")
+        if not candidate_id:
+            raise ValueError("adaptive candidate id is required")
+        vectors = candidate.get("requirements")
+        if not isinstance(vectors, Mapping):
+            raise ValueError("adaptive candidate requirements must be a mapping")
+        normalized = {str(key): str(value) for key, value in vectors.items()}
+        invalid = set(normalized.values()) - SUPPORT_STATES
+        if invalid:
+            raise ValueError("adaptive candidate contains an invalid support state")
+        required_failures = [
+            requirement
+            for requirement in sorted(required)
+            if normalized.get(requirement)
+            not in {"supported_exact", "supported_with_lowering"}
+        ]
+        lowering = candidate.get("lowering")
+        lowering_record: dict[str, Any] | None = None
+        if lowering is not None:
+            if not isinstance(lowering, Mapping):
+                raise ValueError("adaptive lowering must be a mapping")
+            lowering_id = str(lowering.get("id") or "")
+            effects = lowering.get("physical_effects") or []
+            if (
+                not lowering_id
+                or not isinstance(effects, Sequence)
+                or isinstance(effects, (str, bytes))
+            ):
+                raise ValueError("adaptive lowering requires id and physical effects")
+            lowering_record = {
+                "id": lowering_id,
+                "physical_effects": [str(effect) for effect in effects],
+            }
+        if required_failures:
+            decisions.append(
+                {
+                    "id": candidate_id,
+                    "eligible": False,
+                    "decision": "eliminated_before_preference_scoring",
+                    "required_failures": required_failures,
+                    "preferred_score": None,
+                    **({"lowering": lowering_record} if lowering_record else {}),
+                }
+            )
+            continue
+        score = sum(
+            2 if normalized.get(requirement) == "supported_exact" else 1
+            for requirement in preferred
+            if normalized.get(requirement)
+            in {"supported_exact", "supported_with_lowering"}
+        )
+        decisions.append(
+            {
+                "id": candidate_id,
+                "eligible": True,
+                "decision": "eligible",
+                "required_failures": [],
+                "preferred_score": score,
+                **({"lowering": lowering_record} if lowering_record else {}),
+            }
+        )
+    eligible = [item for item in decisions if item["eligible"]]
+    selected = (
+        max(eligible, key=lambda item: (item["preferred_score"], item["id"]))["id"]
+        if eligible
+        else None
+    )
+    return {"candidates": decisions, "selected": selected}
 
 
 def _contains_distinct_three_state(node: Any) -> bool:

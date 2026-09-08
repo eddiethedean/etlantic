@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
+import io
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -280,6 +283,8 @@ class PySparkTransformCompiler:
             if input_id not in frames and len(inputs) == 1:
                 frames[input_id] = next(iter(frames.values()))
 
+        native_explain_digests: list[str] = []
+        native_action_digests: dict[str, str] = {}
         for action in plan.get("actions") or []:
             kind = action.get("kind") or {}
             action_id = str(kind.get("id") or action.get("id"))
@@ -292,6 +297,14 @@ class PySparkTransformCompiler:
                 parameters=dict(parameters),
                 frames=frames,
             )
+            explain_buffer = io.StringIO()
+            with contextlib.redirect_stdout(explain_buffer):
+                frames[action_id].explain(mode="extended")
+            explain_digest = hashlib.sha256(
+                explain_buffer.getvalue().encode("utf-8")
+            ).hexdigest()
+            native_explain_digests.append(explain_digest)
+            native_action_digests[action_id] = explain_digest
 
         valid: dict[str, Any] = {}
         lineage = (plan.get("requirements") or {}).get("dependencies") or []
@@ -315,7 +328,9 @@ class PySparkTransformCompiler:
             metrics={
                 "engine": "pyspark",
                 "udf_policy": "deny",
-                "host_fallback": False,
+                "fallback_events": [],
+                "native_explain_digests": native_explain_digests,
+                "native_action_digests": native_action_digests,
             },
         )
 
