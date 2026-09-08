@@ -8,10 +8,10 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
-  "repository_commit": "6583c0d68b8d465eb33bed7e419358d9ecc2d60a",
+  "repository_commit": "2aaaa2e46626184e526327c36ada96564df57228",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "0c247419b5d62d34f4c20ff0bca57aa3594357b00d56cd3ea3465656fcac9171",
+  "source_tree_digest": "6adecb34ae189d4081f880c66be961fae9ee4c7468a05055f294106f8ea184c5",
   "tests": [
     "tests/portable_conformance/test_public_suite.py",
     "tests/sql/test_sql_portable_security.py",
