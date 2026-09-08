@@ -595,6 +595,55 @@ def test_adaptive_lowering_records_effects_and_identity() -> None:
     }
 
 
+def test_adaptive_lowering_preserves_independent_identities() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    support_report = _adaptive_support_report(
+        {
+            "dtcs:filter": "supported_with_lowering",
+            "dtcs:join": "supported_with_lowering",
+        }
+    )
+    support_report["findings"][1]["lowering_id"] = "lowering/other-v1"
+    support_report["findings"][1]["proof_reference"] = "proof/other-v1"
+    support_report["findings"][1]["conditions"] = ["preserve-order"]
+    support_report["findings"][1]["physical_effects"] = ["shuffle"]
+    from etlantic.transform.compiler import _support_fingerprint
+
+    support_report["fingerprint"] = _support_fingerprint(support_report)
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "lowered",
+                "requirements": {
+                    "dtcs:filter": "supported_with_lowering",
+                    "dtcs:join": "supported_with_lowering",
+                },
+                "support_report": support_report,
+            }
+        ],
+        required_requirements=("dtcs:filter", "dtcs:join"),
+    )
+    candidate = result["candidates"][0]
+    assert candidate["lowerings"] == [
+        {
+            "id": "lowering/fixture-v1",
+            "requirements": ["dtcs:filter"],
+            "proof": "proof/fixture-v1",
+            "conditions": ["preserve-null"],
+            "physical_effects": ["materialization"],
+        },
+        {
+            "id": "lowering/other-v1",
+            "requirements": ["dtcs:join"],
+            "proof": "proof/other-v1",
+            "conditions": ["preserve-order"],
+            "physical_effects": ["shuffle"],
+        },
+    ]
+    assert "lowering" not in candidate
+
+
 def test_adaptive_lowering_is_derived_from_support_evidence() -> None:
     from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
@@ -699,6 +748,82 @@ def test_adaptive_graph_edge_requirement_invalidates_assignment() -> None:
             "requirement": "interchange:arrow",
         }
     ]
+
+
+def test_adaptive_graph_edge_requires_producer_and_consumer_support() -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "id": "producer",
+                "node": "source",
+                "requirements": {"dtcs:filter": "supported_exact"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "supported_exact"}
+                ),
+            },
+            {
+                "id": "consumer",
+                "node": "sink",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    "interchange:arrow": "supported_exact",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        "interchange:arrow": "supported_exact",
+                    }
+                ),
+            },
+        ],
+        edges=[
+            {
+                "producer": "source",
+                "consumer": "sink",
+                "requirements": ["interchange:arrow"],
+            }
+        ],
+    )
+    assert result["graph_valid"] is False
+    assert result["graph_failures"] == [
+        {
+            "producer": "source",
+            "consumer": "sink",
+            "requirement": "interchange:arrow",
+        }
+    ]
+
+
+def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:
+    from types import SimpleNamespace
+
+    from etlantic.registry import ImplementationDescriptor
+    from etlantic.runtime.orchestrator import LocalOrchestrator
+
+    portable = ImplementationDescriptor(
+        transformation_id="t",
+        engine="local",
+        identity="portable",
+        kind="portable_compiled",
+    )
+    native = ImplementationDescriptor(
+        transformation_id="t2",
+        engine="local",
+        identity="native",
+        kind="native",
+    )
+    orchestrator = LocalOrchestrator.__new__(LocalOrchestrator)
+    orchestrator.plan = SimpleNamespace(
+        implementations={"source": portable, "native": native}
+    )
+    calls: list[str] = []
+    orchestrator._preflight_portable_descriptor = lambda descriptor, *, node_name: (
+        calls.append(node_name)
+    )
+    orchestrator._preflight_portable_plan({"native", "source"})
+    assert calls == ["source"]
 
 
 def test_adaptive_evidence_drift_rejects_before_io() -> None:

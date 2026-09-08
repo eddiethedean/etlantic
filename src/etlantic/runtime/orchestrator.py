@@ -704,6 +704,11 @@ class LocalOrchestrator:
 
         async def run_body() -> None:
             nonlocal status
+            # Validate every selected portable implementation before scheduling
+            # any node.  Source nodes acquire/read their inputs in the node
+            # runner, so a per-step check alone is too late to guarantee the
+            # fail-closed no-I/O handoff contract.
+            self._preflight_portable_plan(selected)
             concurrency = (
                 self.plan.execution_settings.get("concurrency")
                 or self.request.metadata.get("concurrency")
@@ -2383,6 +2388,14 @@ class LocalOrchestrator:
                 value = fetched.records or []
             inputs[edge.consumer_port] = value
         return inputs
+
+    def _preflight_portable_plan(self, selected_nodes: set[str]) -> None:
+        """Validate selected portable descriptors before any node I/O."""
+        for node_name in sorted(selected_nodes):
+            descriptor = self.plan.implementations.get(node_name)
+            if descriptor is None or descriptor.kind != "portable_compiled":
+                continue
+            self._preflight_portable_descriptor(descriptor, node_name=node_name)
 
     def _preflight_portable_descriptor(
         self, descriptor: ImplementationDescriptor, *, node_name: str

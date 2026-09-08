@@ -82,6 +82,68 @@ def validate_cross_engine_digests(payload: dict[str, object]) -> None:
         raise SystemExit("cross-engine canonical digests are incomplete")
 
 
+def validate_adaptive_lowering_binding(
+    candidate: dict[str, object],
+    requirements: dict[str, object],
+    support_findings: dict[str, dict[str, object]],
+    resolved: dict[str, str | None],
+) -> None:
+    """Require lowering records to match the candidate's support findings exactly."""
+    lowered = sorted(
+        key for key, value in requirements.items() if value == "supported_with_lowering"
+    )
+    expected_groups: dict[
+        tuple[str, str, tuple[object, ...], tuple[object, ...]], list[str]
+    ] = {}
+    for requirement in lowered:
+        finding_id = resolved.get(requirement)
+        finding = (
+            support_findings.get(str(finding_id)) if finding_id is not None else None
+        )
+        if not isinstance(finding, dict):
+            raise SystemExit("adaptive lowering evidence is incomplete")
+        lowering_id = str(finding.get("lowering_id") or "")
+        proof = str(finding.get("proof_reference") or "")
+        conditions = tuple(finding.get("conditions") or ())
+        effects = tuple(finding.get("physical_effects") or ())
+        if not lowering_id or not proof or not effects:
+            raise SystemExit("adaptive lowering evidence is incomplete")
+        expected_groups.setdefault(
+            (lowering_id, proof, conditions, effects), []
+        ).append(requirement)
+    expected = [
+        {
+            "id": lowering_id,
+            "requirements": sorted(group_requirements),
+            "proof": proof,
+            "conditions": list(conditions),
+            "physical_effects": list(effects),
+        }
+        for (lowering_id, proof, conditions, effects), group_requirements in sorted(
+            expected_groups.items(), key=lambda item: item[0]
+        )
+    ]
+    raw_lowerings = candidate.get("lowerings")
+    if raw_lowerings is None:
+        singular = candidate.get("lowering")
+        raw_lowerings = [] if singular is None else [singular]
+    if not isinstance(raw_lowerings, list) or any(
+        not isinstance(item, dict) for item in raw_lowerings
+    ):
+        raise SystemExit("adaptive lowering evidence is incomplete")
+    actual = [dict(item) for item in raw_lowerings]
+    if candidate.get("lowering") is not None and len(expected) != 1:
+        raise SystemExit("adaptive lowering evidence is not evidence-backed")
+    if candidate.get("lowering") is not None and len(expected) == 1:
+        singular = candidate.get("lowering")
+        if not isinstance(singular, dict) or not actual or singular != actual[0]:
+            raise SystemExit("adaptive lowering evidence is not evidence-backed")
+    if sorted(actual, key=lambda item: json.dumps(item, sort_keys=True)) != sorted(
+        expected, key=lambda item: json.dumps(item, sort_keys=True)
+    ):
+        raise SystemExit("adaptive lowering evidence is not evidence-backed")
+
+
 def main() -> int:
     if set(EXPECTED_SCHEMAS) != REQUIRED:
         raise SystemExit("evidence schema map does not cover the frozen artifact set")
@@ -600,21 +662,12 @@ def main() -> int:
                     )
                 ):
                     raise SystemExit("adaptive support vector is not evidence-backed")
-                lowered = [
-                    key
-                    for key, value in requirements.items()
-                    if value == "supported_with_lowering"
-                ]
-                lowering = candidate.get("lowering")
-                if lowered and (
-                    not isinstance(lowering, dict)
-                    or set(lowering.get("requirements") or ()) != set(lowered)
-                    or not str(lowering.get("id") or "")
-                    or not str(lowering.get("proof") or "")
-                    or not lowering.get("conditions")
-                    or not lowering.get("physical_effects")
-                ):
-                    raise SystemExit("adaptive lowering evidence is incomplete")
+                validate_adaptive_lowering_binding(
+                    candidate,
+                    requirements,
+                    support_findings,
+                    resolved,
+                )
             nodes = evaluation.get("nodes")
             if not isinstance(nodes, list) or len(nodes) < 2:
                 raise SystemExit(

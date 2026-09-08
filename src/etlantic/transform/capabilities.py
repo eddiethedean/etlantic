@@ -507,7 +507,7 @@ def evaluate_adaptive_candidates(
         lowering = candidate.get("lowering")
         if lowering is not None:
             raise ValueError("adaptive lowering must be derived from support evidence")
-        lowering_record: dict[str, Any] | None = None
+        lowering_records: list[dict[str, Any]] = []
         lowered_requirements = sorted(
             requirement
             for requirement, state in normalized.items()
@@ -518,41 +518,39 @@ def evaluate_adaptive_candidates(
                 report_findings[resolved_ids[requirement]]
                 for requirement in lowered_requirements
             ]
-            lowering_ids = {
-                str(item.get("lowering_id") or "") for item in lowered_findings
-            }
-            proofs = {
-                str(item.get("proof_reference") or "") for item in lowered_findings
-            }
-            conditions = {
-                tuple(item.get("conditions") or ()) for item in lowered_findings
-            }
-            effects = {
-                tuple(item.get("physical_effects") or ()) for item in lowered_findings
-            }
-            if (
-                len(lowering_ids) != 1
-                or "" in lowering_ids
-                or len(proofs) != 1
-                or "" in proofs
-                or len(conditions) != 1
-                or len(effects) != 1
-                or not next(iter(effects))
+            groups: dict[
+                tuple[str, str, tuple[Any, ...], tuple[Any, ...]], list[str]
+            ] = {}
+            for requirement, finding in zip(
+                lowered_requirements, lowered_findings, strict=True
             ):
-                raise ValueError(
-                    "adaptive lowering evidence is incomplete or inconsistent"
+                lowering_id = str(finding.get("lowering_id") or "")
+                proof = str(finding.get("proof_reference") or "")
+                conditions = tuple(finding.get("conditions") or ())
+                effects = tuple(finding.get("physical_effects") or ())
+                if not lowering_id or not proof or not effects:
+                    raise ValueError("adaptive lowering evidence is incomplete")
+                groups.setdefault((lowering_id, proof, conditions, effects), []).append(
+                    requirement
                 )
-            lowering_id = next(iter(lowering_ids))
-            proof = next(iter(proofs))
-            lowering_conditions = list(next(iter(conditions)))
-            lowering_effects = list(next(iter(effects)))
-            lowering_record = {
-                "id": lowering_id,
-                "requirements": lowered_requirements,
-                "proof": proof,
-                "conditions": lowering_conditions,
-                "physical_effects": lowering_effects,
-            }
+            for (lowering_id, proof, conditions, effects), requirements in sorted(
+                groups.items(), key=lambda item: item[0]
+            ):
+                lowering_records.append(
+                    {
+                        "id": lowering_id,
+                        "requirements": requirements,
+                        "proof": proof,
+                        "conditions": list(conditions),
+                        "physical_effects": list(effects),
+                    }
+                )
+        lowering_payload: dict[str, Any] = {}
+        if lowering_records:
+            lowering_payload["lowerings"] = lowering_records
+            # Keep the historical singular field for the common one-lowering case.
+            if len(lowering_records) == 1:
+                lowering_payload["lowering"] = lowering_records[0]
         if required_failures:
             decisions.append(
                 {
@@ -564,12 +562,14 @@ def evaluate_adaptive_candidates(
                     "decision": "eliminated_before_preference_scoring",
                     "required_failures": required_failures,
                     "preferred_score": None,
-                    **({"lowering": lowering_record} if lowering_record else {}),
+                    **lowering_payload,
                 }
             )
             continue
+        # Preference expresses capability presence, not a generic lowering penalty.
+        # Lowering trade-offs are represented by the evidence-derived records.
         score = sum(
-            2 if normalized.get(requirement) == "supported_exact" else 1
+            1
             for requirement in preferred
             if normalized.get(requirement)
             in {"supported_exact", "supported_with_lowering"}
@@ -584,7 +584,7 @@ def evaluate_adaptive_candidates(
                 "decision": "eligible",
                 "required_failures": [],
                 "preferred_score": score,
-                **({"lowering": lowering_record} if lowering_record else {}),
+                **lowering_payload,
             }
         )
     selected_by_node: dict[str, str | None] = {}
@@ -625,15 +625,24 @@ def evaluate_adaptive_candidates(
             raise ValueError(
                 "adaptive edge requires producer, consumer, and requirements"
             )
+        producer_candidate = selected_candidates.get(producer)
         consumer_candidate = selected_candidates.get(consumer)
         for requirement in requirements:
             requirement_id = str(requirement)
-            state = (
+            producer_state = (
+                producer_candidate["requirements"].get(requirement_id)
+                if producer_candidate
+                else None
+            )
+            consumer_state = (
                 consumer_candidate["requirements"].get(requirement_id)
                 if consumer_candidate
                 else None
             )
-            if state not in {"supported_exact", "supported_with_lowering"}:
+            if producer_state not in {
+                "supported_exact",
+                "supported_with_lowering",
+            } or consumer_state not in {"supported_exact", "supported_with_lowering"}:
                 graph_failures.append(
                     {
                         "producer": producer,
