@@ -8,6 +8,8 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from datetime import date, datetime, time
+from decimal import Decimal
 from typing import Any
 
 from etlantic.sql.helpers import require_safe_identifier
@@ -96,6 +98,9 @@ class DuckDBTransformCompiler:
                     "finding": _finding,
                     "identifier_finding": _identifier_finding,
                     "sequence": _sequence,
+                    "explain_query": _explain_query,
+                    "inline_sql_parameters": _inline_sql_parameters,
+                    "sql_literal": _sql_literal,
                 }.items()
             },
             "native_duckdb_types": sorted(_NATIVE_DUCKDB_TYPES),
@@ -1823,9 +1828,10 @@ def _apply_action(
     else:
         raise ValueError(f"DuckDB action {name!r} is not implemented")
     target = RelationRef(name=f"{relation_prefix}_{_safe(str(kind.get('id') or name))}")
-    explain_rows = session.execute(
-        f"EXPLAIN {query}", bound_params if bound_params else None
-    ).fetchall()
+    # DuckDB 1.0 rejects parameter bindings on EXPLAIN even though the same
+    # bindings are valid for the actual CREATE TABLE AS statement. Render a
+    # private diagnostic query for EXPLAIN while keeping execution parameterized.
+    explain_rows = session.execute(_explain_query(query, bound_params)).fetchall()
     explain_digest = hashlib.sha256(
         repr([tuple(row) for row in explain_rows]).encode("utf-8")
     ).hexdigest()
@@ -1837,6 +1843,88 @@ def _apply_action(
         hashlib.sha256(statement.encode("utf-8")).hexdigest(),
         explain_digest,
     )
+
+
+def _explain_query(query: str, bound_params: Sequence[Any]) -> str:
+    """Build an EXPLAIN query compatible with DuckDB's parameter support."""
+    if not bound_params:
+        return f"EXPLAIN {query}"
+    return f"EXPLAIN {_inline_sql_parameters(query, bound_params)}"
+
+
+def _inline_sql_parameters(query: str, bound_params: Sequence[Any]) -> str:
+    """Inline safe SQL literals into a compiler-generated diagnostic query.
+
+    This is used only for EXPLAIN, never for data execution. Quoted identifiers
+    and literals are left untouched so a ``?`` in a field name cannot consume a
+    binding accidentally.
+    """
+    values = iter(bound_params)
+    rendered: list[str] = []
+    quote: str | None = None
+    i = 0
+    while i < len(query):
+        char = query[i]
+        if quote is not None:
+            rendered.append(char)
+            if char == quote:
+                if i + 1 < len(query) and query[i + 1] == quote:
+                    rendered.append(query[i + 1])
+                    i += 1
+                else:
+                    quote = None
+            i += 1
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            rendered.append(char)
+            i += 1
+            continue
+        if char == "?":
+            try:
+                rendered.append(_sql_literal(next(values)))
+            except StopIteration as exc:
+                raise ValueError("DuckDB EXPLAIN parameter count mismatch") from exc
+        else:
+            rendered.append(char)
+        i += 1
+    try:
+        next(values)
+    except StopIteration:
+        return "".join(rendered)
+    raise ValueError("DuckDB EXPLAIN parameter count mismatch")
+
+
+def _sql_literal(value: Any) -> str:
+    """Render a scalar binding as a safely quoted SQL literal."""
+    if value is None:
+        return "NULL"
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, float):
+        if value != value:
+            return "CAST('nan' AS DOUBLE)"
+        if value == float("inf"):
+            return "CAST('inf' AS DOUBLE)"
+        if value == float("-inf"):
+            return "CAST('-inf' AS DOUBLE)"
+        return repr(value)
+    if isinstance(value, datetime):
+        return f"TIMESTAMP '{value.isoformat(sep=' ', timespec='microseconds')}'"
+    if isinstance(value, date):
+        return f"DATE '{value.isoformat()}'"
+    if isinstance(value, time):
+        return f"TIME '{value.isoformat(timespec='microseconds')}'"
+    if isinstance(value, (list, tuple)):
+        return "[" + ", ".join(_sql_literal(item) for item in value) + "]"
+    if isinstance(value, bytes):
+        return "X'" + value.hex() + "'"
+    escaped = str(value).replace("'", "''")
+    return f"'{escaped}'"
 
 
 def _join_condition(

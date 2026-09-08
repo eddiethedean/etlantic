@@ -10,6 +10,20 @@ from etlantic.testing import (
 )
 
 
+def _require_all_backend_plugins() -> None:
+    """Skip cross-backend checks when an optional engine is not installed."""
+    for module in (
+        "etlantic_polars",
+        "etlantic_pandas",
+        "etlantic_sql",
+        "etlantic_pyspark",
+        "etlantic_datafusion",
+        "etlantic_duckdb",
+        "pyarrow",
+    ):
+        pytest.importorskip(module)
+
+
 def test_suite_passes_local() -> None:
     from etlantic.transform.local_compiler import LocalTransformCompiler
 
@@ -1344,6 +1358,7 @@ def test_local_round_default_and_null_scalar_semantics() -> None:
 
 def test_backend_null_propagation_for_variadic_scalars() -> None:
     """Backends must not inherit skip-null semantics from native functions."""
+    _require_all_backend_plugins()
     import asyncio
 
     from etlantic.testing.portable_transform_conformance import (
@@ -1464,6 +1479,7 @@ def test_local_by_position_union_rejects_heterogeneous_rows() -> None:
 
 def test_all_compilers_reject_literal_zero_arithmetic() -> None:
     """Portable arithmetic must not inherit backend-specific zero behavior."""
+    _require_all_backend_plugins()
     from etlantic_duckdb import create_transform_compiler as duckdb
 
     from etlantic.transform.compiler import TransformPlanningContext
@@ -1520,6 +1536,7 @@ def test_all_compilers_reject_literal_zero_arithmetic() -> None:
 @pytest.mark.parametrize("operator", ["divide", "modulo"])
 def test_all_compilers_reject_dynamic_denominators(operator: str) -> None:
     """A field/parameter divisor cannot be qualified without source I/O."""
+    _require_all_backend_plugins()
     from etlantic_duckdb import create_transform_compiler as duckdb
 
     from etlantic.transform.compiler import TransformPlanningContext
@@ -1578,6 +1595,7 @@ def test_all_compilers_reject_dynamic_denominators(operator: str) -> None:
 
 
 def test_all_compilers_reject_literal_integer_overflow() -> None:
+    _require_all_backend_plugins()
     from etlantic_duckdb import create_transform_compiler as duckdb
 
     from etlantic.transform.compiler import TransformPlanningContext
@@ -1641,6 +1659,7 @@ def test_all_compilers_reject_literal_integer_overflow() -> None:
 
 @pytest.mark.parametrize("operator", ["add", "subtract", "multiply"])
 def test_all_compilers_reject_dynamic_integer_arithmetic(operator: str) -> None:
+    _require_all_backend_plugins()
     from etlantic_duckdb import create_transform_compiler as duckdb
 
     from etlantic.transform.compiler import TransformPlanningContext

@@ -144,6 +144,7 @@ def test_sf_14_gate_a_polars_pandas_arrow_interchange_with_diagnosed_fallback() 
     assert result.ok
 
 
+@pytest.mark.datafusion
 def test_sf_15_datafusion_graduated_baseline() -> None:
     """Item 15: DataFusion exposes the graduated portable baseline."""
     try:
