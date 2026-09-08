@@ -8,9 +8,9 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "evidence_fingerprint": "3ead96354b1c204e82f332baa33f1d563723794ec7681510f74276da8b06daab",
-  "repository_commit": "54474487495404bffaa44eeabfb096bccf1645d7",
+  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "e44d4f5d48e9f705683a251f248e9ffeac0e599598897cfc0526c3b272129012",
+  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6",
   "tests": "frozen public conformance corpus"
 }

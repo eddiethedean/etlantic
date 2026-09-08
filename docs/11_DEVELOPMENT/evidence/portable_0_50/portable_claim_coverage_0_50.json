@@ -1827,7 +1827,7 @@
     {
       "actions": 12,
       "engine": "duckdb",
-      "evidence_fingerprint": "c64adc707c1a86a8ba2eb0f3adfb52268345a29a921952a9db604bc8b98144a7",
+      "evidence_fingerprint": "2737e0ee7ffb3431c77b770824899b7b47a6cf37f7ae5ff8e944915a67675454",
       "execution_modes": {
         "eager": true,
         "lazy": true
@@ -2112,7 +2112,7 @@
     "unknown"
   ],
   "policy": "Every frozen baseline claim is selected by the public conformance suite; semantic and eager/lazy dimensions are recorded per engine.",
-  "repository_commit": "54474487495404bffaa44eeabfb096bccf1645d7",
+  "repository_commit": "04323fc7c3884cf77f202c3215d81a3a7801002a",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2132,5 +2132,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "e44d4f5d48e9f705683a251f248e9ffeac0e599598897cfc0526c3b272129012"
+  "source_tree_digest": "404837d5d48407c01a674c382360a61ef26023dc8a2755e11453668ba64912b6"
 }
