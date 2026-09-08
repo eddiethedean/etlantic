@@ -7,6 +7,118 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "manifest": {
+    "action_parameters": {
+      "dtcs:aggregate": {
+        "aggregates": {
+          "min_items": 1,
+          "required": true
+        },
+        "groupBy": {
+          "required": true
+        }
+      },
+      "dtcs:deduplicate": {
+        "keys": {
+          "complete_row_identity_when_omitted": true,
+          "required": false
+        }
+      },
+      "dtcs:distinct": {},
+      "dtcs:drop_fields": {
+        "fields": {
+          "min_items": 1,
+          "required": true
+        }
+      },
+      "dtcs:filter": {
+        "predicate": {
+          "kind": "boolean_expression",
+          "required": true
+        }
+      },
+      "dtcs:join": {
+        "collisionPolicy": {
+          "allowed": [
+            "fail"
+          ],
+          "default": "fail"
+        },
+        "nullSafe": {
+          "default": false,
+          "type": "boolean"
+        },
+        "right": {
+          "relation_identity": true,
+          "required": true
+        },
+        "type": {
+          "allowed": [
+            "inner",
+            "left",
+            "right",
+            "full",
+            "semi",
+            "anti",
+            "cross"
+          ],
+          "default": "inner"
+        }
+      },
+      "dtcs:limit": {
+        "count": {
+          "integer": true,
+          "minimum": 0,
+          "required": true
+        }
+      },
+      "dtcs:project": {
+        "fields": {
+          "min_items": 1,
+          "required": true
+        }
+      },
+      "dtcs:rename_fields": {
+        "mapping": {
+          "required": true,
+          "unique_targets": true
+        }
+      },
+      "dtcs:sort": {
+        "keys": {
+          "min_items": 1,
+          "null_placement": [
+            "first",
+            "last"
+          ],
+          "required": true
+        }
+      },
+      "dtcs:union": {
+        "allowMissingColumns": {
+          "allowed": [
+            false
+          ],
+          "default": false
+        },
+        "mode": {
+          "allowed": [
+            "byName",
+            "byPosition"
+          ],
+          "default": "byName"
+        },
+        "other": {
+          "relation_identity": true,
+          "required": true
+        }
+      },
+      "dtcs:with_fields": {
+        "assignments": {
+          "min_items": 1,
+          "required": true
+        }
+      }
+    },
     "actions": [
       "dtcs:filter",
       "dtcs:project",
@@ -424,7 +536,7 @@
       "dtcs:greatest": "baseline_scalar_functions",
       "dtcs:if_null": "baseline_scalar_functions",
       "dtcs:is_null": "baseline_scalar_functions",
-      "dtcs:join": "relational_join_aggregate",
+      "dtcs:join": "baseline_join_inner",
       "dtcs:least": "baseline_scalar_functions",
       "dtcs:length": "baseline_scalar_functions",
       "dtcs:limit": "relational_sort_nulls_limit",
@@ -442,10 +554,16 @@
       "dtcs:starts_with": "baseline_scalar_functions",
       "dtcs:substr": "baseline_scalar_functions",
       "dtcs:sum": "baseline_aggregate_functions",
-      "dtcs:union": "baseline_union",
+      "dtcs:union": "baseline_union_by_name",
       "dtcs:upper": "baseline_scalar_functions",
       "dtcs:with_fields": "kernel_filter_project_lower",
-      "join_modes": "baseline_join_modes",
+      "join_mode:anti": "baseline_join_anti",
+      "join_mode:cross": "baseline_join_cross",
+      "join_mode:full": "baseline_join_full",
+      "join_mode:inner": "baseline_join_inner",
+      "join_mode:left": "baseline_join_left",
+      "join_mode:right": "baseline_join_right",
+      "join_mode:semi": "baseline_join_semi",
       "operator:add": "baseline_scalar_functions",
       "operator:and": "baseline_scalar_functions",
       "operator:divide": "baseline_scalar_functions",
@@ -471,14 +589,67 @@
       "type:missing": "reject_missing_literal_without_three_state",
       "type:null": "baseline_scalar_functions",
       "type:string": "baseline_scalar_functions",
-      "union_modes": "baseline_union_modes"
+      "union_mode:byName": "baseline_union_by_name",
+      "union_mode:byPosition": "baseline_union_by_position"
+    },
+    "literal_constraints": {
+      "boolean": {
+        "python_types": [
+          "bool"
+        ]
+      },
+      "decimal": {
+        "python_types": [
+          "int",
+          "float",
+          "decimal"
+        ]
+      },
+      "integer": {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "python_types": [
+          "int"
+        ]
+      },
+      "invalid": {
+        "requires_semantic_mode": "three_state_distinct"
+      },
+      "missing": {
+        "requires_semantic_mode": "three_state_distinct"
+      },
+      "null": {
+        "value": null
+      },
+      "string": {
+        "encoding": "utf-8",
+        "normalization": "codepoint"
+      }
+    },
+    "multi_input_identity": {
+      "inputs": "named_relation_identity",
+      "join_right": "must_reference_declared_input_or_prior_action",
+      "union_other": "must_reference_declared_input_or_prior_action"
     },
     "numeric_rules": {
-      "decimal": "preserve_declared_precision_and_scale",
+      "decimal": {
+        "promotion": "preserve_declared_precision_and_scale"
+      },
       "divide_by_zero": "raise_portable_arithmetic_error",
-      "integer": "signed_64_or_wider",
+      "evaluation": "statically_bounded_literals_only",
+      "integer": {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "representation": "signed_64"
+      },
       "modulo_by_zero": "raise_portable_arithmetic_error",
-      "overflow": "raise_portable_numeric_error"
+      "overflow": "raise_portable_numeric_error",
+      "promotion": {
+        "decimal:decimal": "decimal",
+        "decimal:integer": "decimal",
+        "integer:decimal": "decimal",
+        "integer:integer": "integer"
+      }
     },
     "obligations": {
       "advanced": "informational",
@@ -504,6 +675,11 @@
       "negate",
       "in"
     ],
+    "output_contract": {
+      "field_names": "exact",
+      "shape": "declared_output_schema",
+      "validation": "runtime_contract_validation_required"
+    },
     "plan": "dtcs.transform-plan/2",
     "profiles": [
       "dtcs:profile/portable-relational-kernel/1",
@@ -551,6 +727,14 @@
       "ordering": "sort keys are applied left-to-right with explicit null placement",
       "unions": "byName aligns names; byPosition aligns ordinal fields; missing columns are explicit"
     },
+    "string_unicode_rules": {
+      "case_mapping": "unicode_simple_case_mapping",
+      "encoding": "utf-8",
+      "null_policy": "propagate_except_null_aware_functions",
+      "substring_length": "codepoints",
+      "substring_start": "zero_based",
+      "unit": "unicode_codepoint"
+    },
     "types": [
       "null",
       "boolean",
@@ -575,8 +759,8 @@
       }
     }
   },
-  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
+  "repository_commit": "f39e04824a772d93f5e1aaefa5d3aafdb6259a5a",
   "result": "pass",
   "schema": "etlantic.portable-baseline/1",
-  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260"
+  "source_tree_digest": "0f083eac972ba2130846e8c58af6fcc9d1a6098685ccfa53c32dc34d023d270c"
 }

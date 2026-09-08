@@ -3,24 +3,267 @@
     {
       "actions": 12,
       "engine": "local",
-      "evidence_fingerprint": "b8b7ccd8f9afdc04ce9efb2c76db85a041ab8e0da81d9d600247c503de27ce3e",
+      "evidence_fingerprint": "4fd9e85bcf5348b389e6a91d38231577b97273efbba6da15a7c7734650ded1e2",
       "execution_modes": {
         "eager": true,
         "lazy": false
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        }
+      ],
       "functions": 30,
       "profiles": 2,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -33,19 +276,352 @@
         "eager": true,
         "lazy": true
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "complex_types_field_access",
+        "complex_types_index",
+        "complex_values_array_size",
+        "conversion_cast_integer",
+        "conversion_to_string",
+        "conversion_try_cast",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "reject_window_frame",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit",
+        "reshape_explode",
+        "reshape_explode_empty",
+        "statistics_stddev",
+        "statistics_variance",
+        "string_advanced_ltrim_split",
+        "string_advanced_trim_regex_replace",
+        "window_v1_lag",
+        "window_v1_row_number"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_types_field_access",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_types_index",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_values_array_size",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_cast_integer",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_to_string",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_try_cast",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_window_frame",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reshape_explode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reshape_explode_empty",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "statistics_stddev",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "statistics_variance",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "string_advanced_ltrim_split",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "string_advanced_trim_regex_replace",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "window_v1_lag",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "window_v1_row_number",
+          "result": "pass"
+        }
+      ],
       "functions": 50,
       "profiles": 9,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -58,19 +634,262 @@
         "eager": true,
         "lazy": false
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        }
+      ],
       "functions": 30,
       "profiles": 2,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -83,19 +902,262 @@
         "eager": true,
         "lazy": true
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        }
+      ],
       "functions": 30,
       "profiles": 2,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -108,19 +1170,352 @@
         "eager": true,
         "lazy": true
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "complex_types_field_access",
+        "complex_types_index",
+        "complex_values_array_size",
+        "conversion_cast_integer",
+        "conversion_to_string",
+        "conversion_try_cast",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "reject_window_frame",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit",
+        "reshape_explode",
+        "reshape_explode_empty",
+        "statistics_stddev",
+        "statistics_variance",
+        "string_advanced_ltrim_split",
+        "string_advanced_trim_regex_replace",
+        "window_v1_lag",
+        "window_v1_row_number"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_types_field_access",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_types_index",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "complex_values_array_size",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_cast_integer",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_to_string",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "conversion_try_cast",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_window_frame",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reshape_explode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reshape_explode_empty",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "statistics_stddev",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "statistics_variance",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "string_advanced_ltrim_split",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "string_advanced_trim_regex_replace",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "window_v1_lag",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "window_v1_row_number",
+          "result": "pass"
+        }
+      ],
       "functions": 50,
       "profiles": 9,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -128,24 +1523,267 @@
     {
       "actions": 12,
       "engine": "datafusion",
-      "evidence_fingerprint": "3397efb9a6992deb12c828ae5133e65c1a70cd9ad16055191a14a22238e99fb2",
+      "evidence_fingerprint": "a63724450827ace2d76a95883daba7ce911775e613ac16fe26d4df09d823e07e",
       "execution_modes": {
         "eager": true,
         "lazy": true
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        }
+      ],
       "functions": 30,
       "profiles": 2,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -153,24 +1791,267 @@
     {
       "actions": 12,
       "engine": "duckdb",
-      "evidence_fingerprint": "4651a61033db514f07a916c80b4f069f8c926e2c418c08537157205b0fd6f120",
+      "evidence_fingerprint": "c64adc707c1a86a8ba2eb0f3adfb52268345a29a921952a9db604bc8b98144a7",
       "execution_modes": {
         "eager": true,
         "lazy": true
       },
+      "fixture_bindings": {
+        "dtcs:abs": "baseline_scalar_functions",
+        "dtcs:aggregate": "baseline_aggregate_functions",
+        "dtcs:average": "baseline_aggregate_functions",
+        "dtcs:case_when": "baseline_scalar_functions",
+        "dtcs:ceil": "baseline_scalar_functions",
+        "dtcs:coalesce": "baseline_scalar_functions",
+        "dtcs:concat": "baseline_scalar_functions",
+        "dtcs:concat_ws": "baseline_scalar_functions",
+        "dtcs:contains": "baseline_scalar_functions",
+        "dtcs:count": "baseline_aggregate_functions",
+        "dtcs:count_all": "baseline_aggregate_functions",
+        "dtcs:count_distinct": "baseline_aggregate_functions",
+        "dtcs:deduplicate": "baseline_field_actions",
+        "dtcs:distinct": "baseline_field_actions",
+        "dtcs:drop_fields": "baseline_field_actions",
+        "dtcs:ends_with": "baseline_scalar_functions",
+        "dtcs:filter": "kernel_filter_project_lower",
+        "dtcs:floor": "baseline_scalar_functions",
+        "dtcs:greatest": "baseline_scalar_functions",
+        "dtcs:if_null": "baseline_scalar_functions",
+        "dtcs:is_null": "baseline_scalar_functions",
+        "dtcs:join": "baseline_join_inner",
+        "dtcs:least": "baseline_scalar_functions",
+        "dtcs:length": "baseline_scalar_functions",
+        "dtcs:limit": "relational_sort_nulls_limit",
+        "dtcs:lower": "baseline_scalar_functions",
+        "dtcs:max": "baseline_aggregate_functions",
+        "dtcs:min": "baseline_aggregate_functions",
+        "dtcs:null_if": "baseline_scalar_functions",
+        "dtcs:power": "baseline_scalar_functions",
+        "dtcs:project": "baseline_scalar_functions",
+        "dtcs:rename_fields": "baseline_field_actions",
+        "dtcs:replace": "baseline_scalar_functions",
+        "dtcs:round": "baseline_scalar_functions",
+        "dtcs:sort": "relational_sort_nulls_limit",
+        "dtcs:sqrt": "baseline_scalar_functions",
+        "dtcs:starts_with": "baseline_scalar_functions",
+        "dtcs:substr": "baseline_scalar_functions",
+        "dtcs:sum": "baseline_aggregate_functions",
+        "dtcs:union": "baseline_union_by_name",
+        "dtcs:upper": "baseline_scalar_functions",
+        "dtcs:with_fields": "kernel_filter_project_lower",
+        "join_mode:anti": "baseline_join_anti",
+        "join_mode:cross": "baseline_join_cross",
+        "join_mode:full": "baseline_join_full",
+        "join_mode:inner": "baseline_join_inner",
+        "join_mode:left": "baseline_join_left",
+        "join_mode:right": "baseline_join_right",
+        "join_mode:semi": "baseline_join_semi",
+        "operator:add": "baseline_scalar_functions",
+        "operator:and": "baseline_scalar_functions",
+        "operator:divide": "baseline_scalar_functions",
+        "operator:eq": "baseline_scalar_functions",
+        "operator:gt": "baseline_scalar_functions",
+        "operator:gte": "baseline_scalar_functions",
+        "operator:in": "baseline_scalar_functions",
+        "operator:lt": "baseline_scalar_functions",
+        "operator:lte": "baseline_scalar_functions",
+        "operator:modulo": "baseline_scalar_functions",
+        "operator:multiply": "baseline_scalar_functions",
+        "operator:negate": "baseline_scalar_functions",
+        "operator:not": "baseline_scalar_functions",
+        "operator:not_eq": "baseline_scalar_functions",
+        "operator:null_safe_eq": "baseline_scalar_functions",
+        "operator:or": "baseline_scalar_functions",
+        "operator:subtract": "baseline_scalar_functions",
+        "semantic_modes": "reject_missing_literal_without_three_state",
+        "type:boolean": "baseline_scalar_functions",
+        "type:decimal": "baseline_scalar_functions",
+        "type:integer": "baseline_scalar_functions",
+        "type:invalid": "reject_missing_literal_without_three_state",
+        "type:missing": "reject_missing_literal_without_three_state",
+        "type:null": "baseline_scalar_functions",
+        "type:string": "baseline_scalar_functions",
+        "union_mode:byName": "baseline_union_by_name",
+        "union_mode:byPosition": "baseline_union_by_position"
+      },
       "fixture_coverage": "complete",
+      "fixture_ids": [
+        "baseline_aggregate_functions",
+        "baseline_field_actions",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
+        "baseline_scalar_functions",
+        "baseline_union",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
+        "kernel_decimal_coalesce",
+        "kernel_filter_project_lower",
+        "kernel_project_identity",
+        "kernel_substr_replace_unicode",
+        "qualified_aggregate_functions",
+        "qualified_count_all_aggregate",
+        "qualified_filter_action",
+        "qualified_string_functions",
+        "qualified_with_fields_action",
+        "reject_join_collision_suffix",
+        "relational_empty_count_all",
+        "relational_join_aggregate",
+        "relational_sort_nulls_limit"
+      ],
+      "fixture_results": [
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_field_actions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_anti",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_cross",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_full",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_inner",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_left",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_right",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_join_semi",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_scalar_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_name",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "baseline_union_by_position",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_decimal_coalesce",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_filter_project_lower",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_project_identity",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "kernel_substr_replace_unicode",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_aggregate_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_count_all_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_filter_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_string_functions",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "qualified_with_fields_action",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "reject_join_collision_suffix",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_empty_count_all",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_join_aggregate",
+          "result": "pass"
+        },
+        {
+          "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py",
+          "fixture_id": "relational_sort_nulls_limit",
+          "result": "pass"
+        }
+      ],
       "functions": 30,
       "profiles": 2,
       "required_fixture_ids": [
         "baseline_aggregate_functions",
         "baseline_field_actions",
-        "baseline_join_modes",
+        "baseline_join_anti",
+        "baseline_join_cross",
+        "baseline_join_full",
+        "baseline_join_inner",
+        "baseline_join_left",
+        "baseline_join_right",
+        "baseline_join_semi",
         "baseline_scalar_functions",
-        "baseline_union",
-        "baseline_union_modes",
+        "baseline_union_by_name",
+        "baseline_union_by_position",
         "kernel_filter_project_lower",
         "reject_missing_literal_without_three_state",
-        "relational_join_aggregate",
         "relational_sort_nulls_limit"
       ],
       "semantic_modes": []
@@ -189,20 +2070,25 @@
     "unknown"
   ],
   "policy": "Every frozen baseline claim is selected by the public conformance suite; semantic and eager/lazy dimensions are recorded per engine.",
-  "repository_commit": "21951fc33458c7da84fb7ec99bc99356e39f7095",
+  "repository_commit": "f39e04824a772d93f5e1aaefa5d3aafdb6259a5a",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
-    "baseline_join_modes",
+    "baseline_join_anti",
+    "baseline_join_cross",
+    "baseline_join_full",
+    "baseline_join_inner",
+    "baseline_join_left",
+    "baseline_join_right",
+    "baseline_join_semi",
     "baseline_scalar_functions",
-    "baseline_union",
-    "baseline_union_modes",
+    "baseline_union_by_name",
+    "baseline_union_by_position",
     "kernel_filter_project_lower",
     "reject_missing_literal_without_three_state",
-    "relational_join_aggregate",
     "relational_sort_nulls_limit"
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "052adb2f89f40e2bef573f2412b2678e24d3148b65b371e491615220dd0f5260"
+  "source_tree_digest": "0f083eac972ba2130846e8c58af6fcc9d1a6098685ccfa53c32dc34d023d270c"
 }
