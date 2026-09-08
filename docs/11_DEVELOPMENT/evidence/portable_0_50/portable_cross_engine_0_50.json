@@ -1,6 +1,10 @@
 {
   "canonical_pipeline": "canonical_multistage/1",
-  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all; ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all",
+  "canonical_result_digests": {
+    "postgresql": "5839979f63478f262f1d9f8b095e6a0b00bbcd4b247e2a2da59dfe30127aebcf",
+    "sqlite": "5839979f63478f262f1d9f8b095e6a0b00bbcd4b247e2a2da59dfe30127aebcf"
+  },
+  "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all",
   "engines": [
     "local",
     "polars",
@@ -17,8 +21,8 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "normalized_result_digest": "5839979f63478f262f1d9f8b095e6a0b00bbcd4b247e2a2da59dfe30127aebcf",
-  "repository_commit": "ac6c595b6773af43f70a9fbd0193086d2f79331c",
+  "repository_commit": "180d260d21fe3c777c45abb8011a03115ade2b63",
   "result": "pass",
   "schema": "etlantic.portable-cross-engine/1",
-  "source_tree_digest": "fb171379f5cd7517a1dd791d89f0efca8b897006384370b4503e4e8ca7624008"
+  "source_tree_digest": "24e970c3729b60fbf9cae912fff741645a5b2475459ab18f33f5ce410b7a3dcd"
 }
