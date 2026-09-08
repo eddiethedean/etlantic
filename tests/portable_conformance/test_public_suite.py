@@ -625,6 +625,7 @@ def test_adaptive_lowering_preserves_independent_identities() -> None:
         required_requirements=("dtcs:filter", "dtcs:join"),
     )
     candidate = result["candidates"][0]
+    assert isinstance(candidate, dict)
     assert candidate["lowerings"] == [
         {
             "id": "lowering/fixture-v1",
@@ -798,6 +799,7 @@ def test_adaptive_graph_edge_requires_producer_and_consumer_support() -> None:
 
 def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:
     from types import SimpleNamespace
+    from typing import Any, cast
 
     from etlantic.registry import ImplementationDescriptor
     from etlantic.runtime.orchestrator import LocalOrchestrator
@@ -815,7 +817,7 @@ def test_orchestrator_preflights_selected_portable_nodes_as_a_plan() -> None:
         kind="native",
     )
     orchestrator = LocalOrchestrator.__new__(LocalOrchestrator)
-    orchestrator.plan = SimpleNamespace(
+    cast(Any, orchestrator).plan = SimpleNamespace(
         implementations={"source": portable, "native": native}
     )
     calls: list[str] = []

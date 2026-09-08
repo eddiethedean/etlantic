@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
@@ -84,8 +85,8 @@ def validate_cross_engine_digests(payload: dict[str, object]) -> None:
 
 def validate_adaptive_lowering_binding(
     candidate: dict[str, object],
-    requirements: dict[str, object],
-    support_findings: dict[str, dict[str, object]],
+    requirements: dict[str, Any],
+    support_findings: dict[str, dict[str, Any]],
     resolved: dict[str, str | None],
 ) -> None:
     """Require lowering records to match the candidate's support findings exactly."""
@@ -656,7 +657,8 @@ def main() -> int:
                         if item.get("applicability") == "applicable"
                     }
                     or any(
-                        support_findings[identifier].get("support")
+                        identifier is None
+                        or support_findings[identifier].get("support")
                         != requirements[requirement]
                         for requirement, identifier in resolved.items()
                     )

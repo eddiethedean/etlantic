@@ -49,7 +49,9 @@ def test_adaptive_lowering_mutation_is_rejected() -> None:
             "physical_effects": ["materialization"],
         }
     }
-    resolved = {"dtcs:filter": "dtcs@1/actions/dtcs:filter#actions"}
+    resolved: dict[str, str | None] = {
+        "dtcs:filter": "dtcs@1/actions/dtcs:filter#actions"
+    }
     candidate["lowering"]["proof"] = "proof/fabricated"
     with pytest.raises(SystemExit, match="not evidence-backed"):
         validate_adaptive_lowering_binding(
