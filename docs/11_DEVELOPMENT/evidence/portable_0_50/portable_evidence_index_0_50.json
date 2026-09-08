@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.portable-evidence-index/1",
-  "repository_commit": "62b7bca90007f60274b7ec4078aa0164c876baca",
+  "repository_commit": "85f8af5c5a97425df9a959cd9065288565636a66",
   "result": "blocked",
   "artifacts": [
     "portable_baseline_contract_0_50.json",
@@ -28,7 +28,7 @@
     "MIGRATION_0_49_TO_0_50.md": "808e8b8bf09eb65160d8ca505068505d768a8305baad8b23e3fea7d6b2a15c20",
     "WHATS_NEW_0_50.md": "5af292cdc27d178a0ede325187d36110df50130434b7b77085bc179670fcce05",
     "portable_adaptive_handoff_0_50.json": "2392c03759f130cdd1963948aaa2c20bd02be170311ed46e64e2769dc798f7e2",
-    "portable_baseline_contract_0_50.json": "bd197dce0ecbb36a4915c82587fddac45300aab0b419a9ba0dfc66fb3af237cb",
+    "portable_baseline_contract_0_50.json": "80cdfcddfd6b1041ff29fe919f4d34fc68b33e5281a0589a46121078e9ea034b",
     "portable_canonical_pipeline_0_50.json": "5beb4ac86a45ff6d582af9ce5148b55f0f01b0df4e5159bf1b305035cc806ccf",
     "portable_claim_coverage_0_50.json": "03f324d7dfc4c3e8f2e4dd851d2ecb2be9f9fd025f251975831c5620a8772799",
     "portable_cross_engine_0_50.json": "3130de0f4e379d596337eccc9f849f4857967db5fd13cfe37a32e5cfc1366419",
@@ -38,9 +38,9 @@
     "portable_local_conformance_0_50.json": "27ffe9312d4c9732caae74d9120b779689eb5819abcd34d340bf8dd78e0fd81d",
     "portable_pandas_conformance_0_50.json": "65cd11c5fe3c484299d8e8201b3029302c996b8b19e38d3e81587544273316ab",
     "portable_polars_conformance_0_50.json": "57b72f1664d383b794e93f6842ca6856de19561209e64be387dfb22eeff33170",
-    "portable_pushdown_contract_0_50.json": "c3d42ac6bffee8814bbb60ad64d70ea135627e902e9a23f68cf3f6a5eaf10cfa",
+    "portable_pushdown_contract_0_50.json": "473f03d15313b739f4b79ffac06e34c5ddb6d341bc54df04b638f4740a5de052",
     "portable_pyspark_conformance_0_50.json": "cec9faa9559a0360262af18c0050fc154f566680a7c4f33e825bf84eb8a4d505",
-    "portable_requirement_support_0_50.json": "7ab0fe12f6d107121494c45dfc16e88a4496a533d3256d237a8e6d2929b188de",
+    "portable_requirement_support_0_50.json": "e36a743aa62c7958fcfb227ccd2a163e8dea4738d2a4a0d1266a316684b5dc99",
     "portable_sql_conformance_0_50.json": "a349e54866536d864f06fae21157084fe74b3bde47f23c77863b8b8ebf332e9b"
   },
   "notes": "No-go: required real-backend, cross-engine, and dependency/security evidence is unavailable."

@@ -56,12 +56,15 @@ def main() -> int:
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+    parent = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True
+    ).strip()
     if (
         not re.fullmatch(r"[0-9a-f]{40}", repository_commit)
-        or repository_commit != head
+        or repository_commit not in {head, parent}
     ):
         raise SystemExit(
-            "evidence index repository_commit is not the checked-out commit"
+            "evidence index repository_commit is not the checked-out commit or its evidence snapshot parent"
         )
     if index.get("result") not in {"pass", "blocked"}:
         raise SystemExit(
