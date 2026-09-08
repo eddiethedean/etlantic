@@ -522,7 +522,10 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
             if engine == "datafusion":
                 frame.explain()
             elif engine == "pyspark":
-                frame.explain(mode="extended")
+                try:
+                    frame.explain(mode="extended")
+                except TypeError:
+                    frame.explain()
             elif engine in {"sql", "duckdb"}:
                 if not metrics.get("native_explain_digests"):
                     raise ValueError("native EXPLAIN digest was not emitted")
