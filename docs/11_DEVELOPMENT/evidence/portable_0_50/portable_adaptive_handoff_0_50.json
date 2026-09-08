@@ -1,5 +1,5 @@
 {
-  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_evidence_drift_rejects_before_io'",
+  "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py tests/portable_conformance/test_public_suite.py -k 'test_requirement_support_serializes_unknown_requirements_fail_closed or test_runtime_preflight_rejects_evidence_free_descriptor or test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or test_adaptive_preferred_unknown_has_no_positive_preference or test_adaptive_lowering_records_effects_and_identity or test_adaptive_graph_edge_requirement_invalidates_assignment or test_adaptive_evidence_drift_rejects_before_io'",
   "environment": {
     "platform": "darwin",
     "python": "3.11.15",
@@ -13,9 +13,10 @@
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
     "test_adaptive_preferred_unknown_has_no_positive_preference",
     "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "2aaaa2e46626184e526327c36ada96564df57228",
+  "repository_commit": "db90fbcc6a65ff3b34ab2ced99dcd5561bb28197",
   "result": "pass",
   "scenarios": [
     {
@@ -25,20 +26,51 @@
             "decision": "eliminated_before_preference_scoring",
             "eligible": false,
             "id": "partial",
+            "node": "orders",
             "preferred_score": null,
             "required_failures": [
               "dtcs:join"
-            ]
+            ],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:join": "unknown"
+            }
           },
           {
             "decision": "eligible",
             "eligible": true,
             "id": "complete",
+            "node": "orders",
             "preferred_score": 2,
-            "required_failures": []
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:join": "supported_exact"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "complete",
+            "node": "customers",
+            "preferred_score": 2,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:join": "supported_exact"
+            }
           }
         ],
-        "selected": "complete"
+        "graph_failures": [],
+        "graph_valid": true,
+        "nodes": [
+          "customers",
+          "orders"
+        ],
+        "selected": {
+          "customers": "complete",
+          "orders": "complete"
+        }
       },
       "fixture": "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
       "id": "partial-required-unknown",
@@ -54,11 +86,37 @@
             "decision": "eligible",
             "eligible": true,
             "id": "unknown-preference",
+            "node": "orders",
             "preferred_score": 0,
-            "required_failures": []
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:sort": "unknown"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "known-preference",
+            "node": "customers",
+            "preferred_score": 2,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact",
+              "dtcs:sort": "supported_exact"
+            }
           }
         ],
-        "selected": "unknown-preference"
+        "graph_failures": [],
+        "graph_valid": true,
+        "nodes": [
+          "customers",
+          "orders"
+        ],
+        "selected": {
+          "customers": "known-preference",
+          "orders": "unknown-preference"
+        }
       },
       "fixture": "test_adaptive_preferred_unknown_has_no_positive_preference",
       "id": "preferred-unknown",
@@ -76,16 +134,48 @@
             "eligible": true,
             "id": "lowered",
             "lowering": {
+              "approved": true,
               "id": "lowering/filter-v1",
               "physical_effects": [
                 "materialization"
-              ]
+              ],
+              "proof": "approved:filter-v1",
+              "requirements": [
+                "dtcs:filter"
+              ],
+              "resolved_conditions": {
+                "null_policy": "preserve"
+              }
             },
+            "node": "orders",
             "preferred_score": 0,
-            "required_failures": []
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_with_lowering"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "exact",
+            "node": "customers",
+            "preferred_score": 0,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:filter": "supported_exact"
+            }
           }
         ],
-        "selected": "lowered"
+        "graph_failures": [],
+        "graph_valid": true,
+        "nodes": [
+          "customers",
+          "orders"
+        ],
+        "selected": {
+          "customers": "exact",
+          "orders": "lowered"
+        }
       },
       "fixture": "test_adaptive_lowering_records_effects_and_identity",
       "id": "lowering-effects",
@@ -93,6 +183,56 @@
         "dtcs:filter"
       ],
       "result": "pass"
+    },
+    {
+      "candidate_evaluation": {
+        "candidates": [
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "native",
+            "node": "orders",
+            "preferred_score": 0,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:join": "supported_exact"
+            }
+          },
+          {
+            "decision": "eligible",
+            "eligible": true,
+            "id": "native",
+            "node": "customers",
+            "preferred_score": 0,
+            "required_failures": [],
+            "requirements": {
+              "dtcs:join": "supported_exact"
+            }
+          }
+        ],
+        "graph_failures": [
+          {
+            "consumer": "customers",
+            "producer": "orders",
+            "requirement": "interchange:arrow"
+          }
+        ],
+        "graph_valid": false,
+        "nodes": [
+          "customers",
+          "orders"
+        ],
+        "selected": {
+          "customers": "native",
+          "orders": "native"
+        }
+      },
+      "fixture": "test_adaptive_graph_edge_requirement_invalidates_assignment",
+      "id": "graph-invalid",
+      "requirements": [
+        "interchange:arrow"
+      ],
+      "result": "rejected_graph_invalid"
     },
     {
       "fixture": "test_adaptive_evidence_drift_rejects_before_io",
@@ -103,5 +243,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "6adecb34ae189d4081f880c66be961fae9ee4c7468a05055f294106f8ea184c5"
+  "source_tree_digest": "05d52306c699a986ee1b12aff47a51c8cfa4fcdc41e641821fe3d5eca79d02da"
 }
