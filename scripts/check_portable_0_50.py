@@ -56,7 +56,35 @@ EXPECTED_SCHEMAS = {
 }
 
 
+def validate_artifact_schema(name: str, schema: object) -> None:
+    """Require the frozen schema assigned to an evidence artifact."""
+    expected = EXPECTED_SCHEMAS.get(name)
+    if expected is None or schema != expected:
+        raise SystemExit(f"invalid evidence schema: {name}")
+
+
+def validate_cross_engine_digests(payload: dict[str, object]) -> None:
+    """Require normalized, PostgreSQL, and SQLite canonical results to agree."""
+    normalized = payload.get("normalized_result_digest")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(normalized or "")):
+        raise SystemExit("cross-engine digest must be derived from canonical output")
+    canonical = payload.get("canonical_result_digests")
+    if (
+        not isinstance(canonical, dict)
+        or set(canonical) != {"postgresql", "sqlite"}
+        or any(
+            not re.fullmatch(r"[0-9a-f]{64}", str(value))
+            for value in canonical.values()
+        )
+        or normalized != canonical["postgresql"]
+        or canonical["postgresql"] != canonical["sqlite"]
+    ):
+        raise SystemExit("cross-engine canonical digests are incomplete")
+
+
 def main() -> int:
+    if set(EXPECTED_SCHEMAS) != REQUIRED:
+        raise SystemExit("evidence schema map does not cover the frozen artifact set")
     missing = sorted(name for name in REQUIRED if not (EVIDENCE / name).is_file())
     if missing:
         raise SystemExit("missing 0.50 contract artifacts: " + ", ".join(missing))
@@ -123,8 +151,7 @@ def main() -> int:
     if manifest != baseline_manifest():
         raise SystemExit("baseline evidence manifest differs from runtime manifest")
     index = json.loads((EVIDENCE / "portable_evidence_index_0_50.json").read_text())
-    if index.get("schema") != EXPECTED_SCHEMAS["portable_evidence_index_0_50.json"]:
-        raise SystemExit("invalid evidence index schema")
+    validate_artifact_schema("portable_evidence_index_0_50.json", index.get("schema"))
     repository_commit = str(index.get("repository_commit") or "")
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
@@ -511,6 +538,8 @@ def main() -> int:
                 if (
                     not isinstance(candidate, dict)
                     or not isinstance(candidate.get("id"), str)
+                    or not isinstance(candidate.get("node"), str)
+                    or not candidate.get("node")
                     or not isinstance(candidate.get("eligible"), bool)
                     or candidate.get("decision")
                     not in {"eligible", "eliminated_before_preference_scoring"}
@@ -527,6 +556,50 @@ def main() -> int:
                 requirements = candidate.get("requirements")
                 if not isinstance(requirements, dict):
                     raise SystemExit("adaptive candidate requirements are missing")
+                support_report = candidate.get("support_report")
+                if not isinstance(support_report, dict):
+                    raise SystemExit("adaptive candidate support evidence is missing")
+                try:
+                    validate_requirement_support_payload(support_report)
+                except ValueError as exc:
+                    raise SystemExit(
+                        "adaptive candidate support evidence is invalid"
+                    ) from exc
+                support_requirements = {
+                    str(item["id"]): item for item in support_report["requirements"]
+                }
+                support_findings = {
+                    str(item["requirement"]): item
+                    for item in support_report["findings"]
+                }
+                aliases = {
+                    str((item.get("parameters") or {}).get("value")): identifier
+                    for identifier, item in support_requirements.items()
+                    if (item.get("parameters") or {}).get("value") is not None
+                }
+                resolved = {
+                    requirement: (
+                        requirement
+                        if requirement in support_findings
+                        else aliases.get(requirement)
+                    )
+                    for requirement in requirements
+                }
+                if (
+                    None in resolved.values()
+                    or set(resolved.values())
+                    != {
+                        identifier
+                        for identifier, item in support_requirements.items()
+                        if item.get("applicability") == "applicable"
+                    }
+                    or any(
+                        support_findings[identifier].get("support")
+                        != requirements[requirement]
+                        for requirement, identifier in resolved.items()
+                    )
+                ):
+                    raise SystemExit("adaptive support vector is not evidence-backed")
                 lowered = [
                     key
                     for key, value in requirements.items()
@@ -535,11 +608,10 @@ def main() -> int:
                 lowering = candidate.get("lowering")
                 if lowered and (
                     not isinstance(lowering, dict)
-                    or lowering.get("approved") is not True
                     or set(lowering.get("requirements") or ()) != set(lowered)
                     or not str(lowering.get("id") or "")
                     or not str(lowering.get("proof") or "")
-                    or not isinstance(lowering.get("resolved_conditions"), dict)
+                    or not lowering.get("conditions")
                     or not lowering.get("physical_effects")
                 ):
                     raise SystemExit("adaptive lowering evidence is incomplete")
@@ -576,7 +648,7 @@ def main() -> int:
     findings_doc = (EVIDENCE / "FINDINGS_0_50.md").read_text()
     migration_doc = (EVIDENCE / "MIGRATION_0_49_TO_0_50.md").read_text()
     whats_new_doc = (EVIDENCE / "WHATS_NEW_0_50.md").read_text()
-    required_findings = {f"SOL-050-{index:03d}" for index in range(1, 18)}
+    required_findings = {f"SOL-050-{index:03d}" for index in range(1, 19)}
     if (
         not required_findings.issubset(set(re.findall(r"SOL-050-\d{3}", findings_doc)))
         or "Sol re-review pending" not in findings_doc
@@ -591,23 +663,7 @@ def main() -> int:
     cross_engine = json.loads(
         (EVIDENCE / "portable_cross_engine_0_50.json").read_text()
     )
-    if not re.fullmatch(
-        r"[0-9a-f]{64}", str(cross_engine.get("normalized_result_digest") or "")
-    ):
-        raise SystemExit("cross-engine digest must be derived from canonical output")
-    canonical_digests = cross_engine.get("canonical_result_digests")
-    if (
-        not isinstance(canonical_digests, dict)
-        or set(canonical_digests) != {"postgresql", "sqlite"}
-        or any(
-            not re.fullmatch(r"[0-9a-f]{64}", str(value))
-            for value in canonical_digests.values()
-        )
-        or cross_engine.get("normalized_result_digest")
-        != canonical_digests["postgresql"]
-        or canonical_digests["postgresql"] != canonical_digests["sqlite"]
-    ):
-        raise SystemExit("cross-engine canonical digests are incomplete")
+    validate_cross_engine_digests(cross_engine)
     print("0.50 evidence artifact set is complete and structurally valid")
     return 0
 

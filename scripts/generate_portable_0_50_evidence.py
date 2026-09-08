@@ -30,9 +30,13 @@ from etlantic.testing.portable_transform_conformance import (
 )
 from etlantic.transform.capabilities import evaluate_adaptive_candidates
 from etlantic.transform.compiler import (
+    COMPILER_PROTOCOL,
     TransformCompileContext,
     TransformExecutionContext,
     TransformPlanningContext,
+    TransformSupportFinding,
+    TransformSupportReport,
+    requirement_records_from_mapping,
 )
 from etlantic.transform.local_compiler import LocalTransformCompiler
 from etlantic.transform.portable_baseline import (
@@ -144,6 +148,8 @@ ADAPTIVE_FIXTURES = (
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring",
     "test_adaptive_preferred_unknown_has_no_positive_preference",
     "test_adaptive_lowering_records_effects_and_identity",
+    "test_adaptive_lowering_is_derived_from_support_evidence",
+    "test_adaptive_evaluation_retains_per_node_selection",
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io",
 )
@@ -155,6 +161,8 @@ ADAPTIVE_COMMAND = (
     "test_adaptive_partial_engine_required_unknown_eliminates_before_scoring or "
     "test_adaptive_preferred_unknown_has_no_positive_preference or "
     "test_adaptive_lowering_records_effects_and_identity or "
+    "test_adaptive_lowering_is_derived_from_support_evidence or "
+    "test_adaptive_evaluation_retains_per_node_selection or "
     "test_adaptive_graph_edge_requirement_invalidates_assignment or "
     "test_adaptive_evidence_drift_rejects_before_io'"
 )
@@ -162,6 +170,55 @@ ADAPTIVE_COMMAND = (
 
 def _adaptive_scenarios() -> list[dict[str, Any]]:
     """Build adaptive handoff records from the production evaluator."""
+
+    def support_report(states: dict[str, str]) -> dict[str, Any]:
+        evidence = "adaptive-fixture-evidence"
+        requirements = requirement_records_from_mapping({"actions": list(states)})
+        requirement_ids = {
+            str((record.get("parameters") or {}).get("value")): str(record["id"])
+            for record in requirements
+        }
+        findings = tuple(
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement=requirement_ids[requirement],
+                reason="fixture support result",
+                support=state,
+                evidence_fingerprint=evidence,
+                lowering_id=(
+                    "lowering/fixture-v1"
+                    if state == "supported_with_lowering"
+                    else None
+                ),
+                proof_reference=(
+                    "proof/fixture-v1" if state == "supported_with_lowering" else None
+                ),
+                conditions=("preserve-null",)
+                if state == "supported_with_lowering"
+                else (),
+                physical_effects=("materialization",)
+                if state == "supported_with_lowering"
+                else (),
+            )
+            for requirement, state in states.items()
+        )
+        return TransformSupportReport(
+            supported=all(
+                state in {"supported_exact", "supported_with_lowering"}
+                for state in states.values()
+            ),
+            evidence_fingerprint=evidence,
+            requirements=requirements,
+            requirement_findings=findings,
+        ).to_requirement_support(
+            target={
+                "engine": "local",
+                "compiler": "adaptive-fixture",
+                "version": "1",
+                "protocol": COMPILER_PROTOCOL,
+            }
+        )
+
     required = {
         "orders": ("dtcs:join",),
         "customers": ("dtcs:join",),
@@ -179,6 +236,9 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "unknown",
                 },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"}
+                ),
             },
             {
                 "node": "orders",
@@ -187,6 +247,9 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "supported_exact",
                 },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                ),
             },
             {
                 "node": "customers",
@@ -195,6 +258,9 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "supported_exact",
                 },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                ),
             },
         ],
         required_requirements=required,
@@ -209,6 +275,9 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "unknown",
                 },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"}
+                ),
             },
             {
                 "node": "customers",
@@ -217,6 +286,9 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "supported_exact",
                 },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "supported_exact"}
+                ),
             },
         ],
         required_requirements={
@@ -234,19 +306,15 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 "node": "orders",
                 "id": "lowered",
                 "requirements": {"dtcs:filter": "supported_with_lowering"},
-                "lowering": {
-                    "id": "lowering/filter-v1",
-                    "approved": True,
-                    "requirements": ["dtcs:filter"],
-                    "proof": "approved:filter-v1",
-                    "resolved_conditions": {"null_policy": "preserve"},
-                    "physical_effects": ["materialization"],
-                },
+                "support_report": support_report(
+                    {"dtcs:filter": "supported_with_lowering"}
+                ),
             },
             {
                 "node": "customers",
                 "id": "exact",
                 "requirements": {"dtcs:filter": "supported_exact"},
+                "support_report": support_report({"dtcs:filter": "supported_exact"}),
             },
         ],
         required_requirements={
@@ -278,7 +346,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
         },
         {
             "id": "graph-invalid",
-            "fixture": ADAPTIVE_FIXTURES[5],
+            "fixture": ADAPTIVE_FIXTURES[7],
             "requirements": ["interchange:arrow"],
             "candidate_evaluation": evaluate_adaptive_candidates(
                 [
@@ -286,11 +354,17 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                         "node": "orders",
                         "id": "native",
                         "requirements": {"dtcs:join": "supported_exact"},
+                        "support_report": support_report(
+                            {"dtcs:join": "supported_exact"}
+                        ),
                     },
                     {
                         "node": "customers",
                         "id": "native",
                         "requirements": {"dtcs:join": "supported_exact"},
+                        "support_report": support_report(
+                            {"dtcs:join": "supported_exact"}
+                        ),
                     },
                 ],
                 required_requirements={
@@ -309,7 +383,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
         },
         {
             "id": "evidence-drift",
-            "fixture": ADAPTIVE_FIXTURES[6],
+            "fixture": ADAPTIVE_FIXTURES[8],
             "preflight": "reject_stale_fingerprint_before_io",
             "result": "rejected_before_io",
         },

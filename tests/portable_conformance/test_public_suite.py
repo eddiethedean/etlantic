@@ -461,6 +461,58 @@ def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
     assert all(item["support"] == "unknown" for item in payload["findings"])
 
 
+def _adaptive_support_report(states: dict[str, str]) -> dict[str, object]:
+    from etlantic.transform.compiler import (
+        COMPILER_PROTOCOL,
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    evidence = "adaptive-fixture-evidence"
+    requirements = requirement_records_from_mapping({"actions": list(states)})
+    requirement_ids = {
+        str((record.get("parameters") or {}).get("value")): str(record["id"])
+        for record in requirements
+    }
+    findings = tuple(
+        TransformSupportFinding(
+            code="PMXFORM000",
+            requirement=requirement_ids[requirement],
+            reason="fixture support result",
+            support=state,
+            evidence_fingerprint=evidence,
+            lowering_id="lowering/fixture-v1"
+            if state == "supported_with_lowering"
+            else None,
+            proof_reference="proof/fixture-v1"
+            if state == "supported_with_lowering"
+            else None,
+            conditions=("preserve-null",) if state == "supported_with_lowering" else (),
+            physical_effects=("materialization",)
+            if state == "supported_with_lowering"
+            else (),
+        )
+        for requirement, state in states.items()
+    )
+    return TransformSupportReport(
+        supported=all(
+            state in {"supported_exact", "supported_with_lowering"}
+            for state in states.values()
+        ),
+        evidence_fingerprint=evidence,
+        requirements=requirements,
+        requirement_findings=findings,
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "adaptive-fixture",
+            "version": "1",
+            "protocol": COMPILER_PROTOCOL,
+        }
+    )
+
+
 def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() -> None:
     from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
@@ -472,6 +524,9 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "unknown",
                 },
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "unknown"}
+                ),
             },
             {
                 "id": "complete",
@@ -479,6 +534,9 @@ def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() ->
                     "dtcs:filter": "supported_exact",
                     "dtcs:join": "supported_exact",
                 },
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:join": "supported_exact"}
+                ),
             },
         ],
         required_requirements=("dtcs:join",),
@@ -501,6 +559,9 @@ def test_adaptive_preferred_unknown_has_no_positive_preference() -> None:
                     "dtcs:filter": "supported_exact",
                     "dtcs:sort": "unknown",
                 },
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "supported_exact", "dtcs:sort": "unknown"}
+                ),
             }
         ],
         required_requirements=("dtcs:filter",),
@@ -517,38 +578,42 @@ def test_adaptive_lowering_records_effects_and_identity() -> None:
             {
                 "id": "lowered",
                 "requirements": {"dtcs:filter": "supported_with_lowering"},
-                "lowering": {
-                    "id": "lowering/filter-v1",
-                    "approved": True,
-                    "requirements": ["dtcs:filter"],
-                    "proof": "approved:filter-v1",
-                    "resolved_conditions": {"null_policy": "preserve"},
-                    "physical_effects": ["materialization"],
-                },
+                "support_report": _adaptive_support_report(
+                    {"dtcs:filter": "supported_with_lowering"}
+                ),
             }
         ],
         required_requirements=("dtcs:filter",),
     )
     lowering = result["candidates"][0]["lowering"]
     assert lowering == {
-        "id": "lowering/filter-v1",
-        "approved": True,
+        "id": "lowering/fixture-v1",
         "requirements": ["dtcs:filter"],
-        "proof": "approved:filter-v1",
-        "resolved_conditions": {"null_policy": "preserve"},
+        "proof": "proof/fixture-v1",
+        "conditions": ["preserve-null"],
         "physical_effects": ["materialization"],
     }
 
 
-def test_adaptive_lowering_requires_approved_proof() -> None:
+def test_adaptive_lowering_is_derived_from_support_evidence() -> None:
     from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
-    with pytest.raises(ValueError, match="approved lowering"):
+    with pytest.raises(ValueError, match="derived from support evidence"):
         evaluate_adaptive_candidates(
             [
                 {
                     "id": "unproven",
                     "requirements": {"dtcs:filter": "supported_with_lowering"},
+                    "support_report": _adaptive_support_report(
+                        {"dtcs:filter": "supported_with_lowering"}
+                    ),
+                    "lowering": {
+                        "id": "fabricated",
+                        "approved": True,
+                        "requirements": ["dtcs:filter"],
+                        "proof": "anything",
+                        "physical_effects": ["anything"],
+                    },
                 }
             ],
             required_requirements=("dtcs:filter",),
@@ -564,16 +629,23 @@ def test_adaptive_evaluation_retains_per_node_selection() -> None:
                 "node": "orders",
                 "id": "partial",
                 "requirements": {"dtcs:join": "unknown"},
+                "support_report": _adaptive_support_report({"dtcs:join": "unknown"}),
             },
             {
                 "node": "orders",
                 "id": "complete",
                 "requirements": {"dtcs:join": "supported_exact"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "supported_exact"}
+                ),
             },
             {
                 "node": "customers",
                 "id": "complete",
                 "requirements": {"dtcs:join": "supported_exact"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "supported_exact"}
+                ),
             },
         ],
         required_requirements={"orders": ("dtcs:join",), "customers": ("dtcs:join",)},
@@ -594,11 +666,17 @@ def test_adaptive_graph_edge_requirement_invalidates_assignment() -> None:
                 "node": "orders",
                 "id": "native",
                 "requirements": {"dtcs:join": "supported_exact"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "supported_exact"}
+                ),
             },
             {
                 "node": "customers",
                 "id": "native",
                 "requirements": {"dtcs:join": "supported_exact"},
+                "support_report": _adaptive_support_report(
+                    {"dtcs:join": "supported_exact"}
+                ),
             },
         ],
         required_requirements={

@@ -6,10 +6,10 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from etlantic.transform.compiler import (
-    SUPPORT_STATES,
     TransformCapabilities,
     TransformSupportFinding,
     TransformSupportReport,
+    validate_requirement_support_payload,
 )
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTION_ARITIES,
@@ -456,9 +456,46 @@ def evaluate_adaptive_candidates(
         if not isinstance(vectors, Mapping):
             raise ValueError("adaptive candidate requirements must be a mapping")
         normalized = {str(key): str(value) for key, value in vectors.items()}
-        invalid = set(normalized.values()) - SUPPORT_STATES
-        if invalid:
-            raise ValueError("adaptive candidate contains an invalid support state")
+        support_report = candidate.get("support_report")
+        if not isinstance(support_report, Mapping):
+            raise ValueError("adaptive candidate requires validated support evidence")
+        validate_requirement_support_payload(support_report)
+        report_requirements = {
+            str(item["id"]): item for item in support_report["requirements"]
+        }
+        report_findings = {
+            str(item["requirement"]): item for item in support_report["findings"]
+        }
+        aliases = {
+            str((item.get("parameters") or {}).get("value")): identifier
+            for identifier, item in report_requirements.items()
+            if (item.get("parameters") or {}).get("value") is not None
+        }
+        resolved_ids: dict[str, str] = {}
+        for requirement, state in normalized.items():
+            requirement_id = (
+                requirement
+                if requirement in report_findings
+                else aliases.get(requirement)
+            )
+            if requirement_id is None or requirement_id not in report_findings:
+                raise ValueError("adaptive requirement is absent from support evidence")
+            finding = report_findings[requirement_id]
+            if finding.get("support") != state:
+                raise ValueError("adaptive support state disagrees with evidence")
+            resolved_ids[requirement] = requirement_id
+        applicable_ids = {
+            identifier
+            for identifier, item in report_requirements.items()
+            if item.get("applicability") == "applicable"
+        }
+        if (
+            set(resolved_ids.values()) != applicable_ids
+            or set(report_findings) != applicable_ids
+        ):
+            raise ValueError(
+                "adaptive candidate must retain the complete support vector"
+            )
         required = _requirements_for(required_requirements, node_id)
         preferred = _requirements_for(preferred_requirements, node_id)
         required_failures = [
@@ -468,54 +505,61 @@ def evaluate_adaptive_candidates(
             not in {"supported_exact", "supported_with_lowering"}
         ]
         lowering = candidate.get("lowering")
+        if lowering is not None:
+            raise ValueError("adaptive lowering must be derived from support evidence")
         lowering_record: dict[str, Any] | None = None
         lowered_requirements = sorted(
             requirement
             for requirement, state in normalized.items()
             if state == "supported_with_lowering"
         )
-        if lowering is not None:
-            if not isinstance(lowering, Mapping):
-                raise ValueError("adaptive lowering must be a mapping")
-            lowering_id = str(lowering.get("id") or "")
-            effects = lowering.get("physical_effects") or []
-            proof = str(lowering.get("proof") or "")
-            resolved_conditions = lowering.get("resolved_conditions")
-            lowering_requirements = lowering.get("requirements")
+        if lowered_requirements:
+            lowered_findings = [
+                report_findings[resolved_ids[requirement]]
+                for requirement in lowered_requirements
+            ]
+            lowering_ids = {
+                str(item.get("lowering_id") or "") for item in lowered_findings
+            }
+            proofs = {
+                str(item.get("proof_reference") or "") for item in lowered_findings
+            }
+            conditions = {
+                tuple(item.get("conditions") or ()) for item in lowered_findings
+            }
+            effects = {
+                tuple(item.get("physical_effects") or ()) for item in lowered_findings
+            }
             if (
-                not lowering_id
-                or not isinstance(effects, Sequence)
-                or isinstance(effects, (str, bytes))
-                or not effects
-                or not proof
-                or not isinstance(resolved_conditions, Mapping)
-                or not isinstance(lowering_requirements, Sequence)
-                or isinstance(lowering_requirements, (str, bytes))
-                or set(map(str, lowering_requirements)) != set(lowered_requirements)
-                or lowering.get("approved") is not True
+                len(lowering_ids) != 1
+                or "" in lowering_ids
+                or len(proofs) != 1
+                or "" in proofs
+                or len(conditions) != 1
+                or len(effects) != 1
+                or not next(iter(effects))
             ):
                 raise ValueError(
-                    "adaptive lowering requires approved id, requirements, proof, "
-                    "resolved conditions, and physical effects"
+                    "adaptive lowering evidence is incomplete or inconsistent"
                 )
+            lowering_id = next(iter(lowering_ids))
+            proof = next(iter(proofs))
+            lowering_conditions = list(next(iter(conditions)))
+            lowering_effects = list(next(iter(effects)))
             lowering_record = {
                 "id": lowering_id,
-                "approved": True,
                 "requirements": lowered_requirements,
                 "proof": proof,
-                "resolved_conditions": dict(resolved_conditions),
-                "physical_effects": [str(effect) for effect in effects],
+                "conditions": lowering_conditions,
+                "physical_effects": lowering_effects,
             }
-        elif lowered_requirements:
-            raise ValueError(
-                "supported_with_lowering requires an approved lowering record"
-            )
         if required_failures:
             decisions.append(
                 {
                     "id": candidate_id,
                     "node": node_id,
                     "requirements": normalized,
+                    "support_report": dict(support_report),
                     "eligible": False,
                     "decision": "eliminated_before_preference_scoring",
                     "required_failures": required_failures,
@@ -535,6 +579,7 @@ def evaluate_adaptive_candidates(
                 "id": candidate_id,
                 "node": node_id,
                 "requirements": normalized,
+                "support_report": dict(support_report),
                 "eligible": True,
                 "decision": "eligible",
                 "required_failures": [],
