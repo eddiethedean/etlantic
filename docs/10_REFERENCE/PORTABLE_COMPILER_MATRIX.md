@@ -1,6 +1,6 @@
 # Portable Compiler Matrix
 
-> **Status: ETLantic 0.50 technical qualification complete; Sol review pending.**
+> **Status: ETLantic 0.50 technical qualification is recorded for Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB; Sol review is pending.**
 
 This matrix records the portable transformation claims shipped in ETLantic
 0.50.0. It is narrower than each backend's native capabilities.

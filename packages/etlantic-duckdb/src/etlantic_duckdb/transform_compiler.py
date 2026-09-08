@@ -252,6 +252,7 @@ class DuckDBTransformCompiler:
             columns[current_name] = next(iter(columns.values()))
         current = relations[current_name]
         current_columns = columns[current_name]
+        native_statement_digests: list[str] = []
         for index, action in enumerate(plan.get("actions") or ()):
             kind = action.get("kind") or {}
             target_name = str(kind.get("target") or "")
@@ -259,7 +260,7 @@ class DuckDBTransformCompiler:
                 raise ValueError(f"missing DuckDB action relation {target_name!r}")
             source = relations[target_name] if target_name else current
             source_columns = columns[target_name] if target_name else current_columns
-            current, out_cols = _apply_action(
+            current, out_cols, statement_digest = _apply_action(
                 plugin,
                 session,
                 source,
@@ -273,6 +274,7 @@ class DuckDBTransformCompiler:
                     f"_{int(context.attempt)}"
                 ),
             )
+            native_statement_digests.append(statement_digest)
             action_id = str(
                 (action.get("kind") or {}).get("id") or action.get("id") or f"a{index}"
             )
@@ -365,6 +367,7 @@ class DuckDBTransformCompiler:
                 "engine": "duckdb",
                 "lazy": True,
                 "evidence_fingerprint": self.info.evidence_fingerprint,
+                "native_statement_digests": native_statement_digests,
             },
         )
 
@@ -378,7 +381,7 @@ def _input_relation(
     step_name: str,
     attempt: int,
     declared_spec: Any = None,
-) -> tuple[RelationRef, list[str]]:
+) -> tuple[RelationRef, list[str], str]:
     if isinstance(value, RelationRef):
         info = plugin.inspect_relation(
             value,
@@ -1184,14 +1187,27 @@ def _analyze_action(
         for index, item in enumerate(items):
             item_path = f"{base}.{key}[{index}]"
             if name == "dtcs:sort":
-                value = item.get("column") if isinstance(item, Mapping) else item
-                identifier = _column_findings(
-                    value,
-                    path=item_path,
-                    available_fields=source_columns,
-                    evidence_fingerprint=evidence_fingerprint,
-                )
-                findings.extend(identifier)
+                if isinstance(item, Mapping) and isinstance(
+                    item.get("expression"), Mapping
+                ):
+                    findings.extend(
+                        _analyze_expression(
+                            item["expression"],
+                            path=f"{item_path}.expression",
+                            evidence_fingerprint=evidence_fingerprint,
+                            available_fields=source_columns,
+                        )
+                    )
+                else:
+                    value = item.get("column") if isinstance(item, Mapping) else item
+                    findings.extend(
+                        _column_findings(
+                            value,
+                            path=item_path,
+                            available_fields=source_columns,
+                            evidence_fingerprint=evidence_fingerprint,
+                        )
+                    )
                 continue
             if isinstance(item, str):
                 if name == "dtcs:with_fields":
@@ -1623,7 +1639,14 @@ def _apply_action(
         items = params.get("by") or params.get("keys") or ()
         order = []
         for item in items:
-            col = str(item.get("column") if isinstance(item, dict) else item)
+            column = (
+                _expr(item["expression"], parameters, bound_params)
+                if isinstance(item, Mapping)
+                and isinstance(item.get("expression"), Mapping)
+                else plugin.quote_identifier(
+                    str(item.get("column") if isinstance(item, Mapping) else item)
+                )
+            )
             desc = (
                 bool(item.get("descending"))
                 if isinstance(item, Mapping) and "descending" in item
@@ -1637,9 +1660,7 @@ def _apply_action(
             )
             if nulls not in {"FIRST", "LAST"}:
                 raise ValueError(f"unsupported DuckDB null ordering {nulls!r}")
-            order.append(
-                f"{plugin.quote_identifier(col)} {'DESC' if desc else 'ASC'} NULLS {nulls}"
-            )
+            order.append(f"{column} {'DESC' if desc else 'ASC'} NULLS {nulls}")
         query = (
             f"SELECT * FROM {source} ORDER BY {', '.join(order)}"
             if order
@@ -1793,7 +1814,7 @@ def _apply_action(
     target = RelationRef(name=f"{relation_prefix}_{_safe(str(kind.get('id') or name))}")
     statement = f"CREATE TEMP TABLE {plugin.quote_identifier(target.name)} AS {query}"
     session.execute(statement, bound_params if bound_params else None)
-    return target, out_names
+    return target, out_names, hashlib.sha256(statement.encode("utf-8")).hexdigest()
 
 
 def _join_condition(

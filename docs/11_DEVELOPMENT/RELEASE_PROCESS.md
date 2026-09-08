@@ -27,7 +27,7 @@ Official plugins declare `etlantic>=0.49.0,<0.50`.
 | Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) | Deprecated redirect |
 | Reference adapter | `etlantic-fastapi` | Beta | Beta |
 | Reference adapter | `etlantic-lsp` | Beta | Beta |
-| Provisional | `etlantic-datafusion` | Alpha | 0.50 baseline qualification pending |
+| Provisional | `etlantic-datafusion` | Alpha | 0.50 technical qualification recorded; independent review pending |
 
 See [Facade packages](FACADE_PACKAGES.md). Evaluators should treat narrative
 Beta / single-tenant boundaries in [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
@@ -52,7 +52,7 @@ Tag `vX.Y.Z` publishes twenty-four distributions:
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | **compatibility redirect** → medallantic |
 | `etlantic-fastapi` | `packages/etlantic-fastapi` | thin reference adapter (since 0.24) |
 | `etlantic-lsp` | `packages/etlantic-lsp` | language server host (since 0.44) |
-| `etlantic-datafusion` | `packages/etlantic-datafusion` | **Provisional** (Alpha classifier; 0.50 qualification pending) |
+| `etlantic-datafusion` | `packages/etlantic-datafusion` | **Provisional** (Alpha classifier; 0.50 technical qualification recorded; independent review pending) |
 | `etlantic-s3` | `packages/etlantic-s3` | **Experimental** connector (Alpha classifier) |
 | `etlantic-kafka` | `packages/etlantic-kafka` | **Experimental** Kafka reference (Alpha; fake-first) |
 | `etlantic-k8s` | `packages/etlantic-k8s` | **Experimental** Kubernetes resource provider (Alpha; FakeKubernetes) |

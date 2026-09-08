@@ -143,9 +143,11 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
         if not isinstance(sep, str):
             raise ValueError("dtcs:concat_ws separator must be a string constant")
         value = pl.concat_str(args[1:], separator=sep)
-        return pl.when(pl.any_horizontal([arg.is_null() for arg in args[1:]])).then(
-            pl.lit(None)
-        ).otherwise(value)
+        return (
+            pl.when(pl.any_horizontal([arg.is_null() for arg in args[1:]]))
+            .then(pl.lit(None))
+            .otherwise(value)
+        )
     if callee == "dtcs:length":
         return args[0].str.len_chars()
     if callee == "dtcs:substr":
@@ -195,14 +197,18 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
         return args[0].sqrt()
     if callee == "dtcs:least":
         value = pl.min_horizontal(args)
-        return pl.when(pl.any_horizontal([arg.is_null() for arg in args])).then(
-            pl.lit(None)
-        ).otherwise(value)
+        return (
+            pl.when(pl.any_horizontal([arg.is_null() for arg in args]))
+            .then(pl.lit(None))
+            .otherwise(value)
+        )
     if callee == "dtcs:greatest":
         value = pl.max_horizontal(args)
-        return pl.when(pl.any_horizontal([arg.is_null() for arg in args])).then(
-            pl.lit(None)
-        ).otherwise(value)
+        return (
+            pl.when(pl.any_horizontal([arg.is_null() for arg in args]))
+            .then(pl.lit(None))
+            .otherwise(value)
+        )
     if callee == "dtcs:to_string":
         return args[0].cast(pl.Utf8)
     if callee == "dtcs:to_integer":

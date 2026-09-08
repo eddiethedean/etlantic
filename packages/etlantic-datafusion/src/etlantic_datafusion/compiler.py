@@ -461,10 +461,16 @@ def _apply_action(
         exprs = []
         for key in keys:
             if isinstance(key, Mapping):
-                exprs.append(
-                    col(
+                expression = key.get("expression")
+                sort_expr = (
+                    _expr(expression, col, f, lit, params)
+                    if isinstance(expression, Mapping)
+                    else col(
                         str(key.get("field") or key.get("column") or key.get("name"))
-                    ).sort(
+                    )
+                )
+                exprs.append(
+                    sort_expr.sort(
                         ascending=str(key.get("direction", "asc")).lower() != "desc",
                         nulls_first=(
                             bool(key.get("nullsFirst"))

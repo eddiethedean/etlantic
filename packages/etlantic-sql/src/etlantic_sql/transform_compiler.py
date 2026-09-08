@@ -245,6 +245,7 @@ class SqlTransformCompiler:
         with engine.begin() as conn:
             relations: dict[str, RelationRef] = {}
             relation_columns: dict[str, list[str]] = {}
+            native_statement_digests: list[str] = []
             for name, frame in frames.items():
                 table = _safe_table(name)
                 _materialize_table(conn, table, frame.rows, dialect=dialect)
@@ -301,6 +302,9 @@ class SqlTransformCompiler:
                     f"{compiled_sql.text}"
                 )
                 conn.execute(_text(create_sql), bound)
+                native_statement_digests.append(
+                    hashlib.sha256(create_sql.encode("utf-8")).hexdigest()
+                )
                 current_rel = RelationRef(name=step_table)
                 current_cols = out_cols
                 relations[action_id] = current_rel
@@ -336,6 +340,7 @@ class SqlTransformCompiler:
                 "fused_steps": len(ctes),
                 "logical_nodes": logical_nodes,
                 "dialect": dialect,
+                "native_statement_digests": native_statement_digests,
             },
         )
 
@@ -372,7 +377,17 @@ def _as_frame(value: Any, *, name: str) -> SqlRelationFrame:
             value.name = name
         return value
     if isinstance(value, list):
-        return SqlRelationFrame(rows=list(value), name=name)
+        return SqlRelationFrame(
+            rows=[
+                item.model_dump()
+                if hasattr(item, "model_dump")
+                else dict(item)
+                if isinstance(item, Mapping)
+                else item
+                for item in value
+            ],
+            name=name,
+        )
     if hasattr(value, "to_dicts"):
         return SqlRelationFrame(rows=list(value.to_dicts()), name=name)
     raise TypeError(f"Unsupported SQL input frame type {type(value)!r}")

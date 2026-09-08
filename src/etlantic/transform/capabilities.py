@@ -678,45 +678,112 @@ def portable_shape_findings(
 def portable_arithmetic_findings(
     definition: Mapping[str, Any],
 ) -> list[TransformSupportFinding]:
-    """Reject statically provable divide/modulo-by-zero expressions.
+    """Reject arithmetic that cannot satisfy the frozen portable contract.
 
-    The portable baseline defines these as errors.  Native engines disagree
-    (NULL, infinity, or exceptions), so plans containing a literal zero
-    denominator must fail during analysis rather than silently diverge.
+    Native engines disagree about division/modulo by zero and fixed-width
+    integer overflow.  A portable plan therefore has to prove that a divisor
+    is a non-zero literal before dispatch; inspecting source rows during
+    planning would violate the no-I/O planning boundary.  Literal integer
+    overflow is similarly rejected before a backend can wrap, coerce, or
+    produce an engine-specific error.
     """
     findings: list[TransformSupportFinding] = []
+    integer_min = -(2**63)
+    integer_max = 2**63 - 1
+
+    def literal_value(node: Any) -> tuple[str | None, Any]:
+        if not isinstance(node, Mapping) or node.get("kind") != "literal":
+            return None, None
+        value = node.get("value")
+        if isinstance(value, Mapping):
+            return str(value.get("type") or ""), value.get("value")
+        return None, value
+
+    def append_finding(requirement: str, reason: str, path: str) -> None:
+        findings.append(
+            TransformSupportFinding(
+                code="PMXFORM302",
+                requirement=requirement,
+                reason=reason,
+                expression_path=path,
+                support="unsupported",
+            )
+        )
 
     def walk(node: Any, path: str = "plan") -> None:
         if isinstance(node, Mapping):
             kind = node.get("kind")
-            if (
-                isinstance(kind, str)
-                and kind in {"binary", "operator"}
-                and normalize_operator(str(node.get("op")))
-                in {
-                    "divide",
-                    "modulo",
-                }
-            ):
+            if isinstance(kind, str) and kind in {"binary", "operator"}:
+                op = normalize_operator(str(node.get("op")))
                 right = node.get("right")
-                if isinstance(right, Mapping) and right.get("kind") == "literal":
-                    value = right.get("value")
-                    if isinstance(value, Mapping):
-                        value = value.get("value")
-                    if (
-                        isinstance(value, (int, float))
-                        and not isinstance(value, bool)
-                        and value == 0
+                if op in {"divide", "modulo"}:
+                    right_type, right_value = literal_value(right)
+                    if right_type is None:
+                        append_finding(
+                            f"arithmetic:{op}:statically-nonzero-denominator",
+                            f"{op} requires a statically non-zero literal denominator; "
+                            "field and parameter denominators cannot be qualified "
+                            "without source-row inspection",
+                            f"{path}.right",
+                        )
+                    elif (
+                        not isinstance(right_value, (int, float))
+                        or isinstance(right_value, bool)
+                        or right_value == 0
                     ):
-                        op = normalize_operator(str(node.get("op")))
-                        findings.append(
-                            TransformSupportFinding(
-                                code="PMXFORM302",
-                                requirement=f"arithmetic:{op}:nonzero-denominator",
-                                reason=f"{op} by a literal zero is an explicit portable arithmetic error",
-                                expression_path=f"{path}.right",
-                                support="unsupported",
+                        append_finding(
+                            f"arithmetic:{op}:nonzero-denominator",
+                            f"{op} by a zero or non-numeric literal is an explicit "
+                            "portable arithmetic error",
+                            f"{path}.right",
+                        )
+                if op in {"add", "subtract", "multiply"}:
+                    left_type, left_value = literal_value(node.get("left"))
+                    right_type, right_value = literal_value(right)
+                    if left_type != "integer" or right_type != "integer":
+                        append_finding(
+                            f"arithmetic:{op}:statically-bounded-operands",
+                            f"{op} requires signed 64-bit integer literals; dynamic "
+                            "operands cannot prove portable overflow behavior",
+                            path,
+                        )
+                    else:
+                        try:
+                            value = {
+                                "add": left_value + right_value,
+                                "subtract": left_value - right_value,
+                                "multiply": left_value * right_value,
+                            }[op]
+                        except TypeError:
+                            value = None
+                        if (
+                            not isinstance(value, int)
+                            or not integer_min <= value <= integer_max
+                        ):
+                            append_finding(
+                                "arithmetic:integer-overflow",
+                                "integer literal arithmetic exceeds the portable signed "
+                                "64-bit range",
+                                path,
                             )
+            elif isinstance(kind, str) and kind == "unary":
+                op = normalize_operator(str(node.get("op")))
+                operand_type, operand_value = literal_value(
+                    node.get("operand", node.get("expr"))
+                )
+                if op == "negate":
+                    if operand_type != "integer":
+                        append_finding(
+                            "arithmetic:negate:statically-bounded-operand",
+                            "negate requires a signed 64-bit integer literal; dynamic "
+                            "operands cannot prove portable overflow behavior",
+                            path,
+                        )
+                    elif operand_value == integer_min:
+                        append_finding(
+                            "arithmetic:integer-overflow",
+                            "negating the portable signed 64-bit minimum overflows",
+                            path,
                         )
             for key, value in node.items():
                 walk(value, f"{path}.{key}")

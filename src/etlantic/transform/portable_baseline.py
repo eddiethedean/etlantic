@@ -211,7 +211,8 @@ def baseline_manifest() -> dict[str, Any]:
                 "arity": list(bounds),
                 "null_policy": (
                     "aware"
-                    if name in {
+                    if name
+                    in {
                         "dtcs:coalesce",
                         "dtcs:if_null",
                         "dtcs:is_null",
@@ -223,6 +224,57 @@ def baseline_manifest() -> dict[str, Any]:
             }
             for name, bounds in sorted(BASELINE_FUNCTION_ARITIES.items())
         },
+        "literal_constraints": {
+            "null": {"value": None},
+            "boolean": {"python_types": ["bool"]},
+            "integer": {
+                "python_types": ["int"],
+                "minimum": -(2**63),
+                "maximum": 2**63 - 1,
+            },
+            "decimal": {"python_types": ["int", "float", "decimal"]},
+            "string": {"encoding": "utf-8", "normalization": "codepoint"},
+            "missing": {"requires_semantic_mode": "three_state_distinct"},
+            "invalid": {"requires_semantic_mode": "three_state_distinct"},
+        },
+        "action_parameters": {
+            "dtcs:filter": {
+                "predicate": {"required": True, "kind": "boolean_expression"}
+            },
+            "dtcs:project": {"fields": {"required": True, "min_items": 1}},
+            "dtcs:with_fields": {"assignments": {"required": True, "min_items": 1}},
+            "dtcs:drop_fields": {"fields": {"required": True, "min_items": 1}},
+            "dtcs:rename_fields": {
+                "mapping": {"required": True, "unique_targets": True}
+            },
+            "dtcs:join": {
+                "type": {"allowed": list(BASELINE_JOIN_MODES), "default": "inner"},
+                "right": {"required": True, "relation_identity": True},
+                "nullSafe": {"default": False, "type": "boolean"},
+                "collisionPolicy": {"allowed": ["fail"], "default": "fail"},
+            },
+            "dtcs:union": {
+                "other": {"required": True, "relation_identity": True},
+                "mode": {"allowed": ["byName", "byPosition"], "default": "byName"},
+                "allowMissingColumns": {"allowed": [False], "default": False},
+            },
+            "dtcs:aggregate": {
+                "groupBy": {"required": True},
+                "aggregates": {"required": True, "min_items": 1},
+            },
+            "dtcs:sort": {
+                "keys": {
+                    "required": True,
+                    "min_items": 1,
+                    "null_placement": ["first", "last"],
+                }
+            },
+            "dtcs:distinct": {},
+            "dtcs:deduplicate": {
+                "keys": {"required": False, "complete_row_identity_when_omitted": True}
+            },
+            "dtcs:limit": {"count": {"required": True, "minimum": 0, "integer": True}},
+        },
         "aggregate_empty_results": {
             "dtcs:sum": None,
             "dtcs:average": None,
@@ -233,11 +285,40 @@ def baseline_manifest() -> dict[str, Any]:
             "dtcs:count_distinct": 0,
         },
         "numeric_rules": {
-            "integer": "signed_64_or_wider",
-            "decimal": "preserve_declared_precision_and_scale",
+            "evaluation": "statically_bounded_literals_only",
+            "integer": {
+                "representation": "signed_64",
+                "minimum": -(2**63),
+                "maximum": 2**63 - 1,
+            },
+            "decimal": {"promotion": "preserve_declared_precision_and_scale"},
+            "promotion": {
+                "integer:integer": "integer",
+                "integer:decimal": "decimal",
+                "decimal:integer": "decimal",
+                "decimal:decimal": "decimal",
+            },
             "overflow": "raise_portable_numeric_error",
             "divide_by_zero": "raise_portable_arithmetic_error",
             "modulo_by_zero": "raise_portable_arithmetic_error",
+        },
+        "string_unicode_rules": {
+            "encoding": "utf-8",
+            "unit": "unicode_codepoint",
+            "case_mapping": "unicode_simple_case_mapping",
+            "substring_start": "zero_based",
+            "substring_length": "codepoints",
+            "null_policy": "propagate_except_null_aware_functions",
+        },
+        "multi_input_identity": {
+            "inputs": "named_relation_identity",
+            "join_right": "must_reference_declared_input_or_prior_action",
+            "union_other": "must_reference_declared_input_or_prior_action",
+        },
+        "output_contract": {
+            "shape": "declared_output_schema",
+            "field_names": "exact",
+            "validation": "runtime_contract_validation_required",
         },
         "union_policies": {
             "byName": {"missing_fields": "reject", "duplicates": "reject"},
@@ -260,8 +341,8 @@ def baseline_manifest() -> dict[str, Any]:
             "dtcs:with_fields": "kernel_filter_project_lower",
             "dtcs:drop_fields": "baseline_field_actions",
             "dtcs:rename_fields": "baseline_field_actions",
-            "dtcs:join": "relational_join_aggregate",
-            "dtcs:union": "baseline_union",
+            "dtcs:join": "baseline_join_inner",
+            "dtcs:union": "baseline_union_by_name",
             "dtcs:aggregate": "baseline_aggregate_functions",
             "dtcs:sort": "relational_sort_nulls_limit",
             "dtcs:distinct": "baseline_field_actions",
@@ -283,8 +364,15 @@ def baseline_manifest() -> dict[str, Any]:
             "type:string": "baseline_scalar_functions",
             "type:missing": "reject_missing_literal_without_three_state",
             "type:invalid": "reject_missing_literal_without_three_state",
-            "join_modes": "baseline_join_modes",
-            "union_modes": "baseline_union_modes",
+            "join_mode:inner": "baseline_join_inner",
+            "join_mode:left": "baseline_join_left",
+            "join_mode:right": "baseline_join_right",
+            "join_mode:full": "baseline_join_full",
+            "join_mode:semi": "baseline_join_semi",
+            "join_mode:anti": "baseline_join_anti",
+            "join_mode:cross": "baseline_join_cross",
+            "union_mode:byName": "baseline_union_by_name",
+            "union_mode:byPosition": "baseline_union_by_position",
             "semantic_modes": "reject_missing_literal_without_three_state",
         },
     }

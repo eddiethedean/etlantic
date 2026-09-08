@@ -67,6 +67,13 @@ def main() -> int:
         "defaults",
         "semantic_rules",
         "leaf_fixture_ids",
+        "literal_constraints",
+        "action_parameters",
+        "aggregate_empty_results",
+        "numeric_rules",
+        "string_unicode_rules",
+        "multi_input_identity",
+        "output_contract",
     }
     if not required_manifest_keys.issubset(manifest):
         raise SystemExit("baseline manifest is missing normative contract fields")
@@ -81,15 +88,36 @@ def main() -> int:
     ).strip()
     if not re.fullmatch(r"[0-9a-f]{40}", repository_commit):
         raise SystemExit("evidence index repository_commit is invalid")
-    if (
-        subprocess.run(
-            ["git", "merge-base", "--is-ancestor", repository_commit, head], cwd=ROOT
-        ).returncode
-        != 0
-    ):
-        raise SystemExit(
-            "evidence index repository_commit is not an ancestor of the checked-out commit"
+    if repository_commit != head:
+        # Generated evidence necessarily changes the evidence tree after the
+        # source revision is committed.  Accept only that single, immediate
+        # evidence commit; accepting an arbitrary ancestor allows stale source
+        # claims to pass under a newer implementation.
+        changed = subprocess.check_output(
+            ["git", "diff", "--name-only", f"{repository_commit}..{head}"],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        commits = int(
+            subprocess.check_output(
+                ["git", "rev-list", "--count", f"{repository_commit}..{head}"],
+                cwd=ROOT,
+                text=True,
+            ).strip()
         )
+        if commits != 1 or any(
+            not path.startswith("docs/11_DEVELOPMENT/evidence/portable_0_50/")
+            for path in changed
+        ):
+            raise SystemExit(
+                "evidence repository_commit must be HEAD or the immediate "
+                "source parent of an evidence-only commit"
+            )
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=ROOT, text=True
+    )
+    if dirty.strip():
+        raise SystemExit("qualification evidence requires a clean worktree")
     source_digest = index.get("source_tree_digest")
     if not isinstance(source_digest, str) or not re.fullmatch(
         r"[0-9a-f]{64}", source_digest
@@ -188,6 +216,25 @@ def main() -> int:
             ) from exc
         if not report.get("requirements") or not report.get("findings"):
             raise SystemExit(f"requirement evidence is empty for {engine}")
+        requirements = {
+            str(item.get("id")): item for item in report.get("requirements") or []
+        }
+        findings_by_requirement = {
+            str(item.get("requirement")): item for item in report.get("findings") or []
+        }
+        for requirement_id, requirement in requirements.items():
+            if requirement.get("applicability") == "not_applicable":
+                continue
+            if requirement.get("obligation") != "required":
+                continue
+            finding = findings_by_requirement.get(requirement_id)
+            if finding is None or finding.get("support") not in {
+                "supported_exact",
+                "supported_with_lowering",
+            }:
+                raise SystemExit(
+                    f"required support evidence is not positive for {engine}: {requirement_id}"
+                )
     coverage = json.loads((EVIDENCE / "portable_claim_coverage_0_50.json").read_text())
     claims = coverage.get("claims")
     expected_fixtures = sorted(set((manifest.get("leaf_fixture_ids") or {}).values()))
@@ -197,11 +244,41 @@ def main() -> int:
         raise SystemExit("claim coverage must contain exactly one claim per engine")
     if coverage.get("required_fixture_ids") != expected_fixtures:
         raise SystemExit("claim coverage fixture inventory differs from baseline")
+    from etlantic.testing.portable_fixtures import FIXTURES
+
+    fixture_names = {case.name for case in FIXTURES}
+    bindings = manifest.get("leaf_fixture_ids") or {}
+    if set(bindings.values()) - fixture_names:
+        raise SystemExit(
+            "baseline manifest references fixture IDs absent from the corpus"
+        )
     for claim in claims:
         if claim.get("fixture_coverage") != "complete":
             raise SystemExit("claim coverage is not complete")
         if claim.get("required_fixture_ids") != expected_fixtures:
             raise SystemExit("claim is missing a baseline fixture binding")
+        if claim.get("fixture_bindings") != bindings:
+            raise SystemExit("claim fixture bindings differ from the baseline manifest")
+        fixture_ids = claim.get("fixture_ids")
+        if not isinstance(fixture_ids, list) or not set(expected_fixtures).issubset(
+            fixture_ids
+        ):
+            raise SystemExit(
+                "claim fixture coverage is not backed by selected fixtures"
+            )
+        fixture_results = claim.get("fixture_results")
+        if not isinstance(fixture_results, list) or {
+            item.get("fixture_id") for item in fixture_results if isinstance(item, dict)
+        } != set(fixture_ids):
+            raise SystemExit("claim fixture results do not cover the selected fixtures")
+        if any(
+            not isinstance(item, dict)
+            or item.get("result") != "pass"
+            or not isinstance(item.get("command"), str)
+            or not item["command"].strip()
+            for item in fixture_results
+        ):
+            raise SystemExit("claim fixture result is missing a passing command link")
         modes = claim.get("execution_modes")
         if not isinstance(modes, dict) or not {"eager", "lazy"}.issubset(modes):
             raise SystemExit("claim is missing eager/lazy execution dimensions")
@@ -219,12 +296,41 @@ def main() -> int:
             continue
         proof = str(item.get("proof_reference") or "")
         engine = str(item.get("engine") or "")
-        expected = str((proofs.get(engine) or {}).get("digest") or "")
+        target = str(item.get("target") or "")
+        expected = f"native-execution:{engine}:{target}"
+        action_proof = ((proofs.get(engine) or {}).get("actions") or {}).get(target)
         if (
-            not proof.startswith("compiler-explain:")
-            or proof.removeprefix("compiler-explain:") != expected
+            proof != expected
+            or not isinstance(action_proof, dict)
+            or action_proof.get("proof_id") != expected
+            or not action_proof.get("native_explain_digest")
+            or not action_proof.get("result_digest")
+            or action_proof.get("host_fallback") is not False
         ):
-            raise SystemExit("required pushdown finding lacks a bound proof record")
+            raise SystemExit("required pushdown finding lacks native execution proof")
+    adaptive = json.loads(
+        (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
+    )
+    adaptive_fixtures = adaptive.get("fixtures")
+    adaptive_command = str(adaptive.get("command") or "")
+    if (
+        not isinstance(adaptive_fixtures, list)
+        or not adaptive_fixtures
+        or any(
+            not isinstance(fixture, str) or fixture not in adaptive_command
+            for fixture in adaptive_fixtures
+        )
+    ):
+        raise SystemExit(
+            "adaptive handoff must link each recorded fixture to its executed command"
+        )
+    dependency = json.loads(
+        (EVIDENCE / "portable_dependency_security_0_50.json").read_text()
+    )
+    if "check_portable_0_50_dependencies.py" not in str(
+        dependency.get("command") or ""
+    ):
+        raise SystemExit("dependency evidence must run isolated wheel checks")
     print("0.50 evidence artifact set is complete and structurally valid")
     return 0
 

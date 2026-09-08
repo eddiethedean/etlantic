@@ -1825,7 +1825,7 @@ class LocalOrchestrator:
                 engine = descriptor.engine
                 state.implementation = descriptor.identity
                 if (
-                    not is_dataframe_engine(engine)
+                    not is_dataframe_engine(engine, registry=self.runtime.registry)
                     and engine != "local"
                     and not is_spark_engine(engine)
                     and not self._is_sql_engine(engine)
@@ -1850,6 +1850,10 @@ class LocalOrchestrator:
                 and self._is_sql_engine(engine)
             ):
                 plugin = self._resolve_sql_plugin(engine)
+                consumers_sql = all(
+                    self._is_sql_engine(self._engine_for(edge.consumer_node))
+                    for edge in graph.edges_from(node.name)
+                )
                 for _port_name in inputs:
                     self._append_validation(
                         validations,
@@ -1869,14 +1873,11 @@ class LocalOrchestrator:
                     plan=self.plan,
                     run_id=run_id,
                     attempt=attempt,
+                    return_handles=consumers_sql,
                 )
                 output_ports = [p.name for p in node.outputs] or ["result"]
                 values = (
                     result if isinstance(result, dict) else {output_ports[0]: result}
-                )
-                consumers_sql = all(
-                    self._is_sql_engine(self._engine_for(edge.consumer_node))
-                    for edge in graph.edges_from(node.name)
                 )
                 for port_name in output_ports:
                     value = values.get(port_name)
@@ -1958,7 +1959,7 @@ class LocalOrchestrator:
                 }
                 return
 
-            if is_dataframe_engine(engine) or (
+            if is_dataframe_engine(engine, registry=self.runtime.registry) or (
                 descriptor is not None
                 and descriptor.kind == "portable_compiled"
                 and engine == "local"

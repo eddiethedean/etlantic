@@ -298,6 +298,8 @@ class TransformSupportReport:
                     "collision_policies": "collision_policy",
                 }.get(scope, scope.rstrip("s"))
                 requirement_by_legacy.setdefault(f"{singular}:{value}", identifier)
+                if scope in {"eager", "lazy"}:
+                    requirement_by_legacy.setdefault(f"mode:{scope}", identifier)
         findings = []
         canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
@@ -530,7 +532,13 @@ def host_pushdown_findings(
 def relational_pushdown_findings(
     definition: Mapping[str, Any], *, evidence_fingerprint: str | None
 ) -> tuple[TransformPushdownFinding, ...]:
-    """Emit the bounded pushdown matrix for native relational compilers."""
+    """Emit the planned pushdown matrix for native relational compilers.
+
+    This result is a planning assertion used by normal runtime selection.  It
+    is deliberately not sufficient as qualification proof: the evidence
+    campaign independently executes each action and captures native evidence
+    before a release artifact can retain this outcome.
+    """
     findings: list[TransformPushdownFinding] = []
     actions = definition.get("actions") or ()
     for index, action_item in enumerate(actions):
@@ -554,7 +562,7 @@ def relational_pushdown_findings(
                     reason="action lowered into the native relational plan",
                     action=action,
                     target=target,
-                    proof_reference=f"explain:{target}",
+                    proof_reference=f"runtime-required:{target}",
                     obligation="required",
                     evidence_fingerprint=evidence_fingerprint,
                 ),

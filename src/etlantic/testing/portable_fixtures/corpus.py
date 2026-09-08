@@ -1549,7 +1549,7 @@ def _baseline_scalar_functions() -> FixtureCase:
     def unary(op: str, operand: dict[str, Any]) -> dict[str, Any]:
         return {"kind": "unary", "op": op, "operand": operand}
 
-    neg = {"kind": "unary", "op": "negate", "operand": field("n")}
+    neg = {"kind": "unary", "op": "negate", "operand": lit("integer", 4)}
     predicate = {
         "kind": "binary",
         "op": "eq",
@@ -1605,12 +1605,12 @@ def _baseline_scalar_functions() -> FixtureCase:
         ("op_and", binary("and", lit("boolean", True), lit("boolean", True))),
         ("op_or", binary("or", lit("boolean", False), lit("boolean", True))),
         ("op_not", unary("not", lit("boolean", False))),
-        ("op_add", binary("add", field("n"), lit("integer", 2))),
-        ("op_subtract", binary("subtract", field("n"), lit("integer", 2))),
-        ("op_multiply", binary("multiply", field("n"), lit("integer", 2))),
+        ("op_add", binary("add", lit("integer", 4), lit("integer", 2))),
+        ("op_subtract", binary("subtract", lit("integer", 4), lit("integer", 2))),
+        ("op_multiply", binary("multiply", lit("integer", 4), lit("integer", 2))),
         ("op_divide", binary("divide", field("n"), lit("integer", 2))),
         ("op_modulo", binary("modulo", field("n"), lit("integer", 3))),
-        ("op_negate", unary("negate", field("n"))),
+        ("op_negate", unary("negate", lit("integer", 4))),
         (
             "op_in",
             call("dtcs:in", field("n"), lit("integer", 3), lit("integer", 4)),

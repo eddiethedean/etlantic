@@ -731,6 +731,7 @@ def test_all_compilers_reject_literal_zero_arithmetic() -> None:
     from etlantic_datafusion import create_transform_compiler as datafusion
     from etlantic_pandas import create_transform_compiler as pandas
     from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
     from etlantic_sql import create_transform_compiler as sql
 
     expression = {
@@ -763,6 +764,7 @@ def test_all_compilers_reject_literal_zero_arithmetic() -> None:
         polars(),
         pandas(),
         sql(),
+        pyspark(),
         datafusion(),
         duckdb(),
     ]
@@ -773,6 +775,185 @@ def test_all_compilers_reject_literal_zero_arithmetic() -> None:
         )
         assert not report.supported
         assert any(f.code == "PMXFORM302" for f in report.findings)
+
+
+@pytest.mark.parametrize("operator", ["divide", "modulo"])
+def test_all_compilers_reject_dynamic_denominators(operator: str) -> None:
+    """A field/parameter divisor cannot be qualified without source I/O."""
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
+    from etlantic_sql import create_transform_compiler as sql
+
+    plan = {
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "t",
+                    "parameters": {
+                        "fields": [
+                            {
+                                "name": "value",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": operator,
+                                    "left": {"kind": "fieldRef", "target": "n"},
+                                    "right": {"kind": "fieldRef", "target": "d"},
+                                },
+                            }
+                        ]
+                    },
+                },
+            }
+        ],
+    }
+    for compiler in [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        pyspark(),
+        datafusion(),
+        duckdb(),
+    ]:
+        report = compiler.analyze(
+            plan,
+            context=TransformPlanningContext("p", "s", "profile", compiler.info.engine),
+        )
+        assert not report.supported
+        assert any(
+            finding.requirement
+            == f"arithmetic:{operator}:statically-nonzero-denominator"
+            for finding in report.findings
+        )
+
+
+def test_all_compilers_reject_literal_integer_overflow() -> None:
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
+    from etlantic_sql import create_transform_compiler as sql
+
+    plan = {
+        "actions": [
+            {
+                "kind": {
+                    "action": "dtcs:project",
+                    "parameters": {
+                        "fields": [
+                            {
+                                "name": "overflow",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": "add",
+                                    "left": {
+                                        "kind": "literal",
+                                        "value": {
+                                            "type": "integer",
+                                            "value": 2**63 - 1,
+                                        },
+                                    },
+                                    "right": {
+                                        "kind": "literal",
+                                        "value": {"type": "integer", "value": 1},
+                                    },
+                                },
+                            }
+                        ]
+                    },
+                }
+            }
+        ]
+    }
+    for compiler in [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        pyspark(),
+        datafusion(),
+        duckdb(),
+    ]:
+        report = compiler.analyze(
+            plan,
+            context=TransformPlanningContext("p", "s", "profile", compiler.info.engine),
+        )
+        assert not report.supported
+        assert any(
+            finding.requirement == "arithmetic:integer-overflow"
+            for finding in report.findings
+        )
+
+
+@pytest.mark.parametrize("operator", ["add", "subtract", "multiply"])
+def test_all_compilers_reject_dynamic_integer_arithmetic(operator: str) -> None:
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
+    from etlantic_sql import create_transform_compiler as sql
+
+    plan = {
+        "actions": [
+            {
+                "kind": {
+                    "action": "dtcs:project",
+                    "parameters": {
+                        "fields": [
+                            {
+                                "name": "value",
+                                "expression": {
+                                    "kind": "binary",
+                                    "op": operator,
+                                    "left": {"kind": "fieldRef", "target": "n"},
+                                    "right": {
+                                        "kind": "literal",
+                                        "value": {"type": "integer", "value": 1},
+                                    },
+                                },
+                            }
+                        ]
+                    },
+                }
+            }
+        ]
+    }
+    for compiler in [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        pyspark(),
+        datafusion(),
+        duckdb(),
+    ]:
+        report = compiler.analyze(
+            plan,
+            context=TransformPlanningContext("p", "s", "profile", compiler.info.engine),
+        )
+        assert not report.supported
+        assert any(
+            finding.requirement == f"arithmetic:{operator}:statically-bounded-operands"
+            for finding in report.findings
+        )
 
 
 @pytest.mark.polars

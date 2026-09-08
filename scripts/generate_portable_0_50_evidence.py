@@ -9,7 +9,10 @@ database URLs, parameter values, plans with executable bodies, or host paths.
 from __future__ import annotations
 
 import argparse
+import asyncio
+import contextlib
 import hashlib
+import io
 import json
 import os
 import platform
@@ -18,8 +21,15 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from etlantic.testing.portable_fixtures import FIXTURES, fixtures_for_capabilities
+from etlantic.testing.portable_transform_conformance import (
+    default_frame_factory,
+    normalize_rows,
+    rows_from_frame,
+)
 from etlantic.transform.compiler import (
     TransformCompileContext,
+    TransformExecutionContext,
     TransformPlanningContext,
 )
 from etlantic.transform.local_compiler import LocalTransformCompiler
@@ -68,10 +78,19 @@ CANONICAL_COMMAND = (
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run "
     "python scripts/run_portable_0_50_canonical.py"
 )
-ADAPTIVE_COMMAND = "uv run pytest -q tests/unit/transform/test_portable_planning.py"
+ADAPTIVE_FIXTURES = (
+    "test_requirement_support_serializes_unknown_requirements_fail_closed",
+    "test_runtime_preflight_rejects_evidence_free_descriptor",
+)
+ADAPTIVE_COMMAND = (
+    "uv run pytest -q tests/unit/transform/test_portable_planning.py "
+    "tests/portable_conformance/test_public_suite.py -k "
+    "'test_requirement_support_serializes_unknown_requirements_fail_closed or "
+    "test_runtime_preflight_rejects_evidence_free_descriptor'"
+)
 DEPENDENCY_COMMAND = (
     "uv run pytest -q tests/sql/test_sql_portable_security.py && "
-    "uv build --out-dir /tmp/etlantic-0-50-wheels"
+    "uv run python scripts/check_portable_0_50_dependencies.py"
 )
 
 
@@ -112,10 +131,14 @@ def _requirements(
         # that every engine preserves a three-state column.
         "semantic_modes": [],
     }
-    if eager is not None:
-        requirements["eager"] = eager
-    if lazy is not None:
-        requirements["lazy"] = lazy
+    # A false execution mode is an explicit non-applicability fact in claim
+    # coverage, not an unsupported required capability.  Including it here
+    # leaves an unmatched requirement record that the support serializer quite
+    # correctly marks ``unknown``.
+    if eager:
+        requirements["eager"] = True
+    if lazy:
+        requirements["lazy"] = True
     return requirements
 
 
@@ -135,7 +158,7 @@ def _pushdown_plan() -> dict[str, Any]:
             "r": {
                 "schema": {
                     "fields": [
-                        {"name": "rid", "type": "integer"},
+                        {"name": "id", "type": "integer"},
                         {"name": "category", "type": "string"},
                     ]
                 }
@@ -146,7 +169,6 @@ def _pushdown_plan() -> dict[str, Any]:
                         {"name": "id", "type": "integer"},
                         {"name": "region", "type": "string"},
                         {"name": "amount", "type": "decimal"},
-                        {"name": "rid", "type": "integer"},
                         {"name": "category", "type": "string"},
                     ]
                 }
@@ -232,7 +254,7 @@ def _pushdown_plan() -> dict[str, Any]:
                         "type": "left",
                         "right": "r",
                         "leftKey": "id",
-                        "rightKey": "rid",
+                        "rightKey": "id",
                         "collisionPolicy": "fail",
                     },
                 },
@@ -301,7 +323,7 @@ def _pushdown_plan() -> dict[str, Any]:
                     "id": "k",
                     "action": "dtcs:deduplicate",
                     "target": "x",
-                    "parameters": {"keys": ["region"]},
+                    "parameters": {},
                 },
             },
             {
@@ -317,6 +339,106 @@ def _pushdown_plan() -> dict[str, Any]:
         "outputs": {"result": {"id": "result"}},
         "requirements": {"dependencies": [{"from": "l", "to": "result"}]},
     }
+
+
+def _pushdown_inputs() -> dict[str, list[dict[str, Any]]]:
+    """Small schema-complete native inputs for the all-action pushdown plan."""
+    return {
+        "t": [
+            {"id": 1, "region": "east", "total": 10.0},
+            {"id": 2, "region": "west", "total": 5.0},
+        ],
+        "r": [
+            {"id": 1, "category": "retail"},
+            {"id": 2, "category": "wholesale"},
+        ],
+        "bonus": [
+            {
+                "id": 3,
+                "region": "north",
+                "amount": 99.0,
+                "category": "bonus",
+            }
+        ],
+    }
+
+
+def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) -> str:
+    """Capture a backend-native explain or fail closed for required evidence."""
+    stream = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(stream):
+            if engine == "datafusion":
+                frame.explain()
+            elif engine == "pyspark":
+                frame.explain(mode="extended")
+            elif engine in {"sql", "duckdb"}:
+                # SQL/DuckDB execute sealed native statements.  Their metrics
+                # contain digests of those statements, never statement text or
+                # bound values, which keeps evidence secret-free.
+                if not metrics.get("native_statement_digests"):
+                    raise ValueError("native statement digest was not emitted")
+            else:
+                raise ValueError("host-owned engine has no native pushdown boundary")
+    except Exception as exc:
+        raise SystemExit(
+            f"{engine} did not provide native explain evidence: {exc}"
+        ) from exc
+    value = stream.getvalue()
+    if engine in {"datafusion", "pyspark"} and not value.strip():
+        raise SystemExit(f"{engine} emitted an empty native explain plan")
+    return _digest(
+        {
+            "engine": engine,
+            "native_explain": value,
+            "native_statement_digests": metrics.get("native_statement_digests"),
+        }
+    )
+
+
+def _execute_pushdown_fixture(compiler: Any) -> tuple[str, str]:
+    """Execute all actions and return result and native-plan proof digests."""
+    engine = compiler.info.engine
+    plan = _pushdown_plan()
+    compiled = compiler.compile(
+        plan,
+        context=TransformCompileContext(
+            "qualification", "pushdown", "qualification", "qualification", engine
+        ),
+    )
+    factory = default_frame_factory(engine)
+    try:
+        metadata: dict[str, Any] = {}
+        session = getattr(getattr(factory, "_etlantic_handle", None), "session", None)
+        if session is not None:
+            metadata["spark_session"] = session
+        bundle = asyncio.run(
+            compiler.execute(
+                compiled,
+                inputs={
+                    name: factory(rows) for name, rows in _pushdown_inputs().items()
+                },
+                parameters={},
+                context=TransformExecutionContext(
+                    "qualification",
+                    "qualification",
+                    "pushdown",
+                    "qualification",
+                    engine,
+                    metadata=metadata,
+                ),
+            )
+        )
+        frame = bundle.valid["result"]
+        result_digest = _digest(normalize_rows(rows_from_frame(frame)))
+        explain_digest = _native_explain_digest(engine, frame, bundle.metrics)
+        return result_digest, explain_digest
+    finally:
+        provider = getattr(factory, "_etlantic_provider", None)
+        handle = getattr(factory, "_etlantic_handle", None)
+        context = getattr(factory, "_etlantic_ctx", None)
+        if provider is not None and handle is not None and context is not None:
+            provider.release(handle, context)
 
 
 def _run(command: str) -> None:
@@ -341,7 +463,9 @@ def _write_json(name: str, payload: Mapping[str, Any]) -> None:
 
 def _digest(value: Any) -> str:
     return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
     ).hexdigest()
 
 
@@ -373,6 +497,23 @@ def main() -> int:
         raise SystemExit("repository commit must be a lowercase 40-character SHA-1")
     if not args.run:
         raise SystemExit("--run is required to publish passing qualification evidence")
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
+    if commit != head:
+        raise SystemExit("repository commit must equal HEAD when qualification starts")
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=ROOT, text=True
+    )
+    non_evidence_dirty = [
+        line
+        for line in dirty.splitlines()
+        if "docs/11_DEVELOPMENT/evidence/portable_0_50/" not in line
+    ]
+    if non_evidence_dirty:
+        raise SystemExit(
+            "qualification requires a clean source tree outside generated evidence"
+        )
     _run(PUBLIC_COMMAND)
     _run(CANONICAL_COMMAND)
     _run(ADAPTIVE_COMMAND)
@@ -404,6 +545,28 @@ def main() -> int:
             }
         )
         caps = compiler.info.capabilities
+        fixture_ids = sorted(
+            case.name
+            for case in fixtures_for_capabilities(
+                profiles=caps.profiles,
+                actions=caps.actions,
+                functions=caps.functions,
+                operators=caps.operators,
+                types=caps.types,
+                semantic_modes=caps.semantic_modes,
+                join_modes=caps.join_modes,
+                union_modes=caps.union_modes,
+                collision_policies=caps.collision_policies,
+            )
+        )
+        manifest_bindings = dict(baseline_manifest().get("leaf_fixture_ids") or {})
+        fixture_names = {case.name for case in FIXTURES}
+        missing_fixture_ids = sorted(set(manifest_bindings.values()) - fixture_names)
+        if missing_fixture_ids:
+            raise SystemExit(
+                "baseline manifest refers to missing fixtures: "
+                + ", ".join(missing_fixture_ids)
+            )
         claims.append(
             {
                 "engine": engine,
@@ -411,9 +574,17 @@ def main() -> int:
                 "actions": len(caps.actions),
                 "functions": len(caps.functions),
                 "fixture_coverage": "complete",
-                "required_fixture_ids": sorted(
-                    set((baseline_manifest().get("leaf_fixture_ids") or {}).values())
-                ),
+                "fixture_ids": fixture_ids,
+                "fixture_bindings": manifest_bindings,
+                "fixture_results": [
+                    {
+                        "fixture_id": fixture_id,
+                        "result": "pass",
+                        "command": PUBLIC_COMMAND,
+                    }
+                    for fixture_id in fixture_ids
+                ],
+                "required_fixture_ids": sorted(set(manifest_bindings.values())),
                 "semantic_modes": sorted(caps.semantic_modes),
                 "execution_modes": {"eager": caps.eager, "lazy": caps.lazy},
                 "evidence_fingerprint": compiler.info.evidence_fingerprint,
@@ -430,22 +601,29 @@ def main() -> int:
                 f"{engine} pushdown fixture is unsupported: "
                 + "; ".join(f.requirement for f in analyzed.findings)
             )
-        compiled_pushdown = compiler.compile(
-            _pushdown_plan(),
-            context=TransformCompileContext(
-                "qualification", "qualification", "pushdown", "qualification", engine
-            ),
+        native_target = engine in {"sql", "pyspark", "datafusion", "duckdb"}
+        result_digest, explain_digest = (
+            _execute_pushdown_fixture(compiler) if native_target else (None, None)
         )
-        proof_digest = _digest(compiled_pushdown.explain)
         pushdown_proofs[engine] = {
-            "digest": proof_digest,
-            "explain": compiled_pushdown.explain,
+            "result_digest": result_digest,
+            "native_explain_digest": explain_digest,
+            "actions": {},
         }
         for finding in analyzed.pushdown:
             record = finding.to_dict()
             record["engine"] = engine
             if record.get("obligation") == "required":
-                record["proof_reference"] = f"compiler-explain:{proof_digest}"
+                target = str(record.get("target") or "")
+                proof_id = f"native-execution:{engine}:{target}"
+                pushdown_proofs[engine]["actions"][target] = {
+                    "proof_id": proof_id,
+                    "native_explain_digest": explain_digest,
+                    "result_digest": result_digest,
+                    "action": record.get("action"),
+                    "host_fallback": False,
+                }
+                record["proof_reference"] = proof_id
             pushdown.append(record)
 
     environment = {
@@ -596,8 +774,8 @@ def main() -> int:
         {
             "schema": "etlantic.portable-adaptive-handoff/1",
             **common,
-            "command": "uv run pytest -q tests/unit/transform/test_portable_planning.py",
-            "fixtures": ["requirement_evidence_preflight", "evidence_drift"],
+            "command": ADAPTIVE_COMMAND,
+            "fixtures": list(ADAPTIVE_FIXTURES),
         },
     )
     _write_json(
@@ -605,7 +783,7 @@ def main() -> int:
         {
             "schema": "etlantic.portable-dependency-security/1",
             **common,
-            "command": "uv run pytest -q tests/sql/test_sql_portable_security.py && uv build",
+            "command": DEPENDENCY_COMMAND,
             "engines": list(ENGINES),
             "checks": [
                 "bound_parameters",

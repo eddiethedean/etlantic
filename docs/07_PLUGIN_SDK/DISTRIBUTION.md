@@ -56,7 +56,7 @@ Install matching minors throughout ETLantic's 0.x roadmap:
 - `etlantic-keyring`
 - `etlantic-sqlmodel`
 - `medallantic`
-- `etlantic-datafusion` (provisional portable baseline implementation; 0.50 qualification pending)
+- `etlantic-datafusion` (provisional portable baseline implementation; 0.50 technical qualification recorded, independent review pending)
 - `etlantic-fastapi` (CP1 `ETLanticAPI` + thin non-CP `create_reference_app`;
   CP1 ≠ production multi-tenant GA)
 

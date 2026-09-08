@@ -39,6 +39,17 @@ def as_records(data: Any, contract_type: type[Any] | None) -> list[Any]:
         items = data
     elif isinstance(data, tuple):
         items = list(data)
+    elif hasattr(data, "to_dicts") and callable(data.to_dicts):
+        # Portable SQL/DuckDB relation frames expose a bounded record view at
+        # a declared materialization boundary.  Normalize that view before
+        # validating a public Data contract rather than treating the frame
+        # object itself as one record.
+        items = list(data.to_dicts())
+    elif hasattr(data, "to_dict") and callable(data.to_dict):
+        try:
+            items = list(data.to_dict(orient="records"))
+        except TypeError:
+            items = [data]
     else:
         items = [data]
     if contract_type is None:

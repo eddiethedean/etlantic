@@ -219,6 +219,7 @@ async def execute_portable_sql_step(
     plan: PipelinePlan,
     run_id: str,
     attempt: int,
+    return_handles: bool = False,
 ) -> Any:
     """Compile and execute a sealed portable transform through the selected SQL engine."""
     from etlantic.transform.compiler import (
@@ -330,7 +331,10 @@ async def execute_portable_sql_step(
             metadata={
                 "_sql_plugin": plugin,
                 "_duckdb_plugin": plugin,
-                "_return_handles": True,
+                # Preserve native relation handles only for a SQL-to-SQL
+                # region.  A terminal/public boundary must materialize rows
+                # so its declared Data contract is actually validated.
+                "_return_handles": return_handles,
             },
         ),
     )

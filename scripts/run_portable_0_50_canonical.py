@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Run the unchanged authored 0.50 canonical pipeline on all seven engines."""
+"""Run one authored 0.50 portable pipeline through every public runtime path."""
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from etlantic import (
@@ -20,308 +19,180 @@ from etlantic import (
 from etlantic.plan import plan_pipeline
 from etlantic.registry import PlanningContext
 from etlantic.runtime import RunStatus
-from etlantic.testing.portable_transform_conformance import (
-    default_frame_factory,
-    normalize_rows,
-    rows_from_frame,
-)
 from etlantic.transform import functions as F
-from etlantic.transform.compiler import (
-    TransformCompileContext,
-    TransformExecutionContext,
-    TransformPlanningContext,
-)
-from etlantic.transform.local_compiler import LocalTransformCompiler
-from etlantic.transform.validate import report_or_raise, validate_plan_budgets
 
 
-class _ProbeRow(Data):
-    value: int
+class _Order(Data):
+    customer_id: int
+    amount: float
 
 
-class _ProbeOut(Data):
-    value: int
+class _Customer(Data):
+    customer_id: int
+    region: str
 
 
-class _ProbeTransform(Transformation):
-    rows: Input[_ProbeRow]
-    result: Output[_ProbeOut]
+class _Bonus(Data):
+    region: str
+    total: float
 
 
-@_ProbeTransform.portable
-def _probe_transform(rows):
-    return rows.filter(F.col("value") > 0).select("value")
+class _Result(Data):
+    region: str
+    total: float
 
 
-class _ProbePipeline(Pipeline):
-    raw: Extract[_ProbeRow] = Extract(asset="probe")
-    transformed = _ProbeTransform.step(rows=raw)
-    curated: Load[_ProbeOut] = Load(input=transformed.result, asset="probe_out")
+class _CanonicalTransform(Transformation):
+    orders: Input[_Order]
+    customers: Input[_Customer]
+    bonus: Input[_Bonus]
+    result: Output[_Result]
 
 
-def _exercise_public_pipeline_path() -> None:
-    """Prove the campaign enters through authoring, planning, and runtime APIs."""
-    profile = Profile(
-        name="canonical-public-path",
-        dataframe_engine="local",
-        portable_transform_policy="require",
+@_CanonicalTransform.portable
+def _canonical_transform(orders, customers, bonus):
+    """The one engine-neutral body qualified by the 0.50 campaign."""
+    prepared = (
+        orders.filter(F.col("amount") > 0)
+        .select("customer_id", "amount")
+        .join(customers, on="customer_id", how="left", collision_policy="fail")
     )
-    runtime = PipelineRuntime()
-    runtime.memory.seed("probe", [_ProbeRow(value=1), _ProbeRow(value=-1)])
-    context = PlanningContext.create(profile=profile, registry=runtime.registry)
-    plan = plan_pipeline(_ProbePipeline, context=context)
-    report_or_raise(validate_plan_budgets(plan.to_dict()))
-    result = _ProbePipeline.run(profile=profile, runtime=runtime, context=context)
-    if result.status is not RunStatus.SUCCEEDED:
-        raise AssertionError(f"public canonical probe failed: {result}")
-    rows = runtime.memory.get("probe_out") or []
-    if [row.model_dump() for row in rows] != [{"value": 1}]:
-        raise AssertionError("public canonical probe returned an unexpected result")
+    totals = prepared.groupBy("region").agg(total=F.sum(F.col("amount")).alias("total"))
+    return (
+        totals.unionByName(bonus)
+        .orderBy(F.col("total").desc_nulls_last())
+        .dropDuplicates()
+        .limit(3)
+    )
 
 
-def _plan() -> dict[str, Any]:
-    return {
-        "planIdentity": "dtcs.transform-plan/2",
-        "inputs": {"orders": {}, "customers": {}, "bonus": {}},
-        "actions": [
-            {
-                "id": "f",
-                "kind": {
-                    "id": "f",
-                    "action": "dtcs:filter",
-                    "target": "orders",
-                    "parameters": {
-                        "predicate": {
-                            "kind": "binary",
-                            "op": "gt",
-                            "left": {
-                                "kind": "fieldRef",
-                                "scope": "field",
-                                "target": "amount",
-                            },
-                            "right": {
-                                "kind": "literal",
-                                "value": {"type": "integer", "value": 0},
-                            },
-                        }
-                    },
-                },
-            },
-            {
-                "id": "p",
-                "kind": {
-                    "id": "p",
-                    "action": "dtcs:project",
-                    "target": "f",
-                    "parameters": {"fields": ["customer_id", "amount"]},
-                },
-            },
-            {
-                "id": "j",
-                "kind": {
-                    "id": "j",
-                    "action": "dtcs:join",
-                    "target": "p",
-                    "parameters": {
-                        "type": "left",
-                        "right": "customers",
-                        "leftKey": "customer_id",
-                        "rightKey": "customer_id",
-                        "collisionPolicy": "fail",
-                    },
-                },
-            },
-            {
-                "id": "a",
-                "kind": {
-                    "id": "a",
-                    "action": "dtcs:aggregate",
-                    "target": "j",
-                    "parameters": {
-                        "groupBy": ["region"],
-                        "aggregates": [
-                            {
-                                "name": "total",
-                                "expression": {
-                                    "kind": "call",
-                                    "callee": "dtcs:sum",
-                                    "args": [
-                                        {
-                                            "kind": "fieldRef",
-                                            "scope": "field",
-                                            "target": "amount",
-                                        }
-                                    ],
-                                },
-                            }
-                        ],
-                    },
-                },
-            },
-            {
-                "id": "u",
-                "kind": {
-                    "id": "u",
-                    "action": "dtcs:union",
-                    "target": "a",
-                    "parameters": {"other": "bonus", "mode": "byName"},
-                },
-            },
-            {
-                "id": "s",
-                "kind": {
-                    "id": "s",
-                    "action": "dtcs:sort",
-                    "target": "u",
-                    "parameters": {
-                        "keys": [
-                            {"column": "total", "direction": "desc", "nulls": "last"}
-                        ]
-                    },
-                },
-            },
-            {
-                "id": "d",
-                "kind": {
-                    "id": "d",
-                    "action": "dtcs:deduplicate",
-                    "target": "s",
-                    "parameters": {},
-                },
-            },
-            {
-                "id": "l",
-                "kind": {
-                    "id": "l",
-                    "action": "dtcs:limit",
-                    "target": "d",
-                    "parameters": {"count": 3},
-                },
-            },
-        ],
-        "outputs": {"result": {}},
-        "requirements": {"dependencies": [{"from": "l", "to": "result"}]},
+class _CanonicalPipeline(Pipeline):
+    raw_orders: Extract[_Order] = Extract(asset="orders")
+    raw_customers: Extract[_Customer] = Extract(asset="customers")
+    raw_bonus: Extract[_Bonus] = Extract(asset="bonus")
+    transformed = _CanonicalTransform.step(
+        orders=raw_orders,
+        customers=raw_customers,
+        bonus=raw_bonus,
+    )
+    curated: Load[_Result] = Load(input=transformed.result, asset="canonical_result")
+
+
+def _profile(engine: str) -> Profile:
+    settings: dict[str, Any] = {
+        "name": f"qualification-{engine}",
+        "portable_transform_policy": "require",
     }
+    if engine in {"local", "polars", "pandas", "datafusion"}:
+        settings["dataframe_engine"] = engine
+    elif engine in {"sql", "duckdb"}:
+        settings["sql_engine"] = engine
+    elif engine == "pyspark":
+        settings["spark_engine"] = engine
+    else:  # pragma: no cover - static campaign inventory
+        raise ValueError(f"unknown qualification engine: {engine}")
+    return Profile(**settings)
 
 
-def _inputs() -> dict[str, list[dict[str, Any]]]:
-    return {
-        "orders": [
-            {"customer_id": 1, "amount": 10},
-            {"customer_id": 2, "amount": 5},
-            {"customer_id": 3, "amount": -1},
+def _register_runtime_engine(runtime: PipelineRuntime, engine: str) -> None:
+    """Register only the public plugin surface selected by ``Profile``."""
+    if engine == "polars":
+        from etlantic_polars import create_plugin
+
+        runtime.register_dataframe_plugin(engine, create_plugin())
+    elif engine == "pandas":
+        from etlantic_pandas import create_plugin
+
+        runtime.register_dataframe_plugin(engine, create_plugin())
+    elif engine == "datafusion":
+        from etlantic_datafusion import create_plugin
+
+        runtime.register_dataframe_plugin(engine, create_plugin())
+    elif engine == "sql":
+        from etlantic_sql import create_plugin
+
+        runtime.register_sql_plugin(engine, create_plugin())
+    elif engine == "duckdb":
+        from etlantic_duckdb import create_plugin
+
+        runtime.register_sql_plugin(engine, create_plugin())
+    elif engine == "pyspark":
+        from etlantic_pyspark import create_plugin, create_provider
+
+        runtime.register_spark_plugin(engine, create_plugin())
+        runtime.register_spark_provider("local", create_provider())
+
+
+def _seed(runtime: PipelineRuntime) -> None:
+    runtime.memory.seed(
+        "orders",
+        [
+            _Order(customer_id=1, amount=10.0),
+            _Order(customer_id=2, amount=5.0),
+            _Order(customer_id=3, amount=-1.0),
         ],
-        "customers": [
-            {"customer_id": 1, "region": "east"},
-            {"customer_id": 2, "region": "west"},
+    )
+    runtime.memory.seed(
+        "customers",
+        [
+            _Customer(customer_id=1, region="east"),
+            _Customer(customer_id=2, region="west"),
         ],
-        "bonus": [{"region": "north", "total": 99}],
-    }
+    )
+    runtime.memory.seed("bonus", [_Bonus(region="north", total=99.0)])
 
 
-def _compilers() -> list[Any]:
-    from etlantic_duckdb import create_transform_compiler as duckdb
-
-    from etlantic_datafusion import create_transform_compiler as datafusion
-    from etlantic_pandas import create_transform_compiler as pandas
-    from etlantic_polars import create_transform_compiler as polars
-    from etlantic_pyspark import create_transform_compiler as pyspark
-    from etlantic_sql import create_transform_compiler as sql
-
+def _rows(value: Any) -> list[dict[str, Any]]:
     return [
-        LocalTransformCompiler(),
-        polars(),
-        pandas(),
-        sql(),
-        pyspark(),
-        datafusion(),
-        duckdb(),
+        item.model_dump() if hasattr(item, "model_dump") else dict(item)
+        for item in (value or [])
     ]
 
 
-def main() -> int:
-    _exercise_public_pipeline_path()
-    plan = _plan()
-    expected = normalize_rows(
-        [
-            {"region": "north", "total": 99},
-            {"region": "east", "total": 10},
-            {"region": "west", "total": 5},
-        ]
+def _run(engine: str) -> None:
+    profile = _profile(engine)
+    runtime = PipelineRuntime()
+    _register_runtime_engine(runtime, engine)
+    _seed(runtime)
+    context = PlanningContext.create(profile=profile, registry=runtime.registry)
+
+    # This is deliberately the same plan and same profile that the runtime
+    # consumes below.  The campaign must not replace it with direct compiler
+    # calls or a raw hand-authored plan.
+    plan = plan_pipeline(_CanonicalPipeline, context=context)
+    implementation = plan.implementations["transformed"]
+    if implementation.kind != "portable_compiled" or implementation.engine != engine:
+        raise AssertionError(
+            f"{engine}: public planning did not select portable runtime"
+        )
+
+    report = _CanonicalPipeline.run(profile=profile, runtime=runtime, context=context)
+    if report.status is not RunStatus.SUCCEEDED:
+        raise AssertionError(f"{engine}: public runtime failed: {report}")
+    actual = sorted(
+        _rows(runtime.memory.get("canonical_result")), key=lambda row: -row["total"]
     )
-    for compiler in _compilers():
-        factory = default_frame_factory(compiler.info.engine)
-        try:
-            profile = Profile(
-                name=f"qualification-{compiler.info.engine}",
-                dataframe_engine=(
-                    compiler.info.engine
-                    if compiler.info.engine
-                    in {"local", "polars", "pandas", "duckdb", "datafusion"}
-                    else None
-                ),
-                sql_engine="sql" if compiler.info.engine == "sql" else None,
-                spark_engine="pyspark" if compiler.info.engine == "pyspark" else None,
-                portable_transform_policy="require",
-            )
-            if profile.portable_transform_policy != "require":
-                raise AssertionError(
-                    "canonical qualification must require portable execution"
-                )
-            report_or_raise(validate_plan_budgets(plan))
-            planning = TransformPlanningContext(
-                "qualification", "canonical", "qualification", compiler.info.engine
-            )
-            report = compiler.analyze(plan, context=planning)
-            if not report.supported:
-                raise AssertionError(f"{compiler.info.engine}: {report.findings!r}")
-            compiled = compiler.compile(
-                plan,
-                context=TransformCompileContext(
-                    "qualification",
-                    "plan",
-                    "canonical",
-                    "qualification",
-                    compiler.info.engine,
-                ),
-            )
-            metadata: dict[str, Any] = {}
-            session = getattr(
-                getattr(factory, "_etlantic_handle", None), "session", None
-            )
-            if session is not None:
-                metadata["spark_session"] = session
-            bundle = asyncio.run(
-                compiler.execute(
-                    compiled,
-                    inputs={name: factory(rows) for name, rows in _inputs().items()},
-                    parameters={},
-                    context=TransformExecutionContext(
-                        "qualification",
-                        "qualification",
-                        "plan",
-                        "canonical",
-                        compiler.info.engine,
-                        metadata=metadata,
-                    ),
-                )
-            )
-            actual = normalize_rows(rows_from_frame(bundle.valid["result"]))
-            if any(set(row) != {"region", "total"} for row in actual):
-                raise AssertionError(
-                    f"{compiler.info.engine}: contract fields diverged"
-                )
-            if actual != expected:
-                raise AssertionError(
-                    f"{compiler.info.engine}: normalized canonical result diverged"
-                )
-            print(f"{compiler.info.engine}: pass")
-        finally:
-            provider = getattr(factory, "_etlantic_provider", None)
-            handle = getattr(factory, "_etlantic_handle", None)
-            resource_context = getattr(factory, "_etlantic_ctx", None)
-            if provider and handle and resource_context:
-                provider.release(handle, resource_context)
+    expected = [
+        {"region": "north", "total": 99.0},
+        {"region": "east", "total": 10.0},
+        {"region": "west", "total": 5.0},
+    ]
+    if actual != expected:
+        raise AssertionError(f"{engine}: public runtime result diverged: {actual!r}")
+
+
+def main() -> int:
+    for engine in (
+        "local",
+        "polars",
+        "pandas",
+        "sql",
+        "pyspark",
+        "datafusion",
+        "duckdb",
+    ):
+        _run(engine)
+        print(f"{engine}: pass")
     return 0
 
 
