@@ -1814,12 +1814,14 @@ class LocalOrchestrator:
             return
 
         if node.kind is NodeKind.STEP:
+            descriptor = self.plan.implementations.get(node.name)
+            if descriptor is not None and descriptor.kind == "portable_compiled":
+                self._preflight_portable_descriptor(descriptor, node_name=node.name)
             inputs = self._gather_inputs(
                 node, graph, artifacts, run_id=run_id, attempt=attempt
             )
             state.records_in = _sum_counts(inputs.values())
             params = self._parameters_for(node)
-            descriptor = self.plan.implementations.get(node.name)
             if descriptor is not None and descriptor.kind == "portable_compiled":
                 impl = None
                 engine = descriptor.engine
@@ -2381,6 +2383,61 @@ class LocalOrchestrator:
                 value = fetched.records or []
             inputs[edge.consumer_port] = value
         return inputs
+
+    def _preflight_portable_descriptor(
+        self, descriptor: ImplementationDescriptor, *, node_name: str
+    ) -> None:
+        """Validate portable compiler evidence before gathering any inputs."""
+        from etlantic.profile import Profile, resolve_profile
+        from etlantic.transform.compiler import preflight_portable_support
+        from etlantic.transform.discovery import (
+            discover_transform_compilers_for_profile,
+        )
+
+        profile_snapshot = getattr(self.plan, "profile_snapshot", None)
+        if isinstance(profile_snapshot, Mapping) and not isinstance(
+            profile_snapshot, Profile
+        ):
+            profile = Profile.from_plan_snapshot(dict(profile_snapshot))
+        elif isinstance(profile_snapshot, Profile):
+            profile = profile_snapshot
+        else:
+            profile = resolve_profile(getattr(self.plan, "profile_name", None))
+        compilers = discover_transform_compilers_for_profile(profile)
+        compiler = None
+        if descriptor.compiler_name:
+            for candidate in compilers.values():
+                info = candidate.info
+                if info.name != descriptor.compiler_name:
+                    continue
+                if (
+                    descriptor.compiler_version
+                    and info.version != descriptor.compiler_version
+                ):
+                    continue
+                compiler = candidate
+                break
+        else:
+            compiler = compilers.get(descriptor.engine)
+        if compiler is None:
+            raise NodeExecutionError(
+                redact_message(
+                    f"No transform compiler for engine {descriptor.engine!r} "
+                    f"on step {node_name}"
+                ),
+                node_name=node_name,
+                stage=FailureStage.TRANSFORM.value,
+                code="PMXFORM302",
+            )
+        try:
+            preflight_portable_support(descriptor, compiler, engine=descriptor.engine)
+        except ValueError as exc:
+            raise NodeExecutionError(
+                redact_message(str(exc)),
+                node_name=node_name,
+                stage=FailureStage.TRANSFORM.value,
+                code="PMXFORM306",
+            ) from exc
 
     def _engine_for(self, node_name: str) -> str:
         for region in self.plan.regions:
