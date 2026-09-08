@@ -25,4 +25,11 @@
 | SOL-050-019 | Medium | resolved by focused Pyright validation |
 | SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |
 
+| FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |
+| FINAL-050-002 | High | resolved by nested support-payload validation |
+| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |
+| FINAL-050-004 | Medium | resolved by complete unknown-category serialization |
+| FINAL-050-005 | Medium | resolved by the 0.50 release-surface update |
+| FINAL-050-006 | Medium | resolved by complete ledger verification |
+
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.

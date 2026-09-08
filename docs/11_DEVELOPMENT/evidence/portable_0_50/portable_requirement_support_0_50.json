@@ -1157,7 +1157,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "b4c54c8e3b5bf9234b91e3a9d4f24d5b46af7955c7facff614b8dc808283b0df",
+      "fingerprint": "b323774a341a491e921eef4c006b6385aa1cc264011a49bdae7002a61694ff45",
       "pushdown": [],
       "requirements": [
         {
@@ -2138,14 +2138,14 @@
         "compiler": "etlantic-datafusion",
         "engine": "datafusion",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "duckdb": {
       "evidence": [
         {
           "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-          "fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -2156,7 +2156,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2170,7 +2170,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2184,7 +2184,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2198,7 +2198,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2212,7 +2212,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2226,7 +2226,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2240,7 +2240,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2254,7 +2254,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2268,7 +2268,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2282,7 +2282,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2296,7 +2296,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2310,7 +2310,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2324,7 +2324,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2338,7 +2338,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2352,7 +2352,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2366,7 +2366,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2380,7 +2380,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2394,7 +2394,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2408,7 +2408,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2422,7 +2422,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2436,7 +2436,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2450,7 +2450,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2464,7 +2464,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2478,7 +2478,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2492,7 +2492,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2506,7 +2506,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2520,7 +2520,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2534,7 +2534,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2548,7 +2548,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2562,7 +2562,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2576,7 +2576,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2590,7 +2590,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2604,7 +2604,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2618,7 +2618,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2632,7 +2632,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2646,7 +2646,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2660,7 +2660,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2674,7 +2674,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2688,7 +2688,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2702,7 +2702,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2716,7 +2716,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2730,7 +2730,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2744,7 +2744,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2758,7 +2758,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2772,7 +2772,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2786,7 +2786,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2800,7 +2800,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2814,7 +2814,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2828,7 +2828,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2842,7 +2842,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2856,7 +2856,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2870,7 +2870,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2884,7 +2884,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2898,7 +2898,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2912,7 +2912,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2926,7 +2926,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2940,7 +2940,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2954,7 +2954,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2968,7 +2968,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2982,7 +2982,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -2996,7 +2996,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3010,7 +3010,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3024,7 +3024,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3038,7 +3038,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3052,7 +3052,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3066,7 +3066,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3080,7 +3080,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3094,7 +3094,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3108,7 +3108,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3122,7 +3122,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3136,7 +3136,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3150,7 +3150,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3164,7 +3164,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3178,7 +3178,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3192,7 +3192,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3206,7 +3206,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3220,7 +3220,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3234,7 +3234,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3248,7 +3248,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3262,7 +3262,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3276,7 +3276,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "4854db4188760942e71ec495aa834b358b39975240bf302eae33fdad0c6e5cce",
+          "evidence_fingerprint": "67480f62c25cf19b0bbc0638daba5d5b37f3cff084b3b75bb75e2c68ebd7881d",
           "expression_path": null,
           "obligation": "required",
           "path": "findings",
@@ -3286,7 +3286,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "6f13e403436d8bb596de554195223b17fa88ddfbc02d0751e8111c8d32891c40",
+      "fingerprint": "6cb10a0ff141049ab0f7f5225c44a39e6550acd392969eac30fec1941f3da5f7",
       "pushdown": [],
       "requirements": [
         {
@@ -4267,7 +4267,7 @@
         "compiler": "etlantic-duckdb",
         "engine": "duckdb",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "local": {
@@ -5401,7 +5401,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "dce10b1c9ce0df4b1ca56a98018e07ab5707ebcfac8cef0286d215d766b63d9d",
+      "fingerprint": "3caac818d9395b02d9b260fb14b3de7a9b1eaa5e58cb02b852336bcca08342cf",
       "pushdown": [],
       "requirements": [
         {
@@ -6370,7 +6370,7 @@
         "compiler": "etlantic-local",
         "engine": "local",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "pandas": {
@@ -7504,7 +7504,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "952358f6d1405c933f0422c6bef3314fc2201692f7396625d1e2c3ab291465ff",
+      "fingerprint": "1fbafa66634c8855e7f7464355d89f06f7c0316695b6760e5624b80d879c5b35",
       "pushdown": [],
       "requirements": [
         {
@@ -8473,7 +8473,7 @@
         "compiler": "etlantic-pandas",
         "engine": "pandas",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "polars": {
@@ -9621,7 +9621,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "43b0a1c82f98e248cee9e287cca2eec310efb767d9b269a9fa17732919ad1d39",
+      "fingerprint": "af5ca0e1d842d7702b60e21401b2e6b300459d008499263fd78e371e61e3d7e2",
       "pushdown": [],
       "requirements": [
         {
@@ -10602,7 +10602,7 @@
         "compiler": "etlantic-polars",
         "engine": "polars",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "pyspark": {
@@ -11750,7 +11750,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "34ca48c6e904295b85d465c31bc1ca141a55f8c374a4b61e5219405c885dfa8f",
+      "fingerprint": "458d2e93b0024d883cb0a92b0b142c3f433f01f4090aa0678d018557312e4e6a",
       "pushdown": [],
       "requirements": [
         {
@@ -12731,7 +12731,7 @@
         "compiler": "etlantic-pyspark",
         "engine": "pyspark",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     },
     "sql": {
@@ -13879,7 +13879,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "84c54a4830062626e887a5eac60dea124c968a66e39b8dc456b61e76c20a9e27",
+      "fingerprint": "a51a7ae92b10545b26bcc54ab968db681d03e6191e9ef8594e054eb6886dd846",
       "pushdown": [],
       "requirements": [
         {
@@ -14860,14 +14860,14 @@
         "compiler": "etlantic-sql",
         "engine": "sql",
         "protocol": "etlantic.transform-compiler/1",
-        "version": "0.49.0"
+        "version": "0.50.0"
       }
     }
   },
-  "repository_commit": "fa5ba79ca4ca6c65040b1115c237b88e4890142e",
+  "repository_commit": "1fe874e2a397026462c063a9cab9d2b76883d0a3",
   "result": "pass",
   "schema": "etlantic.portable-requirement-support/1",
-  "source_tree_digest": "3cdd80d64bc1debd377d8241820afac79d31fffb3aecd3cf36f23c9d33abb9ed",
+  "source_tree_digest": "f3e813ab7240ab3bd1f062a882063140958edf821806e5949f4b40cbc8c0662c",
   "support_states": [
     "supported_exact",
     "supported_with_lowering",

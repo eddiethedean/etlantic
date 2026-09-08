@@ -26,7 +26,7 @@
     "test_adaptive_evidence_drift_rejects_before_io",
     "test_orchestrator_rejects_before_lifecycle_or_cleanup"
   ],
-  "repository_commit": "fa5ba79ca4ca6c65040b1115c237b88e4890142e",
+  "repository_commit": "1fe874e2a397026462c063a9cab9d2b76883d0a3",
   "result": "pass",
   "scenarios": [
     {
@@ -62,7 +62,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -84,13 +84,13 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "4c467704974d3752c4ace87e46d79c4f60be486f6bd6461600285bfdda16c88f",
+              "fingerprint": "9137e2b71d6a17d8653a6122569463a6c13a8be1a126d07617707bf7b6248511",
               "pushdown": [],
               "requirements": [
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:filter#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:filter"
                   },
@@ -171,7 +171,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -193,13 +193,13 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "0e9986b7a443639a9b99e279b6643d51a674ec1255d25077b44ee577bf5fb6f7",
+              "fingerprint": "e023e600912ce4f66fbc3685a4f1fe424d5e79da63de35aa3d8b1183805e50eb",
               "pushdown": [],
               "requirements": [
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:filter#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:filter"
                   },
@@ -282,7 +282,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -304,13 +304,13 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "4c467704974d3752c4ace87e46d79c4f60be486f6bd6461600285bfdda16c88f",
+              "fingerprint": "9137e2b71d6a17d8653a6122569463a6c13a8be1a126d07617707bf7b6248511",
               "pushdown": [],
               "requirements": [
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:filter#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:filter"
                   },
@@ -391,7 +391,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -413,13 +413,13 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "0e9986b7a443639a9b99e279b6643d51a674ec1255d25077b44ee577bf5fb6f7",
+              "fingerprint": "e023e600912ce4f66fbc3685a4f1fe424d5e79da63de35aa3d8b1183805e50eb",
               "pushdown": [],
               "requirements": [
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:filter#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:filter"
                   },
@@ -536,7 +536,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -544,7 +544,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "a9706cbbb2c8479d7366cf8d9a3023921dd5d60dcbd8bceec3ea30233fb9c3f3",
+              "fingerprint": "cf2da643befe30573d348b9165097ce941e52033a84433e5b085abeeb85352be",
               "pushdown": [],
               "requirements": [
                 {
@@ -562,7 +562,7 @@
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:sort#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:sort"
                   },
@@ -645,7 +645,7 @@
                   ],
                   "evidence_fingerprint": "adaptive-fixture-evidence",
                   "expression_path": null,
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "path": "findings",
                   "reason": "fixture support result",
                   "reason_code": "PMXFORM000",
@@ -653,7 +653,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "9af7c53e4a5fcf12c1c54f51871e51dce51de41fca08618c4f95e45072eb8a0c",
+              "fingerprint": "8540ffcd5a8487a1c87fbad0c7f9ea32eaa40c8bf9716a7a7aa0b74372f61dfd",
               "pushdown": [],
               "requirements": [
                 {
@@ -671,7 +671,7 @@
                 {
                   "applicability": "applicable",
                   "id": "dtcs@1/actions/dtcs:sort#actions",
-                  "obligation": "required",
+                  "obligation": "preferred",
                   "parameters": {
                     "value": "dtcs:sort"
                   },
@@ -958,12 +958,14 @@
       "candidate_evaluation": {
         "candidates": [
           {
-            "decision": "eligible",
-            "eligible": true,
+            "decision": "eliminated_before_preference_scoring",
+            "eligible": false,
             "id": "fast",
             "node": "source",
-            "preferred_score": 1,
-            "required_failures": [],
+            "preferred_score": null,
+            "required_failures": [
+              "interchange:arrow"
+            ],
             "requirements": {
               "dtcs:filter": "supported_exact",
               "interchange:arrow": "unknown"
@@ -1071,7 +1073,7 @@
             "eligible": true,
             "id": "compatible",
             "node": "source",
-            "preferred_score": 1,
+            "preferred_score": 0,
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_exact",
@@ -1559,5 +1561,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "3cdd80d64bc1debd377d8241820afac79d31fffb3aecd3cf36f23c9d33abb9ed"
+  "source_tree_digest": "f3e813ab7240ab3bd1f062a882063140958edf821806e5949f4b40cbc8c0662c"
 }
