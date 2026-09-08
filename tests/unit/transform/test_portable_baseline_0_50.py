@@ -62,3 +62,22 @@ def test_profile_aliases_are_normative_and_proven() -> None:
         "canonical": "dtcs:profile/portable-relational/1",
         "proof": "exact-vocabulary-equivalence",
     }
+
+
+def test_relational_pushdown_records_declared_physical_effects() -> None:
+    from etlantic.transform.compiler import relational_pushdown_findings
+
+    findings = relational_pushdown_findings(
+        {
+            "actions": [
+                {
+                    "id": "filter-1",
+                    "kind": {"action": "dtcs:filter"},
+                }
+            ]
+        },
+        evidence_fingerprint="evidence",
+        physical_effects=("materialization", "lost_fusion"),
+    )
+    relational = next(item for item in findings if item.boundary == "relational:0")
+    assert relational.physical_effects == ("materialization", "lost_fusion")
