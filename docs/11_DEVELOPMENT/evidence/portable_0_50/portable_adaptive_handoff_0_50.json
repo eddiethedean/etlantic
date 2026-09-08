@@ -18,7 +18,7 @@
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
     "test_adaptive_evidence_drift_rejects_before_io"
   ],
-  "repository_commit": "781a32c46d23254775c2ffb20108480b77f897cd",
+  "repository_commit": "53111af386cfe242ad65021e187653520c7a8ff0",
   "result": "pass",
   "scenarios": [
     {
@@ -118,7 +118,7 @@
             "eligible": true,
             "id": "complete",
             "node": "orders",
-            "preferred_score": 2,
+            "preferred_score": 1,
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_exact",
@@ -205,7 +205,7 @@
             "eligible": true,
             "id": "complete",
             "node": "customers",
-            "preferred_score": 2,
+            "preferred_score": 1,
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_exact",
@@ -401,7 +401,7 @@
             "eligible": true,
             "id": "known-preference",
             "node": "customers",
-            "preferred_score": 2,
+            "preferred_score": 1,
             "required_failures": [],
             "requirements": {
               "dtcs:filter": "supported_exact",
@@ -523,6 +523,21 @@
                 "dtcs:filter"
               ]
             },
+            "lowerings": [
+              {
+                "conditions": [
+                  "preserve-null"
+                ],
+                "id": "lowering/fixture-v1",
+                "physical_effects": [
+                  "materialization"
+                ],
+                "proof": "proof/fixture-v1",
+                "requirements": [
+                  "dtcs:filter"
+                ]
+              }
+            ],
             "node": "orders",
             "preferred_score": 0,
             "required_failures": [],
@@ -823,5 +838,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "c06818dbbb1b97af1ccda04e6e6c879d6001faddb04823f0da9633fcabfca7a8"
+  "source_tree_digest": "dcefa51d4f4cc857cd891f2d958d927885427f9b7099e39f3ac8d9ed03cfeb93"
 }
