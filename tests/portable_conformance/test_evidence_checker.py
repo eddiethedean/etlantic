@@ -11,6 +11,7 @@ from scripts.check_portable_0_50 import (
     validate_artifact_schema,
     validate_cross_engine_digests,
     validate_findings_ledger,
+    validate_pushdown_campaign,
     validate_requirement_campaign,
 )
 
@@ -320,7 +321,15 @@ def test_adaptive_graph_valid_selection_cannot_choose_ineligible_candidate() -> 
 
 
 @pytest.mark.parametrize(
-    "missing", ["SOL-050-019", "SOL-050-020", "FINAL-050-006", "FINAL-050-010"]
+    "missing",
+    [
+        "SOL-050-019",
+        "SOL-050-020",
+        "SOL-050-021",
+        "SOL-050-024",
+        "FINAL-050-006",
+        "FINAL-050-010",
+    ],
 )
 def test_findings_ledger_rejects_missing_historical_finding(missing: str) -> None:
     from scripts.check_portable_0_50 import (
@@ -353,3 +362,57 @@ def test_findings_ledger_rejects_unresolved_disposition() -> None:
     document += "\nSol re-review pending\n"
     with pytest.raises(SystemExit, match="does not resolve SOL-050-020"):
         validate_findings_ledger(document)
+
+
+def test_pushdown_campaign_covers_every_outcome() -> None:
+    from scripts.generate_portable_0_50_evidence import (
+        PUSHDOWN_OUTCOME_ORDER,
+        _pushdown_outcome_fixtures,
+    )
+
+    payload = {
+        "outcomes": list(PUSHDOWN_OUTCOME_ORDER),
+        "outcome_fixtures": _pushdown_outcome_fixtures(),
+    }
+    validate_pushdown_campaign(payload)
+
+
+def test_pushdown_campaign_rejects_missing_outcome_fixture() -> None:
+    from scripts.generate_portable_0_50_evidence import (
+        PUSHDOWN_OUTCOME_ORDER,
+        _pushdown_outcome_fixtures,
+    )
+
+    fixtures = _pushdown_outcome_fixtures()
+    fixtures.pop()
+    with pytest.raises(SystemExit, match="outcome corpus is incomplete"):
+        validate_pushdown_campaign(
+            {
+                "outcomes": list(PUSHDOWN_OUTCOME_ORDER),
+                "outcome_fixtures": fixtures,
+            }
+        )
+
+
+def test_pushdown_campaign_rejects_mutated_lowering_evidence() -> None:
+    from scripts.generate_portable_0_50_evidence import (
+        PUSHDOWN_OUTCOME_ORDER,
+        _pushdown_outcome_fixtures,
+    )
+
+    from etlantic.transform.compiler import _support_fingerprint
+
+    fixtures = _pushdown_outcome_fixtures()
+    lowered = next(
+        item for item in fixtures if item["outcome"] == "pushed_with_lowering"
+    )
+    report = lowered["support_report"]
+    report["pushdown"][0]["lowering_id"] = "lowering/fabricated-v1"
+    report["fingerprint"] = _support_fingerprint(report)
+    with pytest.raises(SystemExit, match="lowered pushdown evidence is incomplete"):
+        validate_pushdown_campaign(
+            {
+                "outcomes": list(PUSHDOWN_OUTCOME_ORDER),
+                "outcome_fixtures": fixtures,
+            }
+        )

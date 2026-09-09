@@ -56,7 +56,7 @@ EXPECTED_SCHEMAS = {
     "WHATS_NEW_0_50.md": "markdown/1",
 }
 
-EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 21))
+EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 25))
 EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 15))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
@@ -71,6 +71,17 @@ EXPECTED_CANONICAL_ACTIONS = frozenset(
         "dtcs:project",
         "dtcs:sort",
         "dtcs:union",
+    }
+)
+EXPECTED_PUSHDOWN_OUTCOMES = frozenset(
+    {
+        "pushed_exact",
+        "pushed_with_lowering",
+        "not_pushed",
+        "not_applicable",
+        "unsupported",
+        "unavailable",
+        "unknown",
     }
 )
 
@@ -285,6 +296,68 @@ def validate_requirement_campaign(payload: dict[str, object]) -> None:
                     raise SystemExit(
                         f"unsupported action has contradictory positive pushdown for {engine}"
                     )
+
+
+def validate_pushdown_campaign(payload: dict[str, object]) -> None:
+    """Require executable wire fixtures for every frozen pushdown outcome."""
+    from etlantic.transform.compiler import validate_requirement_support_payload
+
+    outcomes = payload.get("outcomes")
+    fixtures = payload.get("outcome_fixtures")
+    if (
+        not isinstance(outcomes, list)
+        or len(outcomes) != len(EXPECTED_PUSHDOWN_OUTCOMES)
+        or set(outcomes) != EXPECTED_PUSHDOWN_OUTCOMES
+        or not isinstance(fixtures, list)
+        or len(fixtures) != len(EXPECTED_PUSHDOWN_OUTCOMES)
+    ):
+        raise SystemExit("pushdown outcome corpus is incomplete")
+    by_outcome = {
+        str(item.get("outcome")): item for item in fixtures if isinstance(item, dict)
+    }
+    if set(by_outcome) != EXPECTED_PUSHDOWN_OUTCOMES:
+        raise SystemExit("pushdown outcome corpus is incomplete")
+    expected_obligations = {
+        "pushed_exact": "required",
+        "pushed_with_lowering": "required",
+        "not_pushed": "preferred",
+        "not_applicable": "informational",
+        "unsupported": "required",
+        "unavailable": "required",
+        "unknown": "required",
+    }
+    for outcome, fixture in by_outcome.items():
+        report = fixture.get("support_report")
+        if not isinstance(report, dict):
+            raise SystemExit("pushdown outcome fixture lacks support evidence")
+        try:
+            validate_requirement_support_payload(report)
+        except ValueError as exc:
+            raise SystemExit("pushdown outcome fixture is invalid") from exc
+        findings = report.get("pushdown")
+        if not isinstance(findings, list) or len(findings) != 1:
+            raise SystemExit("pushdown outcome fixture must have exactly one finding")
+        finding = findings[0]
+        obligation = expected_obligations[outcome]
+        if (
+            not isinstance(finding, dict)
+            or finding.get("outcome") != outcome
+            or finding.get("obligation") != obligation
+            or fixture.get("obligation") != obligation
+        ):
+            raise SystemExit("pushdown outcome fixture disagrees with the contract")
+        expected_eligible = outcome in {"pushed_exact", "pushed_with_lowering"} or (
+            obligation != "required"
+        )
+        if fixture.get("expected_eligible") is not expected_eligible:
+            raise SystemExit("pushdown outcome eligibility is incorrect")
+        if outcome == "pushed_with_lowering" and (
+            finding.get("lowering_id") != "lowering/pushdown-outcome-v1"
+            or finding.get("conditions") != ["preserve-null"]
+            or finding.get("proof_reference") != "proof/pushdown-outcome-v1"
+            or finding.get("physical_effects") != ["materialization"]
+        ):
+            raise SystemExit("lowered pushdown evidence is incomplete")
 
 
 def validate_adaptive_lowering_binding(
@@ -764,6 +837,7 @@ def main() -> int:
     pushdown = json.loads(
         (EVIDENCE / "portable_pushdown_contract_0_50.json").read_text()
     )
+    validate_pushdown_campaign(pushdown)
     proofs = pushdown.get("proofs")
     findings = pushdown.get("findings")
     if not isinstance(proofs, dict) or not isinstance(findings, list):

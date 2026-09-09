@@ -35,6 +35,7 @@ from etlantic.transform.compiler import (
     TransformCompileContext,
     TransformExecutionContext,
     TransformPlanningContext,
+    TransformPushdownFinding,
     TransformSupportFinding,
     TransformSupportReport,
     requirement_records_from_mapping,
@@ -59,6 +60,15 @@ else:
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
 ENGINES = ("local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb")
+PUSHDOWN_OUTCOME_ORDER = (
+    "pushed_exact",
+    "pushed_with_lowering",
+    "not_pushed",
+    "not_applicable",
+    "unsupported",
+    "unavailable",
+    "unknown",
+)
 QUALIFICATION_MATRIX = [
     {"engine": "local", "mode": "host", "dialect": None},
     {"engine": "polars", "mode": "eager", "dialect": None},
@@ -90,6 +100,70 @@ ARTIFACTS = (
     "MIGRATION_0_49_TO_0_50.md",
     "WHATS_NEW_0_50.md",
 )
+
+
+def _pushdown_outcome_fixtures() -> list[dict[str, Any]]:
+    """Exercise every pushdown state through the public support wire schema."""
+    evidence = "pushdown-outcome-fixture-evidence"
+    requirements = requirement_records_from_mapping({"actions": ["dtcs:filter"]})
+    requirement_id = str(requirements[0]["id"])
+    target = {
+        "engine": "fixture",
+        "compiler": "pushdown-outcome-fixture",
+        "version": "1",
+        "protocol": COMPILER_PROTOCOL,
+        "package": "etlantic-pushdown-outcome-fixture",
+        "implementation": "pushdown-outcome-fixture/1",
+    }
+    fixtures: list[dict[str, Any]] = []
+    for outcome in PUSHDOWN_OUTCOME_ORDER:
+        obligation = {
+            "not_pushed": "preferred",
+            "not_applicable": "informational",
+        }.get(outcome, "required")
+        positive = outcome in {"pushed_exact", "pushed_with_lowering"}
+        lowering = outcome == "pushed_with_lowering"
+        pushdown = TransformPushdownFinding(
+            boundary="relational:0",
+            outcome=outcome,
+            reason=f"qualification fixture for {outcome}",
+            action="dtcs:filter",
+            target="action-0",
+            proof_reference=("proof/pushdown-outcome-v1" if positive else None),
+            physical_effects=(("materialization",) if lowering else ()),
+            evidence_fingerprint=(evidence if positive else None),
+            obligation=obligation,
+            lowering_id=("lowering/pushdown-outcome-v1" if lowering else None),
+            conditions=(("preserve-null",) if lowering else ()),
+        )
+        support_report = TransformSupportReport(
+            supported=True,
+            evidence_fingerprint=evidence,
+            requirements=requirements,
+            requirement_findings=(
+                TransformSupportFinding(
+                    code="PMXFORM000",
+                    requirement=requirement_id,
+                    reason="fixture action support is exact",
+                    obligation="required",
+                    support="supported_exact",
+                    evidence_fingerprint=evidence,
+                ),
+            ),
+            pushdown=(pushdown,),
+        ).to_requirement_support(target=target)
+        fixtures.append(
+            {
+                "id": f"pushdown-outcome:{outcome}",
+                "outcome": outcome,
+                "obligation": obligation,
+                "expected_eligible": positive or obligation != "required",
+                "support_report": support_report,
+            }
+        )
+    return fixtures
+
+
 PUBLIC_POSTGRES_COMMAND = (
     "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark "
     "SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q "
@@ -1327,10 +1401,11 @@ def main() -> int:
             **common,
             "command": PUBLIC_COMMAND,
             "environment": environment,
-            "outcomes": ["pushed_exact", "pushed_with_lowering", "not_applicable"],
+            "outcomes": list(PUSHDOWN_OUTCOME_ORDER),
             "boundaries": ["source", "relational", "sink"],
             "findings": pushdown,
             "proofs": pushdown_proofs,
+            "outcome_fixtures": _pushdown_outcome_fixtures(),
             "evidence": sorted(
                 {
                     item["evidence_fingerprint"]
@@ -1514,7 +1589,11 @@ def main() -> int:
         "| SOL-050-017 | Medium | resolved by schema, digest, and ledger validation |\n"
         "| SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |\n"
         "| SOL-050-019 | Medium | resolved by focused Pyright validation |\n"
-        "| SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |\n\n"
+        "| SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |\n"
+        "| SOL-050-021 | High | resolved by truthful unsupported-action pushdown findings |\n"
+        "| SOL-050-022 | High | resolved by obligation-authoritative validation diagnostics |\n"
+        "| SOL-050-023 | High | resolved by complete pushdown outcome and lowering evidence |\n"
+        "| SOL-050-024 | Medium | resolved by authoritative findings-ledger enforcement |\n\n"
         "| FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |\n"
         "| FINAL-050-002 | High | resolved by nested support-payload validation |\n"
         "| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |\n"

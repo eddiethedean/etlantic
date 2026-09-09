@@ -123,7 +123,9 @@ _PUSHDOWN_KEYS = frozenset(
         "boundary",
         "action",
         "target",
+        "lowering_id",
         "proof_reference",
+        "conditions",
         "outcome",
         "reason",
         "obligation",
@@ -267,6 +269,9 @@ class TransformPushdownFinding:
     physical_effects: tuple[str, ...] = ()
     evidence_fingerprint: str | None = None
     obligation: str | None = None
+    # Additive /1 fields kept last for positional compatibility.
+    lowering_id: str | None = None
+    conditions: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -281,6 +286,10 @@ class TransformPushdownFinding:
             payload["target"] = self.target
         if self.proof_reference is not None:
             payload["proof_reference"] = self.proof_reference
+        if self.lowering_id is not None:
+            payload["lowering_id"] = self.lowering_id
+        if self.conditions:
+            payload["conditions"] = list(self.conditions)
         if self.obligation is not None:
             payload["obligation"] = self.obligation
         if self.evidence_fingerprint is not None:
@@ -1135,10 +1144,7 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             raise ValueError("pushdown finding contains unsupported fields")
         if item.get("outcome") not in PUSHDOWN_OUTCOMES:
             raise ValueError("invalid pushdown outcome")
-        if (
-            item.get("obligation") is not None
-            and item.get("obligation") not in OBLIGATIONS
-        ):
+        if item.get("obligation") not in OBLIGATIONS:
             raise ValueError("invalid pushdown obligation")
         validate_bounded_string(item.get("boundary"), field_name="pushdown boundary")
         if item["boundary"] in pushdown_boundaries:
@@ -1148,6 +1154,7 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         for optional_field in (
             "action",
             "target",
+            "lowering_id",
             "proof_reference",
             "evidence_fingerprint",
         ):
@@ -1156,35 +1163,44 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
                     item[optional_field], field_name=f"pushdown {optional_field}"
                 )
         validate_bounded_strings(
+            item.get("conditions", []), field_name="pushdown conditions"
+        )
+        for condition in item.get("conditions", []):
+            _validate_static_condition(condition)
+        validate_bounded_strings(
             item.get("physical_effects", []),
             field_name="pushdown physical_effects",
             allowed=PHYSICAL_EFFECTS,
         )
-        if item.get("obligation") == "required":
-            if not isinstance(item.get("action"), str) or not item["action"]:
-                raise ValueError("required pushdown finding requires action")
-            if not isinstance(item.get("target"), str) or not item["target"]:
-                raise ValueError("required pushdown finding requires target")
-            if item.get("outcome") in {"pushed_exact", "pushed_with_lowering"}:
-                if (
-                    not isinstance(item.get("evidence_fingerprint"), str)
-                    or not item["evidence_fingerprint"]
-                ):
-                    raise ValueError("pushed finding requires evidence fingerprint")
-                if (
-                    not isinstance(item.get("proof_reference"), str)
-                    or not item["proof_reference"]
-                ):
-                    raise ValueError("pushed finding requires proof reference")
-                if item.get("outcome") == "pushed_with_lowering" and not item.get(
-                    "proof_reference"
-                ):
-                    raise ValueError("lowered pushdown requires proof reference")
-            if item.get("evidence_fingerprint") and not any(
-                record.get("fingerprint") == item["evidence_fingerprint"]
-                for record in evidence
+        if not isinstance(item.get("action"), str) or not item["action"]:
+            raise ValueError("pushdown finding requires action")
+        if not isinstance(item.get("target"), str) or not item["target"]:
+            raise ValueError("pushdown finding requires target")
+        if item.get("outcome") == "not_pushed" and item.get("obligation") == "required":
+            raise ValueError("required pushdown cannot be not_pushed")
+        if item.get("outcome") in {"pushed_exact", "pushed_with_lowering"}:
+            if (
+                not isinstance(item.get("evidence_fingerprint"), str)
+                or not item["evidence_fingerprint"]
             ):
-                raise ValueError("pushdown evidence fingerprint is unbound")
+                raise ValueError("pushed finding requires evidence fingerprint")
+            if (
+                not isinstance(item.get("proof_reference"), str)
+                or not item["proof_reference"]
+            ):
+                raise ValueError("pushed finding requires proof reference")
+        if item.get("outcome") == "pushed_with_lowering":
+            if not isinstance(item.get("lowering_id"), str) or not item["lowering_id"]:
+                raise ValueError("lowered pushdown requires lowering identity")
+            if not item.get("conditions"):
+                raise ValueError("lowered pushdown requires static conditions")
+            if not item.get("physical_effects"):
+                raise ValueError("lowered pushdown requires physical effects")
+        if item.get("evidence_fingerprint") and not any(
+            record.get("fingerprint") == item["evidence_fingerprint"]
+            for record in evidence
+        ):
+            raise ValueError("pushdown evidence fingerprint is unbound")
     serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
         "utf-8"
     )

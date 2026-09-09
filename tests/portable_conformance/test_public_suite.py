@@ -8,7 +8,10 @@ from etlantic.testing import (
     portable_transform_conformance,
     run_portable_transform_conformance_suite,
 )
-from etlantic.transform.compiler import TransformSupportFinding
+from etlantic.transform.compiler import (
+    TransformPushdownFinding,
+    TransformSupportFinding,
+)
 
 
 def _require_all_backend_plugins() -> None:
@@ -607,6 +610,154 @@ def _adaptive_support_report(
             },
         }
     )
+
+
+def _support_report_with_pushdown(
+    finding: TransformPushdownFinding,
+) -> dict[str, object]:
+    from etlantic.transform.compiler import (
+        COMPILER_PROTOCOL,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    evidence = "pushdown-fixture-evidence"
+    requirements = requirement_records_from_mapping({"actions": ["dtcs:filter"]})
+    requirement_id = str(requirements[0]["id"])
+    return TransformSupportReport(
+        supported=True,
+        evidence_fingerprint=evidence,
+        requirements=requirements,
+        requirement_findings=(
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement=requirement_id,
+                reason="fixture support result",
+                obligation="required",
+                support="supported_exact",
+                evidence_fingerprint=evidence,
+            ),
+        ),
+        pushdown=(finding,),
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "pushdown-fixture",
+            "version": "1",
+            "protocol": COMPILER_PROTOCOL,
+            "package": "etlantic-pushdown-fixture",
+            "implementation": "pushdown-fixture/1",
+        }
+    )
+
+
+def test_lowered_pushdown_serializes_complete_evidence() -> None:
+    payload = _support_report_with_pushdown(
+        TransformPushdownFinding(
+            boundary="relational:0",
+            outcome="pushed_with_lowering",
+            reason="qualified deterministic lowering",
+            action="dtcs:filter",
+            target="action-0",
+            proof_reference="proof/pushdown-fixture-v1",
+            physical_effects=("materialization",),
+            evidence_fingerprint="pushdown-fixture-evidence",
+            obligation="required",
+            lowering_id="lowering/pushdown-fixture-v1",
+            conditions=("preserve-null",),
+        )
+    )
+    finding = payload["pushdown"][0]
+    assert finding["lowering_id"] == "lowering/pushdown-fixture-v1"
+    assert finding["conditions"] == ["preserve-null"]
+    assert finding["physical_effects"] == ["materialization"]
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("lowering_id", None, "lowering identity"),
+        ("conditions", (), "static conditions"),
+        ("conditions", ("runtime:value",), "resolved static"),
+        ("physical_effects", (), "physical effects"),
+        ("proof_reference", None, "proof reference"),
+        ("evidence_fingerprint", None, "evidence fingerprint"),
+    ],
+)
+def test_lowered_pushdown_rejects_incomplete_or_dynamic_evidence(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    values = {
+        "boundary": "relational:0",
+        "outcome": "pushed_with_lowering",
+        "reason": "qualified deterministic lowering",
+        "action": "dtcs:filter",
+        "target": "action-0",
+        "proof_reference": "proof/pushdown-fixture-v1",
+        "physical_effects": ("materialization",),
+        "evidence_fingerprint": "pushdown-fixture-evidence",
+        "obligation": "required",
+        "lowering_id": "lowering/pushdown-fixture-v1",
+        "conditions": ("preserve-null",),
+    }
+    values[field] = value
+    with pytest.raises(ValueError, match=message):
+        _support_report_with_pushdown(TransformPushdownFinding(**values))
+
+
+def test_preferred_positive_pushdown_still_requires_bound_evidence() -> None:
+    with pytest.raises(ValueError, match="evidence fingerprint"):
+        _support_report_with_pushdown(
+            TransformPushdownFinding(
+                boundary="relational:0",
+                outcome="pushed_exact",
+                reason="unproven preference",
+                action="dtcs:filter",
+                target="action-0",
+                proof_reference="proof/pushdown-fixture-v1",
+                obligation="preferred",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("outcome", "obligation", "expected_failure"),
+    [
+        ("pushed_exact", "required", False),
+        ("pushed_with_lowering", "required", False),
+        ("not_pushed", "required", True),
+        ("not_pushed", "preferred", False),
+        ("not_applicable", "required", True),
+        ("not_applicable", "informational", False),
+        ("unsupported", "required", True),
+        ("unavailable", "required", True),
+        ("unknown", "required", True),
+    ],
+)
+def test_pushdown_eligibility_respects_outcome_and_obligation(
+    outcome: str,
+    obligation: str,
+    expected_failure: bool,
+) -> None:
+    from etlantic.plan.planner import _required_pushdown_failures
+    from etlantic.transform.compiler import TransformSupportReport
+
+    report = TransformSupportReport(
+        supported=True,
+        pushdown=(
+            TransformPushdownFinding(
+                boundary="relational:0",
+                outcome=outcome,
+                reason="fixture outcome",
+                action="dtcs:filter",
+                target="action-0",
+                obligation=obligation,
+            ),
+        ),
+    )
+    assert bool(_required_pushdown_failures(report)) is expected_failure
 
 
 def test_adaptive_partial_engine_required_unknown_eliminates_before_scoring() -> None:

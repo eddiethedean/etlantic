@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -468,6 +469,122 @@ def test_validate_require_accepts_local_portable_compiler() -> None:
     )
     report = KernelPipeline.validate(profile=profile, policy=STRICT_POLICY)
     assert report.valid, [(d.code, d.message) for d in report.diagnostics]
+
+
+@pytest.mark.parametrize("obligation", ["preferred", "informational"])
+def test_validate_require_allows_unknown_non_required_support(
+    monkeypatch: pytest.MonkeyPatch,
+    obligation: str,
+) -> None:
+    """Validation must apply the same obligation semantics as planning/runtime."""
+    from etlantic.policy import STRICT_POLICY
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    base = LocalTransformCompiler()
+
+    class NonRequiredUnknownCompiler:
+        info = base.info
+
+        def analyze(self, definition, *, context, requirements=None):
+            report = base.analyze(
+                definition, context=context, requirements=requirements
+            )
+            records = [dict(item) for item in report.requirements]
+            record_index = next(
+                index
+                for index, item in enumerate(records)
+                if item.get("scope") == "actions"
+                and (item.get("parameters") or {}).get("value") == "dtcs:filter"
+            )
+            records[record_index]["obligation"] = obligation
+            findings = list(report.requirement_findings)
+            finding_index = next(
+                index
+                for index, item in enumerate(findings)
+                if item.requirement == "action:dtcs:filter"
+            )
+            findings[finding_index] = replace(
+                findings[finding_index],
+                code="PMXFORM303",
+                reason="non-required support is unknown",
+                obligation=obligation,
+                support="unknown",
+            )
+            return replace(
+                report,
+                supported=False,
+                findings=(findings[finding_index],),
+                requirements=tuple(records),
+                requirement_findings=tuple(findings),
+            )
+
+    monkeypatch.setattr(
+        "etlantic.transform.discovery.discover_transform_compilers_for_profile",
+        lambda profile: {"local": NonRequiredUnknownCompiler()},
+    )
+    profile = Profile(
+        name="local-portable",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+        assets={"customers": "customers", "out": "out"},
+        validation_policy="strict",
+    )
+    report = KernelPipeline.validate(profile=profile, policy=STRICT_POLICY)
+    assert report.valid, [(d.code, d.message) for d in report.diagnostics]
+
+
+def test_validate_require_uses_canonical_required_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The normalized vector is authoritative even if legacy failures are empty."""
+    from etlantic.policy import STRICT_POLICY
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    base = LocalTransformCompiler()
+
+    class CanonicalRequiredFailureCompiler:
+        info = base.info
+
+        def analyze(self, definition, *, context, requirements=None):
+            report = base.analyze(
+                definition, context=context, requirements=requirements
+            )
+            findings = list(report.requirement_findings)
+            finding_index = next(
+                index
+                for index, item in enumerate(findings)
+                if item.requirement == "action:dtcs:filter"
+            )
+            findings[finding_index] = replace(
+                findings[finding_index],
+                code="PMXFORM303",
+                reason="required support is unknown",
+                obligation="required",
+                support="unknown",
+            )
+            return replace(
+                report,
+                supported=False,
+                findings=(),
+                requirement_findings=tuple(findings),
+            )
+
+    monkeypatch.setattr(
+        "etlantic.transform.discovery.discover_transform_compilers_for_profile",
+        lambda profile: {"local": CanonicalRequiredFailureCompiler()},
+    )
+    profile = Profile(
+        name="local-portable",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+        assets={"customers": "customers", "out": "out"},
+        validation_policy="strict",
+    )
+    report = KernelPipeline.validate(profile=profile, policy=STRICT_POLICY)
+    assert not report.valid
+    diagnostic = next(item for item in report.diagnostics if item.code == "PMXFORM303")
+    assert "required support is unknown" in diagnostic.message
+    assert diagnostic.path == ("pipeline", "normalized")
 
 
 def test_explode_emits_reshape_only() -> None:

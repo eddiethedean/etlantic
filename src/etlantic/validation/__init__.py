@@ -331,7 +331,10 @@ def _phase_policy(
         # Portable-capable steps may satisfy prefer/require without a native
         # callable when a transform compiler exists for the engine.
         if has_portable and portable_policy in {"prefer", "require"}:
-            from etlantic.transform.compiler import TransformPlanningContext
+            from etlantic.transform.compiler import (
+                TransformPlanningContext,
+                required_support_failures,
+            )
             from etlantic.transform.discovery import (
                 discover_transform_compilers_for_profile,
             )
@@ -379,26 +382,24 @@ def _phase_policy(
                         )
                     )
                     continue
-                support_by_id = {
-                    item.get("requirement"): item.get("support")
+                failed_requirements = required_support_failures(summary)
+                if not failed_requirements:
+                    continue
+                findings_by_requirement = {
+                    item.get("requirement"): item
                     for item in summary.get("findings", ())
                 }
-                if all(
-                    item.get("applicability") != "applicable"
-                    or support_by_id.get(item.get("id"))
-                    in {"supported_exact", "supported_with_lowering"}
-                    for item in summary.get("requirements", ())
-                ):
-                    continue
-                for finding in report.findings:
+                for requirement_id in failed_requirements:
+                    finding = findings_by_requirement[requirement_id]
+                    reason = str(
+                        finding.get("reason")
+                        or "required portable support is not proven"
+                    )
                     diagnostics.append(
                         Diagnostic(
-                            code=finding.code or "PMXFORM301",
+                            code=str(finding.get("reason_code") or "PMXFORM301"),
                             severity=Severity.ERROR,
-                            message=(
-                                f'Step "{node.name}": {finding.requirement} — '
-                                f"{finding.reason}"
-                            ),
+                            message=f'Step "{node.name}": {requirement_id} — {reason}',
                             path=("pipeline", node.name),
                         )
                     )
