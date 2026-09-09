@@ -8,10 +8,217 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "evidence_fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
-  "repository_commit": "1699584a80e95b41f0bcd35175396c217a6f1538",
+  "pushdown_proof_attestation": {
+    "actions": {
+      "a": {
+        "action": "dtcs:aggregate",
+        "action_explain_digest": "9c0d125de3aad9c72b5984d912ca928871c22a1cea4573aea0230064c86a1dd2",
+        "action_native_digest": "d8cfb8ce8e216f41d26b7b8acbe8bcea9e73de1e10ec2995b744050c7c3b0bb6",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:a",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "d": {
+        "action": "dtcs:drop_fields",
+        "action_explain_digest": "d57ad8aaef5830caa025c645db35e432cc7ff9747e1aa80224b7f52218a981c2",
+        "action_native_digest": "1a863e9c49e2e474640327904414fd3d6d92dd9821c4e8107d64927ebacf5ff7",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:d",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "f": {
+        "action": "dtcs:filter",
+        "action_explain_digest": "ff5bfb09cc1148b93623470a76493db768c310115d86cd8e2763de5bf345c48f",
+        "action_native_digest": "b0df189f14c2f540812b11e65d5bc9d34e2b3bc2dbc885815c9f33fea50ec0b2",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:f",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "j": {
+        "action": "dtcs:join",
+        "action_explain_digest": "6ad0135ed5bc984824aaa77c9e6cc47f333e4ee6c954ebe920b592ea3b66a390",
+        "action_native_digest": "fda425b43b78471e981940a706e4ca0b5881f1b6bc92c48e67bbd6a8f7738346",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:j",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "k": {
+        "action": "dtcs:deduplicate",
+        "action_explain_digest": "49bb89b8568873567995152d4a54d0c4c7ea6e27805ee3ed00e5b7ab8262cedc",
+        "action_native_digest": "793556ae625b7a65bbc2a4e74de393e661e67d62c8ad6590fed1518412a2570c",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:k",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "l": {
+        "action": "dtcs:limit",
+        "action_explain_digest": "17fe2bf755d80f236de7aea787919fe4fdc1f7a05ee9db5aba38b9b76e701283",
+        "action_native_digest": "e075e5acb8276be443be6eae25a1c2485e57bdc72c853d6a424e1c9b73cf854a",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:l",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "n": {
+        "action": "dtcs:rename_fields",
+        "action_explain_digest": "cad3d3e1f70f546f5bff4199d9eb954d7921715b740097bdcb5c5411a2e7f8a2",
+        "action_native_digest": "e2c0622ece31db5d78d284b0be96ad510fd56e08eb728352dbdc4a359b370505",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:n",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "p": {
+        "action": "dtcs:project",
+        "action_explain_digest": "86a1c66b393c05ddb67c53aa8dbeb4f0ce4b8e3fc2c428c9aee845b5d6ca527c",
+        "action_native_digest": "50509c930b4b90dcb4ce53299f54ad5b4ca3925dbcfc4262549a5dd5a4348233",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:p",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "s": {
+        "action": "dtcs:sort",
+        "action_explain_digest": "f28f29ea725cc856bb85532397d3edbbfa8afc714b5e39dfdc769f639fd46760",
+        "action_native_digest": "db68b487a2e626e59f827433a98a24cf465057c6a84eeced1e09678b581797fb",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:s",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "u": {
+        "action": "dtcs:union",
+        "action_explain_digest": "94de8bf0ccbcac6ba8767f0f7320e57cf17f5d74d953524c5857255f05878efb",
+        "action_native_digest": "7c79229a394d4d8d41d4d15446d87b7ac86af3671c50c2f663e7c875febfe2d2",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:u",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "w": {
+        "action": "dtcs:with_fields",
+        "action_explain_digest": "d741543e96ff78195a03ef8f4e0dc75cab3957afa149a82fe79ba2ddc7d3a8d9",
+        "action_native_digest": "8f580df0ee0b914049560edab60ff02f2417d997c18b356438d87913f2ba441e",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:w",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      },
+      "x": {
+        "action": "dtcs:distinct",
+        "action_explain_digest": "2806f0d24306f6a188cf6a00475efa15c75c5b6d4aee53b0c65f3f437580e2de",
+        "action_native_digest": "b55d3bac5631349ccfef931ab70ea351462a2bf61409043f7551c77b2c6776de",
+        "host_fallback": false,
+        "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+        "physical_effects": [
+          "materialization",
+          "lost_fusion"
+        ],
+        "proof_basis": "native_explain_and_execution_trace",
+        "proof_id": "native-execution:sql:x",
+        "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+      }
+    },
+    "native_explain_digest": "5c6e306de3eade0094cb3859adfaf351d5db40e78ef1dd1442370a73319651e9",
+    "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2",
+    "sqlite_execution": {
+      "action_explain_digests": {
+        "a": "70ff3c14a083cac096f402ac257dba91d7d6abcbd36dfcab910a4ab5ff5f5aed",
+        "d": "c1cb3c988e12adb7a810197c9ebad0c7564de623026219a4e0796983c0ff73ca",
+        "f": "b442f4870bab6e8ab9da57a7ad9d5c3d2b6b75ad80851a0df21c2826b453575a",
+        "j": "037c69e23498571f55f28c4d342ce22db3e0055267ef2f0f1bded7e8c9a1b716",
+        "k": "4869bb124c7cf8c2328092001962a0b04a681f0a4d2b050083d62552f352794e",
+        "l": "46061420031726937ec02c1b1249842926c9b1387ea354115bcb424328b132f8",
+        "n": "604b3afc2d7fbf7f62835e2d89735db7e0f87185a7cc1f7a3a0f61b643b4dba6",
+        "p": "e0c911e423c6d27f17f08278aeb0fece93eaf999f33b49547559e1a3c6111c02",
+        "s": "c677dc1e94f78e7575114cbfbdffdcd4552ac9b3dafafb6cd57be55f48425d8e",
+        "u": "6ccaec2d40a5b2d818c84471219733696ec099f4a2a07a64bfc7ddd93fd574ec",
+        "w": "c771447b257d36593cf36cc7615d6c83e2d85c44c67b0270602fbdf419a6dc00",
+        "x": "db7ae70d9db85c2f64ba51fdfaa927c206c44b23046aaae6698f733920bb63fc"
+      },
+      "action_native_digests": {
+        "a": "ea8ab85ad31038ca7a3847a8d2816549ea8736d0cc2589e5f48aad5f47edd18e",
+        "d": "67b348778a4eb6d35823cc72d4f15bdca4799bf8adafd373bd632fb97887d762",
+        "f": "decee519a9fcd2ed1405910f4db39bc1668b78016314256dfbdac4fa474e6f78",
+        "j": "0183d87108c0768c27587d890f36cac6f97ae2570023b0675c83cf40be59f87f",
+        "k": "fee7f1136a762a9e9f5c3db7da3960820be7a78e7d94a85e3034b33e23f98a9b",
+        "l": "f3e5d59a08719e07f1992429155f878ca099f8ecb6bbe93235435519ae6c1c14",
+        "n": "5ce7b8095e1438fb9211ee7c6f8991399db790f93399134eed29e66d2e32a95b",
+        "p": "02352cdfb4caf59588abaff6ee3c99e037badc175a6e1a9338f5b490426dd34f",
+        "s": "be5aeeb34b1046994dab7402dbc2232d8c69ff00542c99a3230ab8353ad87a00",
+        "u": "14047b99c6a3ce148f23911ab277512cf73acd96894e3ef22064ad48f97e21a3",
+        "w": "ea0b426fc460997ff5fb7d21539054aa65269a42a88dccc2afef64dfcb66fd91",
+        "x": "9608f0f836e370c9721aaceb0cee2e318fdb76a147601a9e8080ca24d0b75bbf"
+      },
+      "host_fallback": false,
+      "native_explain_digest": "0e702ba9e3ae11510b4caaae5e6cc465828fc9df065867860da4c46829df22e2",
+      "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
+    }
+  },
+  "repository_commit": "a9f6b8a19aa49c2bbc408dfc727943a3f5a26a83",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "0ff155b8e0ced826ff5159fe237a6990cd3cc62fcd787e53312733d4f74b483f",
+  "source_tree_digest": "272b572a614dfb4ce7d3494a7b456f6d3156dbd6af130c93182cd38db13561d2",
   "tests": [
     "tests/portable_conformance/test_public_suite.py",
     "tests/sql/test_sql_portable_security.py",
