@@ -124,6 +124,14 @@ def _requirement_campaign_fixture() -> dict[str, object]:
                     "fixture_id": fixture_id,
                     "expected_state": state,
                     "definition_digest": "a" * 64,
+                    "provenance": {
+                        "kind": (
+                            "target_availability_probe"
+                            if state == "unavailable"
+                            else "compiler_analyze"
+                        ),
+                        "compiler": "fixture",
+                    },
                     "support_report": report,
                 }
             )
@@ -197,6 +205,14 @@ def test_requirement_campaign_rejects_generic_negative_finding_path() -> None:
     finding["path"] = "findings"
     report["fingerprint"] = _support_fingerprint(report)
     with pytest.raises(SystemExit, match="not plan-scoped"):
+        validate_requirement_campaign(payload)
+
+
+def test_requirement_campaign_rejects_state_only_negative_evidence() -> None:
+    payload = _requirement_campaign_fixture()
+    negative = payload["negative_reports"]["local"][1]
+    del negative["provenance"]
+    with pytest.raises(SystemExit, match="execution provenance"):
         validate_requirement_campaign(payload)
 
 

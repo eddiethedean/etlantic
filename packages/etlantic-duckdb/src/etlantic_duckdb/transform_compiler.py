@@ -109,6 +109,12 @@ class DuckDBTransformCompiler:
                 name: list(arity) for name, arity in sorted(_FUNCTION_ARITIES.items())
             },
             "evidence_schema": "etlantic-duckdb-evidence/1",
+            "compiler": "etlantic-duckdb",
+            "package": "etlantic-duckdb",
+            "version": __version__,
+            "engine": "duckdb",
+            "protocol": COMPILER_PROTOCOL,
+            "implementation": "duckdb-native/1",
         }
         evidence = hashlib.sha256(
             json.dumps(evidence_payload, sort_keys=True).encode()
@@ -117,6 +123,8 @@ class DuckDBTransformCompiler:
             name="etlantic-duckdb",
             version=__version__,
             engine="duckdb",
+            implementation="duckdb-native/1",
+            package="etlantic-duckdb",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
             evidence_fingerprint=evidence,

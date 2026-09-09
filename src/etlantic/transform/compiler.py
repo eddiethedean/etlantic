@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from hashlib import sha256
@@ -37,11 +38,37 @@ MAX_REPORT_BYTES = 8 * 1024 * 1024
 MAX_CONDITIONS = 64
 MAX_REASON_BYTES = 1_024
 MAX_PARAMETER_BYTES = 1_024
+_STATIC_CONDITION_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*(?:[._:/-][A-Za-z0-9]+)*$")
+_DYNAMIC_CONDITION_PARTS = frozenset(
+    {
+        "source",
+        "row",
+        "rows",
+        "input",
+        "inputs",
+        "runtime",
+        "live",
+        "probe",
+        "value",
+        "values",
+        "param",
+        "parameter",
+        "data",
+    }
+)
 PHYSICAL_EFFECTS = frozenset(
     {"collection", "transfer", "materialization", "lost_fusion"}
 )
 _TARGET_KEYS = frozenset(
-    {"engine", "compiler", "version", "protocol", "package", "placement"}
+    {
+        "engine",
+        "compiler",
+        "version",
+        "protocol",
+        "package",
+        "implementation",
+        "placement",
+    }
 )
 _SUPPORT_PAYLOAD_KEYS = frozenset(
     {
@@ -156,6 +183,8 @@ class TransformCompilerInfo:
     # Optional evidence identity.  This is deliberately additive so existing
     # /1 compiler implementations remain valid and serializable.
     evidence_fingerprint: str | None = None
+    implementation: str | None = None
+    package: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -168,6 +197,10 @@ class TransformCompilerInfo:
         }
         if self.evidence_fingerprint is not None:
             payload["evidence_fingerprint"] = self.evidence_fingerprint
+        if self.implementation is not None:
+            payload["implementation"] = self.implementation
+        if self.package is not None:
+            payload["package"] = self.package
         return payload
 
 
@@ -328,15 +361,23 @@ class TransformSupportReport:
         findings = []
         canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
+        seen_finding_objects: set[int] = set()
         serialized_by_requirement: dict[str, dict[str, Any]] = {}
-        requirements_by_id = {
-            str(record["id"]): record
-            for record in requirements
-            if isinstance(record.get("id"), str)
-        }
+        requirements_by_id: dict[str, dict[str, Any]] = {}
+        for record in requirements:
+            identifier = record.get("id")
+            if not isinstance(identifier, str) or not identifier:
+                raise ValueError("requirement records must have non-empty string IDs")
+            if identifier in requirements_by_id:
+                raise ValueError("requirement IDs must be unique")
+            requirements_by_id[identifier] = record
         requirement_ids = set(requirements_by_id)
         for index, finding in enumerate((*canonical_findings, *self.findings)):
             item = finding.to_dict()
+            finding_object_id = id(finding)
+            if finding_object_id in seen_finding_objects:
+                continue
+            seen_finding_objects.add(finding_object_id)
             original_requirement = str(item.get("requirement") or f"finding-{index}")
             matched_requirement_ids: list[str] = []
             if original_requirement in requirement_ids:
@@ -351,6 +392,15 @@ class TransformSupportReport:
                         str(record["id"])
                         for record in requirements
                         if record.get("scope") == category
+                        and isinstance(record.get("id"), str)
+                    )
+                elif original_requirement.startswith("environment:"):
+                    matched_requirement_ids.extend(
+                        str(record["id"])
+                        for record in requirements
+                        if record.get("scope") == "environment_requirements"
+                        and (record.get("parameters") or {}).get("value")
+                        == original_requirement.removeprefix("environment:")
                         and isinstance(record.get("id"), str)
                     )
             if not matched_requirement_ids:
@@ -406,6 +456,10 @@ class TransformSupportReport:
                 serialized["path"] = finding.expression_path or str(
                     requirement.get("path") or "findings"
                 )
+                if requirement_id in serialized_by_requirement:
+                    raise ValueError(
+                        "support findings must contain exactly one result per requirement"
+                    )
                 used_ids.add(requirement_id)
                 serialized_by_requirement[requirement_id] = serialized
         findings.extend(serialized_by_requirement.values())
@@ -455,15 +509,8 @@ class TransformSupportReport:
                     "baseline_digest": _baseline_digest(),
                 }
             )
-        unique_requirements: list[dict[str, Any]] = []
-        seen_requirement_ids: set[str] = set()
-        for record in requirements:
-            identifier = record.get("id")
-            if identifier in seen_requirement_ids:
-                continue
-            seen_requirement_ids.add(str(identifier))
-            unique_requirements.append(record)
-        requirements = unique_requirements
+        # Duplicate IDs are rejected above; no requirement may be silently
+        # discarded while normalizing a report.
         payload = {
             "schema": "etlantic.portable-requirement-support/1",
             "target": {
@@ -632,13 +679,38 @@ def required_support_failures(payload: Mapping[str, Any]) -> tuple[str, ...]:
     )
 
 
-def capabilities_fingerprint(capabilities: TransformCapabilities) -> str:
-    """Stable evidence identity for an advertised capability set."""
+def capabilities_fingerprint(
+    capabilities: TransformCapabilities,
+    *,
+    compiler: str | None = None,
+    implementation: str | None = None,
+    package: str | None = None,
+    version: str | None = None,
+    engine: str | None = None,
+    protocol: str = COMPILER_PROTOCOL,
+) -> str:
+    """Stable evidence identity for capabilities and compiler identity."""
+    semantic = {
+        "capabilities": capabilities.to_dict(),
+        "compiler": compiler,
+        "implementation": implementation,
+        "package": package,
+        "version": version,
+        "engine": engine,
+        "protocol": protocol,
+    }
     return sha256(
-        json.dumps(
-            capabilities.to_dict(), sort_keys=True, separators=(",", ":")
-        ).encode()
+        json.dumps(semantic, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
+
+
+def _validate_static_condition(value: Any) -> None:
+    """Reject lowering conditions that require runtime or source inspection."""
+    if not isinstance(value, str) or not _STATIC_CONDITION_RE.fullmatch(value):
+        raise ValueError("conditions must be resolved static identifiers")
+    parts = set(re.split(r"[._:/-]+", value.lower()))
+    if parts & _DYNAMIC_CONDITION_PARTS:
+        raise ValueError("conditions must be resolved static identifiers")
 
 
 def host_pushdown_findings(
@@ -787,6 +859,11 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         validate_bounded_string(
             target.get("package"), field_name="requirement-support target.package"
         )
+    if "implementation" in target:
+        validate_bounded_string(
+            target.get("implementation"),
+            field_name="requirement-support target.implementation",
+        )
     if target.get("protocol") != COMPILER_PROTOCOL:
         raise ValueError("requirement-support target.protocol is unsupported")
     placement = target.get("placement")
@@ -917,6 +994,8 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             ):
                 raise ValueError("lowered finding requires conditions and effects")
         validate_bounded_strings(item.get("conditions", []), field_name="conditions")
+        for condition in item.get("conditions", []):
+            _validate_static_condition(condition)
         validate_bounded_strings(
             item.get("physical_effects", []),
             field_name="physical_effects",
@@ -1058,9 +1137,16 @@ def preflight_portable_support(descriptor: Any, compiler: Any, *, engine: str) -
     target = payload.get("target")
     if not isinstance(target, Mapping) or target.get("engine") != engine:
         raise ValueError("portable support evidence targets a different engine")
+    expected_package = getattr(compiler.info, "package", None)
+    expected_implementation = getattr(compiler.info, "implementation", None)
     if (
         target.get("compiler") != compiler.info.name
         or target.get("version") != compiler.info.version
+        or (expected_package is not None and target.get("package") != expected_package)
+        or (
+            expected_implementation is not None
+            and target.get("implementation") != expected_implementation
+        )
     ):
         raise ValueError("portable support evidence targets a different compiler")
     evidence = payload.get("evidence") or []

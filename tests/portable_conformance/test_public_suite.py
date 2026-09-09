@@ -8,6 +8,7 @@ from etlantic.testing import (
     portable_transform_conformance,
     run_portable_transform_conformance_suite,
 )
+from etlantic.transform.compiler import TransformSupportFinding
 
 
 def _require_all_backend_plugins() -> None:
@@ -1581,9 +1582,75 @@ def test_requirement_support_records_each_plan_occurrence() -> None:
 
 
 @pytest.mark.parametrize(
+    "findings",
+    [
+        (
+            TransformSupportFinding(
+                code="PMXFORM301",
+                requirement="action:dtcs:filter",
+                reason="unsupported",
+                support="unsupported",
+            ),
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement="action:dtcs:filter",
+                reason="supported",
+                support="supported_exact",
+                evidence_fingerprint="evidence",
+            ),
+        ),
+        (
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement="action:dtcs:filter",
+                reason="supported",
+                support="supported_exact",
+                evidence_fingerprint="evidence",
+            ),
+            TransformSupportFinding(
+                code="PMXFORM301",
+                requirement="action:dtcs:filter",
+                reason="unsupported",
+                support="unsupported",
+            ),
+        ),
+    ],
+)
+def test_requirement_support_rejects_conflicting_duplicate_findings(findings) -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    with pytest.raises(ValueError, match="exactly one result"):
+        TransformSupportReport(
+            supported=False,
+            evidence_fingerprint="evidence",
+            requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+            requirement_findings=findings,
+        ).to_requirement_support(target={"engine": "local"})
+
+
+def test_requirement_support_rejects_duplicate_requirement_records() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    record = requirement_records_from_mapping({"actions": ["dtcs:filter"]})[0]
+    with pytest.raises(ValueError, match="requirement IDs must be unique"):
+        TransformSupportReport(
+            supported=True,
+            evidence_fingerprint="evidence",
+            requirements=(record, record),
+        ).to_requirement_support(target={"engine": "local"})
+
+
+@pytest.mark.parametrize(
     ("field", "value", "message"),
     [
         ("conditions", [{"runtime": "unresolved"}], "bounded strings"),
+        ("conditions", ["source_rows[0].amount > 0"], "static identifiers"),
         ("physical_effects", ["network_side_effect"], "invalid physical_effects"),
     ],
 )

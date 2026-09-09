@@ -57,7 +57,7 @@ EXPECTED_SCHEMAS = {
 }
 
 EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 21))
-EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 11))
+EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 15))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
 )
@@ -214,6 +214,14 @@ def validate_requirement_campaign(payload: dict[str, object]) -> None:
                 r"[0-9a-f]{64}", str(negative.get("definition_digest") or "")
             ) or not isinstance(negative_report, dict):
                 raise SystemExit(f"negative support evidence is invalid for {engine}")
+            provenance = negative.get("provenance")
+            if not isinstance(provenance, dict) or provenance.get("kind") not in {
+                "compiler_analyze",
+                "target_availability_probe",
+            }:
+                raise SystemExit(
+                    f"negative {expected_state} evidence lacks execution provenance for {engine}"
+                )
             try:
                 validate_requirement_support_payload(negative_report)
             except ValueError as exc:
@@ -222,6 +230,22 @@ def validate_requirement_campaign(payload: dict[str, object]) -> None:
                 ) from exc
             if negative_report["target"].get("engine") != engine:
                 raise SystemExit(f"negative support target disagrees for {engine}")
+            if provenance.get("compiler") != negative_report["target"].get("compiler"):
+                raise SystemExit(
+                    f"negative {expected_state} provenance disagrees for {engine}"
+                )
+            if (
+                expected_state == "unavailable"
+                and provenance.get("kind") != "target_availability_probe"
+            ):
+                raise SystemExit(
+                    "unavailable support must come from a target availability probe"
+                )
+            if (
+                expected_state == "unknown"
+                and provenance.get("kind") != "compiler_analyze"
+            ):
+                raise SystemExit("unknown support must come from compiler analysis")
             matching = [
                 item
                 for item in negative_report.get("findings") or []

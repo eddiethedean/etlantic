@@ -64,6 +64,8 @@ def _support_summary(report: Any, compiler: Any) -> dict[str, Any]:
                 "compiler": info.name,
                 "version": info.version,
                 "protocol": info.compiler_protocol,
+                "package": info.package or info.name,
+                "implementation": info.implementation or info.name,
             }
         )
     except ValueError as exc:

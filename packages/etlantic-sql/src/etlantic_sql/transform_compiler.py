@@ -116,9 +116,18 @@ class SqlTransformCompiler:
             name="etlantic-sql",
             version=__version__,
             engine="sql",
+            implementation="sql-native/1",
+            package="etlantic-sql",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
-            evidence_fingerprint=capabilities_fingerprint(caps),
+            evidence_fingerprint=capabilities_fingerprint(
+                caps,
+                compiler="etlantic-sql",
+                implementation="sql-native/1",
+                package="etlantic-sql",
+                version=__version__,
+                engine="sql",
+            ),
         )
 
     @property

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
+from importlib import metadata
 from typing import Any
 
 from etlantic.transform.compiler import (
@@ -304,6 +305,7 @@ def match_requirements(
         "collision_policies",
         "lazy",
         "eager",
+        "environment_requirements",
     }
     for key in sorted(set(req) - known_keys):
         record(
@@ -313,6 +315,31 @@ def match_requirements(
             code="PMXFORM303",
             support="unknown",
         )
+
+    for requirement in req.get("environment_requirements") or ():
+        value = str(requirement)
+        if value.startswith("distribution:"):
+            distribution = value.removeprefix("distribution:")
+            try:
+                metadata.version(distribution)
+            except metadata.PackageNotFoundError:
+                record(
+                    f"environment:{value}",
+                    False,
+                    "required target distribution is unavailable",
+                    code="PMXFORM302",
+                    support="unavailable",
+                )
+            else:
+                record(f"environment:{value}", True, "")
+        else:
+            record(
+                f"environment:{value}",
+                False,
+                "no trustworthy environment evidence is available",
+                code="PMXFORM303",
+                support="unknown",
+            )
 
     claimed_profiles = set(capabilities.profiles)
     if allow_kernel_profile_alias:

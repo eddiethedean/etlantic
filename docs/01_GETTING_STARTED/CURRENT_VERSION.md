@@ -1,6 +1,6 @@
-# ETLantic 0.49 User Guide
+# ETLantic 0.50 User Guide
 
-> **Status: Available in ETLantic 0.50.0 (shipped Beta).**
+> **Status: Beta release candidate; publication pending independent release approval.**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
@@ -20,7 +20,7 @@ Experimental. `shared-service` remains Experimental. Support is community
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — what you can use today
-3. [What's new in 0.49](WHATS_NEW_0_49.md)
+3. [What's new in 0.50](WHATS_NEW_0_50.md)
 4. [Learning path](LEARNING_PATH.md)
 5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 

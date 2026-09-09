@@ -238,6 +238,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
                 "version": "1",
                 "protocol": COMPILER_PROTOCOL,
                 "package": "etlantic-adaptive-fixture",
+                "implementation": "adaptive-fixture/1",
                 "placement": {
                     "resource": f"fixture-resource-{target_id}",
                     "location": "local",
@@ -1054,7 +1055,8 @@ def main() -> int:
             "engine": compiler.info.engine,
             "compiler": compiler.info.name,
             "version": compiler.info.version,
-            "package": compiler.info.name,
+            "package": compiler.info.package or compiler.info.name,
+            "implementation": compiler.info.implementation or compiler.info.name,
         }
         baseline_report = compiler.analyze(
             {"actions": []},
@@ -1104,32 +1106,37 @@ def main() -> int:
             }
         ]
         for state in ("unavailable", "unknown"):
-            negative_requirements = requirement_records_from_mapping(
-                {"environment_requirements": [f"qualified-{state}-runtime"]}
+            requirement_value = (
+                "distribution:etlantic-qualification-missing"
+                if state == "unavailable"
+                else "unresolved-runtime-evidence"
             )
-            requirement_id = str(negative_requirements[0]["id"])
-            evidence_fingerprint = compiler.info.evidence_fingerprint
-            state_report = TransformSupportReport(
-                supported=False,
-                evidence_fingerprint=evidence_fingerprint,
-                requirements=negative_requirements,
-                requirement_findings=(
-                    TransformSupportFinding(
-                        code="PMXFORM302",
-                        requirement=requirement_id,
-                        reason=f"qualification fixture reports {state} support",
-                        support=state,
-                        evidence_fingerprint=evidence_fingerprint,
-                    ),
+            negative_definition = {
+                "actions": [],
+                "requirements": {"environment_requirements": [requirement_value]},
+            }
+            state_report = compiler.analyze(
+                negative_definition,
+                context=TransformPlanningContext(
+                    "qualification", f"negative-{state}", "qualification", engine
                 ),
+                requirements={"environment_requirements": [requirement_value]},
             ).to_requirement_support(target=target)
             engine_negative_reports.append(
                 {
                     "fixture_id": f"{state}-runtime",
                     "expected_state": state,
-                    "definition_digest": _digest(
-                        {"fixture": f"{state}-runtime", "engine": engine}
-                    ),
+                    "definition_digest": _digest(negative_definition),
+                    "provenance": {
+                        "kind": (
+                            "target_availability_probe"
+                            if state == "unavailable"
+                            else "compiler_analyze"
+                        ),
+                        "compiler": compiler.info.name,
+                        "implementation": compiler.info.implementation
+                        or compiler.info.name,
+                    },
                     "support_report": state_report,
                 }
             )
@@ -1499,7 +1506,11 @@ def main() -> int:
         "| FINAL-050-007 | High | resolved by finding-specific evidence serialization |\n"
         "| FINAL-050-008 | High | resolved by canonical and negative support reports |\n"
         "| FINAL-050-009 | High | resolved by graph constraint domain scenarios |\n"
-        "| FINAL-050-010 | Medium | resolved by the CI-enforced scoped Pyright gate |\n\n"
+        "| FINAL-050-010 | Medium | resolved by the CI-enforced scoped Pyright gate |\n"
+        "| FINAL-050-011 | High | resolved by duplicate requirement/finding rejection |\n"
+        "| FINAL-050-012 | High | resolved by static lowering-condition validation |\n"
+        "| FINAL-050-013 | High | resolved by compiler implementation identity fingerprints |\n"
+        "| FINAL-050-014 | Medium | resolved by release-candidate documentation status |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",

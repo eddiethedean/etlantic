@@ -110,9 +110,18 @@ class PandasTransformCompiler:
             name="etlantic-pandas",
             version=__version__,
             engine="pandas",
+            implementation="pandas-native/1",
+            package="etlantic-pandas",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
-            evidence_fingerprint=capabilities_fingerprint(caps),
+            evidence_fingerprint=capabilities_fingerprint(
+                caps,
+                compiler="etlantic-pandas",
+                implementation="pandas-native/1",
+                package="etlantic-pandas",
+                version=__version__,
+                engine="pandas",
+            ),
         )
 
     @property

@@ -158,9 +158,18 @@ class PySparkTransformCompiler:
             name="etlantic-pyspark",
             version=__version__,
             engine="pyspark",
+            implementation="pyspark-native/1",
+            package="etlantic-pyspark",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
-            evidence_fingerprint=capabilities_fingerprint(caps),
+            evidence_fingerprint=capabilities_fingerprint(
+                caps,
+                compiler="etlantic-pyspark",
+                implementation="pyspark-native/1",
+                package="etlantic-pyspark",
+                version=__version__,
+                engine="pyspark",
+            ),
         )
 
     @property

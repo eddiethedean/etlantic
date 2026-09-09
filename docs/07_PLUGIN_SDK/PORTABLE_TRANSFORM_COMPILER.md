@@ -1,14 +1,13 @@
 # Portable Transformation Compiler Protocol
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: Beta release candidate; publication pending independent release approval.**
 
-!!! success "Available since ETLantic 0.17 (docs target 0.50.0)"
-    `etlantic.transform-compiler/1` is importable. Polars, PySpark, Pandas, and
-    SQL claim `portable-relational-kernel/1` and `portable-relational/1`. Third
-    parties must pass `run_portable_transform_conformance_suite` for every
-    advertised claim. In 0.17, Polars and PySpark additionally claim the
-    graduated Wave 1 / Wave 2 families; continuation families remain
-    unclaimed.
+!!! info "0.50 release candidate"
+    `etlantic.transform-compiler/1` is the requirement-level support protocol.
+    The qualification matrix covers Local, Polars, Pandas, SQL, PySpark,
+    DataFusion, and DuckDB. Publication and compatibility claims remain subject
+    to independent release approval; third parties must pass
+    `run_portable_transform_conformance_suite` for every advertised claim.
 
 A portable transformation compiler translates a validated
 `dtcs.transform-plan/2` (and readable v1) into backend-native expressions without changing its
@@ -114,11 +113,11 @@ and pass the public conformance fixtures for:
 | Modes | Eager required; Pandas additionally `lazy=False`; join `collisionPolicy` **fail** only |
 | Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) with action/expression paths |
 
-All four official compilers claim this baseline (SQL joined in 0.15). In 0.17,
-Polars and PySpark additionally claim string-advanced, conversion, statistics,
-window `/1`, complex-types, complex-values, and reshape `/1`. Pandas and SQL
-remain baseline-only. Relational-extended, temporal-IANA, nondeterministic, and
-window `/2` remain unclaimed.
+The 0.50 release candidate records this baseline independently for seven
+engines. Claims are requirement-level and evidence-backed; unsupported,
+unavailable, and unknown requirements are distinct and fail closed for required
+obligations. Relational-extended, temporal-IANA, nondeterministic, and window
+`/2` remain outside the frozen baseline unless separately qualified.
 
 ## Support reports
 

@@ -155,9 +155,18 @@ class PolarsTransformCompiler:
             name="etlantic-polars",
             version=__version__,
             engine="polars",
+            implementation="polars-native/1",
+            package="etlantic-polars",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
-            evidence_fingerprint=capabilities_fingerprint(caps),
+            evidence_fingerprint=capabilities_fingerprint(
+                caps,
+                compiler="etlantic-polars",
+                implementation="polars-native/1",
+                package="etlantic-polars",
+                version=__version__,
+                engine="polars",
+            ),
         )
 
     @property

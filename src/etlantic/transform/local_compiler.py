@@ -25,6 +25,7 @@ from etlantic.transform.compiler import (
     TransformOutputBundle,
     TransformPlanningContext,
     TransformSupportReport,
+    capabilities_fingerprint,
     host_pushdown_findings,
     requirement_records_from_mapping,
 )
@@ -34,7 +35,6 @@ from etlantic.transform.portable_baseline import (
     BASELINE_TYPES,
     KERNEL_ACTIONS,
     RELATIONAL_ACTIONS,
-    baseline_manifest,
     normalize_action,
     normalize_operator,
 )
@@ -72,17 +72,17 @@ class LocalTransformCompiler:
             name="etlantic-local",
             version="0.50.0",
             engine="local",
+            implementation="python-records/1",
+            package="etlantic",
             capabilities=caps,
-            evidence_fingerprint=hashlib.sha256(
-                json.dumps(
-                    {
-                        "baseline": baseline_manifest(),
-                        "capabilities": caps.to_dict(),
-                        "implementation": "python-records/1",
-                    },
-                    sort_keys=True,
-                ).encode()
-            ).hexdigest(),
+            evidence_fingerprint=capabilities_fingerprint(
+                caps,
+                compiler="etlantic-local",
+                implementation="python-records/1",
+                package="etlantic",
+                version="0.50.0",
+                engine="local",
+            ),
         )
 
     @property

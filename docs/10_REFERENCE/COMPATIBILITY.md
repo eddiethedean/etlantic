@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: Beta release candidate; publication pending independent release approval.**
 
 This table describes the declared compatibility of ETLantic 0.50.0.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
@@ -36,11 +36,11 @@ ContractModel / Python):
 | FastAPI reference adapter | `etlantic-fastapi==0.50.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
 | Medallantic (facade) | `medallantic==0.50.0` |
 | SparkForge redirect | `etlantic-sparkforge==0.50.0` (compatibility shim; prefer `medallantic`) |
-| DataFusion plugin | `etlantic-datafusion==0.50.0` (0.50 technical qualification complete; Sol review pending) |
+| DataFusion plugin | `etlantic-datafusion==0.50.0` (technical qualification complete; release approval pending) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
-| Portable compiler protocol | Shipped as `etlantic.transform-compiler/1` (Polars + PySpark + Pandas relational in 0.13–0.14) |
+| Portable compiler protocol | Release-candidate `etlantic.transform-compiler/1` (Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB qualification recorded for 0.50) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
 | Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.50.0,<0.51` and re-run conformance |
 
