@@ -54,7 +54,7 @@
       "path": "portable_adaptive_handoff_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-adaptive-handoff/1",
-      "sha256": "bec2245cd8afc308edfc14c1fd3a4f4c9c7f9d0871dea0dff6bd469a1bde0205"
+      "sha256": "4bc4fd8509c746c50d8c2998ad59e5b9014a1c473592326b27c0f6eb346fc544"
     },
     "portable_baseline_contract_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -68,7 +68,7 @@
       "path": "portable_baseline_contract_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-baseline/1",
-      "sha256": "218606326d75e32dd5a1ba288ee46be8c45cf1053d92bf1e101174a47e9de19e"
+      "sha256": "a8ca1ee551d5ab9c050cf6ac2ca282f94a362fb29d5d7f607a59bfb1207aefd4"
     },
     "portable_canonical_pipeline_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all",
@@ -82,7 +82,7 @@
       "path": "portable_canonical_pipeline_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-canonical-pipeline/1",
-      "sha256": "5dda7bb68e8ae2e2434346cbcaef79eaa73a5d42786f07d5660a8f82ceb7c5f6"
+      "sha256": "4961953bd6ad646cc7897de97278c924c82e32400aaa4ec026facfb6cc15b38f"
     },
     "portable_claim_coverage_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -96,7 +96,7 @@
       "path": "portable_claim_coverage_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-claim-coverage/1",
-      "sha256": "6f3ab1cbdbf4df105be75895306b2392592ffa55a4b6b1b9f3ab2089b855ac5d"
+      "sha256": "9776cbb5694aeda0ad140c55520ff63a10985f2842601ff52ba9daa40289ca06"
     },
     "portable_cross_engine_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run python scripts/run_portable_0_50_canonical.py --engines all",
@@ -110,7 +110,7 @@
       "path": "portable_cross_engine_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-cross-engine/1",
-      "sha256": "73279d6cfe5556a5e6bb169f018e75e579362ddd4219172c13afa57baa0d67d8"
+      "sha256": "3a05b0021862b89e505e0575da52fad461da23b135c8cdcf0699a345927dac78"
     },
     "portable_datafusion_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -124,7 +124,7 @@
       "path": "portable_datafusion_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "db1adec7b1dd3289c6ff808290407598332f797cff6a8f4ac421602ba6582e16"
+      "sha256": "4f6d63a46cd14675cf6d87676d4b25850d9e14977e772fb163ce04c0c93eb3dc"
     },
     "portable_dependency_security_0_50.json": {
       "command": "uv run pytest -q tests/sql/test_sql_portable_security.py && uv run python scripts/check_portable_0_50_dependencies.py",
@@ -138,7 +138,7 @@
       "path": "portable_dependency_security_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-dependency-security/1",
-      "sha256": "4f531cbc4fc2a965e2cba0f9d4084c48a70efe26c2d8a76365b9934350e6389f"
+      "sha256": "3365b800dd7aef81b81b9dac0ad3ba56eb914aabe7e6229abae379fe83fe7b02"
     },
     "portable_duckdb_pushdown_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -152,7 +152,7 @@
       "path": "portable_duckdb_pushdown_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-pushdown-evidence/1",
-      "sha256": "6f11a3661c78ef00858902a53122ff81496b053bb36517f0444ecea88025607b"
+      "sha256": "37e51254632386b8cccf71862b2f11ac8cb65f1c35dcd25b5a4a4e9617fb18bf"
     },
     "portable_local_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -166,7 +166,7 @@
       "path": "portable_local_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "a60e8246a8779acfd968556520c61573614194a09b23e35ebd63810aed2477a8"
+      "sha256": "d1483c0a1bcd382115235c4768184d5b679cd940cb696c04346874581dae5e80"
     },
     "portable_pandas_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -180,7 +180,7 @@
       "path": "portable_pandas_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "84ef1f3071c2502f158dfbbb5ffdaedf16d55cea179f1f9244c78f4c2c149082"
+      "sha256": "ab913839ba64a9e4a82c4a0bcdd68eca4faa9540dc3f26a2c850bb15b46dd9e1"
     },
     "portable_polars_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -194,7 +194,7 @@
       "path": "portable_polars_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "1ede6cd86932cf73650fd2a11bf012eec94066eca50eef256b02e36276e089c8"
+      "sha256": "261f75aa8501a6d652e15c7cda08c8a11f83818201aa193ed78b1d6f831330eb"
     },
     "portable_pushdown_contract_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -208,7 +208,7 @@
       "path": "portable_pushdown_contract_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-pushdown/1",
-      "sha256": "2a4f7fae0eb14c6ba9e7ec724776d6af61eb3339dcd05e26dfe782b131cab285"
+      "sha256": "768294de7c1ea395db5202d8b0333fdd3a1be5e1aa799ab4d9016d5d1b836df7"
     },
     "portable_pyspark_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -222,7 +222,7 @@
       "path": "portable_pyspark_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "8097a5724781a83b67f6cf358a16bd5b890a498e0eb9543c9494025720ba3e7b"
+      "sha256": "ce1b8261bab4d19021511e535d6c40cb8ff7f52f91b7e0262153017e953bea2e"
     },
     "portable_requirement_support_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -236,7 +236,7 @@
       "path": "portable_requirement_support_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-requirement-support/1",
-      "sha256": "bedc718dcbe88fe46d2826bc68ce03f693a6f98a738c34e32cfbbea5b67708b0"
+      "sha256": "9e294ed8b6ddb2ba5729f40076b79427be569dabaf2d5a68fed45adb78ce4e5d"
     },
     "portable_sql_conformance_0_50.json": {
       "command": "ETLANTIC_SQL_URL=$ETLANTIC_SQL_URL ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch && ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory: ETLANTIC_SPARK_BACKEND=pyspark SPARKLESS_TEST_MODE=pyspark JAVA_HOME=$JAVA_HOME uv run pytest -q tests/portable_conformance/test_public_suite.py tests/sql/test_sql_portable_security.py tests/sql/test_sql_runtime.py::test_sql_to_sql_no_python_fetch",
@@ -250,7 +250,7 @@
       "path": "portable_sql_conformance_0_50.json",
       "result": "pass",
       "schema": "etlantic.portable-conformance/1",
-      "sha256": "3e981796bab462fce38f6e343054e4da93516e36b88a2bd5c3c581919a853d60"
+      "sha256": "e02a1608ed53f7af8a520b1e0acadcc5d03b24714c9591f1d23902d416fa568e"
     }
   },
   "artifacts": [
@@ -277,21 +277,21 @@
     "FINDINGS_0_50.md": "b68452864b1a5f479f654f5ae15979e02301543fab8841220c2fbb933107607c",
     "MIGRATION_0_49_TO_0_50.md": "77d0c03bd7917c9c7d519b738fc80fcd79e04f39cd64badfd2db5630083ec034",
     "WHATS_NEW_0_50.md": "956b8ecc7302b2c65a09c6f30029157ce6be44eace195a0f4bf62a7e9d71899c",
-    "portable_adaptive_handoff_0_50.json": "bec2245cd8afc308edfc14c1fd3a4f4c9c7f9d0871dea0dff6bd469a1bde0205",
-    "portable_baseline_contract_0_50.json": "218606326d75e32dd5a1ba288ee46be8c45cf1053d92bf1e101174a47e9de19e",
-    "portable_canonical_pipeline_0_50.json": "5dda7bb68e8ae2e2434346cbcaef79eaa73a5d42786f07d5660a8f82ceb7c5f6",
-    "portable_claim_coverage_0_50.json": "6f3ab1cbdbf4df105be75895306b2392592ffa55a4b6b1b9f3ab2089b855ac5d",
-    "portable_cross_engine_0_50.json": "73279d6cfe5556a5e6bb169f018e75e579362ddd4219172c13afa57baa0d67d8",
-    "portable_datafusion_conformance_0_50.json": "db1adec7b1dd3289c6ff808290407598332f797cff6a8f4ac421602ba6582e16",
-    "portable_dependency_security_0_50.json": "4f531cbc4fc2a965e2cba0f9d4084c48a70efe26c2d8a76365b9934350e6389f",
-    "portable_duckdb_pushdown_0_50.json": "6f11a3661c78ef00858902a53122ff81496b053bb36517f0444ecea88025607b",
-    "portable_local_conformance_0_50.json": "a60e8246a8779acfd968556520c61573614194a09b23e35ebd63810aed2477a8",
-    "portable_pandas_conformance_0_50.json": "84ef1f3071c2502f158dfbbb5ffdaedf16d55cea179f1f9244c78f4c2c149082",
-    "portable_polars_conformance_0_50.json": "1ede6cd86932cf73650fd2a11bf012eec94066eca50eef256b02e36276e089c8",
-    "portable_pushdown_contract_0_50.json": "2a4f7fae0eb14c6ba9e7ec724776d6af61eb3339dcd05e26dfe782b131cab285",
-    "portable_pyspark_conformance_0_50.json": "8097a5724781a83b67f6cf358a16bd5b890a498e0eb9543c9494025720ba3e7b",
-    "portable_requirement_support_0_50.json": "bedc718dcbe88fe46d2826bc68ce03f693a6f98a738c34e32cfbbea5b67708b0",
-    "portable_sql_conformance_0_50.json": "3e981796bab462fce38f6e343054e4da93516e36b88a2bd5c3c581919a853d60"
+    "portable_adaptive_handoff_0_50.json": "4bc4fd8509c746c50d8c2998ad59e5b9014a1c473592326b27c0f6eb346fc544",
+    "portable_baseline_contract_0_50.json": "a8ca1ee551d5ab9c050cf6ac2ca282f94a362fb29d5d7f607a59bfb1207aefd4",
+    "portable_canonical_pipeline_0_50.json": "4961953bd6ad646cc7897de97278c924c82e32400aaa4ec026facfb6cc15b38f",
+    "portable_claim_coverage_0_50.json": "9776cbb5694aeda0ad140c55520ff63a10985f2842601ff52ba9daa40289ca06",
+    "portable_cross_engine_0_50.json": "3a05b0021862b89e505e0575da52fad461da23b135c8cdcf0699a345927dac78",
+    "portable_datafusion_conformance_0_50.json": "4f6d63a46cd14675cf6d87676d4b25850d9e14977e772fb163ce04c0c93eb3dc",
+    "portable_dependency_security_0_50.json": "3365b800dd7aef81b81b9dac0ad3ba56eb914aabe7e6229abae379fe83fe7b02",
+    "portable_duckdb_pushdown_0_50.json": "37e51254632386b8cccf71862b2f11ac8cb65f1c35dcd25b5a4a4e9617fb18bf",
+    "portable_local_conformance_0_50.json": "d1483c0a1bcd382115235c4768184d5b679cd940cb696c04346874581dae5e80",
+    "portable_pandas_conformance_0_50.json": "ab913839ba64a9e4a82c4a0bcdd68eca4faa9540dc3f26a2c850bb15b46dd9e1",
+    "portable_polars_conformance_0_50.json": "261f75aa8501a6d652e15c7cda08c8a11f83818201aa193ed78b1d6f831330eb",
+    "portable_pushdown_contract_0_50.json": "768294de7c1ea395db5202d8b0333fdd3a1be5e1aa799ab4d9016d5d1b836df7",
+    "portable_pyspark_conformance_0_50.json": "ce1b8261bab4d19021511e535d6c40cb8ff7f52f91b7e0262153017e953bea2e",
+    "portable_requirement_support_0_50.json": "9e294ed8b6ddb2ba5729f40076b79427be569dabaf2d5a68fed45adb78ce4e5d",
+    "portable_sql_conformance_0_50.json": "e02a1608ed53f7af8a520b1e0acadcc5d03b24714c9591f1d23902d416fa568e"
   },
   "environment": {
     "platform": "darwin",
@@ -301,8 +301,8 @@
   },
   "notes": "Generated from real backend qualification commands; sensitive connection values are not recorded.",
   "qualification": "qualified",
-  "repository_commit": "cd37bdb106e6eb33fd980045f2339c3c85e347fa",
+  "repository_commit": "ab7daa0553fe9a37a9390398bea8dcf785caa6c3",
   "result": "pass",
   "schema": "etlantic.portable-evidence-index/1",
-  "source_tree_digest": "ef99d7865a3c62ede264f19f1af656cc556e37c708c5bc9b90fc9502bf156a86"
+  "source_tree_digest": "997089f61090c35c2c339cae5ba95861ece83c7f7c04b9ba47be690d4a15cd69"
 }
