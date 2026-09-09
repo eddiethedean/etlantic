@@ -9,11 +9,11 @@
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
   "plan": "dtcs.transform-plan/2",
-  "repository_commit": "584895b2143d8cb5304369315289227861ab4793",
+  "repository_commit": "cd37bdb106e6eb33fd980045f2339c3c85e347fa",
   "result": "pass",
   "schema": "etlantic.portable-canonical-pipeline/1",
   "source_rows": false,
-  "source_tree_digest": "d41c787716bc099679edae0f1af24236dbf77ad968016267fa78f4639cf3be17",
+  "source_tree_digest": "ef99d7865a3c62ede264f19f1af656cc556e37c708c5bc9b90fc9502bf156a86",
   "stages": [
     "filter",
     "project",
