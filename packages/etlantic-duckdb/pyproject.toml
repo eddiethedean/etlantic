@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
     "etlantic>=0.50.0,<0.51",
     "duckdb>=1.0,<2",
+    "numpy>=2,<3",
 ]
 
 [project.urls]
