@@ -10,14 +10,6 @@ import duckdb
 from etlantic_duckdb.config import DuckDBConfig
 
 
-def _unicode_lower(value: str) -> str:
-    return value.lower()
-
-
-def _unicode_upper(value: str) -> str:
-    return value.upper()
-
-
 def _quote_setting(value: str) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
@@ -42,17 +34,6 @@ def configure_connection(conn: duckdb.DuckDBPyConnection, config: DuckDBConfig) 
     temp_directory = config.resolve_temp_directory()
     if temp_directory:
         conn.execute(f"SET temp_directory = {_quote_setting(temp_directory)}")
-    # Explicit VARCHAR signatures keep DuckDB's scalar Python UDF bridge on
-    # its native object path.  Omitting the signatures makes DuckDB require
-    # NumPy for type inference, but NumPy is intentionally not a dependency of
-    # the lightweight DuckDB plugin (and is absent in the supported wheel
-    # matrix).
-    sqltypes = getattr(duckdb, "sqltypes", None)
-    varchar = getattr(sqltypes, "VARCHAR", None)
-    if varchar is None:  # DuckDB 1.0 compatibility
-        varchar = duckdb.typing.VARCHAR
-    conn.create_function("etlantic_unicode_lower", _unicode_lower, [varchar], varchar)
-    conn.create_function("etlantic_unicode_upper", _unicode_upper, [varchar], varchar)
     for setting in (
         "enable_external_access",
         "autoinstall_known_extensions",
