@@ -462,9 +462,10 @@ def validate_pushdown_findings(
             raise SystemExit("pushdown finding physical effects are invalid")
         proof = item.get("proof_reference")
         if native and relational:
-            if not isinstance(proof, str) or not proof:
+            expected_proof = f"native-execution:{engine}:{action_id}"
+            if proof != expected_proof:
                 raise SystemExit(
-                    "required pushdown finding lacks native execution proof"
+                    "required pushdown finding has an invalid native proof reference"
                 )
             expected_required.add((engine, action_id))
         elif proof not in (None, ""):
@@ -503,6 +504,13 @@ def validate_pushdown_findings(
             if (
                 action_proof.get("proof_id") != expected
                 or action_proof.get("action") != expected_actions[action_id]
+                or not isinstance(action_proof.get("physical_effects"), list)
+                or set(action_proof["physical_effects"])
+                != (
+                    {"materialization", "lost_fusion"}
+                    if engine in {"sql", "duckdb"}
+                    else set()
+                )
                 or action_proof.get("host_fallback") is not False
                 or action_proof.get("proof_basis")
                 != "native_explain_and_execution_trace"
