@@ -1608,6 +1608,7 @@ def main() -> int:
         "| FINAL-050-012 | High | resolved by static lowering-condition validation |\n"
         "| FINAL-050-013 | High | resolved by compiler implementation identity fingerprints |\n"
         "| FINAL-050-014 | Medium | resolved by release-candidate documentation status |\n\n"
+        "| FINAL-050-015 | High | resolved by complete pushdown finding and proof matrix validation |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",

@@ -57,7 +57,7 @@ EXPECTED_SCHEMAS = {
 }
 
 EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 25))
-EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 15))
+EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 16))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
 )
@@ -84,6 +84,22 @@ EXPECTED_PUSHDOWN_OUTCOMES = frozenset(
         "unknown",
     }
 )
+EXPECTED_PUSHDOWN_ACTIONS = (
+    ("f", "dtcs:filter"),
+    ("p", "dtcs:project"),
+    ("w", "dtcs:with_fields"),
+    ("d", "dtcs:drop_fields"),
+    ("n", "dtcs:rename_fields"),
+    ("j", "dtcs:join"),
+    ("u", "dtcs:union"),
+    ("a", "dtcs:aggregate"),
+    ("s", "dtcs:sort"),
+    ("x", "dtcs:distinct"),
+    ("k", "dtcs:deduplicate"),
+    ("l", "dtcs:limit"),
+)
+EXPECTED_PUSHDOWN_BOUNDARIES = ("source", "relational", "sink")
+EXPECTED_NATIVE_PUSHDOWN_ENGINES = frozenset({"sql", "pyspark", "datafusion", "duckdb"})
 
 
 def validate_findings_ledger(findings_doc: str) -> None:
@@ -358,6 +374,175 @@ def validate_pushdown_campaign(payload: dict[str, object]) -> None:
             or finding.get("physical_effects") != ["materialization"]
         ):
             raise SystemExit("lowered pushdown evidence is incomplete")
+
+
+def validate_pushdown_findings(
+    findings: object, proofs: object, payload: dict[str, object]
+) -> None:
+    """Require the checked-in pushdown matrix and native proofs to be complete."""
+    if payload.get("boundaries") != list(EXPECTED_PUSHDOWN_BOUNDARIES):
+        raise SystemExit("pushdown boundary inventory is incomplete")
+    if not isinstance(findings, list):
+        raise SystemExit("pushdown findings must be a list")
+    expected_actions = dict(EXPECTED_PUSHDOWN_ACTIONS)
+    expected_keys = {
+        (engine, boundary, action_id)
+        for engine in EXPECTED_ENGINES
+        for boundary in EXPECTED_PUSHDOWN_BOUNDARIES
+        for action_id in expected_actions
+    }
+    actual_keys: set[tuple[str, str, str]] = set()
+    expected_required: set[tuple[str, str]] = set()
+    for item in findings:
+        if not isinstance(item, dict):
+            raise SystemExit("pushdown finding is not an object")
+        identity = tuple(
+            item.get(name) for name in ("engine", "boundary", "action", "target")
+        )
+        if not all(isinstance(value, str) for value in identity):
+            raise SystemExit("pushdown finding identity is incomplete")
+        engine, boundary, action, target = cast(tuple[str, str, str, str], identity)
+        if engine not in EXPECTED_ENGINES:
+            raise SystemExit("pushdown finding names an unknown engine")
+        if ":" not in boundary:
+            raise SystemExit("pushdown finding boundary is invalid")
+        boundary_name, boundary_index = boundary.split(":", 1)
+        if (
+            boundary_name not in EXPECTED_PUSHDOWN_BOUNDARIES
+            or not boundary_index.isdigit()
+            or int(boundary_index) >= len(expected_actions)
+        ):
+            raise SystemExit("pushdown finding boundary is invalid")
+        if action not in expected_actions.values() or target not in expected_actions:
+            raise SystemExit("pushdown finding action identity is invalid")
+        action_id = target
+        if action != expected_actions[action_id]:
+            raise SystemExit("pushdown finding action and target disagree")
+        action_index = tuple(expected_actions).index(action_id)
+        if boundary_index != str(action_index):
+            raise SystemExit("pushdown finding boundary and target disagree")
+        key = (engine, boundary_name, action_id)
+        if key in actual_keys:
+            raise SystemExit("pushdown findings contain a duplicate identity")
+        actual_keys.add(key)
+
+        native = engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES
+        relational = boundary_name == "relational"
+        expected_outcome = "pushed_exact" if native and relational else "not_applicable"
+        expected_obligation = "required" if native and relational else "informational"
+        if (
+            item.get("outcome") != expected_outcome
+            or item.get("obligation") != expected_obligation
+        ):
+            raise SystemExit(
+                "pushdown finding disagrees with the frozen boundary contract"
+            )
+        expected_reason = (
+            "action lowered into the native relational plan"
+            if native and relational
+            else (
+                "connector source pushdown is outside the native plan contract"
+                if native and boundary_name == "source"
+                else (
+                    "sink pushdown is outside the native plan contract"
+                    if native
+                    else "host-owned execution has no backend pushdown boundary"
+                )
+            )
+        )
+        if item.get("reason") != expected_reason:
+            raise SystemExit("pushdown finding reason disagrees with the contract")
+        expected_effects = (
+            {"materialization", "lost_fusion"}
+            if native and relational and engine in {"sql", "duckdb"}
+            else set()
+        )
+        effects = item.get("physical_effects")
+        if not isinstance(effects, list) or set(effects) != expected_effects:
+            raise SystemExit("pushdown finding physical effects are invalid")
+        proof = item.get("proof_reference")
+        if native and relational:
+            if not isinstance(proof, str) or not proof:
+                raise SystemExit(
+                    "required pushdown finding lacks native execution proof"
+                )
+            expected_required.add((engine, action_id))
+        elif proof not in (None, ""):
+            raise SystemExit(
+                "informational pushdown finding must not claim native proof"
+            )
+    if actual_keys != expected_keys:
+        raise SystemExit("pushdown findings matrix is incomplete")
+
+    if not isinstance(proofs, dict) or set(proofs) != EXPECTED_ENGINES:
+        raise SystemExit("pushdown proof engine inventory is incomplete")
+    expected_proof_keys = {
+        (engine, action_id)
+        for engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES
+        for action_id in expected_actions
+    }
+    actual_proof_keys: set[tuple[str, str]] = set()
+    for engine in EXPECTED_ENGINES:
+        engine_proofs = proofs.get(engine)
+        if not isinstance(engine_proofs, dict):
+            raise SystemExit("pushdown proof record is invalid")
+        actions = engine_proofs.get("actions")
+        if not isinstance(actions, dict):
+            raise SystemExit("pushdown proof action inventory is invalid")
+        expected_action_ids = (
+            set(expected_actions)
+            if engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES
+            else set()
+        )
+        if set(actions) != expected_action_ids:
+            raise SystemExit("pushdown proof action inventory is incomplete")
+        for action_id, action_proof in actions.items():
+            if not isinstance(action_proof, dict):
+                raise SystemExit("pushdown action proof is invalid")
+            expected = f"native-execution:{engine}:{action_id}"
+            if (
+                action_proof.get("proof_id") != expected
+                or action_proof.get("action") != expected_actions[action_id]
+                or action_proof.get("host_fallback") is not False
+                or action_proof.get("proof_basis")
+                != "native_explain_and_execution_trace"
+                or any(
+                    not re.fullmatch(r"[0-9a-f]{64}", str(action_proof.get(name) or ""))
+                    for name in (
+                        "native_explain_digest",
+                        "action_explain_digest",
+                        "action_native_digest",
+                        "result_digest",
+                    )
+                )
+            ):
+                raise SystemExit("native pushdown proof is incomplete")
+            actual_proof_keys.add((engine, action_id))
+    if (
+        actual_proof_keys != expected_proof_keys
+        or actual_proof_keys != expected_required
+    ):
+        raise SystemExit("pushdown proofs do not match required findings")
+
+    sql_execution = (cast(dict[str, object], proofs["sql"])).get("sqlite_execution")
+    if not isinstance(sql_execution, dict):
+        raise SystemExit("SQL pushdown proof lacks SQLite execution evidence")
+    for digest_key in ("result_digest", "native_explain_digest"):
+        if not re.fullmatch(r"[0-9a-f]{64}", str(sql_execution.get(digest_key) or "")):
+            raise SystemExit("SQL SQLite execution digest is invalid")
+    if sql_execution.get("host_fallback") is not False:
+        raise SystemExit("SQL SQLite execution used host fallback")
+    for digest_map_key in ("action_native_digests", "action_explain_digests"):
+        digest_map = sql_execution.get(digest_map_key)
+        if (
+            not isinstance(digest_map, dict)
+            or set(digest_map) != set(expected_actions)
+            or any(
+                not re.fullmatch(r"[0-9a-f]{64}", str(value or ""))
+                for value in digest_map.values()
+            )
+        ):
+            raise SystemExit("SQL SQLite action evidence is incomplete")
 
 
 def validate_adaptive_lowering_binding(
@@ -840,52 +1025,7 @@ def main() -> int:
     validate_pushdown_campaign(pushdown)
     proofs = pushdown.get("proofs")
     findings = pushdown.get("findings")
-    if not isinstance(proofs, dict) or not isinstance(findings, list):
-        raise SystemExit("pushdown evidence lacks executable proof records")
-    for item in findings:
-        if item.get("obligation") != "required":
-            continue
-        proof = str(item.get("proof_reference") or "")
-        engine = str(item.get("engine") or "")
-        target = str(item.get("target") or "")
-        expected = f"native-execution:{engine}:{target}"
-        action_proof = ((proofs.get(engine) or {}).get("actions") or {}).get(target)
-        if (
-            proof != expected
-            or not isinstance(action_proof, dict)
-            or action_proof.get("proof_id") != expected
-            or not action_proof.get("native_explain_digest")
-            or not action_proof.get("action_explain_digest")
-            or not action_proof.get("action_native_digest")
-            or not action_proof.get("result_digest")
-            or action_proof.get("host_fallback") is not False
-            or action_proof.get("proof_basis") != "native_explain_and_execution_trace"
-        ):
-            raise SystemExit("required pushdown finding lacks native execution proof")
-        if engine in {"sql", "duckdb"} and not {
-            "materialization",
-            "lost_fusion",
-        }.issubset(set(action_proof.get("physical_effects") or ())):
-            raise SystemExit(
-                "SQL/DuckDB pushdown proof omits temporary materialization effects"
-            )
-        if engine == "sql":
-            sqlite_execution = (proofs.get(engine) or {}).get("sqlite_execution")
-            if (
-                not isinstance(sqlite_execution, dict)
-                or not re.fullmatch(
-                    r"[0-9a-f]{64}",
-                    str(sqlite_execution.get("result_digest") or ""),
-                )
-                or not re.fullmatch(
-                    r"[0-9a-f]{64}",
-                    str(sqlite_execution.get("native_explain_digest") or ""),
-                )
-                or sqlite_execution.get("host_fallback") is not False
-                or not isinstance(sqlite_execution.get("action_native_digests"), dict)
-                or not isinstance(sqlite_execution.get("action_explain_digests"), dict)
-            ):
-                raise SystemExit("SQL pushdown proof lacks SQLite execution evidence")
+    validate_pushdown_findings(findings, proofs, pushdown)
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
     )

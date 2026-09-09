@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 from scripts.check_portable_0_50 import (
     validate_adaptive_lowering_binding,
@@ -12,6 +15,7 @@ from scripts.check_portable_0_50 import (
     validate_cross_engine_digests,
     validate_findings_ledger,
     validate_pushdown_campaign,
+    validate_pushdown_findings,
     validate_requirement_campaign,
 )
 
@@ -416,3 +420,56 @@ def test_pushdown_campaign_rejects_mutated_lowering_evidence() -> None:
                 "outcome_fixtures": fixtures,
             }
         )
+
+
+def _pushdown_evidence_fixture() -> dict[str, object]:
+    return json.loads(
+        (
+            Path(__file__).parents[2] / "docs/11_DEVELOPMENT/evidence/portable_0_50/"
+            "portable_pushdown_contract_0_50.json"
+        ).read_text()
+    )
+
+
+def test_pushdown_findings_reject_missing_matrix_entry() -> None:
+    payload = _pushdown_evidence_fixture()
+    findings = payload["findings"]
+    assert isinstance(findings, list)
+    findings.pop()
+    with pytest.raises(SystemExit, match="findings matrix is incomplete"):
+        validate_pushdown_findings(findings, payload["proofs"], payload)
+
+
+def test_pushdown_findings_reject_orphan_native_proof() -> None:
+    payload = _pushdown_evidence_fixture()
+    proofs = payload["proofs"]
+    assert isinstance(proofs, dict)
+    actions = proofs["sql"]["actions"]
+    assert isinstance(actions, dict)
+    del actions["f"]
+    with pytest.raises(SystemExit, match="proof action inventory is incomplete"):
+        validate_pushdown_findings(payload["findings"], proofs, payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("boundary", "relational:1"),
+        ("action", "dtcs:project"),
+        ("target", "p"),
+        ("outcome", "not_pushed"),
+        ("obligation", "preferred"),
+    ],
+)
+def test_pushdown_findings_reject_identity_or_contract_mutation(
+    field: str, value: str
+) -> None:
+    payload = _pushdown_evidence_fixture()
+    findings = payload["findings"]
+    assert isinstance(findings, list)
+    finding = next(
+        item for item in findings if item["engine"] == "sql" and item["target"] == "f"
+    )
+    finding[field] = value
+    with pytest.raises(SystemExit):
+        validate_pushdown_findings(findings, payload["proofs"], payload)
