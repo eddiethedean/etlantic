@@ -8,6 +8,7 @@ the portable semantic invariant, not a preferred implementation strategy.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -179,11 +180,43 @@ def test_final_rel_003_postgresql_uses_default_sigma_context() -> None:
     _run(create_transform_compiler(), case)
 
 
+@pytest.mark.sql
+def test_final_rel_003_postgresql_uses_complete_case_ignorable_context() -> None:
+    """Final-sigma context skips every required case-ignorable separator."""
+    _require_postgresql()
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = _project_case(
+        "final_rel_003_postgresql_complete_sigma_context",
+        [("value", _call("dtcs:lower", _field("text")))],
+        rows=[{"text": "A:\u03a3"}, {"text": "A\u03a3:B"}],
+        expected=[{"value": "a:\u03c2"}, {"value": "a\u03c3:b"}],
+    )
+    _run(create_transform_compiler(), case)
+
+
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:
     """A field-derived bound cannot establish the non-negative invariant."""
     plan = _project_case(
         "final_rel_004_dynamic_substring_bound",
         [("value", _call("dtcs:substr", _field("text"), _field("start")))],
+        rows=[{"text": "abc", "start": -1}],
+        expected=[],
+    ).plan
+
+    findings = portable_shape_findings(plan)
+    assert any(
+        finding.requirement == "function:dtcs:substr:argument:1" for finding in findings
+    )
+
+
+def test_final_rel_004_composed_row_dependent_substring_offsets_fail_analysis() -> None:
+    """Composing a field expression cannot bypass the static-bound requirement."""
+    start = _call("dtcs:floor", _field("start"))
+    plan = _project_case(
+        "final_rel_004_composed_substring_bound",
+        [("value", _call("dtcs:substr", _field("text"), start))],
         rows=[{"text": "abc", "start": -1}],
         expected=[],
     ).plan
@@ -218,3 +251,115 @@ def test_final_rel_005_dynamic_replace_search_fails_analysis() -> None:
         finding.requirement == "function:dtcs:replace:empty_search"
         for finding in findings
     )
+
+
+def test_final_rel_005_composed_row_dependent_replace_search_fails_analysis() -> None:
+    """Composing a field expression cannot bypass the non-empty-search proof."""
+    plan = _project_case(
+        "final_rel_005_composed_replace_search",
+        [
+            (
+                "value",
+                _call(
+                    "dtcs:replace",
+                    _field("text"),
+                    _call("dtcs:lower", _field("search")),
+                    _literal("string", "x"),
+                ),
+            )
+        ],
+        rows=[{"text": "abc", "search": ""}],
+        expected=[],
+    ).plan
+
+    findings = portable_shape_findings(plan)
+    assert any(
+        finding.requirement == "function:dtcs:replace:empty_search"
+        for finding in findings
+    )
+
+
+def test_final_rel_008_findings_ledger_records_latest_review_round() -> None:
+    """The immutable release ledger includes every stable FINAL-REL finding."""
+    from scripts.check_portable_0_50 import validate_findings_ledger
+
+    root = Path(__file__).resolve().parents[2]
+    ledger = (
+        root / "docs/11_DEVELOPMENT/evidence/portable_0_50/FINDINGS_0_50.md"
+    ).read_text(encoding="utf-8")
+    expected = {f"FINAL-REL-{index:03d}" for index in range(1, 9)}
+    missing = sorted(
+        finding_id for finding_id in expected if f"| {finding_id} |" not in ledger
+    )
+    assert not missing, f"release findings ledger omits {missing!r}"
+    for finding_id in sorted(expected):
+        row = next(line for line in ledger.splitlines() if f"| {finding_id} |" in line)
+        assert "resolved" in row.lower(), f"{finding_id} is not resolved in the ledger"
+        with pytest.raises(SystemExit, match="ledger is incomplete"):
+            validate_findings_ledger(ledger.replace(row, "", 1))
+
+
+@pytest.mark.sql
+def test_sol_rel_009_sqlite_preserves_boolean_type_through_union(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A boolean contributed by either union input remains a boolean."""
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = FixtureCase(
+        name="sol_rel_009_sqlite_boolean_union",
+        required_profiles=frozenset(),
+        required_actions=frozenset(),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"left": {}, "right": {}},
+            "actions": [
+                {
+                    "id": "u",
+                    "kind": {
+                        "id": "u",
+                        "action": "dtcs:union",
+                        "target": "left",
+                        "parameters": {"other": "right", "mode": "byName"},
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "u", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"left": [{"flag": None}], "right": [{"flag": True}]},
+        expected=[{"flag": None}, {"flag": True}],
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sol_rel_009_sqlite_preserves_boolean_type_for_null_aware_expression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Typed-null branches do not erase a scalar expression's boolean result type."""
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = _project_case(
+        "sol_rel_009_sqlite_boolean_coalesce",
+        [
+            (
+                "value",
+                _call(
+                    "dtcs:coalesce",
+                    _literal("null", None),
+                    _literal("boolean", True),
+                ),
+            )
+        ],
+        rows=[{"seed": 1}],
+        expected=[{"value": True}],
+    )
+    _run(create_transform_compiler(), case)

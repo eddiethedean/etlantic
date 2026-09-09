@@ -707,16 +707,40 @@ def _postgres_case_ignorable_class() -> str:
 
     PostgreSQL's POSIX ``alpha`` class is not sufficient for Unicode default
     casing context: punctuation such as a hyphen must stop a sigma context,
-    while combining marks and modifier characters must be skipped.  Python's
-    Unicode database is available at compile time, so encode the stable
-    category-based subset as compact character ranges in the generated SQL.
+    while combining marks, modifier characters, and the punctuation listed by
+    Unicode's ``Case_Ignorable`` property must be skipped.  Python's Unicode
+    database is available at compile time, so encode the category-based subset
+    and the assigned punctuation exceptions as compact character ranges in the
+    generated SQL.
     """
 
+    # Python's stdlib exposes General_Category but not the derived
+    # Case_Ignorable property. Keep the assigned punctuation exceptions
+    # explicit so PostgreSQL's final-sigma context matches default Unicode
+    # casing (including separators such as ':' and '.').
+    case_ignorable_punctuation = {
+        0x2E,
+        0x3A,
+        0xB7,
+        0x387,
+        0x55F,
+        0x5F4,
+        0x2018,
+        0x2019,
+        0x2024,
+        0x2027,
+        0xFE13,
+        0xFE52,
+        0xFE55,
+        0xFF07,
+        0xFF0E,
+        0xFF1A,
+    }
     codepoints = [
         codepoint
         for codepoint in range(sys.maxunicode + 1)
         if unicodedata.category(chr(codepoint)) in {"Mn", "Me", "Cf", "Lm", "Sk"}
-        or codepoint in {0x27, 0x2019}
+        or codepoint in case_ignorable_punctuation
     ]
     ranges: list[tuple[int, int]] = []
     if codepoints:

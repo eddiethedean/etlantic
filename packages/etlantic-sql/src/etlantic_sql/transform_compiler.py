@@ -288,6 +288,7 @@ class SqlTransformCompiler:
             relations: dict[str, RelationRef] = {}
             relation_columns: dict[str, list[str]] = {}
             relation_boolean_columns: dict[str, set[str]] = {}
+            relation_non_boolean_columns: dict[str, set[str]] = {}
             native_statement_digests: list[str] = []
             native_explain_digests: list[str] = []
             native_action_digests: dict[str, str] = {}
@@ -298,7 +299,9 @@ class SqlTransformCompiler:
                 relation_columns[name] = (
                     list(frame.rows[0].keys()) if frame.rows else list(frame.columns)
                 )
-                relation_boolean_columns[name] = _infer_boolean_columns(frame.rows)
+                bool_columns, non_bool_columns = _infer_column_types(frame.rows)
+                relation_boolean_columns[name] = bool_columns
+                relation_non_boolean_columns[name] = non_bool_columns
 
             # Primary working relation: first declared input or sole frame.
             input_ids = list((plan.get("inputs") or {}).keys()) or list(frames.keys())
@@ -370,12 +373,20 @@ class SqlTransformCompiler:
                 current_source = action_id
                 relations[action_id] = current_rel
                 relation_columns[action_id] = out_cols
-                relation_boolean_columns[action_id] = _action_boolean_columns(
+                bool_columns, non_bool_columns = _action_column_types(
                     kind,
-                    inherited=relation_boolean_columns.get(target_source, set()),
+                    inherited_boolean=relation_boolean_columns.get(
+                        target_source, set()
+                    ),
+                    inherited_non_boolean=relation_non_boolean_columns.get(
+                        target_source, set()
+                    ),
                     relation_boolean_columns=relation_boolean_columns,
+                    relation_non_boolean_columns=relation_non_boolean_columns,
                     output_columns=out_cols,
                 )
+                relation_boolean_columns[action_id] = bool_columns
+                relation_non_boolean_columns[action_id] = non_bool_columns
                 ctes.append(CteDef(name=step_table, query=query))
 
             valid: dict[str, SqlRelationFrame] = {}
@@ -479,24 +490,39 @@ def _safe_table(name: str) -> str:
     return require_safe_identifier(cleaned)
 
 
-def _infer_boolean_columns(rows: list[dict[str, Any]]) -> set[str]:
-    if not rows:
-        return set()
-    return {
-        name
-        for name in rows[0]
-        if (values := [row.get(name) for row in rows if row.get(name) is not None])
-        and all(isinstance(value, bool) for value in values)
-    }
+def _infer_column_types(rows: list[dict[str, Any]]) -> tuple[set[str], set[str]]:
+    """Infer definite boolean and definite non-boolean columns across all rows."""
+    columns = {name for row in rows for name in row}
+    booleans: set[str] = set()
+    non_booleans: set[str] = set()
+    for name in columns:
+        values = [row.get(name) for row in rows if row.get(name) is not None]
+        if not values:
+            continue
+        if all(isinstance(value, bool) for value in values):
+            booleans.add(name)
+        else:
+            non_booleans.add(name)
+    return booleans, non_booleans
 
 
-def _expression_is_boolean(node: Any) -> bool:
+def _expression_boolean_type(node: Any, *, inherited_boolean: set[str]) -> bool | None:
+    """Return True/False for definite boolean/non-boolean, None when unknown/null."""
     if not isinstance(node, Mapping):
-        return isinstance(node, bool)
+        return bool(node) if isinstance(node, bool) else False
     kind = node.get("kind")
+    if kind == "fieldRef":
+        return True if node.get("target") in inherited_boolean else None
     if kind == "literal":
         value = node.get("value")
-        return isinstance(value, Mapping) and value.get("type") == "boolean"
+        if not isinstance(value, Mapping):
+            return None
+        value_type = value.get("type")
+        if value_type == "boolean":
+            return True
+        if value_type in {"null", "missing"} or value.get("value") is None:
+            return None
+        return False
     if kind == "binary":
         return str(node.get("op")) in {
             "eq",
@@ -528,45 +554,92 @@ def _expression_is_boolean(node: Any) -> bool:
         values = args[1::2]
         if len(args) % 2:
             values.append(args[-1])
-        return bool(values) and all(_expression_is_boolean(value) for value in values)
-    if callee in {"dtcs:coalesce", "dtcs:if_null", "dtcs:null_if"}:
-        return bool(args) and all(_expression_is_boolean(value) for value in args)
-    return False
+    elif callee in {"dtcs:coalesce", "dtcs:if_null", "dtcs:null_if"}:
+        values = args
+    else:
+        return False
+    if not values:
+        return None
+    types = [
+        _expression_boolean_type(value, inherited_boolean=inherited_boolean)
+        for value in values
+    ]
+    if any(value is False for value in types):
+        return False
+    if any(value is True for value in types):
+        return all(value in {True, None} for value in types)
+    return None
 
 
-def _action_boolean_columns(
+def _expression_is_null_literal(node: Any) -> bool:
+    if not isinstance(node, Mapping) or node.get("kind") != "literal":
+        return False
+    value = node.get("value")
+    return isinstance(value, Mapping) and value.get("type") in {"null", "missing"}
+
+
+def _action_column_types(
     kind: Mapping[str, Any],
     *,
-    inherited: set[str],
+    inherited_boolean: set[str],
+    inherited_non_boolean: set[str],
     relation_boolean_columns: Mapping[str, set[str]],
+    relation_non_boolean_columns: Mapping[str, set[str]],
     output_columns: list[str],
-) -> set[str]:
+) -> tuple[set[str], set[str]]:
     action = str(kind.get("action") or "")
     params = kind.get("parameters") or {}
-    result = set(inherited)
+    booleans = set(inherited_boolean)
+    non_booleans = set(inherited_non_boolean)
     if action == "dtcs:project":
-        result = set()
+        booleans = set()
+        non_booleans = set()
         for item in params.get("fields") or ():
-            if isinstance(item, str) and item in inherited:
-                result.add(item)
+            if isinstance(item, str):
+                if item in inherited_boolean:
+                    booleans.add(item)
+                elif item in inherited_non_boolean:
+                    non_booleans.add(item)
             elif isinstance(item, Mapping):
                 name = str(item.get("name") or "")
-                if (
-                    "expression" in item and _expression_is_boolean(item["expression"])
-                ) or ("expression" not in item and name in inherited):
-                    result.add(name)
+                if "expression" in item:
+                    expression = item["expression"]
+                    expression_type = _expression_boolean_type(
+                        expression, inherited_boolean=inherited_boolean
+                    )
+                    if expression_type is True:
+                        booleans.add(name)
+                    elif expression_type is False or not _expression_is_null_literal(
+                        expression
+                    ):
+                        non_booleans.add(name)
+                elif name in inherited_boolean:
+                    booleans.add(name)
+                elif name in inherited_non_boolean:
+                    non_booleans.add(name)
     elif action == "dtcs:with_fields":
         for item in params.get("assignments") or ():
             if not isinstance(item, Mapping):
                 continue
             name = str(item.get("name") or "")
-            result.discard(name)
-            if _expression_is_boolean(item.get("expression")):
-                result.add(name)
+            booleans.discard(name)
+            non_booleans.discard(name)
+            expression = item.get("expression")
+            expression_type = _expression_boolean_type(
+                expression, inherited_boolean=inherited_boolean
+            )
+            if expression_type is True:
+                booleans.add(name)
+            elif expression_type is False or not _expression_is_null_literal(
+                expression
+            ):
+                non_booleans.add(name)
     elif action == "dtcs:drop_fields":
-        result -= {
+        dropped = {
             str(name) for name in (params.get("fields") or params.get("names") or ())
         }
+        booleans -= dropped
+        non_booleans -= dropped
     elif action == "dtcs:rename_fields":
         mapping = params.get("mapping") or {}
         if isinstance(mapping, list):
@@ -577,12 +650,19 @@ def _action_boolean_columns(
             }
         else:
             renamed = {str(key): str(value) for key, value in dict(mapping).items()}
-        result = {renamed.get(name, name) for name in result}
-    elif action == "dtcs:join":
-        result |= relation_boolean_columns.get(str(params.get("right")), set())
+        booleans = {renamed.get(name, name) for name in booleans}
+        non_booleans = {renamed.get(name, name) for name in non_booleans}
+    elif action in {"dtcs:join", "dtcs:union"}:
+        other = str(params.get("right") or params.get("other"))
+        booleans |= relation_boolean_columns.get(other, set())
+        non_booleans |= relation_non_boolean_columns.get(other, set())
     elif action == "dtcs:aggregate":
-        result &= {str(name) for name in (params.get("groupBy") or ())}
-    return result & set(output_columns)
+        group_by = {str(name) for name in (params.get("groupBy") or ())}
+        booleans &= group_by
+        non_booleans = set(output_columns) - booleans
+    booleans &= set(output_columns)
+    non_booleans = (non_booleans & set(output_columns)) - booleans
+    return booleans, non_booleans
 
 
 def _sqlite_type(values: list[Any]) -> str:

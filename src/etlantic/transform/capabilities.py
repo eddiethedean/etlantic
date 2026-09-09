@@ -190,6 +190,42 @@ def _collect_expression_requirements(
             _collect_expression_requirements(item, functions, operators, types)
 
 
+def _portable_nonnegative_integer_operand(node: Any) -> bool:
+    """Return whether a substring bound has a governed portable proof path."""
+    if not isinstance(node, Mapping):
+        return False
+    if node.get("kind") == "fieldRef" and node.get("scope") == "parameter":
+        return True
+    if node.get("kind") != "literal":
+        return False
+    value = node.get("value")
+    if isinstance(value, Mapping) and value.get("type") in {"null", "missing"}:
+        # A null bound propagates a null substring result and is valid SQL.
+        return True
+    return (
+        isinstance(value, Mapping)
+        and value.get("type") == "integer"
+        and isinstance(value.get("value"), int)
+        and not isinstance(value.get("value"), bool)
+        and value["value"] >= 0
+    )
+
+
+def _portable_nonempty_search_operand(node: Any) -> bool:
+    """Return whether a replacement search has a governed proof path."""
+    if isinstance(node, Mapping) and node.get("kind") == "fieldRef":
+        return node.get("scope") == "parameter"
+    if not isinstance(node, Mapping) or node.get("kind") != "literal":
+        return False
+    value = node.get("value")
+    return (
+        isinstance(value, Mapping)
+        and value.get("type") == "string"
+        and isinstance(value.get("value"), str)
+        and bool(value["value"])
+    )
+
+
 def merge_requirements(
     *parts: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
@@ -1122,13 +1158,7 @@ def portable_shape_findings(
                         )
                     if callee == "dtcs:substr":
                         for argument_index, argument in enumerate(args[1:3], start=1):
-                            if not isinstance(argument, Mapping):
-                                continue
-                            kind = argument.get("kind")
-                            if (
-                                kind == "fieldRef"
-                                and argument.get("scope") != "parameter"
-                            ):
+                            if not _portable_nonnegative_integer_operand(argument):
                                 findings.append(
                                     TransformSupportFinding(
                                         "PMXFORM302",
@@ -1137,52 +1167,14 @@ def portable_shape_findings(
                                         f"{path}.args[{argument_index}]",
                                     )
                                 )
-                                continue
-                            if kind != "literal":
-                                continue
-                            literal = argument.get("value")
-                            if not isinstance(literal, Mapping):
-                                continue
-                            if (
-                                literal.get("type") == "integer"
-                                and isinstance(literal.get("value"), int)
-                                and literal["value"] < 0
-                            ):
-                                findings.append(
-                                    TransformSupportFinding(
-                                        "PMXFORM302",
-                                        f"function:dtcs:substr:argument:{argument_index}",
-                                        "substring start and length must be non-negative",
-                                        f"{path}.args[{argument_index}]",
-                                    )
-                                )
                     if callee == "dtcs:replace" and len(args) >= 2:
                         search = args[1]
-                        if (
-                            isinstance(search, Mapping)
-                            and search.get("kind") == "fieldRef"
-                            and search.get("scope") != "parameter"
-                        ):
+                        if not _portable_nonempty_search_operand(search):
                             findings.append(
                                 TransformSupportFinding(
                                     "PMXFORM302",
                                     "function:dtcs:replace:empty_search",
-                                    "portable replace search must be a non-empty constant",
-                                    f"{path}.args[1]",
-                                )
-                            )
-                        if (
-                            isinstance(search, Mapping)
-                            and search.get("kind") == "literal"
-                            and isinstance(search.get("value"), Mapping)
-                            and search["value"].get("type") == "string"
-                            and search["value"].get("value") == ""
-                        ):
-                            findings.append(
-                                TransformSupportFinding(
-                                    "PMXFORM302",
-                                    "function:dtcs:replace:empty_search",
-                                    "portable replace does not accept an empty search string",
+                                    "portable replace search must be a non-empty string constant",
                                     f"{path}.args[1]",
                                 )
                             )

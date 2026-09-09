@@ -50,4 +50,13 @@
 
 | FINAL-050-015 | High | resolved by complete pushdown finding and proof matrix validation |
 
+| FINAL-REL-001 | High | resolved by typed-null boolean lowering and PostgreSQL null substring coverage |
+| FINAL-REL-002 | High | resolved by PostgreSQL half-even floating-point rounding |
+| FINAL-REL-003 | High | resolved by complete Unicode Case_Ignorable sigma context |
+| FINAL-REL-004 | High | resolved by fail-closed composed substring bound analysis |
+| FINAL-REL-005 | High | resolved by fail-closed composed replacement search analysis |
+| FINAL-REL-006 | High | resolved by public case_when arity validation |
+| FINAL-REL-007 | High | resolved by canonical normalization of null, boolean, numeric, and order semantics |
+| FINAL-REL-008 | Medium | resolved by complete stable finding ledger and checker coverage |
+
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.

@@ -60,6 +60,7 @@ EXPECTED_SCHEMAS = {
 
 EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 27))
 EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 16))
+EXPECTED_RELEASE_FINDINGS = frozenset(f"FINAL-REL-{index:03d}" for index in range(1, 9))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
 )
@@ -246,8 +247,10 @@ def validate_installed_compiler_evidence(
 
 def validate_findings_ledger(findings_doc: str) -> None:
     """Require every known review finding to have an explicit resolution."""
-    expected = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
-    found = set(re.findall(r"(?:SOL|FINAL)-050-\d{3}", findings_doc))
+    expected = (
+        EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS | EXPECTED_RELEASE_FINDINGS
+    )
+    found = set(re.findall(r"(?:SOL|FINAL)-(?:050|REL)-\d{3}", findings_doc))
     if found != expected:
         raise SystemExit("findings ledger is incomplete")
     for finding_id in sorted(expected):
