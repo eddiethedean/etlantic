@@ -247,7 +247,7 @@ def validate_requirement_campaign(payload: dict[str, object]) -> None:
                 }
                 if not unsupported_ids or not any(
                     item.get("requirement") in unsupported_ids
-                    and item.get("path") == "actions/0"
+                    and item.get("path") not in {None, "", "findings"}
                     for item in matching
                 ):
                     raise SystemExit(

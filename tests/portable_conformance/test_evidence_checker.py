@@ -178,6 +178,28 @@ def test_requirement_campaign_requires_every_negative_state() -> None:
         validate_requirement_campaign(payload)
 
 
+def test_requirement_campaign_rejects_generic_negative_finding_path() -> None:
+    from etlantic.transform.compiler import _support_fingerprint
+
+    payload = _requirement_campaign_fixture()
+    negative_reports = payload["negative_reports"]
+    assert isinstance(negative_reports, dict)
+    unsupported = next(
+        item
+        for item in negative_reports["local"]
+        if item["expected_state"] == "unsupported"
+    )
+    report = unsupported["support_report"]
+    assert isinstance(report, dict)
+    finding = next(
+        item for item in report["findings"] if item["support"] == "unsupported"
+    )
+    finding["path"] = "findings"
+    report["fingerprint"] = _support_fingerprint(report)
+    with pytest.raises(SystemExit, match="not plan-scoped"):
+        validate_requirement_campaign(payload)
+
+
 def test_adaptive_lowering_mutation_is_rejected() -> None:
     candidate = {
         "requirements": {"dtcs:filter": "supported_with_lowering"},
