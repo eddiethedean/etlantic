@@ -341,10 +341,13 @@ def test_adaptive_graph_valid_selection_cannot_choose_ineligible_candidate() -> 
 def test_findings_ledger_rejects_missing_historical_finding(missing: str) -> None:
     from scripts.check_portable_0_50 import (
         EXPECTED_FINAL_FINDINGS,
+        EXPECTED_RELEASE_FINDINGS,
         EXPECTED_SOL_FINDINGS,
     )
 
-    findings = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
+    findings = (
+        EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS | EXPECTED_RELEASE_FINDINGS
+    )
     document = "\n".join(
         f"| {finding_id} | High | resolved by regression evidence |"
         for finding_id in sorted(findings - {missing})
@@ -357,10 +360,13 @@ def test_findings_ledger_rejects_missing_historical_finding(missing: str) -> Non
 def test_findings_ledger_rejects_unresolved_disposition() -> None:
     from scripts.check_portable_0_50 import (
         EXPECTED_FINAL_FINDINGS,
+        EXPECTED_RELEASE_FINDINGS,
         EXPECTED_SOL_FINDINGS,
     )
 
-    findings = EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS
+    findings = (
+        EXPECTED_SOL_FINDINGS | EXPECTED_FINAL_FINDINGS | EXPECTED_RELEASE_FINDINGS
+    )
     document = "\n".join(
         f"| {finding_id} | High | "
         f"{'pending' if finding_id == 'SOL-050-020' else 'resolved'} |"
