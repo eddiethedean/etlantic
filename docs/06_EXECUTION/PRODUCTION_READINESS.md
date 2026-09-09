@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 ## Residual evaluation lead
 
@@ -92,7 +92,7 @@ reference controls are shipped:
 - Cross-tenant / multi-tenant isolation guarantees (beyond single-tenant keys)
 - Formal denial-of-service capacity SLAs (partial I/O budgets only)
 - Compliance-grade audit system of record (CLI reports are operational evidence)
-- Multi-year LTS or compatibility support beyond the current published minor
+- Multi-year LTS or compatibility support beyond the current release candidate minor
 - HA/DR, RPO/RTO, and compliance attestations (adopter-owned)
 - Broader supply-chain programs beyond package allowlists, pins, SHA-256
   release digests, and GitHub attestations (CycloneDX SBOM is optional;

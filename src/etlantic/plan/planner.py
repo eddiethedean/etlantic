@@ -57,17 +57,18 @@ from etlantic.transformation import Step
 def _support_summary(report: Any, compiler: Any) -> dict[str, Any]:
     """Return the canonical requirement-level support payload for a plan."""
     info = compiler.info
+    target: dict[str, Any] = {
+        "engine": info.engine,
+        "compiler": info.name,
+        "version": info.version,
+        "protocol": info.compiler_protocol,
+        "package": info.package or info.name,
+        "implementation": info.implementation or info.name,
+    }
+    if getattr(info, "environment", None) is not None:
+        target["environment"] = dict(info.environment)
     try:
-        return report.to_requirement_support(
-            target={
-                "engine": info.engine,
-                "compiler": info.name,
-                "version": info.version,
-                "protocol": info.compiler_protocol,
-                "package": info.package or info.name,
-                "implementation": info.implementation or info.name,
-            }
-        )
+        return report.to_requirement_support(target=target)
     except ValueError as exc:
         raise PipelineValidationError(
             f"Portable compiler support evidence is invalid for engine {info.engine!r}: {exc}",

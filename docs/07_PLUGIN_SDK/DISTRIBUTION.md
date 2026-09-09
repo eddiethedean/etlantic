@@ -1,6 +1,6 @@
 # Distribution
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 Distribution describes how ETLantic plugins are packaged, published,
 discovered, installed, and maintained across the ecosystem.

@@ -92,10 +92,19 @@ def create_transform_compiler() -> SqlTransformCompiler:
     return SqlTransformCompiler()
 
 
+def _environment_identity(dialect: str | None = None) -> dict[str, str]:
+    """Return the SQL runtime identity used for planning evidence."""
+    if dialect is None:
+        url = os.environ.get("ETLANTIC_SQL_URL", "")
+        dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "unknown"
+    return {"dialect": dialect or "unknown", "runtime": "sqlalchemy"}
+
+
 class SqlTransformCompiler:
     """Compile ``dtcs.transform-plan/2`` kernel+relational IR to SQL IR."""
 
-    def __init__(self) -> None:
+    def __init__(self, dialect: str | None = None) -> None:
+        environment = _environment_identity(dialect)
         caps = TransformCapabilities(
             profiles=frozenset({KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1}),
             actions=CLAIMED_ACTIONS,
@@ -127,7 +136,9 @@ class SqlTransformCompiler:
                 package="etlantic-sql",
                 version=__version__,
                 engine="sql",
+                environment=environment,
             ),
+            environment=environment,
         )
 
     @property
@@ -175,6 +186,7 @@ class SqlTransformCompiler:
                 definition,
                 evidence_fingerprint=self._info.evidence_fingerprint,
                 physical_effects=("materialization", "lost_fusion"),
+                supported_actions=self._info.capabilities.actions,
             ),
             requirements=requirement_records_from_mapping(req, definition=definition),
             requirement_findings=report.requirement_findings,

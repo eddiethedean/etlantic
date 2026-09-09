@@ -1,6 +1,6 @@
 # All current guides
 
-> **Status: Available in ETLantic 0.50.0.** Visible sitemap for the primary
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Visible sitemap for the primary
 > eight-section nav. Historical pages remain searchable via
 > [Earlier releases](EARLIER_RELEASES.md) and the archive index.
 

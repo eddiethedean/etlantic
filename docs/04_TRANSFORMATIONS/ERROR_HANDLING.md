@@ -1,6 +1,6 @@
 # Error Handling
 
-!!! success "Available in ETLantic 0.50.0"
+!!! success "ETLantic 0.50.0 release candidate; publication pending"
     Structured diagnostics, validation failures, runtime
     `NodeExecutionError` paths, callback `FailureAction` results, and
     `Profile.retry_max_attempts` retry intent are shipped. Retry execution is

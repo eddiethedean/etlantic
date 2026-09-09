@@ -1059,6 +1059,8 @@ def main() -> int:
             "package": compiler.info.package or compiler.info.name,
             "implementation": compiler.info.implementation or compiler.info.name,
         }
+        if compiler.info.environment is not None:
+            target["environment"] = dict(compiler.info.environment)
         baseline_report = compiler.analyze(
             {"actions": []},
             context=TransformPlanningContext(

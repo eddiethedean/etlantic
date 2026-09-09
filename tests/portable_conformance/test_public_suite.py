@@ -396,7 +396,15 @@ def test_requirement_support_serializes_positive_records() -> None:
         evidence_fingerprint="evidence",
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
     )
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     assert payload["requirements"]
     assert payload["findings"][0]["support"] == "unknown"
 
@@ -415,6 +423,8 @@ def test_requirement_support_uses_explicit_canonical_positive_evidence() -> None
             "engine": "local",
             "compiler": compiler.info.name,
             "version": compiler.info.version,
+            "package": compiler.info.package,
+            "implementation": compiler.info.implementation,
         }
     )
     assert any(item["support"] == "supported_exact" for item in payload["findings"])
@@ -429,7 +439,15 @@ def test_requirement_support_serializes_unknown_requirements_fail_closed() -> No
         context=TransformPlanningContext("p", "s", "profile", "local"),
         requirements={"future_dimension": ["x", "y"]},
     )
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     assert all(item["id"].startswith("dtcs@1/") for item in payload["requirements"])
     assert {item["requirement"] for item in payload["findings"]} == {
         item["id"] for item in payload["requirements"]
@@ -460,7 +478,15 @@ def test_requirement_support_maps_legacy_findings_and_rejects_unknown_target_fie
         context=TransformPlanningContext("p", "s", "profile", "local"),
         requirements={"actions": ["dtcs:filter"], "functions": ["dtcs:not_real"]},
     )
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     function_id = next(
         item["id"] for item in payload["requirements"] if "/functions/" in item["id"]
     )
@@ -484,7 +510,15 @@ def test_requirement_support_rejects_evidence_free_positive_reports() -> None:
         supported=True,
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
     )
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     assert all(item["support"] == "unknown" for item in payload["findings"])
 
 
@@ -563,6 +597,7 @@ def _adaptive_support_report(
             "version": "1",
             "protocol": COMPILER_PROTOCOL,
             "package": "etlantic-adaptive-fixture",
+            "implementation": "adaptive-fixture/1",
             "placement": {
                 "resource": f"fixture-resource-{target_id}",
                 "location": "local",
@@ -1413,7 +1448,15 @@ def test_requirement_support_rejects_nested_provenance_and_source_rows() -> None
         supported=True,
         evidence_fingerprint="evidence",
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
-    ).to_requirement_support(target={"engine": "local"})
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     payload["evidence"][0]["timestamp"] = "volatile"
     payload["evidence"][0]["source_rows"] = [{"secret": "redacted"}]
     payload["fingerprint"] = _support_fingerprint(payload)
@@ -1433,7 +1476,15 @@ def test_requirement_support_rejects_nested_requirement_parameters() -> None:
         supported=True,
         evidence_fingerprint="evidence",
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
-    ).to_requirement_support(target={"engine": "local"})
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     payload["requirements"][0]["parameters"]["source_rows"] = [
         {"password": "plain-secret"}
     ]
@@ -1472,7 +1523,15 @@ def test_requirement_support_preserves_finding_specific_evidence() -> None:
         ),
     )
 
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     validate_requirement_support_payload(payload)
     assert {item["fingerprint"] for item in payload["evidence"]} == {
         "evidence-1",
@@ -1571,7 +1630,15 @@ def test_requirement_support_records_each_plan_occurrence() -> None:
                 evidence_fingerprint="evidence",
             ),
         ),
-    ).to_requirement_support(target={"engine": "local"})
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     assert {item["requirement"] for item in payload["findings"]} == {
         record["id"] for record in requirements
     }
@@ -1628,7 +1695,15 @@ def test_requirement_support_rejects_conflicting_duplicate_findings(findings) ->
             evidence_fingerprint="evidence",
             requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
             requirement_findings=findings,
-        ).to_requirement_support(target={"engine": "local"})
+        ).to_requirement_support(
+            target={
+                "engine": "local",
+                "compiler": "test",
+                "version": "1",
+                "package": "test",
+                "implementation": "test",
+            }
+        )
 
 
 def test_requirement_support_rejects_duplicate_requirement_records() -> None:
@@ -1643,7 +1718,44 @@ def test_requirement_support_rejects_duplicate_requirement_records() -> None:
             supported=True,
             evidence_fingerprint="evidence",
             requirements=(record, record),
-        ).to_requirement_support(target={"engine": "local"})
+        ).to_requirement_support(
+            target={
+                "engine": "local",
+                "compiler": "test",
+                "version": "1",
+                "package": "test",
+                "implementation": "test",
+            }
+        )
+
+
+def test_requirement_support_rejects_repeated_finding_object() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    finding = TransformSupportFinding(
+        code="PMXFORM301",
+        requirement="action:dtcs:filter",
+        reason="unsupported",
+        support="unsupported",
+    )
+    with pytest.raises(ValueError, match="exactly one result"):
+        TransformSupportReport(
+            supported=False,
+            requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+            requirement_findings=(finding, finding),
+        ).to_requirement_support(
+            target={
+                "engine": "local",
+                "compiler": "test",
+                "version": "1",
+                "package": "test",
+                "implementation": "test",
+            }
+        )
 
 
 def test_planner_rejects_dynamic_lowering_condition_even_if_payload_is_mutated() -> (
@@ -1663,6 +1775,7 @@ def test_planner_rejects_dynamic_lowering_condition_even_if_payload_is_mutated()
     [
         ("conditions", [{"runtime": "unresolved"}], "bounded strings"),
         ("conditions", ["source_rows[0].amount > 0"], "static identifiers"),
+        ("conditions", ["orders-amount-positive"], "static identifiers"),
         ("physical_effects", ["network_side_effect"], "invalid physical_effects"),
     ],
 )
@@ -1680,7 +1793,15 @@ def test_requirement_support_rejects_untyped_finding_metadata(
         supported=True,
         evidence_fingerprint="evidence",
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
-    ).to_requirement_support(target={"engine": "local"})
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     payload["findings"][0][field] = value
     payload["fingerprint"] = _support_fingerprint(payload)
     with pytest.raises(ValueError, match=message):
@@ -1712,7 +1833,15 @@ def test_requirement_support_rejects_mismatched_evidence_fingerprint() -> None:
         supported=True,
         evidence_fingerprint="evidence-a",
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
-    ).to_requirement_support(target={"engine": "local"})
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     payload["findings"][0]["evidence_fingerprint"] = "evidence-b"
     payload["fingerprint"] = _support_fingerprint(payload)
     with pytest.raises(ValueError, match="does not match evidence"):
@@ -1758,7 +1887,15 @@ def test_requirement_support_does_not_reassign_unmatched_legacy_findings() -> No
         ),
         requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
     )
-    payload = report.to_requirement_support(target={"engine": "local"})
+    payload = report.to_requirement_support(
+        target={
+            "engine": "local",
+            "compiler": "test",
+            "version": "1",
+            "package": "test",
+            "implementation": "test",
+        }
+    )
     legacy = next(item for item in payload["requirements"] if item["scope"] == "legacy")
     assert legacy["parameters"]["legacy_requirement"] == "capability:lazy"
     assert payload["findings"][0]["requirement"] == legacy["id"]

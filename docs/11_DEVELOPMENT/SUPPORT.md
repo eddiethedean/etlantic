@@ -1,6 +1,6 @@
 # Support Policy (maintainers)
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 > **Canonical adopter policy:** root
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).
@@ -21,7 +21,7 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Maintainer notes
 
-- The current published minor line (`0.50.x`) receives best-effort correctness
+- The current release candidate line line (`0.50.x`) receives best-effort correctness
   and security fixes. Older 0.x lines are not actively maintained.
 - Supported isolation profiles (`isolated-deployment`, `dedicated-schema`)
   graduated in 0.43. There is no hosted multi-tenant SaaS. See

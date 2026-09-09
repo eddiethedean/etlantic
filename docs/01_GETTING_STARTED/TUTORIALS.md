@@ -1,6 +1,6 @@
 # Tutorials
 
-> **Status: Available in ETLantic 0.50.0.** Guided paths with expected time,
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Guided paths with expected time,
 > environment, and CI coverage.
 
 | Tutorial | Time | Environment | CI |

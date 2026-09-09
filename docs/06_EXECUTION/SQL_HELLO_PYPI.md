@@ -1,6 +1,6 @@
 # SQL hello (PyPI path)
 
-> **Status: Available in ETLantic 0.50.0.** Paste-ready SQLite demo — no
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Paste-ready SQLite demo — no
 > git clone. PostgreSQL is the reference backend for production; MERGE
 > (`sql_merge`) is PostgreSQL-only.
 

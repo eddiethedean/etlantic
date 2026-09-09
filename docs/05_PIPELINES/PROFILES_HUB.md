@@ -1,6 +1,6 @@
 # Profiles hub
 
-> **Status: Available in ETLantic 0.50.0.** Start here for environment,
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Start here for environment,
 > allowlist, and production trust. Detail pages remain authoritative.
 
 ## Read in this order

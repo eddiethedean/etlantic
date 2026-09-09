@@ -39,6 +39,7 @@ MAX_CONDITIONS = 64
 MAX_REASON_BYTES = 1_024
 MAX_PARAMETER_BYTES = 1_024
 _STATIC_CONDITION_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*(?:[._:/-][A-Za-z0-9]+)*$")
+_STATIC_CONDITION_IDENTIFIERS = frozenset({"preserve-null", "preserve-order"})
 _DYNAMIC_CONDITION_PARTS = frozenset(
     {
         "source",
@@ -67,6 +68,7 @@ _TARGET_KEYS = frozenset(
         "protocol",
         "package",
         "implementation",
+        "environment",
         "placement",
     }
 )
@@ -84,6 +86,7 @@ _SUPPORT_PAYLOAD_KEYS = frozenset(
 _PLACEMENT_TARGET_KEYS = frozenset(
     {"resource", "location", "security_domain", "connector", "policy"}
 )
+_ENVIRONMENT_KEYS = frozenset({"dialect", "runtime", "driver", "version"})
 _REQUIREMENT_KEYS = frozenset(
     {
         "id",
@@ -185,6 +188,8 @@ class TransformCompilerInfo:
     evidence_fingerprint: str | None = None
     implementation: str | None = None
     package: str | None = None
+    # Runtime/dialect identity that participates in evidence fingerprints.
+    environment: Mapping[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -201,6 +206,8 @@ class TransformCompilerInfo:
             payload["implementation"] = self.implementation
         if self.package is not None:
             payload["package"] = self.package
+        if self.environment is not None:
+            payload["environment"] = dict(self.environment)
         return payload
 
 
@@ -361,7 +368,6 @@ class TransformSupportReport:
         findings = []
         canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
-        seen_finding_objects: set[int] = set()
         serialized_by_requirement: dict[str, dict[str, Any]] = {}
         requirements_by_id: dict[str, dict[str, Any]] = {}
         for record in requirements:
@@ -372,6 +378,15 @@ class TransformSupportReport:
                 raise ValueError("requirement IDs must be unique")
             requirements_by_id[identifier] = record
         requirement_ids = set(requirements_by_id)
+        for collection in (canonical_findings, list(self.findings)):
+            collection_object_ids: set[int] = set()
+            for finding in collection:
+                if id(finding) in collection_object_ids:
+                    raise ValueError(
+                        "support findings must contain exactly one result per requirement"
+                    )
+                collection_object_ids.add(id(finding))
+        seen_finding_objects: set[int] = set()
         for index, finding in enumerate((*canonical_findings, *self.findings)):
             item = finding.to_dict()
             finding_object_id = id(finding)
@@ -704,6 +719,7 @@ def capabilities_fingerprint(
     version: str | None = None,
     engine: str | None = None,
     protocol: str = COMPILER_PROTOCOL,
+    environment: Mapping[str, str] | None = None,
 ) -> str:
     """Stable evidence identity for capabilities and compiler identity."""
     semantic = {
@@ -714,6 +730,7 @@ def capabilities_fingerprint(
         "version": version,
         "engine": engine,
         "protocol": protocol,
+        "environment": dict(environment or {}),
     }
     return sha256(
         json.dumps(semantic, sort_keys=True, separators=(",", ":")).encode()
@@ -727,6 +744,8 @@ def _validate_static_condition(value: Any) -> None:
     parts = set(re.split(r"[._:/-]+", value.lower()))
     if parts & _DYNAMIC_CONDITION_PARTS:
         raise ValueError("conditions must be resolved static identifiers")
+    if value.lower() not in _STATIC_CONDITION_IDENTIFIERS:
+        raise ValueError("conditions must be manifest-declared static identifiers")
 
 
 def _static_condition_error(value: Any) -> bool:
@@ -774,6 +793,7 @@ def relational_pushdown_findings(
     *,
     evidence_fingerprint: str | None,
     physical_effects: tuple[str, ...] = (),
+    supported_actions: frozenset[str] | set[str] | None = None,
 ) -> tuple[TransformPushdownFinding, ...]:
     """Emit the planned pushdown matrix for native relational compilers.
 
@@ -788,6 +808,13 @@ def relational_pushdown_findings(
         kind = action_item.get("kind") if isinstance(action_item, Mapping) else {}
         action = str((kind or {}).get("action") or "")
         target = str((action_item or {}).get("id") or index)
+        action_supported = supported_actions is None or action in supported_actions
+        relational_outcome = "pushed_exact" if action_supported else "unsupported"
+        relational_reason = (
+            "action lowered into the native relational plan"
+            if action_supported
+            else "action is not supported by the native relational compiler"
+        )
         findings.extend(
             (
                 TransformPushdownFinding(
@@ -801,12 +828,14 @@ def relational_pushdown_findings(
                 ),
                 TransformPushdownFinding(
                     boundary=f"relational:{index}",
-                    outcome="pushed_exact",
-                    reason="action lowered into the native relational plan",
+                    outcome=relational_outcome,
+                    reason=relational_reason,
                     action=action,
                     target=target,
-                    proof_reference=f"runtime-required:{target}",
-                    physical_effects=physical_effects,
+                    proof_reference=(
+                        f"runtime-required:{target}" if action_supported else None
+                    ),
+                    physical_effects=(physical_effects if action_supported else ()),
                     obligation="required",
                     evidence_fingerprint=evidence_fingerprint,
                 ),
@@ -888,6 +917,20 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             target.get("implementation"),
             field_name="requirement-support target.implementation",
         )
+    environment = target.get("environment")
+    if environment is not None:
+        if not isinstance(environment, Mapping) or not environment:
+            raise ValueError(
+                "requirement-support target.environment must be a non-empty object"
+            )
+        if set(environment) - _ENVIRONMENT_KEYS:
+            raise ValueError(
+                "requirement-support target.environment contains unsupported fields"
+            )
+        for key, value in environment.items():
+            validate_bounded_string(
+                value, field_name=f"requirement-support target.environment.{key}"
+            )
     if target.get("protocol") != COMPILER_PROTOCOL:
         raise ValueError("requirement-support target.protocol is unsupported")
     placement = target.get("placement")
@@ -1032,6 +1075,16 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     }
     if applicable != finding_ids:
         raise ValueError("every applicable requirement needs exactly one finding")
+    if any(
+        finding.get("support") in {"supported_exact", "supported_with_lowering"}
+        for finding in findings
+    ) and (
+        not isinstance(target.get("package"), str)
+        or not isinstance(target.get("implementation"), str)
+    ):
+        raise ValueError(
+            "positive support evidence requires package and implementation identity"
+        )
     requirement_by_id = {str(item["id"]): item for item in requirements}
     for finding in findings:
         requirement = requirement_by_id[str(finding["requirement"])]
@@ -1163,6 +1216,7 @@ def preflight_portable_support(descriptor: Any, compiler: Any, *, engine: str) -
         raise ValueError("portable support evidence targets a different engine")
     expected_package = getattr(compiler.info, "package", None)
     expected_implementation = getattr(compiler.info, "implementation", None)
+    expected_environment = getattr(compiler.info, "environment", None)
     if (
         target.get("compiler") != compiler.info.name
         or target.get("version") != compiler.info.version
@@ -1170,6 +1224,10 @@ def preflight_portable_support(descriptor: Any, compiler: Any, *, engine: str) -
         or (
             expected_implementation is not None
             and target.get("implementation") != expected_implementation
+        )
+        or (
+            expected_environment is not None
+            and target.get("environment") != dict(expected_environment)
         )
     ):
         raise ValueError("portable support evidence targets a different compiler")

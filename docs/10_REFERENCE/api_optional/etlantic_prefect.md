@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-prefect API
 
-> **Status: Available in ETLantic 0.50.0.** Prefect local scheduler MVP.
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

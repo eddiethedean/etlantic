@@ -81,3 +81,32 @@ def test_relational_pushdown_records_declared_physical_effects() -> None:
     )
     relational = next(item for item in findings if item.boundary == "relational:0")
     assert relational.physical_effects == ("materialization", "lost_fusion")
+
+
+def test_relational_pushdown_marks_unadvertised_actions_unsupported() -> None:
+    from etlantic.transform.compiler import relational_pushdown_findings
+
+    findings = relational_pushdown_findings(
+        {"actions": [{"id": "unsupported", "kind": {"action": "dtcs:nope"}}]},
+        evidence_fingerprint="evidence",
+        supported_actions=frozenset({"dtcs:filter"}),
+    )
+    relational = next(item for item in findings if item.boundary == "relational:0")
+    assert relational.outcome == "unsupported"
+    assert relational.proof_reference is None
+
+
+def test_capabilities_fingerprint_includes_environment_identity() -> None:
+    from etlantic.transform.compiler import (
+        TransformCapabilities,
+        capabilities_fingerprint,
+    )
+
+    capabilities = TransformCapabilities(actions=frozenset({"dtcs:filter"}))
+    sqlite = capabilities_fingerprint(
+        capabilities, engine="sql", environment={"dialect": "sqlite"}
+    )
+    postgres = capabilities_fingerprint(
+        capabilities, engine="sql", environment={"dialect": "postgresql"}
+    )
+    assert sqlite != postgres

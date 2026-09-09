@@ -277,6 +277,14 @@ def validate_requirement_campaign(payload: dict[str, object]) -> None:
                     raise SystemExit(
                         f"unsupported action finding is not plan-scoped for {engine}"
                     )
+                if any(
+                    item.get("action") == "dtcs:not-supported"
+                    and item.get("outcome") in {"pushed_exact", "pushed_with_lowering"}
+                    for item in negative_report.get("pushdown") or []
+                ):
+                    raise SystemExit(
+                        f"unsupported action has contradictory positive pushdown for {engine}"
+                    )
 
 
 def validate_adaptive_lowering_binding(

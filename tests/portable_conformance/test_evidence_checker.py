@@ -75,7 +75,13 @@ def _requirement_campaign_fixture() -> dict[str, object]:
     )
 
     def target(engine: str) -> dict[str, str]:
-        return {"engine": engine, "compiler": "fixture", "version": "1"}
+        return {
+            "engine": engine,
+            "compiler": "fixture",
+            "version": "1",
+            "package": "fixture-package",
+            "implementation": "fixture/1",
+        }
 
     reports = {
         engine: canonical_report.to_requirement_support(target=target(engine))

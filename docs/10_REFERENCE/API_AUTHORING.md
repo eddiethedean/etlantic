@@ -1,6 +1,6 @@
 # API — Authoring
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 

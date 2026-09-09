@@ -1,6 +1,6 @@
 # Secrets Management
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 > **Available:** `env` and mounted-file secret providers (0.5+).
 > Optional OS keyring provider via `etlantic-keyring` (0.9+).

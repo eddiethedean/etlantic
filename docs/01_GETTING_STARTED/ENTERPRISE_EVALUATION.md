@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: Available in ETLantic 0.50.0.** Deep diligence packet. Start with the
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 

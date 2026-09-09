@@ -124,7 +124,10 @@ def main() -> None:
                     f"Illustrative page must say so explicitly: {entry.page}"
                 )
             continue
-        if "Status: Available" not in text:
+        if (
+            "Status: Available" not in text
+            and "release candidate; publication pending" not in text
+        ):
             raise SystemExit(f"Runnable page lacks Available status: {entry.page}")
         if source.name not in text:
             raise SystemExit(

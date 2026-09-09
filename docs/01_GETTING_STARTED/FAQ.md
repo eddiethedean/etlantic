@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.50.0 (shipped Beta).**
+> **Status: ETLantic 0.50.0 release candidate; publication pending (shipped Beta).**
 
 Practical questions for ETLantic **0.50.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).

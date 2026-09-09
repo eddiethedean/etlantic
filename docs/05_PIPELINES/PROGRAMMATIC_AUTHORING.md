@@ -1,6 +1,6 @@
 # Programmatic Authoring
 
-> **Status: Available in ETLantic 0.50.0** (introduced in 0.24).
+> **Status: ETLantic 0.50.0 release candidate; publication pending** (introduced in 0.24).
 
 Author pipelines with immutable builders or JSON — no class declarations
 required. Class authoring remains fully supported and normalizes to the same

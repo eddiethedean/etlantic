@@ -1,6 +1,6 @@
 # Compile an Airflow DAG
 
-> **Status: Available in ETLantic 0.50.0.** ETLantic compiles a plan; it does
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** ETLantic compiles a plan; it does
 > not install or operate an Airflow scheduler.
 
 !!! tip "PyPI vs clone"

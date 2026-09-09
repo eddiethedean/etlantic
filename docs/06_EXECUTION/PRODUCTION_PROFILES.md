@@ -1,6 +1,6 @@
 # Production Profiles
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 ETLantic 0.43.0 treats production configuration as an explicit trust boundary
 via `Profile.security_mode == "production"`. The built-in `production` profile

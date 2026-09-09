@@ -138,7 +138,9 @@ class DataFusionTransformCompiler:
             for f in findings
         ]
         pushdown = relational_pushdown_findings(
-            definition, evidence_fingerprint=self.info.evidence_fingerprint
+            definition,
+            evidence_fingerprint=self.info.evidence_fingerprint,
+            supported_actions=self.info.capabilities.actions,
         )
         return TransformSupportReport(
             not findings,

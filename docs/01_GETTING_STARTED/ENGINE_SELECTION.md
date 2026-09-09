@@ -1,6 +1,6 @@
 # Engine selection
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 !!! tip "PyPI vs clone"
     Recommended path below is **PyPI-only**. Rows marked clone-assisted need a

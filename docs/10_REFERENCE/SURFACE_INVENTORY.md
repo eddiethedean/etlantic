@@ -1,6 +1,6 @@
 # Public Surface Inventory (0.50)
 
-> **Status: Available in ETLantic 0.50.0.** Canonical public surface for the
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Canonical public surface for the
 > **0.50 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)

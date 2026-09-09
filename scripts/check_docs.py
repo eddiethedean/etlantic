@@ -175,6 +175,24 @@ def check_nav_page_status_markers() -> None:
         )
 
 
+def check_release_candidate_claims() -> None:
+    """Keep docs aligned while the 0.50 package publication is pending."""
+    facts = load_release_facts()
+    if facts.get("maturity") != "beta":
+        return
+    prohibited = ("Available in ETLantic 0.50.0", "published on PyPI")
+    violations: list[str] = []
+    for path in (ROOT / "docs").rglob("*.md"):
+        text = path.read_text(encoding="utf-8")
+        if any(token in text for token in prohibited):
+            violations.append(path.relative_to(ROOT).as_posix())
+    if violations:
+        raise SystemExit(
+            "release-candidate docs contain publication claims:\n- "
+            + "\n- ".join(sorted(violations))
+        )
+
+
 def check_not_in_nav_orphans() -> None:
     """Every not_in_nav page outside archives must have an inbound docs link."""
     mkdocs = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
@@ -1832,6 +1850,7 @@ def main() -> None:
                 if (
                     "**Status: Available" not in text
                     and "Status: Available" not in text
+                    and "release candidate; publication pending" not in text
                 ):
                     raise SystemExit(f"{path} runnable guide missing Available status")
             continue
@@ -1847,6 +1866,7 @@ def main() -> None:
             and "Design study—" not in text
             and "Experimental design study—" not in text
             and "Available in ETLantic" not in text
+            and "release candidate; publication pending" not in text
         ):
             raise SystemExit(f"{path} missing Future design / design-study admonition")
 
@@ -2064,7 +2084,10 @@ def main() -> None:
         ]
     )
     major_minor = ".".join(package_version.split(".")[:2])
-    if f"Available in ETLantic {major_minor}" not in api_ref:
+    if (
+        f"Available in ETLantic {major_minor}" not in api_ref
+        and "release candidate; publication pending" not in api_ref
+    ):
         raise SystemExit(
             f"API_REFERENCE.md must claim Available in ETLantic {major_minor}"
         )
@@ -3056,6 +3079,7 @@ def main() -> None:
             "Stable-surface docstring gate failed:\n- " + "\n- ".join(failures)
         )
 
+    check_release_candidate_claims()
     check_nav_page_status_markers()
     check_not_in_nav_orphans()
     external = subprocess.run(

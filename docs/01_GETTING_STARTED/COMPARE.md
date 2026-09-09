@@ -1,6 +1,6 @@
 # Is ETLantic for me?
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 ETLantic is a typed **modeling, validation, and planning** layer for Python
 data pipelines. It is not a dataframe engine, warehouse transformer, or

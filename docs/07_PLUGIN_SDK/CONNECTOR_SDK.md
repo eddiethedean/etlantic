@@ -1,6 +1,6 @@
 # Connector SDK
 
-> **Status: Available in ETLantic 0.50.0.** Public source, sink, and storage
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Public source, sink, and storage
 > connector protocols under `etlantic.connectors`.
 
 ## Protocols

@@ -1,6 +1,6 @@
 # API — Agents
 
-> **Status: Available in ETLantic 0.50.0.** Human-governed context bundles,
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Human-governed context bundles,
 > proposal sandbox, and instruction generators. Hub:
 > [Python API Reference](API_REFERENCE.md). Tutorial:
 > [Human-governed AI](../01_GETTING_STARTED/HUMAN_GOVERNED_AI.md).

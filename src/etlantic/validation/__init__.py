@@ -356,15 +356,19 @@ def _phase_policy(
                     ),
                     requirements=portable_def.requirements,
                 )
+                target = {
+                    "engine": compiler.info.engine,
+                    "compiler": compiler.info.name,
+                    "version": compiler.info.version,
+                    "protocol": compiler.info.compiler_protocol,
+                    "package": compiler.info.package or compiler.info.name,
+                    "implementation": compiler.info.implementation
+                    or compiler.info.name,
+                }
+                if compiler.info.environment is not None:
+                    target["environment"] = dict(compiler.info.environment)
                 try:
-                    summary = report.to_requirement_support(
-                        target={
-                            "engine": compiler.info.engine,
-                            "compiler": compiler.info.name,
-                            "version": compiler.info.version,
-                            "protocol": compiler.info.compiler_protocol,
-                        }
-                    )
+                    summary = report.to_requirement_support(target=target)
                 except ValueError as exc:
                     diagnostics.append(
                         Diagnostic(

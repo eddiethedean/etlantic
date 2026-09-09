@@ -1,6 +1,6 @@
 # Ops Pilot Guide
 
-> **Status: Available in ETLantic 0.50.0 (Beta) for the documented
+> **Status: ETLantic 0.50.0 release candidate; publication pending (Beta) for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
 > product and is not unrestricted enterprise production. The future boundary
 > is defined by the

@@ -1,6 +1,6 @@
 # Plugin SDK
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
 !!! tip "Start here when creating a plugin"
     Follow [Building an ETLantic Plugin](BUILDING_A_PLUGIN.md) for the canonical

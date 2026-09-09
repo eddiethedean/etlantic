@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-pandas API
 
-> **Status: Available in ETLantic 0.50.0.** Pandas dataframe plugin + portable compiler.
+> **Status: ETLantic 0.50.0 release candidate; publication pending.** Pandas dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

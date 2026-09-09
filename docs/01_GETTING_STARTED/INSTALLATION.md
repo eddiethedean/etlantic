@@ -1,9 +1,10 @@
-# Installing ETLantic 0.50.0
+# Installing ETLantic 0.50.0 release candidate
 
-> **Status: Available in ETLantic 0.50.0.**
+> **Status: ETLantic 0.50.0 release candidate; publication pending.**
 
-ETLantic **0.50.0** supports Python 3.11–3.13 and is published on
-[PyPI](https://pypi.org/project/etlantic/0.50.0/).
+ETLantic **0.50.0** supports Python 3.11–3.13. The release candidate is
+available from the repository; package publication is pending final release
+approval. Do not expect `etlantic==0.50.0` to resolve from PyPI yet.
 
 !!! tip "PyPI user vs contributor clone"
     | Audience | Path |
@@ -22,7 +23,10 @@ Use a virtual environment. Prefer `python -m pip` and `python -m etlantic` so
 the interpreter you intend is the one that runs. Pin **0.50.0** for
 reproducible evaluation.
 
-### pip (recommended)
+### pip (after publication)
+
+The pinned PyPI commands below are release-day instructions. Until publication,
+use the repository checkout instructions instead.
 
 ```bash
 python -m venv .venv
