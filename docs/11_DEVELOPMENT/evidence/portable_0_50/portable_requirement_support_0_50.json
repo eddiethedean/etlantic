@@ -14881,6 +14881,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-datafusion",
+          "implementation": "datafusion-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -15249,6 +15254,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-duckdb",
+          "implementation": "duckdb-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -15620,6 +15630,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-local",
+          "implementation": "python-records/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -15987,6 +16002,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-pandas",
+          "implementation": "pandas-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -16354,6 +16374,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-polars",
+          "implementation": "polars-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -16721,6 +16746,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-pyspark",
+          "implementation": "pyspark-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -17089,6 +17119,11 @@
         "definition_digest": "9b856c992462b84c7278f7e76f31b0c4bbcddb425d4e8a7b457f30fc2fba6be6",
         "expected_state": "unsupported",
         "fixture_id": "unsupported-action",
+        "provenance": {
+          "compiler": "etlantic-sql",
+          "implementation": "sql-native/1",
+          "kind": "compiler_analyze"
+        },
         "support_report": {
           "evidence": [
             {
@@ -22681,10 +22716,10 @@
       }
     }
   },
-  "repository_commit": "df052a2a6ae3cb875f75f20a4dc04a7c6da6593e",
+  "repository_commit": "584895b2143d8cb5304369315289227861ab4793",
   "result": "pass",
   "schema": "etlantic.portable-requirement-support/1",
-  "source_tree_digest": "2ae786b94e4d614cc88c5fc09580e4fb6e01afd16f1ee2c4299de2b337cea8f6",
+  "source_tree_digest": "d41c787716bc099679edae0f1af24236dbf77ad968016267fa78f4639cf3be17",
   "support_states": [
     "supported_exact",
     "supported_with_lowering",

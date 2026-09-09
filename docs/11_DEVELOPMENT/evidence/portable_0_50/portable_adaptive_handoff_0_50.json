@@ -27,7 +27,7 @@
     "test_adaptive_evidence_drift_rejects_before_io",
     "test_orchestrator_rejects_before_lifecycle_or_cleanup"
   ],
-  "repository_commit": "df052a2a6ae3cb875f75f20a4dc04a7c6da6593e",
+  "repository_commit": "584895b2143d8cb5304369315289227861ab4793",
   "result": "pass",
   "scenarios": [
     {
@@ -3389,5 +3389,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "2ae786b94e4d614cc88c5fc09580e4fb6e01afd16f1ee2c4299de2b337cea8f6"
+  "source_tree_digest": "d41c787716bc099679edae0f1af24236dbf77ad968016267fa78f4639cf3be17"
 }
