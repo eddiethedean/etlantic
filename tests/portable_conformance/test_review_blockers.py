@@ -8,6 +8,7 @@ the portable semantic invariant, not a preferred implementation strategy.
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -190,8 +191,18 @@ def test_final_rel_003_postgresql_uses_complete_case_ignorable_context() -> None
     case = _project_case(
         "final_rel_003_postgresql_complete_sigma_context",
         [("value", _call("dtcs:lower", _field("text")))],
-        rows=[{"text": "A:\u03a3"}, {"text": "A\u03a3:B"}],
-        expected=[{"value": "a:\u03c2"}, {"value": "a\u03c3:b"}],
+        rows=[
+            {"text": "A:\u03a3"},
+            {"text": "A\u03a3:B"},
+            {"text": "A'\u03a3"},
+            {"text": "A\u03a3'B"},
+        ],
+        expected=[
+            {"value": "a:\u03c2"},
+            {"value": "a\u03c3:b"},
+            {"value": "a'\u03c2"},
+            {"value": "a\u03c3'b"},
+        ],
     )
     _run(create_transform_compiler(), case)
 
@@ -280,14 +291,14 @@ def test_final_rel_005_composed_row_dependent_replace_search_fails_analysis() ->
 
 
 def test_final_rel_008_findings_ledger_records_latest_review_round() -> None:
-    """The immutable release ledger includes every stable FINAL-REL finding."""
+    """The immutable release ledger includes every stable release finding."""
     from scripts.check_portable_0_50 import validate_findings_ledger
 
     root = Path(__file__).resolve().parents[2]
     ledger = (
         root / "docs/11_DEVELOPMENT/evidence/portable_0_50/FINDINGS_0_50.md"
     ).read_text(encoding="utf-8")
-    expected = {f"FINAL-REL-{index:03d}" for index in range(1, 9)}
+    expected = {f"FINAL-REL-{index:03d}" for index in range(1, 9)} | {"SOL-REL-009"}
     missing = sorted(
         finding_id for finding_id in expected if f"| {finding_id} |" not in ledger
     )
@@ -362,4 +373,67 @@ def test_sol_rel_009_sqlite_preserves_boolean_type_for_null_aware_expression(
         rows=[{"seed": 1}],
         expected=[{"value": True}],
     )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sol_rel_009_sqlite_maps_union_boolean_types_by_position(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A by-position union maps right-side type metadata onto left-side names."""
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = FixtureCase(
+        name="sol_rel_009_sqlite_boolean_union_by_position",
+        required_profiles=frozenset(),
+        required_actions=frozenset(),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"left": {}, "right": {}},
+            "actions": [
+                {
+                    "id": "u",
+                    "kind": {
+                        "id": "u",
+                        "action": "dtcs:union",
+                        "target": "left",
+                        "parameters": {"other": "right", "mode": "byPosition"},
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "u", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"left": [{"value": None}], "right": [{"flag": True}]},
+        expected=[{"value": None}, {"value": True}],
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sol_rel_009_sqlite_parameter_scope_does_not_inherit_field_type(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A parameter sharing a field name retains its own runtime value type."""
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = _project_case(
+        "sol_rel_009_sqlite_parameter_field_name_collision",
+        [
+            (
+                "value",
+                {"kind": "fieldRef", "scope": "parameter", "target": "flag"},
+            )
+        ],
+        rows=[{"flag": True}],
+        expected=[{"value": 2}],
+    )
+    case = replace(case, parameters={"flag": 2})
     _run(create_transform_compiler(), case)

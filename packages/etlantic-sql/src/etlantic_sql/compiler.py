@@ -719,6 +719,7 @@ def _postgres_case_ignorable_class() -> str:
     # explicit so PostgreSQL's final-sigma context matches default Unicode
     # casing (including separators such as ':' and '.').
     case_ignorable_punctuation = {
+        0x27,
         0x2E,
         0x3A,
         0xB7,

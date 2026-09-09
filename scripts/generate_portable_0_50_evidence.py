@@ -1664,6 +1664,7 @@ def main() -> int:
         "| FINAL-REL-006 | High | resolved by public case_when arity validation |\n"
         "| FINAL-REL-007 | High | resolved by canonical normalization of null, boolean, numeric, and order semantics |\n"
         "| FINAL-REL-008 | Medium | resolved by complete stable finding ledger and checker coverage |\n\n"
+        "| SOL-REL-009 | High | resolved by SQLite boolean type preservation across unions and scoped parameters |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",

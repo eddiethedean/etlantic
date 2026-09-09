@@ -60,7 +60,9 @@ EXPECTED_SCHEMAS = {
 
 EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 27))
 EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 16))
-EXPECTED_RELEASE_FINDINGS = frozenset(f"FINAL-REL-{index:03d}" for index in range(1, 9))
+EXPECTED_RELEASE_FINDINGS = frozenset(
+    {f"FINAL-REL-{index:03d}" for index in range(1, 9)} | {"SOL-REL-009"}
+)
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
 )

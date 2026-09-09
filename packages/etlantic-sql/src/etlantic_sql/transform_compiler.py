@@ -383,7 +383,9 @@ class SqlTransformCompiler:
                     ),
                     relation_boolean_columns=relation_boolean_columns,
                     relation_non_boolean_columns=relation_non_boolean_columns,
+                    relation_columns=relation_columns,
                     output_columns=out_cols,
+                    parameters=parameters,
                 )
                 relation_boolean_columns[action_id] = bool_columns
                 relation_non_boolean_columns[action_id] = non_bool_columns
@@ -506,12 +508,33 @@ def _infer_column_types(rows: list[dict[str, Any]]) -> tuple[set[str], set[str]]
     return booleans, non_booleans
 
 
-def _expression_boolean_type(node: Any, *, inherited_boolean: set[str]) -> bool | None:
+def _expression_boolean_type(
+    node: Any,
+    *,
+    inherited_boolean: set[str],
+    parameters: Mapping[str, Any] | None = None,
+) -> bool | None:
     """Return True/False for definite boolean/non-boolean, None when unknown/null."""
     if not isinstance(node, Mapping):
         return bool(node) if isinstance(node, bool) else False
     kind = node.get("kind")
     if kind == "fieldRef":
+        if node.get("scope") == "parameter":
+            target = node.get("target")
+            if (
+                isinstance(target, str)
+                and parameters is not None
+                and target in parameters
+            ):
+                value = parameters[target]
+                if isinstance(value, bool):
+                    return True
+                if value is None:
+                    return None
+                return False
+            return None
+        if node.get("scope") not in {None, "field", "column"}:
+            return None
         return True if node.get("target") in inherited_boolean else None
     if kind == "literal":
         value = node.get("value")
@@ -561,7 +584,11 @@ def _expression_boolean_type(node: Any, *, inherited_boolean: set[str]) -> bool 
     if not values:
         return None
     types = [
-        _expression_boolean_type(value, inherited_boolean=inherited_boolean)
+        _expression_boolean_type(
+            value,
+            inherited_boolean=inherited_boolean,
+            parameters=parameters,
+        )
         for value in values
     ]
     if any(value is False for value in types):
@@ -585,7 +612,9 @@ def _action_column_types(
     inherited_non_boolean: set[str],
     relation_boolean_columns: Mapping[str, set[str]],
     relation_non_boolean_columns: Mapping[str, set[str]],
+    relation_columns: Mapping[str, list[str]],
     output_columns: list[str],
+    parameters: Mapping[str, Any] | None = None,
 ) -> tuple[set[str], set[str]]:
     action = str(kind.get("action") or "")
     params = kind.get("parameters") or {}
@@ -605,7 +634,9 @@ def _action_column_types(
                 if "expression" in item:
                     expression = item["expression"]
                     expression_type = _expression_boolean_type(
-                        expression, inherited_boolean=inherited_boolean
+                        expression,
+                        inherited_boolean=inherited_boolean,
+                        parameters=parameters,
                     )
                     if expression_type is True:
                         booleans.add(name)
@@ -626,7 +657,9 @@ def _action_column_types(
             non_booleans.discard(name)
             expression = item.get("expression")
             expression_type = _expression_boolean_type(
-                expression, inherited_boolean=inherited_boolean
+                expression,
+                inherited_boolean=inherited_boolean,
+                parameters=parameters,
             )
             if expression_type is True:
                 booleans.add(name)
@@ -654,8 +687,25 @@ def _action_column_types(
         non_booleans = {renamed.get(name, name) for name in non_booleans}
     elif action in {"dtcs:join", "dtcs:union"}:
         other = str(params.get("right") or params.get("other"))
-        booleans |= relation_boolean_columns.get(other, set())
-        non_booleans |= relation_non_boolean_columns.get(other, set())
+        if (
+            action == "dtcs:union"
+            and str(params.get("mode") or "byPosition") == "byPosition"
+        ):
+            # Align right-side type metadata to left-side output names by
+            # ordinal, matching the SQL union projection.
+            right_types = relation_boolean_columns.get(other, set())
+            right_non_types = relation_non_boolean_columns.get(other, set())
+            right_names = relation_columns.get(other, [])
+            for index, name in enumerate(right_names):
+                if index >= len(output_columns):
+                    break
+                if name in right_types:
+                    booleans.add(output_columns[index])
+                elif name in right_non_types:
+                    non_booleans.add(output_columns[index])
+        else:
+            booleans |= relation_boolean_columns.get(other, set())
+            non_booleans |= relation_non_boolean_columns.get(other, set())
     elif action == "dtcs:aggregate":
         group_by = {str(name) for name in (params.get("groupBy") or ())}
         booleans &= group_by
