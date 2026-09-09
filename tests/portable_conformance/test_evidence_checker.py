@@ -611,15 +611,14 @@ def test_production_checker_rejects_coordinated_fingerprint_rewrite(
     support_path = evidence / "portable_requirement_support_0_50.json"
     support = json.loads(support_path.read_text())
     for report in support["reports"].values():
-        report["evidence"][0]["fingerprint"] = fake
+        for record in report["evidence"]:
+            record["fingerprint"] = fake
+        for finding in report["findings"]:
+            finding["evidence_fingerprint"] = fake
+        for finding in report.get("pushdown", []):
+            finding["evidence_fingerprint"] = fake
         report["fingerprint"] = _support_fingerprint(report)
     support_path.write_text(json.dumps(support, indent=2, sort_keys=True) + "\n")
-    pushdown_path = evidence / "portable_pushdown_contract_0_50.json"
-    pushdown = json.loads(pushdown_path.read_text())
-    for finding in pushdown["findings"]:
-        finding["evidence_fingerprint"] = fake
-    pushdown["evidence"] = [fake]
-    pushdown_path.write_text(json.dumps(pushdown, indent=2, sort_keys=True) + "\n")
     _refresh_temp_evidence_metadata(evidence)
     monkeypatch.setattr(checker, "EVIDENCE", evidence)
     real_check_output = checker.subprocess.check_output
