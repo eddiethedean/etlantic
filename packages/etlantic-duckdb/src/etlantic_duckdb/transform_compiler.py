@@ -1977,7 +1977,10 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
         if kind == "literal":
             value = node.get("value")
             if isinstance(value, dict) and "value" in value:
-                value = value["value"]
+                if value.get("type") == "decimal":
+                    value = Decimal(str(value["value"]))
+                else:
+                    value = value["value"]
             bindings.append(value)
             return "?"
         if kind == "call":

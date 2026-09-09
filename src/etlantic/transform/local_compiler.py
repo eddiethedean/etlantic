@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from collections.abc import Mapping, Sequence
+from decimal import Decimal
 from typing import Any, cast
 
 from etlantic.transform.capabilities import (
@@ -246,6 +247,11 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
                 return MISSING
             if kind == "invalid":
                 return INVALID
+            if kind == "decimal":
+                payload = value.get("value")
+                if payload is None:
+                    raise ValueError("decimal literal requires a value")
+                return Decimal(str(payload))
             return value.get("value")
         return value
     if k == "unary":

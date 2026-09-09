@@ -7,6 +7,7 @@ import json
 import os
 import re
 from collections.abc import Mapping, Sequence
+from decimal import Decimal
 from typing import Any
 
 from etlantic.sql.helpers import require_safe_identifier
@@ -289,6 +290,7 @@ class SqlTransformCompiler:
             relation_columns: dict[str, list[str]] = {}
             relation_boolean_columns: dict[str, set[str]] = {}
             relation_non_boolean_columns: dict[str, set[str]] = {}
+            relation_decimal_columns: dict[str, set[str]] = {}
             native_statement_digests: list[str] = []
             native_explain_digests: list[str] = []
             native_action_digests: dict[str, str] = {}
@@ -302,6 +304,7 @@ class SqlTransformCompiler:
                 bool_columns, non_bool_columns = _infer_column_types(frame.rows)
                 relation_boolean_columns[name] = bool_columns
                 relation_non_boolean_columns[name] = non_bool_columns
+                relation_decimal_columns[name] = _infer_decimal_columns(frame.rows)
 
             # Primary working relation: first declared input or sole frame.
             input_ids = list((plan.get("inputs") or {}).keys()) or list(frames.keys())
@@ -389,6 +392,16 @@ class SqlTransformCompiler:
                 )
                 relation_boolean_columns[action_id] = bool_columns
                 relation_non_boolean_columns[action_id] = non_bool_columns
+                relation_decimal_columns[action_id] = _action_decimal_columns(
+                    kind,
+                    inherited_decimal=relation_decimal_columns.get(
+                        target_source, set()
+                    ),
+                    relation_decimal_columns=relation_decimal_columns,
+                    relation_columns=relation_columns,
+                    output_columns=out_cols,
+                    parameters=parameters,
+                )
                 ctes.append(CteDef(name=step_table, query=query))
 
             valid: dict[str, SqlRelationFrame] = {}
@@ -412,10 +425,13 @@ class SqlTransformCompiler:
                 )
                 result = conn.execute(_text(result_sql))
                 boolean_columns = relation_boolean_columns.get(str(source), set())
+                decimal_columns = relation_decimal_columns.get(str(source), set())
                 rows = [
                     {
                         key: bool(value)
                         if key in boolean_columns and value is not None
+                        else Decimal(str(value))
+                        if key in decimal_columns and value is not None
                         else value
                         for key, value in row._mapping.items()
                     }
@@ -506,6 +522,183 @@ def _infer_column_types(rows: list[dict[str, Any]]) -> tuple[set[str], set[str]]
         else:
             non_booleans.add(name)
     return booleans, non_booleans
+
+
+def _infer_decimal_columns(rows: list[dict[str, Any]]) -> set[str]:
+    """Identify input columns whose non-null values are exact Decimals."""
+    from decimal import Decimal
+
+    columns = {name for row in rows for name in row}
+    return {
+        name
+        for name in columns
+        if any(isinstance(row.get(name), Decimal) for row in rows)
+    }
+
+
+def _expression_decimal_type(
+    node: Any,
+    *,
+    inherited_decimal: set[str],
+    parameters: Mapping[str, Any] | None = None,
+) -> bool:
+    from decimal import Decimal
+
+    if not isinstance(node, Mapping):
+        return isinstance(node, Decimal)
+    kind = node.get("kind")
+    if kind == "fieldRef":
+        if node.get("scope") == "parameter":
+            target = node.get("target")
+            return isinstance(
+                (parameters or {}).get(target) if isinstance(target, str) else None,
+                Decimal,
+            )
+        return str(node.get("target")) in inherited_decimal
+    if kind == "literal":
+        value = node.get("value")
+        return isinstance(value, Mapping) and value.get("type") == "decimal"
+    if kind == "binary":
+        if str(node.get("op")) not in {
+            "add",
+            "sub",
+            "subtract",
+            "mul",
+            "multiply",
+            "div",
+            "divide",
+            "modulo",
+        }:
+            return False
+        return _expression_decimal_type(
+            node.get("left"), inherited_decimal=inherited_decimal, parameters=parameters
+        ) or _expression_decimal_type(
+            node.get("right"),
+            inherited_decimal=inherited_decimal,
+            parameters=parameters,
+        )
+    if kind == "unary":
+        return _expression_decimal_type(
+            node.get("operand", node.get("expr")),
+            inherited_decimal=inherited_decimal,
+            parameters=parameters,
+        )
+    if kind == "call":
+        callee = str(node.get("callee") or "")
+        if callee in {
+            "dtcs:contains",
+            "dtcs:starts_with",
+            "dtcs:ends_with",
+            "dtcs:in",
+            "dtcs:is_null",
+            "dtcs:is_missing",
+            "dtcs:is_invalid",
+            "dtcs:to_string",
+        }:
+            return False
+        args = list(node.get("args") or ())
+        if callee == "dtcs:case_when":
+            args = args[1::2] + (args[-1:] if len(args) % 2 else [])
+        return any(
+            _expression_decimal_type(
+                child, inherited_decimal=inherited_decimal, parameters=parameters
+            )
+            for child in args
+        )
+    return False
+
+
+def _action_decimal_columns(
+    kind: Mapping[str, Any],
+    *,
+    inherited_decimal: set[str],
+    relation_decimal_columns: Mapping[str, set[str]],
+    relation_columns: Mapping[str, list[str]],
+    output_columns: list[str],
+    parameters: Mapping[str, Any] | None = None,
+) -> set[str]:
+    action = str(kind.get("action") or "")
+    params = kind.get("parameters") or {}
+    decimal_columns = set(inherited_decimal)
+    if action == "dtcs:project":
+        decimal_columns = set()
+        for item in params.get("fields") or ():
+            if isinstance(item, str):
+                if item in inherited_decimal:
+                    decimal_columns.add(item)
+            elif isinstance(item, Mapping):
+                name = str(item.get("name") or "")
+                expression = item.get("expression")
+                if expression is None:
+                    if name in inherited_decimal:
+                        decimal_columns.add(name)
+                elif _expression_decimal_type(
+                    expression,
+                    inherited_decimal=inherited_decimal,
+                    parameters=parameters,
+                ):
+                    decimal_columns.add(name)
+    elif action == "dtcs:with_fields":
+        for item in params.get("assignments") or ():
+            if not isinstance(item, Mapping):
+                continue
+            name = str(item.get("name") or "")
+            decimal_columns.discard(name)
+            if _expression_decimal_type(
+                item.get("expression"),
+                inherited_decimal=inherited_decimal,
+                parameters=parameters,
+            ):
+                decimal_columns.add(name)
+    elif action == "dtcs:drop_fields":
+        decimal_columns -= {
+            str(name) for name in (params.get("fields") or params.get("names") or ())
+        }
+    elif action == "dtcs:rename_fields":
+        mapping = params.get("mapping") or {}
+        if isinstance(mapping, list):
+            mapping = {
+                str(item["from"]): str(item["to"])
+                for item in mapping
+                if isinstance(item, Mapping) and "from" in item and "to" in item
+            }
+        decimal_columns = {str(mapping.get(name, name)) for name in decimal_columns}
+    elif action in {"dtcs:join", "dtcs:union"}:
+        other = str(params.get("right") or params.get("other"))
+        other_decimal = relation_decimal_columns.get(other, set())
+        if (
+            action == "dtcs:union"
+            and str(params.get("mode") or "byPosition") == "byPosition"
+        ):
+            names = relation_columns.get(other, [])
+            decimal_columns.update(
+                output_columns[index]
+                for index, name in enumerate(names)
+                if index < len(output_columns) and name in other_decimal
+            )
+        else:
+            decimal_columns.update(other_decimal)
+    elif action == "dtcs:aggregate":
+        group_by = {str(name) for name in (params.get("groupBy") or ())}
+        decimal_columns &= group_by
+        for item in params.get("aggregates") or ():
+            if not isinstance(item, Mapping):
+                continue
+            name = str(item.get("name") or item.get("alias") or "")
+            expression = item.get("expression") or item.get("field")
+            if _expression_decimal_type(
+                expression,
+                inherited_decimal=inherited_decimal,
+                parameters=parameters,
+            ) and str(item.get("function") or item.get("op") or "").lower() in {
+                "sum",
+                "average",
+                "avg",
+                "min",
+                "max",
+            }:
+                decimal_columns.add(name)
+    return decimal_columns & set(output_columns)
 
 
 def _expression_boolean_type(
@@ -715,10 +908,14 @@ def _action_column_types(
     return booleans, non_booleans
 
 
-def _sqlite_type(values: list[Any]) -> str:
+def _sqlite_type(values: list[Any], *, dialect: str = "sqlite") -> str:
     non_null = [v for v in values if v is not None]
     if not non_null:
         return "TEXT"
+    from decimal import Decimal
+
+    if any(isinstance(v, Decimal) for v in non_null):
+        return "NUMERIC" if dialect == "postgresql" else "TEXT"
     if all(isinstance(v, bool) for v in non_null):
         return "INTEGER"
     if all(isinstance(v, int) and not isinstance(v, bool) for v in non_null):
@@ -750,7 +947,7 @@ def _materialize_table(
     safe_columns = [require_safe_identifier(str(c)) for c in columns]
     col_defs = ", ".join(
         f"{quote_identifier(c, dialect=dialect)} "
-        f"{_sqlite_type([row.get(c) for row in rows])}"
+        f"{_sqlite_type([row.get(c) for row in rows], dialect=dialect)}"
         for c in safe_columns
     )
     conn.execute(text(f"CREATE TEMP TABLE {table_sql} ({col_defs})"))
@@ -761,7 +958,8 @@ def _materialize_table(
         payload = {c: row.get(c) for c in safe_columns}
         for key, value in list(payload.items()):
             if isinstance(value, Decimal):
-                payload[key] = float(value)
+                if dialect == "sqlite":
+                    payload[key] = str(value)
             elif value is not None and not isinstance(value, (str, int, float, bool)):
                 payload[key] = str(value)
         conn.execute(insert, payload)

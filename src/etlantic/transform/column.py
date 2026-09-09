@@ -340,6 +340,8 @@ class ColumnExpr:
 
 def literal_node(value: Any) -> dict[str, Any]:
     """Build a DTCS literal node from a Python scalar or sentinel."""
+    from decimal import Decimal
+
     from etlantic.transform.protocol import MISSING, Invalid, Missing
 
     if value is None:
@@ -358,6 +360,15 @@ def literal_node(value: Any) -> dict[str, Any]:
         return {"kind": "literal", "value": {"type": "boolean", "value": value}}
     if isinstance(value, int) and not isinstance(value, bool):
         return {"kind": "literal", "value": {"type": "integer", "value": value}}
+    if isinstance(value, Decimal):
+        if not value.is_finite():
+            raise ModelDefinitionError("Portable decimal literals must be finite")
+        # DTCS plans are JSON-shaped.  Keep Decimal's coefficient and scale in
+        # a canonical string rather than converting through binary float.
+        return {
+            "kind": "literal",
+            "value": {"type": "decimal", "value": str(value)},
+        }
     if isinstance(value, float):
         return {"kind": "literal", "value": {"type": "decimal", "value": str(value)}}
     if isinstance(value, str):

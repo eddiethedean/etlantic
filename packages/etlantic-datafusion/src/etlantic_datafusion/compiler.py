@@ -8,6 +8,7 @@ import io
 import json
 import re
 from collections.abc import Mapping, Sequence
+from decimal import Decimal
 from typing import Any
 
 from etlantic.transform.capabilities import (
@@ -314,7 +315,13 @@ def _expr(
         if isinstance(value, Mapping):
             if value.get("type") in {"missing", "invalid"}:
                 raise ValueError("DataFusion cannot preserve missing/invalid literals")
-            value = value.get("value")
+            if value.get("type") == "decimal":
+                payload = value.get("value")
+                if payload is None:
+                    raise ValueError("decimal literal requires a value")
+                value = Decimal(str(payload))
+            else:
+                value = value.get("value")
         return lit(value)
     if kind == "binary":
         left, right = (

@@ -55,7 +55,10 @@ def unwrap_literal_value(value: Any) -> Any:
     if lit_type == "decimal":
         if payload is None:
             raise ValueError("decimal literal requires a value")
-        return Decimal(str(payload))
+        # JSON-authored decimal fixtures may use numeric values for ordinary
+        # bounded decimals.  Exact Decimal authoring uses a string payload so
+        # coefficient and scale survive serialization without a float hop.
+        return Decimal(str(payload)) if isinstance(payload, str) else payload
     if lit_type == "string":
         return str(payload)
     raise ValueError(f"Unsupported DTCS literal type {lit_type!r}")

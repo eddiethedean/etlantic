@@ -83,10 +83,11 @@ class SqlCompiler:
     def next_param(self, params: dict[str, Any], value: Any) -> str:
         self._param_counter += 1
         name = f"p{self._param_counter}"
-        # sqlite's DB-API adapter does not bind Decimal instances.  Convert
-        # only at this backend boundary; PostgreSQL retains exact numerics.
+        # sqlite's DB-API adapter does not bind Decimal instances.  Keep the
+        # exact decimal spelling as text; SQLite's NUMERIC affinity otherwise
+        # coerces it through binary floating point before the query runs.
         params[name] = (
-            float(value)
+            str(value)
             if self.dialect == "sqlite" and isinstance(value, Decimal)
             else value
         )
@@ -104,6 +105,12 @@ class SqlCompiler:
             return self.quote(require_safe_identifier(expr))
         if isinstance(expr, LiteralExpr):
             parameter = self.next_param(params, expr.value)
+            if self.dialect == "sqlite" and expr.sql_type == "NUMERIC":
+                # SQLite has no exact decimal storage class.  Preserve the
+                # canonical coefficient/scale as a bound text value; callers
+                # that require numeric evaluation must use a backend with a
+                # native NUMERIC implementation.
+                return parameter
             if expr.sql_type:
                 return f"CAST({parameter} AS {expr.sql_type})"
             return parameter

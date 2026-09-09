@@ -1,0 +1,122 @@
+"""Regression coverage for the frozen portable Decimal contract."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Any
+
+import pytest
+
+from etlantic.testing.portable_fixtures.corpus import FixtureCase
+from etlantic.testing.portable_transform_conformance import (
+    _run_case,
+    default_frame_factory,
+)
+from etlantic.transform import functions as F
+from etlantic.transform.compiler import TransformPlanningContext
+
+
+def _decimal_case(
+    *,
+    expression: dict[str, Any],
+    rows: list[dict[str, Any]],
+    expected: list[dict[str, Any]],
+) -> FixtureCase:
+    return FixtureCase(
+        name="decimal_contract",
+        required_profiles=frozenset(),
+        required_actions=frozenset(),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "p",
+                    "kind": {
+                        "action": "dtcs:project",
+                        "id": "p",
+                        "target": "t",
+                        "parameters": {
+                            "fields": [{"name": "value", "expression": expression}]
+                        },
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "p", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"t": rows},
+        expected=expected,
+    )
+
+
+def _run(compiler: Any, case: FixtureCase) -> None:
+    _run_case(
+        compiler,
+        case,
+        planning=TransformPlanningContext(
+            pipeline_id="decimal",
+            step_name="step",
+            profile_name="portable",
+            engine=compiler.info.engine,
+        ),
+        to_frame=default_frame_factory(compiler.info.engine),
+    )
+
+
+def test_public_decimal_literal_is_json_safe_and_exact() -> None:
+    literal = F.lit(Decimal("1234567890.123456789012345678")).node
+    assert literal == {
+        "kind": "literal",
+        "value": {
+            "type": "decimal",
+            "value": "1234567890.123456789012345678",
+        },
+    }
+
+
+def test_local_decimal_literal_preserves_coefficient_and_scale() -> None:
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_case(
+        expression=F.lit(value).node,
+        rows=[{"seed": 1}],
+        expected=[{"value": value}],
+    )
+    _run(LocalTransformCompiler(), case)
+
+
+@pytest.mark.sql
+def test_sqlite_decimal_field_round_trip_preserves_precision() -> None:
+    from etlantic_sql import create_transform_compiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_case(
+        expression=F.col("amount").node,
+        rows=[{"amount": value}],
+        expected=[{"value": value}],
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_postgresql_decimal_field_round_trip_preserves_precision() -> None:
+    if (
+        not __import__("os")
+        .environ.get("ETLANTIC_SQL_URL", "")
+        .startswith("postgresql")
+    ):
+        pytest.skip("PostgreSQL Decimal verification requires ETLANTIC_SQL_URL")
+    from etlantic_sql import create_transform_compiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_case(
+        expression=F.col("amount").node,
+        rows=[{"amount": value}],
+        expected=[{"value": value}],
+    )
+    _run(create_transform_compiler(), case)
