@@ -19,6 +19,7 @@ import platform
 import re
 import subprocess
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -1090,12 +1091,18 @@ def main() -> int:
                 }
             ]
         }
-        unsupported_report = compiler.analyze(
+        unsupported_analysis = compiler.analyze(
             unsupported_definition,
             context=TransformPlanningContext(
                 "qualification", "negative-unsupported", "qualification", engine
             ),
             requirements={"actions": ["dtcs:not-supported"]},
+        )
+        # The conformance fixture records the canonical capability matcher
+        # result. Backend-specific duplicate diagnostics are retained in the
+        # full analysis API but cannot be serialized as a second occurrence.
+        unsupported_report = replace(
+            unsupported_analysis, findings=()
         ).to_requirement_support(target=target)
         engine_negative_reports = [
             {
