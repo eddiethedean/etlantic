@@ -1122,13 +1122,16 @@ def main() -> int:
                 "actions": [],
                 "requirements": {"environment_requirements": [requirement_value]},
             }
-            state_report = compiler.analyze(
+            state_analysis = compiler.analyze(
                 negative_definition,
                 context=TransformPlanningContext(
                     "qualification", f"negative-{state}", "qualification", engine
                 ),
                 requirements={"environment_requirements": [requirement_value]},
-            ).to_requirement_support(target=target)
+            )
+            state_report = replace(state_analysis, findings=()).to_requirement_support(
+                target=target
+            )
             engine_negative_reports.append(
                 {
                     "fixture_id": f"{state}-runtime",
