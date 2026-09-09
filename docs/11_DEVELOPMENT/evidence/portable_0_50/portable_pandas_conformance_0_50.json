@@ -13,10 +13,10 @@
     "native_explain_digest": null,
     "result_digest": null
   },
-  "repository_commit": "159097e562364ac03287fceeb36eb8b220ccb75c",
+  "repository_commit": "1dbb501cd19976b0ccd43a5105961cdd32347fb5",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "1f1cca90d5a1ca09e1c682dbe02d68b4544fcdd4201e92be32dc6a9bf9492bd0",
+  "source_tree_digest": "41d4fe9a4c420038d81b5a163e54497c2fefdd8adb7d91a15e8368da6236d357",
   "tests": [
     "tests/portable_conformance/test_public_suite.py",
     "tests/sql/test_sql_portable_security.py",
