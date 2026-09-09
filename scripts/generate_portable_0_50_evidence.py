@@ -1109,6 +1109,12 @@ def main() -> int:
                 "fixture_id": "unsupported-action",
                 "expected_state": "unsupported",
                 "definition_digest": _digest(unsupported_definition),
+                "provenance": {
+                    "kind": "compiler_analyze",
+                    "compiler": compiler.info.name,
+                    "implementation": compiler.info.implementation
+                    or compiler.info.name,
+                },
                 "support_report": unsupported_report,
             }
         ]
