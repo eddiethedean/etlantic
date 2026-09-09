@@ -39,6 +39,10 @@ jobs:
       - name: Ruff format
         run: uv run ruff format --check .
 
+      - name: Pyright (0.50 release surface)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run pyright
+
       - name: Pytest (core)
         run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 

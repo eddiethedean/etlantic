@@ -315,6 +315,7 @@ def _build_plan(
             definition, graph, context, default_engine
         )
     else:
+        assert pipeline_cls is not None
         implementations = _select_implementations(
             pipeline_cls, graph, context, default_engine
         )
@@ -1170,6 +1171,7 @@ def _select_implementations(
             )
         if native_record is None:
             _missing_implementation_error(node.name, requested_engine)
+        assert native_record is not None
         engine = native_record.engine
         identity = native_record.identity
         is_async = native_record.is_async
@@ -1701,7 +1703,8 @@ def _interchange_descriptor(
     }:
         copy_eligibility = CopyEligibility.COPY_REQUIRED
     elif (
-        producer_capabilities.zero_copy
+        producer_capabilities is not None
+        and producer_capabilities.zero_copy
         and consumer_capabilities is not None
         and consumer_capabilities.zero_copy
     ):
@@ -1909,6 +1912,7 @@ def _resolve_outputs(
                 else:
                     # Cross-engine handoff: keep in-memory until conversion.
                     strategy = ArtifactStrategy.IN_MEMORY
+            contract_type = getattr(node, "contract_type", None)
             art_id = artifact_identity(
                 pipeline_id=graph.pipeline_id,
                 node_name=node.name,
@@ -1917,11 +1921,11 @@ def _resolve_outputs(
                 tenant=tenant,
                 environment=environment,
                 authorization=authorization,
-                contract_version=published_contract_version(
-                    getattr(node, "contract_type", None)
-                )
-                if getattr(node, "contract_type", None) is not None
-                else None,
+                contract_version=(
+                    published_contract_version(contract_type)
+                    if contract_type is not None
+                    else None
+                ),
             )
             impl = implementations.get(node.name)
             compiler_fp = None

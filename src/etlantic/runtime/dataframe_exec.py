@@ -147,6 +147,8 @@ def _worst_decision(
 def _unpack_validation(
     result: tuple[Any, ...],
 ) -> tuple[Any, ValidationDecision, list[dict[str, Any]], Any | None]:
+    if len(result) < 3:
+        raise ValueError("validation results must contain value, decision, diagnostics")
     if len(result) >= 4:
         return result[0], result[1], list(result[2] or []), result[3]
     return result[0], result[1], list(result[2] or []), None

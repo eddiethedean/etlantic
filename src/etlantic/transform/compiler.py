@@ -43,6 +43,17 @@ PHYSICAL_EFFECTS = frozenset(
 _TARGET_KEYS = frozenset(
     {"engine", "compiler", "version", "protocol", "package", "placement"}
 )
+_SUPPORT_PAYLOAD_KEYS = frozenset(
+    {
+        "schema",
+        "target",
+        "requirements",
+        "findings",
+        "evidence",
+        "pushdown",
+        "fingerprint",
+    }
+)
 _PLACEMENT_TARGET_KEYS = frozenset(
     {"resource", "location", "security_domain", "connector", "policy"}
 )
@@ -281,6 +292,7 @@ class TransformSupportReport:
         evidence_fingerprints: list[str] = []
         for candidate in [
             self.evidence_fingerprint,
+            *(finding.evidence_fingerprint for finding in self.requirement_findings),
             *(finding.evidence_fingerprint for finding in self.findings),
         ]:
             if candidate and candidate not in evidence_fingerprints:
@@ -289,7 +301,7 @@ class TransformSupportReport:
             fingerprint: ("compiler" if index == 0 else f"compiler-{index + 1}")
             for index, fingerprint in enumerate(evidence_fingerprints)
         }
-        requirement_by_legacy: dict[str, str] = {}
+        requirement_by_legacy: dict[str, list[str]] = {}
         for record in requirements:
             identifier = record.get("id")
             value = (record.get("parameters") or {}).get("value")
@@ -306,9 +318,13 @@ class TransformSupportReport:
                     "union_modes": "union_mode",
                     "collision_policies": "collision_policy",
                 }.get(scope, scope.rstrip("s"))
-                requirement_by_legacy.setdefault(f"{singular}:{value}", identifier)
+                requirement_by_legacy.setdefault(f"{singular}:{value}", []).append(
+                    identifier
+                )
                 if scope in {"eager", "lazy"}:
-                    requirement_by_legacy.setdefault(f"mode:{scope}", identifier)
+                    requirement_by_legacy.setdefault(f"mode:{scope}", []).append(
+                        identifier
+                    )
         findings = []
         canonical_findings = list(self.requirement_findings)
         used_ids: set[str] = set()
@@ -328,7 +344,7 @@ class TransformSupportReport:
             else:
                 legacy_match = requirement_by_legacy.get(original_requirement)
                 if legacy_match is not None:
-                    matched_requirement_ids.append(legacy_match)
+                    matched_requirement_ids.extend(legacy_match)
                 elif original_requirement.startswith("requirement:"):
                     category = original_requirement.removeprefix("requirement:")
                     matched_requirement_ids.extend(
@@ -387,7 +403,9 @@ class TransformSupportReport:
                     serialized["reason_code"] = "PMXFORM999"
                 if serialized.get("reason_code") != "PMXFORM999":
                     serialized["reason_code"] = finding.code
-                serialized["path"] = finding.expression_path or "findings"
+                serialized["path"] = finding.expression_path or str(
+                    requirement.get("path") or "findings"
+                )
                 used_ids.add(requirement_id)
                 serialized_by_requirement[requirement_id] = serialized
         findings.extend(serialized_by_requirement.values())
@@ -467,8 +485,11 @@ class TransformSupportReport:
 
 def requirement_records_from_mapping(
     requirements: Mapping[str, Any] | None,
+    *,
+    definition: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], ...]:
-    """Convert legacy requirement lists into stable bounded protocol records."""
+    """Convert requirement lists into stable, occurrence-aware protocol records."""
+    occurrence_paths = _requirement_occurrence_paths(definition or {})
     records: list[dict[str, Any]] = []
     seen: set[str] = set()
     for scope in sorted((requirements or {}).keys()):
@@ -482,23 +503,100 @@ def requirement_records_from_mapping(
             if item is None:
                 continue
             semantic_id = str(item)
-            requirement_id = _canonical_requirement_id(scope, semantic_id, scope)
-            if requirement_id in seen:
-                continue
-            seen.add(requirement_id)
-            records.append(
-                {
-                    "id": requirement_id,
-                    "vocabulary": "dtcs",
-                    "version": "1",
-                    "scope": scope,
-                    "path": scope,
-                    "obligation": "required",
-                    "applicability": "applicable",
-                    "parameters": {"value": semantic_id},
-                }
-            )
+            paths = occurrence_paths.get((scope, semantic_id)) or (scope,)
+            for path in paths:
+                requirement_id = _canonical_requirement_id(scope, semantic_id, path)
+                if requirement_id in seen:
+                    continue
+                seen.add(requirement_id)
+                records.append(
+                    {
+                        "id": requirement_id,
+                        "vocabulary": "dtcs",
+                        "version": "1",
+                        "scope": scope,
+                        "path": path,
+                        "obligation": "required",
+                        "applicability": "applicable",
+                        "parameters": {"value": semantic_id},
+                    }
+                )
     return tuple(records)
+
+
+def _requirement_occurrence_paths(
+    definition: Mapping[str, Any],
+) -> dict[tuple[str, str], tuple[str, ...]]:
+    """Return value-free logical paths for governed plan requirements."""
+    from etlantic.transform.portable_baseline import (
+        normalize_action,
+        normalize_operator,
+    )
+
+    paths: dict[tuple[str, str], list[str]] = {}
+
+    def record(scope: str, semantic_id: Any, path: str) -> None:
+        key = (scope, str(semantic_id))
+        values = paths.setdefault(key, [])
+        if path not in values:
+            values.append(path)
+
+    def visit(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            kind = node.get("kind")
+            if kind == "call" and isinstance(node.get("callee"), str):
+                callee = str(node["callee"])
+                if callee == "dtcs:in":
+                    record("operators", "in", path)
+                else:
+                    record("functions", callee, path)
+            elif (
+                isinstance(kind, str)
+                and kind in {"binary", "unary"}
+                and isinstance(node.get("op"), str)
+            ):
+                record("operators", normalize_operator(str(node["op"])), path)
+            elif kind == "literal":
+                value = node.get("value")
+                if isinstance(value, Mapping) and isinstance(value.get("type"), str):
+                    record("types", value["type"], path)
+            for key, value in node.items():
+                visit(value, f"{path}/{key}" if path else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                visit(value, f"{path}/{index}")
+
+    profile = definition.get("profile")
+    if isinstance(profile, str):
+        record("profiles", profile, "profile")
+    for index, item in enumerate(definition.get("actions") or ()):
+        if not isinstance(item, Mapping):
+            continue
+        kind = item.get("kind")
+        if not isinstance(kind, Mapping):
+            continue
+        action = kind.get("action")
+        base = f"actions/{index}"
+        if isinstance(action, str):
+            action = normalize_action(action)
+            record("actions", action, base)
+        parameters = kind.get("parameters")
+        if isinstance(parameters, Mapping):
+            if action == "dtcs:join":
+                if parameters.get("type") is not None:
+                    record("join_modes", parameters["type"], f"{base}/parameters/type")
+                if parameters.get("collisionPolicy") is not None:
+                    record(
+                        "collision_policies",
+                        parameters["collisionPolicy"],
+                        f"{base}/parameters/collisionPolicy",
+                    )
+            elif action == "dtcs:union" and parameters.get("mode") is not None:
+                record("union_modes", parameters["mode"], f"{base}/parameters/mode")
+        visit(item, base)
+    for name, output in sorted((definition.get("outputs") or {}).items()):
+        visit(output, f"outputs/{name}")
+    return {key: tuple(values) for key, values in paths.items()}
 
 
 def _canonical_requirement_id(scope: str, semantic_id: str, path: str) -> str:
@@ -671,6 +769,8 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
             if allowed is not None and value not in allowed:
                 raise ValueError(f"invalid {field_name} value")
 
+    if set(payload) != _SUPPORT_PAYLOAD_KEYS:
+        raise ValueError("requirement-support payload contains unsupported fields")
     if payload.get("schema") != "etlantic.portable-requirement-support/1":
         raise ValueError("invalid requirement-support schema")
     if not isinstance(payload.get("target"), Mapping):
@@ -680,8 +780,13 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
     if unknown_target:
         raise ValueError("requirement-support target contains unsupported fields")
     for key in ("engine", "compiler", "version", "protocol"):
-        if not isinstance(target.get(key), str) or not target[key]:
-            raise ValueError(f"requirement-support target.{key} must be non-empty")
+        validate_bounded_string(
+            target.get(key), field_name=f"requirement-support target.{key}"
+        )
+    if "package" in target:
+        validate_bounded_string(
+            target.get("package"), field_name="requirement-support target.package"
+        )
     if target.get("protocol") != COMPILER_PROTOCOL:
         raise ValueError("requirement-support target.protocol is unsupported")
     placement = target.get("placement")
@@ -693,12 +798,10 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
                 "requirement-support target.placement must contain the complete "
                 "resource, location, security_domain, connector, and policy identity"
             )
-        if any(
-            not isinstance(placement.get(key), str) or not placement[key]
-            for key in _PLACEMENT_TARGET_KEYS
-        ):
-            raise ValueError(
-                "requirement-support target.placement values must be non-empty strings"
+        for key in _PLACEMENT_TARGET_KEYS:
+            validate_bounded_string(
+                placement.get(key),
+                field_name=f"requirement-support target.placement.{key}",
             )
     requirements = payload.get("requirements")
     findings = payload.get("findings")
@@ -772,9 +875,17 @@ def validate_requirement_support_payload(payload: Mapping[str, Any]) -> None:
         reason = item.get("reason")
         if (
             not isinstance(reason, str)
+            or not reason
             or len(reason.encode("utf-8")) > MAX_REASON_BYTES
+            or any(ord(character) < 32 for character in reason)
         ):
-            raise ValueError("finding reason exceeds 1024 UTF-8 bytes")
+            raise ValueError("finding reason must be a bounded string")
+        if "code" in item:
+            validate_bounded_string(item.get("code"), field_name="finding code")
+        if item.get("expression_path") is not None:
+            validate_bounded_string(
+                item.get("expression_path"), field_name="finding expression path"
+            )
         validate_bounded_string(
             item.get("reason_code"), field_name="finding reason code"
         )

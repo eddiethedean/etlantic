@@ -271,7 +271,10 @@ async def cancel_spark_jobs(
         advertised = True
         if callable(caps):
             try:
-                advertised = bool(caps().supports("cancellation"))
+                supports = getattr(caps(), "supports", None)
+                if not callable(supports):
+                    raise TypeError("capability result has no supports() method")
+                advertised = bool(supports("cancellation"))
             except Exception as exc:
                 advertised = False
                 errors.append(f"capability probe failed: {exc}")

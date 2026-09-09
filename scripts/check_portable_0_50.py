@@ -57,7 +57,22 @@ EXPECTED_SCHEMAS = {
 }
 
 EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 21))
-EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 7))
+EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 11))
+EXPECTED_ENGINES = frozenset(
+    {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
+)
+EXPECTED_CANONICAL_ACTIONS = frozenset(
+    {
+        "dtcs:aggregate",
+        "dtcs:deduplicate",
+        "dtcs:filter",
+        "dtcs:join",
+        "dtcs:limit",
+        "dtcs:project",
+        "dtcs:sort",
+        "dtcs:union",
+    }
+)
 
 
 def validate_findings_ledger(findings_doc: str) -> None:
@@ -101,6 +116,143 @@ def validate_cross_engine_digests(payload: dict[str, object]) -> None:
         or canonical["postgresql"] != canonical["sqlite"]
     ):
         raise SystemExit("cross-engine canonical digests are incomplete")
+
+
+def validate_requirement_campaign(payload: dict[str, object]) -> None:
+    """Require exact canonical-plan and negative-state reports for every engine."""
+    from etlantic.transform.compiler import validate_requirement_support_payload
+
+    fingerprint = payload.get("canonical_definition_fingerprint")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(fingerprint or "")):
+        raise SystemExit("canonical support evidence lacks a definition fingerprint")
+    if payload.get("canonical_action_count") != len(EXPECTED_CANONICAL_ACTIONS):
+        raise SystemExit("canonical support evidence has the wrong action count")
+    reports = payload.get("reports")
+    baseline_reports = payload.get("baseline_reports")
+    negative_reports = payload.get("negative_reports")
+    if (
+        not isinstance(reports, dict)
+        or set(reports) != EXPECTED_ENGINES
+        or not isinstance(baseline_reports, dict)
+        or set(baseline_reports) != EXPECTED_ENGINES
+        or not isinstance(negative_reports, dict)
+        or set(negative_reports) != EXPECTED_ENGINES
+    ):
+        raise SystemExit("requirement evidence does not cover all seven engines")
+    for engine, report in reports.items():
+        if not isinstance(report, dict):
+            raise SystemExit(f"canonical requirement evidence is invalid for {engine}")
+        try:
+            validate_requirement_support_payload(report)
+            validate_requirement_support_payload(baseline_reports[engine])
+        except (TypeError, ValueError) as exc:
+            raise SystemExit(
+                f"invalid requirement evidence for {engine}: {exc}"
+            ) from exc
+        if (
+            report["target"].get("engine") != engine
+            or baseline_reports[engine]["target"].get("engine") != engine
+        ):
+            raise SystemExit(f"requirement evidence target disagrees for {engine}")
+        requirements = {
+            str(item.get("id")): item for item in report.get("requirements") or []
+        }
+        findings_by_requirement = {
+            str(item.get("requirement")): item for item in report.get("findings") or []
+        }
+        action_requirements = {
+            requirement_id: item
+            for requirement_id, item in requirements.items()
+            if item.get("scope") == "actions"
+        }
+        canonical_actions = {
+            str((item.get("parameters") or {}).get("value"))
+            for item in action_requirements.values()
+        }
+        if (
+            canonical_actions != EXPECTED_CANONICAL_ACTIONS
+            or len(action_requirements) != len(EXPECTED_CANONICAL_ACTIONS)
+            or {item.get("path") for item in action_requirements.values()}
+            != {f"actions/{index}" for index in range(len(EXPECTED_CANONICAL_ACTIONS))}
+            or any(
+                findings_by_requirement.get(requirement_id, {}).get("path")
+                != requirement.get("path")
+                for requirement_id, requirement in action_requirements.items()
+            )
+        ):
+            raise SystemExit(
+                f"canonical action-level support evidence is incomplete for {engine}"
+            )
+        for requirement_id, requirement in requirements.items():
+            if (
+                requirement.get("applicability") == "applicable"
+                and requirement.get("obligation") == "required"
+            ):
+                finding = findings_by_requirement.get(requirement_id)
+                if finding is None or finding.get("support") not in {
+                    "supported_exact",
+                    "supported_with_lowering",
+                }:
+                    raise SystemExit(
+                        "required canonical support evidence is not positive for "
+                        f"{engine}: {requirement_id}"
+                    )
+
+        engine_negatives = negative_reports[engine]
+        if (
+            not isinstance(engine_negatives, list)
+            or {item.get("expected_state") for item in engine_negatives}
+            != {"unsupported", "unavailable", "unknown"}
+            or {item.get("fixture_id") for item in engine_negatives}
+            != {"unsupported-action", "unavailable-runtime", "unknown-runtime"}
+        ):
+            raise SystemExit(f"negative support corpus is incomplete for {engine}")
+        for negative in engine_negatives:
+            negative_report = negative.get("support_report")
+            expected_state = negative.get("expected_state")
+            if not re.fullmatch(
+                r"[0-9a-f]{64}", str(negative.get("definition_digest") or "")
+            ) or not isinstance(negative_report, dict):
+                raise SystemExit(f"negative support evidence is invalid for {engine}")
+            try:
+                validate_requirement_support_payload(negative_report)
+            except ValueError as exc:
+                raise SystemExit(
+                    f"negative support evidence is invalid for {engine}: {exc}"
+                ) from exc
+            if negative_report["target"].get("engine") != engine:
+                raise SystemExit(f"negative support target disagrees for {engine}")
+            matching = [
+                item
+                for item in negative_report.get("findings") or []
+                if item.get("support") == expected_state
+            ]
+            if not matching or any(
+                not item.get("reason_code")
+                or not item.get("reason")
+                or not item.get("path")
+                for item in matching
+            ):
+                raise SystemExit(
+                    f"negative {expected_state} finding is absent for {engine}"
+                )
+            if expected_state == "unsupported":
+                unsupported_ids = {
+                    str(item.get("id"))
+                    for item in negative_report.get("requirements") or []
+                    if item.get("scope") == "actions"
+                    and item.get("path") == "actions/0"
+                    and (item.get("parameters") or {}).get("value")
+                    == "dtcs:not-supported"
+                }
+                if not unsupported_ids or not any(
+                    item.get("requirement") in unsupported_ids
+                    and item.get("path") == "actions/0"
+                    for item in matching
+                ):
+                    raise SystemExit(
+                        f"unsupported action finding is not plan-scoped for {engine}"
+                    )
 
 
 def validate_adaptive_lowering_binding(
@@ -468,50 +620,13 @@ def main() -> int:
         digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
         if digests.get(name) != digest:
             raise SystemExit(f"evidence digest mismatch: {name}")
+    from etlantic.transform.compiler import validate_requirement_support_payload
+
     support = json.loads(
         (EVIDENCE / "portable_requirement_support_0_50.json").read_text()
     )
-    from etlantic.transform.compiler import validate_requirement_support_payload
-
-    reports = support.get("reports")
-    if not isinstance(reports, dict) or set(reports) != {
-        "local",
-        "polars",
-        "pandas",
-        "sql",
-        "pyspark",
-        "datafusion",
-        "duckdb",
-    }:
-        raise SystemExit("requirement evidence does not cover all seven engines")
-    for engine, report in reports.items():
-        try:
-            validate_requirement_support_payload(report)
-        except ValueError as exc:
-            raise SystemExit(
-                f"invalid requirement evidence for {engine}: {exc}"
-            ) from exc
-        if not report.get("requirements") or not report.get("findings"):
-            raise SystemExit(f"requirement evidence is empty for {engine}")
-        requirements = {
-            str(item.get("id")): item for item in report.get("requirements") or []
-        }
-        findings_by_requirement = {
-            str(item.get("requirement")): item for item in report.get("findings") or []
-        }
-        for requirement_id, requirement in requirements.items():
-            if requirement.get("applicability") == "not_applicable":
-                continue
-            if requirement.get("obligation") != "required":
-                continue
-            finding = findings_by_requirement.get(requirement_id)
-            if finding is None or finding.get("support") not in {
-                "supported_exact",
-                "supported_with_lowering",
-            }:
-                raise SystemExit(
-                    f"required support evidence is not positive for {engine}: {requirement_id}"
-                )
+    validate_requirement_campaign(support)
+    reports = cast(dict[str, dict[str, Any]], support["reports"])
     coverage = json.loads((EVIDENCE / "portable_claim_coverage_0_50.json").read_text())
     claims = coverage.get("claims")
     expected_fixtures = sorted(set((manifest.get("leaf_fixture_ids") or {}).values()))
@@ -688,7 +803,23 @@ def main() -> int:
         "lowering-effects",
         "graph-valid-alternative",
         "graph-invalid",
+        "region-fusion",
+        "physical-unit",
+        "retry-semantics",
+        "security-policy",
+        "contract-compatibility",
+        "publication-semantics",
+        "whole-dag",
         "evidence-drift",
+    }
+    graph_constraint_expectations = {
+        "region-fusion": ("region", "fusion:preserve"),
+        "physical-unit": ("physical_unit", "physical_unit:compatible"),
+        "retry-semantics": ("whole_dag", "retry:idempotent"),
+        "security-policy": ("whole_dag", "security:policy"),
+        "contract-compatibility": ("whole_dag", "contract:compatible"),
+        "publication-semantics": ("whole_dag", "publication:atomic"),
+        "whole-dag": ("whole_dag", "dag:feasible"),
     }
     if (
         not isinstance(scenarios, list)
@@ -806,11 +937,26 @@ def main() -> int:
                     "adaptive evaluation must cover multiple logical nodes"
                 )
             validate_adaptive_target_matrix(targets_by_node, nodes)
-            if scenario["id"] == "graph-invalid" and (
+            if scenario["id"] in {"graph-invalid", *graph_constraint_expectations} and (
                 evaluation.get("graph_valid") is not False
                 or not evaluation.get("graph_failures")
             ):
                 raise SystemExit("adaptive graph-invalid fixture is not rejected")
+            if scenario["id"] in graph_constraint_expectations:
+                expected_kind, expected_requirement = graph_constraint_expectations[
+                    scenario["id"]
+                ]
+                failures = evaluation["graph_failures"]
+                if any(
+                    failure.get("constraint") != scenario["id"]
+                    or failure.get("kind") != expected_kind
+                    or failure.get("requirement") != expected_requirement
+                    or failure.get("node") not in evaluation["nodes"]
+                    for failure in failures
+                ) or {failure.get("node") for failure in failures} != set(
+                    evaluation["nodes"]
+                ):
+                    raise SystemExit("adaptive graph constraint evidence is incomplete")
             if scenario["id"] == "graph-valid-alternative" and (
                 evaluation.get("graph_valid") is not True
                 or evaluation.get("graph_failures")

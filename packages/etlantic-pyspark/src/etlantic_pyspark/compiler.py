@@ -201,7 +201,7 @@ class PySparkTransformCompiler:
             pushdown=relational_pushdown_findings(
                 definition, evidence_fingerprint=self._info.evidence_fingerprint
             ),
-            requirements=requirement_records_from_mapping(req),
+            requirements=requirement_records_from_mapping(req, definition=definition),
             requirement_findings=report.requirement_findings,
         )
 

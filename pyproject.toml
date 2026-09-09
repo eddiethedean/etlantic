@@ -89,6 +89,7 @@ dev = [
     "pymdown-extensions>=10.14,<11",
     "pytest>=8,<9",
     "pytest-benchmark>=4,<5",
+    "pyright==1.1.411",
     "ruff>=0.9,<1",
 ]
 dataframes = [
@@ -368,3 +369,25 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+include = [
+    "src/etlantic/transform",
+    "src/etlantic/plan/planner.py",
+    "src/etlantic/runtime/dataframe_exec.py",
+    "src/etlantic/runtime/sql_exec.py",
+    "src/etlantic/runtime/spark_exec.py",
+    "src/etlantic/runtime/execute.py",
+    "src/etlantic/runtime/orchestrator.py",
+    "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+    "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+    "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+    "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+    "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+    "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+    "scripts/check_portable_0_50.py",
+    "scripts/generate_portable_0_50_evidence.py",
+    "scripts/run_portable_0_50_canonical.py",
+]

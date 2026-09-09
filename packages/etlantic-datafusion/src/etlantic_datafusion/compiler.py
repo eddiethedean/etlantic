@@ -138,7 +138,7 @@ class DataFusionTransformCompiler:
             tuple(findings),
             self.info.evidence_fingerprint,
             pushdown,
-            requirement_records_from_mapping(req),
+            requirement_records_from_mapping(req, definition=definition),
             report.requirement_findings,
         )
 

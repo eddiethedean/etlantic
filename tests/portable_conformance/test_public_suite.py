@@ -912,6 +912,67 @@ def test_adaptive_graph_edge_requires_producer_and_consumer_support() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("scenario_id", "kind", "requirement"),
+    [
+        ("region-fusion", "region", "fusion:preserve"),
+        ("physical-unit", "physical_unit", "physical_unit:compatible"),
+        ("retry-semantics", "whole_dag", "retry:idempotent"),
+        ("security-policy", "whole_dag", "security:policy"),
+        ("contract-compatibility", "whole_dag", "contract:compatible"),
+        ("publication-semantics", "whole_dag", "publication:atomic"),
+        ("whole-dag", "whole_dag", "dag:feasible"),
+    ],
+)
+def test_adaptive_graph_constraint_domains_fail_closed(
+    scenario_id: str, kind: str, requirement: str
+) -> None:
+    from etlantic.transform.capabilities import evaluate_adaptive_candidates
+
+    nodes = ("source", "sink")
+    result = evaluate_adaptive_candidates(
+        [
+            {
+                "node": node,
+                "id": "native",
+                "requirements": {
+                    "dtcs:filter": "supported_exact",
+                    requirement: "unknown",
+                },
+                "support_report": _adaptive_support_report(
+                    {
+                        "dtcs:filter": "supported_exact",
+                        requirement: "unknown",
+                    },
+                    obligations={requirement: "preferred"},
+                ),
+            }
+            for node in nodes
+        ],
+        graph_constraints=(
+            {
+                "id": scenario_id,
+                "kind": kind,
+                "nodes": nodes if kind != "whole_dag" else (),
+                "requirements": (requirement,),
+            },
+        ),
+    )
+
+    assert result["graph_valid"] is False
+    assert result["selected"] == {"sink": "native", "source": "native"}
+    constrained_nodes = nodes if kind != "whole_dag" else tuple(sorted(nodes))
+    assert result["graph_failures"] == [
+        {
+            "constraint": scenario_id,
+            "kind": kind,
+            "node": node,
+            "requirement": requirement,
+        }
+        for node in constrained_nodes
+    ]
+
+
 def test_adaptive_graph_selection_prefers_complete_feasible_assignment() -> None:
     from etlantic.transform.capabilities import evaluate_adaptive_candidates
 
@@ -1378,6 +1439,145 @@ def test_requirement_support_rejects_nested_requirement_parameters() -> None:
     payload["fingerprint"] = _support_fingerprint(payload)
     with pytest.raises(ValueError, match="parameters contain unsupported fields"):
         validate_requirement_support_payload(payload)
+
+
+def test_requirement_support_preserves_finding_specific_evidence() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    requirements = requirement_records_from_mapping(
+        {"actions": ["dtcs:filter", "dtcs:join"]}
+    )
+    identifiers = {
+        str((record.get("parameters") or {}).get("value")): str(record["id"])
+        for record in requirements
+    }
+    report = TransformSupportReport(
+        supported=True,
+        requirements=requirements,
+        requirement_findings=tuple(
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement=identifiers[action],
+                reason="qualified by an engine-specific campaign",
+                support="supported_exact",
+                evidence_fingerprint=f"evidence-{index}",
+            )
+            for index, action in enumerate(("dtcs:filter", "dtcs:join"), start=1)
+        ),
+    )
+
+    payload = report.to_requirement_support(target={"engine": "local"})
+    validate_requirement_support_payload(payload)
+    assert {item["fingerprint"] for item in payload["evidence"]} == {
+        "evidence-1",
+        "evidence-2",
+    }
+    assert {
+        item["requirement"]: item["evidence_fingerprint"]
+        for item in payload["findings"]
+    } == {
+        identifiers["dtcs:filter"]: "evidence-1",
+        identifiers["dtcs:join"]: "evidence-2",
+    }
+
+
+def test_requirement_support_rejects_untyped_trust_boundary_fields() -> None:
+    from copy import deepcopy
+
+    from etlantic.transform.compiler import (
+        TransformSupportReport,
+        _support_fingerprint,
+        requirement_records_from_mapping,
+        validate_requirement_support_payload,
+    )
+
+    baseline = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence",
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+    ).to_requirement_support(
+        target={
+            "engine": "local",
+            "package": "etlantic",
+            "placement": {
+                "resource": "local-memory",
+                "location": "local",
+                "security_domain": "qualification",
+                "connector": "memory",
+                "policy": "portable-qualification",
+            },
+        }
+    )
+    mutations = (
+        lambda payload: payload.__setitem__(
+            "source_rows", [{"password": "plain-secret"}]
+        ),
+        lambda payload: payload["target"].__setitem__(
+            "package", {"source_rows": [{"secret": "value"}]}
+        ),
+        lambda payload: payload["findings"][0].__setitem__(
+            "code", {"executable": "callable"}
+        ),
+        lambda payload: payload["findings"][0].__setitem__(
+            "expression_path", {"source_rows": [1]}
+        ),
+        lambda payload: payload["target"]["placement"].__setitem__(
+            "policy", "unsafe\npolicy"
+        ),
+    )
+
+    for mutate in mutations:
+        payload = deepcopy(baseline)
+        mutate(payload)
+        payload["fingerprint"] = _support_fingerprint(payload)
+        with pytest.raises(ValueError):
+            validate_requirement_support_payload(payload)
+
+
+def test_requirement_support_records_each_plan_occurrence() -> None:
+    from etlantic.transform.compiler import (
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    definition = {
+        "actions": [
+            {"id": "first", "kind": {"action": "dtcs:filter"}},
+            {"id": "second", "kind": {"action": "dtcs:filter"}},
+        ]
+    }
+    requirements = requirement_records_from_mapping(
+        {"actions": ["dtcs:filter"]}, definition=definition
+    )
+    assert [record["path"] for record in requirements] == ["actions/0", "actions/1"]
+
+    payload = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint="evidence",
+        requirements=requirements,
+        requirement_findings=(
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement="action:dtcs:filter",
+                reason="qualified",
+                support="supported_exact",
+                evidence_fingerprint="evidence",
+            ),
+        ),
+    ).to_requirement_support(target={"engine": "local"})
+    assert {item["requirement"] for item in payload["findings"]} == {
+        record["id"] for record in requirements
+    }
+    assert {item["path"] for item in payload["findings"]} == {
+        "actions/0",
+        "actions/1",
+    }
 
 
 @pytest.mark.parametrize(

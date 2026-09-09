@@ -359,9 +359,10 @@ controlled fakes.
 ETLantic ships `py.typed` and a typed root facade stub
 (`src/etlantic/__init__.pyi`). Positive fixtures live under
 `tests/typing/pass/`; negative fixtures under `tests/typing/fail/` document
-demoted root imports. CI does not yet fail the build on a dedicated pyright
-fail-suite run — treat these as contributor anchors and expand them when the
-typing gate lands.
+demoted root imports. CI runs `uv run pyright` over the 0.50 portable compiler,
+planner, execution, backend compiler, and qualification-script surface defined
+by `[tool.pyright]`. The fixture directories remain contributor anchors for a
+future repository-wide fail-suite gate.
 
 ```text
 tests/typing/pass/etl_facade.py

@@ -11,7 +11,130 @@ from scripts.check_portable_0_50 import (
     validate_artifact_schema,
     validate_cross_engine_digests,
     validate_findings_ledger,
+    validate_requirement_campaign,
 )
+
+
+def _requirement_campaign_fixture() -> dict[str, object]:
+    from scripts.check_portable_0_50 import (
+        EXPECTED_CANONICAL_ACTIONS,
+        EXPECTED_ENGINES,
+    )
+
+    from etlantic.transform.compiler import (
+        TransformSupportFinding,
+        TransformSupportReport,
+        requirement_records_from_mapping,
+    )
+
+    evidence = "qualification-evidence"
+    definition = {
+        "actions": [
+            {"id": f"action-{index}", "kind": {"action": action}}
+            for index, action in enumerate(sorted(EXPECTED_CANONICAL_ACTIONS))
+        ]
+    }
+    canonical_requirements = requirement_records_from_mapping(
+        {"actions": sorted(EXPECTED_CANONICAL_ACTIONS)}, definition=definition
+    )
+    canonical_findings = tuple(
+        TransformSupportFinding(
+            code="PMXFORM000",
+            requirement=f"action:{action}",
+            reason="qualified",
+            support="supported_exact",
+            evidence_fingerprint=evidence,
+        )
+        for action in sorted(EXPECTED_CANONICAL_ACTIONS)
+    )
+    canonical_report = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint=evidence,
+        requirements=canonical_requirements,
+        requirement_findings=canonical_findings,
+    )
+    baseline_report = TransformSupportReport(
+        supported=True,
+        evidence_fingerprint=evidence,
+        requirements=requirement_records_from_mapping({"actions": ["dtcs:filter"]}),
+        requirement_findings=(
+            TransformSupportFinding(
+                code="PMXFORM000",
+                requirement="action:dtcs:filter",
+                reason="qualified",
+                support="supported_exact",
+                evidence_fingerprint=evidence,
+            ),
+        ),
+    )
+    unsupported_definition = {
+        "actions": [{"id": "negative", "kind": {"action": "dtcs:not-supported"}}]
+    }
+    unsupported_requirements = requirement_records_from_mapping(
+        {"actions": ["dtcs:not-supported"]}, definition=unsupported_definition
+    )
+
+    def target(engine: str) -> dict[str, str]:
+        return {"engine": engine, "compiler": "fixture", "version": "1"}
+
+    reports = {
+        engine: canonical_report.to_requirement_support(target=target(engine))
+        for engine in EXPECTED_ENGINES
+    }
+    baseline_reports = {
+        engine: baseline_report.to_requirement_support(target=target(engine))
+        for engine in EXPECTED_ENGINES
+    }
+    negatives: dict[str, list[dict[str, object]]] = {}
+    for engine in EXPECTED_ENGINES:
+        entries: list[dict[str, object]] = []
+        for fixture_id, state, requirements in (
+            ("unsupported-action", "unsupported", unsupported_requirements),
+            (
+                "unavailable-runtime",
+                "unavailable",
+                requirement_records_from_mapping(
+                    {"environment_requirements": ["unavailable-runtime"]}
+                ),
+            ),
+            (
+                "unknown-runtime",
+                "unknown",
+                requirement_records_from_mapping(
+                    {"environment_requirements": ["unknown-runtime"]}
+                ),
+            ),
+        ):
+            report = TransformSupportReport(
+                supported=False,
+                evidence_fingerprint=evidence,
+                requirements=requirements,
+                requirement_findings=(
+                    TransformSupportFinding(
+                        code="PMXFORM302",
+                        requirement=str(requirements[0]["id"]),
+                        reason=f"fixture reports {state}",
+                        support=state,
+                        evidence_fingerprint=evidence,
+                    ),
+                ),
+            ).to_requirement_support(target=target(engine))
+            entries.append(
+                {
+                    "fixture_id": fixture_id,
+                    "expected_state": state,
+                    "definition_digest": "a" * 64,
+                    "support_report": report,
+                }
+            )
+        negatives[engine] = entries
+    return {
+        "canonical_definition_fingerprint": "b" * 64,
+        "canonical_action_count": len(EXPECTED_CANONICAL_ACTIONS),
+        "reports": reports,
+        "baseline_reports": baseline_reports,
+        "negative_reports": negatives,
+    }
 
 
 def test_evidence_schema_mutation_is_rejected() -> None:
@@ -32,6 +155,27 @@ def test_cross_engine_digest_mutation_is_rejected() -> None:
     }
     with pytest.raises(SystemExit, match="canonical digests"):
         validate_cross_engine_digests(payload)
+
+
+def test_requirement_campaign_requires_canonical_plan_reports() -> None:
+    payload = _requirement_campaign_fixture()
+    validate_requirement_campaign(payload)
+    payload["reports"] = payload["baseline_reports"]
+    with pytest.raises(SystemExit, match="canonical action-level"):
+        validate_requirement_campaign(payload)
+
+
+def test_requirement_campaign_requires_every_negative_state() -> None:
+    payload = _requirement_campaign_fixture()
+    negative_reports = payload["negative_reports"]
+    assert isinstance(negative_reports, dict)
+    negative_reports["local"] = [
+        item
+        for item in negative_reports["local"]
+        if item["expected_state"] != "unknown"
+    ]
+    with pytest.raises(SystemExit, match="negative support corpus"):
+        validate_requirement_campaign(payload)
 
 
 def test_adaptive_lowering_mutation_is_rejected() -> None:
@@ -131,7 +275,9 @@ def test_adaptive_graph_valid_selection_cannot_choose_ineligible_candidate() -> 
         validate_adaptive_selection(evaluation)
 
 
-@pytest.mark.parametrize("missing", ["SOL-050-019", "SOL-050-020", "FINAL-050-006"])
+@pytest.mark.parametrize(
+    "missing", ["SOL-050-019", "SOL-050-020", "FINAL-050-006", "FINAL-050-010"]
+)
 def test_findings_ledger_rejects_missing_historical_finding(missing: str) -> None:
     from scripts.check_portable_0_50 import (
         EXPECTED_FINAL_FINDINGS,

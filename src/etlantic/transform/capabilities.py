@@ -419,6 +419,7 @@ def evaluate_adaptive_candidates(
     required_requirements: Sequence[str] | Mapping[str, Sequence[str]] = (),
     preferred_requirements: Sequence[str] | Mapping[str, Sequence[str]] = (),
     edges: Sequence[Mapping[str, Any]] = (),
+    graph_constraints: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Evaluate candidate support vectors before preference scoring.
 
@@ -656,12 +657,47 @@ def evaluate_adaptive_candidates(
             )
         )
 
+    constraint_specs: list[tuple[str, str, tuple[str, ...], tuple[str, ...]]] = []
+    constraint_ids: set[str] = set()
+    allowed_constraint_kinds = {"region", "physical_unit", "whole_dag"}
+    for constraint in graph_constraints:
+        if not isinstance(constraint, Mapping):
+            raise TypeError("adaptive graph constraints must be mappings")
+        unknown_fields = set(constraint) - {"id", "kind", "nodes", "requirements"}
+        if unknown_fields:
+            raise ValueError("adaptive graph constraint contains unsupported fields")
+        constraint_id = str(constraint.get("id") or "")
+        kind = str(constraint.get("kind") or "")
+        raw_nodes = constraint.get("nodes") or ()
+        raw_requirements = constraint.get("requirements") or ()
+        if (
+            not constraint_id
+            or constraint_id in constraint_ids
+            or kind not in allowed_constraint_kinds
+            or isinstance(raw_nodes, (str, bytes))
+            or isinstance(raw_requirements, (str, bytes))
+        ):
+            raise ValueError("adaptive graph constraint is invalid")
+        nodes = tuple(str(node) for node in raw_nodes)
+        requirements = tuple(str(requirement) for requirement in raw_requirements)
+        if (
+            (kind != "whole_dag" and not nodes)
+            or not requirements
+            or any(not node for node in nodes)
+            or any(not requirement for requirement in requirements)
+        ):
+            raise ValueError("adaptive graph constraint is invalid")
+        constraint_ids.add(constraint_id)
+        constraint_specs.append((constraint_id, kind, nodes, requirements))
+
     expected_nodes = set(targets_by_node)
     for specification in (required_requirements, preferred_requirements):
         if isinstance(specification, Mapping):
             expected_nodes.update(str(node_id) for node_id in specification)
     for producer, consumer, _requirements in edge_specs:
         expected_nodes.update((producer, consumer))
+    for _constraint_id, _kind, nodes, _requirements in constraint_specs:
+        expected_nodes.update(nodes)
     if expected_nodes != set(targets_by_node):
         raise ValueError(
             "adaptive candidates must cover every node and placement target"
@@ -675,6 +711,15 @@ def evaluate_adaptive_candidates(
         )
 
     node_ids = sorted({item["node"] for item in decisions})
+    constraint_specs = [
+        (
+            constraint_id,
+            kind,
+            nodes if nodes else tuple(node_ids),
+            requirements,
+        )
+        for constraint_id, kind, nodes, requirements in constraint_specs
+    ]
     eligible_by_node: dict[str, list[dict[str, Any]]] = {
         node_id: [] for node_id in node_ids
     }
@@ -720,6 +765,27 @@ def evaluate_adaptive_candidates(
                             "requirement": requirement_id,
                         }
                     )
+        for constraint_id, kind, nodes, requirements in constraint_specs:
+            for node_id in nodes:
+                candidate = selected_candidates.get(node_id)
+                for requirement_id in requirements:
+                    state = (
+                        candidate["requirements"].get(requirement_id)
+                        if candidate
+                        else None
+                    )
+                    if state not in {
+                        "supported_exact",
+                        "supported_with_lowering",
+                    }:
+                        failures.append(
+                            {
+                                "constraint": constraint_id,
+                                "kind": kind,
+                                "node": node_id,
+                                "requirement": requirement_id,
+                            }
+                        )
         return failures
 
     # Every current edge constraint is a hard requirement on both incident
@@ -733,6 +799,9 @@ def evaluate_adaptive_candidates(
     for producer, consumer, requirements in edge_specs:
         edge_requirements_by_node[producer].update(requirements)
         edge_requirements_by_node[consumer].update(requirements)
+    for _constraint_id, _kind, nodes, requirements in constraint_specs:
+        for node_id in nodes:
+            edge_requirements_by_node[node_id].update(requirements)
 
     best_assignment: dict[str, Mapping[str, Any]] | None = None
     if all(eligible_by_node[node_id] for node_id in node_ids):

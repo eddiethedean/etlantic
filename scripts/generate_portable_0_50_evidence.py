@@ -50,6 +50,11 @@ from etlantic.transform.portable_baseline import (
 )
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 
+if __package__:
+    from scripts.run_portable_0_50_canonical import _CanonicalTransform
+else:
+    from run_portable_0_50_canonical import _CanonicalTransform
+
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
 ENGINES = ("local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb")
@@ -151,6 +156,7 @@ ADAPTIVE_FIXTURES = (
     "test_adaptive_lowering_is_derived_from_support_evidence",
     "test_adaptive_evaluation_retains_per_node_selection",
     "test_adaptive_graph_edge_requirement_invalidates_assignment",
+    "test_adaptive_graph_constraint_domains_fail_closed",
     "test_adaptive_graph_selection_prefers_complete_feasible_assignment",
     "test_adaptive_candidate_target_must_be_unique_per_node",
     "test_adaptive_candidate_target_must_match_support_report",
@@ -408,6 +414,49 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
             },
         ),
     )
+    graph_constraint_scenarios = []
+    for scenario_id, kind, requirement in (
+        ("region-fusion", "region", "fusion:preserve"),
+        ("physical-unit", "physical_unit", "physical_unit:compatible"),
+        ("retry-semantics", "whole_dag", "retry:idempotent"),
+        ("security-policy", "whole_dag", "security:policy"),
+        ("contract-compatibility", "whole_dag", "contract:compatible"),
+        ("publication-semantics", "whole_dag", "publication:atomic"),
+        ("whole-dag", "whole_dag", "dag:feasible"),
+    ):
+        nodes = ("source", "sink")
+        evaluation = evaluate_adaptive_candidates(
+            [
+                candidate(
+                    node,
+                    "native",
+                    {
+                        "dtcs:filter": "supported_exact",
+                        requirement: "unknown",
+                    },
+                    target_id="primary",
+                    obligations={requirement: "preferred"},
+                )
+                for node in nodes
+            ],
+            graph_constraints=(
+                {
+                    "id": scenario_id,
+                    "kind": kind,
+                    "nodes": nodes if kind != "whole_dag" else (),
+                    "requirements": (requirement,),
+                },
+            ),
+        )
+        graph_constraint_scenarios.append(
+            {
+                "id": scenario_id,
+                "fixture": "test_adaptive_graph_constraint_domains_fail_closed",
+                "requirements": [requirement],
+                "candidate_evaluation": evaluation,
+                "result": "rejected_graph_invalid",
+            }
+        )
     return [
         {
             "id": "partial-required-unknown",
@@ -476,6 +525,7 @@ def _adaptive_scenarios() -> list[dict[str, Any]]:
             "preflight": "reject_stale_fingerprint_before_io",
             "result": "rejected_before_io",
         },
+        *graph_constraint_scenarios,
     ]
 
 
@@ -990,12 +1040,23 @@ def main() -> int:
     _run(DEPENDENCY_COMMAND)
 
     reports: dict[str, Any] = {}
+    baseline_reports: dict[str, Any] = {}
+    negative_reports: dict[str, list[dict[str, Any]]] = {}
     claims: list[dict[str, Any]] = []
     pushdown: list[dict[str, Any]] = []
     pushdown_proofs: dict[str, Any] = {}
+    canonical_definition = _CanonicalTransform.portable_definition()
+    if canonical_definition is None:
+        raise SystemExit("canonical 0.50 transform has no portable definition")
     for engine, factory in _compiler_factories().items():
         compiler = factory()
-        report = compiler.analyze(
+        target = {
+            "engine": compiler.info.engine,
+            "compiler": compiler.info.name,
+            "version": compiler.info.version,
+            "package": compiler.info.name,
+        }
+        baseline_report = compiler.analyze(
             {"actions": []},
             context=TransformPlanningContext(
                 "qualification", "baseline", "qualification", engine
@@ -1005,15 +1066,74 @@ def main() -> int:
                 lazy=compiler.info.capabilities.lazy,
             ),
         )
-        if not report.supported:
+        if not baseline_report.supported:
             raise SystemExit(f"{engine} does not satisfy the frozen baseline")
-        reports[engine] = report.to_requirement_support(
-            target={
-                "engine": compiler.info.engine,
-                "compiler": compiler.info.name,
-                "version": compiler.info.version,
-            }
+        baseline_reports[engine] = baseline_report.to_requirement_support(target=target)
+        canonical_report = compiler.analyze(
+            canonical_definition.plan,
+            context=TransformPlanningContext(
+                "qualification", "canonical", "qualification", engine
+            ),
+            requirements=canonical_definition.requirements,
         )
+        if not canonical_report.supported:
+            raise SystemExit(f"{engine} does not support the canonical 0.50 plan")
+        reports[engine] = canonical_report.to_requirement_support(target=target)
+
+        unsupported_definition = {
+            "actions": [
+                {
+                    "id": "negative-unsupported",
+                    "kind": {"action": "dtcs:not-supported"},
+                }
+            ]
+        }
+        unsupported_report = compiler.analyze(
+            unsupported_definition,
+            context=TransformPlanningContext(
+                "qualification", "negative-unsupported", "qualification", engine
+            ),
+            requirements={"actions": ["dtcs:not-supported"]},
+        ).to_requirement_support(target=target)
+        engine_negative_reports = [
+            {
+                "fixture_id": "unsupported-action",
+                "expected_state": "unsupported",
+                "definition_digest": _digest(unsupported_definition),
+                "support_report": unsupported_report,
+            }
+        ]
+        for state in ("unavailable", "unknown"):
+            negative_requirements = requirement_records_from_mapping(
+                {"environment_requirements": [f"qualified-{state}-runtime"]}
+            )
+            requirement_id = str(negative_requirements[0]["id"])
+            evidence_fingerprint = compiler.info.evidence_fingerprint
+            state_report = TransformSupportReport(
+                supported=False,
+                evidence_fingerprint=evidence_fingerprint,
+                requirements=negative_requirements,
+                requirement_findings=(
+                    TransformSupportFinding(
+                        code="PMXFORM302",
+                        requirement=requirement_id,
+                        reason=f"qualification fixture reports {state} support",
+                        support=state,
+                        evidence_fingerprint=evidence_fingerprint,
+                    ),
+                ),
+            ).to_requirement_support(target=target)
+            engine_negative_reports.append(
+                {
+                    "fixture_id": f"{state}-runtime",
+                    "expected_state": state,
+                    "definition_digest": _digest(
+                        {"fixture": f"{state}-runtime", "engine": engine}
+                    ),
+                    "support_report": state_report,
+                }
+            )
+        negative_reports[engine] = engine_negative_reports
         caps = compiler.info.capabilities
         fixture_ids = sorted(
             case.name
@@ -1168,7 +1288,11 @@ def main() -> int:
                 "unknown",
             ],
             "obligations": ["required", "preferred", "informational"],
+            "canonical_definition_fingerprint": canonical_definition.fingerprint,
+            "canonical_action_count": len(canonical_definition.plan["actions"]),
+            "baseline_reports": baseline_reports,
             "reports": reports,
+            "negative_reports": negative_reports,
         },
     )
     _write_json(
@@ -1371,7 +1495,11 @@ def main() -> int:
         "| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |\n"
         "| FINAL-050-004 | Medium | resolved by complete unknown-category serialization |\n"
         "| FINAL-050-005 | Medium | resolved by the 0.50 release-surface update |\n"
-        "| FINAL-050-006 | Medium | resolved by complete ledger verification |\n\n"
+        "| FINAL-050-006 | Medium | resolved by complete ledger verification |\n"
+        "| FINAL-050-007 | High | resolved by finding-specific evidence serialization |\n"
+        "| FINAL-050-008 | High | resolved by canonical and negative support reports |\n"
+        "| FINAL-050-009 | High | resolved by graph constraint domain scenarios |\n"
+        "| FINAL-050-010 | Medium | resolved by the CI-enforced scoped Pyright gate |\n\n"
         "Implementation resolutions are complete; Sol re-review pending. The "
         "evidence index, source digest, and artifact digests are the release record "
         "for this disposition.\n",
