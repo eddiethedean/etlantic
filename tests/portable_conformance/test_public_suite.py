@@ -1646,6 +1646,18 @@ def test_requirement_support_rejects_duplicate_requirement_records() -> None:
         ).to_requirement_support(target={"engine": "local"})
 
 
+def test_planner_rejects_dynamic_lowering_condition_even_if_payload_is_mutated() -> (
+    None
+):
+    from etlantic.plan.planner import _support_is_eligible
+    from etlantic.transform.compiler import _support_fingerprint
+
+    payload = _adaptive_support_report({"dtcs:filter": "supported_with_lowering"})
+    payload["findings"][0]["conditions"] = ["source_rows[0].amount > 0"]
+    payload["fingerprint"] = _support_fingerprint(payload)
+    assert _support_is_eligible(payload) is False
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [

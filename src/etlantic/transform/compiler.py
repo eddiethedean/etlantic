@@ -668,14 +668,30 @@ def required_support_failures(payload: Mapping[str, Any]) -> tuple[str, ...]:
         for item in payload.get("findings", ())
         if isinstance(item, Mapping)
     }
+    invalid_lowerings = {
+        str(item.get("requirement"))
+        for item in payload.get("findings", ())
+        if isinstance(item, Mapping)
+        and item.get("support") == "supported_with_lowering"
+        and (
+            not isinstance(item.get("conditions"), list)
+            or any(
+                _static_condition_error(condition)
+                for condition in item.get("conditions", ())
+            )
+        )
+    }
     return tuple(
         str(item.get("id"))
         for item in payload.get("requirements", ())
         if isinstance(item, Mapping)
         and item.get("applicability") == "applicable"
         and item.get("obligation") == "required"
-        and findings.get(item.get("id"))
-        not in {"supported_exact", "supported_with_lowering"}
+        and (
+            findings.get(item.get("id"))
+            not in {"supported_exact", "supported_with_lowering"}
+            or item.get("id") in invalid_lowerings
+        )
     )
 
 
@@ -711,6 +727,14 @@ def _validate_static_condition(value: Any) -> None:
     parts = set(re.split(r"[._:/-]+", value.lower()))
     if parts & _DYNAMIC_CONDITION_PARTS:
         raise ValueError("conditions must be resolved static identifiers")
+
+
+def _static_condition_error(value: Any) -> bool:
+    try:
+        _validate_static_condition(value)
+    except ValueError:
+        return True
+    return False
 
 
 def host_pushdown_findings(
