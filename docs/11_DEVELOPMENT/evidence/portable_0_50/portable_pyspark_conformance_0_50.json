@@ -7,11 +7,11 @@
     "spark_backend": "pyspark JVM",
     "sql_backend": "postgresql (URL supplied at runtime; redacted)"
   },
-  "evidence_fingerprint": "f695bc2b96d1148c705b56611abcff1baad40b5a3407d29100a92a5e8ebcd70a",
-  "repository_commit": "79b5bfa4490ca8c6741d8a5e5ffd6326df8da149",
+  "evidence_fingerprint": "774fad4e0165adfa553febc8c0d3bfa1ab73bea2429b22f57e07c01f1d003a44",
+  "repository_commit": "df052a2a6ae3cb875f75f20a4dc04a7c6da6593e",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "e88225036f4013f2a38dc7bd50834530220c97af3523a569f83406b21dd72747",
+  "source_tree_digest": "2ae786b94e4d614cc88c5fc09580e4fb6e01afd16f1ee2c4299de2b337cea8f6",
   "tests": [
     "tests/portable_conformance/test_public_suite.py",
     "tests/sql/test_sql_portable_security.py",

@@ -27,7 +27,7 @@
     "test_adaptive_evidence_drift_rejects_before_io",
     "test_orchestrator_rejects_before_lifecycle_or_cleanup"
   ],
-  "repository_commit": "79b5bfa4490ca8c6741d8a5e5ffd6326df8da149",
+  "repository_commit": "df052a2a6ae3cb875f75f20a4dc04a7c6da6593e",
   "result": "pass",
   "scenarios": [
     {
@@ -85,7 +85,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "deb95831b14dde9226079d07b4ef418108c3b01e13bef09341d27201cdc15cc5",
+              "fingerprint": "171fcca13fd2a4aee5db92cb792287b78ab47c3387e840e5c30814698207fc3f",
               "pushdown": [],
               "requirements": [
                 {
@@ -117,6 +117,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -132,6 +133,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -194,7 +196,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "8dd578443acda08cc985b2327c6003cee839ed0370c26d49626597ac460ca928",
+              "fingerprint": "8e85817095bd273bed6102ba156593d8c415bdbb6b08e2656ffd478ad7aeff43",
               "pushdown": [],
               "requirements": [
                 {
@@ -226,6 +228,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -241,6 +244,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -305,7 +309,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "deb95831b14dde9226079d07b4ef418108c3b01e13bef09341d27201cdc15cc5",
+              "fingerprint": "171fcca13fd2a4aee5db92cb792287b78ab47c3387e840e5c30814698207fc3f",
               "pushdown": [],
               "requirements": [
                 {
@@ -337,6 +341,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -352,6 +357,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -414,7 +420,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "8dd578443acda08cc985b2327c6003cee839ed0370c26d49626597ac460ca928",
+              "fingerprint": "8e85817095bd273bed6102ba156593d8c415bdbb6b08e2656ffd478ad7aeff43",
               "pushdown": [],
               "requirements": [
                 {
@@ -446,6 +452,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -461,6 +468,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -545,7 +553,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "71a4bd9691241f844240bb4ac92e56a7e2a8533795ec463da220e33893a396f4",
+              "fingerprint": "7547d7b11cbe395b6792b7bb10d660bf617135dcf5ca04fa33865094114c36e0",
               "pushdown": [],
               "requirements": [
                 {
@@ -577,6 +585,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -592,6 +601,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -654,7 +664,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "29b8527692af20b6dfd2d5fec634f265daf971ec6f5692a471449c4579397ffc",
+              "fingerprint": "9a50a56968d85899e977ab71cb32695ff84a71c8f2db884e1aac48e7c235a8cc",
               "pushdown": [],
               "requirements": [
                 {
@@ -686,6 +696,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -701,6 +712,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -807,7 +819,7 @@
                   "support": "supported_with_lowering"
                 }
               ],
-              "fingerprint": "72af1a705ac7c925ee73390698706a94b2297f36c5720284d61be9c860dc1aa2",
+              "fingerprint": "f88fa67a2220993f36da2863155b357da34d431c19bd9b4de09645a9c79cfbbc",
               "pushdown": [],
               "requirements": [
                 {
@@ -827,6 +839,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -842,6 +855,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -889,7 +903,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "c81ede9778527cd09e84684d62314dced074f2e121d00528ae633e4f44bfbc23",
+              "fingerprint": "7118e9116a95c5d04518048d98723770cc23009b271e63a95df2f730d6e2e4d0",
               "pushdown": [],
               "requirements": [
                 {
@@ -909,6 +923,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -924,6 +939,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1010,7 +1026,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "2b044bed3118ec72b63491746a1dd4dc8194f999f4ba01f98aad48e86a194116",
+              "fingerprint": "7655c11a69269a2b665fd70543d8f3aea872f2ba743d1cfeb99d5c91b05b43ff",
               "pushdown": [],
               "requirements": [
                 {
@@ -1042,6 +1058,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1057,6 +1074,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1119,7 +1137,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "f39189fb1ecf88305c5a143d3979686334c7b30a74d0b041cb0b98aec1bec1a8",
+              "fingerprint": "ed6a77d871ff21fe555c6a19c951813c1ed90b679520137a880ffffb59194266",
               "pushdown": [],
               "requirements": [
                 {
@@ -1151,6 +1169,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1166,6 +1185,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1213,7 +1233,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "4bc5d39480ae0a09531c429ebdcfee4996f8e8880c536ee6b10a234513c44dc8",
+              "fingerprint": "8468e477a6e3f87d2ffa20313d08b25152fe87c91e28d0f9171db87469f5e989",
               "pushdown": [],
               "requirements": [
                 {
@@ -1233,6 +1253,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1248,6 +1269,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1295,7 +1317,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "6c1bccffc726167cae747d5f03d752ff902bbbbede659e2a41c9a0476c6bd683",
+              "fingerprint": "f47722230d8d5c22e5621c5a20ac3e9d76b0a6c1fe91a61150b06e177d353cba",
               "pushdown": [],
               "requirements": [
                 {
@@ -1315,6 +1337,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1330,6 +1353,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1399,7 +1423,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "6b9eff6bd4adf9ac688a5bfde4fdd444e69bc53aa41606ce8f93475f94147c31",
+              "fingerprint": "1432af38e45ea4f4259f58ac6218d498b4aef2e895cfdf89b399e02cfcd6d50b",
               "pushdown": [],
               "requirements": [
                 {
@@ -1419,6 +1443,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1434,6 +1459,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1481,7 +1507,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "6b9eff6bd4adf9ac688a5bfde4fdd444e69bc53aa41606ce8f93475f94147c31",
+              "fingerprint": "1432af38e45ea4f4259f58ac6218d498b4aef2e895cfdf89b399e02cfcd6d50b",
               "pushdown": [],
               "requirements": [
                 {
@@ -1501,6 +1527,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1516,6 +1543,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1612,7 +1640,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "4e9f0fa07fa2046d653740a9ee3d447596af4ac4eba2b632541e28e89b92471f",
+              "fingerprint": "203c9505635963084afd21b5f02abd346804054dba9709065b25c650a344f813",
               "pushdown": [],
               "requirements": [
                 {
@@ -1644,6 +1672,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1659,6 +1688,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1721,7 +1751,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "4e9f0fa07fa2046d653740a9ee3d447596af4ac4eba2b632541e28e89b92471f",
+              "fingerprint": "203c9505635963084afd21b5f02abd346804054dba9709065b25c650a344f813",
               "pushdown": [],
               "requirements": [
                 {
@@ -1753,6 +1783,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1768,6 +1799,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1865,7 +1897,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "d6e3fc9a1e7568daaf0897a8ff927e84454d02476901e481cb778992826cee24",
+              "fingerprint": "281660d9cc1994185e547bd63d0ddfbf42cb24dd39d5d7fbddc46d761210d02d",
               "pushdown": [],
               "requirements": [
                 {
@@ -1897,6 +1929,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -1912,6 +1945,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -1974,7 +2008,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "d6e3fc9a1e7568daaf0897a8ff927e84454d02476901e481cb778992826cee24",
+              "fingerprint": "281660d9cc1994185e547bd63d0ddfbf42cb24dd39d5d7fbddc46d761210d02d",
               "pushdown": [],
               "requirements": [
                 {
@@ -2006,6 +2040,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2021,6 +2056,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2118,7 +2154,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "879ca43187f7383cf729f7e11bf4389ee3693493af5f8a56e762a95a57189a07",
+              "fingerprint": "7910585f82f3ed18d57052257909941c9c331241fec0292f757e5b7d5d0b49ec",
               "pushdown": [],
               "requirements": [
                 {
@@ -2150,6 +2186,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2165,6 +2202,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2227,7 +2265,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "879ca43187f7383cf729f7e11bf4389ee3693493af5f8a56e762a95a57189a07",
+              "fingerprint": "7910585f82f3ed18d57052257909941c9c331241fec0292f757e5b7d5d0b49ec",
               "pushdown": [],
               "requirements": [
                 {
@@ -2259,6 +2297,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2274,6 +2313,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2371,7 +2411,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "73f263ca0bdb3fcaeba7c8e853c1f9ad2176e8a8c02758d6139035c083933b8b",
+              "fingerprint": "338f4c48e2a05361e157ad53dd26536f02e0e62cd5703ab4c9c4d8d710c634d1",
               "pushdown": [],
               "requirements": [
                 {
@@ -2403,6 +2443,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2418,6 +2459,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2480,7 +2522,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "73f263ca0bdb3fcaeba7c8e853c1f9ad2176e8a8c02758d6139035c083933b8b",
+              "fingerprint": "338f4c48e2a05361e157ad53dd26536f02e0e62cd5703ab4c9c4d8d710c634d1",
               "pushdown": [],
               "requirements": [
                 {
@@ -2512,6 +2554,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2527,6 +2570,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2624,7 +2668,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "848b5be83f7f2043736f5f405c8099a147848eb13aea825fb501113445984662",
+              "fingerprint": "df585ca83afd7b1b47f477e4e4fb0e6473d36c081b32638f56bc4910faf7c173",
               "pushdown": [],
               "requirements": [
                 {
@@ -2656,6 +2700,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2671,6 +2716,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2733,7 +2779,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "848b5be83f7f2043736f5f405c8099a147848eb13aea825fb501113445984662",
+              "fingerprint": "df585ca83afd7b1b47f477e4e4fb0e6473d36c081b32638f56bc4910faf7c173",
               "pushdown": [],
               "requirements": [
                 {
@@ -2765,6 +2811,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2780,6 +2827,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2877,7 +2925,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "8168e021cd40b60439a786e9e8a5ba8f709ccc604c40916291d0bee3f14dc8bf",
+              "fingerprint": "35a24503810ede72b972e35ebf1f2f7aa367be9bba8614a2100312e703ecf2ba",
               "pushdown": [],
               "requirements": [
                 {
@@ -2909,6 +2957,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -2924,6 +2973,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -2986,7 +3036,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "8168e021cd40b60439a786e9e8a5ba8f709ccc604c40916291d0bee3f14dc8bf",
+              "fingerprint": "35a24503810ede72b972e35ebf1f2f7aa367be9bba8614a2100312e703ecf2ba",
               "pushdown": [],
               "requirements": [
                 {
@@ -3018,6 +3068,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -3033,6 +3084,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -3130,7 +3182,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "3a5aae74dbdef28976f1a53781f7056a3645089d5d15bc9daca8e092070a7158",
+              "fingerprint": "97612289f232867a8fc7dbb871d46351a3c06f0bd82f9b980f328cab1192a4c0",
               "pushdown": [],
               "requirements": [
                 {
@@ -3162,6 +3214,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -3177,6 +3230,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -3239,7 +3293,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "3a5aae74dbdef28976f1a53781f7056a3645089d5d15bc9daca8e092070a7158",
+              "fingerprint": "97612289f232867a8fc7dbb871d46351a3c06f0bd82f9b980f328cab1192a4c0",
               "pushdown": [],
               "requirements": [
                 {
@@ -3271,6 +3325,7 @@
               "target": {
                 "compiler": "adaptive-fixture",
                 "engine": "local",
+                "implementation": "adaptive-fixture/1",
                 "package": "etlantic-adaptive-fixture",
                 "placement": {
                   "connector": "memory",
@@ -3286,6 +3341,7 @@
             "target": {
               "compiler": "adaptive-fixture",
               "engine": "local",
+              "implementation": "adaptive-fixture/1",
               "package": "etlantic-adaptive-fixture",
               "placement": {
                 "connector": "memory",
@@ -3333,5 +3389,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "e88225036f4013f2a38dc7bd50834530220c97af3523a569f83406b21dd72747"
+  "source_tree_digest": "2ae786b94e4d614cc88c5fc09580e4fb6e01afd16f1ee2c4299de2b337cea8f6"
 }

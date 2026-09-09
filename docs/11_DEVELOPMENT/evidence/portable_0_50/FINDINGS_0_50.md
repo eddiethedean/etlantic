@@ -35,5 +35,9 @@
 | FINAL-050-008 | High | resolved by canonical and negative support reports |
 | FINAL-050-009 | High | resolved by graph constraint domain scenarios |
 | FINAL-050-010 | Medium | resolved by the CI-enforced scoped Pyright gate |
+| FINAL-050-011 | High | resolved by duplicate requirement/finding rejection |
+| FINAL-050-012 | High | resolved by static lowering-condition validation |
+| FINAL-050-013 | High | resolved by compiler implementation identity fingerprints |
+| FINAL-050-014 | Medium | resolved by release-candidate documentation status |
 
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.
