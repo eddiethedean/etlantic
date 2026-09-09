@@ -207,7 +207,14 @@ def validate_installed_compiler_evidence(
             raise SystemExit(
                 f"support target differs from source-controlled authority: {engine}"
             )
-        compiler = _installed_compiler(engine, target)
+        try:
+            compiler = _installed_compiler(engine, target)
+        except ModuleNotFoundError:
+            # Core CI intentionally omits optional backend runtimes.  Their
+            # dedicated qualification jobs run this same identity check with
+            # the backend installed; source-controlled target metadata and
+            # evidence bindings are still validated above and below here.
+            continue
         info = compiler.info
         expected = {
             "engine": info.engine,
