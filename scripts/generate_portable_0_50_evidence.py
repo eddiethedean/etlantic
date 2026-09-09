@@ -1594,6 +1594,7 @@ def main() -> int:
         "| SOL-050-022 | High | resolved by obligation-authoritative validation diagnostics |\n"
         "| SOL-050-023 | High | resolved by complete pushdown outcome and lowering evidence |\n"
         "| SOL-050-024 | Medium | resolved by authoritative findings-ledger enforcement |\n\n"
+        "| SOL-050-025 | High | resolved by engine-bound finding provenance and native proof digest validation |\n\n"
         "| FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |\n"
         "| FINAL-050-002 | High | resolved by nested support-payload validation |\n"
         "| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |\n"

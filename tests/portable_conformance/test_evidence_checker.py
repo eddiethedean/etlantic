@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -433,6 +434,56 @@ def _pushdown_evidence_fixture() -> dict[str, object]:
     )
 
 
+def _pushdown_expected_evidence(payload: dict[str, object]) -> dict[str, str]:
+    findings = payload["findings"]
+    assert isinstance(findings, list)
+    return {
+        engine: next(
+            item["evidence_fingerprint"]
+            for item in findings
+            if item["engine"] == engine
+        )
+        for engine in {
+            "local",
+            "polars",
+            "pandas",
+            "sql",
+            "pyspark",
+            "datafusion",
+            "duckdb",
+        }
+    }
+
+
+def _refresh_temp_evidence_metadata(evidence: Path) -> None:
+    """Keep copied evidence metadata aligned with the current test checkout."""
+    root = Path(__file__).parents[2]
+    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).split(b"\0")
+    digest = hashlib.sha256()
+    evidence_prefix = b"docs/11_DEVELOPMENT/evidence/portable_0_50/"
+    for raw in sorted(
+        item for item in tracked if item and not item.startswith(evidence_prefix)
+    ):
+        digest.update(raw)
+        digest.update(b"\0")
+        digest.update((root / raw.decode("utf-8")).read_bytes())
+        digest.update(b"\0")
+    source_digest = digest.hexdigest()
+    index_path = evidence / "portable_evidence_index_0_50.json"
+    index = json.loads(index_path.read_text())
+    index["source_tree_digest"] = source_digest
+    for name in index["artifacts"]:
+        path = evidence / name
+        if path.suffix == ".json":
+            payload = json.loads(path.read_text())
+            payload["source_tree_digest"] = source_digest
+            path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        artifact_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        index["digests"][name] = artifact_digest
+        index["artifact_metadata"][name]["sha256"] = artifact_digest
+    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n")
+
+
 def test_pushdown_findings_reject_missing_matrix_entry() -> None:
     payload = _pushdown_evidence_fixture()
     findings = payload["findings"]
@@ -440,6 +491,34 @@ def test_pushdown_findings_reject_missing_matrix_entry() -> None:
     findings.pop()
     with pytest.raises(SystemExit, match="findings matrix is incomplete"):
         validate_pushdown_findings(findings, payload["proofs"], payload)
+
+
+def test_pushdown_findings_reject_malformed_evidence_inventory() -> None:
+    payload = _pushdown_evidence_fixture()
+    payload["evidence"] = [{} for _ in range(7)]
+    with pytest.raises(
+        SystemExit, match="pushdown evidence fingerprint inventory is incomplete"
+    ):
+        validate_pushdown_findings(payload["findings"], payload["proofs"], payload)
+
+
+def test_pushdown_findings_reject_cross_engine_evidence_binding_mutation() -> None:
+    payload = _pushdown_evidence_fixture()
+    findings = payload["findings"]
+    assert isinstance(findings, list)
+    expected = _pushdown_expected_evidence(payload)
+    for item in findings:
+        if item["engine"] == "sql":
+            item["evidence_fingerprint"] = expected["pandas"]
+        elif item["engine"] == "pandas":
+            item["evidence_fingerprint"] = expected["sql"]
+    with pytest.raises(SystemExit, match="not bound to engine evidence"):
+        validate_pushdown_findings(
+            findings,
+            payload["proofs"],
+            payload,
+            expected_evidence_fingerprints=expected,
+        )
 
 
 def test_production_checker_rejects_digest_updated_missing_finding(
@@ -454,12 +533,7 @@ def test_production_checker_rejects_digest_updated_missing_finding(
     payload = json.loads(contract_path.read_text())
     payload["findings"].pop()
     contract_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    digest = hashlib.sha256(contract_path.read_bytes()).hexdigest()
-    index_path = evidence / "portable_evidence_index_0_50.json"
-    index = json.loads(index_path.read_text())
-    index["digests"][contract_name] = digest
-    index["artifact_metadata"][contract_name]["sha256"] = digest
-    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n")
+    _refresh_temp_evidence_metadata(evidence)
     monkeypatch.setattr(checker, "EVIDENCE", evidence)
     real_check_output = checker.subprocess.check_output
 
@@ -471,6 +545,56 @@ def test_production_checker_rejects_digest_updated_missing_finding(
     monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
     with pytest.raises(SystemExit, match="findings matrix is incomplete"):
         checker.main()
+
+
+def test_production_checker_rejects_digest_updated_missing_pushdown_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import scripts.check_portable_0_50 as checker
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    contract_name = "portable_pushdown_contract_0_50.json"
+    contract_path = evidence / contract_name
+    payload = json.loads(contract_path.read_text())
+    for finding in payload["findings"]:
+        finding.pop("evidence_fingerprint", None)
+    payload["evidence"] = []
+    contract_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    _refresh_temp_evidence_metadata(evidence)
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    with pytest.raises(
+        SystemExit, match="pushdown evidence fingerprint inventory is incomplete"
+    ):
+        checker.main()
+
+
+def test_production_checker_accepts_refreshed_current_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import scripts.check_portable_0_50 as checker
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    _refresh_temp_evidence_metadata(evidence)
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    assert checker.main() == 0
 
 
 def test_pushdown_findings_reject_orphan_native_proof() -> None:
@@ -506,3 +630,14 @@ def test_pushdown_findings_reject_identity_or_contract_mutation(
     finding[field] = value
     with pytest.raises(SystemExit):
         validate_pushdown_findings(findings, payload["proofs"], payload)
+
+
+def test_pushdown_findings_reject_disconnected_action_proof_digest() -> None:
+    payload = _pushdown_evidence_fixture()
+    proofs = payload["proofs"]
+    assert isinstance(proofs, dict)
+    action_proof = proofs["sql"]["actions"]["f"]
+    assert isinstance(action_proof, dict)
+    action_proof["result_digest"] = "0" * 64
+    with pytest.raises(SystemExit, match="native pushdown proof is incomplete"):
+        validate_pushdown_findings(payload["findings"], proofs, payload)

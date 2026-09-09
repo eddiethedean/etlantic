@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
 
@@ -56,7 +57,7 @@ EXPECTED_SCHEMAS = {
     "WHATS_NEW_0_50.md": "markdown/1",
 }
 
-EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 25))
+EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 26))
 EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 16))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
@@ -377,11 +378,31 @@ def validate_pushdown_campaign(payload: dict[str, object]) -> None:
 
 
 def validate_pushdown_findings(
-    findings: object, proofs: object, payload: dict[str, object]
+    findings: object,
+    proofs: object,
+    payload: dict[str, object],
+    *,
+    expected_evidence_fingerprints: Mapping[str, str] | None = None,
 ) -> None:
     """Require the checked-in pushdown matrix and native proofs to be complete."""
     if payload.get("boundaries") != list(EXPECTED_PUSHDOWN_BOUNDARIES):
         raise SystemExit("pushdown boundary inventory is incomplete")
+    evidence = payload.get("evidence")
+    if not isinstance(evidence, list) or len(evidence) != len(EXPECTED_ENGINES):
+        raise SystemExit("pushdown evidence fingerprint inventory is incomplete")
+    if any(
+        not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+        for value in evidence
+    ) or len(set(evidence)) != len(evidence):
+        raise SystemExit("pushdown evidence fingerprint inventory is incomplete")
+    if expected_evidence_fingerprints is not None and (
+        set(expected_evidence_fingerprints) != EXPECTED_ENGINES
+        or any(
+            not re.fullmatch(r"[0-9a-f]{64}", str(value))
+            for value in expected_evidence_fingerprints.values()
+        )
+    ):
+        raise SystemExit("pushdown expected evidence fingerprints are invalid")
     if not isinstance(findings, list):
         raise SystemExit("pushdown findings must be a list")
     expected_actions = dict(EXPECTED_PUSHDOWN_ACTIONS)
@@ -393,6 +414,9 @@ def validate_pushdown_findings(
     }
     actual_keys: set[tuple[str, str, str]] = set()
     expected_required: set[tuple[str, str]] = set()
+    finding_evidence: dict[str, set[str]] = {
+        engine: set() for engine in EXPECTED_ENGINES
+    }
     for item in findings:
         if not isinstance(item, dict):
             raise SystemExit("pushdown finding is not an object")
@@ -404,6 +428,12 @@ def validate_pushdown_findings(
         engine, boundary, action, target = cast(tuple[str, str, str, str], identity)
         if engine not in EXPECTED_ENGINES:
             raise SystemExit("pushdown finding names an unknown engine")
+        evidence_fingerprint = item.get("evidence_fingerprint")
+        if not isinstance(evidence_fingerprint, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", evidence_fingerprint
+        ):
+            raise SystemExit("pushdown finding evidence fingerprint is invalid")
+        finding_evidence[engine].add(evidence_fingerprint)
         if ":" not in boundary:
             raise SystemExit("pushdown finding boundary is invalid")
         boundary_name, boundary_index = boundary.split(":", 1)
@@ -474,6 +504,15 @@ def validate_pushdown_findings(
             )
     if actual_keys != expected_keys:
         raise SystemExit("pushdown findings matrix is incomplete")
+    if any(len(values) != 1 for values in finding_evidence.values()):
+        raise SystemExit("pushdown findings lack consistent evidence fingerprints")
+    if set().union(*finding_evidence.values()) != set(evidence):
+        raise SystemExit("pushdown evidence does not match finding fingerprints")
+    if expected_evidence_fingerprints is not None and any(
+        finding_evidence[engine] != {expected_evidence_fingerprints[engine]}
+        for engine in EXPECTED_ENGINES
+    ):
+        raise SystemExit("pushdown findings are not bound to engine evidence")
 
     if not isinstance(proofs, dict) or set(proofs) != EXPECTED_ENGINES:
         raise SystemExit("pushdown proof engine inventory is incomplete")
@@ -497,6 +536,17 @@ def validate_pushdown_findings(
         )
         if set(actions) != expected_action_ids:
             raise SystemExit("pushdown proof action inventory is incomplete")
+        if engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES:
+            for digest_key in ("result_digest", "native_explain_digest"):
+                if not re.fullmatch(
+                    r"[0-9a-f]{64}", str(engine_proofs.get(digest_key) or "")
+                ):
+                    raise SystemExit("native pushdown proof digest is invalid")
+        elif any(
+            engine_proofs.get(digest_key) is not None
+            for digest_key in ("result_digest", "native_explain_digest")
+        ):
+            raise SystemExit("host pushdown proof must not claim native digests")
         for action_id, action_proof in actions.items():
             if not isinstance(action_proof, dict):
                 raise SystemExit("pushdown action proof is invalid")
@@ -523,6 +573,10 @@ def validate_pushdown_findings(
                         "result_digest",
                     )
                 )
+                or action_proof.get("result_digest")
+                != engine_proofs.get("result_digest")
+                or action_proof.get("native_explain_digest")
+                != engine_proofs.get("native_explain_digest")
             ):
                 raise SystemExit("native pushdown proof is incomplete")
             actual_proof_keys.add((engine, action_id))
@@ -925,6 +979,20 @@ def main() -> int:
     )
     validate_requirement_campaign(support)
     reports = cast(dict[str, dict[str, Any]], support["reports"])
+    expected_pushdown_evidence: dict[str, str] = {}
+    for engine in EXPECTED_ENGINES:
+        records = reports[engine].get("evidence")
+        if (
+            not isinstance(records, list)
+            or len(records) != 1
+            or not isinstance(records[0], dict)
+            or records[0].get("id") != "compiler"
+            or not isinstance(records[0].get("fingerprint"), str)
+        ):
+            raise SystemExit(
+                f"support evidence is incomplete for pushdown engine: {engine}"
+            )
+        expected_pushdown_evidence[engine] = records[0]["fingerprint"]
     coverage = json.loads((EVIDENCE / "portable_claim_coverage_0_50.json").read_text())
     claims = coverage.get("claims")
     expected_fixtures = sorted(set((manifest.get("leaf_fixture_ids") or {}).values()))
@@ -1033,7 +1101,12 @@ def main() -> int:
     validate_pushdown_campaign(pushdown)
     proofs = pushdown.get("proofs")
     findings = pushdown.get("findings")
-    validate_pushdown_findings(findings, proofs, pushdown)
+    validate_pushdown_findings(
+        findings,
+        proofs,
+        pushdown,
+        expected_evidence_fingerprints=expected_pushdown_evidence,
+    )
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
     )
