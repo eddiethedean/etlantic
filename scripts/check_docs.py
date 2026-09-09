@@ -178,7 +178,7 @@ def check_nav_page_status_markers() -> None:
 def check_release_candidate_claims() -> None:
     """Keep docs aligned while the 0.50 package publication is pending."""
     facts = load_release_facts()
-    if facts.get("maturity") != "beta":
+    if str(facts.get("maturity", "")).lower() != "beta":
         return
     prohibited = ("Available in ETLantic 0.50.0", "published on PyPI")
     violations: list[str] = []
