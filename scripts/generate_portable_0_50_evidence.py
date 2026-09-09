@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import contextlib
 import hashlib
+import importlib
 import io
 import json
 import os
@@ -620,28 +621,21 @@ DEPENDENCY_COMMAND = (
 
 
 def _compiler_factories() -> Mapping[str, Any]:
-    from etlantic_datafusion import create_transform_compiler as datafusion
-    from etlantic_pandas import create_transform_compiler as pandas
-    from etlantic_polars import create_transform_compiler as polars
-    from etlantic_pyspark import create_transform_compiler as pyspark
-    from etlantic_sql import create_transform_compiler as sql
+    def optional_factory(module_name: str) -> Any:
+        def factory() -> Any:
+            module = importlib.import_module(module_name)
+            return module.create_transform_compiler()
 
-    # Keep optional engine imports lazy.  Qualification tests for one plugin
-    # must not require every other optional dependency to be installed in that
-    # environment (for example DataFusion jobs intentionally omit DuckDB).
-    def duckdb_factory() -> Any:
-        from etlantic_duckdb import create_transform_compiler
-
-        return create_transform_compiler()
+        return factory
 
     return {
         "local": LocalTransformCompiler,
-        "polars": polars,
-        "pandas": pandas,
-        "sql": sql,
-        "pyspark": pyspark,
-        "datafusion": datafusion,
-        "duckdb": duckdb_factory,
+        "polars": optional_factory("etlantic_polars"),
+        "pandas": optional_factory("etlantic_pandas"),
+        "sql": optional_factory("etlantic_sql"),
+        "pyspark": optional_factory("etlantic_pyspark"),
+        "datafusion": optional_factory("etlantic_datafusion"),
+        "duckdb": optional_factory("etlantic_duckdb"),
     }
 
 
