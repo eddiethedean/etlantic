@@ -184,7 +184,12 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     return CallExpr(callee=callee, args=tuple(args))
 
 
-def lower_agg_expr(node: Any, *, parameters: dict[str, Any]) -> CallExpr:
+def lower_agg_expr(
+    node: Any,
+    *,
+    parameters: dict[str, Any],
+    decimal: bool = False,
+) -> CallExpr:
     if not isinstance(node, dict) or node.get("kind") != "call":
         raise ValueError(f"Expected aggregate call expression, got {node!r}")
     callee = str(node.get("callee") or "")
@@ -192,6 +197,8 @@ def lower_agg_expr(node: Any, *, parameters: dict[str, Any]) -> CallExpr:
     if callee == "dtcs:count_all":
         return CallExpr(callee=callee, args=())
     args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if decimal and callee in {"dtcs:sum", "dtcs:average", "dtcs:min", "dtcs:max"}:
+        callee = f"dtcs:decimal_{callee.removeprefix('dtcs:')}"
     return CallExpr(callee=callee, args=tuple(args))
 
 

@@ -6,6 +6,7 @@ import contextlib
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from decimal import Decimal
 from typing import Any
 from uuid import uuid4
 
@@ -491,6 +492,20 @@ def _duck_type(rows: list[dict[str, Any]], column: str) -> str:
     values = [row.get(column) for row in rows if row.get(column) is not None]
     if not values:
         return "VARCHAR"
+    if all(isinstance(v, Decimal) for v in values):
+        if not all(v.is_finite() for v in values):
+            raise ValueError(f"Decimal column {column!r} contains a non-finite value")
+        integer_digits = max(
+            max(len(value.as_tuple().digits) + value.as_tuple().exponent, 0)
+            for value in values
+        )
+        scale = max(max(-value.as_tuple().exponent, 0) for value in values)
+        precision = max(integer_digits + scale, 1)
+        if precision > 38:
+            raise ValueError(
+                f"Decimal column {column!r} exceeds DuckDB DECIMAL(38) precision"
+            )
+        return f"DECIMAL({precision},{scale})"
     if all(isinstance(v, bool) for v in values):
         return "BOOLEAN"
     if all(isinstance(v, int) and not isinstance(v, bool) for v in values):

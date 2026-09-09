@@ -53,6 +53,48 @@ def _decimal_case(
     )
 
 
+def _decimal_sum_case(rows: list[dict[str, Any]], expected: Decimal) -> FixtureCase:
+    return FixtureCase(
+        name="decimal_sum_contract",
+        required_profiles=frozenset(),
+        required_actions=frozenset(),
+        required_functions=frozenset(),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "a",
+                    "kind": {
+                        "action": "dtcs:aggregate",
+                        "id": "a",
+                        "target": "t",
+                        "parameters": {
+                            "groupBy": [],
+                            "aggregates": [
+                                {
+                                    "name": "total",
+                                    "expression": {
+                                        "kind": "call",
+                                        "callee": "dtcs:sum",
+                                        "args": [F.col("amount").node],
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "a", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={"t": rows},
+        expected=[{"total": expected}],
+    )
+
+
 def _run(compiler: Any, case: FixtureCase) -> None:
     _run_case(
         compiler,
@@ -118,5 +160,48 @@ def test_postgresql_decimal_field_round_trip_preserves_precision() -> None:
         expression=F.col("amount").node,
         rows=[{"amount": value}],
         expected=[{"value": value}],
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sqlite_decimal_sum_preserves_precision() -> None:
+    from etlantic_sql import create_transform_compiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_sum_case(
+        rows=[{"amount": value}, {"amount": Decimal("0.000000000000000001")}],
+        expected=Decimal("1234567890.123456789012345679"),
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_postgresql_decimal_sum_preserves_precision() -> None:
+    if (
+        not __import__("os")
+        .environ.get("ETLANTIC_SQL_URL", "")
+        .startswith("postgresql")
+    ):
+        pytest.skip("PostgreSQL Decimal verification requires ETLANTIC_SQL_URL")
+    from etlantic_sql import create_transform_compiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_sum_case(
+        rows=[{"amount": value}, {"amount": Decimal("0.000000000000000001")}],
+        expected=Decimal("1234567890.123456789012345679"),
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.duckdb
+def test_duckdb_decimal_field_and_sum_preserve_precision() -> None:
+    pytest.importorskip("duckdb")
+    from etlantic_duckdb import create_transform_compiler
+
+    value = Decimal("1234567890.123456789012345678")
+    case = _decimal_sum_case(
+        rows=[{"amount": value}, {"amount": Decimal("0.000000000000000001")}],
+        expected=Decimal("1234567890.123456789012345679"),
     )
     _run(create_transform_compiler(), case)

@@ -362,6 +362,8 @@ class SqlCompiler:
                 body = f"GREATEST({', '.join(args)})"
         elif callee == "dtcs:sum":
             body = f"SUM({args[0]})"
+        elif callee == "dtcs:decimal_sum":
+            body = f"ETLANTIC_DECIMAL_SUM({args[0]})"
         elif callee == "dtcs:average":
             # PostgreSQL returns NUMERIC for AVG(integer), while the portable
             # baseline normalizes average to the common floating result used
@@ -372,10 +374,16 @@ class SqlCompiler:
                 if self.dialect == "postgresql"
                 else average
             )
+        elif callee == "dtcs:decimal_average":
+            body = f"ETLANTIC_DECIMAL_AVERAGE({args[0]})"
         elif callee == "dtcs:min":
             body = f"MIN({args[0]})"
+        elif callee == "dtcs:decimal_min":
+            body = f"ETLANTIC_DECIMAL_MIN({args[0]})"
         elif callee == "dtcs:max":
             body = f"MAX({args[0]})"
+        elif callee == "dtcs:decimal_max":
+            body = f"ETLANTIC_DECIMAL_MAX({args[0]})"
         elif callee == "dtcs:count_all":
             body = "COUNT(*)"
         elif callee == "dtcs:count":
@@ -395,9 +403,13 @@ class SqlCompiler:
                 "dtcs:is_null",
                 "dtcs:case_when",
                 "dtcs:sum",
+                "dtcs:decimal_sum",
                 "dtcs:average",
+                "dtcs:decimal_average",
                 "dtcs:min",
+                "dtcs:decimal_min",
                 "dtcs:max",
+                "dtcs:decimal_max",
                 "dtcs:count",
                 "dtcs:count_all",
                 "dtcs:count_distinct",

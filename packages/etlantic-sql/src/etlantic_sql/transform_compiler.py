@@ -7,7 +7,7 @@ import json
 import os
 import re
 from collections.abc import Mapping, Sequence
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any
 
 from etlantic.sql.helpers import require_safe_identifier
@@ -286,6 +286,12 @@ class SqlTransformCompiler:
                     lambda value: None if value is None else str(value).upper(),
                     deterministic=True,
                 )
+                driver.create_aggregate("ETLANTIC_DECIMAL_SUM", 1, _DecimalSumAggregate)
+                driver.create_aggregate(
+                    "ETLANTIC_DECIMAL_AVERAGE", 1, _DecimalAverageAggregate
+                )
+                driver.create_aggregate("ETLANTIC_DECIMAL_MIN", 1, _DecimalMinAggregate)
+                driver.create_aggregate("ETLANTIC_DECIMAL_MAX", 1, _DecimalMaxAggregate)
             relations: dict[str, RelationRef] = {}
             relation_columns: dict[str, list[str]] = {}
             relation_boolean_columns: dict[str, set[str]] = {}
@@ -339,6 +345,8 @@ class SqlTransformCompiler:
                     parameters=dict(parameters),
                     relations=relations,
                     relation_columns=relation_columns,
+                    dialect=dialect,
+                    decimal_columns=relation_decimal_columns.get(target_source, set()),
                 )
                 step_table = _safe_table(f"step_{index}_{action_id}")
                 compiled_sql = compiler.compile_query(
@@ -690,7 +698,12 @@ def _action_decimal_columns(
                 expression,
                 inherited_decimal=inherited_decimal,
                 parameters=parameters,
-            ) and str(item.get("function") or item.get("op") or "").lower() in {
+            ) and str(
+                item.get("function")
+                or item.get("op")
+                or (expression.get("callee") if isinstance(expression, Mapping) else "")
+                or ""
+            ).removeprefix("dtcs:").lower() in {
                 "sum",
                 "average",
                 "avg",
@@ -699,6 +712,49 @@ def _action_decimal_columns(
             }:
                 decimal_columns.add(name)
     return decimal_columns & set(output_columns)
+
+
+class _DecimalAggregate:
+    def __init__(self) -> None:
+        self.values: list[Decimal] = []
+
+    def step(self, value: Any) -> None:
+        if value is not None:
+            self.values.append(
+                value if isinstance(value, Decimal) else Decimal(str(value))
+            )
+
+
+class _DecimalSumAggregate(_DecimalAggregate):
+    def finalize(self) -> str | None:
+        if not self.values:
+            return None
+        with localcontext() as context:
+            context.prec = max(
+                100, *(len(value.as_tuple().digits) for value in self.values)
+            )
+            return str(sum(self.values, Decimal(0)))
+
+
+class _DecimalAverageAggregate(_DecimalAggregate):
+    def finalize(self) -> str | None:
+        if not self.values:
+            return None
+        with localcontext() as context:
+            context.prec = max(
+                100, *(len(value.as_tuple().digits) for value in self.values)
+            )
+            return str(sum(self.values, Decimal(0)) / Decimal(len(self.values)))
+
+
+class _DecimalMinAggregate(_DecimalAggregate):
+    def finalize(self) -> str | None:
+        return str(min(self.values)) if self.values else None
+
+
+class _DecimalMaxAggregate(_DecimalAggregate):
+    def finalize(self) -> str | None:
+        return str(max(self.values)) if self.values else None
 
 
 def _expression_boolean_type(

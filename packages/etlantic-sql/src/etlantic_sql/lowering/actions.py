@@ -54,6 +54,8 @@ def apply_action_to_query(
     parameters: dict[str, Any],
     relations: dict[str, RelationRef],
     relation_columns: dict[str, list[str]],
+    dialect: str | None = None,
+    decimal_columns: set[str] | None = None,
 ) -> tuple[SqlQuery, list[str]]:
     """Lower one action into a SqlQuery over ``source``.
 
@@ -203,7 +205,13 @@ def apply_action_to_query(
         )
 
     if name == "dtcs:aggregate":
-        return _apply_aggregate(source, params, parameters=parameters)
+        return _apply_aggregate(
+            source,
+            params,
+            parameters=parameters,
+            dialect=dialect,
+            decimal_columns=decimal_columns or set(),
+        )
 
     if name == "dtcs:sort":
         return _apply_sort(source, columns, params)
@@ -466,6 +474,8 @@ def _apply_aggregate(
     params: dict[str, Any],
     *,
     parameters: dict[str, Any],
+    dialect: str | None,
+    decimal_columns: set[str],
 ) -> tuple[SqlQuery, list[str]]:
     group_by = [str(k) for k in (params.get("groupBy") or [])]
     aggregates = params.get("aggregates") or []
@@ -473,9 +483,24 @@ def _apply_aggregate(
     out_cols = list(group_by)
     for item in aggregates:
         alias = str(item["name"])
+        expression = item["expression"]
+        aggregate_name = str(expression.get("callee") or "")
+        decimal_aggregate = (
+            str(dialect or "").lower() == "sqlite"
+            and aggregate_name in {"dtcs:sum", "dtcs:average", "dtcs:min", "dtcs:max"}
+            and _expression_is_decimal(
+                expression,
+                decimal_columns=decimal_columns,
+                parameters=parameters,
+            )
+        )
         cols.append(
             AliasedExpr(
-                expr=lower_agg_expr(item["expression"], parameters=parameters),
+                expr=lower_agg_expr(
+                    expression,
+                    parameters=parameters,
+                    decimal=decimal_aggregate,
+                ),
                 alias=alias,
             )
         )
@@ -488,6 +513,63 @@ def _apply_aggregate(
         metadata={"action": "dtcs:aggregate"},
     )
     return query, out_cols
+
+
+def _expression_is_decimal(
+    node: Any,
+    *,
+    decimal_columns: set[str],
+    parameters: dict[str, Any],
+) -> bool:
+    """Return whether an aggregate expression carries exact Decimal values."""
+    from decimal import Decimal
+
+    if not isinstance(node, dict):
+        return isinstance(node, Decimal)
+    kind = node.get("kind")
+    if kind == "fieldRef":
+        if node.get("scope") == "parameter":
+            return isinstance(parameters.get(node.get("target")), Decimal)
+        return str(node.get("target")) in decimal_columns
+    if kind == "literal":
+        value = node.get("value")
+        return isinstance(value, dict) and value.get("type") == "decimal"
+    if kind in {"binary", "unary"}:
+        children = (
+            (node.get("left"), node.get("right"))
+            if kind == "binary"
+            else (node.get("operand", node.get("expr")),)
+        )
+        return any(
+            _expression_is_decimal(
+                child,
+                decimal_columns=decimal_columns,
+                parameters=parameters,
+            )
+            for child in children
+        )
+    if kind == "call":
+        callee = str(node.get("callee") or "")
+        if callee in {
+            "dtcs:contains",
+            "dtcs:starts_with",
+            "dtcs:ends_with",
+            "dtcs:in",
+            "dtcs:is_null",
+            "dtcs:is_missing",
+            "dtcs:is_invalid",
+            "dtcs:to_string",
+        }:
+            return False
+        return any(
+            _expression_is_decimal(
+                child,
+                decimal_columns=decimal_columns,
+                parameters=parameters,
+            )
+            for child in (node.get("args") or ())
+        )
+    return False
 
 
 def _apply_sort(
