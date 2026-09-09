@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -438,6 +440,37 @@ def test_pushdown_findings_reject_missing_matrix_entry() -> None:
     findings.pop()
     with pytest.raises(SystemExit, match="findings matrix is incomplete"):
         validate_pushdown_findings(findings, payload["proofs"], payload)
+
+
+def test_production_checker_rejects_digest_updated_missing_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import scripts.check_portable_0_50 as checker
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    contract_name = "portable_pushdown_contract_0_50.json"
+    contract_path = evidence / contract_name
+    payload = json.loads(contract_path.read_text())
+    payload["findings"].pop()
+    contract_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    digest = hashlib.sha256(contract_path.read_bytes()).hexdigest()
+    index_path = evidence / "portable_evidence_index_0_50.json"
+    index = json.loads(index_path.read_text())
+    index["digests"][contract_name] = digest
+    index["artifact_metadata"][contract_name]["sha256"] = digest
+    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n")
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    with pytest.raises(SystemExit, match="findings matrix is incomplete"):
+        checker.main()
 
 
 def test_pushdown_findings_reject_orphan_native_proof() -> None:
