@@ -31,5 +31,9 @@
 | FINAL-050-004 | Medium | resolved by complete unknown-category serialization |
 | FINAL-050-005 | Medium | resolved by the 0.50 release-surface update |
 | FINAL-050-006 | Medium | resolved by complete ledger verification |
+| FINAL-050-007 | High | resolved by finding-specific evidence serialization |
+| FINAL-050-008 | High | resolved by canonical and negative support reports |
+| FINAL-050-009 | High | resolved by graph constraint domain scenarios |
+| FINAL-050-010 | Medium | resolved by the CI-enforced scoped Pyright gate |
 
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.
