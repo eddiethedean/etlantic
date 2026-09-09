@@ -44,4 +44,6 @@
 | FINAL-050-013 | High | resolved by compiler implementation identity fingerprints |
 | FINAL-050-014 | Medium | resolved by release-candidate documentation status |
 
+| FINAL-050-015 | High | resolved by complete pushdown finding and proof matrix validation |
+
 Implementation resolutions are complete; Sol re-review pending. The evidence index, source digest, and artifact digests are the release record for this disposition.
