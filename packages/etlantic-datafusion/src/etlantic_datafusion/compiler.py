@@ -6,6 +6,7 @@ import contextlib
 import hashlib
 import io
 import json
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -50,6 +51,19 @@ __version__ = "0.50.0"
 _ACTIONS = frozenset(KERNEL_ACTIONS + RELATIONAL_ACTIONS)
 _FUNCTIONS = frozenset(BASELINE_FUNCTIONS)
 _OPERATORS = frozenset(BASELINE_OPERATORS)
+
+
+def _canonical_explain_text(value: str) -> str:
+    """Remove per-session relation identifiers from DataFusion plans."""
+    replacements: dict[str, str] = {}
+
+    def replace(match: re.Match[str]) -> str:
+        relation = match.group(0)
+        if relation not in replacements:
+            replacements[relation] = f"<relation-{len(replacements)}>"
+        return replacements[relation]
+
+    return re.sub(r"\b[0-9a-f]{33}\b", replace, value)
 
 
 class DataFusionTransformCompiler:
@@ -243,7 +257,9 @@ class DataFusionTransformCompiler:
                 with contextlib.redirect_stdout(explain_buffer):
                     out.explain()
                 explain_value = explain_buffer.getvalue()
-            explain_digest = hashlib.sha256(explain_value.encode("utf-8")).hexdigest()
+            explain_digest = hashlib.sha256(
+                _canonical_explain_text(explain_value).encode("utf-8")
+            ).hexdigest()
             native_explain_digests.append(explain_digest)
             native_action_digests[action_id] = explain_digest
         actions = plan.get("actions") or []

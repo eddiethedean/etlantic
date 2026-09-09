@@ -59,6 +59,7 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
+PROOF_AUTHORITY = ROOT / "scripts/portable_0_50_proof_authority.json"
 ENGINES = ("local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb")
 PUSHDOWN_OUTCOME_ORDER = (
     "pushed_exact",
@@ -909,6 +910,16 @@ def _native_explain_digest(engine: str, frame: Any, metrics: Mapping[str, Any]) 
             f"{engine} did not provide native explain evidence: {exc}"
         ) from exc
     value = stream.getvalue()
+    if engine == "datafusion":
+        replacements: dict[str, str] = {}
+
+        def replace_relation(match: re.Match[str]) -> str:
+            relation = match.group(0)
+            if relation not in replacements:
+                replacements[relation] = f"<relation-{len(replacements)}>"
+            return replacements[relation]
+
+        value = re.sub(r"\b[0-9a-f]{33}\b", replace_relation, value)
     if engine in {"datafusion", "pyspark"} and not value.strip():
         raise SystemExit(f"{engine} emitted an empty native explain plan")
     if engine in {"datafusion", "pyspark"} and re.search(
@@ -1059,6 +1070,31 @@ def _digest(value: Any) -> str:
     ).hexdigest()
 
 
+def _validate_proof_authority(
+    targets: Mapping[str, Any], proofs: Mapping[str, Any]
+) -> None:
+    """Require generated identities and native proofs to match reviewed anchors."""
+    authority = json.loads(PROOF_AUTHORITY.read_text(encoding="utf-8"))
+    if authority.get("schema") != "etlantic.portable-proof-authority/1":
+        raise SystemExit("portable proof authority schema is invalid")
+    expected_targets = authority.get("compiler_targets")
+    if not isinstance(expected_targets, dict) or expected_targets != dict(targets):
+        raise SystemExit("generated compiler targets differ from proof authority")
+    expected_digests = authority.get("native_proof_digests")
+    if not isinstance(expected_digests, dict) or set(expected_digests) != {
+        "sql",
+        "pyspark",
+        "datafusion",
+        "duckdb",
+    }:
+        raise SystemExit("portable native proof authority is incomplete")
+    for engine, expected in expected_digests.items():
+        if _digest(proofs.get(engine)) != expected:
+            raise SystemExit(
+                f"generated native proof differs from proof authority: {engine}"
+            )
+
+
 def _source_tree_digest() -> str:
     """Hash tracked source/config/docs outside the generated evidence tree."""
     files = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
@@ -1121,6 +1157,7 @@ def main() -> int:
     claims: list[dict[str, Any]] = []
     pushdown: list[dict[str, Any]] = []
     pushdown_proofs: dict[str, Any] = {}
+    compiler_targets: dict[str, Any] = {}
     canonical_definition = _CanonicalTransform.portable_definition()
     if canonical_definition is None:
         raise SystemExit("canonical 0.50 transform has no portable definition")
@@ -1132,9 +1169,11 @@ def main() -> int:
             "version": compiler.info.version,
             "package": compiler.info.package or compiler.info.name,
             "implementation": compiler.info.implementation or compiler.info.name,
+            "protocol": compiler.info.compiler_protocol,
         }
         if compiler.info.environment is not None:
             target["environment"] = dict(compiler.info.environment)
+        compiler_targets[engine] = target
         baseline_report = compiler.analyze(
             {"actions": []},
             context=TransformPlanningContext(
@@ -1351,6 +1390,8 @@ def main() -> int:
                 record["proof_reference"] = proof_id
             pushdown.append(record)
 
+    _validate_proof_authority(compiler_targets, pushdown_proofs)
+
     environment = {
         "python": platform.python_version(),
         "platform": platform.system().lower(),
@@ -1464,10 +1505,9 @@ def main() -> int:
                     for claim in claims
                     if claim["engine"] == engine
                 ),
-                # Keep a second, per-engine campaign record of native proofs.
-                # The checker cross-validates this attestation against the
-                # pushdown contract so editing one artifact cannot rewrite
-                # execution digests in isolation.
+                # Keep a second, per-engine campaign record for cross-artifact
+                # consistency.  The independent source authority, rather than
+                # this generated copy, authenticates the proof commitment.
                 "pushdown_proof_attestation": pushdown_proofs.get(engine),
                 **(
                     {
@@ -1600,7 +1640,7 @@ def main() -> int:
         "| SOL-050-023 | High | resolved by complete pushdown outcome and lowering evidence |\n"
         "| SOL-050-024 | Medium | resolved by authoritative findings-ledger enforcement |\n\n"
         "| SOL-050-025 | High | resolved by engine-bound finding provenance and native proof digest validation |\n\n"
-        "| SOL-050-026 | High | resolved by installed compiler fingerprints and per-engine native proof attestations |\n\n"
+        "| SOL-050-026 | High | resolved by source-authoritative compiler targets and native proof commitments |\n\n"
         "| FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |\n"
         "| FINAL-050-002 | High | resolved by nested support-payload validation |\n"
         "| FINAL-050-003 | High | resolved by value-free DuckDB EXPLAIN bindings |\n"

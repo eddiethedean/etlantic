@@ -633,6 +633,62 @@ def test_production_checker_rejects_coordinated_fingerprint_rewrite(
         checker.main()
 
 
+def test_production_checker_rejects_sql_dialect_controlled_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Evidence cannot select the SQL compiler identity used to verify itself."""
+    import scripts.check_portable_0_50 as checker
+
+    from etlantic.transform.compiler import _support_fingerprint
+    from etlantic_sql import SqlTransformCompiler
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    sqlite_compiler = SqlTransformCompiler(dialect="sqlite")
+    sqlite_fingerprint = sqlite_compiler.info.evidence_fingerprint
+    support_path = evidence / "portable_requirement_support_0_50.json"
+    support = json.loads(support_path.read_text())
+    report = support["reports"]["sql"]
+    report["target"]["environment"] = dict(sqlite_compiler.info.environment or {})
+    for record in report["evidence"]:
+        record["fingerprint"] = sqlite_fingerprint
+    for finding in report["findings"]:
+        finding["evidence_fingerprint"] = sqlite_fingerprint
+    for finding in report["pushdown"]:
+        finding["evidence_fingerprint"] = sqlite_fingerprint
+    report["fingerprint"] = _support_fingerprint(report)
+    support_path.write_text(json.dumps(support, indent=2, sort_keys=True) + "\n")
+
+    contract_path = evidence / "portable_pushdown_contract_0_50.json"
+    contract = json.loads(contract_path.read_text())
+    old_fingerprint = next(
+        item["evidence_fingerprint"]
+        for item in contract["findings"]
+        if item["engine"] == "sql"
+    )
+    contract["evidence"] = [
+        sqlite_fingerprint if value == old_fingerprint else value
+        for value in contract["evidence"]
+    ]
+    for finding in contract["findings"]:
+        if finding["engine"] == "sql":
+            finding["evidence_fingerprint"] = sqlite_fingerprint
+    contract_path.write_text(json.dumps(contract, indent=2, sort_keys=True) + "\n")
+
+    _refresh_temp_evidence_metadata(evidence)
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    with pytest.raises(SystemExit, match="source-controlled authority"):
+        checker.main()
+
+
 def test_production_checker_rejects_coordinated_native_digest_rewrite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -650,6 +706,12 @@ def test_production_checker_rejects_coordinated_native_digest_rewrite(
         action["result_digest"] = sql_proof["result_digest"]
         action["native_explain_digest"] = sql_proof["native_explain_digest"]
     contract_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    conformance_path = evidence / "portable_sql_conformance_0_50.json"
+    conformance = json.loads(conformance_path.read_text())
+    conformance["pushdown_proof_attestation"] = sql_proof
+    conformance_path.write_text(
+        json.dumps(conformance, indent=2, sort_keys=True) + "\n"
+    )
     _refresh_temp_evidence_metadata(evidence)
     monkeypatch.setattr(checker, "EVIDENCE", evidence)
     real_check_output = checker.subprocess.check_output
@@ -660,8 +722,21 @@ def test_production_checker_rejects_coordinated_native_digest_rewrite(
         return real_check_output(command, **kwargs)
 
     monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
-    with pytest.raises(SystemExit, match="independently attested"):
+    with pytest.raises(SystemExit, match="source-controlled authority"):
         checker.main()
+
+
+@pytest.mark.datafusion
+def test_datafusion_pushdown_evidence_is_reproducible() -> None:
+    """Session-local DataFusion relation names cannot perturb proof digests."""
+    pytest.importorskip("datafusion")
+    from scripts.generate_portable_0_50_evidence import (
+        _compiler_factories,
+        _execute_pushdown_fixture,
+    )
+
+    compiler = _compiler_factories()["datafusion"]()
+    assert _execute_pushdown_fixture(compiler) == _execute_pushdown_fixture(compiler)
 
 
 def test_pushdown_findings_reject_orphan_native_proof() -> None:

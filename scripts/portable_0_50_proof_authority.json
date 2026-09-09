@@ -1,0 +1,72 @@
+{
+  "authority": "reviewed source release anchor",
+  "compiler_targets": {
+    "datafusion": {
+      "compiler": "etlantic-datafusion",
+      "engine": "datafusion",
+      "implementation": "datafusion-native/1",
+      "package": "etlantic-datafusion",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "duckdb": {
+      "compiler": "etlantic-duckdb",
+      "engine": "duckdb",
+      "implementation": "duckdb-native/1",
+      "package": "etlantic-duckdb",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "local": {
+      "compiler": "etlantic-local",
+      "engine": "local",
+      "implementation": "python-records/1",
+      "package": "etlantic",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "pandas": {
+      "compiler": "etlantic-pandas",
+      "engine": "pandas",
+      "implementation": "pandas-native/1",
+      "package": "etlantic-pandas",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "polars": {
+      "compiler": "etlantic-polars",
+      "engine": "polars",
+      "implementation": "polars-native/1",
+      "package": "etlantic-polars",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "pyspark": {
+      "compiler": "etlantic-pyspark",
+      "engine": "pyspark",
+      "implementation": "pyspark-native/1",
+      "package": "etlantic-pyspark",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    },
+    "sql": {
+      "compiler": "etlantic-sql",
+      "engine": "sql",
+      "environment": {
+        "dialect": "postgresql",
+        "runtime": "sqlalchemy"
+      },
+      "implementation": "sql-native/1",
+      "package": "etlantic-sql",
+      "protocol": "etlantic.transform-compiler/1",
+      "version": "0.50.0"
+    }
+  },
+  "native_proof_digests": {
+    "datafusion": "9e500d21f2f53d27ad7e723abf4832a3631bc41f614795b2cd703fcbb1eb9835",
+    "duckdb": "af03908d85ca19ae5e15661d00f610dedc551fca2602b0de562494cf5960df24",
+    "pyspark": "e0a06e07a6eb73a2a3228e72c255485750d900eb8e4d64db215ec7d2976353fd",
+    "sql": "63701a2d056d5ad738f68efc0db4bf624f4382779af13483c9906ad41f8fcfb0"
+  },
+  "schema": "etlantic.portable-proof-authority/1"
+}

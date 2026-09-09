@@ -13,6 +13,7 @@ from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/11_DEVELOPMENT/evidence/portable_0_50"
+PROOF_AUTHORITY = ROOT / "scripts/portable_0_50_proof_authority.json"
 REQUIRED = {
     "portable_evidence_index_0_50.json",
     "portable_baseline_contract_0_50.json",
@@ -103,6 +104,35 @@ EXPECTED_PUSHDOWN_BOUNDARIES = ("source", "relational", "sink")
 EXPECTED_NATIVE_PUSHDOWN_ENGINES = frozenset({"sql", "pyspark", "datafusion", "duckdb"})
 
 
+def _canonical_digest(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _proof_authority() -> dict[str, Any]:
+    """Load the reviewed source authority outside the generated evidence tree."""
+    payload = json.loads(PROOF_AUTHORITY.read_text(encoding="utf-8"))
+    if payload.get("schema") != "etlantic.portable-proof-authority/1":
+        raise SystemExit("portable proof authority schema is invalid")
+    targets = payload.get("compiler_targets")
+    proof_digests = payload.get("native_proof_digests")
+    if not isinstance(targets, dict) or set(targets) != EXPECTED_ENGINES:
+        raise SystemExit("portable compiler target authority is incomplete")
+    if (
+        not isinstance(proof_digests, dict)
+        or set(proof_digests) != EXPECTED_NATIVE_PUSHDOWN_ENGINES
+        or any(
+            not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+            for value in proof_digests.values()
+        )
+    ):
+        raise SystemExit("portable native proof authority is incomplete")
+    return payload
+
+
 def _installed_compiler(engine: str, target: Mapping[str, Any]) -> Any:
     """Instantiate the first-party compiler named by a support target.
 
@@ -117,7 +147,12 @@ def _installed_compiler(engine: str, target: Mapping[str, Any]) -> Any:
     if engine == "sql":
         from etlantic_sql import SqlTransformCompiler
 
-        environment = target.get("environment")
+        authority_target = _proof_authority()["compiler_targets"].get(engine)
+        environment = (
+            authority_target.get("environment")
+            if isinstance(authority_target, Mapping)
+            else None
+        )
         dialect = (
             environment.get("dialect") if isinstance(environment, Mapping) else None
         )
@@ -155,6 +190,7 @@ def validate_installed_compiler_evidence(
     reports: Mapping[str, Any],
 ) -> None:
     """Bind every report fingerprint to the installed first-party compiler."""
+    authoritative_targets = _proof_authority()["compiler_targets"]
     for engine in EXPECTED_ENGINES:
         report = reports.get(engine)
         if not isinstance(report, Mapping):
@@ -167,6 +203,10 @@ def validate_installed_compiler_evidence(
             or len(records) != 1
         ):
             raise SystemExit(f"support evidence is incomplete for {engine}")
+        if target != authoritative_targets.get(engine):
+            raise SystemExit(
+                f"support target differs from source-controlled authority: {engine}"
+            )
         compiler = _installed_compiler(engine, target)
         info = compiler.info
         expected = {
@@ -478,6 +518,7 @@ def validate_pushdown_findings(
     *,
     expected_evidence_fingerprints: Mapping[str, str] | None = None,
     proof_attestations: Mapping[str, Mapping[str, Any] | None] | None = None,
+    authoritative_proof_digests: Mapping[str, str] | None = None,
 ) -> None:
     """Require the checked-in pushdown matrix and native proofs to be complete."""
     if payload.get("boundaries") != list(EXPECTED_PUSHDOWN_BOUNDARIES):
@@ -634,6 +675,13 @@ def validate_pushdown_findings(
         if set(actions) != expected_action_ids:
             raise SystemExit("pushdown proof action inventory is incomplete")
         if engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES:
+            if authoritative_proof_digests is not None and (
+                _canonical_digest(engine_proofs)
+                != authoritative_proof_digests.get(engine)
+            ):
+                raise SystemExit(
+                    "native pushdown proof differs from source-controlled authority"
+                )
             if proof_attestations is not None:
                 attestation = proof_attestations.get(engine)
                 if (
@@ -1230,6 +1278,7 @@ def main() -> int:
         pushdown,
         expected_evidence_fingerprints=expected_pushdown_evidence,
         proof_attestations=proof_attestations,
+        authoritative_proof_digests=_proof_authority()["native_proof_digests"],
     )
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()
