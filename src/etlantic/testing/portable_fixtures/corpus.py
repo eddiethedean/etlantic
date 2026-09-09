@@ -234,6 +234,158 @@ def _substr_literal_replace() -> FixtureCase:
     )
 
 
+def _kernel_semantic_edges() -> FixtureCase:
+    """Exercise normative null, Unicode, rounding, and substring edges."""
+
+    def lit(type_: str, value: Any) -> dict[str, Any]:
+        return {"kind": "literal", "value": {"type": type_, "value": value}}
+
+    def field(name: str) -> dict[str, Any]:
+        return {"kind": "fieldRef", "scope": "field", "target": name}
+
+    def call(name: str, *args: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "call", "callee": name, "args": list(args)}
+
+    def binary(op: str, left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+        return {"kind": "binary", "op": op, "left": left, "right": right}
+
+    fields = [
+        ("lower", call("dtcs:lower", field("text"))),
+        ("upper", call("dtcs:upper", field("text"))),
+        ("substring", call("dtcs:substr", field("text"), lit("integer", 0))),
+        ("ends_empty", call("dtcs:ends_with", field("text"), lit("string", ""))),
+        ("rounded", call("dtcs:round", field("number"))),
+        ("rounded_negative", call("dtcs:round", lit("decimal", -2.5))),
+        (
+            "rounded_scale",
+            call("dtcs:round", lit("decimal", 2.25), lit("integer", 1)),
+        ),
+        (
+            "contains_nullable",
+            call("dtcs:contains", field("nullable_text"), lit("string", "a")),
+        ),
+        (
+            "replace_nullable",
+            call(
+                "dtcs:replace",
+                field("nullable_text"),
+                lit("string", "a"),
+                lit("string", "x"),
+            ),
+        ),
+        ("round_nullable", call("dtcs:round", field("nullable_number"))),
+        (
+            "null_if_right_null",
+            call("dtcs:null_if", field("text"), lit("null", None)),
+        ),
+        (
+            "in_nullable",
+            call("dtcs:in", field("nullable_number"), lit("decimal", 1.5)),
+        ),
+        (
+            "eq_nullable",
+            binary("eq", field("nullable_number"), lit("decimal", 1.5)),
+        ),
+        ("and_nullable", binary("and", field("flag"), lit("boolean", True))),
+    ]
+    return FixtureCase(
+        name="kernel_semantic_edges",
+        required_profiles=frozenset({KERNEL_PROFILE_V1}),
+        required_actions=frozenset({"dtcs:project"}),
+        required_functions=frozenset(
+            {
+                "dtcs:contains",
+                "dtcs:ends_with",
+                "dtcs:in",
+                "dtcs:lower",
+                "dtcs:null_if",
+                "dtcs:replace",
+                "dtcs:round",
+                "dtcs:substr",
+                "dtcs:upper",
+            }
+        ),
+        required_operators=frozenset({"and", "eq"}),
+        required_types=frozenset({"boolean", "decimal", "integer", "null", "string"}),
+        plan={
+            "planIdentity": "dtcs.transform-plan/2",
+            "inputs": {"t": {"id": "t"}},
+            "actions": [
+                {
+                    "id": "p1",
+                    "kind": {
+                        "action": "dtcs:project",
+                        "id": "p1",
+                        "parameters": {
+                            "fields": [
+                                {"name": name, "expression": expression}
+                                for name, expression in fields
+                            ]
+                        },
+                        "target": "t",
+                    },
+                }
+            ],
+            "outputs": {"result": {"id": "result"}},
+            "requirements": {
+                "dependencies": [{"from": "p1", "to": "result", "reason": "lineage"}]
+            },
+        },
+        inputs={
+            "t": [
+                {
+                    "text": "Straße",
+                    "number": 2.5,
+                    "nullable_text": None,
+                    "nullable_number": None,
+                    "flag": None,
+                },
+                {
+                    "text": "İ\u039f\u03a3",
+                    "number": 3.5,
+                    "nullable_text": "abc",
+                    "nullable_number": 1.5,
+                    "flag": True,
+                },
+            ]
+        },
+        expected=[
+            {
+                "lower": "straße",
+                "upper": "STRASSE",
+                "substring": "Straße",
+                "ends_empty": True,
+                "rounded": 2.0,
+                "rounded_negative": -2.0,
+                "rounded_scale": 2.2,
+                "contains_nullable": None,
+                "replace_nullable": None,
+                "round_nullable": None,
+                "null_if_right_null": "Straße",
+                "in_nullable": None,
+                "eq_nullable": None,
+                "and_nullable": None,
+            },
+            {
+                "lower": "i\u0307\u03bf\u03c2",
+                "upper": "İ\u039f\u03a3",
+                "substring": "İ\u039f\u03a3",
+                "ends_empty": True,
+                "rounded": 4.0,
+                "rounded_negative": -2.0,
+                "rounded_scale": 2.2,
+                "contains_nullable": True,
+                "replace_nullable": "xbc",
+                "round_nullable": 2.0,
+                "null_if_right_null": "İ\u039f\u03a3",
+                "in_nullable": True,
+                "eq_nullable": True,
+                "and_nullable": True,
+            },
+        ],
+    )
+
+
 def _relational_aggregate() -> FixtureCase:
     return FixtureCase(
         name="relational_join_aggregate",
@@ -2267,6 +2419,7 @@ FIXTURES: tuple[FixtureCase, ...] = (
     _kernel_filter_project(),
     _kernel_project_identity(),
     _substr_literal_replace(),
+    _kernel_semantic_edges(),
     _decimal_extremes(),
     _relational_aggregate(),
     _sort_nulls_limit(),

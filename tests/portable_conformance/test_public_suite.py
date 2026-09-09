@@ -2258,6 +2258,165 @@ def test_all_compilers_reject_literal_zero_arithmetic() -> None:
         assert any(f.code == "PMXFORM302" for f in report.findings)
 
 
+@pytest.mark.parametrize(
+    ("expression", "requirement"),
+    [
+        (
+            {
+                "kind": "call",
+                "callee": "dtcs:case_when",
+                "args": [
+                    {"kind": "literal", "value": {"type": "boolean", "value": True}},
+                    {"kind": "literal", "value": {"type": "string", "value": "yes"}},
+                ],
+            },
+            "function:dtcs:case_when:arity",
+        ),
+        (
+            {
+                "kind": "call",
+                "callee": "dtcs:substr",
+                "args": [
+                    {"kind": "literal", "value": {"type": "string", "value": "abc"}},
+                    {"kind": "literal", "value": {"type": "integer", "value": -1}},
+                ],
+            },
+            "function:dtcs:substr:argument:1",
+        ),
+        (
+            {
+                "kind": "call",
+                "callee": "dtcs:replace",
+                "args": [
+                    {"kind": "literal", "value": {"type": "string", "value": "abc"}},
+                    {"kind": "literal", "value": {"type": "string", "value": ""}},
+                    {"kind": "literal", "value": {"type": "string", "value": "x"}},
+                ],
+            },
+            "function:dtcs:replace:empty_search",
+        ),
+    ],
+)
+def test_all_compilers_reject_nonportable_scalar_shapes(
+    expression: dict[str, object], requirement: str
+) -> None:
+    _require_all_backend_plugins()
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
+    from etlantic_sql import create_transform_compiler as sql
+
+    plan = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "t",
+                    "parameters": {
+                        "fields": [{"name": "value", "expression": expression}]
+                    },
+                },
+            }
+        ],
+    }
+    for compiler in [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        pyspark(),
+        datafusion(),
+        duckdb(),
+    ]:
+        report = compiler.analyze(
+            plan,
+            context=TransformPlanningContext("p", "s", "profile", compiler.info.engine),
+        )
+        assert not report.supported
+        assert any(finding.requirement == requirement for finding in report.findings)
+
+
+def test_all_compilers_reject_invalid_runtime_constants_before_input_access() -> None:
+    _require_all_backend_plugins()
+    import asyncio
+
+    from etlantic_duckdb import create_transform_compiler as duckdb
+
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformExecutionContext,
+    )
+    from etlantic.transform.local_compiler import LocalTransformCompiler
+    from etlantic_datafusion import create_transform_compiler as datafusion
+    from etlantic_pandas import create_transform_compiler as pandas
+    from etlantic_polars import create_transform_compiler as polars
+    from etlantic_pyspark import create_transform_compiler as pyspark
+    from etlantic_sql import create_transform_compiler as sql
+
+    expression = {
+        "kind": "call",
+        "callee": "dtcs:replace",
+        "args": [
+            {"kind": "fieldRef", "scope": "field", "target": "text"},
+            {"kind": "fieldRef", "scope": "parameter", "target": "search"},
+            {"kind": "literal", "value": {"type": "string", "value": "x"}},
+        ],
+    }
+    plan = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "parameters": {"search": {"type": "string"}},
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "p",
+                "kind": {
+                    "id": "p",
+                    "action": "dtcs:project",
+                    "target": "t",
+                    "parameters": {
+                        "fields": [{"name": "value", "expression": expression}]
+                    },
+                },
+            }
+        ],
+    }
+    for compiler in [
+        LocalTransformCompiler(),
+        polars(),
+        pandas(),
+        sql(),
+        pyspark(),
+        datafusion(),
+        duckdb(),
+    ]:
+        compiled = compiler.compile(
+            plan,
+            context=TransformCompileContext(
+                "p", "plan", "s", "profile", compiler.info.engine
+            ),
+        )
+        with pytest.raises(ValueError, match="non-empty string"):
+            asyncio.run(
+                compiler.execute(
+                    compiled,
+                    inputs={"t": object()},
+                    parameters={"search": ""},
+                    context=TransformExecutionContext(
+                        "r", "p", "plan", "s", compiler.info.engine
+                    ),
+                )
+            )
+
+
 @pytest.mark.parametrize("operator", ["divide", "modulo"])
 def test_all_compilers_reject_dynamic_denominators(operator: str) -> None:
     """A field/parameter divisor cannot be qualified without source I/O."""

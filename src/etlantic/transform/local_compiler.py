@@ -15,6 +15,7 @@ from etlantic.transform.capabilities import (
     portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
+    validate_portable_runtime_parameters,
 )
 from etlantic.transform.compiler import (
     CompiledTransform,
@@ -163,6 +164,7 @@ class LocalTransformCompiler:
         context: TransformExecutionContext,
     ) -> TransformOutputBundle:
         plan = compiled.native_plan
+        validate_portable_runtime_parameters(plan, parameters)
         relations: dict[str, list[dict[str, Any]]] = {
             str(k): _rows(v) for k, v in inputs.items()
         }
@@ -315,6 +317,7 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
             "dtcs:if_null",
             "dtcs:is_null",
             "dtcs:case_when",
+            "dtcs:null_if",
         } and any(value is None for value in a):
             return None
         if n == "dtcs:lower":

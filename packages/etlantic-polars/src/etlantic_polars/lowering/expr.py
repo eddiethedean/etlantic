@@ -101,6 +101,14 @@ def lower_expr(node: Any, *, parameters: dict[str, Any]) -> pl.Expr:
         operand = node.get("operand", node.get("expr"))
         if operand is None:
             raise ValueError("unary expression missing operand/expr")
+        # Polars cannot apply a boolean unary operator to a Null-typed
+        # expression.  Preserve DTCS three-state semantics by short-circuiting
+        # statically null operands before constructing the native expression.
+        try:
+            if constant_python(operand, parameters=parameters) is None:
+                return pl.lit(None)
+        except (KeyError, ValueError):
+            pass
         return _UNARY_OPS[op](lower_expr(operand, parameters=parameters))
     if kind == "call":
         return _lower_call(node, parameters=parameters)
@@ -111,6 +119,19 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> pl.Expr:
     callee = str(node.get("callee") or "")
     raw_args = list(node.get("args") or [])
     args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee not in {
+        "dtcs:case_when",
+        "dtcs:coalesce",
+        "dtcs:if_null",
+        "dtcs:null_if",
+        "dtcs:is_null",
+    }:
+        for raw in raw_args:
+            try:
+                if constant_python(raw, parameters=parameters) is None:
+                    return pl.lit(None)
+            except ValueError:
+                pass
     if callee == "dtcs:lower":
         return args[0].str.to_lowercase()
     if callee == "dtcs:upper":

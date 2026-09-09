@@ -220,6 +220,9 @@ class DataFusionTransformCompiler:
         plan = compiled.native_plan
         if not isinstance(plan, dict):
             raise ValueError("DataFusion compiled transform has no closed plan")
+        from etlantic.transform.capabilities import validate_portable_runtime_parameters
+
+        validate_portable_runtime_parameters(plan, parameters)
         relations: dict[str, Any] = {}
         for name, value in inputs.items():
             relations[str(name)] = value
@@ -359,8 +362,21 @@ def _expr(
     if kind == "call":
         name = str(node.get("callee"))
         args = [_expr(a, col, f, lit, params) for a in node.get("args") or []]
-        if name == "dtcs:round" and len(args) == 1:
-            args.append(lit(0))
+        if name == "dtcs:round":
+            places = args[1] if len(args) > 1 else lit(0)
+            factor = f.power(lit(10.0), places)
+            scaled = args[0] * factor
+            magnitude = f.abs(scaled)
+            integral = f.floor(magnitude)
+            fraction = magnitude - integral
+            rounded_magnitude = (
+                f.when(fraction < lit(0.5), integral)
+                .when(fraction > lit(0.5), integral + lit(1.0))
+                .when((integral % lit(2.0)) == lit(0.0), integral)
+                .otherwise(integral + lit(1.0))
+            )
+            sign = f.when(scaled < lit(0.0), lit(-1.0)).otherwise(lit(1.0))
+            return sign * rounded_magnitude / factor
         fn = {
             "dtcs:lower": f.lower,
             "dtcs:upper": f.upper,
@@ -371,7 +387,6 @@ def _expr(
             "dtcs:starts_with": f.starts_with,
             "dtcs:ends_with": f.ends_with,
             "dtcs:abs": f.abs,
-            "dtcs:round": f.round,
             "dtcs:floor": f.floor,
             "dtcs:ceil": f.ceil,
             "dtcs:power": f.power,
@@ -391,7 +406,7 @@ def _expr(
             return (
                 f.substring(args[0], start, args[2])
                 if len(args) >= 3
-                else f.substring(args[0], start)
+                else f.substring(args[0], start, f.length(args[0]))
             )
         if name == "dtcs:concat_ws":
             if len(args) < 2:

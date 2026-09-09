@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import sys
+import unicodedata
 from decimal import Decimal
+from functools import lru_cache
 from typing import Any
 from uuid import uuid4
 
@@ -211,9 +214,19 @@ class SqlCompiler:
                         )
         body: str
         if callee == "dtcs:lower":
-            body = f"LOWER({args[0]})"
+            if self.dialect == "sqlite":
+                body = f"ETLANTIC_UNICODE_LOWER({args[0]})"
+            elif self.dialect == "postgresql":
+                body = _postgres_unicode_case(args[0], mode="lower")
+            else:
+                body = f"LOWER({args[0]})"
         elif callee == "dtcs:upper":
-            body = f"UPPER({args[0]})"
+            if self.dialect == "sqlite":
+                body = f"ETLANTIC_UNICODE_UPPER({args[0]})"
+            elif self.dialect == "postgresql":
+                body = _postgres_unicode_case(args[0], mode="upper")
+            else:
+                body = f"UPPER({args[0]})"
         elif callee == "dtcs:concat":
             body = " || ".join(args) if args else "''"
         elif callee == "dtcs:concat_ws":
@@ -238,7 +251,15 @@ class SqlCompiler:
             )
         elif callee == "dtcs:substr":
             # DTCS / Polars use 0-based start; SQL SUBSTRING/substr is 1-based.
-            if self.dialect == "sqlite":
+            # A NULL bound must propagate as a typed NULL rather than being
+            # used in ``TEXT + INTEGER`` arithmetic (PostgreSQL cannot resolve
+            # that expression even though the surrounding result is NULL).
+            if any(
+                isinstance(argument, LiteralExpr) and argument.value is None
+                for argument in expr.args[1:]
+            ):
+                body = "CAST(NULL AS TEXT)"
+            elif self.dialect == "sqlite":
                 if len(args) == 2:
                     body = f"SUBSTR({args[0]}, ({args[1]}) + 1)"
                 else:
@@ -265,7 +286,10 @@ class SqlCompiler:
                 body = f"(STRPOS({args[0]}, {args[1]}) = 1)"
         elif callee == "dtcs:ends_with":
             if self.dialect == "sqlite":
-                body = f"(SUBSTR({args[0]}, -LENGTH({args[1]})) = {args[1]})"
+                body = (
+                    f"(CASE WHEN LENGTH({args[1]}) = 0 THEN TRUE "
+                    f"ELSE SUBSTR({args[0]}, -LENGTH({args[1]})) = {args[1]} END)"
+                )
             else:
                 body = f"(RIGHT({args[0]}, CHAR_LENGTH({args[1]})) = {args[1]})"
         elif callee == "dtcs:coalesce":
@@ -279,7 +303,26 @@ class SqlCompiler:
         elif callee == "dtcs:abs":
             body = f"ABS({args[0]})"
         elif callee == "dtcs:round":
-            body = f"ROUND({args[0]}, {args[1] if len(args) > 1 else '0'})"
+            value = args[0]
+            places = args[1] if len(args) > 1 else "0"
+            factor = f"POWER(10.0, {places})"
+            scaled = f"(({value}) * ({factor}))"
+            magnitude = f"ABS({scaled})"
+            integral = f"FLOOR({magnitude})"
+            fraction = f"(({magnitude}) - ({integral}))"
+            # ``FLOOR`` over a floating column is ``double precision`` on
+            # PostgreSQL, while MOD's integer/numeric overloads do not accept
+            # that type.  Cast the integral component explicitly so the same
+            # parity test is valid for literals, NUMERIC columns, and floats.
+            parity = f"MOD(CAST({integral} AS NUMERIC), 2)"
+            rounded_magnitude = (
+                f"CASE WHEN {fraction} < 0.5 THEN {integral} "
+                f"WHEN {fraction} > 0.5 THEN ({integral}) + 1 "
+                f"WHEN {parity} = 0 THEN {integral} "
+                f"ELSE ({integral}) + 1 END"
+            )
+            sign = f"CASE WHEN {scaled} < 0 THEN -1.0 ELSE 1.0 END"
+            body = f"(({sign}) * ({rounded_magnitude}) / ({factor}))"
         elif callee == "dtcs:floor":
             body = f"FLOOR({args[0]})"
         elif callee == "dtcs:ceil":
@@ -638,6 +681,109 @@ class SqlCompiler:
                 },
             )
         raise ValueError(f"Unsupported write intent: {write.intent}")
+
+
+@lru_cache(maxsize=2)
+def _unicode_expansions(mode: str) -> tuple[tuple[str, str], ...]:
+    """Return the host Unicode database's full one-codepoint case expansions."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    expansions: list[tuple[str, str]] = []
+    for codepoint in range(sys.maxunicode + 1):
+        char = chr(codepoint)
+        mapped = getattr(char, mode)()
+        if len(mapped) != 1:
+            expansions.append((char, mapped))
+    return tuple(expansions)
+
+
+def _sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+@lru_cache(maxsize=1)
+def _postgres_case_ignorable_class() -> str:
+    """Return a PostgreSQL regex class for Unicode Case_Ignorable code points.
+
+    PostgreSQL's POSIX ``alpha`` class is not sufficient for Unicode default
+    casing context: punctuation such as a hyphen must stop a sigma context,
+    while combining marks and modifier characters must be skipped.  Python's
+    Unicode database is available at compile time, so encode the stable
+    category-based subset as compact character ranges in the generated SQL.
+    """
+
+    codepoints = [
+        codepoint
+        for codepoint in range(sys.maxunicode + 1)
+        if unicodedata.category(chr(codepoint)) in {"Mn", "Me", "Cf", "Lm", "Sk"}
+        or codepoint in {0x27, 0x2019}
+    ]
+    ranges: list[tuple[int, int]] = []
+    if codepoints:
+        start = previous = codepoints[0]
+        for codepoint in codepoints[1:]:
+            if codepoint == previous + 1:
+                previous = codepoint
+                continue
+            ranges.append((start, previous))
+            start = previous = codepoint
+        ranges.append((start, previous))
+
+    def escaped(codepoint: int) -> str:
+        char = chr(codepoint)
+        return "\\" + char if char in {"\\", "]", "-", "^"} else char
+
+    parts = [
+        escaped(start) if start == end else f"{escaped(start)}-{escaped(end)}"
+        for start, end in ranges
+    ]
+    return "[" + "".join(parts) + "]"
+
+
+def _postgres_unicode_case(value: str, *, mode: str) -> str:
+    """Compile full default Unicode casing for PostgreSQL relation plans.
+
+    PostgreSQL 16 applies simple mappings and omits expansions such as
+    ``ß`` → ``SS`` and ``İ`` → ``i`` plus combining dot. Splitting the value
+    into code points keeps execution in SQL while applying the full mapping.
+    Lowercase sigma additionally needs the default context-sensitive final form.
+    """
+    simple = mode.upper()
+    clauses = [
+        f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
+        for source, mapped in _unicode_expansions(mode)
+    ]
+    if mode == "lower":
+        text = f"CAST({value} AS TEXT)"
+        ignorable = _postgres_case_ignorable_class()
+        prefix = (
+            f"REGEXP_REPLACE(SUBSTRING({text} FROM 1 FOR "
+            "CAST(etlantic_chars.ordinality - 1 AS INTEGER)), "
+            f"{_sql_literal(ignorable + '+$')}"
+            ", '')"
+        )
+        suffix = (
+            f"REGEXP_REPLACE(SUBSTRING({text} FROM "
+            "CAST(etlantic_chars.ordinality + 1 AS INTEGER)), "
+            f"{_sql_literal('^' + ignorable + '+')}"
+            ", '')"
+        )
+        clauses.append(
+            "WHEN etlantic_chars.ch = 'Σ' "
+            f"AND LENGTH({prefix}) > 0 "
+            f"AND UPPER(RIGHT({prefix}, 1)) <> LOWER(RIGHT({prefix}, 1)) "
+            f"AND (LENGTH({suffix}) = 0 OR "
+            f"UPPER(LEFT({suffix}, 1)) = LOWER(LEFT({suffix}, 1))) "
+            "THEN 'ς'"
+        )
+    cases = " ".join(clauses)
+    return (
+        "(SELECT COALESCE(STRING_AGG(CASE "
+        f"{cases} ELSE {simple}(etlantic_chars.ch) END, '' "
+        "ORDER BY etlantic_chars.ordinality), '') "
+        f"FROM REGEXP_SPLIT_TO_TABLE(CAST({value} AS TEXT), '') WITH ORDINALITY "
+        "AS etlantic_chars(ch, ordinality))"
+    )
 
 
 def _projection_names(query: SqlQuery) -> set[str]:

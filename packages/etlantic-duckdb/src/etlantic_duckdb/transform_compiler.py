@@ -18,8 +18,10 @@ from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
     portable_arithmetic_findings,
+    portable_shape_findings,
     requirements_from_plan,
     three_state_findings,
+    validate_portable_runtime_parameters,
 )
 from etlantic.transform.compiler import (
     COMPILER_PROTOCOL,
@@ -163,6 +165,7 @@ class DuckDBTransformCompiler:
         findings = list(report.findings)
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(shape_findings)
+        findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
         findings = [
             finding
@@ -235,6 +238,7 @@ class DuckDBTransformCompiler:
         plan = compiled.native_plan
         if not isinstance(plan, dict):
             raise ValueError("Compiled DuckDB transform has no closed plan")
+        validate_portable_runtime_parameters(plan, parameters)
         plugin = context.metadata.get("_sql_plugin") or context.metadata.get(
             "_duckdb_plugin"
         )
@@ -1986,6 +1990,11 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
                 bindings.extend(captured)
                 arg_binding_groups.append(captured)
             args = arg_sql
+            if callee in {"contains", "starts_with", "ends_with", "replace"}:
+                args = [
+                    f"CAST({arg} AS VARCHAR)" if arg == "?" and group == [None] else arg
+                    for arg, group in zip(args, arg_binding_groups, strict=True)
+                ]
             if callee == "count_all":
                 return "COUNT(*)"
             if callee == "count_distinct":
@@ -2000,6 +2009,8 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
                 if len(args) == 2:
                     return f"SUBSTR({args[0]}, {args[1]} + 1)"
                 return f"SUBSTR({args[0]}, {args[1]} + 1, {args[2]})"
+            if callee == "round" and len(args) == 1:
+                args.append("0")
             if callee == "case_when":
                 if len(args) < 3 or len(args) % 2 == 0:
                     raise ValueError(
@@ -2024,14 +2035,14 @@ def _expr(node: Any, parameters: dict[str, Any], bindings: list[Any]) -> str:
                 "min": "MIN",
                 "max": "MAX",
                 "count": "COUNT",
-                "lower": "LOWER",
-                "upper": "UPPER",
+                "lower": "ETLANTIC_UNICODE_LOWER",
+                "upper": "ETLANTIC_UNICODE_UPPER",
                 "concat": "CONCAT",
                 "concat_ws": "CONCAT_WS",
                 "replace": "REPLACE",
                 "length": "LENGTH",
                 "abs": "ABS",
-                "round": "ROUND",
+                "round": "ROUND_EVEN",
                 "floor": "FLOOR",
                 "ceil": "CEIL",
                 "sqrt": "SQRT",

@@ -135,6 +135,19 @@ def test_public_exports_complete() -> None:
     _public_symbols()
 
 
+def test_normalize_rows_preserves_semantic_scalar_and_order_distinctions() -> None:
+    from etlantic.testing.portable_transform_conformance import _semantically_equal
+
+    assert normalize_rows([{"value": float("nan")}]) == [
+        {"value": {"$etlantic.scalar": "nan"}}
+    ]
+    assert normalize_rows([{"value": 2}, {"value": 1}], preserve_order=True) == [
+        {"value": 2},
+        {"value": 1},
+    ]
+    assert not _semantically_equal([{"value": True}], [{"value": 1}])
+
+
 def test_pipeline_case_module_uses_no_private_etlantic_imports() -> None:
     """Isolated-wheel / public-API gate: foundation module stays public-only."""
     root = Path(__file__).resolve().parents[2]

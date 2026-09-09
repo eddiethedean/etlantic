@@ -288,12 +288,16 @@ jobs:
       - name: Pytest SQL suite (SQLite IR + runtime)
         env:
           ETLANTIC_SQL_URL: "sqlite+pysqlite:///:memory:"
-        run: uv run pytest -q tests/sql -m sql
+        run: |
+          uv run pytest -q tests/sql -m sql
+          uv run pytest -q tests/portable_conformance -m sql
 
       - name: Pytest SQL suite (PostgreSQL)
         env:
           ETLANTIC_SQL_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
-        run: uv run pytest -q tests/sql -m sql
+        run: |
+          uv run pytest -q tests/sql -m sql
+          uv run pytest -q tests/portable_conformance -m sql
 
       - name: Runnable SQL examples
         env:
@@ -880,7 +884,10 @@ jobs:
       - name: Real PySpark tests
         env:
           SPARKLESS_TEST_MODE: pyspark
-        run: uv run pytest -q -m real_pyspark
+          ETLANTIC_SPARK_BACKEND: pyspark
+        run: |
+          uv run pytest -q -m real_pyspark
+          uv run pytest -q tests/portable_conformance/test_public_suite.py::test_suite_passes_pyspark -m spark
 
   airflow-import:
     name: Airflow import (${{ matrix.airflow-version }})

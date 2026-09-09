@@ -32,14 +32,20 @@ from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
 FrameFactory = Callable[[list[dict[str, Any]]], Any]
 
 
-def normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def normalize_rows(
+    rows: list[dict[str, Any]], *, preserve_order: bool = False
+) -> list[dict[str, Any]]:
     """Stable cross-engine row normalization for conformance compares."""
 
     def _norm_value(value: Any) -> Any:
         if value is None:
             return None
         if isinstance(value, float) and math.isnan(value):
-            return None
+            return {"$etlantic.scalar": "nan"}
+        if isinstance(value, Mapping):
+            return {key: _norm_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [_norm_value(item) for item in value]
         item_method = getattr(value, "item", None)
         if callable(item_method):
             try:
@@ -52,10 +58,24 @@ def normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for row in rows:
         item = {k: _norm_value(row[k]) for k in sorted(row)}
         cleaned.append(item)
-    return sorted(
-        cleaned,
-        key=lambda r: tuple(str(r.get(k)) for k in sorted(r)),
-    )
+    if preserve_order:
+        return cleaned
+    return sorted(cleaned, key=lambda r: tuple(str(r.get(k)) for k in sorted(r)))
+
+
+def _semantically_equal(left: Any, right: Any) -> bool:
+    """Compare normalized values without Python's bool/int equivalence."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if isinstance(left, Mapping) and isinstance(right, Mapping):
+        return left.keys() == right.keys() and all(
+            _semantically_equal(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _semantically_equal(a, b) for a, b in zip(left, right, strict=True)
+        )
+    return bool(left == right)
 
 
 def default_frame_factory(engine: str) -> FrameFactory:
@@ -86,7 +106,7 @@ def default_frame_factory(engine: str) -> FrameFactory:
         import pandas as pd
 
         def _pandas(rows: list[dict[str, Any]]) -> Any:
-            return pd.DataFrame(rows)
+            return pd.DataFrame(rows).convert_dtypes()
 
         return _pandas
     if engine in {"pyspark", "spark"}:
@@ -387,6 +407,12 @@ def _run_case(
         )
     )
     frame = next(iter(bundle.valid.values()))
-    got = normalize_rows(rows_from_frame(frame))
-    expected = normalize_rows(list(case.expected or []))
-    assert got == expected, f"{case.name}: {got!r} != {expected!r}"
+    ordered = any(
+        isinstance(action, Mapping)
+        and isinstance(action.get("kind"), Mapping)
+        and action["kind"].get("action") == "dtcs:sort"
+        for action in (case.plan.get("actions") or [])
+    )
+    got = normalize_rows(rows_from_frame(frame), preserve_order=ordered)
+    expected = normalize_rows(list(case.expected or []), preserve_order=ordered)
+    assert _semantically_equal(got, expected), f"{case.name}: {got!r} != {expected!r}"

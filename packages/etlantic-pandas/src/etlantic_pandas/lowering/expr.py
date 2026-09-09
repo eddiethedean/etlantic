@@ -86,32 +86,45 @@ def lower_expr(node: Any, *, parameters: dict[str, Any]) -> ExprFn:
 
 
 def _binary(op: str, left_fn: ExprFn, right_fn: ExprFn) -> ExprFn:
-    if op == "eq":
-        return lambda df: left_fn(df) == right_fn(df)
-    if op in {"neq", "not_eq"}:
-        return lambda df: left_fn(df) != right_fn(df)
-    if op == "lt":
-        return lambda df: left_fn(df) < right_fn(df)
-    if op == "lte":
-        return lambda df: left_fn(df) <= right_fn(df)
-    if op == "gt":
-        return lambda df: left_fn(df) > right_fn(df)
-    if op == "gte":
-        return lambda df: left_fn(df) >= right_fn(df)
-    if op == "add":
-        return lambda df: left_fn(df) + right_fn(df)
-    if op in {"sub", "subtract"}:
-        return lambda df: left_fn(df) - right_fn(df)
-    if op in {"mul", "multiply"}:
-        return lambda df: left_fn(df) * right_fn(df)
-    if op in {"div", "divide"}:
-        return lambda df: left_fn(df) / right_fn(df)
-    if op == "modulo":
-        return lambda df: left_fn(df) % right_fn(df)
-    if op == "and":
-        return lambda df: left_fn(df) & right_fn(df)
-    if op == "or":
-        return lambda df: left_fn(df) | right_fn(df)
+    if op in {"and", "or"}:
+
+        def _boolean(df: pd.DataFrame) -> pd.Series:
+            left = left_fn(df).astype("boolean")
+            right = right_fn(df).astype("boolean")
+            return left & right if op == "and" else left | right
+
+        return _boolean
+    if op != "null_safe_eq":
+
+        def _propagating(df: pd.DataFrame) -> pd.Series:
+            left = left_fn(df)
+            right = right_fn(df)
+            nulls = left.isna() | right.isna()
+            operations = {
+                "eq": lambda: left == right,
+                "neq": lambda: left != right,
+                "not_eq": lambda: left != right,
+                "lt": lambda: left < right,
+                "lte": lambda: left <= right,
+                "gt": lambda: left > right,
+                "gte": lambda: left >= right,
+                "add": lambda: left + right,
+                "sub": lambda: left - right,
+                "subtract": lambda: left - right,
+                "mul": lambda: left * right,
+                "multiply": lambda: left * right,
+                "div": lambda: left / right,
+                "divide": lambda: left / right,
+                "modulo": lambda: left % right,
+            }
+            if op not in operations:
+                raise ValueError(f"Unsupported binary op {op!r}")
+            result = operations[op]()
+            if op in {"eq", "neq", "not_eq", "lt", "lte", "gt", "gte"}:
+                result = result.astype("boolean")
+            return result.mask(nulls)
+
+        return _propagating
     if op == "null_safe_eq":
 
         def _null_safe(df: pd.DataFrame) -> pd.Series:
@@ -127,7 +140,7 @@ def _binary(op: str, left_fn: ExprFn, right_fn: ExprFn) -> ExprFn:
 
 def _unary(op: str, operand_fn: ExprFn) -> ExprFn:
     if op == "not":
-        return lambda df: ~operand_fn(df)
+        return lambda df: ~operand_fn(df).astype("boolean")
     if op == "negate":
         return lambda df: -operand_fn(df)
     raise ValueError(f"Unsupported unary op {op!r}")
@@ -137,6 +150,19 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
     callee = str(node.get("callee") or "")
     raw_args = list(node.get("args") or [])
     arg_fns = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee not in {
+        "dtcs:case_when",
+        "dtcs:coalesce",
+        "dtcs:if_null",
+        "dtcs:null_if",
+        "dtcs:is_null",
+    }:
+        for raw in raw_args:
+            try:
+                if constant_python(raw, parameters=parameters) is None:
+                    return lambda df: _lit(df, None)
+            except ValueError:
+                pass
     if callee == "dtcs:lower":
         return lambda df: arg_fns[0](df).astype("string").str.lower()
     if callee == "dtcs:upper":
@@ -219,36 +245,44 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
         return lambda df: (
             arg_fns[0](df)
             .astype("string")
-            .str.contains(str(needle), regex=False, na=False)
+            .str.contains(str(needle), regex=False, na=pd.NA)
         )
     if callee == "dtcs:in":
         values = [constant_python(raw, parameters=parameters) for raw in raw_args[1:]]
-        return lambda df: arg_fns[0](df).isin(values)
+        return lambda df: (
+            arg_fns[0](df).isin(values).astype("boolean").mask(arg_fns[0](df).isna())
+        )
     if callee == "dtcs:starts_with":
         prefix = constant_python(raw_args[1], parameters=parameters)
         return lambda df: (
-            arg_fns[0](df).astype("string").str.startswith(str(prefix), na=False)
+            arg_fns[0](df).astype("string").str.startswith(str(prefix), na=pd.NA)
         )
     if callee == "dtcs:ends_with":
         suffix = constant_python(raw_args[1], parameters=parameters)
         return lambda df: (
-            arg_fns[0](df).astype("string").str.endswith(str(suffix), na=False)
+            arg_fns[0](df).astype("string").str.endswith(str(suffix), na=pd.NA)
         )
     if callee == "dtcs:coalesce":
 
         def _coalesce(df: pd.DataFrame) -> pd.Series:
-            out = arg_fns[0](df)
+            out = arg_fns[0](df).astype("object")
             for fn in arg_fns[1:]:
-                nxt = fn(df)
+                nxt = fn(df).astype("object")
                 out = out.where(out.notna(), nxt)
-            return out
+            return out.where(out.notna(), None)
 
         return _coalesce
     if callee == "dtcs:if_null":
-        return lambda df: arg_fns[0](df).where(arg_fns[0](df).notna(), arg_fns[1](df))
+        return lambda df: (
+            arg_fns[0](df)
+            .astype("object")
+            .where(arg_fns[0](df).notna(), arg_fns[1](df).astype("object"))
+        )
     if callee == "dtcs:null_if":
-        return lambda df: arg_fns[0](df).where(
-            arg_fns[0](df) != arg_fns[1](df), other=np.nan
+        return lambda df: (
+            arg_fns[0](df)
+            .astype("object")
+            .where(arg_fns[0](df) != arg_fns[1](df), other=None)
         )
     if callee == "dtcs:is_null":
         return lambda df: arg_fns[0](df).isna()
@@ -260,7 +294,7 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> ExprFn:
             if len(raw_args) > 1
             else 0
         )
-        return lambda df: arg_fns[0](df).astype("float64").round(int(scale))
+        return lambda df: arg_fns[0](df).astype("Float64").round(int(scale))
     if callee == "dtcs:floor":
         return lambda df: np.floor(arg_fns[0](df).astype("float64"))
     if callee == "dtcs:ceil":

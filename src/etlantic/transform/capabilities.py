@@ -1111,6 +1111,81 @@ def portable_shape_findings(
                                 path,
                             )
                         )
+                    if callee == "dtcs:case_when" and len(args) % 2 == 0:
+                        findings.append(
+                            TransformSupportFinding(
+                                "PMXFORM302",
+                                "function:dtcs:case_when:arity",
+                                "case_when requires condition/value pairs and one else value",
+                                path,
+                            )
+                        )
+                    if callee == "dtcs:substr":
+                        for argument_index, argument in enumerate(args[1:3], start=1):
+                            if not isinstance(argument, Mapping):
+                                continue
+                            kind = argument.get("kind")
+                            if (
+                                kind == "fieldRef"
+                                and argument.get("scope") != "parameter"
+                            ):
+                                findings.append(
+                                    TransformSupportFinding(
+                                        "PMXFORM302",
+                                        f"function:dtcs:substr:argument:{argument_index}",
+                                        "substring start and length must be proven non-negative constants",
+                                        f"{path}.args[{argument_index}]",
+                                    )
+                                )
+                                continue
+                            if kind != "literal":
+                                continue
+                            literal = argument.get("value")
+                            if not isinstance(literal, Mapping):
+                                continue
+                            if (
+                                literal.get("type") == "integer"
+                                and isinstance(literal.get("value"), int)
+                                and literal["value"] < 0
+                            ):
+                                findings.append(
+                                    TransformSupportFinding(
+                                        "PMXFORM302",
+                                        f"function:dtcs:substr:argument:{argument_index}",
+                                        "substring start and length must be non-negative",
+                                        f"{path}.args[{argument_index}]",
+                                    )
+                                )
+                    if callee == "dtcs:replace" and len(args) >= 2:
+                        search = args[1]
+                        if (
+                            isinstance(search, Mapping)
+                            and search.get("kind") == "fieldRef"
+                            and search.get("scope") != "parameter"
+                        ):
+                            findings.append(
+                                TransformSupportFinding(
+                                    "PMXFORM302",
+                                    "function:dtcs:replace:empty_search",
+                                    "portable replace search must be a non-empty constant",
+                                    f"{path}.args[1]",
+                                )
+                            )
+                        if (
+                            isinstance(search, Mapping)
+                            and search.get("kind") == "literal"
+                            and isinstance(search.get("value"), Mapping)
+                            and search["value"].get("type") == "string"
+                            and search["value"].get("value") == ""
+                        ):
+                            findings.append(
+                                TransformSupportFinding(
+                                    "PMXFORM302",
+                                    "function:dtcs:replace:empty_search",
+                                    "portable replace does not accept an empty search string",
+                                    f"{path}.args[1]",
+                                )
+                            )
                     if callee == "dtcs:concat_ws" and args:
                         separator = args[0]
                         if not (
@@ -1255,6 +1330,56 @@ def portable_arithmetic_findings(
 
     walk(definition)
     return findings
+
+
+def validate_portable_runtime_parameters(
+    definition: Mapping[str, Any], parameters: Mapping[str, Any]
+) -> None:
+    """Fail closed on runtime constants whose native semantics diverge."""
+
+    def parameter_value(node: Any) -> tuple[bool, Any]:
+        if not (
+            isinstance(node, Mapping)
+            and node.get("kind") == "fieldRef"
+            and node.get("scope") == "parameter"
+        ):
+            return False, None
+        name = str(node.get("target") or "")
+        if name not in parameters:
+            raise ValueError(f"missing portable transform parameter {name!r}")
+        return True, parameters[name]
+
+    def walk(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            if node.get("kind") == "call":
+                callee = str(node.get("callee") or "")
+                args = list(node.get("args") or ())
+                if callee == "dtcs:substr":
+                    for index, argument in enumerate(args[1:3], start=1):
+                        is_parameter, value = parameter_value(argument)
+                        if is_parameter and (
+                            not isinstance(value, int)
+                            or isinstance(value, bool)
+                            or value < 0
+                        ):
+                            raise ValueError(
+                                "portable substring start and length parameters "
+                                f"must be non-negative integers at {path}.args[{index}]"
+                            )
+                if callee == "dtcs:replace" and len(args) >= 2:
+                    is_parameter, value = parameter_value(args[1])
+                    if is_parameter and (not isinstance(value, str) or not value):
+                        raise ValueError(
+                            "portable replace search parameter must be a non-empty "
+                            f"string at {path}.args[1]"
+                        )
+            for key, value in node.items():
+                walk(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+
+    walk(definition, "plan")
 
 
 _WINDOWED_AGGREGATE_CALLEES = frozenset(

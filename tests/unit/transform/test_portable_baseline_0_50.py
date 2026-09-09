@@ -14,10 +14,20 @@ def test_baseline_manifest_is_normative_and_fixture_complete() -> None:
         "aggregate_empty_results",
         "numeric_rules",
         "string_unicode_rules",
+        "conditional_rules",
         "multi_input_identity",
         "output_contract",
     }.issubset(manifest)
     assert manifest["numeric_rules"]["promotion"]["integer:decimal"] == "decimal"
+    assert manifest["numeric_rules"]["rounding"] == "half_even"
+    assert manifest["string_unicode_rules"]["case_mapping"] == (
+        "unicode_default_case_mapping"
+    )
+    assert manifest["string_unicode_rules"]["substring_bounds"] == "non_negative"
+    assert manifest["string_unicode_rules"]["replace_empty_search"] == "reject"
+    assert manifest["conditional_rules"]["case_when_arity"] == (
+        "condition_value_pairs_plus_else"
+    )
     assert (
         manifest["output_contract"]["validation"]
         == "runtime_contract_validation_required"

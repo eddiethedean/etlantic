@@ -315,14 +315,20 @@ def baseline_manifest() -> dict[str, Any]:
             "overflow": "raise_portable_numeric_error",
             "divide_by_zero": "raise_portable_arithmetic_error",
             "modulo_by_zero": "raise_portable_arithmetic_error",
+            "rounding": "half_even",
         },
         "string_unicode_rules": {
             "encoding": "utf-8",
             "unit": "unicode_codepoint",
-            "case_mapping": "unicode_simple_case_mapping",
+            "case_mapping": "unicode_default_case_mapping",
             "substring_start": "zero_based",
             "substring_length": "codepoints",
+            "substring_bounds": "non_negative",
+            "replace_empty_search": "reject",
             "null_policy": "propagate_except_null_aware_functions",
+        },
+        "conditional_rules": {
+            "case_when_arity": "condition_value_pairs_plus_else",
         },
         "multi_input_identity": {
             "inputs": "named_relation_identity",

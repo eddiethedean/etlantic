@@ -186,6 +186,7 @@ class PySparkTransformCompiler:
         from etlantic.transform.capabilities import (
             merge_requirements,
             portable_arithmetic_findings,
+            portable_shape_findings,
             requirements_from_plan,
             three_state_findings,
             window_frame_findings,
@@ -202,6 +203,7 @@ class PySparkTransformCompiler:
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(window_frame_findings(definition))
         findings.extend(windowed_aggregate_findings(definition))
+        findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
         return TransformSupportReport(
             supported=not findings,
@@ -277,6 +279,9 @@ class PySparkTransformCompiler:
         plan = compiled.native_plan
         if not isinstance(plan, dict):
             raise ValueError("Compiled transform missing native plan")
+        from etlantic.transform.capabilities import validate_portable_runtime_parameters
+
+        validate_portable_runtime_parameters(plan, parameters)
         session = (context.metadata or {}).get("spark_session")
         if session is None:
             raise RuntimeError(

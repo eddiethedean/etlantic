@@ -105,6 +105,13 @@ def lower_expr(node: Any, *, parameters: dict[str, Any]) -> Any:
         operand = node.get("operand", node.get("expr"))
         if operand is None:
             raise ValueError("unary expression missing operand/expr")
+        # Spark rejects applying NOT to an untyped NULL literal.  Short-circuit
+        # statically null operands so the portable null result is preserved.
+        try:
+            if constant_python(operand, parameters=parameters) is None:
+                return _F().lit(None)
+        except (KeyError, ValueError):
+            pass
         return _unary_ops()[op](lower_expr(operand, parameters=parameters))
     if kind == "call":
         return _lower_call(node, parameters=parameters)
@@ -115,6 +122,19 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
     callee = str(node.get("callee") or "")
     raw_args = list(node.get("args") or [])
     args = [lower_expr(a, parameters=parameters) for a in raw_args]
+    if callee not in {
+        "dtcs:case_when",
+        "dtcs:coalesce",
+        "dtcs:if_null",
+        "dtcs:null_if",
+        "dtcs:is_null",
+    }:
+        for raw in raw_args:
+            try:
+                if constant_python(raw, parameters=parameters) is None:
+                    return _F().lit(None)
+            except ValueError:
+                pass
     if callee == "dtcs:lower":
         return _F().lower(args[0])
     if callee == "dtcs:upper":
@@ -207,7 +227,27 @@ def _lower_call(node: dict[str, Any], *, parameters: dict[str, Any]) -> Any:
             if len(raw_args) > 1
             else 0
         )
-        return _F().round(args[0], int(scale))
+        functions = _F()
+        if hasattr(functions, "bround"):
+            return functions.bround(args[0], int(scale))
+        # sparkless does not expose bround. Build the same half-even operation
+        # from native column expressions so the JVM-free conformance path does
+        # not silently exercise Spark's half-away-from-zero round instead.
+        factor = functions.lit(float(10 ** int(scale)))
+        scaled = args[0] * factor
+        magnitude = functions.abs(scaled)
+        integral = functions.floor(magnitude)
+        fraction = magnitude - integral
+        rounded_magnitude = (
+            functions.when(fraction < functions.lit(0.5), integral)
+            .when(fraction > functions.lit(0.5), integral + functions.lit(1.0))
+            .when((integral % functions.lit(2.0)) == functions.lit(0.0), integral)
+            .otherwise(integral + functions.lit(1.0))
+        )
+        sign = functions.when(
+            scaled < functions.lit(0.0), functions.lit(-1.0)
+        ).otherwise(functions.lit(1.0))
+        return sign * rounded_magnitude / factor
     if callee == "dtcs:floor":
         return _F().floor(args[0])
     if callee == "dtcs:ceil":

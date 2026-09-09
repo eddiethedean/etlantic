@@ -155,6 +155,7 @@ class SqlTransformCompiler:
         from etlantic.transform.capabilities import (
             merge_requirements,
             portable_arithmetic_findings,
+            portable_shape_findings,
             requirements_from_plan,
             three_state_findings,
         )
@@ -167,6 +168,7 @@ class SqlTransformCompiler:
         findings = list(report.findings)
         findings.extend(_analyze_modes(definition))
         findings.extend(three_state_findings(definition, self._info.capabilities))
+        findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
         # Reject trusted SQL fragments in portable definitions.
         blob = json.dumps(definition, sort_keys=True)
@@ -250,6 +252,9 @@ class SqlTransformCompiler:
         plan = compiled.native_plan
         if not isinstance(plan, dict):
             raise ValueError("Compiled transform missing native plan")
+        from etlantic.transform.capabilities import validate_portable_runtime_parameters
+
+        validate_portable_runtime_parameters(plan, parameters)
 
         dialect, engine = _open_engine(context.metadata)
         compiler = SqlCompiler(
@@ -266,8 +271,23 @@ class SqlTransformCompiler:
                 )
 
         with engine.begin() as conn:
+            if dialect == "sqlite":
+                driver = conn.connection.driver_connection
+                driver.create_function(
+                    "ETLANTIC_UNICODE_LOWER",
+                    1,
+                    lambda value: None if value is None else str(value).lower(),
+                    deterministic=True,
+                )
+                driver.create_function(
+                    "ETLANTIC_UNICODE_UPPER",
+                    1,
+                    lambda value: None if value is None else str(value).upper(),
+                    deterministic=True,
+                )
             relations: dict[str, RelationRef] = {}
             relation_columns: dict[str, list[str]] = {}
+            relation_boolean_columns: dict[str, set[str]] = {}
             native_statement_digests: list[str] = []
             native_explain_digests: list[str] = []
             native_action_digests: dict[str, str] = {}
@@ -278,12 +298,14 @@ class SqlTransformCompiler:
                 relation_columns[name] = (
                     list(frame.rows[0].keys()) if frame.rows else list(frame.columns)
                 )
+                relation_boolean_columns[name] = _infer_boolean_columns(frame.rows)
 
             # Primary working relation: first declared input or sole frame.
             input_ids = list((plan.get("inputs") or {}).keys()) or list(frames.keys())
             if not input_ids:
                 raise ValueError("Portable SQL plan has no inputs")
             current_name = str(input_ids[0])
+            current_source = current_name
             current_rel = relations[current_name]
             current_cols = list(relation_columns[current_name])
             ctes: list[CteDef] = []
@@ -297,11 +319,13 @@ class SqlTransformCompiler:
                 if target is None:
                     target_rel = current_rel
                     target_cols = current_cols
+                    target_source = current_source
                 else:
                     if target not in relations:
                         raise KeyError(f"Missing action target relation {target!r}")
                     target_rel = relations[target]
                     target_cols = list(relation_columns[target])
+                    target_source = str(target)
                 query, out_cols = apply_action_to_query(
                     target_rel,
                     target_cols,
@@ -343,8 +367,15 @@ class SqlTransformCompiler:
                 ).hexdigest()
                 current_rel = RelationRef(name=step_table)
                 current_cols = out_cols
+                current_source = action_id
                 relations[action_id] = current_rel
                 relation_columns[action_id] = out_cols
+                relation_boolean_columns[action_id] = _action_boolean_columns(
+                    kind,
+                    inherited=relation_boolean_columns.get(target_source, set()),
+                    relation_boolean_columns=relation_boolean_columns,
+                    output_columns=out_cols,
+                )
                 ctes.append(CteDef(name=step_table, query=query))
 
             valid: dict[str, SqlRelationFrame] = {}
@@ -367,7 +398,16 @@ class SqlTransformCompiler:
                     f"{compiler.quote(require_safe_identifier(relations[source].name))}"
                 )
                 result = conn.execute(_text(result_sql))
-                rows = [dict(row._mapping) for row in result]
+                boolean_columns = relation_boolean_columns.get(str(source), set())
+                rows = [
+                    {
+                        key: bool(value)
+                        if key in boolean_columns and value is not None
+                        else value
+                        for key, value in row._mapping.items()
+                    }
+                    for row in result
+                ]
                 valid[out_name] = SqlRelationFrame(rows=rows, name=out_name)
 
         return TransformOutputBundle(
@@ -437,6 +477,112 @@ def _safe_table(name: str) -> str:
     if not cleaned or cleaned[0].isdigit():
         cleaned = f"t_{cleaned}"
     return require_safe_identifier(cleaned)
+
+
+def _infer_boolean_columns(rows: list[dict[str, Any]]) -> set[str]:
+    if not rows:
+        return set()
+    return {
+        name
+        for name in rows[0]
+        if (values := [row.get(name) for row in rows if row.get(name) is not None])
+        and all(isinstance(value, bool) for value in values)
+    }
+
+
+def _expression_is_boolean(node: Any) -> bool:
+    if not isinstance(node, Mapping):
+        return isinstance(node, bool)
+    kind = node.get("kind")
+    if kind == "literal":
+        value = node.get("value")
+        return isinstance(value, Mapping) and value.get("type") == "boolean"
+    if kind == "binary":
+        return str(node.get("op")) in {
+            "eq",
+            "neq",
+            "not_eq",
+            "lt",
+            "lte",
+            "gt",
+            "gte",
+            "and",
+            "or",
+            "null_safe_eq",
+        }
+    if kind == "unary":
+        return node.get("op") == "not"
+    if kind != "call":
+        return False
+    callee = str(node.get("callee") or "")
+    if callee in {
+        "dtcs:contains",
+        "dtcs:ends_with",
+        "dtcs:in",
+        "dtcs:is_null",
+        "dtcs:starts_with",
+    }:
+        return True
+    args = list(node.get("args") or ())
+    if callee == "dtcs:case_when":
+        values = args[1::2]
+        if len(args) % 2:
+            values.append(args[-1])
+        return bool(values) and all(_expression_is_boolean(value) for value in values)
+    if callee in {"dtcs:coalesce", "dtcs:if_null", "dtcs:null_if"}:
+        return bool(args) and all(_expression_is_boolean(value) for value in args)
+    return False
+
+
+def _action_boolean_columns(
+    kind: Mapping[str, Any],
+    *,
+    inherited: set[str],
+    relation_boolean_columns: Mapping[str, set[str]],
+    output_columns: list[str],
+) -> set[str]:
+    action = str(kind.get("action") or "")
+    params = kind.get("parameters") or {}
+    result = set(inherited)
+    if action == "dtcs:project":
+        result = set()
+        for item in params.get("fields") or ():
+            if isinstance(item, str) and item in inherited:
+                result.add(item)
+            elif isinstance(item, Mapping):
+                name = str(item.get("name") or "")
+                if (
+                    "expression" in item and _expression_is_boolean(item["expression"])
+                ) or ("expression" not in item and name in inherited):
+                    result.add(name)
+    elif action == "dtcs:with_fields":
+        for item in params.get("assignments") or ():
+            if not isinstance(item, Mapping):
+                continue
+            name = str(item.get("name") or "")
+            result.discard(name)
+            if _expression_is_boolean(item.get("expression")):
+                result.add(name)
+    elif action == "dtcs:drop_fields":
+        result -= {
+            str(name) for name in (params.get("fields") or params.get("names") or ())
+        }
+    elif action == "dtcs:rename_fields":
+        mapping = params.get("mapping") or {}
+        if isinstance(mapping, list):
+            renamed = {
+                str(item["from"]): str(item["to"])
+                for item in mapping
+                if isinstance(item, Mapping) and "from" in item and "to" in item
+            }
+        else:
+            renamed = {str(key): str(value) for key, value in dict(mapping).items()}
+        result = {renamed.get(name, name) for name in result}
+    elif action == "dtcs:join":
+        result |= relation_boolean_columns.get(str(params.get("right")), set())
+    elif action == "dtcs:aggregate":
+        result &= {str(name) for name in (params.get("groupBy") or ())}
+    return result & set(output_columns)
 
 
 def _sqlite_type(values: list[Any]) -> str:

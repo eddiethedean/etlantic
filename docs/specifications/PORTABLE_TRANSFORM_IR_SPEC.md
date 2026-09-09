@@ -262,8 +262,10 @@ Plugins MUST NOT substitute tolerant behavior for strict behavior.
 
 String length and substring offsets are defined in Unicode code points, not
 encoded bytes. Index origins MUST be explicit in the function definition;
-portable substring APIs use zero-based indexing even if a backend lowering uses
-another convention.
+portable substring APIs use zero-based, non-negative indexing even if a backend
+lowering uses another convention. Substring lengths MUST also be non-negative.
+Portable literal replacement rejects an empty search string because backend
+replacement semantics for that input are not equivalent.
 
 Case conversion uses Unicode default case conversion. Locale-sensitive
 behavior requires an explicit future function and capability.
