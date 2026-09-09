@@ -57,7 +57,7 @@ EXPECTED_SCHEMAS = {
     "WHATS_NEW_0_50.md": "markdown/1",
 }
 
-EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 26))
+EXPECTED_SOL_FINDINGS = frozenset(f"SOL-050-{index:03d}" for index in range(1, 27))
 EXPECTED_FINAL_FINDINGS = frozenset(f"FINAL-050-{index:03d}" for index in range(1, 16))
 EXPECTED_ENGINES = frozenset(
     {"local", "polars", "pandas", "sql", "pyspark", "datafusion", "duckdb"}
@@ -101,6 +101,83 @@ EXPECTED_PUSHDOWN_ACTIONS = (
 )
 EXPECTED_PUSHDOWN_BOUNDARIES = ("source", "relational", "sink")
 EXPECTED_NATIVE_PUSHDOWN_ENGINES = frozenset({"sql", "pyspark", "datafusion", "duckdb"})
+
+
+def _installed_compiler(engine: str, target: Mapping[str, Any]) -> Any:
+    """Instantiate the first-party compiler named by a support target.
+
+    Evidence fingerprints are compiler identities, not values copied from the
+    checked-in report.  Recomputing them from the installed implementations
+    makes coordinated report/index edits fail closed.
+    """
+    if engine == "local":
+        from etlantic.transform.local_compiler import LocalTransformCompiler
+
+        return LocalTransformCompiler()
+    if engine == "sql":
+        from etlantic_sql import SqlTransformCompiler
+
+        environment = target.get("environment")
+        dialect = environment.get("dialect") if isinstance(environment, Mapping) else None
+        return SqlTransformCompiler(dialect=dialect)
+    factories: dict[str, Any] = {}
+    if engine == "polars":
+        from etlantic_polars import create_transform_compiler
+
+        factories[engine] = create_transform_compiler
+    elif engine == "pandas":
+        from etlantic_pandas import create_transform_compiler
+
+        factories[engine] = create_transform_compiler
+    elif engine == "pyspark":
+        from etlantic_pyspark import create_transform_compiler
+
+        factories[engine] = create_transform_compiler
+    elif engine == "datafusion":
+        from etlantic_datafusion import create_transform_compiler
+
+        factories[engine] = create_transform_compiler
+    elif engine == "duckdb":
+        from etlantic_duckdb import create_transform_compiler
+
+        factories[engine] = create_transform_compiler
+    else:
+        raise SystemExit(f"unsupported compiler evidence engine: {engine}")
+    try:
+        return factories[engine]()
+    except Exception as exc:
+        raise SystemExit(f"cannot load compiler evidence for {engine}") from exc
+
+
+def validate_installed_compiler_evidence(
+    reports: Mapping[str, Any],
+) -> None:
+    """Bind every report fingerprint to the installed first-party compiler."""
+    for engine in EXPECTED_ENGINES:
+        report = reports.get(engine)
+        if not isinstance(report, Mapping):
+            raise SystemExit(f"support report is missing for {engine}")
+        target = report.get("target")
+        records = report.get("evidence")
+        if not isinstance(target, Mapping) or not isinstance(records, list) or len(records) != 1:
+            raise SystemExit(f"support evidence is incomplete for {engine}")
+        compiler = _installed_compiler(engine, target)
+        info = compiler.info
+        expected = {
+            "engine": info.engine,
+            "compiler": info.name,
+            "version": info.version,
+            "package": info.package or info.name,
+            "implementation": info.implementation or info.name,
+            "protocol": info.compiler_protocol,
+        }
+        if any(target.get(key) != value for key, value in expected.items()):
+            raise SystemExit(f"support target identity differs from installed compiler: {engine}")
+        if info.environment is not None and target.get("environment") != dict(info.environment):
+            raise SystemExit(f"support target environment differs from installed compiler: {engine}")
+        fingerprint = info.evidence_fingerprint
+        if not isinstance(fingerprint, str) or records[0].get("fingerprint") != fingerprint:
+            raise SystemExit(f"support evidence fingerprint is not compiler-derived: {engine}")
 
 
 def validate_findings_ledger(findings_doc: str) -> None:
@@ -383,6 +460,7 @@ def validate_pushdown_findings(
     payload: dict[str, object],
     *,
     expected_evidence_fingerprints: Mapping[str, str] | None = None,
+    proof_attestations: Mapping[str, Mapping[str, Any] | None] | None = None,
 ) -> None:
     """Require the checked-in pushdown matrix and native proofs to be complete."""
     if payload.get("boundaries") != list(EXPECTED_PUSHDOWN_BOUNDARIES):
@@ -516,6 +594,8 @@ def validate_pushdown_findings(
 
     if not isinstance(proofs, dict) or set(proofs) != EXPECTED_ENGINES:
         raise SystemExit("pushdown proof engine inventory is incomplete")
+    if proof_attestations is not None and set(proof_attestations) != EXPECTED_ENGINES:
+        raise SystemExit("pushdown proof attestation inventory is incomplete")
     expected_proof_keys = {
         (engine, action_id)
         for engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES
@@ -537,6 +617,10 @@ def validate_pushdown_findings(
         if set(actions) != expected_action_ids:
             raise SystemExit("pushdown proof action inventory is incomplete")
         if engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES:
+            if proof_attestations is not None:
+                attestation = proof_attestations.get(engine)
+                if not isinstance(attestation, Mapping) or dict(attestation) != engine_proofs:
+                    raise SystemExit("native pushdown proof is not independently attested")
             for digest_key in ("result_digest", "native_explain_digest"):
                 if not re.fullmatch(
                     r"[0-9a-f]{64}", str(engine_proofs.get(digest_key) or "")
@@ -993,6 +1077,7 @@ def main() -> int:
                 f"support evidence is incomplete for pushdown engine: {engine}"
             )
         expected_pushdown_evidence[engine] = records[0]["fingerprint"]
+    validate_installed_compiler_evidence(reports)
     coverage = json.loads((EVIDENCE / "portable_claim_coverage_0_50.json").read_text())
     claims = coverage.get("claims")
     expected_fixtures = sorted(set((manifest.get("leaf_fixture_ids") or {}).values()))
@@ -1101,11 +1186,28 @@ def main() -> int:
     validate_pushdown_campaign(pushdown)
     proofs = pushdown.get("proofs")
     findings = pushdown.get("findings")
+    proof_attestations: dict[str, Mapping[str, Any] | None] = {}
+    conformance_names = {
+        "duckdb": "portable_duckdb_pushdown_0_50.json",
+        **{
+            engine: f"portable_{engine}_conformance_0_50.json"
+            for engine in EXPECTED_ENGINES - {"duckdb"}
+        },
+    }
+    for engine, name in conformance_names.items():
+        conformance = json.loads((EVIDENCE / name).read_text())
+        attestation = conformance.get("pushdown_proof_attestation")
+        proof_attestations[engine] = (
+            cast(Mapping[str, Any], attestation)
+            if isinstance(attestation, Mapping)
+            else None
+        )
     validate_pushdown_findings(
         findings,
         proofs,
         pushdown,
         expected_evidence_fingerprints=expected_pushdown_evidence,
+        proof_attestations=proof_attestations,
     )
     adaptive = json.loads(
         (EVIDENCE / "portable_adaptive_handoff_0_50.json").read_text()

@@ -30,6 +30,7 @@
 | SOL-050-024 | Medium | resolved by authoritative findings-ledger enforcement |
 
 | SOL-050-025 | High | resolved by engine-bound finding provenance and native proof digest validation |
+| SOL-050-026 | High | resolved by installed compiler fingerprints and per-engine native proof attestations |
 
 | FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |
 | FINAL-050-002 | High | resolved by nested support-payload validation |

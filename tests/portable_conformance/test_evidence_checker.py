@@ -597,6 +597,74 @@ def test_production_checker_accepts_refreshed_current_evidence(
     assert checker.main() == 0
 
 
+def test_production_checker_rejects_coordinated_fingerprint_rewrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refreshed report/index cannot replace compiler-derived identity."""
+    import scripts.check_portable_0_50 as checker
+
+    from etlantic.transform.compiler import _support_fingerprint
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    fake = "f" * 64
+    support_path = evidence / "portable_requirement_support_0_50.json"
+    support = json.loads(support_path.read_text())
+    for report in support["reports"].values():
+        report["evidence"][0]["fingerprint"] = fake
+        report["fingerprint"] = _support_fingerprint(report)
+    support_path.write_text(json.dumps(support, indent=2, sort_keys=True) + "\n")
+    pushdown_path = evidence / "portable_pushdown_contract_0_50.json"
+    pushdown = json.loads(pushdown_path.read_text())
+    for finding in pushdown["findings"]:
+        finding["evidence_fingerprint"] = fake
+    pushdown["evidence"] = [fake]
+    pushdown_path.write_text(json.dumps(pushdown, indent=2, sort_keys=True) + "\n")
+    _refresh_temp_evidence_metadata(evidence)
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    with pytest.raises(SystemExit, match="compiler-derived"):
+        checker.main()
+
+
+def test_production_checker_rejects_coordinated_native_digest_rewrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Native proof digests must match the independent engine attestation."""
+    import scripts.check_portable_0_50 as checker
+
+    evidence = tmp_path / "portable_0_50"
+    shutil.copytree(checker.EVIDENCE, evidence)
+    contract_path = evidence / "portable_pushdown_contract_0_50.json"
+    payload = json.loads(contract_path.read_text())
+    sql_proof = payload["proofs"]["sql"]
+    sql_proof["result_digest"] = "e" * 64
+    sql_proof["native_explain_digest"] = "d" * 64
+    for action in sql_proof["actions"].values():
+        action["result_digest"] = sql_proof["result_digest"]
+        action["native_explain_digest"] = sql_proof["native_explain_digest"]
+    contract_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    _refresh_temp_evidence_metadata(evidence)
+    monkeypatch.setattr(checker, "EVIDENCE", evidence)
+    real_check_output = checker.subprocess.check_output
+
+    def clean_status(command: object, **kwargs: object) -> object:
+        if command == ["git", "status", "--porcelain"]:
+            return "" if kwargs.get("text") else b""
+        return real_check_output(command, **kwargs)
+
+    monkeypatch.setattr(checker.subprocess, "check_output", clean_status)
+    with pytest.raises(SystemExit, match="independently attested"):
+        checker.main()
+
+
 def test_pushdown_findings_reject_orphan_native_proof() -> None:
     payload = _pushdown_evidence_fixture()
     proofs = payload["proofs"]
