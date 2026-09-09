@@ -27,7 +27,7 @@
     "test_adaptive_evidence_drift_rejects_before_io",
     "test_orchestrator_rejects_before_lifecycle_or_cleanup"
   ],
-  "repository_commit": "1315a5304e2d5b3f9be00607887b998e7df21303",
+  "repository_commit": "1207120df6c6f9975031b0f102d7501a68b2c273",
   "result": "pass",
   "scenarios": [
     {
@@ -49,7 +49,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -85,7 +85,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "171fcca13fd2a4aee5db92cb792287b78ab47c3387e840e5c30814698207fc3f",
+              "fingerprint": "6b81d6bbc0d88f09404ac9e904493375d4674b72ca173c3d46ff1d2b036cd86f",
               "pushdown": [],
               "requirements": [
                 {
@@ -160,7 +160,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -196,7 +196,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "8e85817095bd273bed6102ba156593d8c415bdbb6b08e2656ffd478ad7aeff43",
+              "fingerprint": "df0b96d4d223a78540089207c9d6086f2070bb0305006b6dce279a89d82cd2b1",
               "pushdown": [],
               "requirements": [
                 {
@@ -273,7 +273,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -309,7 +309,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "171fcca13fd2a4aee5db92cb792287b78ab47c3387e840e5c30814698207fc3f",
+              "fingerprint": "6b81d6bbc0d88f09404ac9e904493375d4674b72ca173c3d46ff1d2b036cd86f",
               "pushdown": [],
               "requirements": [
                 {
@@ -384,7 +384,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -420,7 +420,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "8e85817095bd273bed6102ba156593d8c415bdbb6b08e2656ffd478ad7aeff43",
+              "fingerprint": "df0b96d4d223a78540089207c9d6086f2070bb0305006b6dce279a89d82cd2b1",
               "pushdown": [],
               "requirements": [
                 {
@@ -517,7 +517,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -553,7 +553,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "7547d7b11cbe395b6792b7bb10d660bf617135dcf5ca04fa33865094114c36e0",
+              "fingerprint": "32aead36a024a08d6ed08f9453df9376345509ebbfb6580aec7fc89591f44a96",
               "pushdown": [],
               "requirements": [
                 {
@@ -628,7 +628,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -664,7 +664,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "9a50a56968d85899e977ab71cb32695ff84a71c8f2db884e1aac48e7c235a8cc",
+              "fingerprint": "057e38d754343b7f37d1dd8deefeca581f2efcc47675d059477f46a4c691506b",
               "pushdown": [],
               "requirements": [
                 {
@@ -789,7 +789,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -819,7 +819,7 @@
                   "support": "supported_with_lowering"
                 }
               ],
-              "fingerprint": "f88fa67a2220993f36da2863155b357da34d431c19bd9b4de09645a9c79cfbbc",
+              "fingerprint": "6c79ff05b02ef8838e00a6b33839e59715c03801e6fb2ef39760b8100ae963a7",
               "pushdown": [],
               "requirements": [
                 {
@@ -881,7 +881,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -903,7 +903,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "7118e9116a95c5d04518048d98723770cc23009b271e63a95df2f730d6e2e4d0",
+              "fingerprint": "8684cdb8849af0dfaf811e65e2d477349fda4ed4bd4c2782a49477db59262d7e",
               "pushdown": [],
               "requirements": [
                 {
@@ -990,7 +990,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1026,7 +1026,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "7655c11a69269a2b665fd70543d8f3aea872f2ba743d1cfeb99d5c91b05b43ff",
+              "fingerprint": "e6513e90181c83dbe7a256e30002497a5971691e653b13225b10605cfb64b377",
               "pushdown": [],
               "requirements": [
                 {
@@ -1101,7 +1101,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1137,7 +1137,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "ed6a77d871ff21fe555c6a19c951813c1ed90b679520137a880ffffb59194266",
+              "fingerprint": "1bbb56d0461061d2a81ce13e52667ec218dcb1b4aeb376c55034d5de5606fba4",
               "pushdown": [],
               "requirements": [
                 {
@@ -1211,7 +1211,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1233,7 +1233,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "8468e477a6e3f87d2ffa20313d08b25152fe87c91e28d0f9171db87469f5e989",
+              "fingerprint": "a63d19cfc0e8d29d3dc1c35ef4d7a42761e2f83716b76d0747ee969fc4ea09fd",
               "pushdown": [],
               "requirements": [
                 {
@@ -1295,7 +1295,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1317,7 +1317,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "f47722230d8d5c22e5621c5a20ac3e9d76b0a6c1fe91a61150b06e177d353cba",
+              "fingerprint": "075f716d9fce9ba3211d4b2b3ee257716bf9050c77d9df3199fdf9a367a3fee6",
               "pushdown": [],
               "requirements": [
                 {
@@ -1401,7 +1401,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1423,7 +1423,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "1432af38e45ea4f4259f58ac6218d498b4aef2e895cfdf89b399e02cfcd6d50b",
+              "fingerprint": "7ca530fdec939e2027f7873f9981230d1ae08b9075fff6349680797b08f25bed",
               "pushdown": [],
               "requirements": [
                 {
@@ -1485,7 +1485,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1507,7 +1507,7 @@
                   "support": "supported_exact"
                 }
               ],
-              "fingerprint": "1432af38e45ea4f4259f58ac6218d498b4aef2e895cfdf89b399e02cfcd6d50b",
+              "fingerprint": "7ca530fdec939e2027f7873f9981230d1ae08b9075fff6349680797b08f25bed",
               "pushdown": [],
               "requirements": [
                 {
@@ -1604,7 +1604,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1640,7 +1640,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "203c9505635963084afd21b5f02abd346804054dba9709065b25c650a344f813",
+              "fingerprint": "117a4cab95860d1a7435aa972f842817f9aee807f7110504cd9f1b3a03c6782b",
               "pushdown": [],
               "requirements": [
                 {
@@ -1715,7 +1715,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1751,7 +1751,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "203c9505635963084afd21b5f02abd346804054dba9709065b25c650a344f813",
+              "fingerprint": "117a4cab95860d1a7435aa972f842817f9aee807f7110504cd9f1b3a03c6782b",
               "pushdown": [],
               "requirements": [
                 {
@@ -1861,7 +1861,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -1897,7 +1897,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "281660d9cc1994185e547bd63d0ddfbf42cb24dd39d5d7fbddc46d761210d02d",
+              "fingerprint": "206a3e42fbe11bb6067b0cafa4a22fb90303774e989be81d79004cd29147fd3e",
               "pushdown": [],
               "requirements": [
                 {
@@ -1972,7 +1972,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2008,7 +2008,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "281660d9cc1994185e547bd63d0ddfbf42cb24dd39d5d7fbddc46d761210d02d",
+              "fingerprint": "206a3e42fbe11bb6067b0cafa4a22fb90303774e989be81d79004cd29147fd3e",
               "pushdown": [],
               "requirements": [
                 {
@@ -2118,7 +2118,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2154,7 +2154,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "7910585f82f3ed18d57052257909941c9c331241fec0292f757e5b7d5d0b49ec",
+              "fingerprint": "5519de3f87b3e29d59b77db697c7bbc76fa3a62bb4a53a7da038cf4a404aff28",
               "pushdown": [],
               "requirements": [
                 {
@@ -2229,7 +2229,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2265,7 +2265,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "7910585f82f3ed18d57052257909941c9c331241fec0292f757e5b7d5d0b49ec",
+              "fingerprint": "5519de3f87b3e29d59b77db697c7bbc76fa3a62bb4a53a7da038cf4a404aff28",
               "pushdown": [],
               "requirements": [
                 {
@@ -2375,7 +2375,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2411,7 +2411,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "338f4c48e2a05361e157ad53dd26536f02e0e62cd5703ab4c9c4d8d710c634d1",
+              "fingerprint": "9cb7936c6b1f25e83427f736ef3060d43e8087a4e0324183fd8c8b492a06d463",
               "pushdown": [],
               "requirements": [
                 {
@@ -2486,7 +2486,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2522,7 +2522,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "338f4c48e2a05361e157ad53dd26536f02e0e62cd5703ab4c9c4d8d710c634d1",
+              "fingerprint": "9cb7936c6b1f25e83427f736ef3060d43e8087a4e0324183fd8c8b492a06d463",
               "pushdown": [],
               "requirements": [
                 {
@@ -2632,7 +2632,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2668,7 +2668,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "df585ca83afd7b1b47f477e4e4fb0e6473d36c081b32638f56bc4910faf7c173",
+              "fingerprint": "65f90843cb1bd5b60e3b5a5d9b2cd14d55a3e365c2e24fea745f6b308e696516",
               "pushdown": [],
               "requirements": [
                 {
@@ -2743,7 +2743,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2779,7 +2779,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "df585ca83afd7b1b47f477e4e4fb0e6473d36c081b32638f56bc4910faf7c173",
+              "fingerprint": "65f90843cb1bd5b60e3b5a5d9b2cd14d55a3e365c2e24fea745f6b308e696516",
               "pushdown": [],
               "requirements": [
                 {
@@ -2889,7 +2889,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -2925,7 +2925,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "35a24503810ede72b972e35ebf1f2f7aa367be9bba8614a2100312e703ecf2ba",
+              "fingerprint": "eb934e768e8a6814ea61e3036ccfc191c93d115e3092d967faaa582b4e4af285",
               "pushdown": [],
               "requirements": [
                 {
@@ -3000,7 +3000,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -3036,7 +3036,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "35a24503810ede72b972e35ebf1f2f7aa367be9bba8614a2100312e703ecf2ba",
+              "fingerprint": "eb934e768e8a6814ea61e3036ccfc191c93d115e3092d967faaa582b4e4af285",
               "pushdown": [],
               "requirements": [
                 {
@@ -3146,7 +3146,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -3182,7 +3182,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "97612289f232867a8fc7dbb871d46351a3c06f0bd82f9b980f328cab1192a4c0",
+              "fingerprint": "c0ae08f63a2ab577dc615c8fdf943fb3afe7246a35c4d3dfdaee741c35bfb00c",
               "pushdown": [],
               "requirements": [
                 {
@@ -3257,7 +3257,7 @@
             "support_report": {
               "evidence": [
                 {
-                  "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+                  "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
                   "fingerprint": "adaptive-fixture-evidence",
                   "id": "compiler",
                   "kind": "compiler_capability"
@@ -3293,7 +3293,7 @@
                   "support": "unknown"
                 }
               ],
-              "fingerprint": "97612289f232867a8fc7dbb871d46351a3c06f0bd82f9b980f328cab1192a4c0",
+              "fingerprint": "c0ae08f63a2ab577dc615c8fdf943fb3afe7246a35c4d3dfdaee741c35bfb00c",
               "pushdown": [],
               "requirements": [
                 {
@@ -3389,5 +3389,5 @@
   ],
   "schema": "etlantic.portable-adaptive-handoff/1",
   "source_rows": false,
-  "source_tree_digest": "060b7d896d82179396dd71ba369513c61f02e667a2c30b68c2e6248f82f05c11"
+  "source_tree_digest": "ccc294edec954a2742f148a9b51a99b98bf5097859a24a36cd4ce93222394dbd"
 }

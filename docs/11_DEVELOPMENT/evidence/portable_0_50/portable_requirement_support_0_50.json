@@ -3,8 +3,8 @@
     "datafusion": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-          "fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+          "fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -15,7 +15,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -29,7 +29,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -43,7 +43,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -57,7 +57,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -71,7 +71,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -85,7 +85,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -99,7 +99,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -113,7 +113,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -127,7 +127,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -141,7 +141,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -155,7 +155,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -169,7 +169,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -183,7 +183,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -197,7 +197,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -211,7 +211,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -225,7 +225,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -239,7 +239,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -253,7 +253,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -267,7 +267,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -281,7 +281,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -295,7 +295,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -309,7 +309,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -323,7 +323,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -337,7 +337,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -351,7 +351,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -365,7 +365,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -379,7 +379,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -393,7 +393,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -407,7 +407,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -421,7 +421,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -435,7 +435,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -449,7 +449,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -463,7 +463,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -477,7 +477,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -491,7 +491,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -505,7 +505,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -519,7 +519,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -533,7 +533,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -547,7 +547,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -561,7 +561,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -575,7 +575,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -589,7 +589,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -603,7 +603,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -617,7 +617,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -631,7 +631,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -645,7 +645,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -659,7 +659,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -673,7 +673,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -687,7 +687,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -701,7 +701,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -715,7 +715,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -729,7 +729,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -743,7 +743,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -757,7 +757,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -771,7 +771,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -785,7 +785,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -799,7 +799,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -813,7 +813,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -827,7 +827,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -841,7 +841,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -855,7 +855,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -869,7 +869,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -883,7 +883,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -897,7 +897,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -911,7 +911,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -925,7 +925,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -939,7 +939,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -953,7 +953,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -967,7 +967,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -981,7 +981,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -995,7 +995,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1009,7 +1009,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1023,7 +1023,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1037,7 +1037,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1051,7 +1051,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1065,7 +1065,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -1079,7 +1079,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "union_modes",
@@ -1093,7 +1093,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "union_modes",
@@ -1107,7 +1107,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "collision_policies",
@@ -1121,7 +1121,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "lazy",
@@ -1135,7 +1135,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "eager",
@@ -1145,7 +1145,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "593441395ddb2c167bf4810ab0e9f04bcd3b30bb89dd3a78fda26fb224368146",
+      "fingerprint": "faf795a2dcf2d7b14b73eecabfcfd0e9c54df2e52c73c8eb95060a6764179c67",
       "pushdown": [],
       "requirements": [
         {
@@ -2134,8 +2134,8 @@
     "duckdb": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-          "fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+          "fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -2146,7 +2146,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -2160,7 +2160,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -2174,7 +2174,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -2188,7 +2188,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2202,7 +2202,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2216,7 +2216,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2230,7 +2230,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2244,7 +2244,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2258,7 +2258,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2272,7 +2272,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2286,7 +2286,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2300,7 +2300,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2314,7 +2314,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2328,7 +2328,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2342,7 +2342,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions",
@@ -2356,7 +2356,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2370,7 +2370,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2384,7 +2384,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2398,7 +2398,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2412,7 +2412,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2426,7 +2426,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2440,7 +2440,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2454,7 +2454,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2468,7 +2468,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2482,7 +2482,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2496,7 +2496,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2510,7 +2510,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2524,7 +2524,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2538,7 +2538,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2552,7 +2552,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2566,7 +2566,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2580,7 +2580,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2594,7 +2594,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2608,7 +2608,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2622,7 +2622,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2636,7 +2636,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2650,7 +2650,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2664,7 +2664,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2678,7 +2678,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2692,7 +2692,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2706,7 +2706,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2720,7 +2720,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2734,7 +2734,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2748,7 +2748,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2762,7 +2762,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "functions",
@@ -2776,7 +2776,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2790,7 +2790,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2804,7 +2804,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2818,7 +2818,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2832,7 +2832,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2846,7 +2846,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2860,7 +2860,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2874,7 +2874,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2888,7 +2888,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2902,7 +2902,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2916,7 +2916,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2930,7 +2930,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2944,7 +2944,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2958,7 +2958,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2972,7 +2972,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -2986,7 +2986,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -3000,7 +3000,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "operators",
@@ -3014,7 +3014,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3028,7 +3028,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3042,7 +3042,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3056,7 +3056,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3070,7 +3070,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3084,7 +3084,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3098,7 +3098,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "types",
@@ -3112,7 +3112,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3126,7 +3126,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3140,7 +3140,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3154,7 +3154,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3168,7 +3168,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3182,7 +3182,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3196,7 +3196,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "join_modes",
@@ -3210,7 +3210,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "union_modes",
@@ -3224,7 +3224,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "union_modes",
@@ -3238,7 +3238,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "collision_policies",
@@ -3252,7 +3252,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "lazy",
@@ -3266,7 +3266,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "eager",
@@ -3276,7 +3276,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "3ddc636e776f747fd16b969568201ba83fee65bf4732f704603ac3d7db311bde",
+      "fingerprint": "4c06b9a0169de756e2f057863f120279ab2c95974ac48b40a36cf19eb66ca4e4",
       "pushdown": [],
       "requirements": [
         {
@@ -4265,7 +4265,7 @@
     "local": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "154ad8932ded49f640099376aab4bdd467da19bd1e4eb3855a60ee392567d0e0",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -5393,7 +5393,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "e840c48325dedaa54d62867cc989aab4444d053791d67b774395eb313d2a0f87",
+      "fingerprint": "2830c9afc7244560bf1aa01f5708b9cab1912d96cb882ac6345d8a51b3972152",
       "pushdown": [],
       "requirements": [
         {
@@ -6370,7 +6370,7 @@
     "pandas": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "95edacc724a23e642383040bc389bef720a223544d608bbe76240ea841134165",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -7498,7 +7498,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "e68622797a0af555caa5291d4d253bdd27f45e3b5a6179706c57de08a90ad5ad",
+      "fingerprint": "f2aecfcea2fa20ca1ea1728e12832bc798d4f81890d4855e6854b04af8682e06",
       "pushdown": [],
       "requirements": [
         {
@@ -8475,7 +8475,7 @@
     "polars": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "aa9c9a7d5ed3f38c0d5fecfa6828e54a2d213346f848320d2373716561e2239d",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -9617,7 +9617,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "cd1f610e140932b6ea9c8acb31671385e5b9ecaac057d3f07aea4617dfbbe424",
+      "fingerprint": "a815e00d35719eb49f5cc44d044cefb36580f09ac4cbe3b9b04268e4b7da2d0e",
       "pushdown": [],
       "requirements": [
         {
@@ -10606,7 +10606,7 @@
     "pyspark": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "82d9268ab263c3f182caf36438903c940fd5c3f7590988d5aef2e418948e6ea2",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -11748,7 +11748,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "d578ecca2228ca6c60d6725d7680890742a2ae09e045872bc40b2d70712478b8",
+      "fingerprint": "d97533f9af4191b13c15a1c833043972fdd1316766081192eeba58473dc9e22b",
       "pushdown": [],
       "requirements": [
         {
@@ -12737,7 +12737,7 @@
     "sql": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -13879,7 +13879,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "6989535aa63f9aee21088799748d6fdabe40fc4654c042b612ae5e49b620e0a4",
+      "fingerprint": "a1f1da9718d62cec5111ceb794b6527fdb207d4475f4e40bc744c4f2619f5991",
       "pushdown": [],
       "requirements": [
         {
@@ -14893,8 +14893,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -14905,7 +14905,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -14919,7 +14919,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -14933,7 +14933,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "actions/0",
@@ -14943,12 +14943,12 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "346adf5fc6ef8b547940e4b6428a6234fd86bcd1eace1d15f811603465381bf3",
+          "fingerprint": "6adcb52563c230e90d5d2e12352c5746ec02f7e2d9b19a939b4b813b134df45f",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
               "boundary": "source:0",
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "obligation": "informational",
               "outcome": "not_applicable",
               "physical_effects": [],
@@ -14958,7 +14958,7 @@
             {
               "action": "dtcs:not-supported",
               "boundary": "relational:0",
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "obligation": "required",
               "outcome": "unsupported",
               "physical_effects": [],
@@ -14968,7 +14968,7 @@
             {
               "action": "dtcs:not-supported",
               "boundary": "sink:0",
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "obligation": "informational",
               "outcome": "not_applicable",
               "physical_effects": [],
@@ -15037,8 +15037,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -15049,7 +15049,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "environment_requirements",
@@ -15063,7 +15063,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15077,7 +15077,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15087,7 +15087,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "ada0bc307c8a78300d936b4f00b0412d1cd4828aaaf84cf63550e2f7e0470f68",
+          "fingerprint": "2bebb6b4f6b33b764b980e5b1d467c3d79f74a6256bef420bc07733b36faed75",
           "pushdown": [],
           "requirements": [
             {
@@ -15150,8 +15150,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -15162,7 +15162,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "environment_requirements",
@@ -15176,7 +15176,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15190,7 +15190,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+              "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15200,7 +15200,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "64d4987af9a98ad6ed9c299827cc1be53e4a536bf934b293b40bed37f880eda0",
+          "fingerprint": "bf3cb5ea715f21c50d5d86240440415de27b31afeb3b0c196ee1ee1f27de4bba",
           "pushdown": [],
           "requirements": [
             {
@@ -15265,8 +15265,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -15277,7 +15277,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15291,7 +15291,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15305,7 +15305,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "actions/0",
@@ -15315,12 +15315,12 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "d1adb554d3dbe8aaf0d144ab4a11bbdcbb690fd3c483b461c9c23e6e6f4baab9",
+          "fingerprint": "34ae75aeaaa76283259ccddd8ebd78c349eb8ffa9a10febf886bbec327062dec",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
               "boundary": "source:0",
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "obligation": "informational",
               "outcome": "not_applicable",
               "physical_effects": [],
@@ -15330,7 +15330,7 @@
             {
               "action": "dtcs:not-supported",
               "boundary": "relational:0",
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "obligation": "required",
               "outcome": "unsupported",
               "physical_effects": [],
@@ -15340,7 +15340,7 @@
             {
               "action": "dtcs:not-supported",
               "boundary": "sink:0",
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "obligation": "informational",
               "outcome": "not_applicable",
               "physical_effects": [],
@@ -15409,8 +15409,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -15421,7 +15421,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "environment_requirements",
@@ -15435,7 +15435,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15449,7 +15449,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15459,7 +15459,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "741cb95f86c96186183e8136cc2bf03f619d345d3b5b9535710ae73b3b523cdf",
+          "fingerprint": "aede823b07f49fbe914f537fd8c64289b5dd40ac1d708360346a26b13f00565e",
           "pushdown": [],
           "requirements": [
             {
@@ -15522,8 +15522,8 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-              "fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+              "fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "id": "compiler",
               "kind": "compiler_capability"
             }
@@ -15534,7 +15534,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "environment_requirements",
@@ -15548,7 +15548,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15562,7 +15562,7 @@
               "evidence": [
                 "compiler"
               ],
-              "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+              "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
               "expression_path": null,
               "obligation": "required",
               "path": "profiles",
@@ -15572,7 +15572,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "142c4f4c0132bd2df838bbbdc609b51789a87922b520632df0254736954ef61d",
+          "fingerprint": "a0f25f64c9a3b90a76563a4d069a337e803a6bc39e6729917e6ee6fe7bd9f6a4",
           "pushdown": [],
           "requirements": [
             {
@@ -15637,7 +15637,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "154ad8932ded49f640099376aab4bdd467da19bd1e4eb3855a60ee392567d0e0",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -15687,7 +15687,7 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "e8780c5d19a1d6a5fbc5295cda73efe4bee53252fd84ae233ca403468438d94a",
+          "fingerprint": "fd731dd6bde69530089ab55f5c004751632906639e372ec7c24d1ac0cb3db330",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
@@ -15781,7 +15781,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "154ad8932ded49f640099376aab4bdd467da19bd1e4eb3855a60ee392567d0e0",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -15831,7 +15831,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "857ede885b5afcf8e067a5195189e3af093212bc785eebecf6c195c1491b47fd",
+          "fingerprint": "dfae549a8690b049c1302b904cac3a35a2e70d2ebf0f7a1b147beb74de352b04",
           "pushdown": [],
           "requirements": [
             {
@@ -15894,7 +15894,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "154ad8932ded49f640099376aab4bdd467da19bd1e4eb3855a60ee392567d0e0",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -15944,7 +15944,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "7730afdd8a4afaf1f357b22c8810ad3b5e0e4e7db9f8f5301635813aaa69d3ee",
+          "fingerprint": "80480dcab4320d413fc1f5f051b0573ca7b2cf697e87f6759ab9bf8b6af6ce63",
           "pushdown": [],
           "requirements": [
             {
@@ -16009,7 +16009,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "95edacc724a23e642383040bc389bef720a223544d608bbe76240ea841134165",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16059,7 +16059,7 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "2dd8b67e889637c9bba905b3b8dcb282343eba70f829f7e64049a9b052a4fba2",
+          "fingerprint": "983f95eabb46138427f0b81feea3396ad6fe0d8254bdaf81dd73f62f035204b2",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
@@ -16153,7 +16153,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "95edacc724a23e642383040bc389bef720a223544d608bbe76240ea841134165",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16203,7 +16203,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "26332e3938623d210ce7e8de37dd871034c8b9f47611a74d29f12e77806f9f78",
+          "fingerprint": "28680f1cfc6e8e4a6c62ec8866f52c0e39e0200b7244489c76b35e419c1ea615",
           "pushdown": [],
           "requirements": [
             {
@@ -16266,7 +16266,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "95edacc724a23e642383040bc389bef720a223544d608bbe76240ea841134165",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16316,7 +16316,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "55d63cac6eb1a4e7cffc8ee1f483922d4e04dbeea621b4895889d8e96dfdd277",
+          "fingerprint": "a2e05322dafa967a0e1578d842a0000e281767ee4e2be8e3eb018cdab22d4f73",
           "pushdown": [],
           "requirements": [
             {
@@ -16381,7 +16381,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "aa9c9a7d5ed3f38c0d5fecfa6828e54a2d213346f848320d2373716561e2239d",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16431,7 +16431,7 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "d52e7c798bd43325bef291caa46660612d613a9278b14b03d40f90586a609cc8",
+          "fingerprint": "e81bdafbbafd588da25eeead04dd16e2b795e7fb5e83972cce39e05a28d1adda",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
@@ -16525,7 +16525,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "aa9c9a7d5ed3f38c0d5fecfa6828e54a2d213346f848320d2373716561e2239d",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16575,7 +16575,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "b17ec42f28075bfb0f799be8f0c2687a090f4e871bd1c37374438e9259e30ef6",
+          "fingerprint": "d554196c7184ee3aedcbaafd83d329dbf027cb339325dd3669fa3157ab2fe774",
           "pushdown": [],
           "requirements": [
             {
@@ -16638,7 +16638,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "aa9c9a7d5ed3f38c0d5fecfa6828e54a2d213346f848320d2373716561e2239d",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16688,7 +16688,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "60ee0600bbee155094a1d7f0ec941d6f0f1665714574b37cd7e89b643475fc14",
+          "fingerprint": "ca922c74259715f8a443aa18949216b36c062bdef97b3972d2396ecc11c8c5a5",
           "pushdown": [],
           "requirements": [
             {
@@ -16753,7 +16753,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "82d9268ab263c3f182caf36438903c940fd5c3f7590988d5aef2e418948e6ea2",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16803,7 +16803,7 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "780c123e7b77588b04a4f3b698086ef02db5751e1c5a6e38416a586dc6340a35",
+          "fingerprint": "072c52862fc47b863ca05a84ec87302bb49a25d904f5f0f2ab234dfa74ffa624",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
@@ -16897,7 +16897,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "82d9268ab263c3f182caf36438903c940fd5c3f7590988d5aef2e418948e6ea2",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -16947,7 +16947,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "18e5bf23c33f2fa57e2b1186d62a2d5fb0072019a206fc0616d5cbfebbb6efd3",
+          "fingerprint": "1e9f2a2d1377868026659941e4f96558039efdb6439b0adea01d9fe34a1709c1",
           "pushdown": [],
           "requirements": [
             {
@@ -17010,7 +17010,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "82d9268ab263c3f182caf36438903c940fd5c3f7590988d5aef2e418948e6ea2",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -17060,7 +17060,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "beb6d7967ca358340e7fc86fb9b9a9ee2d175fb0fdd695f76a1d6ee1709403a7",
+          "fingerprint": "d9e43faed9030728ec2f8efee5ae67e47d19aa844d9f65cf66f3829a8bd1a94e",
           "pushdown": [],
           "requirements": [
             {
@@ -17125,7 +17125,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -17175,7 +17175,7 @@
               "support": "unsupported"
             }
           ],
-          "fingerprint": "4c7c9a27319e820844d043af4ca3e93905dffc3b9cd39747edca4c16e5ba8add",
+          "fingerprint": "75f6b3ef9374f4ae8f37c10435f2ef691928af7ed4779f067098d1e77d05ff17",
           "pushdown": [
             {
               "action": "dtcs:not-supported",
@@ -17273,7 +17273,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -17323,7 +17323,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "0cbdc380c8bb0a8e555cea03c3dd302e518dfeedf345b769b3be6a68d35171a6",
+          "fingerprint": "4ca72f4bbe4facfb14d130804c58aa670afa98fc69a4f089d633b0905e899d22",
           "pushdown": [],
           "requirements": [
             {
@@ -17390,7 +17390,7 @@
         "support_report": {
           "evidence": [
             {
-              "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+              "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
               "fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
               "id": "compiler",
               "kind": "compiler_capability"
@@ -17440,7 +17440,7 @@
               "support": "supported_exact"
             }
           ],
-          "fingerprint": "c23a52b1eb5f6db710b545e1442a4811f0356cbe5760c92de88c6f269d9e0df1",
+          "fingerprint": "4173edefbfeb66ae7dd7762e2f9ef21c00d7a6fbc45281d259cd6a3f83796191",
           "pushdown": [],
           "requirements": [
             {
@@ -17506,8 +17506,8 @@
     "datafusion": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-          "fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+          "fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -17518,7 +17518,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -17532,7 +17532,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profile",
@@ -17546,7 +17546,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -17560,7 +17560,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -17574,7 +17574,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/3",
@@ -17588,7 +17588,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/6",
@@ -17602,7 +17602,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0",
@@ -17616,7 +17616,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2",
@@ -17630,7 +17630,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/7",
@@ -17644,7 +17644,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/1",
@@ -17658,7 +17658,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/5",
@@ -17672,7 +17672,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/4",
@@ -17686,7 +17686,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/3/kind/parameters/aggregates/0/expression",
@@ -17700,7 +17700,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0/kind/parameters/predicate",
@@ -17714,7 +17714,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0/kind/parameters/predicate/right",
@@ -17728,7 +17728,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2/parameters/type",
@@ -17742,7 +17742,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/4/parameters/mode",
@@ -17756,7 +17756,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2/parameters/collisionPolicy",
@@ -17766,12 +17766,12 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "92d1d7ffdb54cc479df86beb0bc99d4011d9c664906d99fe6edef72b18b9f2dc",
+      "fingerprint": "2baa1e8e3cc86c8c4a5d2aeb3009c5912efeb29ec8932f18f6f8ff7e21d1f7eb",
       "pushdown": [
         {
           "action": "dtcs:filter",
           "boundary": "source:0",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17781,7 +17781,7 @@
         {
           "action": "dtcs:filter",
           "boundary": "relational:0",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17792,7 +17792,7 @@
         {
           "action": "dtcs:filter",
           "boundary": "sink:0",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17802,7 +17802,7 @@
         {
           "action": "dtcs:project",
           "boundary": "source:1",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17812,7 +17812,7 @@
         {
           "action": "dtcs:project",
           "boundary": "relational:1",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17823,7 +17823,7 @@
         {
           "action": "dtcs:project",
           "boundary": "sink:1",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17833,7 +17833,7 @@
         {
           "action": "dtcs:join",
           "boundary": "source:2",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17843,7 +17843,7 @@
         {
           "action": "dtcs:join",
           "boundary": "relational:2",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17854,7 +17854,7 @@
         {
           "action": "dtcs:join",
           "boundary": "sink:2",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17864,7 +17864,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "source:3",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17874,7 +17874,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "relational:3",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17885,7 +17885,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "sink:3",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17895,7 +17895,7 @@
         {
           "action": "dtcs:union",
           "boundary": "source:4",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17905,7 +17905,7 @@
         {
           "action": "dtcs:union",
           "boundary": "relational:4",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17916,7 +17916,7 @@
         {
           "action": "dtcs:union",
           "boundary": "sink:4",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17926,7 +17926,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "source:5",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17936,7 +17936,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "relational:5",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17947,7 +17947,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "sink:5",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17957,7 +17957,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "source:6",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17967,7 +17967,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "relational:6",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -17978,7 +17978,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "sink:6",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17988,7 +17988,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "source:7",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -17998,7 +17998,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "relational:7",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [],
@@ -18009,7 +18009,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "sink:7",
-          "evidence_fingerprint": "9940c20260b8bdb228f9be97c8237d410a80acacd7c61e26af28cbfcc8f10150",
+          "evidence_fingerprint": "ba9bd61277869c1aa9317bd5a397f02dd7aa3ea77845ff031f8302c0ddf4b9d7",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18248,8 +18248,8 @@
     "duckdb": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
-          "fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
+          "fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "id": "compiler",
           "kind": "compiler_capability"
         }
@@ -18260,7 +18260,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -18274,7 +18274,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profile",
@@ -18288,7 +18288,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -18302,7 +18302,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "profiles",
@@ -18316,7 +18316,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/3",
@@ -18330,7 +18330,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/6",
@@ -18344,7 +18344,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0",
@@ -18358,7 +18358,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2",
@@ -18372,7 +18372,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/7",
@@ -18386,7 +18386,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/1",
@@ -18400,7 +18400,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/5",
@@ -18414,7 +18414,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/4",
@@ -18428,7 +18428,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/3/kind/parameters/aggregates/0/expression",
@@ -18442,7 +18442,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0/kind/parameters/predicate",
@@ -18456,7 +18456,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/0/kind/parameters/predicate/right",
@@ -18470,7 +18470,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2/parameters/type",
@@ -18484,7 +18484,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/4/parameters/mode",
@@ -18498,7 +18498,7 @@
           "evidence": [
             "compiler"
           ],
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "expression_path": null,
           "obligation": "required",
           "path": "actions/2/parameters/collisionPolicy",
@@ -18508,12 +18508,12 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "2240bb9587eb2d6e5561ab21171250d8581f99d24c73a3b108e3e391b5d3169d",
+      "fingerprint": "37cd26ca2662f8fff6552c75262a00404367066b947bd6211e7cf20028cb72ca",
       "pushdown": [
         {
           "action": "dtcs:filter",
           "boundary": "source:0",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18523,7 +18523,7 @@
         {
           "action": "dtcs:filter",
           "boundary": "relational:0",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18537,7 +18537,7 @@
         {
           "action": "dtcs:filter",
           "boundary": "sink:0",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18547,7 +18547,7 @@
         {
           "action": "dtcs:project",
           "boundary": "source:1",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18557,7 +18557,7 @@
         {
           "action": "dtcs:project",
           "boundary": "relational:1",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18571,7 +18571,7 @@
         {
           "action": "dtcs:project",
           "boundary": "sink:1",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18581,7 +18581,7 @@
         {
           "action": "dtcs:join",
           "boundary": "source:2",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18591,7 +18591,7 @@
         {
           "action": "dtcs:join",
           "boundary": "relational:2",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18605,7 +18605,7 @@
         {
           "action": "dtcs:join",
           "boundary": "sink:2",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18615,7 +18615,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "source:3",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18625,7 +18625,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "relational:3",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18639,7 +18639,7 @@
         {
           "action": "dtcs:aggregate",
           "boundary": "sink:3",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18649,7 +18649,7 @@
         {
           "action": "dtcs:union",
           "boundary": "source:4",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18659,7 +18659,7 @@
         {
           "action": "dtcs:union",
           "boundary": "relational:4",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18673,7 +18673,7 @@
         {
           "action": "dtcs:union",
           "boundary": "sink:4",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18683,7 +18683,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "source:5",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18693,7 +18693,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "relational:5",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18707,7 +18707,7 @@
         {
           "action": "dtcs:sort",
           "boundary": "sink:5",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18717,7 +18717,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "source:6",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18727,7 +18727,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "relational:6",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18741,7 +18741,7 @@
         {
           "action": "dtcs:deduplicate",
           "boundary": "sink:6",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18751,7 +18751,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "source:7",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -18761,7 +18761,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "relational:7",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "required",
           "outcome": "pushed_exact",
           "physical_effects": [
@@ -18775,7 +18775,7 @@
         {
           "action": "dtcs:limit",
           "boundary": "sink:7",
-          "evidence_fingerprint": "fe68b6b562f49ae9b6278d6fa8da1db18e4c63b9192818c11c4adae90bede760",
+          "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
           "obligation": "informational",
           "outcome": "not_applicable",
           "physical_effects": [],
@@ -19014,7 +19014,7 @@
     "local": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "154ad8932ded49f640099376aab4bdd467da19bd1e4eb3855a60ee392567d0e0",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -19274,7 +19274,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "cba188e4ea65ea89100c48d46edc2fdf7dafff96ca0693bb7e7532dc98bb3a99",
+      "fingerprint": "16e0e8e979ee01dec3ceedd324514238678877b54e0d1556c9f3fa86ad1fca92",
       "pushdown": [
         {
           "action": "dtcs:filter",
@@ -19748,7 +19748,7 @@
     "pandas": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "95edacc724a23e642383040bc389bef720a223544d608bbe76240ea841134165",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -20008,7 +20008,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "59ad4462232db2141793f0ab9b6a7b099bbf58643ee063315f7b695e408a8f50",
+      "fingerprint": "158a81fca8e2c3daa4ae032c34c635f4aca86ec6eb4b492a0279b90670ca57ae",
       "pushdown": [
         {
           "action": "dtcs:filter",
@@ -20482,7 +20482,7 @@
     "polars": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "aa9c9a7d5ed3f38c0d5fecfa6828e54a2d213346f848320d2373716561e2239d",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -20742,7 +20742,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "f9a9d199501813d747f5b42f2e4056e07fe8934389f4dd2cd66912999d3ce9ab",
+      "fingerprint": "5fab12df6e567c55b78cae779135f305df448f56dfc08dab494f406a6a232fb1",
       "pushdown": [
         {
           "action": "dtcs:filter",
@@ -21216,7 +21216,7 @@
     "pyspark": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "82d9268ab263c3f182caf36438903c940fd5c3f7590988d5aef2e418948e6ea2",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -21476,7 +21476,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "dd2ab57f8648e9d7acf5d62db4714dda1648ae800a40b8f23c9bb75c6e4c5af8",
+      "fingerprint": "ec080a63711b1a5f2fbd81bddf142117cd6e1d8383d93a8b4b2b5143fc35e49b",
       "pushdown": [
         {
           "action": "dtcs:filter",
@@ -21958,7 +21958,7 @@
     "sql": {
       "evidence": [
         {
-          "baseline_digest": "9ade7a40f2facceb42a68d3311b0983c62fcbf375de68ac3220e67e28ba35a7f",
+          "baseline_digest": "02fb4fe42411f3222708e9259816d55289fd488c34f244376ce6909fab5e8e82",
           "fingerprint": "50f252b5e328af7c7d0a508e65428894fd7a0a013fe7d76e1102d680dfbe185a",
           "id": "compiler",
           "kind": "compiler_capability"
@@ -22218,7 +22218,7 @@
           "support": "supported_exact"
         }
       ],
-      "fingerprint": "a206aee6fe917cb2224a3acee4c8c9dfa4fe8dd611fc01e3169b6bad221d7dd9",
+      "fingerprint": "8f9823b522614250bd00a840b94c0da127adbb25d7c923a9b016692b43ae8ef5",
       "pushdown": [
         {
           "action": "dtcs:filter",
@@ -22726,10 +22726,10 @@
       }
     }
   },
-  "repository_commit": "1315a5304e2d5b3f9be00607887b998e7df21303",
+  "repository_commit": "1207120df6c6f9975031b0f102d7501a68b2c273",
   "result": "pass",
   "schema": "etlantic.portable-requirement-support/1",
-  "source_tree_digest": "060b7d896d82179396dd71ba369513c61f02e667a2c30b68c2e6248f82f05c11",
+  "source_tree_digest": "ccc294edec954a2742f148a9b51a99b98bf5097859a24a36cd4ce93222394dbd",
   "support_states": [
     "supported_exact",
     "supported_with_lowering",

@@ -156,6 +156,9 @@
       "native_relational_boundary": "applicable"
     },
     "collision_policy": "fail",
+    "conditional_rules": {
+      "case_when_arity": "condition_value_pairs_plus_else"
+    },
     "defaults": {
       "join.collisionPolicy": "fail",
       "join.type": "inner",
@@ -649,7 +652,8 @@
         "decimal:integer": "decimal",
         "integer:decimal": "decimal",
         "integer:integer": "integer"
-      }
+      },
+      "rounding": "half_even"
     },
     "obligations": {
       "advanced": "informational",
@@ -738,9 +742,11 @@
       "unions": "byName aligns names; byPosition aligns ordinal fields; missing columns are explicit"
     },
     "string_unicode_rules": {
-      "case_mapping": "unicode_simple_case_mapping",
+      "case_mapping": "unicode_default_case_mapping",
       "encoding": "utf-8",
       "null_policy": "propagate_except_null_aware_functions",
+      "replace_empty_search": "reject",
+      "substring_bounds": "non_negative",
       "substring_length": "codepoints",
       "substring_start": "zero_based",
       "unit": "unicode_codepoint"
@@ -769,8 +775,8 @@
       }
     }
   },
-  "repository_commit": "1315a5304e2d5b3f9be00607887b998e7df21303",
+  "repository_commit": "1207120df6c6f9975031b0f102d7501a68b2c273",
   "result": "pass",
   "schema": "etlantic.portable-baseline/1",
-  "source_tree_digest": "060b7d896d82179396dd71ba369513c61f02e667a2c30b68c2e6248f82f05c11"
+  "source_tree_digest": "ccc294edec954a2742f148a9b51a99b98bf5097859a24a36cd4ce93222394dbd"
 }
