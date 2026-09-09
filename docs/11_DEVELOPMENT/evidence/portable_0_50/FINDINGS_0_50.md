@@ -24,6 +24,10 @@
 | SOL-050-018 | High | resolved by Spark protocol dispatch and error-semantics regression coverage |
 | SOL-050-019 | Medium | resolved by focused Pyright validation |
 | SOL-050-020 | Medium | resolved by non-recursive node-local adaptive selection |
+| SOL-050-021 | High | resolved by truthful unsupported-action pushdown findings |
+| SOL-050-022 | High | resolved by obligation-authoritative validation diagnostics |
+| SOL-050-023 | High | resolved by complete pushdown outcome and lowering evidence |
+| SOL-050-024 | Medium | resolved by authoritative findings-ledger enforcement |
 
 | FINAL-050-001 | High | resolved by obligation-authoritative feasibility checks |
 | FINAL-050-002 | High | resolved by nested support-payload validation |
