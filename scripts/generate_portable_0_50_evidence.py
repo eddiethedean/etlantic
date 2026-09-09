@@ -620,13 +620,19 @@ DEPENDENCY_COMMAND = (
 
 
 def _compiler_factories() -> Mapping[str, Any]:
-    from etlantic_duckdb import create_transform_compiler as duckdb
-
     from etlantic_datafusion import create_transform_compiler as datafusion
     from etlantic_pandas import create_transform_compiler as pandas
     from etlantic_polars import create_transform_compiler as polars
     from etlantic_pyspark import create_transform_compiler as pyspark
     from etlantic_sql import create_transform_compiler as sql
+
+    # Keep optional engine imports lazy.  Qualification tests for one plugin
+    # must not require every other optional dependency to be installed in that
+    # environment (for example DataFusion jobs intentionally omit DuckDB).
+    def duckdb_factory() -> Any:
+        from etlantic_duckdb import create_transform_compiler
+
+        return create_transform_compiler()
 
     return {
         "local": LocalTransformCompiler,
@@ -635,7 +641,7 @@ def _compiler_factories() -> Mapping[str, Any]:
         "sql": sql,
         "pyspark": pyspark,
         "datafusion": datafusion,
-        "duckdb": duckdb,
+        "duckdb": duckdb_factory,
     }
 
 
