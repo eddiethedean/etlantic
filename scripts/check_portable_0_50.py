@@ -118,7 +118,9 @@ def _installed_compiler(engine: str, target: Mapping[str, Any]) -> Any:
         from etlantic_sql import SqlTransformCompiler
 
         environment = target.get("environment")
-        dialect = environment.get("dialect") if isinstance(environment, Mapping) else None
+        dialect = (
+            environment.get("dialect") if isinstance(environment, Mapping) else None
+        )
         return SqlTransformCompiler(dialect=dialect)
     factories: dict[str, Any] = {}
     if engine == "polars":
@@ -159,7 +161,11 @@ def validate_installed_compiler_evidence(
             raise SystemExit(f"support report is missing for {engine}")
         target = report.get("target")
         records = report.get("evidence")
-        if not isinstance(target, Mapping) or not isinstance(records, list) or len(records) != 1:
+        if (
+            not isinstance(target, Mapping)
+            or not isinstance(records, list)
+            or len(records) != 1
+        ):
             raise SystemExit(f"support evidence is incomplete for {engine}")
         compiler = _installed_compiler(engine, target)
         info = compiler.info
@@ -172,12 +178,23 @@ def validate_installed_compiler_evidence(
             "protocol": info.compiler_protocol,
         }
         if any(target.get(key) != value for key, value in expected.items()):
-            raise SystemExit(f"support target identity differs from installed compiler: {engine}")
-        if info.environment is not None and target.get("environment") != dict(info.environment):
-            raise SystemExit(f"support target environment differs from installed compiler: {engine}")
+            raise SystemExit(
+                f"support target identity differs from installed compiler: {engine}"
+            )
+        if info.environment is not None and target.get("environment") != dict(
+            info.environment
+        ):
+            raise SystemExit(
+                f"support target environment differs from installed compiler: {engine}"
+            )
         fingerprint = info.evidence_fingerprint
-        if not isinstance(fingerprint, str) or records[0].get("fingerprint") != fingerprint:
-            raise SystemExit(f"support evidence fingerprint is not compiler-derived: {engine}")
+        if (
+            not isinstance(fingerprint, str)
+            or records[0].get("fingerprint") != fingerprint
+        ):
+            raise SystemExit(
+                f"support evidence fingerprint is not compiler-derived: {engine}"
+            )
 
 
 def validate_findings_ledger(findings_doc: str) -> None:
@@ -619,8 +636,13 @@ def validate_pushdown_findings(
         if engine in EXPECTED_NATIVE_PUSHDOWN_ENGINES:
             if proof_attestations is not None:
                 attestation = proof_attestations.get(engine)
-                if not isinstance(attestation, Mapping) or dict(attestation) != engine_proofs:
-                    raise SystemExit("native pushdown proof is not independently attested")
+                if (
+                    not isinstance(attestation, Mapping)
+                    or dict(attestation) != engine_proofs
+                ):
+                    raise SystemExit(
+                        "native pushdown proof is not independently attested"
+                    )
             for digest_key in ("result_digest", "native_explain_digest"):
                 if not re.fullmatch(
                     r"[0-9a-f]{64}", str(engine_proofs.get(digest_key) or "")
