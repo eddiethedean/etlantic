@@ -2374,7 +2374,7 @@
       "result": "pass"
     }
   ],
-  "repository_commit": "9a0e8b5afd70410e9f6dc0b9e1d8d3759a14c0a2",
+  "repository_commit": "26e6b20dcb6bc36d897f43ed943dffdcf4253072",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2394,5 +2394,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "494dab59146d51b83156ee70d07912254211716e7cc24e594da84be4dfd598c6"
+  "source_tree_digest": "c5f28430d084bc487c7213d2cf6033b428ba92e1a141974d155f8a98d831cf8e"
 }
