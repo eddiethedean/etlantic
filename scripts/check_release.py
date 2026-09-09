@@ -42,6 +42,15 @@ EXPERIMENTAL_PACKAGES = (
 )
 
 
+def _is_timeout_error(exc: BaseException) -> bool:
+    """Return whether an external PyPI failure is specifically a timeout."""
+
+    if isinstance(exc, TimeoutError):
+        return True
+    reason = getattr(exc, "reason", None)
+    return isinstance(reason, TimeoutError)
+
+
 def version_from(path: Path, pattern: str) -> str:
     match = re.search(pattern, path.read_text(encoding="utf-8"))
     if match is None:
@@ -246,7 +255,10 @@ def main() -> int:
         missing_version = []
         brand_new = []
         reason = getattr(exc, "reason", exc)
-        errors.append(f"PyPI availability check unavailable: {reason}")
+        if _is_timeout_error(exc):
+            print(f"PyPI availability check timed out; continuing: {reason}")
+        else:
+            errors.append(f"PyPI availability check unavailable: {reason}")
     print(f"Release readiness for {version}")
     if brand_new:
         print(

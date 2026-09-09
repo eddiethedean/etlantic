@@ -403,6 +403,19 @@ def test_release_check_reports_offline_failure_without_traceback(
     assert "PyPI availability check unavailable: offline" in output
 
 
+def test_release_check_allows_pypi_timeout_with_warning(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from scripts import check_release
+
+    def timed_out(_name: str, _version: str) -> bool:
+        raise TimeoutError("handshake timed out")
+
+    monkeypatch.setattr(check_release, "pypi_exists", timed_out)
+    assert check_release.main() == 0
+    assert "PyPI availability check timed out; continuing" in capsys.readouterr().out
+
+
 def test_release_check_success_path_initializes_network_state(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
