@@ -1969,7 +1969,7 @@
     {
       "actions": 12,
       "engine": "duckdb",
-      "evidence_fingerprint": "23554e9439a093af77837280759d506c78ddd9d31386147673a32e150749663a",
+      "evidence_fingerprint": "5962745d0627eb062eb9e818be8d7bd29509c8fe0b118837eb84ef8fb0580826",
       "execution_modes": {
         "eager": true,
         "lazy": true
@@ -2374,7 +2374,7 @@
       "result": "pass"
     }
   ],
-  "repository_commit": "137679cd4a160b3e41a3f5293f1839e6560d4210",
+  "repository_commit": "9d2341583cf8424770b32b5749d621abafa30b5b",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2394,5 +2394,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "5b3552ae0c535a8da2e1cf776daa061ea6552922f99c48868fe2105dc4032c77"
+  "source_tree_digest": "344a0a9df26141e95a66945b00b8d2955c628685ba134ff5cc171de480b760ae"
 }
