@@ -2,7 +2,8 @@
 
 > **Status: Not started.** This document defines the evidence contract before
 > implementation. It does not claim that adaptive planning or `/2` execution is
-> currently available. The final decision is owned by
+> currently available. The shipped 0.50.1 portable evidence is a required input,
+> not an adaptive-runtime qualification. The final decision is owned by
 > [#95](https://github.com/eddiethedean/etlantic/issues/95).
 
 See the [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md),
@@ -13,12 +14,14 @@ See the [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md),
 
 | Surface | Target at gate | Current |
 |---|---|---|
-| Existing explicit profiles and canonical `etlantic.plan/1` | Available, unchanged | Existing behavior; 0.51 regression evidence pending |
-| `StepRunReport.metadata` built-in engine keys | Namespaced writer output with warning-free 0.50 bare-key reads under `etlantic.run_report/1` | Migration evidence pending |
-| Adaptive Profile policy and `etlantic.plan/2` authoring/inspection | Available for the frozen bounded contract | Not implemented |
+| Existing explicit profiles and canonical `etlantic.plan/1` | Available, unchanged; adaptive fallback alone may add namespaced fallback metadata | Existing behavior; 0.51 regression and fallback-provenance evidence pending |
+| 0.50.1 portable requirement/support and adaptive-handoff evidence | Digest-bound input to candidate analysis | Technically qualified and published; 0.51 lineage/drift verification pending |
+| Native `@Transformation.implementation(engine)` bodies | Explicit `/1` escape hatch only; never an adaptive candidate | Existing explicit behavior; adaptive ineligibility/fallback evidence pending |
+| `StepRunReport.metadata` built-in engine keys | Namespaced writer output with warning-free 0.50 bare-key reads under `etlantic.run_report/1` | 0.50.1 writers emit bare keys; migration evidence pending |
+| Adaptive Profile policy and `etlantic.plan/2` authoring/inspection | Available through a schema-specific `AdaptivePipelinePlan`; `PipelinePlan` remains `/1`-only | Not implemented |
 | Local static-batch physical-DAG execution | Available only for qualified combinations | Not implemented |
-| Local Python, Polars, and Pandas single-target adaptive plans | Available after per-row evidence | Not qualified |
-| DuckDB single-target adaptive plans | Experimental candidate after the 0.50 seven-engine/pushdown gate and independent `/2` physical-DAG evidence | Not qualified |
+| Local portable compiler, Polars, and Pandas single-target adaptive plans | Available after per-row evidence; arbitrary Python/native bodies excluded | Not qualified |
+| DuckDB single-target adaptive plans | Experimental candidate; 0.50 baseline/pushdown prerequisite passed, independent `/2` physical-DAG evidence required | 0.50 prerequisite complete; 0.51 row not qualified |
 | Polars → Pandas and Pandas → Polars | Available through directional `etlantic.interchange/1` Gate A evidence | Not qualified |
 | DuckDB ↔ Local/Polars/Pandas | No availability claim until each directional handoff is independently qualified | Not qualified |
 | Third-party placement claims | Public conformance protocol; maturity remains provider-owned | Not implemented |
@@ -35,17 +38,17 @@ documentation evidence required of the initial rows.
 | # | Measure | Required | Current | Owner |
 |---|---|---:|---|---|
 | 1 | ADR freezes Profile precedence, target identity, `/1`–`/2`, unit protocol, fallback, selection, bounds, and diagnostics | Pass | **Not started** | #41 |
-| 2 | Explicit profiles retain canonical `/1` bytes, fingerprints, semantics, and reader behavior | Pass | **Not started** | #42–#44 |
+| 2 | Ordinary explicit profiles retain canonical `/1` bytes, fingerprints, semantics, and reader behavior; opted-in fallback adds only `etlantic.adaptive_fallback` metadata | Pass | **Not started** | #42–#44 |
 | 3 | Unsupported old readers and all unqualified `/2` consumers reject before external I/O | Pass | **Not started** | #44, #90, #92, #94 |
 | 4 | Production discovery authorizes before load across every applicable extension family | Pass | **Not started** | #45–#49, #78 |
-| 5 | Every selected node has a complete, truthful, bounded target candidate set or stable rejection | Pass | **Not started** | #50–#54 |
-| 6 | Solver matches the independent oracle and remains invariant under semantic-preserving permutations | Pass | **Not started** | #55–#59, #91, #93 |
-| 7 | 256-node, 8-target, 2,048-record, 1,000,000-work-unit, 4-MiB explain, and 256-MiB memory limits enforce stable outcomes | Pass | **Not started** | #41, #57, #74, #77, #91 |
+| 5 | Every selected node has a complete, truthful, bounded target candidate set or stable rejection; native bodies never become adaptive candidates | Pass | **Not started** | #50–#54 |
+| 6 | Solver matches the independent oracle, proves any component decomposition preserves the global tuple, and remains invariant under semantic-preserving permutations | Pass | **Not started** | #55–#59, #91, #93 |
+| 7 | Fixed 256-node, 8-target, 2,048-record, 1,000,000-work-unit, 4-MiB explain, and 256-MiB deterministic transient-byte limits enforce stable outcomes without Profile overrides | Pass | **Not started** | #41, #57, #74, #77, #91 |
 | 8 | Region identity and fusion preserve target, effect, retry, checkpoint, selection, security, validation, and publication boundaries | Pass | **Not started** | #60–#63 |
-| 9 | All seven physical-unit kinds validate, round-trip, reject tampering, and remain secret/source-row free | Pass | **Not started** | #43, #64–#68, #93 |
+| 9 | All seven physical-unit kinds validate, round-trip, preserve their frozen effect/ownership/retry semantics, reject tampering, and remain secret/source-row free | Pass | **Not started** | #43, #64–#68, #93 |
 | 10 | Whole-DAG admission validates every live dependency before read, acquisition, staging, or mutation | Pass | **Not started** | #90 |
 | 11 | Local runtime schedules `/2` physical dependencies and never silently falls back to logical scheduling | Pass | **Not started** | #69–#73, #88–#89 |
-| 12 | Partial selection is planned before placement; selection drift requires re-planning | Pass | **Not started** | #41, #65, #69, #73 |
+| 12 | Partial selection stores the 0.50-compatible canonical `selected_nodes` plus sliced logical graph; physical coverage is exact and selection drift requires re-planning | Pass | **Not started** | #41, #65, #69, #73 |
 | 13 | Retry, cancellation, timeout, cleanup, validation, and publication match the explicit baseline or fail earlier safely | Pass | **Not started** | #71–#73, #81, #89 |
 | 14 | Explain/diff projections are deterministic, bounded, redacted, and consistent across Python, CLI, IDE, and notebook surfaces | Pass | **Not started** | #74–#77, #94 |
 | 15 | Polars↔Pandas directional fixtures prove exact target regions, Arrow handoff, second-target dispatch, and publication | Pass | **Not started** | #79–#81 |
@@ -65,14 +68,14 @@ it must not contain secrets or source rows.
 
 | Artifact | Required content | Status |
 |---|---|---|
-| `adaptive_wire_compatibility_0_51.json` | `/1` byte/fingerprint goldens; `/2` reader/writer/verify/JSON-Schema matrix | Planned |
+| `adaptive_wire_compatibility_0_51.json` | `/1` byte/fingerprint goldens; `/1`-only `PipelinePlan`; `/2` `AdaptivePipelinePlan`; dispatching reader/writer/verify/JSON-Schema matrix; fallback metadata isolation | Planned |
 | `runtime_metadata_namespace_compatibility_0_51.json` | Namespaced-only writer output; 0.50 fixtures for `dataframe`, `sql`, `spark`, and `spark_schema`; namespaced-wins collisions; warning-free deterministic/idempotent migration and reserialization | Planned |
-| `adaptive_inventory_conformance_0_51.json` | Target inventory, authorize-before-load, directional pair, and unknown-evidence fixtures | Planned |
+| `adaptive_inventory_conformance_0_51.json` | Target inventory, digest-bound 0.50.1 evidence lineage/drift, authorize-before-load, native-body ineligibility, directional pair, and unknown-evidence fixtures | Planned |
 | `adaptive_solver_conformance_0_51.json` | Objective boundaries, oracle equality, permutation invariance, fallback, and replay seeds | Planned |
-| `adaptive_resource_budget_0_51.json` | Limit-boundary cases, work units, peak planner memory, serialized explain size, and measured duration | Planned |
+| `adaptive_resource_budget_0_51.json` | Fixed limit-boundary cases, work units, deterministic transient-byte accounting, serialized explain size, and non-normative peak RSS/duration measurements | Planned |
 | `adaptive_physical_dag_conformance_0_51.json` | Seven unit kinds, topology, logical coverage, tamper rejection, and redaction | Planned |
 | `adaptive_runtime_conformance_0_51.json` | Admission, dispatch, selection, retry, cancellation, cleanup, and publication | Planned |
-| `adaptive_consumer_matrix_0_51.json` | Local, CLI, compile, control-plane, durable, federated, streaming, and expanded-graph outcomes | Planned |
+| `adaptive_consumer_matrix_0_51.json` | I0–I3 outcomes for Python/CLI, local runtime, compile, control-plane, durable, federated, remote, third-party, streaming, and expanded-graph consumers | Planned |
 | `adaptive_explain_identity_0_51.json` | Python/CLI/IDE/notebook parity, diff semantics, truncation, and redaction | Planned |
 | `adaptive_security_matrix_0_51.json` | All applicable allowlists, tenant/residency/masking policy, and no-secret/source-row scan | Planned |
 | `adaptive_e2e_0_51.json` | Fixed Polars↔Pandas topology, directional handoff, explicit differential, and publication receipts | Planned |
@@ -86,9 +89,9 @@ The primary end-to-end fixture is fixed before implementation:
 
 ```text
 bounded source
-  → predicate + projection on Polars target (proven pushdown/fusion)
+  → portable predicate + projection on Polars target (proven pushdown/fusion)
   → one directional Arrow Gate A transfer
-  → Pandas target transform
+  → portable Pandas target transform
   → validation barrier
   → publication unit and receipt
 ```
@@ -129,6 +132,8 @@ providers cannot inherit the maturity of a passing core planner or engine pair.
 
 - No universal cost currency, statistics-aware join ordering, or performance
   recommendation without a separate benchmark gate.
+- No adaptive execution of native `@Transformation.implementation(engine)`
+  bodies; those remain explicit `/1` escape hatches.
 - No adaptive streaming, runtime expansion, speculative execution, telemetry
   feedback, or runtime re-planning.
 - No external-orchestrator compilation or remote/federated `/2` execution claim.

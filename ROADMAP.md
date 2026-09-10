@@ -4424,13 +4424,17 @@ Deliver:
   interchange support;
 - exact per-node candidate enumeration without compiling,
   executing user code, reading data, listing sources, or resolving secrets;
+- portable definitions and proven compiler lowerings as the only adaptive
+  compute candidates; native implementation bodies remain explicit `/1` escape
+  hatches and receive deterministic adaptive-ineligibility records;
 - deterministic, work-unit-bounded graph placement using one hard-constraint
   evaluator and a versioned integer/enum objective for locality, pushdown,
   cross-target transitions, collection, materialization, fusion,
   configured-priority, and stable target identity;
-- frozen default ceilings of 256 selected nodes, eight targets/candidates per
-  node, 2,048 candidate records, 1,000,000 solver state expansions, 4 MiB of
-  serialized explain output, and 256 MiB of planner-owned transient memory;
+- fixed, non-configurable 0.51 ceilings of 256 selected nodes, eight
+  targets/candidates per node, 2,048 candidate records, 1,000,000 solver state
+  expansions, 4 MiB of serialized explain output, and 256 MiB of
+  deterministically accounted planner-owned transient state;
 - maximal connected compatible regions, including multiple disconnected
   regions that use the same placement target;
 - an explicit physical DAG of compute, transfer, collection, validation,
@@ -4441,6 +4445,8 @@ Deliver:
   and publication semantics;
 - shared explain and diff artifacts for candidates, selections, rejections,
   regions, physical topology, handoffs, unavailable estimates, and fallback;
+- a namespaced built-in `StepRunReport.metadata` writer migration with
+  warning-free, deterministic, idempotent reads of 0.50 bare aliases;
 - public placement/interchange conformance, solver oracle and resource-budget
   evidence, plus heterogeneous and
   adaptive-versus-explicit differential campaigns; and
@@ -4448,8 +4454,9 @@ Deliver:
   documentation backed by executable examples.
 
 The initial availability matrix is local-runtime only: single-target Local
-Python, Polars, and Pandas plus directional Polars→Pandas and Pandas→Polars
-handoffs through the shipped `etlantic.interchange/1` Arrow Gate A. DuckDB is
+portable compiler, Polars, and Pandas plus directional Polars→Pandas and
+Pandas→Polars handoffs through the shipped `etlantic.interchange/1` Arrow Gate
+A. DuckDB is
 listed as an Experimental single-target candidate after the 0.50 seven-engine
 and pushdown gate;
 DuckDB cross-target handoffs have no availability claim until each direction is
@@ -4467,9 +4474,14 @@ Acceptance:
 - adaptive fallback defaults to error; an explicitly permitted baseline
   fallback regenerates an independently validated `/1` plan rather than
   executing a partial or approximate `/2` result;
-- partial selections are dependency-closed before placement and fingerprinted;
-  a different runtime selection requires re-planning;
-- identical logical-plan, profile, eligible-plugin inventory, and evidence
+- native-only nodes, `portable_transform_policy="native"`, and native-body
+  overrides never enter `/2`; they fail adaptive planning or use only an
+  explicitly enabled, independently valid `/1` fallback;
+- partial selections preserve the 0.50 canonical `selected_nodes` and sliced
+  logical-graph representation before placement; `/2` physical coverage is
+  exact, both forms are fingerprinted, and a different runtime selection
+  requires re-planning;
+- identical logical-plan, profile, eligible-target inventory, and evidence
   fingerprints produce identical physical plans independent of registry order;
 - unsupported, unknown, untrusted, or non-eligible candidates never receive an
   optimistic placement;
@@ -4495,6 +4507,8 @@ Acceptance:
   release claims Available adaptive behavior only for the published local-batch
   combination matrix; DuckDB remains Experimental until its 0.50 pushdown
   qualification and independent adaptive rows pass; and
+- new runtime writers emit only namespaced built-in step metadata while 0.50
+  bare aliases remain warning-free readable with deterministic collision rules;
 - planner, optimizer, interchange, runtime, conformance, stable-foundation,
   compatibility, security, and documentation gates pass.
 
