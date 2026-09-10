@@ -4,11 +4,9 @@
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import re
 import subprocess
-import tarfile
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
@@ -273,6 +271,52 @@ def validate_artifact_schema(name: str, schema: object) -> None:
     expected = EXPECTED_SCHEMAS.get(name)
     if expected is None or schema != expected:
         raise SystemExit(f"invalid evidence schema: {name}")
+
+
+def _qualified_source_tree_digest(repository_commit: str) -> str:
+    """Hash raw tracked blobs without checkout or archive conversions."""
+    tree = subprocess.check_output(
+        ["git", "ls-tree", "-rz", "--full-tree", repository_commit], cwd=ROOT
+    )
+    evidence_prefix = b"docs/11_DEVELOPMENT/evidence/portable_0_50/"
+    entries: list[tuple[bytes, bytes]] = []
+    for record in tree.split(b"\0"):
+        if not record:
+            continue
+        metadata, path = record.split(b"\t", 1)
+        _mode, object_type, object_id = metadata.split(b" ", 2)
+        if object_type != b"blob" or path.startswith(evidence_prefix):
+            continue
+        entries.append((path, object_id))
+
+    ordered = sorted(entries)
+    objects = subprocess.run(
+        ["git", "cat-file", "--batch"],
+        cwd=ROOT,
+        input=b"".join(object_id + b"\n" for _, object_id in ordered),
+        capture_output=True,
+        check=True,
+    ).stdout
+    offset = 0
+    digest = hashlib.sha256()
+    for path, expected_object_id in ordered:
+        header_end = objects.index(b"\n", offset)
+        header = objects[offset:header_end].split(b" ")
+        if len(header) != 3 or header[0] != expected_object_id or header[1] != b"blob":
+            raise SystemExit(f"cannot read qualified source blob: {path.decode()}")
+        size = int(header[2])
+        content_start = header_end + 1
+        content_end = content_start + size
+        if objects[content_end : content_end + 1] != b"\n":
+            raise SystemExit(f"invalid qualified source blob framing: {path.decode()}")
+        digest.update(path)
+        digest.update(b"\0")
+        digest.update(objects[content_start:content_end])
+        digest.update(b"\0")
+        offset = content_end + 1
+    if offset != len(objects):
+        raise SystemExit("unexpected trailing qualified source blob data")
+    return digest.hexdigest()
 
 
 def validate_cross_engine_digests(payload: dict[str, object]) -> None:
@@ -1027,27 +1071,7 @@ def main() -> int:
         r"[0-9a-f]{64}", source_digest
     ):
         raise SystemExit("evidence index source_tree_digest is missing or invalid")
-    archive_bytes = subprocess.check_output(
-        ["git", "archive", "--format=tar", repository_commit],
-        cwd=ROOT,
-    )
-    digest = hashlib.sha256()
-    evidence_prefix = "docs/11_DEVELOPMENT/evidence/portable_0_50/"
-    archived_files: list[tuple[bytes, bytes]] = []
-    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:") as archive:
-        for member in archive:
-            if not member.isfile() or member.name.startswith(evidence_prefix):
-                continue
-            stream = archive.extractfile(member)
-            if stream is None:
-                raise SystemExit(f"cannot read qualified source blob: {member.name}")
-            archived_files.append((member.name.encode("utf-8"), stream.read()))
-    for raw, content in sorted(archived_files):
-        digest.update(raw)
-        digest.update(b"\0")
-        digest.update(content)
-        digest.update(b"\0")
-    if digest.hexdigest() != source_digest:
+    if _qualified_source_tree_digest(repository_commit) != source_digest:
         raise SystemExit(
             "evidence source tree digest does not match its recorded qualification commit"
         )
