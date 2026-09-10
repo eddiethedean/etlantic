@@ -56,14 +56,14 @@ class TargetDescriptor:
             raise ValueError(
                 "PMADP201: target descriptor capability_fingerprint must be a string"
             )
-        if isinstance(self.evidence_refs, (str, bytes)):
-            raise ValueError("PMADP202: evidence_refs must be an array")
+        evidence_refs = _validated_array(
+            self.evidence_refs, "target descriptor evidence_refs", code="PMADP202"
+        )
         if any(
-            not isinstance(value, str) or not value.strip()
-            for value in self.evidence_refs
+            not isinstance(value, str) or not value.strip() for value in evidence_refs
         ):
             raise ValueError("PMADP202: evidence_refs must contain non-blank strings")
-        object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
+        object.__setattr__(self, "evidence_refs", evidence_refs)
         object.__setattr__(self, "protocol_versions", deep_freeze(protocol_versions))
         metadata = _validated_metadata(self.metadata, "target descriptor metadata")
         object.__setattr__(self, "metadata", deep_freeze(metadata))
@@ -102,7 +102,7 @@ class TargetDescriptor:
             security_domain=data.get("security_domain", "default"),
             protocol_versions=data.get("protocol_versions", {}),
             capability_fingerprint=data.get("capability_fingerprint", ""),
-            evidence_refs=tuple(data.get("evidence_refs", ())),
+            evidence_refs=data.get("evidence_refs", ()),
             metadata=data.get("metadata", {}),
         )
 
@@ -117,16 +117,19 @@ class AdaptiveInventory:
     evidence_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        targets = _validated_array(self.targets, "adaptive inventory targets")
         targets = tuple(
             target
             if isinstance(target, TargetDescriptor)
             else TargetDescriptor.from_dict(target)
-            for target in self.targets
+            for target in targets
         )
         target_ids = [target.target_id for target in targets]
         if len(set(target_ids)) != len(target_ids):
             raise ValueError("PMADP201: inventory target ids must be unique")
-        order = tuple(self.eligible_target_order)
+        order = _validated_array(
+            self.eligible_target_order, "adaptive inventory eligible_target_order"
+        )
         if any(
             not isinstance(target_id, str) or not target_id.strip()
             for target_id in order
@@ -140,13 +143,14 @@ class AdaptiveInventory:
             )
         if not isinstance(self.fingerprint, str) or not self.fingerprint.strip():
             raise ValueError("PMADP201: inventory fingerprint is required")
-        if isinstance(self.evidence_refs, (str, bytes)) or any(
-            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
-        ):
+        evidence_refs = _validated_array(
+            self.evidence_refs, "adaptive inventory evidence_refs", code="PMADP202"
+        )
+        if any(not isinstance(ref, str) or not ref.strip() for ref in evidence_refs):
             raise ValueError("PMADP202: inventory evidence_refs must contain strings")
         object.__setattr__(self, "targets", targets)
         object.__setattr__(self, "eligible_target_order", order)
-        object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
+        object.__setattr__(self, "evidence_refs", evidence_refs)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -161,12 +165,10 @@ class AdaptiveInventory:
         _reject_unknown(data, set(cls.__dataclass_fields__), "adaptive inventory")
         _require_fields(data, set(cls.__dataclass_fields__), "adaptive inventory")
         return cls(
-            targets=tuple(
-                TargetDescriptor.from_dict(item) for item in data.get("targets", ())
-            ),
-            eligible_target_order=tuple(data.get("eligible_target_order", ())),
+            targets=data.get("targets", ()),
+            eligible_target_order=data.get("eligible_target_order", ()),
             fingerprint=data.get("fingerprint", ""),
-            evidence_refs=tuple(data.get("evidence_refs", ())),
+            evidence_refs=data.get("evidence_refs", ()),
         )
 
 
@@ -197,18 +199,20 @@ class CandidateRecord:
             raise ValueError(f"PMADP220: unknown candidate kind {self.kind!r}")
         if self.status not in {"eligible", "rejected"}:
             raise ValueError(f"PMADP220: unknown candidate status {self.status!r}")
-        if isinstance(self.reason_codes, (str, bytes)) or isinstance(
-            self.evidence_refs, (str, bytes)
-        ):
-            raise ValueError("PMADP220: candidate references must be arrays")
+        reason_codes = _validated_array(
+            self.reason_codes, "candidate reason_codes", code="PMADP220"
+        )
+        evidence_refs = _validated_array(
+            self.evidence_refs, "candidate evidence_refs", code="PMADP220"
+        )
         if any(
             not isinstance(value, str) or not value.strip()
-            for value in (*self.reason_codes, *self.evidence_refs)
+            for value in (*reason_codes, *evidence_refs)
         ):
             raise ValueError("PMADP220: candidate references must be non-blank strings")
-        if not self.reason_codes and self.status == "rejected":
+        if not reason_codes and self.status == "rejected":
             raise ValueError("PMADP221: rejected candidate requires reason_codes")
-        if self.status == "eligible" and self.reason_codes:
+        if self.status == "eligible" and reason_codes:
             raise ValueError(
                 "PMADP220: eligible candidate cannot contain rejection reasons"
             )
@@ -217,8 +221,8 @@ class CandidateRecord:
         )
         if any(type(value) is not int for value in objective_facts.values()):
             raise ValueError("PMADP321: candidate objective facts must be integers")
-        for name in ("reason_codes", "evidence_refs"):
-            object.__setattr__(self, name, tuple(getattr(self, name)))
+        object.__setattr__(self, "reason_codes", reason_codes)
+        object.__setattr__(self, "evidence_refs", evidence_refs)
         object.__setattr__(self, "objective_facts", deep_freeze(objective_facts))
         metadata = _validated_metadata(self.metadata, "candidate metadata")
         object.__setattr__(self, "metadata", deep_freeze(metadata))
@@ -247,8 +251,8 @@ class CandidateRecord:
             target_id=data["target_id"],
             kind=data["kind"],
             status=data["status"],
-            reason_codes=tuple(data.get("reason_codes", ())),
-            evidence_refs=tuple(data.get("evidence_refs", ())),
+            reason_codes=data.get("reason_codes", ()),
+            evidence_refs=data.get("evidence_refs", ()),
             objective_facts=data.get("objective_facts", {}),
             metadata=data.get("metadata", {}),
         )
@@ -303,14 +307,18 @@ class AdaptiveRegion:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP403: adaptive region {name} is required")
-        nodes = tuple(self.logical_nodes)
+        nodes = _validated_array(
+            self.logical_nodes, "adaptive region logical_nodes", code="PMADP403"
+        )
         if (
             not nodes
             or any(not isinstance(node, str) or not node.strip() for node in nodes)
             or len(set(nodes)) != len(nodes)
         ):
             raise ValueError("PMADP403: adaptive regions require unique logical nodes")
-        dependencies = tuple(self.dependencies)
+        dependencies = _validated_array(
+            self.dependencies, "adaptive region dependencies", code="PMADP402"
+        )
         if any(
             not isinstance(dependency, str) or not dependency.strip()
             for dependency in dependencies
@@ -343,8 +351,8 @@ class AdaptiveRegion:
         return cls(
             identity=data["identity"],
             target_id=data["target_id"],
-            logical_nodes=tuple(data.get("logical_nodes", ())),
-            dependencies=tuple(data.get("dependencies", ())),
+            logical_nodes=data.get("logical_nodes", ()),
+            dependencies=data.get("dependencies", ()),
             fused=data.get("fused", False),
             security_domain=data.get("security_domain", "default"),
             metadata=data.get("metadata", {}),
@@ -413,9 +421,9 @@ class AdaptivePipelinePlan:
         node_order = tuple(self.logical_graph.node_names())
         node_names = set(node_order)
         if self.selected_nodes is not None:
-            if isinstance(self.selected_nodes, (str, bytes)):
-                raise ValueError("PMADP403: selected_nodes must be an array")
-            selected_tuple = tuple(self.selected_nodes)
+            selected_tuple = _validated_array(
+                self.selected_nodes, "adaptive plan selected_nodes", code="PMADP403"
+            )
             if any(
                 not isinstance(node, str) or not node.strip() for node in selected_tuple
             ):
@@ -446,6 +454,7 @@ class AdaptivePipelinePlan:
             if isinstance(self.inventory, AdaptiveInventory)
             else AdaptiveInventory.from_dict(self.inventory)
         )
+        candidates = _validated_array(self.candidates, "adaptive plan candidates")
         candidates = tuple(
             candidate
             if isinstance(candidate, CandidateRecord)
@@ -475,6 +484,7 @@ class AdaptivePipelinePlan:
         }
         candidates = tuple(candidate_by_pair[pair] for pair in expected_pairs)
         candidate_map = {candidate.candidate_id: candidate for candidate in candidates}
+        decisions = _validated_array(self.decisions, "adaptive plan decisions")
         decisions = tuple(
             decision
             if isinstance(decision, AdaptiveDecision)
@@ -499,6 +509,7 @@ class AdaptivePipelinePlan:
                 raise ValueError(
                     f"PMADP220: decision {decision.node_name!r} references an invalid candidate"
                 )
+        regions = _validated_array(self.regions, "adaptive plan regions")
         regions = tuple(
             region
             if isinstance(region, AdaptiveRegion)
@@ -639,20 +650,12 @@ class AdaptivePipelinePlan:
             profile_name=data["profile_name"],
             fingerprint=data["fingerprint"],
             logical_graph=_graph_from_dict(data["logical_graph"]),
-            selected_nodes=(
-                tuple(data["selected_nodes"])
-                if data["selected_nodes"] is not None
-                else None
-            ),
+            selected_nodes=data["selected_nodes"],
             inventory=AdaptiveInventory.from_dict(data["inventory"]),
-            candidates=tuple(
-                CandidateRecord.from_dict(item) for item in data["candidates"]
-            ),
-            decisions=tuple(
-                AdaptiveDecision.from_dict(item) for item in data["decisions"]
-            ),
+            candidates=data["candidates"],
+            decisions=data["decisions"],
             objective=data["objective"],
-            regions=tuple(AdaptiveRegion.from_dict(item) for item in data["regions"]),
+            regions=data["regions"],
             physical_dag=PhysicalDAG.from_dict(data["physical_dag"]),
             protocol_versions=data["protocol_versions"],
             profile_snapshot=data["profile_snapshot"],
@@ -684,6 +687,14 @@ def _require_fields(data: Mapping[str, Any], required: set[str], label: str) -> 
     missing = sorted(required - set(data))
     if missing:
         raise ValueError(f"PMADP400: {label} is missing field(s): {', '.join(missing)}")
+
+
+def _validated_array(
+    value: Any, label: str, *, code: str = "PMADP400"
+) -> tuple[Any, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{code}: {label} must be an array")
+    return tuple(value)
 
 
 def _reject_secret_material(value: Any) -> None:

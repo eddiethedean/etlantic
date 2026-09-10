@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import anyio
 import pytest
@@ -341,6 +343,28 @@ def test_adaptive_plan_rejects_unknown_top_level_protocol_version() -> None:
 def test_adaptive_plan_rejects_non_array_objective() -> None:
     document = _plan().to_dict()
     document["objective"] = "latency"
+
+    with pytest.raises(ValueError, match="PMADP"):
+        AdaptivePipelinePlan.from_dict(document, verify=False)
+
+
+def _set_target_evidence_refs_to_scalar(document: dict[str, Any]) -> None:
+    document["inventory"]["targets"][0]["evidence_refs"] = "evidence-1"
+
+
+def _set_physical_dependencies_to_object(document: dict[str, Any]) -> None:
+    document["physical_dag"]["units"][0]["dependencies"] = {}
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [_set_target_evidence_refs_to_scalar, _set_physical_dependencies_to_object],
+)
+def test_adaptive_plan_rejects_non_array_nested_fields(
+    mutate: Callable[[dict[str, Any]], None],
+) -> None:
+    document = _plan().to_dict()
+    mutate(document)
 
     with pytest.raises(ValueError, match="PMADP"):
         AdaptivePipelinePlan.from_dict(document, verify=False)

@@ -81,20 +81,21 @@ class PhysicalUnit:
             or not self.target_identity.strip()
         ):
             raise ValueError("PMADP201: physical unit target identity is required")
-        if isinstance(self.logical_nodes, (str, bytes)):
-            raise ValueError("PMADP403: physical unit logical_nodes must be an array")
-        nodes = tuple(self.logical_nodes)
+        nodes = _validated_array(
+            self.logical_nodes, "physical unit logical_nodes", code="PMADP403"
+        )
         if any(not isinstance(node, str) or not node.strip() for node in nodes):
             raise ValueError("PMADP403: physical unit logical_nodes must be non-blank")
         if len(set(nodes)) != len(nodes):
             raise ValueError("PMADP403: physical unit logical_nodes must be unique")
-        if isinstance(self.dependencies, (str, bytes)):
-            raise ValueError("PMADP402: physical unit dependencies must be an array")
+        dependency_values = _validated_array(
+            self.dependencies, "physical unit dependencies", code="PMADP402"
+        )
         dependencies = tuple(
             dep
             if isinstance(dep, PhysicalDependency)
             else PhysicalDependency.from_dict(dep)
-            for dep in self.dependencies
+            for dep in dependency_values
         )
         dependency_ids = [dep.unit_id for dep in dependencies]
         if self.identity in dependency_ids:
@@ -180,14 +181,11 @@ class PhysicalUnit:
         return cls(
             identity=data["identity"],
             kind=data["kind"],
-            dependencies=tuple(
-                PhysicalDependency.from_dict(item)
-                for item in data.get("dependencies", ())
-            ),
+            dependencies=data.get("dependencies", ()),
             target_identity=data["target_identity"],
-            logical_nodes=tuple(data.get("logical_nodes", ())),
-            input_contracts=tuple(data.get("input_contracts", ())),
-            output_contracts=tuple(data.get("output_contracts", ())),
+            logical_nodes=data.get("logical_nodes", ()),
+            input_contracts=data.get("input_contracts", ()),
+            output_contracts=data.get("output_contracts", ()),
             policy=data.get("policy", {}),
             retry_policy=data.get("retry_policy", {}),
             ownership=data.get("ownership", {}),
@@ -205,9 +203,10 @@ class PhysicalDAG:
     topological_order: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        units = _validated_array(self.units, "physical DAG units")
         units = tuple(
             unit if isinstance(unit, PhysicalUnit) else PhysicalUnit.from_dict(unit)
-            for unit in self.units
+            for unit in units
         )
         ids = [unit.identity for unit in units]
         if len(set(ids)) != len(ids):
@@ -220,7 +219,9 @@ class PhysicalDAG:
                         "PMADP402: physical DAG has dangling dependency "
                         f"{dependency.unit_id!r}"
                     )
-        order = tuple(self.topological_order)
+        order = _validated_array(
+            self.topological_order, "physical DAG topological_order", code="PMADP402"
+        )
         if set(order) != set(ids) or len(order) != len(ids):
             raise ValueError(
                 "PMADP402: physical topological order must cover every unit"
@@ -281,14 +282,14 @@ class PhysicalDAG:
             {"units", "logical_to_physical", "topological_order"},
             "physical DAG",
         )
-        units = tuple(PhysicalUnit.from_dict(item) for item in data.get("units", ()))
+        units = data.get("units", ())
         mapping = data.get("logical_to_physical", {})
         if not isinstance(mapping, Mapping):
             raise ValueError("PMADP403: logical_to_physical must be an object")
         return cls(
             units=units,
             logical_to_physical=mapping,
-            topological_order=tuple(data.get("topological_order", ())),
+            topological_order=data.get("topological_order", ()),
         )
 
 
@@ -304,6 +305,14 @@ def _require_fields(data: Mapping[str, Any], required: set[str], label: str) -> 
     missing = sorted(required - set(data))
     if missing:
         raise ValueError(f"PMADP400: {label} is missing field(s): {', '.join(missing)}")
+
+
+def _validated_array(
+    value: Any, label: str, *, code: str = "PMADP400"
+) -> tuple[Any, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{code}: {label} must be an array")
+    return tuple(value)
 
 
 def _validated_string_map(value: Mapping[str, str], label: str) -> dict[str, str]:
@@ -335,7 +344,7 @@ def _validated_object_mapping(value: Mapping[str, Any], label: str) -> dict[str,
 def _validated_object_sequence(
     value: tuple[Mapping[str, Any], ...], label: str
 ) -> tuple[dict[str, Any], ...]:
-    if isinstance(value, (str, bytes)):
+    if not isinstance(value, (list, tuple)):
         raise ValueError(f"PMADP400: {label} must be an array")
     result: list[dict[str, Any]] = []
     for item in value:
