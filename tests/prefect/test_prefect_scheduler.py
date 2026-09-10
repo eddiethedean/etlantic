@@ -6,6 +6,12 @@ import os
 
 import pytest
 
+# Full-suite resource contention can make Prefect's temporary API server take
+# longer than its default startup window. Keep this test deterministic without
+# changing application/runtime configuration.
+os.environ.setdefault("PREFECT_LOGGING_TO_API_ENABLED", "false")
+os.environ.setdefault("PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS", "60")
+
 pytest.importorskip("prefect")
 try:
     from prefect import flow as _prefect_flow  # noqa: F401
@@ -32,9 +38,6 @@ from etlantic.runtime.scheduler_discovery import (
 from etlantic.runtime.state import RunStatus
 
 pytestmark = pytest.mark.prefect
-
-# Prefer in-process Prefect without requiring a durable API server.
-os.environ.setdefault("PREFECT_LOGGING_TO_API_ENABLED", "false")
 
 
 class _Raw(Data):

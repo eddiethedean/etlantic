@@ -240,10 +240,12 @@ def test_pipeline_with_local_spark() -> None:
     assert len(sink) == 2
     names = {c.full_name for c in sink}
     assert names == {"Ada Lovelace", "Grace Hopper"}
-    spark_steps = [s for s in report.steps if s.metadata.get("spark")]
+    spark_steps = [s for s in report.steps if s.metadata.get("etlantic.spark")]
     assert spark_steps
     # Region compile recorded on the transform step
-    assert any((s.metadata.get("spark") or {}).get("compiled") for s in spark_steps)
+    assert any(
+        (s.metadata.get("etlantic.spark") or {}).get("compiled") for s in spark_steps
+    )
 
 
 @pytest.mark.spark

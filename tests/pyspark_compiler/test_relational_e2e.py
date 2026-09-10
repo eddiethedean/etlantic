@@ -130,9 +130,9 @@ def test_plan_and_run_relational_aggregate_sparkless() -> None:
     }
     assert by_region == {"east": 15.0, "west": 7.0}
     spark_meta = [
-        s.metadata.get("spark")
+        s.metadata.get("etlantic.spark")
         for s in report.steps
-        if (s.metadata or {}).get("spark", {}).get("portable_compiled")
+        if (s.metadata or {}).get("etlantic.spark", {}).get("portable_compiled")
     ]
     assert spark_meta
     assert spark_meta[0].get("udf_policy") == "deny"

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/physical-unit.json",
+  "title": "ETLantic Physical Unit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "identity", "kind", "dependencies", "target_identity", "logical_nodes", "input_contracts", "output_contracts", "policy", "retry_policy", "ownership", "protocol_versions", "metadata"],
+  "properties": {
+    "schema": {"const": "etlantic.physical_unit/1"},
+    "identity": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["compute", "transfer", "collection", "validation", "materialization", "reuse", "publication"]},
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["unit_id", "kind"],
+        "properties": {
+          "unit_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["data", "control", "lifecycle"]}
+        }
+      }
+    },
+    "target_identity": {"type": "string", "minLength": 1},
+    "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "input_contracts": {"type": "array", "items": {"type": "object"}},
+    "output_contracts": {"type": "array", "items": {"type": "object"}},
+    "policy": {"type": "object"},
+    "retry_policy": {"type": "object"},
+    "ownership": {"type": "object"},
+    "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+    "metadata": {"type": "object"}
+  }
+}

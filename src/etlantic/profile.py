@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import warnings
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any, Literal
@@ -14,6 +16,146 @@ PortableTransformPolicy = Literal["require", "prefer", "native"]
 SecurityMode = Literal["development", "test", "production"]
 ObservabilityDelivery = Literal["best_effort", "durable_audit"]
 OptimizationPolicy = Literal["off", "shadow", "apply_accepted"]
+ExecutionStrategy = Literal["explicit", "adaptive"]
+AdaptiveFallback = Literal["error", "explicit"]
+
+
+@dataclass(frozen=True, slots=True)
+class PlacementTarget:
+    """Secret-free, profile-authored description of an adaptive target.
+
+    Values are discovery keys and protocol references, not import paths or live
+    plugin objects.  The profile mapping key is the human-facing target id;
+    :meth:`identity` provides the content identity used by adaptive plans.
+    """
+
+    engine: str
+    compiler: str | None = None
+    executor: str | None = None
+    connector: str | None = None
+    resource: str | None = None
+    location: str = "local"
+    security_domain: str = "default"
+    required_capabilities: tuple[str, ...] = ()
+    version_constraints: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        for name in ("engine", "location", "security_domain"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PMADP101: placement target {name} must be non-blank")
+        for name in ("compiler", "executor", "connector", "resource"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(
+                    f"PMADP101: placement target {name} must be a non-blank string or null"
+                )
+        capabilities = self.required_capabilities
+        if isinstance(capabilities, str) or any(
+            not isinstance(value, str) or not value.strip() for value in capabilities
+        ):
+            raise ValueError(
+                "PMADP101: placement target required_capabilities must contain strings"
+            )
+        if len(set(capabilities)) != len(capabilities):
+            raise ValueError("PMADP101: placement target capabilities must be unique")
+        constraints = self.version_constraints
+        if not isinstance(constraints, Mapping) or any(
+            not isinstance(key, str)
+            or not key.strip()
+            or not isinstance(value, str)
+            or not value.strip()
+            for key, value in constraints.items()
+        ):
+            raise ValueError(
+                "PMADP101: placement target version_constraints must map strings to strings"
+            )
+        _reject_secret_like_target_values(self)
+        object.__setattr__(self, "required_capabilities", tuple(capabilities))
+        object.__setattr__(self, "version_constraints", dict(constraints))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the canonical JSON representation."""
+        return {
+            "engine": self.engine,
+            "compiler": self.compiler,
+            "executor": self.executor,
+            "connector": self.connector,
+            "resource": self.resource,
+            "location": self.location,
+            "security_domain": self.security_domain,
+            "required_capabilities": list(self.required_capabilities),
+            "version_constraints": dict(self.version_constraints),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> PlacementTarget:
+        """Parse a closed target object and reject unknown fields."""
+        if not isinstance(data, Mapping):
+            raise ValueError("PMADP101: placement target must be an object")
+        allowed = {
+            "engine",
+            "compiler",
+            "executor",
+            "connector",
+            "resource",
+            "location",
+            "security_domain",
+            "required_capabilities",
+            "version_constraints",
+        }
+        unknown = sorted(set(data) - allowed)
+        if unknown:
+            raise ValueError(
+                f"PMADP101: unknown placement target field(s): {', '.join(unknown)}"
+            )
+        capabilities = data.get("required_capabilities", ())
+        if isinstance(capabilities, str) or not isinstance(capabilities, (list, tuple)):
+            raise ValueError(
+                "PMADP101: placement target required_capabilities must be an array"
+            )
+        constraints = data.get("version_constraints", {})
+        if not isinstance(constraints, Mapping):
+            raise ValueError(
+                "PMADP101: placement target version_constraints must be an object"
+            )
+        raw_engine = data.get("engine")
+        if not isinstance(raw_engine, str):
+            raise ValueError("PMADP101: placement target engine must be a string")
+        return cls(
+            engine=raw_engine,
+            compiler=data.get("compiler"),
+            executor=data.get("executor"),
+            connector=data.get("connector"),
+            resource=data.get("resource"),
+            location=data.get("location", "local"),
+            security_domain=data.get("security_domain", "default"),
+            required_capabilities=tuple(capabilities),
+            version_constraints=dict(constraints),
+        )
+
+    def identity(self) -> str:
+        """Return the stable content identity for this target descriptor."""
+        payload = json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _reject_secret_like_target_values(target: PlacementTarget) -> None:
+    """Reject secret-bearing target metadata before it can enter a snapshot."""
+    secret_words = ("password", "passwd", "secret", "token", "api_key", "credential")
+    for _key, value in target.to_dict().items():
+        if isinstance(value, Mapping):
+            for nested_key, nested_value in value.items():
+                lowered = str(nested_key).lower()
+                if any(word in lowered for word in secret_words):
+                    raise ValueError(
+                        f"PMADP101: placement target contains secret-like field {nested_key!r}"
+                    )
+                if not isinstance(nested_value, str):
+                    raise ValueError(
+                        "PMADP101: placement target values must remain secret-free strings"
+                    )
+
 
 _BINDINGS_REMOVED = (
     "Profile(bindings=...) was removed in ETLantic 0.16. Use assets= instead. "
@@ -55,7 +197,7 @@ def _normalize_assets(
     assets: dict[str, Any] | None,
     bindings: dict[str, Any] | None = None,
     allow_legacy_bindings: bool = False,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Normalize public assets= into the internal asset→provider store."""
     from etlantic.bindings import normalize_assets_map
 
@@ -140,6 +282,12 @@ class Profile:
     resource_provider_allowlist: dict[str, str | None] = field(default_factory=dict)
     # 0.12: portable vs native selection (no silent fallback).
     portable_transform_policy: PortableTransformPolicy = "prefer"
+    # 0.51: opt-in adaptive planning.  These fields are intentionally omitted
+    # from explicit /1 plan snapshots so dormant policy cannot alter /1 bytes.
+    execution_strategy: ExecutionStrategy = "explicit"
+    placement_targets: dict[str, PlacementTarget] = field(default_factory=dict)
+    eligible_targets: tuple[str, ...] = ()
+    adaptive_fallback: AdaptiveFallback = "error"
     # 0.20: safe I/O, outbound, isolation, optional capability probe.
     tenant: str = "default"
     environment: str = "default"
@@ -185,6 +333,11 @@ class Profile:
         schema_registry_allowlist: dict[str, str | None] | None = None,
         resource_provider_allowlist: dict[str, str | None] | None = None,
         portable_transform_policy: PortableTransformPolicy = "prefer",
+        execution_strategy: ExecutionStrategy = "explicit",
+        placement_targets: Mapping[str, PlacementTarget | Mapping[str, Any]]
+        | None = None,
+        eligible_targets: tuple[str, ...] = (),
+        adaptive_fallback: AdaptiveFallback = "error",
         tenant: str = "default",
         environment: str = "default",
         safe_io: dict[str, Any] | None = None,
@@ -236,6 +389,11 @@ class Profile:
                 version pin (production fail-closed when a provider is selected).
             portable_transform_policy: ``"prefer"``, ``"require"``, or
                 ``"native"``.
+            execution_strategy: ``"explicit"`` or opt-in ``"adaptive"``.
+            placement_targets: Stable target ids mapped to secret-free target
+                descriptors.
+            eligible_targets: Ordered target ids considered by adaptive planning.
+            adaptive_fallback: ``"error"`` or independently-built ``"explicit"``.
             tenant: Tenant label for safe I/O / outbound policy.
             environment: Environment label for safe I/O / outbound policy.
             safe_io: Safe I/O policy mapping.
@@ -322,6 +480,39 @@ class Profile:
             dict(resource_provider_allowlist or {}),
         )
         object.__setattr__(self, "portable_transform_policy", portable_transform_policy)
+        strategy = _parse_execution_strategy(execution_strategy)
+        fallback = _parse_adaptive_fallback(adaptive_fallback)
+        targets = _coerce_placement_targets(placement_targets)
+        if isinstance(eligible_targets, str):
+            raise ValueError("PMADP102: eligible_targets must be an array")
+        eligible = tuple(eligible_targets)
+        if any(not isinstance(value, str) or not value.strip() for value in eligible):
+            raise ValueError(
+                "PMADP102: eligible_targets must contain non-blank strings"
+            )
+        if len(set(eligible)) != len(eligible):
+            raise ValueError("PMADP102: eligible_targets must not contain duplicates")
+        missing_targets = sorted(set(eligible) - set(targets))
+        if missing_targets:
+            raise ValueError(
+                "PMADP102: eligible_targets reference unknown target(s): "
+                + ", ".join(missing_targets)
+            )
+        if strategy == "adaptive":
+            if not eligible:
+                raise ValueError("PMADP102: adaptive profiles require eligible_targets")
+            if str(orchestrator).strip().lower() != "local":
+                raise ValueError(
+                    "PMADP103: adaptive planning requires orchestrator='local'"
+                )
+            if spark_streaming:
+                raise ValueError(
+                    "PMADP103: adaptive planning does not support streaming"
+                )
+        object.__setattr__(self, "execution_strategy", strategy)
+        object.__setattr__(self, "placement_targets", targets)
+        object.__setattr__(self, "eligible_targets", eligible)
+        object.__setattr__(self, "adaptive_fallback", fallback)
         object.__setattr__(self, "tenant", str(tenant or "default"))
         object.__setattr__(self, "environment", str(environment or "default"))
         object.__setattr__(self, "safe_io", dict(safe_io or {}))
@@ -395,6 +586,9 @@ class Profile:
             required_orchestrator_capabilities=self.required_orchestrator_capabilities,
             portable_transform_policy=self.portable_transform_policy,
             implementation_overrides=dict(self.implementation_overrides),
+            execution_strategy=self.execution_strategy,
+            eligible_targets=self.eligible_targets,
+            adaptive_fallback=self.adaptive_fallback,
         )
 
     @property
@@ -433,6 +627,11 @@ class Profile:
             data["secrets"][key] = ref.to_dict()
         data["assets"] = dict(self.bindings)
         data.pop("bindings", None)
+        data["placement_targets"] = {
+            key: target.to_dict() for key, target in self.placement_targets.items()
+        }
+        if isinstance(data.get("eligible_targets"), tuple):
+            data["eligible_targets"] = list(data["eligible_targets"])
         for key in (
             "required_sql_capabilities",
             "required_spark_capabilities",
@@ -465,6 +664,18 @@ class Profile:
         # Intentionally omit ``assets`` so equivalent plans keep fingerprints.
         data["bindings"] = dict(self.bindings)
         data["safe_io"] = sanitize_safe_io_for_plan(dict(self.safe_io or {}))
+        if self.execution_strategy == "explicit":
+            for key in (
+                "execution_strategy",
+                "placement_targets",
+                "eligible_targets",
+                "adaptive_fallback",
+            ):
+                data.pop(key, None)
+        else:
+            data["placement_targets"] = {
+                key: target.to_dict() for key, target in self.placement_targets.items()
+            }
         return data
 
     @classmethod
@@ -609,6 +820,12 @@ class Profile:
             portable_transform_policy=_parse_portable_policy(
                 data.get("portable_transform_policy")
             ),
+            execution_strategy=_parse_execution_strategy(
+                data.get("execution_strategy")
+            ),
+            placement_targets=_coerce_placement_targets(data.get("placement_targets")),
+            eligible_targets=tuple(data.get("eligible_targets") or ()),
+            adaptive_fallback=_parse_adaptive_fallback(data.get("adaptive_fallback")),
             tenant=str(data.get("tenant") or "default"),
             environment=str(data.get("environment") or "default"),
             safe_io=dict(data.get("safe_io") or {}),
@@ -685,6 +902,47 @@ def _as_str_tuple(value: Any) -> tuple[str, ...]:
     if isinstance(value, str):
         return (value,)
     return tuple(str(x) for x in value)
+
+
+def _coerce_placement_targets(
+    value: Mapping[str, PlacementTarget | Mapping[str, Any]] | None,
+) -> dict[str, PlacementTarget]:
+    """Normalize target descriptors while preserving profile insertion order."""
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError("PMADP101: placement_targets must be an object")
+    targets: dict[str, PlacementTarget] = {}
+    for raw_key, raw_target in value.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise ValueError("PMADP101: placement target ids must be non-blank")
+        key = raw_key
+        if key in targets:
+            raise ValueError(f"PMADP101: duplicate placement target id {key!r}")
+        targets[key] = (
+            raw_target
+            if isinstance(raw_target, PlacementTarget)
+            else PlacementTarget.from_dict(raw_target)
+        )
+    return targets
+
+
+def _parse_execution_strategy(value: Any) -> ExecutionStrategy:
+    strategy = str(value or "explicit").strip().lower()
+    if strategy not in {"explicit", "adaptive"}:
+        raise ValueError(
+            f"PMADP100: execution_strategy must be explicit|adaptive, got {value!r}"
+        )
+    return strategy  # type: ignore[return-value]
+
+
+def _parse_adaptive_fallback(value: Any) -> AdaptiveFallback:
+    fallback = str(value or "error").strip().lower()
+    if fallback not in {"error", "explicit"}:
+        raise ValueError(
+            f"PMADP100: adaptive_fallback must be error|explicit, got {value!r}"
+        )
+    return fallback  # type: ignore[return-value]
 
 
 def _parse_portable_policy(value: Any) -> PortableTransformPolicy:

@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
 from etlantic.plan.model import PLAN_SCHEMA
 
 # schema id → upgrade step producing the next schema version
@@ -40,7 +41,7 @@ def upgrade_plan_dict(data: dict[str, Any]) -> dict[str, Any]:
         seen.add(schema)
         current = dict(_UPGRADERS[schema](current))
         schema = current.get("schema")
-    if schema == PLAN_SCHEMA:
+    if schema in {PLAN_SCHEMA, ADAPTIVE_PLAN_SCHEMA}:
         return current
     if schema is None or schema == "":
         raise UnsupportedPlanSchemaError(
@@ -48,5 +49,6 @@ def upgrade_plan_dict(data: dict[str, Any]) -> dict[str, Any]:
             f"(expected {PLAN_SCHEMA!r})."
         )
     raise UnsupportedPlanSchemaError(
-        f"Unsupported PipelinePlan schema {schema!r}; expected {PLAN_SCHEMA!r}."
+        f"Unsupported PipelinePlan schema {schema!r}; expected {PLAN_SCHEMA!r} or "
+        f"{ADAPTIVE_PLAN_SCHEMA!r}."
     )

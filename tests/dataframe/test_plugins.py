@@ -106,7 +106,7 @@ def test_polars_eager_end_to_end(polars_plugin) -> None:
         {"customer_id": 2, "full_name": "Grace Hopper"},
     ]
     step = next(s for s in report.steps if s.step_name == "normalized")
-    assert step.metadata.get("dataframe", {}).get("collected") is True
+    assert step.metadata.get("etlantic.dataframe", {}).get("collected") is True
 
 
 @pytest.mark.pandas

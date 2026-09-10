@@ -128,6 +128,43 @@
     },
     "validation_policy": { "type": "string" },
     "portable_transform_policy": { "type": "string" },
+    "execution_strategy": {
+      "type": "string",
+      "enum": ["explicit", "adaptive"]
+    },
+    "placement_targets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["engine"],
+        "properties": {
+          "engine": { "type": "string", "minLength": 1 },
+          "compiler": { "type": ["string", "null"] },
+          "executor": { "type": ["string", "null"] },
+          "connector": { "type": ["string", "null"] },
+          "resource": { "type": ["string", "null"] },
+          "location": { "type": "string", "minLength": 1 },
+          "security_domain": { "type": "string", "minLength": 1 },
+          "required_capabilities": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "version_constraints": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "eligible_targets": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "adaptive_fallback": {
+      "type": "string",
+      "enum": ["error", "explicit"]
+    },
     "concurrency": { "type": ["integer", "null"] },
     "timeout_seconds": { "type": ["number", "null"] },
     "retry_max_attempts": { "type": ["integer", "null"] },

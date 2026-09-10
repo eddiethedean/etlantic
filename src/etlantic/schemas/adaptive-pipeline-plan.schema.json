@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://etlantic.dev/schemas/adaptive-pipeline-plan.json",
+  "title": "ETLantic Adaptive Pipeline Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "plan_id", "pipeline_id", "pipeline_name", "profile_name", "fingerprint", "logical_graph", "selected_nodes", "inventory", "candidates", "decisions", "objective", "regions", "physical_dag", "protocol_versions", "profile_snapshot", "security_domain", "metadata"],
+  "properties": {
+    "schema": {"const": "etlantic.plan/2"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "pipeline_id": {"type": "string", "minLength": 1},
+    "pipeline_name": {"type": "string", "minLength": 1},
+    "profile_name": {"type": "string", "minLength": 1},
+    "fingerprint": {"type": "string", "minLength": 1},
+    "logical_graph": {"type": "object"},
+    "selected_nodes": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targets", "eligible_target_order", "fingerprint", "evidence_refs"],
+      "properties": {
+        "targets": {"type": "array", "items": {"$ref": "#/$defs/target"}},
+        "eligible_target_order": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "fingerprint": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "candidates": {"type": "array", "items": {"$ref": "#/$defs/candidate"}},
+    "decisions": {"type": "array", "items": {"$ref": "#/$defs/decision"}},
+    "objective": {"type": "array", "items": {"type": ["integer", "string"]}},
+    "regions": {"type": "array", "items": {"$ref": "#/$defs/region"}},
+    "physical_dag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units", "logical_to_physical", "topological_order"],
+      "properties": {
+        "units": {"type": "array", "items": {"$ref": "#/$defs/physical_unit"}},
+        "logical_to_physical": {"type": "object", "additionalProperties": {"type": "string"}},
+        "topological_order": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+    "profile_snapshot": {"type": "object"},
+    "security_domain": {"type": "string"},
+    "metadata": {"type": "object"}
+  },
+  "$defs": {
+    "physical_unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "identity", "kind", "dependencies", "target_identity", "logical_nodes", "input_contracts", "output_contracts", "policy", "retry_policy", "ownership", "protocol_versions", "metadata"],
+      "properties": {
+        "schema": {"const": "etlantic.physical_unit/1"},
+        "identity": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["compute", "transfer", "collection", "validation", "materialization", "reuse", "publication"]},
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["unit_id", "kind"],
+            "properties": {
+              "unit_id": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["data", "control", "lifecycle"]}
+            }
+          }
+        },
+        "target_identity": {"type": "string", "minLength": 1},
+        "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "input_contracts": {"type": "array", "items": {"type": "object"}},
+        "output_contracts": {"type": "array", "items": {"type": "object"}},
+        "policy": {"type": "object"},
+        "retry_policy": {"type": "object"},
+        "ownership": {"type": "object"},
+        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+        "metadata": {"type": "object"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_id", "identity", "engine", "compiler", "executor", "connector", "resource", "location", "security_domain", "protocol_versions", "capability_fingerprint", "evidence_refs", "metadata"],
+      "properties": {
+        "target_id": {"type": "string", "minLength": 1},
+        "identity": {"type": "string", "minLength": 1},
+        "engine": {"type": "string", "minLength": 1},
+        "compiler": {"type": ["string", "null"]},
+        "executor": {"type": ["string", "null"]},
+        "connector": {"type": ["string", "null"]},
+        "resource": {"type": ["string", "null"]},
+        "location": {"type": "string", "minLength": 1},
+        "security_domain": {"type": "string", "minLength": 1},
+        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+        "capability_fingerprint": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+        "metadata": {"type": "object"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "node_name", "target_id", "kind", "status", "reason_codes", "evidence_refs", "objective_facts", "metadata"],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "node_name": {"type": "string", "minLength": 1},
+        "target_id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["source", "sink", "compute"]},
+        "status": {"enum": ["eligible", "rejected"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+        "objective_facts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "metadata": {"type": "object"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_name", "candidate_id", "target_id"],
+      "properties": {
+        "node_name": {"type": "string", "minLength": 1},
+        "candidate_id": {"type": "string", "minLength": 1},
+        "target_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "target_id", "logical_nodes", "dependencies", "fused", "security_domain", "metadata"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "target_id": {"type": "string", "minLength": 1},
+        "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "dependencies": {"type": "array", "items": {"type": "string"}},
+        "fused": {"type": "boolean"},
+        "security_domain": {"type": "string"},
+        "metadata": {"type": "object"}
+      }
+    }
+  }
+}

@@ -44,7 +44,44 @@ under `docs/11_DEVELOPMENT/evidence/portable_0_50/`. Their digests and schema
 versions must be recorded by the 0.51 inventory; copying selected fields into a
 new unlinked artifact is insufficient provenance.
 
-## Outcome
+## Architecture Summary
+
+The existing explicit planner remains intact and is selected by the default
+Profile strategy. A thin strategy dispatch in `etlantic.plan.planner` routes an
+opted-in adaptive request through a separate, data-only planning pipeline. The
+adaptive path consumes the already-sliced logical graph, normalized Profile
+policy, authorize-before-load target inventory, and immutable 0.50.1 evidence;
+it emits a closed `etlantic.plan/2` document. The local runtime admits that
+document as a whole and then schedules physical-unit dependencies. It never
+re-runs placement or silently walks the logical graph.
+
+```text
+Pipeline/Profile/RunRequest
+  -> existing validation and selection slicing
+  -> strategy dispatch
+       explicit -> existing /1 builder -> existing logical runtime
+       adaptive -> inventory -> candidates -> exact solver -> regions
+                -> physical lowering -> /2 validation/fingerprint
+                -> whole-DAG live admission -> physical scheduler
+  -> shared report/explain/diff projections
+```
+
+The `/1` and `/2` model classes, builders, and execution paths are deliberately
+separate. Shared module-level codecs and public projections may dispatch on the
+schema, but a `/1` object never acquires authoritative physical semantics and a
+`/2` consumer never falls back to `/1` behavior by accident.
+
+## Change Boundary
+
+### Problem
+
+ETLantic 0.50.1 can execute portable transformations on several engines, but
+placement is still selected explicitly and the local scheduler treats physical
+units as advisory. There is no public contract that can choose a complete
+heterogeneous assignment, prove every boundary, persist it as an authoritative
+physical DAG, and execute exactly that DAG.
+
+### Desired outcome
 
 Pipeline authors can retain explicit engine selection or opt into adaptive
 placement through a profile. For adaptive plans, ETLantic enumerates only
@@ -58,6 +95,53 @@ Installing an engine does not grant it authority. A candidate participates only
 when the profile, all applicable production allowlists, compiler and connector
 capabilities, contracts, security boundaries, resource policy, and directional
 interchange evidence admit its complete placement target.
+
+### In scope
+
+- four additive Profile policy fields and their JSON Schema/round-trip rules;
+- a separate public `etlantic.plan/2` model, JSON Schema, canonical codec,
+  fingerprint, and verification path;
+- a bounded, side-effect-free inventory, candidate matrix, hard-constraint
+  filter, exact placement solver, connected-region builder, and physical DAG
+  lowerer;
+- authoritative local static-batch execution of the seven physical-unit kinds;
+- whole-DAG live admission, dependency scheduling, dispatch, retries,
+  cancellation, cleanup, validation, and publication attribution;
+- adaptive explain/diff projections through existing Python, CLI, IDE, and
+  notebook surfaces;
+- the built-in `StepRunReport.metadata` namespace migration;
+- public provider conformance helpers, compatibility fixtures, resource gates,
+  the fixed Local/Polars/Pandas launch corpus, documentation, and release
+  evidence.
+
+### Touched surface
+
+| Area | Existing ownership | Expected 0.51 change |
+|---|---|---|
+| Profile | `src/etlantic/profile.py`, `src/etlantic/_profile/records.py`, `src/etlantic/schemas/profile.schema.json` | Add and validate adaptive fields; preserve old document reads and explicit `/1` snapshots |
+| Plan wire | `src/etlantic/plan/model.py`, `serialize.py`, `upgrade.py`, `__init__.py`, `pipeline-plan.schema.json` | Keep `/1` frozen; add schema-specific `/2` records, schema, codec dispatch, fingerprint, and public union |
+| Planning | `src/etlantic/plan/planner.py`, `src/etlantic/planning/` | Add strategy dispatch and isolated adaptive stages; reuse selection slicing and validated evidence only |
+| Capability/trust | `src/etlantic/transform/`, `connectors/`, `resources/`, `plugins/`, `interchange/tabular/` | Read bounded descriptors through existing authorize-before-load paths; add only versioned adaptive projection/conformance records |
+| Runtime | `src/etlantic/runtime/execute.py`, `scheduler.py`, `orchestrator.py`, `executors/` | Add `/2` admission and physical scheduling/dispatch without changing `/1` scheduling |
+| Reports | `src/etlantic/extensions.py`, `src/etlantic/reports/upgrade.py`, built-in writers in `runtime/orchestrator.py` | Migrate four built-in step keys while retaining `etlantic.run_report/1` |
+| Public projections | `src/etlantic/plan/explain.py`, `diff.py`, CLI, IDE/LSP and notebook adapters | Dispatch over `PlanDocument`; project records without replanning |
+| First-party launch targets | local compiler plus `packages/etlantic-polars` and `packages/etlantic-pandas` | Advertise/verify required physical execution and fusion support; no unrelated compiler semantics expansion |
+| Tests/evidence/docs | `tests/profile`, `tests/plan`, `tests/runtime`, `tests/compatibility`, `tests/portable_conformance`, `scripts/`, `docs/` | Add 0.51 contract, oracle, differential, security, migration, and release evidence |
+
+### Explicitly out of scope
+
+- native transformation bodies as adaptive candidates;
+- SQL, PySpark, DataFusion, DuckDB, remote warehouses, external orchestrators,
+  durable/federated workers, streaming, and runtime-expanded graph execution as
+  **Available** `/2` consumers;
+- cost currency, live statistics, trial execution, telemetry feedback,
+  speculative execution, or runtime replanning;
+- multi-node fragment-cover search, overlapping fragments, or join reordering;
+- a stored `/2` to `/1` downgrade or mutation of `/1` wire records;
+- renaming third-party metadata, logical-plan metadata, or unrelated extension
+  keys;
+- fixing unrelated engine/compiler defects unless they invalidate a proposed
+  0.51 qualification row.
 
 ## Frozen Phase Boundaries
 
@@ -161,6 +245,72 @@ leave them open for downstream tasks. It may tighten a bound or validation rule,
 but a public rename or scope expansion requires an explicit update to this plan,
 the epic, and affected task acceptance criteria first.
 
+### Required behavior
+
+The public Profile additions are exactly these four fields:
+
+```python
+execution_strategy: Literal["explicit", "adaptive"] = "explicit"
+placement_targets: dict[str, PlacementTarget] = field(default_factory=dict)
+eligible_targets: tuple[str, ...] = ()
+adaptive_fallback: Literal["error", "explicit"] = "error"
+```
+
+`PlacementTarget` is a frozen public value with these fields and no secret
+payload:
+
+```python
+engine: str
+compiler: str | None = None
+executor: str | None = None
+connector: str | None = None
+resource: str | None = None
+location: str = "local"
+security_domain: str = "default"
+required_capabilities: tuple[str, ...] = ()
+version_constraints: dict[str, str] = field(default_factory=dict)
+```
+
+The enclosing mapping key is the stable human-facing target id. `compiler`,
+`executor`, `connector`, and `resource` are discovery/reference keys, never
+import paths or live objects. `resource` refers to a key in `Profile.resources`.
+`version_constraints` maps the referenced package/protocol identity to a
+specifier accepted by the existing plugin compatibility machinery. The
+canonical discovered descriptor—not the Profile key alone—produces the target
+identity fingerprint.
+
+Profile construction and `Profile.from_dict()` reject an unknown strategy or
+fallback, blank target ids, duplicate eligible ids, eligible ids missing from
+`placement_targets`, unknown target fields, non-string references, an adaptive
+profile with no eligible targets, and resolved secret-like values anywhere in a
+target. Adaptive planning also rejects non-local orchestrators, streaming, and
+runtime-expanded graphs in 0.51. Explicit profiles may carry dormant target
+definitions, but the existing `/1` profile snapshot projection omits all four
+adaptive fields so ordinary `/1` bytes remain unchanged.
+
+The public return contract is:
+
+- `Pipeline.plan()` and `plan_pipeline()` return `PipelinePlan` for explicit
+  strategy and `AdaptivePipelinePlan` for successful adaptive strategy;
+- `plan_pipeline_with_report()` returns `PlanDocument | None` plus the existing
+  validation report;
+- `plan_from_json()`, `plan_to_json()`, `plan_fingerprint()`, and
+  `verify_plan_fingerprint()` accept/return the public `PlanDocument` union and
+  dispatch strictly by `schema`;
+- `Pipeline.run()` and `Pipeline.arun()` continue returning
+  `PipelineRunReport`; the runtime dispatch is internal and schema-driven;
+- explain and diff return the existing JSON-serializable public projection
+  shapes with additive adaptive sections; and
+- compile, control-plane, durable, remote, federated, streaming, and unknown
+  third-party consumers reject `/2` with `PMADP500` before external I/O.
+
+Profile shape errors remain `ValueError`/schema-validation errors. Adaptive
+planning infeasibility uses `PipelineValidationError` with one or more stable
+`PMADP1xx`–`PMADP3xx` diagnostics. Wire/integrity errors use the existing
+`UnsupportedPlanSchemaError` or `ValueError` boundary. Admission or execution
+failures use `PipelineExecutionError` with `PMADP4xx`–`PMADP5xx`. No error path
+returns a partial `/2` plan.
+
 | Surface | Phase 0.51 lock |
 |---|---|
 | Profile strategy | `execution_strategy: Literal["explicit", "adaptive"] = "explicit"` |
@@ -236,6 +386,48 @@ turning a native body into a candidate.
 Published meanings are append-only within these ranges. CLI, Python, IDE, and
 notebook projections carry the same code and structured path.
 
+The following codes are the minimum frozen set. Implementations may add codes
+only inside the owning range and must update the diagnostic catalog and public
+fixtures in the same change.
+
+| Code | Required trigger |
+|---|---|
+| `PMADP100` | Unknown `execution_strategy` or `adaptive_fallback` value |
+| `PMADP101` | Invalid placement-target shape, identity field, or secret-like value |
+| `PMADP102` | Duplicate/unknown eligible target or adaptive mode with no eligible target |
+| `PMADP103` | Adaptive mode requested for a non-local orchestrator |
+| `PMADP120` | `portable_transform_policy="native"` or a native-only selected node in adaptive mode |
+| `PMADP121` | Run/Profile override names a target outside the eligible trusted portable set |
+| `PMADP122` | Runtime selection differs from the fingerprinted `/2` logical scope |
+| `PMADP123` | Explicit fallback requested but the independent `/1` plan is invalid or unavailable |
+| `PMADP124` | Stored `/2` downgrade requested |
+| `PMADP200` | Target, plugin, provider, connector, or adapter fails trust/allowlist admission |
+| `PMADP201` | Target identity or protocol/version descriptor is incomplete or conflicting |
+| `PMADP202` | Required evidence is missing, invalid, unqualified, or has drifted |
+| `PMADP220` | Candidate matrix is incomplete, duplicated, or references an unknown node/target |
+| `PMADP221` | Portable requirement is unsupported, unavailable, conditional, or unknown where proof is required |
+| `PMADP222` | No eligible portable definition/compiler exists for a selected compute node |
+| `PMADP240` | Required source/sink locality or pushdown is not positively proved |
+| `PMADP241` | Producer/consumer contract or security policy makes a boundary infeasible |
+| `PMADP242` | Required directional interchange/collection/materialization path is unavailable |
+| `PMADP300`–`PMADP306` | The corresponding fixed resource limit in the table below is exceeded |
+| `PMADP320` | No complete feasible assignment exists after hard constraints |
+| `PMADP321` | Candidate objective facts or resulting objective tuple are invalid |
+| `PMADP322` | Solver replay/oracle evidence does not reproduce the selected assignment |
+| `PMADP400` | Unknown `/2` section, unit kind, dependency kind, or protocol version |
+| `PMADP401` | Adaptive plan/unit fingerprint or referenced identity does not verify |
+| `PMADP402` | Physical DAG has a cycle, dangling dependency, or invalid topological order |
+| `PMADP403` | Physical-to-logical coverage is missing, duplicate, or includes unselected nodes |
+| `PMADP404` | Artifact ownership, cleanup authority, or publication authority is invalid |
+| `PMADP500` | Consumer does not advertise exact `/2` and physical-unit protocol support |
+| `PMADP501` | Whole-DAG live admission detects authorization, capability, resource, or evidence drift |
+| `PMADP502` | Static-batch restriction is violated by streaming or runtime graph expansion |
+| `PMADP520` | Planned target executor or unit kind cannot be dispatched exactly |
+| `PMADP521` | A unit dependency fails or is cancelled; dependents are not started |
+| `PMADP522` | Retry, timeout, or cancellation policy cannot preserve logical semantics |
+| `PMADP523` | Staged-artifact cleanup fails and requires operator reconciliation |
+| `PMADP524` | Publication outcome is unknown and requires idempotent reconciliation |
+
 The fallback `input_fingerprint` covers the logical scope, normalized adaptive
 Profile fields, eligible-target descriptors/order, evidence digests, and fixed
 limit-set version. It is provenance for the failed adaptive attempt, not a
@@ -283,6 +475,125 @@ of at most eight nodes, four targets, and 65,536 complete assignments.
 All at-most-eight target alternatives for a node remain visible; the explain
 limit applies to supporting evidence inside each node-target record, not to the
 complete candidate matrix.
+
+## Cross-Cutting Invariants
+
+- **Validation:** a `/2` document is executable only after schema, fingerprint,
+  logical coverage, topology, unit protocol, candidate-decision, target, and
+  evidence-reference validation all succeed.
+- **Determinism:** canonical ordering is derived from sliced logical topological
+  order, eligible-target order, stable ids, and canonical JSON. Registry or map
+  insertion order, process hash seed, timing, concurrency, and allocator state
+  cannot change a plan or explanation.
+- **Type and contract safety:** every physical edge names an input/output
+  artifact contract. A conversion, collection, or transfer exists only when a
+  directional mechanism proves the required fidelity.
+- **Trust:** static manifest evaluation and allowlist authorization precede
+  plugin/provider loading. Planning never imports a denied candidate merely to
+  explain its denial.
+- **Data safety:** planning is data-free and secret-free. Plans, explanations,
+  diagnostics, reports, evidence, and failure messages contain references,
+  digests, bounded metadata, and redacted public configuration only.
+- **Runtime authority:** no physical unit starts until whole-DAG admission has
+  succeeded. Runtime cannot add a target, unit, edge, fallback, or placement.
+- **Lifecycle:** each staged artifact has one owner and deterministic cleanup
+  authority. Dependents never run after an unsatisfied dependency. Cancellation
+  stops new scheduling before cleanup/reconciliation.
+- **Publication:** publication units are the only sink-commit authority. Retry
+  requires idempotency or an explicit reconciliation protocol; an unknown
+  outcome is never reported as success.
+- **Idempotency:** codec migration, plan verification, report-key migration,
+  admission of unchanged inputs, and cleanup of already-removed owned staging
+  artifacts are repeatable with the same result.
+- **Compatibility:** explicit `/1` planning and execution do not traverse any
+  adaptive stage. Existing public plugin protocols remain valid for explicit
+  use even when they do not participate in `/2`.
+
+## Edge Cases and Failure Modes
+
+| Case | Required outcome |
+|---|---|
+| Empty graph or empty partial selection | Existing selection validation fails; no inventory discovery occurs |
+| Duplicate or missing eligible target | Profile validation emits `PMADP102`; no plugin load occurs |
+| Eligible target package absent | Candidate is `rejected` with unavailable evidence; planning continues only if another complete assignment exists |
+| Native-only selected node or native override | Complete rejection records use `PMADP120`/`PMADP121`; permitted fallback independently produces `/1`, otherwise planning fails |
+| Unknown required capability or stale evidence digest | Candidate is ineligible with `PMADP202` or `PMADP221`; unknown never scores as zero or favorable |
+| Multiple disconnected branches on one target | Separate connected regions with deterministic ids and dependencies |
+| Fan-out across targets | One producer artifact has explicit ownership; each directional transfer/collection is represented and cleanup is ordered after all consumers |
+| Join with incompatible input targets | Solver includes all required input boundaries or rejects the assignment; it cannot collect implicitly at runtime |
+| Validation/materialization/publication boundary inside a same-target run | Fusion stops at the boundary; the corresponding physical unit remains explicit |
+| Resource limit reached exactly | Value at the published ceiling is accepted; the first value above it emits the matching `PMADP30x` outcome |
+| Solver exhaustion before a complete optimum | No approximate `/2`; emit `PMADP304` and fail or regenerate an admitted `/1` fallback |
+| Tampered, cyclic, incomplete, or unknown `/2` | Deserialize/verify/admission fails before discovery or I/O with `PMADP400`–`PMADP404` |
+| Runtime target/version/authorization drift | Whole-DAG admission emits `PMADP501`; zero units start |
+| Runtime selection differs from stored scope | Emit `PMADP122`; require replanning |
+| Unit failure with concurrent ready work | Stop admitting newly dependent work; honor cancellation policy, await/cancel already-running independent work as declared, then clean owned staging |
+| Cancellation during transfer/materialization | Do not publish; close handles and clean only owned artifacts; record cleanup or reconciliation diagnostics |
+| Publication timeout or lost acknowledgement | Record `PMADP524` unknown outcome; do not retry unless the connector proves idempotent reconciliation |
+| Legacy and namespaced report key collide | Namespaced value wins, bare alias is removed, no warning is emitted, and a second migration is identical |
+| Unsupported `/2` consumer | Emit `PMADP500` at its first acceptance boundary before connector/resource/plugin activity |
+
+## Security and Reliability Contract
+
+Planning receives immutable public descriptors only. It may read bounded static
+manifests and checked-in evidence after authorization, but cannot resolve a
+`SecretRef`, open a connector, list a source, acquire a resource, execute a
+compiler target, invoke user code, or perform a write. Production discovery
+uses the existing plugin, optimization-pass, schema-registry, and
+resource-provider allowlists; connector and interchange admission also preserve
+tenant, workspace, environment, security-domain, residency, classification,
+masking, and outbound policy.
+
+Runtime admission rechecks every mutable authorization, selected package and
+protocol version, resource reference, connector, compiler/executor, contract,
+and directional handoff. Admission is atomic with respect to scheduling: either
+the complete DAG is admitted or no unit is submitted. The scheduler uses a
+bounded ready queue and existing concurrency/timeout controls. Unit result
+recording precedes dependent readiness, and publication receipts or explicit
+unknown outcomes are durable in the run report before final success is emitted.
+
+## Compatibility Contract
+
+| Compatibility axis | Required 0.51 behavior |
+|---|---|
+| Existing Python API | Current Profile, Pipeline, planner, runtime, explain, diff, and report calls remain source-compatible; additions are optional and additive |
+| Explicit behavior | Default strategy is `explicit`; ordinary plans retain canonical `/1` bytes, fingerprints, logical scheduling, outputs, and failure behavior |
+| Profile documents | Older Profile JSON loads with adaptive defaults. New Profile JSON may contain the four additive fields; explicit `/1` snapshots omit them |
+| Plan documents | New readers accept `/1` and `/2`; `PipelinePlan` and `PLAN_SCHEMA` remain `/1`; old readers/consumers reject `/2`; no downgrade exists |
+| Run reports | Schema remains `etlantic.run_report/1`; four 0.50 bare step aliases read silently and normalize to namespaced keys; unknown third-party keys follow existing policy |
+| Plugins | Existing protocol implementations remain valid for explicit execution. Adaptive participation requires exact advertised protocol/capability/evidence support and never occurs by installation alone |
+| Runtime versions | Python 3.11, 3.12, and 3.13 remain supported; Linux, macOS, and Windows core behavior remains gated in CI |
+| Optional dependencies | Core import and explicit local operation remain optional-dependency clean; adaptive target packages are loaded only when selected and authorized |
+| Persisted state | Existing `/1` plans, Profile fixtures, run reports, artifacts, checkpoints, and publication receipts remain readable under their current retention guarantees |
+
+## Recommended Implementation
+
+The required behavior above is authoritative. Internal names may adapt when the
+repository makes a different private split materially simpler, provided public
+types, wire fields, diagnostics, invariants, ACs, and evidence remain unchanged.
+
+- Use frozen `slots=True` dataclasses plus existing `deep_freeze`/`mutable_copy`
+  conventions for `/2` records. Keep each record's validation next to its
+  `to_dict`/`from_dict` implementation.
+- Introduce `adaptive_model.py`, `physical.py`, and `adaptive_serialize.py`
+  instead of adding conditional fields to `plan/model.py`. Let
+  `plan/serialize.py` parse the schema and delegate.
+- Represent inventory, candidates, solver state, and explanations as immutable
+  data records. Do not pass live plugin objects beyond the discovery/analyzer
+  boundary; retain stable keys and evidence digests.
+- Build one pure hard-constraint predicate and one pure objective function used
+  by both the production branch-and-bound solver and independent test oracle.
+  The oracle enumerates independently but compares the same frozen objective
+  tuple.
+- Build regions and physical units from the chosen assignment in separate pure
+  stages. Validate after each stage and again at wire/runtime admission.
+- Add `AdaptiveAdmission` and `PhysicalScheduler` collaborators behind the
+  existing local scheduler rather than branching throughout
+  `LocalOrchestrator`. Existing engine execution helpers remain target adapters.
+- Reuse the current report model and add a narrow migration helper for the four
+  engine aliases. Do not introduce `etlantic.run_report/2` for this migration.
+- Generate release evidence through dedicated `scripts/check_adaptive_0_51.py`
+  and bounded fixture builders; do not hand-edit passing status into evidence.
 
 ## Initial Qualification Matrix
 
@@ -361,9 +672,10 @@ the frozen portable-only `/2` boundary.
 | [Task #91](https://github.com/eddiethedean/etlantic/issues/91) | Define `PMADP306` against deterministic canonical byte accounting; retain peak RSS as measured release evidence that cannot influence the selected assignment |
 | [Task #95](https://github.com/eddiethedean/etlantic/issues/95) | Name the launch row Local portable compiler rather than generic Local Python |
 
-Until those bodies are updated, the affected acceptance criteria are not
-implementation-ready. Their dependency links and milestone membership remain
-valid.
+Phase 0 performs these body updates before production code begins. The plan is
+ready to start at Phase 0; the stale text is an administrative sequencing gate,
+not an unresolved architecture decision. Existing dependency links and
+milestone membership remain valid.
 
 ## Deterministic Placement Contract
 
@@ -507,66 +819,369 @@ wait for I3. #82 creates and maintains the
 [0.51 exit gate](EXIT_GATE_0_51.md), while #95 alone records the final release
 decision.
 
-## Exit Gates
+## Concrete Implementation Sequence
 
-- Profiles without adaptive policy retain the documented explicit plan and
-  runtime behavior and canonical `/1` plan bytes/fingerprints.
-- Adaptive profiles emit `/2`; `/1`-only readers, compilers, schedulers, and
-  execution hosts reject it before external I/O rather than following the
-  logical graph.
-- An opted-in explicit fallback returns an independently validated `/1` plan
-  with a stable fallback decision; the runtime never executes a partial,
-  approximate, or exhausted-search `/2` plan.
-- Explicit per-step overrides always win or fail with a stable diagnostic; no
-  automatic choice silently replaces them.
-- Native implementation bodies never appear in an adaptive candidate matrix or
-  `/2` physical DAG. Native-only nodes, `portable_transform_policy="native"`,
-  and native-body overrides fail adaptive planning or take only the explicitly
-  enabled, independently valid `/1` fallback.
-- Candidate eligibility is traceable to the digest-bound 0.50.1
-  requirement/support evidence. Engine names, installed packages, aggregate
-  seven-engine qualification, and the 0.50 adaptive-handoff helper's selected
-  value are never authoritative placement inputs by themselves.
-- Runtime writers emit only the namespaced built-in step metadata keys.
-  `etlantic.run_report/1` readers migrate the four 0.50 bare aliases without a
-  warning or data loss, prefer an existing namespaced value on collision, drop
-  the bare alias, and produce the same result on repeated migration.
-- Partial-run selection preserves the 0.50 `selected_nodes` and sliced-graph
-  semantics before placement; both are fingerprinted, physical coverage is
-  exact, and runtime selection drift requires re-planning.
-- Identical logical-plan, profile, eligible-target inventory, and evidence
-  fingerprints produce identical physical plans and explanations, independent
-  of registry insertion order.
-- Disconnected same-target branches are separate regions, while adjacent
-  compatible nodes fuse only when their execution, effect, retry, checkpoint,
-  selection, security, and publication policies have a safe aggregate.
-- Every cross-region edge has a validated producer/consumer contract and an
-  executable interchange, collection, or materialization unit.
-- Whole-DAG admission succeeds before any external I/O, and the local runtime
-  schedules the adaptive physical DAG rather than treating
-  physical units as advisory metadata.
-- Adaptive and explicit executions produce equivalent observable outputs,
-  validations, lifecycle semantics, retry behavior, and publication outcomes
-  on the differential corpus.
-- Missing capability, trust, contract, or interchange evidence produces a
-  deterministic safe fallback only when policy permits it; otherwise planning
-  fails before mutation.
-- Explain output identifies the selected placement, rejected alternatives,
-  reason codes, region/fusion decision, handoff mechanism, and unavailable
-  estimates without leaking secrets or source rows.
-- Production planning neither imports nor selects a non-allowlisted plugin,
-  optimization pass, resource provider, connector, or applicable
-  schema-registry adapter.
-- Static batch and local-runtime bounds are enforced. Runtime-expanded or
-  streaming graphs and unsupported compile/control-plane/federated consumers
-  fail closed with stable diagnostics.
-- The deterministic resource envelope is enforced with stable `PMADP3xx`
-  diagnostics and no wall-clock-dependent selection.
-- Only rows that pass the initial qualification matrix may be described as
-  Available; every other adaptive engine/provider/consumer path remains
-  Experimental or unavailable according to its independently published gate.
-- All affected planner, optimizer, interchange, runtime, conformance,
-  stable-foundation, compatibility, and documentation suites pass.
+Each phase below is a reviewable merge boundary. A later phase may be developed
+in parallel only against merged contracts from its dependencies. New public
+behavior remains unavailable until the phase's merge gate passes.
+
+### Phase 0 — Contract and backlog freeze
+
+- **Goal:** remove contradictory task language and record every public/wire
+  decision before production code.
+- **Files:** new ADR under `docs/11_DEVELOPMENT/adr/`; this plan; the exit gate;
+  diagnostic and surface inventories; GitHub #30–#95 bodies identified in the
+  backlog-reconciliation table.
+- **Behavior:** freeze the four Profile fields, `PlacementTarget`, `/2` and
+  physical-unit schemas, exact diagnostics, resource limits, consumer matrix,
+  metadata aliases, fallback, selection, and rollback rules.
+- **Verification:** `scripts/check_docs.py`, `scripts/check_surface_inventory.py`,
+  `scripts/check_diagnostic_stability.py`, docs build, and a machine-readable
+  contract fixture consumed by later tests.
+- **Depends on:** nothing. **Merge gate:** #41 and #82 accepted; contradictory
+  backlog language removed. No production implementation starts before this
+  gate.
+
+### Phase 1 — Profile policy and report-reader compatibility
+
+- **Goal:** introduce opt-in policy without changing explicit planning and make
+  legacy report reads ready before new writers ship.
+- **Files:** `src/etlantic/profile.py`, `_profile/records.py`,
+  `schemas/profile.schema.json`, `extensions.py`, `reports/upgrade.py`, public
+  exports, profile templates, `tests/profile/test_adaptive_profile_0_51.py`, and
+  `tests/reports/test_metadata_namespace_0_51.py`.
+- **Behavior:** validate/canonicalize `PlacementTarget` and the four fields;
+  preserve old Profile reads; preserve explicit `/1` snapshot bytes; migrate
+  the four bare built-in step aliases with namespaced-wins collision behavior.
+- **Verification:** constructor/schema negatives, JSON round trips, secret-key
+  rejection, old fixture loads, explicit `/1` goldens, no-warning migration,
+  collision, idempotency, and deterministic reserialization.
+- **Depends on:** Phase 0. **Merge gate:** #42 plus the reader half of the
+  metadata migration pass; adaptive planning still returns an unavailable
+  diagnostic.
+
+### Phase 2 — Closed `/2` and physical-unit wire model
+
+- **Goal:** make adaptive plans representable and verifiable without making
+  them executable.
+- **Files:** new `src/etlantic/plan/adaptive_model.py`, `physical.py`,
+  `adaptive_serialize.py`, new `schemas/adaptive-pipeline-plan.schema.json` and
+  `schemas/physical-unit.schema.json`; dispatch changes in `plan/serialize.py`,
+  `plan/upgrade.py`, `plan/__init__.py`, and curated root exports;
+  `tests/plan/test_adaptive_wire_0_51.py`.
+- **Behavior:** implement `AdaptivePipelinePlan`, every required nested record,
+  `PlanDocument`, strict schema dispatch, canonical fingerprinting, deep freeze,
+  unknown-field/kind rejection, and no downgrade. `/1` classes and bytes remain
+  unchanged.
+- **Verification:** `/2` round-trip and JSON Schema parity, verify true/false,
+  one-field tampering for every section, unknown section/unit/dependency,
+  missing decision references, deep immutability, `/1` golden matrix, and old
+  consumer rejection.
+- **Depends on:** Phase 1. **Merge gate:** #43–#44; all execution consumers
+  still reject `/2` with `PMADP500`.
+
+### Phase 3 — Trusted inventory and evidence lineage
+
+- **Goal:** produce the complete bounded set of Profile-eligible target
+  descriptors without touching a data plane.
+- **Files:** new `src/etlantic/planning/adaptive_inventory.py`; bounded adapters
+  over `transform/discovery.py`, plugin coordinator, connectors, resources, and
+  tabular interchange; `tests/planning/test_adaptive_inventory_0_51.py`.
+- **Behavior:** validate Profile ids first; authorize manifests before load;
+  resolve only eligible keys; canonicalize target identity/version/capability
+  descriptors; bind exact 0.50.1 evidence digests; build the directional
+  interchange matrix; reject drift and denied targets explicitly.
+- **Verification:** randomized registry order, denied-import sentinels, missing
+  package/version/protocol/evidence cases, duplicate identity, directional
+  handoff asymmetry, bounded metadata, and secret/source-row scans.
+- **Depends on:** Phase 2. **Merge gate:** #45–#49; inventory fingerprint and
+  diagnostics reproduce from fixture inputs.
+
+### Phase 4 — Complete candidate matrix
+
+- **Goal:** explain eligibility for every selected node × eligible target before
+  optimization.
+- **Files:** new `src/etlantic/planning/adaptive_candidates.py` and candidate
+  records in the `/2` model; `tests/planning/test_adaptive_candidates_0_51.py`.
+- **Behavior:** enumerate source, sink, and portable compute records only;
+  preserve one record per matrix cell; invoke bounded `analyze()` but never
+  `compile()`, `execute()`, or user code; apply overrides and native
+  ineligibility; derive objective facts solely from proved evidence.
+- **Verification:** complete/duplicate/missing cell checks, portable exact and
+  lowering support, unavailable compiler, unknown required capability,
+  source/sink locality, native-only/native override, explicit fallback input,
+  and analyzer side-effect sentinels.
+- **Depends on:** Phase 3. **Merge gate:** #50–#54; matrix size and ordering are
+  deterministic and every rejection has a stable code.
+
+### Phase 5 — Exact bounded placement solver
+
+- **Goal:** select the globally best complete feasible assignment or return one
+  stable failure.
+- **Files:** new `adaptive_objective.py` and `adaptive_solver.py`;
+  `tests/planning/test_adaptive_solver_0_51.py`, independent
+  `tests/planning/adaptive_oracle.py`, and resource-gate script support.
+- **Behavior:** apply one hard-constraint predicate; compare the frozen tuple;
+  traverse in canonical order; count work units/bytes; use only proof-safe
+  branch-and-bound; emit a complete decision set, `PMADP320`, or a permitted
+  independently generated `/1` fallback.
+- **Verification:** exhaustive oracle through the published small-graph bound,
+  seeded graph/registry permutations, tie-break boundaries, disconnected
+  component equivalence, exact-limit/over-limit cases, replay seeds, and proof
+  that wall-clock timing cannot affect output.
+- **Depends on:** Phase 4. **Merge gate:** #55–#59, #91, and solver portions of
+  #93 pass with identical fingerprints across repeated runs.
+
+### Phase 6 — Connected regions and physical lowering
+
+- **Goal:** turn an assignment into one closed, executable physical topology.
+- **Files:** new `adaptive_regions.py`, `adaptive_lowering.py`, physical
+  validators, `tests/planning/test_adaptive_regions_0_51.py`, and
+  `tests/plan/test_physical_dag_0_51.py`.
+- **Behavior:** partition maximal connected compatible regions; preserve every
+  protected boundary; lower seven unit kinds and every cross-region edge;
+  assign typed dependencies, contracts, ownership, lifecycle, retry,
+  publication authority, and complete logical attribution.
+- **Verification:** chains, diamonds, joins, fan-out, disconnected same-target
+  branches, partial selections, all protected boundaries, fused/unfused parity,
+  all seven kinds, cycle/dangling/coverage tampering, handoff direction, cleanup
+  ownership, and publication uniqueness.
+- **Depends on:** Phase 5. **Merge gate:** #60–#68; schema round trips and
+  physical validation pass before explain or runtime integration.
+
+### Phase 7 — Explain and diff projections
+
+- **Goal:** expose decisions without recomputing them.
+- **Files:** `src/etlantic/plan/explain.py`, `diff.py`, CLI plan/inspect/diff
+  commands, IDE/LSP schemas/commands, notebook adapter, and
+  `tests/plan/test_adaptive_explain_0_51.py`.
+- **Behavior:** project every selected/lower-ranked/rejected alternative,
+  objective component, region/fusion boundary, physical edge, handoff,
+  unavailable estimate, truncation marker, and fallback from the stored plan.
+- **Verification:** Python/CLI/IDE/notebook JSON parity, semantic diff fixtures,
+  no-replanning sentinels, ordering permutations, 4 MiB boundary, per-record
+  evidence truncation, and secret/source-row redaction.
+- **Depends on:** Phase 6. **Merge gate:** #74–#77; explicit explain/diff
+  fixtures remain compatible.
+
+### Phase 8 — Whole-DAG admission and physical execution protocol
+
+- **Goal:** define the live trust boundary and executor contract before any `/2`
+  unit can run.
+- **Files:** new `src/etlantic/runtime/adaptive_admission.py`,
+  `physical_protocol.py`, and `physical_scheduler.py`; dispatch changes in
+  `runtime/execute.py`, `scheduler.py`, executor registry, and explicit
+  rejection adapters; `tests/runtime/test_adaptive_admission_0_51.py`.
+- **Behavior:** require exact plan/unit/capability versions; recheck every live
+  dependency; admit atomically before resource acquisition; reject unsupported
+  consumers and runtime selection drift; construct the ready queue solely from
+  physical dependencies.
+- **Verification:** import/load/I/O/mutation sentinels for every admission
+  failure, capability/version/authorization drift, unsupported consumer matrix,
+  streaming/runtime-expansion rejection, dependency order, and concurrency
+  bounds.
+- **Depends on:** Phase 6; may proceed in parallel with Phase 7. **Merge gate:**
+  #88, #90, #92; `/2` remains execution-disabled until Phase 9 adapters pass.
+
+### Phase 9 — Local adapters, lifecycle, and report writers
+
+- **Goal:** execute only the initially qualified local static-batch topologies
+  with `/2` as authority.
+- **Files:** physical scheduler/admission modules, `runtime/orchestrator.py`,
+  existing dataframe/local execution helpers, Polars/Pandas packages as needed,
+  and `tests/runtime/test_adaptive_execution_0_51.py`.
+- **Behavior:** dispatch compute to the planned compiler/executor; execute
+  transfer/collection/materialization/validation/reuse/publication units;
+  preserve logical retry/cancellation/timeout/publication semantics and fused
+  step attribution; emit only namespaced built-in step metadata.
+- **Verification:** unit failure injection at every boundary, concurrent branch
+  ordering, retry-safe and unsafe publication, cancellation during handoff,
+  cleanup/reconciliation, partial run, fused attribution, report migration, and
+  adaptive-versus-explicit output/lifecycle differential tests.
+- **Depends on:** Phases 6 and 8. **Merge gate:** #69–#73 and #89; only fixture-
+  gated Local/Polars/Pandas combinations can execute.
+
+### Phase 10 — Public conformance, documentation, and graduation
+
+- **Goal:** prove and publish exactly the supported 0.51 claim.
+- **Files:** `src/etlantic/testing/adaptive.py`, fixed conformance fixtures,
+  `scripts/check_adaptive_0_51.py`, evidence directory, concepts/quickstart,
+  operations/rollback, backend participation, migration/API/CLI docs, roadmap,
+  and release notes.
+- **Behavior:** expose third-party conformance without granting maturity; run
+  the fixed Polars→Pandas and reverse topology; publish weakest-link maturity;
+  keep every unqualified row Experimental/unavailable; provide rollback for new,
+  queued, and in-flight `/2` work.
+- **Verification:** #78–#87 and #93–#95 evidence, full CI on Python 3.11–3.13
+  and supported OSes, all existing release/stable-foundation gates, docs build
+  and links, runnable examples, and final no-go review.
+- **Depends on:** Phases 7 and 9. **Merge gate:** #95 records a dated decision
+  and every required artifact in the exit gate verifies from its command.
+
+## Acceptance Criteria
+
+- **AC-001 — Explicit compatibility:** A Profile without
+  `execution_strategy="adaptive"` produces the same canonical `/1` bytes,
+  fingerprint, selected logical graph, runtime behavior, and observable report
+  as 0.50.1 for every compatibility fixture.
+- **AC-002 — Profile contract:** The four adaptive fields and
+  `PlacementTarget` round-trip through Python and JSON Schema; every invalid,
+  duplicate, missing, unknown, or secret-bearing form is rejected with the
+  specified error before discovery.
+- **AC-003 — Adaptive wire:** A successful adaptive plan is a deeply immutable,
+  schema-valid `AdaptivePipelinePlan` with schema `etlantic.plan/2`; all required
+  sections round-trip canonically and participate in fingerprint verification.
+- **AC-004 — Wire/consumer rejection:** Unknown or tampered `/2` content and
+  every unsupported `/2` consumer fail with the specified diagnostic before
+  connector discovery, resource acquisition, data reads, staging, or mutation;
+  no stored downgrade is available.
+- **AC-005 — Fallback:** With fallback `error`, infeasibility returns no plan.
+  With fallback `explicit`, only a separately valid explicit build returns `/1`
+  and exactly one `etlantic.adaptive_fallback` metadata record; no partial or
+  approximate `/2` is emitted or run.
+- **AC-006 — Portable/override boundary:** Request overrides take precedence
+  over Profile overrides. An eligible portable-target override constrains the
+  matrix; an ineligible target, native body, native-only node, or `native`
+  policy fails adaptively or follows AC-005 without executing user code.
+- **AC-007 — Trusted inventory:** The inventory contains every and only ordered
+  Profile-eligible targets whose manifests pass all applicable allowlists before
+  load; canonical identities include the frozen placement fields and versions.
+- **AC-008 — Evidence lineage:** Every positive capability, lowering, locality,
+  pushdown, contract, and handoff fact references validated immutable evidence,
+  including the exact 0.50.1 input digest; missing or drifted evidence makes the
+  affected candidate ineligible.
+- **AC-009 — Candidate truthfulness:** The stored matrix has exactly one record
+  for every selected node × eligible target, retains all rejections, and admits
+  only supported source, sink, or portable-compute candidates. Installed engine
+  names and unknown evidence never establish eligibility or positive rank.
+- **AC-010 — Exact deterministic placement:** For identical logical scope,
+  Profile, target inventory, and evidence, planning returns the same complete
+  assignment, objective tuple, explanation, and `/2` fingerprint across process
+  hash seeds and semantic-preserving graph/registry permutations; the assignment
+  matches the independent oracle corpus.
+- **AC-011 — Resource bounds:** Every published count/byte/work-unit ceiling
+  accepts its exact boundary and rejects the first excess with `PMADP300`–
+  `PMADP306`; timing and measured RSS never select a different assignment.
+- **AC-012 — Selection:** Full, `run_one`, `run_until`, and explicit-node
+  selections retain the 0.50.1 canonical sliced graph and `selected_nodes`
+  representation; `/2` covers exactly that scope, and a different runtime
+  selection emits `PMADP122`.
+- **AC-013 — Connected regions/fusion:** Every selected node occurs in exactly
+  one maximal connected compatible region. Disconnected same-target branches
+  remain separate, and fusion never crosses a frozen effect, retry, checkpoint,
+  selection, security, validation, materialization, or publication boundary.
+- **AC-014 — Physical DAG:** All seven unit kinds validate and round-trip; every
+  logical node and edge has exact physical attribution, every cross-target edge
+  has an executable directional boundary, topology is acyclic, and ownership,
+  cleanup, validation, and publication authority are unambiguous.
+- **AC-015 — Explain/diff:** Python, CLI, IDE, and notebook projections expose
+  the same stored selections, lower-ranked viable alternatives, rejections,
+  objective values, regions, fusion decisions, physical topology, handoffs,
+  unavailable estimates, and fallback without replanning; output is bounded,
+  deterministic, and redacted.
+- **AC-016 — Atomic admission:** The local runtime verifies the complete live
+  `/2` dependency set and mutable policy before starting any unit. Any trust,
+  version, capability, contract, resource, authorization, selection, or evidence
+  drift starts zero units and emits the owning `PMADP4xx`/`PMADP5xx` diagnostic.
+- **AC-017 — Runtime authority:** For a qualified adaptive plan, the local
+  scheduler derives readiness only from physical-unit dependencies and dispatches
+  exactly the stored target/unit; it never walks the logical graph as a fallback
+  or performs runtime placement.
+- **AC-018 — Lifecycle and publication:** Dependency failure, retry, timeout,
+  cancellation, transfer, collection, materialization, reuse, validation,
+  cleanup, and publication preserve explicit-baseline semantics. Publication is
+  committed once or recorded as an explicit unknown outcome requiring
+  reconciliation, and fused units retain per-logical-step attribution.
+- **AC-019 — Report migration:** New built-in writers emit only
+  `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, and
+  `etlantic.spark_schema`. Readers silently normalize 0.50 bare aliases,
+  namespaced values win collisions, aliases disappear, and repeat migration and
+  reserialization are identical under `etlantic.run_report/1`.
+- **AC-020 — Differential semantics:** The fixed Local-only, Polars-only,
+  Pandas-only, Polars→Pandas, and Pandas→Polars fixtures produce equivalent
+  outputs, validation outcomes, logical lifecycle/report attribution, retry,
+  cancellation, cleanup, and publication results under adaptive and explicit
+  plans.
+- **AC-021 — Fail-closed non-scope:** Streaming/runtime-expanded graphs and
+  compile, Airflow, Prefect, control-plane, durable, remote, federated, or
+  unqualified third-party `/2` consumers reject with stable diagnostics before
+  external I/O.
+- **AC-022 — Security:** Production planning never loads or selects a denied
+  plugin, optimization pass, connector, resource provider, or applicable
+  schema-registry adapter, never crosses the frozen policy domains, and no plan,
+  evidence, diagnostic, explanation, report, or fixture contains a resolved
+  secret or source row.
+- **AC-023 — Qualification truthfulness:** Only rows with passing independent
+  evidence are marked Available; DuckDB remains Experimental unless its own row
+  passes, and all other engine/provider/consumer combinations retain their
+  prior or unavailable maturity.
+- **AC-024 — Release integrity:** All affected core, planner, optimizer,
+  interchange, runtime, plugin, conformance, compatibility, stable-foundation,
+  packaging, documentation, and supported Python/OS CI gates pass, with no open
+  critical/high defect attributable to 0.51.
+
+## Verification Matrix
+
+| Acceptance | Preferred proof | Required fixture, suite, or artifact |
+|---|---|---|
+| AC-001 | Compatibility + integration | `/1` byte/fingerprint burn-in matrix; explicit runtime differential |
+| AC-002 | Unit + contract + static gate | Adaptive Profile constructor/from-dict tests and Profile JSON Schema |
+| AC-003 | Contract + property | `/2` round-trip, deep-freeze, schema parity, canonical-order properties |
+| AC-004 | Contract + security integration | Tamper/unknown-field matrix and pre-I/O consumer sentinels |
+| AC-005 | Integration + compatibility | No-solution/exhaustion/fallback matrix and `/1` metadata golden |
+| AC-006 | Unit + integration | Request/Profile precedence, native-ineligible, and no-user-code fixtures |
+| AC-007 | Security integration + property | Authorize-before-load sentinels and randomized inventory order |
+| AC-008 | Contract + compatibility | 0.50.1 digest lineage, missing/drifted/invalid evidence fixtures |
+| AC-009 | Unit + property | Complete Cartesian matrix, duplicate/missing record, truthful support tests |
+| AC-010 | Oracle + property | Exhaustive small-graph oracle and seeded metamorphic campaign |
+| AC-011 | Boundary + static gate | Exact/first-excess limits and deterministic byte/work accounting report |
+| AC-012 | Compatibility + integration | Existing selection corpus plus `/2` coverage and runtime drift rejection |
+| AC-013 | Unit + property | Chain/diamond/join/fan-out/disconnected and protected-boundary goldens |
+| AC-014 | Contract + property + security | Seven-kind round trips, topology/tamper matrix, ownership/publication checks |
+| AC-015 | Contract + parity + security | Python/CLI/IDE/notebook goldens, truncation limits, secret/source-row scan |
+| AC-016 | Integration + fault injection | Whole-DAG admission matrix with zero-I/O/zero-unit-start sentinels |
+| AC-017 | Integration | Physical dependency scheduler traces and no-logical-fallback sentinel |
+| AC-018 | Integration + chaos | Per-unit failure/cancellation/retry/cleanup/publication campaign |
+| AC-019 | Migration + compatibility | 0.50 report fixtures, collision/idempotency/no-warning writer-reader matrix |
+| AC-020 | Differential integration | Fixed five-row launch corpus with output and lifecycle comparisons |
+| AC-021 | Security integration | Unsupported consumer/static-batch rejection matrix |
+| AC-022 | Security + static gate | Production allowlist matrix and recursive secret/source-row scans |
+| AC-023 | Contract + manual release decision | Signed evidence manifest, weakest-link matrix, #95 go/no-go record |
+| AC-024 | CI + packaging + docs | Full `checks.yml`, release/stable-foundation scripts, wheel tests, docs/link build |
+
+## Risks
+
+| Risk | Consequence | Mitigation / blocking gate |
+|---|---|---|
+| `/2` logic leaks into `/1` | Breaks stable bytes, readers, or explicit runtime | Separate models/builders; AC-001 goldens on every contract/runtime merge |
+| Installed plugin is treated as eligible | Trust bypass or nondeterministic inventory | Profile-closed ids and authorize-before-load sentinels; AC-007/AC-022 |
+| Candidate analysis performs live work | Data/secret exposure during planning | Data-only analyzer protocol, hostile sentinels, immutable evidence; AC-008/AC-009 |
+| Solver objective is ambiguous or local-greedy | Non-optimal or nondeterministic placement | Frozen tuple, single predicate, exhaustive oracle, replay seeds; AC-010/AC-011 |
+| Region fusion erases semantic boundaries | Incorrect retry, validation, or publication behavior | One conservative boundary predicate and fused/unfused differentials; AC-013/AC-018 |
+| Runtime silently falls back to logical scheduling | Executed work differs from inspected/fingerprinted plan | Schema dispatch plus no-logical-fallback sentinel; AC-016/AC-017 |
+| Partial admission starts work before a late failure | Reads/mutations occur under invalid policy | Atomic whole-DAG admission with per-dependency I/O sentinels; AC-016 |
+| Handoff cancellation leaks staging | Resource leak or stale data reuse | Explicit ownership/cleanup units and chaos cases; AC-014/AC-018 |
+| Publication acknowledgement is lost | Duplicate writes or false success | Idempotency/reconciliation contract and `PMADP524`; AC-018 |
+| Explain truncation changes solver input | Display budget alters selected placement | Store complete bounded matrix in `/2`; truncate only projection evidence; AC-009/AC-015 |
+| 0.50 evidence drifts after planning | Unsupported target selected from stale claims | Digest-bound lineage at planning and live admission; AC-008/AC-016 |
+| Scope expands to all seven portable engines | Unproven consumer/lifecycle claims delay or weaken release | Fixed launch matrix and weakest-link graduation; AC-021/AC-023 |
+
+## Known Pre-existing Problems and Follow-Up Candidates
+
+- [#127](https://github.com/eddiethedean/etlantic/issues/127) tracks a
+  PostgreSQL 16 arm64 non-final Greek sigma parity mismatch found during this
+  audit. It is outside the initial Local/Polars/Pandas qualification matrix and
+  does not block 0.51, but it blocks any future PostgreSQL/SQL adaptive
+  availability claim until resolved and evidenced.
+- The bare built-in step-report keys are pre-existing 0.50.1 output, but their
+  bounded compatibility migration is explicitly in scope through AC-019; it is
+  not a general metadata cleanup mandate.
+- Existing `/1` physical units are advisory and the scheduler walks logical
+  nodes. That is the central in-scope gap, not permission to redesign unrelated
+  scheduler, control-plane, or orchestration APIs.
+- Statistics-aware costing, provider economics, telemetry feedback, runtime
+  replanning, and additional `/2` consumers remain candidate later epics. They
+  are not defects in this change.
 
 ## Required Release Evidence
 
@@ -615,3 +1230,35 @@ bounded runtime replanning, and additional experimental engines beyond DuckDB
 require later, separately gated phases. Phase 0.51 establishes no performance
 or maturity claim for an engine that has not independently passed its existing
 conformance and graduation requirements.
+
+## Definition of Done
+
+Phase 0.51 is done only when:
+
+1. AC-001 through AC-024 are demonstrated by the linked verification artifacts;
+2. every in-scope public field, wire record, diagnostic, migration, and runtime
+   behavior matches the accepted ADR and this plan;
+3. explicit `/1`, legacy Profile/report, plugin, and persisted-artifact
+   compatibility is preserved;
+4. all required evidence is generated by its recorded command and verifies from
+   a clean checkout;
+5. supported Python/OS, package, documentation, security, compatibility,
+   conformance, differential, and stable-foundation CI is green;
+6. no unresolved critical/high correctness, security, compatibility, data-loss,
+   or publication finding attributable to 0.51 remains;
+7. documentation and examples describe only behavior and maturity proven by the
+   final evidence matrix; and
+8. #95 records the dated go/no-go decision, evidence owners, residual risks,
+   rollback trigger, and exact Available/Experimental/unavailable rows.
+
+Repository-wide perfection is not part of this definition. Independently
+confirmed pre-existing defects outside the change boundary remain follow-up
+work unless they invalidate an in-scope qualification row or make safe
+implementation impossible.
+
+## Plan Decision
+
+**READY FOR IMPLEMENTATION.** Phase 0 is the mandatory first implementation
+increment: reconcile the identified backlog wording and accept the ADR before
+merging production code. This sequencing gate contains no unresolved product or
+architecture decision; all later phases consume the contracts frozen here.

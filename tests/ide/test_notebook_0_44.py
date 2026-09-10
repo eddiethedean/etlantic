@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
+import pytest
 from tests.fixtures.sample_pipeline import SamplePipeline
 
 from etlantic.authoring.preview import plan_preview, structural_validate_preview
@@ -84,5 +86,9 @@ def test_bind_pipeline_marks_stale_on_redefine() -> None:
 
 
 def test_optional_widgets_without_extra() -> None:
+    if importlib.util.find_spec("ipywidgets") is not None:
+        pytest.skip(
+            "ipywidgets is installed; this check requires the extra to be absent"
+        )
     session = NotebookSession()
     assert session.optional_widgets() is None

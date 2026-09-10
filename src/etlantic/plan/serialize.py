@@ -7,11 +7,25 @@ import hashlib
 import json
 from typing import Any
 
+from etlantic.plan.adaptive_model import (
+    ADAPTIVE_PLAN_SCHEMA,
+    AdaptivePipelinePlan,
+    PlanDocument,
+)
+from etlantic.plan.adaptive_serialize import (
+    adaptive_plan_fingerprint,
+    adaptive_plan_from_json,
+    adaptive_plan_to_json,
+    canonical_adaptive_dict,
+    verify_adaptive_fingerprint,
+)
 from etlantic.plan.model import PipelinePlan
 
 
-def canonical_plan_dict(plan: PipelinePlan) -> dict[str, Any]:
+def canonical_plan_dict(plan: PlanDocument) -> dict[str, Any]:
     """Return a deterministically ordered plan dict for hashing."""
+    if isinstance(plan, AdaptivePipelinePlan):
+        return canonical_adaptive_dict(plan)
     data = copy.deepcopy(plan.to_dict())
     # Derived / fill-in fields excluded from the content hash.
     data = {k: v for k, v in data.items() if k not in {"fingerprint", "plan_id"}}
@@ -21,7 +35,7 @@ def canonical_plan_dict(plan: PipelinePlan) -> dict[str, Any]:
     return _sort_structure(data)
 
 
-def canonical_plan_json(plan: PipelinePlan) -> str:
+def canonical_plan_json(plan: PlanDocument) -> str:
     """Return canonical JSON bytes as a UTF-8 string."""
     return json.dumps(
         canonical_plan_dict(plan),
@@ -31,21 +45,25 @@ def canonical_plan_json(plan: PipelinePlan) -> str:
     )
 
 
-def plan_fingerprint(plan: PipelinePlan) -> str:
+def plan_fingerprint(plan: PlanDocument) -> str:
     """Compute a stable SHA-256 fingerprint of the canonical plan."""
+    if isinstance(plan, AdaptivePipelinePlan):
+        return adaptive_plan_fingerprint(plan)
     payload = canonical_plan_json(plan).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
-def plan_to_json(plan: PipelinePlan, *, indent: int | None = 2) -> str:
+def plan_to_json(plan: PlanDocument, *, indent: int | None = 2) -> str:
     """Serialize a plan including its fingerprint."""
+    if isinstance(plan, AdaptivePipelinePlan):
+        return adaptive_plan_to_json(plan, indent=indent)
     data = plan.to_dict()
     if indent is None:
         return json.dumps(data, sort_keys=True, separators=(",", ":"))
     return json.dumps(data, indent=indent, sort_keys=True) + "\n"
 
 
-def verify_plan_fingerprint(plan: PipelinePlan) -> None:
+def verify_plan_fingerprint(plan: PlanDocument) -> None:
     """Recompute the canonical plan fingerprint and compare to ``plan.fingerprint``.
 
     Args:
@@ -58,6 +76,9 @@ def verify_plan_fingerprint(plan: PipelinePlan) -> None:
         ValueError: When the embedded fingerprint does not match the canonical
             SHA-256 of the plan content (excluding derived ``plan_id`` fields).
     """
+    if isinstance(plan, AdaptivePipelinePlan):
+        verify_adaptive_fingerprint(plan)
+        return
     expected = plan_fingerprint(plan)
     if plan.fingerprint != expected:
         raise ValueError(
@@ -66,7 +87,7 @@ def verify_plan_fingerprint(plan: PipelinePlan) -> None:
         )
 
 
-def plan_from_json(text: str, *, verify: bool = True) -> PipelinePlan:
+def plan_from_json(text: str, *, verify: bool = True) -> PlanDocument:
     """Deserialize a plan from JSON text.
 
     Args:
@@ -85,7 +106,11 @@ def plan_from_json(text: str, *, verify: bool = True) -> PipelinePlan:
     data = json.loads(text)
     if not isinstance(data, dict):
         raise ValueError("PipelinePlan JSON must be an object")
-    plan = PipelinePlan.from_dict(data, verify=verify)
+    schema = data.get("schema")
+    if schema == ADAPTIVE_PLAN_SCHEMA:
+        plan = adaptive_plan_from_json(text, verify=verify)
+    else:
+        plan = PipelinePlan.from_dict(data, verify=verify)
     if verify:
         verify_plan_fingerprint(plan)
     return plan

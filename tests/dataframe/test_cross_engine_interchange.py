@@ -97,7 +97,7 @@ def test_polars_to_pandas_pipeline_honors_planned_interchange() -> None:
     assert [row.value for row in runtime.memory.get("out")] == [1, 2]
 
     pandas_step = next(s for s in report.steps if s.step_name == "pandas_step")
-    dataframe_meta = pandas_step.metadata.get("dataframe") or {}
+    dataframe_meta = pandas_step.metadata.get("etlantic.dataframe") or {}
     evidence_items = (dataframe_meta.get("extras") or {}).get("interchange_evidence")
     assert evidence_items
     observed_raw = evidence_items[0]

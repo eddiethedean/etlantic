@@ -1,10 +1,27 @@
 """PipelinePlan IR package."""
 
+from etlantic.plan.adaptive_model import (
+    ADAPTIVE_PLAN_SCHEMA,
+    AdaptiveDecision,
+    AdaptiveInventory,
+    AdaptivePipelinePlan,
+    AdaptiveRegion,
+    CandidateRecord,
+    PlanDocument,
+    TargetDescriptor,
+)
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.plan.diff import PlanDiff, diff_plans, render_plan_explain_human
 from etlantic.plan.explain import explain_plan
 from etlantic.plan.freeze import deep_freeze
 from etlantic.plan.model import PLAN_SCHEMA, PipelinePlan, validate_plan_interchange
+from etlantic.plan.physical import (
+    PHYSICAL_UNIT_SCHEMA,
+    PhysicalDAG,
+    PhysicalDependency,
+    PhysicalUnit,
+    PhysicalUnitKind,
+)
 from etlantic.plan.planner import plan_pipeline, plan_pipeline_with_report
 from etlantic.plan.serialize import (
     canonical_plan_json,
@@ -20,11 +37,24 @@ from etlantic.plan.slicing import (
 )
 
 __all__ = [
+    "ADAPTIVE_PLAN_SCHEMA",
+    "PHYSICAL_UNIT_SCHEMA",
     "PLAN_SCHEMA",
+    "AdaptiveDecision",
+    "AdaptiveInventory",
+    "AdaptivePipelinePlan",
+    "AdaptiveRegion",
     "ArtifactRef",
     "ArtifactStrategy",
+    "CandidateRecord",
+    "PhysicalDAG",
+    "PhysicalDependency",
+    "PhysicalUnit",
+    "PhysicalUnitKind",
     "PipelinePlan",
     "PlanDiff",
+    "PlanDocument",
+    "TargetDescriptor",
     "canonical_plan_json",
     "deep_freeze",
     "dependency_closure",

@@ -40,9 +40,14 @@ from etlantic.diagnostics import ValidationReport
 from etlantic.lifecycle import PipelineRuntime
 from etlantic.orchestration import compile_plan
 from etlantic.pipeline import Extract, Load, Pipeline
-from etlantic.plan import PipelinePlan, explain_plan, plan_pipeline
+from etlantic.plan import (
+    AdaptivePipelinePlan,
+    PipelinePlan,
+    explain_plan,
+    plan_pipeline,
+)
 from etlantic.ports import Input, Output, Parameter
-from etlantic.profile import Profile
+from etlantic.profile import PlacementTarget, Profile
 from etlantic.reports import PipelineRunReport
 from etlantic.secrets import SecretRef
 from etlantic.transformation import Transformation
@@ -62,6 +67,8 @@ _CURATED: dict[str, Any] = {
     "Profile": Profile,
     "PipelineRuntime": PipelineRuntime,
     "PipelinePlan": PipelinePlan,
+    "AdaptivePipelinePlan": AdaptivePipelinePlan,
+    "PlacementTarget": PlacementTarget,
     "plan_pipeline": plan_pipeline,
     "explain_plan": explain_plan,
     "ValidationReport": ValidationReport,

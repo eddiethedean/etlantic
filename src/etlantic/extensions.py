@@ -96,6 +96,10 @@ def namespaced_extension_items(
 # Known legacy bare keys written by first-party packages before 0.36.
 # Migration rewrites these to namespaced keys without semantic loss.
 REPORT_METADATA_ALIASES: dict[str, str] = {
+    "dataframe": "etlantic.dataframe",
+    "sql": "etlantic.sql",
+    "spark": "etlantic.spark",
+    "spark_schema": "etlantic.spark_schema",
     "prefect_run_id": "etlantic.prefect.run_id",
     "prefect_task_correlation": "etlantic.prefect.task_correlation",
 }

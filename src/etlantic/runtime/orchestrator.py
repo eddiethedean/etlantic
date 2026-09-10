@@ -1472,7 +1472,7 @@ class LocalOrchestrator:
                     data = await self._read_source(node, run_id=run_id)
                     self._store_outputs(node, data, artifacts)
                     state.records_out = _count(data)
-                    state.metadata["spark"] = {
+                    state.metadata["etlantic.spark"] = {
                         "source_kind": "records",
                         "provider": provider,
                     }
@@ -1495,7 +1495,7 @@ class LocalOrchestrator:
                 )
                 self._store_outputs(node, data, artifacts)
                 state.records_out = 0
-                state.metadata["spark"] = {"source_kind": "dataset_ref"}
+                state.metadata["etlantic.spark"] = {"source_kind": "dataset_ref"}
                 return
             if self._is_sql_engine(self._engine_for(node.name)):
                 engine = self._engine_for(node.name)
@@ -1584,7 +1584,7 @@ class LocalOrchestrator:
                     await self._write_sink(node, payload, run_id=run_id)
                     state.records_in = _count(payload)
                     state.records_out = state.records_in
-                    state.metadata["spark"] = {
+                    state.metadata["etlantic.spark"] = {
                         "sink_kind": "records",
                         "provider": provider,
                     }
@@ -1640,9 +1640,9 @@ class LocalOrchestrator:
                 state.records_out = (
                     result.metrics.rows_affected or result.metrics.rows_out
                 )
-                state.metadata["spark"] = result.metrics.to_dict()
+                state.metadata["etlantic.spark"] = result.metrics.to_dict()
                 if result.schema_observation:
-                    state.metadata["spark_schema"] = result.schema_observation
+                    state.metadata["etlantic.spark_schema"] = result.schema_observation
                 self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                 return
             if self._is_sql_engine(self._engine_for(node.name)) and not isinstance(
@@ -1900,7 +1900,7 @@ class LocalOrchestrator:
                     )
                     artifacts.put(ref, value, durable=False)
                 state.records_out = 0
-                state.metadata["sql"] = {
+                state.metadata["etlantic.sql"] = {
                     "portable_compiled": True,
                     "consumers_sql": consumers_sql,
                     "rows_fetched": plugin.rows_fetched_total(),
@@ -1959,7 +1959,7 @@ class LocalOrchestrator:
                     stored = plugin.to_records(result, contract_type=node.contract_type)
                 artifacts.put(ref, stored, durable=False)
                 state.records_out = _count(stored) if isinstance(stored, list) else 0
-                state.metadata["spark"] = {
+                state.metadata["etlantic.spark"] = {
                     "portable_compiled": True,
                     "udf_policy": "deny",
                     "consumers_spark": consumers_spark,
@@ -2058,7 +2058,7 @@ class LocalOrchestrator:
                     )
                 state.records_in = bundle.metrics.rows_in or state.records_in
                 state.records_out = bundle.metrics.rows_out or 0
-                state.metadata["dataframe"] = bundle.metrics.to_dict()
+                state.metadata["etlantic.dataframe"] = bundle.metrics.to_dict()
                 return
 
             # Every portable-compiled descriptor returns through its dedicated
@@ -2139,7 +2139,7 @@ class LocalOrchestrator:
                 )
                 artifacts.put(ref, stored, durable=False)
                 state.records_out = 0
-                state.metadata["sql"] = {
+                state.metadata["etlantic.sql"] = {
                     "rows_fetched": plugin.rows_fetched_total(),
                     "result_kind": type(stored).__name__,
                     "consumers_sql": consumers_sql,
@@ -2228,7 +2228,7 @@ class LocalOrchestrator:
                     spark_region.identity if spark_region else "", None
                 )
                 state.records_out = _count(stored) if isinstance(stored, list) else 0
-                state.metadata["spark"] = {
+                state.metadata["etlantic.spark"] = {
                     "result_kind": type(result).__name__,
                     "consumers_spark": consumers_spark,
                     "region": spark_region.identity if spark_region else None,

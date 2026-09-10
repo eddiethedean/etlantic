@@ -20,6 +20,8 @@
     "Profile",
     "PipelineRuntime",
     "PipelinePlan",
+    "AdaptivePipelinePlan",
+    "PlacementTarget",
     "plan_pipeline",
     "explain_plan",
     "ValidationReport",
@@ -104,6 +106,8 @@
   ],
   "wire_schemas": {
     "etlantic.plan/1": "stable",
+    "etlantic.plan/2": "provisional",
+    "etlantic.physical_unit/1": "provisional",
     "etlantic.pipeline/1": "stable",
     "etlantic.run_report/1": "stable",
     "etlantic.interchange/1": "stable",

@@ -108,7 +108,7 @@ def test_sf_14_gate_a_polars_pandas_arrow_interchange_with_diagnosed_fallback() 
     assert [row.value for row in runtime.memory.get("out")] == [1, 2]
 
     pandas_step = next(s for s in report.steps if s.step_name == "pandas_step")
-    dataframe_meta = pandas_step.metadata.get("dataframe") or {}
+    dataframe_meta = pandas_step.metadata.get("etlantic.dataframe") or {}
     evidence_items = (dataframe_meta.get("extras") or {}).get("interchange_evidence")
     assert evidence_items, "expected ownership/collection/copy interchange evidence"
     observed_raw = evidence_items[0]

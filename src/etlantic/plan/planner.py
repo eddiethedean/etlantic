@@ -186,6 +186,8 @@ def plan_pipeline(
             f"Cannot plan invalid pipeline {pipeline_cls.__name__}.",
             report=report,
         )
+    if ctx.profile.execution_strategy == "adaptive":
+        raise _adaptive_unavailable()
     return _build_plan(pipeline_cls, ctx, selection=selection or ctx.selection)
 
 
@@ -263,6 +265,24 @@ def _selection_error(message: str) -> PipelineValidationError:
     return PipelineValidationError(message, report=report)
 
 
+def _adaptive_unavailable() -> PipelineValidationError:
+    """Fail closed until the candidate/solver/runtime phases are available."""
+    diagnostic = Diagnostic(
+        code="PMADP221",
+        severity=Severity.ERROR,
+        message=(
+            "Adaptive planning is not available in this implementation slice; "
+            "use execution_strategy='explicit' or complete the 0.51 planner gate."
+        ),
+        path=("profile", "execution_strategy"),
+        phase="policy",
+    )
+    report = ValidationReport.from_diagnostics([diagnostic], phases=("policy",))
+    return PipelineValidationError(
+        f"{diagnostic.code}: {diagnostic.message}", report=report
+    )
+
+
 def _build_plan_from_definition(
     definition: Any,
     context: PlanningContext,
@@ -270,6 +290,8 @@ def _build_plan_from_definition(
     selection: dict[str, Any] | None = None,
 ) -> PipelinePlan:
     """Build a plan from an unresolved PipelineDefinition."""
+    if context.profile.execution_strategy == "adaptive":
+        raise _adaptive_unavailable()
     return _build_plan(None, context, selection=selection, definition=definition)
 
 

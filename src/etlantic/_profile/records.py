@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 PortableTransformPolicy = Literal["require", "prefer", "native"]
 SecurityMode = Literal["development", "test", "production"]
+ExecutionStrategy = Literal["explicit", "adaptive"]
+AdaptiveFallback = Literal["error", "explicit"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +25,9 @@ class EngineProfile:
     required_orchestrator_capabilities: tuple[str, ...] = ()
     portable_transform_policy: PortableTransformPolicy = "prefer"
     implementation_overrides: dict[str, str] = field(default_factory=dict)
+    execution_strategy: ExecutionStrategy = "explicit"
+    eligible_targets: tuple[str, ...] = ()
+    adaptive_fallback: AdaptiveFallback = "error"
 
 
 @dataclass(frozen=True, slots=True)
