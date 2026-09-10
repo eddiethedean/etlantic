@@ -9,7 +9,7 @@ Live Confluent HTTP is skipped unless `ETLANTIC_SCHEMA_REGISTRY_URL` is set.
 ## Install
 
 ```bash
-pip install 'etlantic-schemaregistry==0.50.0'
+pip install 'etlantic-schemaregistry==0.50.1'
 ```
 
 Core dependency: `etlantic>=0.50.0,<0.51`. Production profiles require

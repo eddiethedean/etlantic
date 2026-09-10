@@ -100,6 +100,16 @@ Recommended: `import etlantic as etl` (curated root + lazy namespaces).
 
 {imports}
 
+## Pipeline authoring
+
+- Define new transformation logic with `@Transformation.portable` and
+  ETLantic expressions (`etl.transform.functions`) by default.
+- Use `portable_transform_policy="require"` for new profiles so unsupported
+  semantics fail during validation or planning.
+- Use `@Transformation.implementation(engine)` only as an explicit escape
+  hatch. Native bodies are engine-specific and are not eligible for adaptive
+  execution.
+
 ## FastAPI dual surface
 
 - **CP1 control plane:** `ETLanticAPI` / `include_router` / `create_app`
@@ -151,6 +161,12 @@ Use public CLI commands ({cmds}) and
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports ({sdk}).
 
+Define new transformation logic with `@Transformation.portable` and ETLantic
+expressions (`etl.transform.functions`) by default. Use
+`portable_transform_policy="require"` for new profiles. Native
+`@Transformation.implementation(engine)` bodies are explicit engine-specific
+escape hatches and are not eligible for adaptive execution.
+
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.
 Continuous landing-zone directory watchers are optional submitters, never core
@@ -174,6 +190,7 @@ globs:
 # ETLantic
 
 - Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization, streaming, resources, agents.
+- Prefer `@Transformation.portable` with ETLantic expressions and `portable_transform_policy="require"`; native `@Transformation.implementation(engine)` bodies are engine-specific escape hatches and are not eligible for adaptive execution.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.

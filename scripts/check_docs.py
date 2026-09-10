@@ -197,7 +197,12 @@ def check_release_candidate_claims() -> None:
         return
     if str(facts.get("maturity", "")).lower() != "beta":
         return
-    prohibited = ("Available in ETLantic 0.50.0", "published on PyPI")
+    current_version = str(facts["current_version"])
+    prohibited = (
+        f"Available in ETLantic {current_version} (published",
+        f"ETLantic {current_version} is a published",
+        f"v{current_version} is published",
+    )
     violations: list[str] = []
     for path in (ROOT / "docs").rglob("*.md"):
         text = path.read_text(encoding="utf-8")
@@ -823,24 +828,23 @@ def check_observability_doc_consistency() -> None:
 
 
 def check_quickstart_init_scaffold_sync() -> None:
-    """Keep Quickstart aha imports aligned with etlantic init scaffold."""
+    """Keep Quickstart aha authoring style aligned with the init scaffold."""
     init_src = (ROOT / "src/etlantic/cli/cmds/init.py").read_text(encoding="utf-8")
-    import_match = re.search(
-        r"from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation",
-        init_src,
-    )
-    if import_match is None:
+    scaffold_import = "import etlantic as etl"
+    if scaffold_import not in init_src:
+        raise SystemExit("init.py scaffold must use the curated etlantic facade")
+    if "@Identity.portable" not in init_src or "@Identity.implementation" in init_src:
         raise SystemExit(
-            "init.py scaffold must import Data, Extract, Input, Load, Output, "
-            "Pipeline, Transformation from etlantic"
+            "init.py scaffold must define portable Identity without a native body"
         )
-    scaffold_import = import_match.group(0)
+    if '"portable_transform_policy": "require"' not in init_src:
+        raise SystemExit("init.py scaffold profile must require portable transforms")
     quickstart = (ROOT / "docs/01_GETTING_STARTED/QUICKSTART.md").read_text(
         encoding="utf-8"
     )
     if scaffold_import not in quickstart:
         raise SystemExit(
-            "QUICKSTART.md must include the init scaffold import line:\n"
+            "QUICKSTART.md must include the init scaffold facade import:\n"
             f"  {scaffold_import}"
         )
     if re.search(r"from etlantic import[^\n]*\bIdentity\b", quickstart):
@@ -2243,18 +2247,20 @@ def main() -> None:
                 f"{plugin_pyproject} version {plugin_version} != core {package_version}"
             )
 
-    # Embedded plugin component versions must also match.
+    # Embedded distribution/plugin component versions must also match. Portable
+    # compiler modules retain their independently qualified compiler identity
+    # across compatible patch releases; check_portable_0_50.py binds those
+    # identities to the frozen evidence instead.
     for component in (
         ROOT / "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
         ROOT / "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
         ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/provider.py",
+        ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/__init__.py",
         ROOT / "packages/etlantic-sql/src/etlantic_sql/plugin.py",
-        ROOT / "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+        ROOT / "packages/etlantic-sql/src/etlantic_sql/__init__.py",
         ROOT / "packages/etlantic-polars/src/etlantic_polars/__init__.py",
-        ROOT / "packages/etlantic-polars/src/etlantic_polars/compiler.py",
-        ROOT / "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
-        ROOT / "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+        ROOT / "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
         ROOT / "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
         ROOT / "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
         ROOT / "packages/medallantic/src/medallantic/__init__.py",
@@ -2262,7 +2268,6 @@ def main() -> None:
         ROOT / "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/__init__.py",
         ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
-        ROOT / "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
         ROOT / "packages/etlantic-duckdb/src/etlantic_duckdb/__init__.py",
     ):
         text = component.read_text(encoding="utf-8")

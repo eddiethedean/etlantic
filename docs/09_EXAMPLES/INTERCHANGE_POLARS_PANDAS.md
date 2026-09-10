@@ -11,7 +11,7 @@ a checkout (and CI); it is **not** included in the wheel.
 ## 1. Install
 
 ```bash
-python -m pip install 'etlantic[dataframes]==0.50.0'
+python -m pip install 'etlantic[dataframes]==0.50.1'
 ```
 
 ## 2. Create `interchange_polars_pandas.py`
@@ -27,7 +27,7 @@ Requires:
 
 Or from published packages:
 
-    pip install 'etlantic[dataframes]==0.50.0'
+    pip install 'etlantic[dataframes]==0.50.1'
 
 Run with:
 
@@ -103,7 +103,7 @@ def _require_plugins() -> dict[str, Any]:
             "Missing dataframe plugin(s): "
             + ", ".join(missing)
             + ". Install with: uv sync --group dataframes "
-            "or pip install 'etlantic[dataframes]==0.50.0'"
+            "or pip install 'etlantic[dataframes]==0.50.1'"
         )
     return found
 
@@ -185,7 +185,7 @@ Optional:
 
 ```bash
 curl -fsSL -o interchange_polars_pandas.py \
-  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.50.0/examples/interchange_polars_pandas.py
+  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.50.1/examples/interchange_polars_pandas.py
 python interchange_polars_pandas.py
 ```
 

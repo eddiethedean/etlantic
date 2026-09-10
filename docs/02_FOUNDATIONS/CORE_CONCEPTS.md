@@ -88,7 +88,7 @@ semantics. It does not commit the transformation to a dataframe engine.
     `@Transformation.implementation(...)` remains available for engines and
     profiles outside the advertised compiler claim set.
 
-A portable definition describes common relational behavior once using
+The portable definition is the recommended authoring path. It describes common relational behavior once using
 PySpark-inspired symbolic DataFrame and Column expressions:
 
 ```python
@@ -103,7 +103,10 @@ def normalize(customers, minimum_age):
 ETLantic will normalize this definition into the canonical DTCS Transformation
 Plan (`dtcs.transform-plan/2`, with v1 readable) through the public `dtcs`
 package. Plugins will compile that plan to native operations. The definition
-does not process data and is not a native implementation.
+does not process data and is not a native implementation. The qualified
+relational baseline can compile it for Local, Polars, Pandas, SQL, PySpark,
+DataFusion, and DuckDB, and portable definitions are the input to the upcoming
+adaptive execution feature.
 
 ## Implementation
 
@@ -120,7 +123,8 @@ One transformation may have multiple implementations. The planner selects a
 compatible implementation for the chosen profile.
 
 Native implementations remain the explicit escape hatch for behavior outside
-the portable language or for approved backend-specific optimization.
+the portable language or for approved backend-specific optimization. They pin
+the step to an engine and are not eligible for adaptive execution.
 
 ## Port
 

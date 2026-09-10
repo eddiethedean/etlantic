@@ -11,7 +11,7 @@
 python -m venv .venv && source .venv/bin/activate
 # Windows PowerShell: py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -22,30 +22,16 @@ Expect `succeeded` and Ada/Grace rows in `data/out.json`.
 
 ### Polars engine (after local success)
 
-The `init` scaffold only implements `"local"`. Installing the Polars plugin and
-flipping `dataframe_engine` is **not** enough—you must also register a Polars
-implementation.
+The `init` scaffold defines a portable transformation. Install the Polars
+plugin and change the engine; do not add a Polars-specific body.
 
 ```bash
-python -m pip install 'etlantic[polars]==0.50.0'
+python -m pip install 'etlantic[polars]==0.50.1'
 ```
 
-Then either follow the [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md),
-or add a Polars implementation and set the profile engine:
-
-```python
-@Identity.implementation("polars")
-def identity_polars(rows):
-    import polars as pl
-
-    if hasattr(rows, "with_columns"):
-        return rows
-    return pl.DataFrame(
-        [row.model_dump() if hasattr(row, "model_dump") else row for row in rows]
-    )
-```
-
-In `profiles/development.json`, set `"dataframe_engine": "polars"`, then:
+Follow the [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md),
+or set `"dataframe_engine": "polars"` while keeping
+`"portable_transform_policy": "require"`, then:
 
 ```bash
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -56,7 +42,7 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 
 ```bash
 cp path/to/prod.example.json profiles/prod.json
-# edit plugin_allowlist pins to ==0.50.0 and fill assets
+# edit plugin_allowlist pins to ==0.50.1 and fill assets
 python -m etlantic validate pipeline.py:SamplePipeline --profile profiles/prod.json
 ```
 
@@ -80,7 +66,7 @@ Empty allowlists fail with `PMPLUG401`. See
 | Pick an engine | [Engine selection](ENGINE_SELECTION.md) |
 | Polars / Pandas / SQL / PySpark | Tutorials under [Execution](../06_EXECUTION/README.md) |
 | Polars↔Pandas Gate A interchange | [Interchange](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) |
-| Portable transform without native impl | [Portable transforms](../09_EXAMPLES/PORTABLE_TRANSFORMS.md) |
+| Portable transformations (recommended) | [Portable transforms](../09_EXAMPLES/PORTABLE_TRANSFORMS.md) |
 
 ## CI and production
 

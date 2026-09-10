@@ -7,14 +7,14 @@ Medallantic and ETLantic use matching minor versions:
 
 ```bash
 python -m pip install \
-  'etlantic==0.50.0' \
-  'medallantic==0.50.0'
+  'etlantic==0.50.1' \
+  'medallantic==0.50.1'
 ```
 
 The ETLantic extra is equivalent:
 
 ```bash
-python -m pip install 'etlantic[medallantic]==0.50.0'
+python -m pip install 'etlantic[medallantic]==0.50.1'
 ```
 
 Execution engines remain optional. Add only the plugins required by the target

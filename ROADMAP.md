@@ -6,8 +6,10 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.50.0** (Beta) — seven-engine portable
-execution and pushdown conformance with fail-closed requirement evidence.
+**Current release candidate:** ETLantic **0.50.1** (Beta) — portable-first
+scaffolding/documentation plus compatible planner and report-metadata fixes.
+ETLantic 0.50.0 remains the published seven-engine portable baseline until the
+patch is tagged.
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
@@ -18,7 +20,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.50 | Seven-engine portable execution and pushdown conformance | Published / shipped evidence |
+| Current | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Gate-ready for tag/publish |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |

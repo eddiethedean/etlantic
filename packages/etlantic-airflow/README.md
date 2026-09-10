@@ -49,6 +49,6 @@ Airflow-style compiler).
 
 ## Links
 
-[Documentation](https://etlantic.readthedocs.io/en/v0.50.0/06_EXECUTION/AIRFLOW/) ·
+[Documentation](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/AIRFLOW/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-airflow) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

@@ -9,8 +9,8 @@ Package version is **0.50.0** — pin with core.
 ## Install
 
 ```bash
-pip install 'etlantic-sqlmodel==0.50.0'
-# pip install 'etlantic==0.50.0'
+pip install 'etlantic-sqlmodel==0.50.1'
+# pip install 'etlantic==0.50.1'
 ```
 
 ## Schema bridge
@@ -72,6 +72,6 @@ for isolation queries. Use separate engines/schemas per tenant for
 
 ## Links
 
-[Optional packages](https://etlantic.readthedocs.io/en/v0.50.0/10_REFERENCE/OPTIONAL_PACKAGES/) ·
+[Optional packages](https://etlantic.readthedocs.io/en/v0.50.1/10_REFERENCE/OPTIONAL_PACKAGES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sqlmodel) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

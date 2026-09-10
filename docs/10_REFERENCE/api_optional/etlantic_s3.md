@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-s3==0.50.0'
+pip install 'etlantic-s3==0.50.1'
 ```
 
 ```python

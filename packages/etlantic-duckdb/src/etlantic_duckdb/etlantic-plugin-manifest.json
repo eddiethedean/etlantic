@@ -9,7 +9,7 @@
     "publication.atomic",
     "transactions"
   ],
-  "digest": "sha256:cec9be1a2e59871045af81e52c70787e09f5d631568596b3e636e41efef9cb18",
+  "digest": "sha256:a30efe56bef44fd5ef2a30cb30e740b8be3a92a3cfbd872035b405b32454ae67",
   "entries": [
     {
       "capabilities": [
@@ -42,5 +42,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.50.0"
+  "version": "0.50.1"
 }

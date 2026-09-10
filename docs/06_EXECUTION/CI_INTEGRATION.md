@@ -38,7 +38,7 @@ write_profile(
         validation_policy="strict",
         plugin_allowlist={
             "local": None,
-            # "etlantic-polars": "==0.50.0",
+            # "etlantic-polars": "==0.50.1",
         },
         assets={
             # Logical binding name → provider key or descriptor name
@@ -91,9 +91,9 @@ jobs:
       - name: Install ETLantic
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'etlantic==0.50.0'
+          python -m pip install 'etlantic==0.50.1'
           # Add matching plugins when the pipeline needs them, e.g.:
-          # python -m pip install 'etlantic-polars==0.50.0'
+          # python -m pip install 'etlantic-polars==0.50.1'
 
       - name: Validate (SARIF)
         run: |
@@ -127,7 +127,7 @@ validate or plan.
 
 Recommended gates:
 
-1. Pin ETLantic and official plugins to one tested release (`==0.50.0`).
+1. Pin ETLantic and official plugins to one tested release (`==0.50.1`).
 2. Validate every changed pipeline with an explicit allowlisted profile.
 3. Generate contracts and fail on unexpected diffs.
 4. Upload SARIF through the CI platform's supported integration.

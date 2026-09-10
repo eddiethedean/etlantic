@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.50.0 etlantic-polars==0.50.0 etlantic-pandas==0.50.0
+    pip install etlantic==0.50.1 etlantic-polars==0.50.1 etlantic-pandas==0.50.1
 
 Run with:
 
@@ -28,6 +28,7 @@ from etlantic import (
     Transformation,
 )
 from etlantic.registry import PlanningContext
+from etlantic.transform import functions as F
 
 
 class RawCustomer(Data):
@@ -46,26 +47,12 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("polars")
-def normalize_polars(customers):
-    import polars as pl
-
-    frame = customers if hasattr(customers, "with_columns") else pl.DataFrame(customers)
-    return frame.with_columns(
-        (pl.col("first_name") + " " + pl.col("last_name")).alias("full_name")
-    ).select("customer_id", "full_name")
-
-
-@NormalizeCustomers.implementation("pandas")
-def normalize_pandas(customers):
-    import pandas as pd
-
-    frame = (
-        customers if isinstance(customers, pd.DataFrame) else pd.DataFrame(customers)
+@NormalizeCustomers.portable
+def normalize(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
     )
-    out = frame.copy()
-    out["full_name"] = out["first_name"] + " " + out["last_name"]
-    return out[["customer_id", "full_name"]]
 
 
 class CustomerPipeline(Pipeline):
@@ -83,7 +70,11 @@ def run_with_engine(engine: str):
             RawCustomer(customer_id=2, first_name="Grace", last_name="Hopper"),
         ],
     )
-    profile = Profile(name=f"{engine}-example", dataframe_engine=engine)
+    profile = Profile(
+        name=f"{engine}-example",
+        dataframe_engine=engine,
+        portable_transform_policy="require",
+    )
     context = PlanningContext.create(profile=profile, registry=runtime.registry)
     report = CustomerPipeline.run(profile=profile, runtime=runtime, context=context)
     from etlantic.reports import render_text

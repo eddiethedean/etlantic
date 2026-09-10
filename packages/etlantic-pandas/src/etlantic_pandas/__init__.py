@@ -38,7 +38,7 @@ _PANDAS_WRITE_EXTRAS = frozenset(
     e for e in WRITE_CAPABILITY_EXTRAS if e in {"write.append", "write.overwrite"}
 )
 
-__version__ = "0.50.0"
+__version__ = "0.50.1"
 
 __all__ = [
     "PandasDataframePlugin",

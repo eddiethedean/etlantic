@@ -3,6 +3,7 @@
   "security_mode": "development",
   "orchestrator": "local",
   "dataframe_engine": "local",
+  "portable_transform_policy": "require",
   "observability_providers": {
     "console": "json-console"
   },

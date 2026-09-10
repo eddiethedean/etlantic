@@ -9,7 +9,7 @@ Runnable copy: `examples/sample_project/`.
 examples/sample_project/
   README.md
   contracts.py      # Data contracts
-  transforms.py     # Transformation + local implementation
+  transforms.py     # Portable ETLantic transformation
   pipeline.py       # Pipeline wiring
   run_local.py      # validate → plan → run
 ```
@@ -25,7 +25,7 @@ Expected: `succeeded` and curated customer records.
 ## Why this layout
 
 - Contracts stay importable without pulling runtime seeds
-- Transforms register implementations once
+- Transforms define engine-neutral logic once
 - Pipeline module is CLI-friendly (`pipeline.py:CustomerPipeline`)
 - Runner owns seeding and execution
 

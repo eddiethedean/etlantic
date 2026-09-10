@@ -86,7 +86,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
     },
 )
 
@@ -95,7 +95,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.50.0",
+        "etlantic-sql": "==0.50.1",
     },
 )
 ```
@@ -104,9 +104,11 @@ When `security_mode="production"`, profiles fail closed if `plugin_allowlist`
 is empty. Development profiles may omit the allowlist. See
 [Runtime configuration](../10_REFERENCE/RUNTIME_CONFIGURATION.md).
 
-Use `dataframe_engine` for Polars/Pandas/local implementations. Use
-`sql_engine="sql"` when SQL implementations and bindings should run through a
-SQL plugin (`etlantic-sql`). Do not set `dataframe_engine` to `"sql"`.
+Use `dataframe_engine` for Polars/Pandas/local execution. Use
+`sql_engine="sql"` when portable SQL compilation and bindings should run
+through `etlantic-sql`. Do not set `dataframe_engine` to `"sql"`. Prefer
+`portable_transform_policy="require"`; native implementations are explicit
+engine-specific escape hatches.
 
 Planning uses the selected profile when generating a Pipeline Plan.
 

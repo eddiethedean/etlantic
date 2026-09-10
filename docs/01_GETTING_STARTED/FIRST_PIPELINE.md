@@ -1,6 +1,7 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Extends the project from
+> **Status: Available in ETLantic 0.50.0 (published Beta); updated for the
+> 0.50.1 release candidate.** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"
@@ -13,14 +14,14 @@ directory—do not reinstall. Otherwise install from PyPI, then scaffold:
 
 ```bash
 # Only if you do not already have a Quickstart project:
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
 
 (`init` needs an empty directory, or pass `--force`.)
 
-Open `pipeline.py`: typed `Row`, local `Identity`, and `SamplePipeline`
+Open `pipeline.py`: typed `Row`, portable `Identity`, and `SamplePipeline`
 (Extract → step → Load). Asset names bind in `profiles/development.json`.
 
 ## Validate, plan, and run
@@ -43,15 +44,16 @@ If you have not yet seen validate-before-write fail, do the
 Replace the passthrough with a reshape (upper-case names):
 
 ```python
-from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+import etlantic as etl
+from etlantic.transform import functions as F
 
 
-class Row(Data):
+class Row(etl.Data):
     id: int
     name: str
 
 
-class NamedRow(Data):
+class NamedRow(etl.Data):
     """Output contract: same fields as Row, but a distinct type so validate
     and plan treat input vs published shape as separate contracts."""
 
@@ -59,26 +61,27 @@ class NamedRow(Data):
     name: str
 
 
-class UpperName(Transformation):
-    rows: Input[Row]
-    result: Output[NamedRow]
+class UpperName(etl.Transformation):
+    rows: etl.Input[Row]
+    result: etl.Output[NamedRow]
 
 
-@UpperName.implementation("local")
-def upper_name(rows: list[Row]) -> list[NamedRow]:
-    return [NamedRow(id=row.id, name=row.name.upper()) for row in rows]
+@UpperName.portable
+def upper_name(rows):
+    return rows.select("id", F.upper(F.col("name")).alias("name"))
 
 
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
+class SamplePipeline(etl.Pipeline):
+    raw: etl.Extract[Row] = etl.Extract(asset="rows")
     step = UpperName.step(rows=raw)
-    out: Load[NamedRow] = Load(input=step.result, asset="out")
+    out: etl.Load[NamedRow] = etl.Load(input=step.result, asset="out")
 ```
 
 The lesson is **named contracts at each boundary**, not a schema change: `Row`
 is what you extract; `NamedRow` is what you publish (here with upper-cased
-`name`). Re-run validate → plan → run. `data/out.json` should show `"ADA"` /
-`"GRACE"`.
+`name`). The body uses ETLantic expressions rather than a local dataframe API;
+the selected engine compiles it. Re-run validate → plan → run.
+`data/out.json` should show `"ADA"` / `"GRACE"`.
 
 ## Next
 

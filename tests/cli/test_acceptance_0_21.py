@@ -34,12 +34,11 @@ def test_cli_acceptance_chain(tmp_path: Path) -> None:
     )
     target = "pipeline.py:SamplePipeline"
     assert run_cli("validate", target, "--profile", "development").returncode == 0
-    assert (
-        run_cli(
-            "plan", target, "--profile", "development", "--format", "json"
-        ).returncode
-        == 0
-    )
+    planned = run_cli("plan", target, "--profile", "development", "--format", "json")
+    assert planned.returncode == 0
+    plan_payload = json.loads(planned.stdout)
+    assert plan_payload["implementations"]["step"]["kind"] == "portable_compiled"
+    assert plan_payload["implementations"]["step"]["engine"] == "local"
     run = run_cli(
         "run", target, "--profile", "development", "--format", "json", "--no-write"
     )

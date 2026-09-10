@@ -41,7 +41,7 @@ from etlantic.connectors.models import (
 from etlantic_snowflake.fake import FakeSnowflakeConnection, snowflake_sdk_available
 
 PROVIDER = "snowflake"
-PACKAGE_VERSION = "0.50.0"
+PACKAGE_VERSION = "0.50.1"
 
 SOURCE_CAPS = frozenset(
     {

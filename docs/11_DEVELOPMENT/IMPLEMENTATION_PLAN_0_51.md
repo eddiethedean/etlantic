@@ -2,7 +2,7 @@
 title: ETLantic 0.51 Implementation Plan
 description: Implementation-grade plan for deterministic adaptive heterogeneous execution planning and executable physical DAGs.
 plan_status: current
-plan_last_reviewed: 0.48.0
+plan_last_reviewed: 0.50.0
 ---
 
 # ETLantic 0.51 Implementation Plan
@@ -88,6 +88,9 @@ interchange evidence admit its complete placement target.
   path.
 - Explicit planning remains the default. Explicit implementation overrides and
   required engines are hard constraints.
+- The runtime-report namespace migration is limited to built-in engine metadata
+  in `StepRunReport.metadata`. It does not rename logical-plan metadata,
+  profile metadata, third-party extension keys, or physical-unit fields.
 - The first release is deterministic and capability/locality-driven. Universal
   cost currency, statistics-dependent join ordering, speculative execution,
   live trial runs, telemetry feedback, and runtime adaptive replanning are out
@@ -122,6 +125,7 @@ the epic, and affected task acceptance criteria first.
 | Unit protocol | `etlantic.physical_unit/1` is the versioned admission/execution/result protocol for all seven unit kinds; executors advertise supported plan, unit, and capability versions |
 | Fusion | A backend may fuse only with an advertised fused-region capability. Otherwise the planner deterministically emits ordered single-node compute units without changing region identity or semantics |
 | Selection | Selection closure is computed before placement and fingerprinted. A different runtime selection requires a new plan |
+| Runtime report metadata | Keep `etlantic.run_report/1`. New writers emit `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, and `etlantic.spark_schema` instead of the legacy bare `dataframe`, `sql`, `spark`, and `spark_schema` keys in `StepRunReport.metadata`. Readers accept either form, remove legacy aliases during load, and prefer the namespaced value when both forms are present; migration and reserialization are deterministic and idempotent |
 | Diagnostics | Reserve `PMADP1xx` policy/schema, `PMADP2xx` inventory/candidate, `PMADP3xx` solver/bounds, `PMADP4xx` physical validation, and `PMADP5xx` admission/runtime families |
 
 Planning remains side-effect free. Static manifests and already-authorized
@@ -184,16 +188,16 @@ gate adds a qualified `/2` physical-DAG consumer and combination row.
 
 | ID | Workstream | Governing story | Deliverables | Completion evidence |
 |---|---|---|---|---|
-| 051-A | Policy and contracts | [#31](https://github.com/eddiethedean/etlantic/issues/31) | ADR; `/1` versus `/2` compatibility; Profile precedence; placement-target identity; unit taxonomy; bounded-search, fallback, partial-run, fusion, and consumer-support rules | Accepted ADR plus profile/plan reader-writer matrix, production-trust, and unsupported-consumer evidence |
+| 051-A | Policy and contracts | [#31](https://github.com/eddiethedean/etlantic/issues/31) | ADR; `/1` versus `/2` compatibility; Profile precedence; placement-target identity; unit taxonomy; bounded-search, fallback, partial-run, fusion, consumer-support, and runtime-report metadata migration rules | Accepted ADR plus profile/plan and report-metadata reader-writer matrices, production-trust, and unsupported-consumer evidence |
 | 051-C | Capability inventory | [#32](https://github.com/eddiethedean/etlantic/issues/32) | Unified target/compiler/connector/locality/directional-interchange inventory; canonical pushdown vocabulary; deterministic evidence fingerprint | Truthful inventory fixtures, directional pairwise matrix, authorize-before-import tests, and secret scan |
 | 051-N | Candidate enumeration | [#33](https://github.com/eddiethedean/etlantic/issues/33) | Source, sink, native, and portable per-node candidates with exact support analysis and stable rejection reasons | Complete candidate matrix across native/portable/I/O/ambiguous/no-solution fixtures |
 | 051-P | Placement selection | [#34](https://github.com/eddiethedean/etlantic/issues/34) | One graph-level constraint evaluator; versioned integer/enum objective vector; bounded deterministic search; explicit fallback records | Exhaustive small-graph oracle, seeded properties, resource budgets, and registration-randomized fingerprints |
 | 051-R | Connected regions | [#35](https://github.com/eddiethedean/etlantic/issues/35) | Maximal connected compatible regions, stable identities, topological dependencies, protected semantic boundaries | Branch/join/fan-out/disconnected/security fixtures and explicit-plan compatibility goldens |
 | 051-L | Physical lowering | [#36](https://github.com/eddiethedean/etlantic/issues/36) | Seven canonical unit kinds with validated dependencies, execution contract, policy/security envelopes, and directional handoffs | Physical-DAG round trips, tamper tests, interchange proofs, and secret/source-row scan |
-| 051-X | Runtime authority | [#37](https://github.com/eddiethedean/etlantic/issues/37) | Whole-DAG admission; physical-unit scheduling/dispatch; explicit handoffs; fused attribution/reliability; unsupported-consumer rejection | Adaptive-versus-explicit local batch differential suite plus compile/control-plane/remote rejection or capability tests |
+| 051-X | Runtime authority | [#37](https://github.com/eddiethedean/etlantic/issues/37) | Whole-DAG admission; physical-unit scheduling/dispatch; explicit handoffs; fused attribution/reliability; namespaced built-in step-report metadata emission; unsupported-consumer rejection | Adaptive-versus-explicit local batch differential suite, legacy report-metadata compatibility fixtures, and compile/control-plane/remote rejection or capability tests |
 | 051-E | Explain and diff | [#38](https://github.com/eddiethedean/etlantic/issues/38) | Candidate, selection, rejection, region, topology, interchange, estimate, and fallback explanations across public surfaces | Python/CLI/IDE/notebook parity, deterministic output, redaction, and size/depth-budget tests |
-| 051-Q | Conformance and graduation | [#39](https://github.com/eddiethedean/etlantic/issues/39) | Public claim conformance; graph corpus; solver oracle/budgets; heterogeneous end-to-end fixture; differential semantics; final evidence gate | Truthfulness, determinism, resource-bound, fail-closed, production-trust, docs, and stable-foundation reports |
-| 051-D | Documentation | [#40](https://github.com/eddiethedean/etlantic/issues/40) | Concepts/quickstart, operations/security/rollback, plugin participation, migration, wire/API/CLI references, release notes | Executed examples, docs build/link checks, maturity review, and safety scan |
+| 051-Q | Conformance and graduation | [#39](https://github.com/eddiethedean/etlantic/issues/39) | Public claim conformance; graph corpus; solver oracle/budgets; heterogeneous end-to-end fixture; differential semantics; legacy runtime-report compatibility; final evidence gate | Truthfulness, determinism, resource-bound, fail-closed, production-trust, report-migration, docs, and stable-foundation reports |
+| 051-D | Documentation | [#40](https://github.com/eddiethedean/etlantic/issues/40) | Concepts/quickstart, operations/security/rollback, plugin participation, migration including runtime-report metadata aliases, wire/API/CLI references, release notes | Executed examples, docs build/link checks, migration examples, maturity review, and safety scan |
 
 ## Task Ledger
 
@@ -271,9 +275,9 @@ path safe. An incomplete increment cannot advertise the claim of a later one.
 
 | Increment | Task spine | Merge condition | Public state after merge |
 |---|---|---|---|
-| **I0 — contract freeze** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; exit-gate skeleton names every required artifact | Explicit `/1` unchanged; adaptive remains unavailable |
+| **I0 — contract freeze** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; runtime-report metadata alias and collision rules fixed; exit-gate skeleton names every required artifact | Explicit `/1` unchanged; adaptive remains unavailable |
 | **I1 — plan and explain** | #45–#68, #74–#77, #91, #93 | Inventory, node candidates, exact bounded solver, connected regions, seven-kind lowering, explain/diff, oracle, and tamper evidence pass | Adaptive `/2` may be generated and inspected behind opt-in; every execution consumer rejects it before I/O |
-| **I2 — local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
+| **I2 — local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, namespaced step-report emission, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
 | **I3 — qualification** | #78–#81, #83–#87, #94–#95 | Public conformance, fixed launch topology, directional pair matrix, differential semantics, documentation, security scan, and final evidence decision pass | Only the published matrix becomes Available |
 
 The task-level critical path is:
@@ -301,6 +305,10 @@ decision.
   approximate, or exhausted-search `/2` plan.
 - Explicit per-step overrides always win or fail with a stable diagnostic; no
   automatic choice silently replaces them.
+- Runtime writers emit only the namespaced built-in step metadata keys.
+  `etlantic.run_report/1` readers migrate the four 0.50 bare aliases without a
+  warning or data loss, prefer an existing namespaced value on collision, drop
+  the bare alias, and produce the same result on repeated migration.
 - Partial-run selection is dependency-closed before placement and is part of
   the `/2` fingerprint; runtime selection drift requires re-planning.
 - Identical logical-plan, profile, eligible-target inventory, and evidence
@@ -344,6 +352,9 @@ decision.
   decision and no unresolved critical/high phase finding.
 - Profile/plan `/1`–`/2` reader-writer, verify-mode, unsupported-consumer, and
   deterministic-fingerprint report.
+- Runtime-report metadata namespace compatibility report covering new-writer
+  output, 0.50 legacy reads, collision precedence, deterministic reserialization,
+  and idempotent migration.
 - Capability inventory and candidate truthfulness matrix.
 - Placement exhaustive-oracle, seeded-property, resource-budget, and
   connected-region randomized-order campaign.
@@ -361,6 +372,7 @@ decision.
 |---|---|
 | ADR, public-field inventory, diagnostic ranges | #41–#43 |
 | `/1`–`/2` compatibility matrix | #44, #94 |
+| Runtime-report metadata namespace compatibility | #41, #69–#73, #83–#87, #94 |
 | Capability/candidate truthfulness | #45–#54, #78 |
 | Solver oracle and resource envelope | #55–#59, #91, #93 |
 | Physical-DAG validation and interchange | #60–#68, #79 |

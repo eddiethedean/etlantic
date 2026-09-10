@@ -34,15 +34,15 @@
 ETLantic is a Python library for **defining** data pipelines as typed
 contracts and graphs, **validating** them before they run, and **producing a
 deterministic plan** that a plugin executes (local Python, Polars, Pandas,
-SQL, or Spark) or an orchestrator compiles (Airflow). It is not dbt, not a
-dataframe engine, and not a hosted scheduler.
+SQL, PySpark, DataFusion, or DuckDB) or an orchestrator compiles (Airflow). It
+is not dbt, not a dataframe engine, and not a hosted scheduler.
 
 ## Quickstart
 
 ETLantic requires Python 3.11 or newer. In an activated virtual environment:
 
 ```bash
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 python -m etlantic --version
 mkdir my-pipeline
 cd my-pipeline
@@ -57,7 +57,7 @@ for setup details and expected output.
 
 If `init` refuses the directory, use an empty folder (or `--force` only after
 you have reviewed what it overwrites). Pin every official plugin to the same
-version as core (`etlantic-polars==0.50.0` with `etlantic==0.50.0`). Mixed
+version as core (`etlantic-polars==0.50.1` with `etlantic==0.50.1`). Mixed
 plugin versions fail closed — see
 [Troubleshooting](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/TROUBLESHOOTING/#core-and-plugin-versions-do-not-match).
 
@@ -75,7 +75,13 @@ plugin versions fail closed — see
   and [DPCS](https://etlantic.readthedocs.io/en/stable/05_PIPELINES/DPCS/)
   artifacts.
 - Pluggable execution across local Python, Polars, Pandas, SQL, and PySpark,
-  plus orchestration integrations.
+  DataFusion, and DuckDB, plus orchestration integrations.
+
+Define transformation logic once with `@Transformation.portable`. ETLantic's
+qualified relational baseline runs that definition across all seven engines.
+Use `@Transformation.implementation(...)` only as an explicit escape hatch for
+behavior outside the portable surface: native bodies are tied to one engine
+and will not be eligible for adaptive execution.
 
 Application code should use the curated public facade:
 
@@ -104,7 +110,8 @@ only the integrations a pipeline needs:
 | SQL or PySpark | `etlantic[sql]` or `etlantic[pyspark]` |
 | Airflow or Prefect | `etlantic[airflow]` or `etlantic[prefect]` |
 
-Each transformation must support the selected backend. In controlled
+Prefer portable transformations and set `portable_transform_policy="require"`
+so unsupported semantics fail during validation or planning. In controlled
 deployments, pin ETLantic and official plugins to the same release. See
 [engine selection](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/ENGINE_SELECTION/)
 and
@@ -134,9 +141,9 @@ before a pilot.
 
 ## Learn more
 
-These links use the Read the Docs **stable** alias (currently 0.50.0). The
+These links use the Read the Docs **stable** alias (currently 0.50.1). The
 pinned tree is also at
-[v0.50.0](https://etlantic.readthedocs.io/en/v0.50.0/).
+[v0.50.1](https://etlantic.readthedocs.io/en/v0.50.1/).
 
 - [Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
   and [first pipeline](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/FIRST_PIPELINE/)

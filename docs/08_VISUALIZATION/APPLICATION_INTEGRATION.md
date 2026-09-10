@@ -48,8 +48,8 @@ job = service.submit_run("demo")
 Install the optional package (same minor as core):
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.50.0'
-# or: python -m pip install 'etlantic[fastapi]==0.50.0'
+python -m pip install 'etlantic-fastapi==0.50.1'
+# or: python -m pip install 'etlantic[fastapi]==0.50.1'
 ```
 
 | Surface | Entry points | Role |

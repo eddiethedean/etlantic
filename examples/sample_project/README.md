@@ -14,7 +14,7 @@ across modules.
 | Module | Role |
 |---|---|
 | `contracts.py` | `RawCustomer` / `Customer` data contracts |
-| `transforms.py` | `NormalizeCustomers` transformation + local impl |
+| `transforms.py` | `NormalizeCustomers` portable ETLantic transformation |
 | `pipeline.py` | `CustomerPipeline` extract → step → load |
 | `run_local.py` | Bindings + `PipelineRuntime` seed and run |
 

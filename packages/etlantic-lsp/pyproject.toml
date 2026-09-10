@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-lsp"
-version = "0.50.0"
+version = "0.50.1"
 description = "Language server for ETLantic pipelines (editor-neutral LSP host)."
 readme = "README.md"
 license = "MIT"

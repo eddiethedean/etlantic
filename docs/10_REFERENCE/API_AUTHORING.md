@@ -13,6 +13,9 @@
     packages. See
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
     and [Portable Transform Compiler](../07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER.md).
+    This is the recommended transformation authoring path. Native
+    implementations are engine-specific escape hatches and are not eligible
+    for adaptive execution.
 
 ### Core behavioral contracts
 
@@ -21,8 +24,8 @@ The generated signatures below are supplemented by these current guarantees:
 | API | Returns | Important failures / side effects |
 |---|---|---|
 | `Transformation.step(**bindings)` | A symbolic `Step`; no user code runs | Unknown bindings raise `ModelDefinitionError`; required ports are validated before execution |
-| `Transformation.implementation(engine)` | A decorator returning the original callable | Registration replaces the implementation for the same class/engine in the current process |
-| `Transformation.portable` | Decorator registering a symbolic definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) at registration; does not execute |
+| `Transformation.portable` | Decorator registering the recommended symbolic definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) at registration; does not execute |
+| `Transformation.implementation(engine)` | A decorator returning an engine-specific escape-hatch callable | Registration replaces the implementation for the same class/engine in the current process; not adaptive-execution eligible |
 | `Transformation.to_transform_plan()` | Deep-copied `dtcs.transform-plan/2` dict | Raises `ModelDefinitionError` if no portable definition is registered |
 | `Transformation.portable_fingerprint()` | Hex fingerprint string | Same failure mode as `to_transform_plan` |
 | `Pipeline.validate(...)` | `ValidationReport` | Does not execute transformation implementations; production empty allowlist fails closed (`PMPLUG401`) |

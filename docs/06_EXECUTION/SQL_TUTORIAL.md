@@ -12,8 +12,8 @@
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.50.0' 'etlantic-sql==0.50.0'
-git clone --branch v0.50.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.50.1' 'etlantic-sql==0.50.1'
+git clone --branch v0.50.1 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/sql_to_sql.py
 ```

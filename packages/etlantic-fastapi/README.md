@@ -22,9 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.50.0'
+pip install 'etlantic-fastapi==0.50.1'
 # keep core on the same pin:
-# pip install 'etlantic==0.50.0'
+# pip install 'etlantic==0.50.1'
 ```
 
 ## Control-plane usage

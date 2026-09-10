@@ -8,13 +8,13 @@
 ## PyPI path (no clone)
 
 ```bash
-python -m pip install 'etlantic[polars]==0.50.0'
+python -m pip install 'etlantic[polars]==0.50.1'
 mkdir pilot && cd pilot
 python -m etlantic init --with-toml
 ```
 
-Add a Polars implementation (see [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md)),
-then write `profiles/prod.json` (trim `plugin_allowlist` to packages you
+Keep the generated portable transformation unchanged, then write
+`profiles/prod.json` (trim `plugin_allowlist` to packages you
 actually installed — a monorepo with every plugin installed must allowlist
 each discovered package or validation fails with `PMPLUG402`):
 
@@ -25,9 +25,10 @@ each discovered package or validation fails with `PMPLUG402`):
   "security_domain": "production",
   "orchestrator": "local",
   "dataframe_engine": "polars",
+  "portable_transform_policy": "require",
   "validation_policy": "strict",
   "plugin_allowlist": {
-    "etlantic-polars": "==0.50.0"
+    "etlantic-polars": "==0.50.1"
   },
   "assets": {
     "rows": "json://data/sample.json",
@@ -48,7 +49,7 @@ python -m etlantic run pipeline.py:SamplePipeline \
 Optional Airflow compile (install `etlantic-airflow`; does not install Airflow):
 
 ```bash
-python -m pip install 'etlantic-airflow==0.50.0'
+python -m pip install 'etlantic-airflow==0.50.1'
 python -m etlantic compile pipeline.py:SamplePipeline \
   --profile profiles/prod.json --target airflow -o dags/
 ```
@@ -56,7 +57,7 @@ python -m etlantic compile pipeline.py:SamplePipeline \
 ## Clone companion
 
 ```bash
-git clone --branch v0.50.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.50.1 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync --group dataframes
 uv run python examples/sample_pilot/run_pilot.py
@@ -67,7 +68,8 @@ uv run etlantic validate pipeline.py:PilotPipeline \
 ```
 
 The companion registers only the selected Polars plugin on its planning
-context, then validates, plans, and runs against the same runtime.
+context, then validates, plans, and runs the portable definition against the
+same runtime.
 
 ## Expected output
 

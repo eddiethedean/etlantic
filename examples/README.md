@@ -3,6 +3,13 @@
 These examples use APIs and dependencies shipped in the current ETLantic
 release.
 
+Portable ETLantic transformations are the default in the general examples.
+They author logic once with `@Transformation.portable` and use
+`portable_transform_policy="require"` when selecting an engine. Examples that
+register `@Transformation.implementation(...)` are deliberately
+engine-specific demonstrations; those bodies are not portable or eligible for
+adaptive execution.
+
 **Which path am I on?**
 
 | Audience | Start here |
@@ -117,8 +124,8 @@ uv run --group dataframes python examples/dataframe_parity.py polars
 uv run --group dataframes python examples/dataframe_parity.py pandas
 ```
 
-Runs the same logical pipeline against either dataframe plugin via
-`Profile.dataframe_engine`.
+Runs the same portable transformation against either dataframe compiler via
+`Profile.dataframe_engine`; the transformation body is unchanged.
 
 ## SQL to SQL (CI)
 

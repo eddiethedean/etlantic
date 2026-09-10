@@ -1,8 +1,9 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.0 (published Beta); updated for the
+> 0.50.1 release candidate.**
 
-Practical questions for ETLantic **0.50.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.50.1**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -49,7 +50,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.50.0' 'etlantic-polars==0.50.0'
+python -m pip install 'etlantic==0.50.1' 'etlantic-polars==0.50.1'
 ```
 
 ## Why do validate/plan work but run has no data?

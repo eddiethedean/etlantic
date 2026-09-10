@@ -34,7 +34,7 @@ python -m etlantic report query --since 2026-01-01T00:00:00+00:00 --status succe
 {
   "name": "production",
   "security_mode": "production",
-  "plugin_allowlist": {"etlantic-polars": "==0.50.0"},
+  "plugin_allowlist": {"etlantic-polars": "==0.50.1"},
   "run_history_provider": "file",
   "observability_delivery": "durable_audit"
 }
@@ -63,7 +63,7 @@ from etlantic.runtime.observability_bridge import ObservabilityBridge
 profile = etl.Profile(
     name="production",
     security_mode="production",
-    plugin_allowlist={"etlantic-polars": "==0.50.0"},
+    plugin_allowlist={"etlantic-polars": "==0.50.1"},
     run_history_provider="file",
     observability_delivery="durable_audit",
 )

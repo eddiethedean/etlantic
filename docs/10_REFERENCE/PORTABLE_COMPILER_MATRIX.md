@@ -10,12 +10,12 @@ This matrix records the portable transformation claims shipped in ETLantic
 | Package | Engine | Claimed profiles | Execution mode | Join collision policy |
 |---|---|---|---|---|
 | `etlantic` | Local | kernel `/1`, relational `/1` | Eager only | `fail` only |
-| `etlantic-polars==0.50.0` | Polars | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
-| `etlantic-pyspark==0.50.0` | PySpark | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
-| `etlantic-pandas==0.50.0` | Pandas | kernel `/1`, relational `/1` | Eager only (`lazy=False`) | `fail` only |
-| `etlantic-sql==0.50.0` | SQL | kernel `/1`, relational `/1` | Eager (relation/SQL) | `fail` only |
-| `etlantic-datafusion==0.50.0` | DataFusion | kernel `/1`, relational `/1` | Eager and lazy | `fail` only |
-| `etlantic-duckdb==0.50.0` | DuckDB | kernel `/1`, relational `/1` | Lazy relation handles | `fail` only |
+| `etlantic-polars==0.50.1` | Polars | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
+| `etlantic-pyspark==0.50.1` | PySpark | kernel `/1`, relational `/1`, `portable-string-advanced/1`, `portable-conversion/1`, `portable-statistics/1`, `portable-window/1`, `portable-complex-values/1`, `portable-complex-types/1`, `portable-reshape/1` | Eager and lazy | `fail` only |
+| `etlantic-pandas==0.50.1` | Pandas | kernel `/1`, relational `/1` | Eager only (`lazy=False`) | `fail` only |
+| `etlantic-sql==0.50.1` | SQL | kernel `/1`, relational `/1` | Eager (relation/SQL) | `fail` only |
+| `etlantic-datafusion==0.50.1` | DataFusion | kernel `/1`, relational `/1` | Eager and lazy | `fail` only |
+| `etlantic-duckdb==0.50.1` | DuckDB | kernel `/1`, relational `/1` | Lazy relation handles | `fail` only |
 
 Full profile identifiers use the `dtcs:profile/` prefix (for example
 `dtcs:profile/portable-window/1`). Compilers read `dtcs.transform-plan/2` and

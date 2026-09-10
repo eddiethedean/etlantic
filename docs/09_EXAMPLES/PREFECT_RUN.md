@@ -5,7 +5,7 @@
 
 !!! warning "Clone required"
     `examples/prefect_run.py` is **not** on the PyPI wheel. Use a git checkout
-    (prefer the `v0.50.0` tag) plus `uv sync --group prefect`.
+    (prefer the `v0.50.1` tag) plus `uv sync --group prefect`.
 
 ## Install and run
 
@@ -19,7 +19,7 @@ uv run python examples/prefect_run.py
 For an application install, keep core and plugin on the same minor line:
 
 ```bash
-pip install 'etlantic==0.50.0' 'etlantic-prefect==0.50.0'
+pip install 'etlantic==0.50.1' 'etlantic-prefect==0.50.1'
 ```
 
 The example creates a process-local `PipelineRuntime`, seeds an in-memory
@@ -29,7 +29,11 @@ source, registers the scheduler explicitly, and selects Prefect with:
 from etlantic_prefect import create_plugin
 
 runtime.register_scheduler_plugin("prefect", create_plugin())
-profile = Profile(name="prefect-demo", orchestrator="prefect")
+profile = Profile(
+    name="prefect-demo",
+    orchestrator="prefect",
+    portable_transform_policy="require",
+)
 report = CustomerPipeline.run(profile=profile, runtime=runtime)
 ```
 
@@ -49,6 +53,8 @@ scheduler: prefect
 
 Run identifiers, timestamps, and durations vary. Prefect consumes the resolved
 `PipelinePlan`; it does not reinterpret or re-plan the pipeline.
+The example's transformation is portable, so its body remains eligible for
+future adaptive planning before the resolved plan reaches Prefect.
 
 For deployment boundaries, see [Deployment](../06_EXECUTION/DEPLOYMENT.md) and
 [Production Profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).

@@ -11,7 +11,7 @@ single-tenant reference deployments and Supported multi-tenant profiles.
 
 | ID | Component | Affected | Symptom | Workaround | Status |
 |---|---|---|---|---|---|
-| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.50.0` and matching plugins; follow Upgrade hub | Open (Beta) |
+| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.50.1` and matching plugins; follow Upgrade hub | Open (Beta) |
 | DOC-026 | Control plane | Multi-tenant hosts | Treating CP1–CP4 alone as GA isolation | Use Supported profiles only; see [cp_ga_support_matrix_0_43.json](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json) | By design |
 | DOC-002 | Portable transforms | Polars / PySpark vs Pandas / SQL | Advanced portable families graduate unevenly across engines | Use [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md); keep Pandas/SQL on kernel + relational `/1` | Partial |
 | DOC-003 | Portable window | Window frames | Explicit `rowsBetween` / `rangeBetween` fail closed; `first_value` / `last_value` use ordered partition semantics | Avoid frame clauses until claimed; watch `portable-window/2` | Open |

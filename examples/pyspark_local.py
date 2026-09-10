@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.50.0 etlantic-pyspark==0.50.0
+    pip install etlantic==0.50.1 etlantic-pyspark==0.50.1
 
 Run with:
 
@@ -26,6 +26,7 @@ from etlantic import (
     Profile,
     Transformation,
 )
+from etlantic.transform import functions as F
 
 
 class RawCustomer(Data):
@@ -44,13 +45,12 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("pyspark")
-def normalize_pyspark(customers):
-    from pyspark.sql import functions as F
-
-    return customers.withColumn(
-        "full_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name"))
-    ).select("customer_id", "full_name")
+@NormalizeCustomers.portable
+def normalize(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
+    )
 
 
 class CustomerSparkPipeline(Pipeline):
@@ -72,7 +72,11 @@ def run_example() -> object:
             RawCustomer(customer_id=2, first_name="Grace", last_name="Hopper"),
         ],
     )
-    profile = Profile(name="spark-local", spark_engine="pyspark")
+    profile = Profile(
+        name="spark-local",
+        spark_engine="pyspark",
+        portable_transform_policy="require",
+    )
     return CustomerSparkPipeline.run(profile=profile, runtime=runtime)
 
 

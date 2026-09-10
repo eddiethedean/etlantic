@@ -6,7 +6,7 @@ Requires:
 
 Or from published packages:
 
-    pip install etlantic==0.50.0 etlantic-airflow==0.50.0
+    pip install etlantic==0.50.1 etlantic-airflow==0.50.1
 
 Run with:
 
@@ -31,6 +31,7 @@ from etlantic import (
     plan_pipeline,
 )
 from etlantic.registry import PlanningContext
+from etlantic.transform import functions as F
 
 
 class RawCustomer(Data):
@@ -49,15 +50,12 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("local")
-def normalize_local(customers):
-    return [
-        Customer(
-            customer_id=c.customer_id,
-            full_name=f"{c.first_name} {c.last_name}",
-        )
-        for c in customers
-    ]
+@NormalizeCustomers.portable
+def normalize(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
+    )
 
 
 class CustomerAirflowPipeline(Pipeline):
@@ -80,7 +78,11 @@ def main() -> None:
         ],
     )
 
-    local_profile = Profile(name="local", orchestrator="local")
+    local_profile = Profile(
+        name="local",
+        orchestrator="local",
+        portable_transform_policy="require",
+    )
     report = CustomerAirflowPipeline.run(profile=local_profile, runtime=runtime)
     print(report.to_text())
     assert report.status.value == "succeeded"
@@ -88,6 +90,7 @@ def main() -> None:
     airflow_profile = Profile(
         name="airflow",
         orchestrator="airflow",
+        portable_transform_policy="require",
         schedule={
             "type": "cron",
             "expression": "0 2 * * *",

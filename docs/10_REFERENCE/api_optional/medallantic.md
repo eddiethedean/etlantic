@@ -13,7 +13,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'medallantic==0.50.0'
+pip install 'medallantic==0.50.1'
 ```
 
 ```python

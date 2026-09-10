@@ -6,11 +6,9 @@ Like a FastAPI endpoint, a Transformation declares **what it accepts** and
 **what it produces** using Python type annotations. It does not describe how
 the work is executed.
 
-Execution implementations are registered separately, allowing the same
-transformation contract to run on different execution engines.
-
-The accepted 0.11+ design also permits a single portable relational definition
-that compatible plugins compile. This API is available as authoring in 0.11 (compilers 0.12+).
+Define the logic once as a portable ETLantic transformation. Compatible engine
+plugins compile that definition; native engine implementations remain explicit
+escape hatches.
 
 ## Design Goals
 
@@ -20,8 +18,8 @@ A transformation should:
 - Be independent of execution technology.
 - Clearly declare inputs, outputs, and parameters.
 - Generate a [DTCS](DTCS.md) artifact.
-- Support multiple interchangeable implementations.
-- Optionally carry one backend-independent portable definition.
+- Carry one backend-independent portable definition by default.
+- Support native implementations where the portable surface is insufficient.
 
 ## Basic Example
 
@@ -67,25 +65,7 @@ minimum_age: Parameter[int] = 18
 
 Parameters are strongly typed and participate in validation and documentation.
 
-## Implementations
-
-A transformation may have multiple implementations.
-
-```python
-@NormalizeCustomers.implementation("polars")
-def normalize(customers, minimum_age):
-    ...
-```
-
-```python
-@NormalizeCustomers.implementation("pandas")
-def normalize(customers, minimum_age):
-    ...
-```
-
-The transformation contract remains unchanged while execution varies.
-
-## Portable Definition (0.11+)
+## Portable Definition
 
 ```python
 from etlantic.transform import functions as F
@@ -101,12 +81,27 @@ def normalize(customers, minimum_age):
 ```
 
 The function receives symbolic inputs during definition building and produces
-an immutable transformation IR. It never receives source rows. Engine plugins
-compile supported operations to Polars, Pandas, SQL, PySpark, or future native
-expressions.
+an immutable transformation IR. It never receives source rows. The qualified
+baseline compiles to Local, Polars, Pandas, SQL, PySpark, DataFusion, and
+DuckDB. This is the recommended path and the form supported by upcoming
+adaptive execution.
 
 See [Portable Transformations](PORTABLE_TRANSFORMATIONS.md) and the
 [function reference](PORTABLE_FUNCTIONS.md).
+
+## Native Implementations
+
+A transformation may register a native body when a required operation is
+outside the portable surface:
+
+```python
+@NormalizeCustomers.implementation("polars")
+def normalize_polars(customers, minimum_age):
+    ...
+```
+
+The contract remains reusable, but the body is tied to Polars and is not
+eligible for adaptive execution.
 
 ## Synchronous and Asynchronous Execution
 

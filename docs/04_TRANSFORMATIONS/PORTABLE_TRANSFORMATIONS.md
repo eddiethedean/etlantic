@@ -9,7 +9,9 @@
     in **0.17**.
 
 A portable transformation expresses dataframe logic once and lets ETLantic
-plugins compile it for Polars, Pandas, SQL, PySpark, and future engines.
+compile the qualified baseline for Local, Polars, Pandas, SQL, PySpark,
+DataFusion, and DuckDB. It is the recommended default for new pipelines and
+the authoring form supported by the upcoming adaptive execution feature.
 
 The syntax deliberately resembles PySpark's DataFrame and Column APIs:
 

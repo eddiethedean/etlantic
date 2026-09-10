@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sql"
-version = "0.50.0"
+version = "0.50.1"
 description = "PostgreSQL reference SQL execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

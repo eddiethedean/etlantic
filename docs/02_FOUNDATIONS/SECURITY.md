@@ -317,8 +317,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
-        "etlantic-airflow": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
+        "etlantic-airflow": "==0.50.1",
     },
 )
 ```
@@ -742,8 +742,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
-        "etlantic-sql": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
+        "etlantic-sql": "==0.50.1",
     },
 )
 ```

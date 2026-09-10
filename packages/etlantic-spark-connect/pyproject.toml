@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-spark-connect"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental Spark Connect provider for ETLantic (fake by default)."
 readme = "README.md"
 license = "MIT"

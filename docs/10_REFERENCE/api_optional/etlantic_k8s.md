@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-k8s==0.50.0'
+pip install 'etlantic-k8s==0.50.1'
 ```
 
 ```python

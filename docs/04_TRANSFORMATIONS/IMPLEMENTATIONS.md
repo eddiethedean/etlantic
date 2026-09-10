@@ -1,6 +1,9 @@
 # Implementations
 
-An implementation provides the executable behavior for a `Transformation`.
+This page documents the native implementation escape hatch. For new pipeline
+logic, start with a [portable definition](PORTABLE_TRANSFORMATIONS.md), which
+ETLantic can compile across its qualified engine baseline and use for adaptive
+execution.
 
 Transformations describe **what** a data operation does. Implementations describe
 **how** it is executed for a particular runtime.
@@ -18,7 +21,7 @@ class NormalizeCustomers(Transformation):
 
 The class above is the transformation contract.
 
-Execution is provided separately.
+Engine-specific execution can be provided separately when necessary.
 
 ```python
 @NormalizeCustomers.implementation("polars")
@@ -42,10 +45,9 @@ def normalize(customers, minimum_age):
     return customers.filter(F.col("age") >= minimum_age)
 ```
 
-Portable authoring is available in 0.11+; the Polars **kernel** compiler ships
-in 0.12 and relational claims (Polars + PySpark + Pandas) ship in 0.13–0.14.
-Native `@implementation()` registration remains required for engines/profiles
-a compiler has not yet claimed. See
+The qualified baseline now covers Local, Polars, Pandas, SQL, PySpark,
+DataFusion, and DuckDB. Native `@implementation()` registration remains
+available for semantics a selected compiler has not claimed. See
 [Portable Transformations](PORTABLE_TRANSFORMATIONS.md).
 
 Portable support is capability-based. Plugins claim exact DTCS profiles,
@@ -54,11 +56,11 @@ fixtures; merely offering similar dataframe methods is insufficient.
 
 ## Why Separate Them?
 
-Keeping implementations separate allows:
+Keeping native implementations separate allows:
 
 - Multiple execution engines
 - Easier testing
-- Runtime portability
+- Explicit backend-specific optimization
 - Cleaner contracts
 - Better documentation
 - Independent optimization
@@ -105,6 +107,9 @@ Changing profiles changes the implementation—not the transformation contract.
 SQL implementations receive `RelationRef` handles and return SQL query
 objects; they do not fetch rows into Python unless a hybrid boundary requires
 it.
+
+Native bodies do not move with the profile: each is registered for one engine
+and is not eligible for adaptive execution.
 
 ## Sync and Async
 

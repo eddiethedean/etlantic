@@ -11,8 +11,8 @@ pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
 ## Install
 
 ```bash
-pip install 'etlantic-sql==0.50.0'
-# pip install 'etlantic==0.50.0'
+pip install 'etlantic-sql==0.50.1'
+# pip install 'etlantic==0.50.1'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
@@ -33,8 +33,13 @@ The `etlantic.sql_plugins` entry point named `sql` registers
 keep connection URLs in environment-backed configuration or secret providers,
 not in plans.
 
-Register `@Transformation.implementation("sql")` handlers that take
-`RelationRef` inputs and return SQL query handles (not fetched rows).
+Prefer `@Transformation.portable` with
+`portable_transform_policy="require"`; the compiler lowers the qualified
+baseline to typed, parameterized SQL. Register
+`@Transformation.implementation("sql")` only when dialect-specific behavior
+outside that baseline is required. Native handlers take `RelationRef` inputs
+and return SQL query handles (not fetched rows); they are tied to SQL and are
+not eligible for adaptive execution.
 
 ## Capabilities
 
@@ -80,7 +85,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.50.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.50.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

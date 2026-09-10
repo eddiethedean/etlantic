@@ -30,7 +30,7 @@ The pinned PyPI commands below install the published `0.50.0` release.
 python -m venv .venv
 source .venv/bin/activate   # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 python -m etlantic --version
 ```
 
@@ -45,12 +45,12 @@ Expected output:
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install 'etlantic==0.50.0'
+uv pip install 'etlantic==0.50.1'
 python -m etlantic --version
 ```
 
 If you already have a uv project (`pyproject.toml`), you may use
-`uv add 'etlantic==0.50.0'` instead. Create an **empty subdirectory** for
+`uv add 'etlantic==0.50.1'` instead. Create an **empty subdirectory** for
 `python -m etlantic init --with-toml`, or pass `--force` if the directory is
 not empty. **`--force` overwrites** scaffolded files such as `pipeline.py`,
 `profiles/development.json`, and (with `--with-toml`) `pyproject.toml` /
@@ -62,7 +62,7 @@ not empty. **`--force` overwrites** scaffolded files such as `pipeline.py`,
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.50.0'
+py -3.11 -m pip install 'etlantic==0.50.1'
 py -3.11 -m etlantic --version
 ```
 
@@ -89,7 +89,7 @@ Use these only if your org already standardizes on Poetry or Conda. They are
 
 ```bash
 poetry new my-pipeline && cd my-pipeline
-poetry add 'etlantic==0.50.0'
+poetry add 'etlantic==0.50.1'
 poetry run python -m etlantic --version
 # poetry new leaves a non-empty tree — init needs --force (or an empty subdir):
 poetry run python -m etlantic init --with-toml --force
@@ -100,7 +100,7 @@ poetry run python -m etlantic init --with-toml --force
 ```bash
 conda create -n etlantic python=3.12 pip -y
 conda activate etlantic
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 python -m etlantic --version
 ```
 
@@ -113,39 +113,39 @@ explicitly and **match the core minor** (`0.50.0` with `0.50.0`).
 **Primary install (separate packages):**
 
 ```bash
-python -m pip install 'etlantic-polars==0.50.0'     # dataframe + Polars portable compiler
-python -m pip install 'etlantic-pandas==0.50.0'     # dataframe + Pandas portable compiler
-python -m pip install 'etlantic-sql==0.50.0'        # SQL plugin (SQLite + PostgreSQL Tier A)
-python -m pip install 'etlantic-pyspark==0.50.0'    # PySpark plugin + portable compiler
-python -m pip install 'etlantic-airflow==0.50.0'    # Airflow DAG compiler
-python -m pip install 'etlantic-prefect==0.50.0'    # Prefect direct-execution (local MVP)
-python -m pip install 'etlantic-keyring==0.50.0'    # OS keyring secret provider
-python -m pip install 'etlantic-sqlmodel==0.50.0'   # SQLModel bridge helpers
-python -m pip install 'medallantic==0.50.0' # SparkForge → ETLantic IR adapter
+python -m pip install 'etlantic-polars==0.50.1'     # dataframe + Polars portable compiler
+python -m pip install 'etlantic-pandas==0.50.1'     # dataframe + Pandas portable compiler
+python -m pip install 'etlantic-sql==0.50.1'        # SQL plugin (SQLite + PostgreSQL Tier A)
+python -m pip install 'etlantic-pyspark==0.50.1'    # PySpark plugin + portable compiler
+python -m pip install 'etlantic-airflow==0.50.1'    # Airflow DAG compiler
+python -m pip install 'etlantic-prefect==0.50.1'    # Prefect direct-execution (local MVP)
+python -m pip install 'etlantic-keyring==0.50.1'    # OS keyring secret provider
+python -m pip install 'etlantic-sqlmodel==0.50.1'   # SQLModel bridge helpers
+python -m pip install 'medallantic==0.50.1' # SparkForge → ETLantic IR adapter
 ```
 
 **Equivalent extras** (same packages, same pins):
 
 ```bash
-python -m pip install 'etlantic[polars]==0.50.0'
-python -m pip install 'etlantic[pandas]==0.50.0'
-python -m pip install 'etlantic[dataframes]==0.50.0'   # polars + pandas
-python -m pip install 'etlantic[sql]==0.50.0'          # alias: [postgresql]
-python -m pip install 'etlantic[pyspark]==0.50.0'      # alias: [spark]
-python -m pip install 'etlantic[airflow]==0.50.0'
-python -m pip install 'etlantic[prefect]==0.50.0'
+python -m pip install 'etlantic[polars]==0.50.1'
+python -m pip install 'etlantic[pandas]==0.50.1'
+python -m pip install 'etlantic[dataframes]==0.50.1'   # polars + pandas
+python -m pip install 'etlantic[sql]==0.50.1'          # alias: [postgresql]
+python -m pip install 'etlantic[pyspark]==0.50.1'      # alias: [spark]
+python -m pip install 'etlantic[airflow]==0.50.1'
+python -m pip install 'etlantic[prefect]==0.50.1'
 # Experimental Gate B stub (not graduated; not recommended):
-python -m pip install 'etlantic[datafusion]==0.50.0'
-python -m pip install 'etlantic[kafka]==0.50.0'        # Experimental FakeKafka
-python -m pip install 'etlantic[schemaregistry]==0.50.0'  # Experimental fake registry
+python -m pip install 'etlantic[datafusion]==0.50.1'
+python -m pip install 'etlantic[kafka]==0.50.1'        # Experimental FakeKafka
+python -m pip install 'etlantic[schemaregistry]==0.50.1'  # Experimental fake registry
 ```
 
 Also available: `[keyring]`, `[sqlmodel]`, `[medallantic]`, `[fastapi]`,
 `[otel]`, `[arrow]`, `[mcp]`, `[k8s]`, `[spark-connect]`.
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.50.0'   # dual surface: CP1 ETLanticAPI + thin create_reference_app (non-CP); CP1 ≠ multi-tenant GA
-# or: python -m pip install 'etlantic[fastapi]==0.50.0'
+python -m pip install 'etlantic-fastapi==0.50.1'   # dual surface: CP1 ETLanticAPI + thin create_reference_app (non-CP); CP1 ≠ multi-tenant GA
+# or: python -m pip install 'etlantic[fastapi]==0.50.1'
 ```
 
 Verify discovery after installing Polars:
@@ -184,7 +184,7 @@ only; does not install Apache Airflow). Prefect: direct execution via
 Prefer the [Upgrade hub](UPGRADE.md). Quick pin:
 
 ```bash
-python -m pip install --upgrade 'etlantic==0.50.0'
+python -m pip install --upgrade 'etlantic==0.50.1'
 ```
 
 
@@ -210,7 +210,7 @@ Day-0 evaluation should use the PyPI pin above.
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.50.0'
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.50.1'
 python -m etlantic --version
 ```
 
@@ -219,7 +219,7 @@ Optional plugins from the same monorepo (after cloning):
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-git checkout v0.50.0
+git checkout v0.50.1
 uv sync --locked
 uv sync --extra fastapi   # optional reference adapter
 uv run python -m etlantic --version

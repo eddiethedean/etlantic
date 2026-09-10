@@ -19,20 +19,9 @@ class Identity(Transformation):
     result: Output[Row]
 
 
-@Identity.implementation("local")
-def identity_local(rows: list[Row]) -> list[Row]:
-    return list(rows)
-
-
-@Identity.implementation("polars")
-def identity_polars(rows):
-    import polars as pl
-
-    if hasattr(rows, "with_columns"):
-        return rows
-    return pl.DataFrame(
-        [row.model_dump() if hasattr(row, "model_dump") else row for row in rows]
-    )
+@Identity.portable
+def identity(rows):
+    return rows
 
 
 class PilotPipeline(Pipeline):

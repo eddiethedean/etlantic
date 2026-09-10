@@ -6,15 +6,18 @@
 
 | Situation | Prefer |
 |---|---|
-| One closed relational definition for Polars / PySpark / Pandas / SQL within kernel + `portable-relational/1` | `@Transformation.portable` |
-| Local Python / memory demos | `@Transformation.implementation("local")` |
+| New transformation within the qualified seven-engine baseline | `@Transformation.portable` |
+| Local Python / memory demos | `@Transformation.portable` |
+| Pipelines intended for adaptive execution | `@Transformation.portable` plus `portable_transform_policy="require"` |
 | Explicit SQL dialect control or unclaimed SQL ops | Native `@implementation("sql")` |
 | Ops outside advertised claims (UDFs, unclaimed profiles, Pandas index semantics) | Native `@implementation(...)` |
 | Force native only | `Profile(portable_transform_policy="native")` |
 | Fail if portable cannot compile | `Profile(portable_transform_policy="require")` |
 
-The transformation **contract** and pipeline wiring stay the same across
-engines. Native implementation **bodies** may differ by engine.
+Portable is the default authoring recommendation. The same definition can be
+compiled for Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB within
+the qualified baseline. Native implementation bodies are tied to their
+registered engine and are not eligible for adaptive execution.
 
 ## When to use `@Transformation.portable`
 
@@ -27,9 +30,10 @@ def normalize(rows):
 ```
 
 Inspect with `Normalize.to_transform_plan()` / `portable_fingerprint()`.
-With `portable_transform_policy` of `prefer` or `require`, Polars, PySpark,
-Pandas, and SQL can execute fitting plans without a matching native
-implementation (Pandas is eager-only and index-neutral; SQL uses typed IR).
+With `portable_transform_policy` of `prefer` or `require`, all seven qualified
+engines can execute fitting baseline plans without a matching native
+implementation. Use `require` for new projects so an unsupported operation
+fails during validation or planning instead of selecting a native body.
 
 ## When to use `@Transformation.implementation`
 
@@ -50,6 +54,11 @@ explicit native SQL implementation only — never silent portable emulation.
 Advanced families shipped on Polars and PySpark in 0.17; Pandas and SQL remain
 baseline-only (see the
 [portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md)).
+
+Choosing a native body is an explicit portability tradeoff. It can still be
+the right choice for unsupported semantics or a proven backend-specific
+optimization, but the step stays pinned to that engine and cannot participate
+in adaptive execution.
 
 ## Related
 

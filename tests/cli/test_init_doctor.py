@@ -23,6 +23,13 @@ def test_init_scaffold(tmp_path: Path) -> None:
     assert (tmp_path / "data" / "sample.json").is_file()
     assert (tmp_path / "etlantic.toml").is_file()
     assert (tmp_path / ".etlantic" / "reports").is_dir()
+    pipeline_source = (tmp_path / "pipeline.py").read_text(encoding="utf-8")
+    assert "@Identity.portable" in pipeline_source
+    assert ".implementation(" not in pipeline_source
+    profile = json.loads(
+        (tmp_path / "profiles" / "development.json").read_text(encoding="utf-8")
+    )
+    assert profile["portable_transform_policy"] == "require"
 
 
 def test_doctor_after_init(tmp_path: Path, monkeypatch) -> None:

@@ -21,6 +21,7 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
+    Profile,
     Transformation,
 )
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -36,9 +37,9 @@ class Normalize(Transformation):
     result: Output[Row]
 
 
-@Normalize.implementation("local")
-def normalize(rows: list[Row]) -> list[Row]:
-    return [Row(id=row.id, name=row.name.strip().title()) for row in rows]
+@Normalize.portable
+def normalize(rows):
+    return rows
 
 
 class FilePipeline(Pipeline):
@@ -48,7 +49,12 @@ class FilePipeline(Pipeline):
 
 
 def run_files(source: Path, sink: Path, provider: str) -> object:
-    context = PlanningContext.create(profile="development")
+    profile = Profile(
+        name="development",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+    )
+    context = PlanningContext.create(profile=profile)
     context.registry.register_binding(
         BindingDescriptor(
             binding="file_source",
@@ -66,7 +72,7 @@ def run_files(source: Path, sink: Path, provider: str) -> object:
         )
     )
     return FilePipeline.run(
-        profile="development",
+        profile=profile,
         runtime=PipelineRuntime(),
         context=context,
     )
@@ -77,7 +83,7 @@ def json_to_json(directory: Path) -> Path:
     source = directory / "input.json"
     sink = directory / "output.json"
     source.write_text(
-        json.dumps([{"id": 1, "name": " ada "}, {"id": 2, "name": "grace"}]),
+        json.dumps([{"id": 1, "name": "Ada"}, {"id": 2, "name": "Grace"}]),
         encoding="utf-8",
     )
     run_files(source, sink, "json")
@@ -91,7 +97,7 @@ def csv_to_csv(directory: Path) -> Path:
     with source.open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=["id", "name"])
         writer.writeheader()
-        writer.writerows([{"id": 1, "name": " ada "}, {"id": 2, "name": "grace"}])
+        writer.writerows([{"id": 1, "name": "Ada"}, {"id": 2, "name": "Grace"}])
     run_files(source, sink, "csv")
     return sink
 

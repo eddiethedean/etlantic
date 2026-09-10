@@ -17,8 +17,10 @@ from etlantic import (
     Output,
     Pipeline,
     PipelineRuntime,
+    Profile,
     Transformation,
 )
+from etlantic.transform import functions as F
 
 
 class RawCustomer(Data):
@@ -37,15 +39,12 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("local")
-def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
-    return [
-        Customer(
-            customer_id=customer.customer_id,
-            full_name=f"{customer.first_name} {customer.last_name}",
-        )
-        for customer in customers
-    ]
+@NormalizeCustomers.portable
+def normalize_customers(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
+    )
 
 
 class CustomerPipeline(Pipeline):
@@ -59,9 +58,14 @@ class CustomerPipeline(Pipeline):
 
 def run_example() -> tuple[PipelineRuntime, object]:
     """Validate, plan, and run the in-memory demo (used by CI)."""
-    validation = CustomerPipeline.validate(profile="development")
+    profile = Profile(
+        name="development",
+        dataframe_engine="local",
+        portable_transform_policy="require",
+    )
+    validation = CustomerPipeline.validate(profile=profile)
     validation.raise_for_errors()
-    CustomerPipeline.plan(profile="development")
+    CustomerPipeline.plan(profile=profile)
 
     runtime = PipelineRuntime()
     runtime.memory.seed(
@@ -71,7 +75,7 @@ def run_example() -> tuple[PipelineRuntime, object]:
             RawCustomer(customer_id=2, first_name="Grace", last_name="Hopper"),
         ],
     )
-    report = CustomerPipeline.run(profile="development", runtime=runtime)
+    report = CustomerPipeline.run(profile=profile, runtime=runtime)
     return runtime, report
 
 

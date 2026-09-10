@@ -38,6 +38,6 @@ default development path.
 
 ## Links
 
-[Prefect example](https://etlantic.readthedocs.io/en/v0.50.0/09_EXAMPLES/PREFECT_RUN/) ·
+[Prefect example](https://etlantic.readthedocs.io/en/v0.50.1/09_EXAMPLES/PREFECT_RUN/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-prefect) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

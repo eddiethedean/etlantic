@@ -8,8 +8,10 @@
 1. Use public imports: `etlantic`, `etlantic.dataframe`, `.sql`, `.spark`,
    `.orchestration`, `.viz`, `.secrets`, `.testing`.
 2. Prefer `Extract` / `Load` vocabulary—not legacy Source/Sink names.
-3. Keep transformations as contracts (`Transformation` + ports) with separate
-   `@implementation(...)` or `@portable` bodies.
+3. Define transformation logic with `@Transformation.portable` and ETLantic
+   expressions. Use native `@implementation(...)` bodies only for unsupported
+   semantics or intentional backend-specific optimization; native bodies are
+   not eligible for adaptive execution.
 4. Validate before plan/compile/run: `etlantic validate TARGET --format json`.
 
 ## Profiles and trust
@@ -18,7 +20,7 @@
    explicit `--profile` in CI.
 2. Production profiles require a non-empty `plugin_allowlist` with exact pins.
 3. Set `security_mode` explicitly (`development` | `test` | `production`).
-4. Pin matching minors: `etlantic==0.50.0` with `etlantic-polars==0.50.0`, etc.
+4. Pin matching minors: `etlantic==0.50.1` with `etlantic-polars==0.50.1`, etc.
 
 ## Secrets and artifacts
 
@@ -73,8 +75,10 @@ memory seeding. Use in-memory demos only inside one Python process.
 ## Engines
 
 1. Prove one engine path under validate/plan before combining engines.
-2. Keep a native `@implementation(...)` for portable profiles outside the
-   advertised claim set, or use `portable_transform_policy="native"`.
+2. Use `portable_transform_policy="require"` for new profiles so unsupported
+   semantics fail closed.
+3. Add a native `@implementation(...)` only when accepting an explicit engine
+   lock-in for behavior outside the advertised claim set.
 
 ## Related
 

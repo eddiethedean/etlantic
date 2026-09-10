@@ -20,6 +20,16 @@ Also supported: `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`,
 `etlantic.control_plane`, `etlantic.optimization`, `etlantic.streaming`,
 `etlantic.resources`, `etlantic.agents`
 
+## Pipeline authoring
+
+- Define new transformation logic with `@Transformation.portable` and
+  ETLantic expressions (`etl.transform.functions`) by default.
+- Use `portable_transform_policy="require"` for new profiles so unsupported
+  semantics fail during validation or planning.
+- Use `@Transformation.implementation(engine)` only as an explicit escape
+  hatch. Native bodies are engine-specific and are not eligible for adaptive
+  execution.
+
 ## FastAPI dual surface
 
 - **CP1 control plane:** `ETLanticAPI` / `include_router` / `create_app`

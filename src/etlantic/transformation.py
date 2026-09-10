@@ -129,9 +129,9 @@ class Transformation:
     """Base class for typed transformation contracts.
 
     Subclasses declare :class:`~etlantic.ports.Input`, :class:`~etlantic.ports.Output`,
-    and :class:`~etlantic.ports.Parameter` annotations. Execution backends are
-    registered separately with :meth:`implementation` (native) or
-    :meth:`portable` (symbolic DTCS plan compiled by engine plugins).
+    and :class:`~etlantic.ports.Parameter` annotations. Define logic with
+    :meth:`portable` (the recommended engine-neutral DTCS plan) or register an
+    engine-specific escape hatch with :meth:`implementation`.
 
     Wire instances in pipelines via :meth:`step`, which returns a symbolic
     :class:`Step` without running user code.
@@ -194,6 +194,9 @@ class Transformation:
     def implementation(cls, engine: str) -> Callable[[F], F]:
         """Register a native callable for one execution engine.
 
+        Prefer :meth:`portable` for new transformations. Native callables are
+        engine-specific and are not eligible for adaptive execution.
+
         Args:
             engine: Registry engine name such as ``"local"``, ``"polars"``,
                 ``"pandas"``, ``"sql"``, or ``"pyspark"``.
@@ -227,9 +230,9 @@ class Transformation:
         ``ParameterRef`` parameters during trusted import. It must return a
         ``FrameExpr`` or a mapping of declared output names to ``FrameExpr``.
 
-        Native :meth:`implementation` callables remain available as escape
-        hatches. Portable definitions emit ``dtcs.transform-plan/2`` and do not
-        execute data.
+        This is the recommended authoring path. Native :meth:`implementation`
+        callables remain available as escape hatches. Portable definitions
+        emit ``dtcs.transform-plan/2`` and do not execute data.
         """
         from etlantic.transform.dtcs_builder import invoke_portable
         from etlantic.transform.protocol import PortableDefinitionRecord

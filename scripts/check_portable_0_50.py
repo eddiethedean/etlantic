@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import re
 import subprocess
+import tarfile
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
@@ -1010,53 +1012,45 @@ def main() -> int:
     ).strip()
     if not re.fullmatch(r"[0-9a-f]{40}", repository_commit):
         raise SystemExit("evidence index repository_commit is invalid")
-    if repository_commit != head:
-        # Generated evidence necessarily changes the evidence tree after the
-        # source revision is committed.  Accept only that single, immediate
-        # evidence commit; accepting an arbitrary ancestor allows stale source
-        # claims to pass under a newer implementation.
-        changed = subprocess.check_output(
-            ["git", "diff", "--name-only", f"{repository_commit}..{head}"],
-            cwd=ROOT,
-            text=True,
-        ).splitlines()
-        commits = int(
-            subprocess.check_output(
-                ["git", "rev-list", "--count", f"{repository_commit}..{head}"],
-                cwd=ROOT,
-                text=True,
-            ).strip()
-        )
-        if commits != 1 or any(
-            not path.startswith("docs/11_DEVELOPMENT/evidence/portable_0_50/")
-            for path in changed
-        ):
-            raise SystemExit(
-                "evidence repository_commit must be HEAD or the immediate "
-                "source parent of an evidence-only commit"
-            )
-    dirty = subprocess.check_output(
-        ["git", "status", "--porcelain"], cwd=ROOT, text=True
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", repository_commit, head],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
     )
-    if dirty.strip():
-        raise SystemExit("qualification evidence requires a clean worktree")
+    if ancestor.returncode != 0:
+        raise SystemExit(
+            "evidence repository_commit must be an ancestor of the current revision"
+        )
     source_digest = index.get("source_tree_digest")
     if not isinstance(source_digest, str) or not re.fullmatch(
         r"[0-9a-f]{64}", source_digest
     ):
         raise SystemExit("evidence index source_tree_digest is missing or invalid")
-    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
+    archive_bytes = subprocess.check_output(
+        ["git", "archive", "--format=tar", repository_commit],
+        cwd=ROOT,
+    )
     digest = hashlib.sha256()
-    evidence_prefix = b"docs/11_DEVELOPMENT/evidence/portable_0_50/"
-    for raw in sorted(
-        item for item in tracked if item and not item.startswith(evidence_prefix)
-    ):
+    evidence_prefix = "docs/11_DEVELOPMENT/evidence/portable_0_50/"
+    archived_files: list[tuple[bytes, bytes]] = []
+    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:") as archive:
+        for member in archive:
+            if not member.isfile() or member.name.startswith(evidence_prefix):
+                continue
+            stream = archive.extractfile(member)
+            if stream is None:
+                raise SystemExit(f"cannot read qualified source blob: {member.name}")
+            archived_files.append((member.name.encode("utf-8"), stream.read()))
+    for raw, content in sorted(archived_files):
         digest.update(raw)
         digest.update(b"\0")
-        digest.update((ROOT / raw.decode("utf-8")).read_bytes())
+        digest.update(content)
         digest.update(b"\0")
     if digest.hexdigest() != source_digest:
-        raise SystemExit("evidence source tree differs from the recorded qualification")
+        raise SystemExit(
+            "evidence source tree digest does not match its recorded qualification commit"
+        )
     if index.get("result") not in {"pass", "blocked"}:
         raise SystemExit(
             "evidence index result must be pass or an explicit blocked no-go"

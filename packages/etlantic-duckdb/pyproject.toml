@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-duckdb"
-version = "0.50.0"
+version = "0.50.1"
 description = "Optional DuckDB SQL execution and portable transform plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

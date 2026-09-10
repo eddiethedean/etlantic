@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -462,28 +461,11 @@ def _pushdown_expected_evidence(payload: dict[str, object]) -> dict[str, str]:
 
 
 def _refresh_temp_evidence_metadata(evidence: Path) -> None:
-    """Keep copied evidence metadata aligned with the current test checkout."""
-    root = Path(__file__).parents[2]
-    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).split(b"\0")
-    digest = hashlib.sha256()
-    evidence_prefix = b"docs/11_DEVELOPMENT/evidence/portable_0_50/"
-    for raw in sorted(
-        item for item in tracked if item and not item.startswith(evidence_prefix)
-    ):
-        digest.update(raw)
-        digest.update(b"\0")
-        digest.update((root / raw.decode("utf-8")).read_bytes())
-        digest.update(b"\0")
-    source_digest = digest.hexdigest()
+    """Refresh copied artifact digests without rewriting qualification provenance."""
     index_path = evidence / "portable_evidence_index_0_50.json"
     index = json.loads(index_path.read_text())
-    index["source_tree_digest"] = source_digest
     for name in index["artifacts"]:
         path = evidence / name
-        if path.suffix == ".json":
-            payload = json.loads(path.read_text())
-            payload["source_tree_digest"] = source_digest
-            path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         artifact_digest = hashlib.sha256(path.read_bytes()).hexdigest()
         index["digests"][name] = artifact_digest
         index["artifact_metadata"][name]["sha256"] = artifact_digest

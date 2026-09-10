@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-k8s"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental Kubernetes resource provider for ETLantic (fake by default)."
 readme = "README.md"
 license = "MIT"

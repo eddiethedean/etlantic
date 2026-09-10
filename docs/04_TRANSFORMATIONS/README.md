@@ -13,7 +13,8 @@ This section explains how to:
 - Define transformations using Python classes
 - Declare typed inputs and outputs
 - Define transformation parameters
-- Register execution implementations
+- Define portable, engine-neutral transformation logic
+- Register native execution implementations when an escape hatch is required
 - Support synchronous and asynchronous execution
 - Generate DTCS artifacts
 - Validate transformation compatibility
@@ -41,18 +42,29 @@ This declaration answers:
 
 It intentionally does **not** answer how the work is performed.
 
-An Available surface adds a PySpark-inspired, implementation-agnostic
-definition that serializes as a DTCS 3.0 Transformation Plan. Official plugins
-compile those plans for Polars, PySpark, Pandas, and SQL (kernel + relational
-baseline; advanced families where documented). See
+Define the logic once with the PySpark-inspired, implementation-agnostic
+portable surface. It serializes as a DTCS 3.0 Transformation Plan, and official
+compilers run the qualified baseline on Local, Polars, Pandas, SQL, PySpark,
+DataFusion, and DuckDB:
+
+```python
+from etlantic.transform import functions as F
+
+
+@NormalizeCustomers.portable
+def normalize(customers, minimum_age):
+    return customers.filter(F.col("age") >= minimum_age)
+```
+
+This is the recommended style for new transformations and is required for the
+upcoming adaptive execution feature. See
 [Portable Transformations](PORTABLE_TRANSFORMATIONS.md) and the
 [portable compiler matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md).
-Author with `@Transformation.portable` or keep `@implementation(...)` for
-native backends.
 
-## Separating Interface from Implementation
+## Native Escape Hatches
 
-Execution is registered independently.
+Use a native implementation only when the portable surface cannot express a
+required operation or a backend-specific optimization is intentional:
 
 ```python
 @NormalizeCustomers.implementation("polars")
@@ -68,7 +80,9 @@ def normalize(customers, minimum_age):
     ...
 ```
 
-Both satisfy the same transformation contract.
+Both satisfy the same transformation contract, but each body is coupled to one
+backend. Native bodies are not portable and will not be supported by adaptive
+execution.
 
 ## Relationship to DTCS
 
@@ -165,9 +179,9 @@ Read this section in the following order:
 3. [OUTPUTS](OUTPUTS.md)
 4. [PARAMETERS](PARAMETERS.md)
 5. [TYPE_ANNOTATIONS](TYPE_ANNOTATIONS.md)
-6. [IMPLEMENTATIONS](IMPLEMENTATIONS.md)
-7. [PORTABLE_TRANSFORMATIONS](PORTABLE_TRANSFORMATIONS.md) (shipped portable authoring)
-8. [PORTABLE_FUNCTIONS](PORTABLE_FUNCTIONS.md) (current DTCS 2.0/3.0 function mapping)
+6. [PORTABLE_TRANSFORMATIONS](PORTABLE_TRANSFORMATIONS.md) (recommended authoring path)
+7. [PORTABLE_FUNCTIONS](PORTABLE_FUNCTIONS.md) (current DTCS 2.0/3.0 function mapping)
+8. [IMPLEMENTATIONS](IMPLEMENTATIONS.md) (native escape hatches)
 9. [CALLBACKS](CALLBACKS.md)
 10. [ERROR_HANDLING](ERROR_HANDLING.md)
 11. [ASYNC](ASYNC.md)

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-fastapi"
-version = "0.50.0"
+version = "0.50.1"
 description = "FastAPI adapter for ETLantic control-plane (CP1) and authoring reference."
 readme = "README.md"
 license = "MIT"

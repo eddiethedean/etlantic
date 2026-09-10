@@ -14,6 +14,7 @@ See the [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md),
 | Surface | Target at gate | Current |
 |---|---|---|
 | Existing explicit profiles and canonical `etlantic.plan/1` | Available, unchanged | Existing behavior; 0.51 regression evidence pending |
+| `StepRunReport.metadata` built-in engine keys | Namespaced writer output with warning-free 0.50 bare-key reads under `etlantic.run_report/1` | Migration evidence pending |
 | Adaptive Profile policy and `etlantic.plan/2` authoring/inspection | Available for the frozen bounded contract | Not implemented |
 | Local static-batch physical-DAG execution | Available only for qualified combinations | Not implemented |
 | Local Python, Polars, and Pandas single-target adaptive plans | Available after per-row evidence | Not qualified |
@@ -51,8 +52,9 @@ documentation evidence required of the initial rows.
 | 16 | Qualified single-target and cross-target combinations pass public conformance and differential campaigns | Pass | **Not started** | #78–#81 |
 | 17 | Plans, evidence, diagnostics, explain artifacts, and reports contain no resolved secrets or source rows | Pass | **Not started** | #44, #68, #77, #82 |
 | 18 | Concepts, operations, rollback, plugin, migration, reference, release, and executable-example documentation passes strict checks | Pass | **Not started** | #83–#87, #94 |
-| 19 | No unresolved critical/high security, correctness, compatibility, or data-loss finding | 0 | **Not started** | #82, #95 |
-| 20 | Final matrix, weakest-link maturity, owners, residual risks, and rollback trigger are recorded | Pass | **Not started** | #95 |
+| 19 | Runtime writers emit only `etlantic.dataframe`, `etlantic.sql`, `etlantic.spark`, and `etlantic.spark_schema`; 0.50 bare aliases load warning-free, namespaced values win collisions, bare aliases are removed, and migration is deterministic and idempotent | Pass | **Not started** | #41, #69–#73, #83–#87, #94 |
+| 20 | No unresolved critical/high security, correctness, compatibility, or data-loss finding | 0 | **Not started** | #82, #95 |
+| 21 | Final matrix, weakest-link maturity, owners, residual risks, and rollback trigger are recorded | Pass | **Not started** | #95 |
 
 ## Required Evidence Manifest
 
@@ -64,6 +66,7 @@ it must not contain secrets or source rows.
 | Artifact | Required content | Status |
 |---|---|---|
 | `adaptive_wire_compatibility_0_51.json` | `/1` byte/fingerprint goldens; `/2` reader/writer/verify/JSON-Schema matrix | Planned |
+| `runtime_metadata_namespace_compatibility_0_51.json` | Namespaced-only writer output; 0.50 fixtures for `dataframe`, `sql`, `spark`, and `spark_schema`; namespaced-wins collisions; warning-free deterministic/idempotent migration and reserialization | Planned |
 | `adaptive_inventory_conformance_0_51.json` | Target inventory, authorize-before-load, directional pair, and unknown-evidence fixtures | Planned |
 | `adaptive_solver_conformance_0_51.json` | Objective boundaries, oracle equality, permutation invariance, fallback, and replay seeds | Planned |
 | `adaptive_resource_budget_0_51.json` | Limit-boundary cases, work units, peak planner memory, serialized explain size, and measured duration | Planned |
@@ -74,7 +77,7 @@ it must not contain secrets or source rows.
 | `adaptive_security_matrix_0_51.json` | All applicable allowlists, tenant/residency/masking policy, and no-secret/source-row scan | Planned |
 | `adaptive_e2e_0_51.json` | Fixed Polars↔Pandas topology, directional handoff, explicit differential, and publication receipts | Planned |
 | `FINDINGS_0_51.md` | Triaged phase findings with zero unresolved critical/high at decision time | Planned |
-| `MIGRATION_0_50_TO_0_51.md` | Opt-in profile migration, `/1`–`/2`, rollback, and consumer compatibility | Planned |
+| `MIGRATION_0_50_TO_0_51.md` | Opt-in profile migration, `/1`–`/2`, runtime-report metadata aliases and collision behavior, rollback, and consumer compatibility | Planned |
 | `WHATS_NEW_0_51.md` | Exact Available matrix and explicit non-claims | Planned |
 
 ## Reference Topology
@@ -102,7 +105,9 @@ and reuse units.
 Trigger rollback for any confirmed semantic divergence, unsafe retry or
 publication, admission after prior mutation, fingerprint nondeterminism,
 unauthorized plugin/provider load, secret/source-row leak, or `/2` consumer that
-silently follows the logical graph.
+silently follows the logical graph. Also trigger rollback if runtime-report
+metadata migration loses a value, resolves an alias collision inconsistently,
+or allows new writers to emit the retired bare built-in keys.
 
 1. Disable new adaptive planning through documented configuration.
 2. Stop accepting stored `/2` plans and invalidate adaptive plan caches.

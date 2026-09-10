@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-mcp"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental read-only MCP server for ETLantic (fake by default)."
 readme = "README.md"
 license = "MIT"

@@ -9,7 +9,7 @@
 
 !!! warning "Provisional"
     `etlantic.quality` may change with migration notes in a future minor. Prefer
-    documented helpers below; pin core to `==0.50.0` in pilots.
+    documented helpers below; pin core to `==0.50.1` in pilots.
 
 ## Behavioral contracts
 

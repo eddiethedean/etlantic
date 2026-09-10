@@ -107,7 +107,7 @@ audience: adopter
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The commands below pin
-`etlantic==0.50.0` so this version of the documentation and the installed API
+`etlantic==0.50.1` so this version of the documentation and the installed API
 stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
 continues with an intentional validation failure after the first successful
 run.
@@ -118,7 +118,7 @@ run.
     python -m venv .venv
     source .venv/bin/activate
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.50.0'
+    python -m pip install 'etlantic==0.50.1'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -135,7 +135,7 @@ run.
     py -3.11 -m venv .venv
     .\.venv\Scripts\Activate.ps1
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.50.0'
+    python -m pip install 'etlantic==0.50.1'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -192,13 +192,13 @@ Prefect. Add only what the pipeline uses.
 
 | Path | Install | Current scope |
 |---|---|---|
-| Local Python + JSON/CSV | `pip install 'etlantic==0.50.0'` | Built-in first-success and test path |
-| Polars | `pip install 'etlantic[polars]==0.50.0'` | Eager/lazy execution and portable compilation |
-| Pandas | `pip install 'etlantic[pandas]==0.50.0'` | Eager execution and portable compilation |
-| SQL | `pip install 'etlantic[sql]==0.50.0'` | SQLite evaluation and PostgreSQL reference execution |
-| PySpark | `pip install 'etlantic[pyspark]==0.50.0'` | Batch Spark execution; compatible JVM required |
-| Airflow | `pip install 'etlantic[airflow]==0.50.0'` | DAG compilation; Apache Airflow installs separately |
-| Prefect | `pip install 'etlantic[prefect]==0.50.0'` | Bounded local direct-execution integration |
+| Local Python + JSON/CSV | `pip install 'etlantic==0.50.1'` | Built-in first-success and test path |
+| Polars | `pip install 'etlantic[polars]==0.50.1'` | Eager/lazy execution and portable compilation |
+| Pandas | `pip install 'etlantic[pandas]==0.50.1'` | Eager execution and portable compilation |
+| SQL | `pip install 'etlantic[sql]==0.50.1'` | SQLite evaluation and PostgreSQL reference execution |
+| PySpark | `pip install 'etlantic[pyspark]==0.50.1'` | Batch Spark execution; compatible JVM required |
+| Airflow | `pip install 'etlantic[airflow]==0.50.1'` | DAG compilation; Apache Airflow installs separately |
+| Prefect | `pip install 'etlantic[prefect]==0.50.1'` | Bounded local direct-execution integration |
 
 See [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) for prerequisites
 and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.

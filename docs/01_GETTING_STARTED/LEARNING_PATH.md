@@ -17,8 +17,9 @@
 | 6 | [Scheduler and worker](SCHEDULER_TUTORIAL.md) (optional) | `schedule create` + `--once` ticks |
 
 Short capability teaser (full matrix later): typed contracts, validate-before-write,
-deterministic plans, Local/Polars/Pandas/SQL/PySpark, Airflow compile, M6
-observability/history pilot. Details: [Capabilities](CAPABILITIES.md).
+deterministic plans, a portable baseline across Local/Polars/Pandas/SQL/
+PySpark/DataFusion/DuckDB, Airflow compile, and the M6 observability/history
+pilot. Details: [Capabilities](CAPABILITIES.md).
 
 ## Week 1 — deepen (pick one)
 

@@ -17,8 +17,12 @@ aggregate functions, Arrow interchange, lazy execution, schema inspection,
 and deterministic support/evidence reports. Unsupported extensions fail during
 analysis before execution.
 
+Use `@Transformation.portable` with
+`portable_transform_policy="require"`. This recommended engine-neutral path is
+eligible for adaptive execution; engine-specific bodies are not.
+
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.50.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.50.1/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

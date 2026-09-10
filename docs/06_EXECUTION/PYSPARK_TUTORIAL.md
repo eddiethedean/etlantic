@@ -13,7 +13,7 @@
 - A JDK supported by your PySpark build (CI uses **Java 17** for
   `real-pyspark`)
 - `JAVA_HOME` pointing at that JDK (not only `java` on `PATH`)
-- `etlantic-pyspark==0.50.0`
+- `etlantic-pyspark==0.50.1`
 
 ## JDK / JAVA_HOME / platform notes
 
@@ -41,15 +41,17 @@ Databricks / EMR / Spark Connect providers are **not** included in 0.38.
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.50.0' 'etlantic-pyspark==0.50.0'
-git clone --branch v0.50.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.50.1' 'etlantic-pyspark==0.50.1'
+git clone --branch v0.50.1 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py
 ```
 
-The transformation registers a native PySpark implementation and selects it
-with `Profile(name="spark-local", spark_engine="pyspark")`. The runtime also
-registers the local Spark provider explicitly.
+The transformation uses the same `@NormalizeCustomers.portable` definition as
+the dataframe examples and selects it with
+`Profile(..., spark_engine="pyspark", portable_transform_policy="require")`.
+The runtime registers the local Spark provider explicitly; the transformation
+body contains no PySpark imports.
 
 Complete source:
 [`examples/pyspark_local.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/pyspark_local.py).
@@ -72,13 +74,17 @@ steps:
 Run identifiers and durations vary. A Java gateway error means the local Spark
 runtime did not start; it is not an expected successful result.
 
+Use a native `@Transformation.implementation("pyspark")` only for required
+Spark behavior outside the portable compiler's claims. That pins the step to
+PySpark and makes it ineligible for adaptive execution.
+
 ## Delta constraints
 
 Delta Lake is **optional**. Without `delta-spark`, the plugin does not advertise
 merge / Delta storage capabilities and Delta-required plans fail closed.
 
 ```bash
-python -m pip install 'etlantic-pyspark[delta]==0.50.0'
+python -m pip install 'etlantic-pyspark[delta]==0.50.1'
 # or: python -m pip install 'delta-spark>=3.0,<4'
 ```
 

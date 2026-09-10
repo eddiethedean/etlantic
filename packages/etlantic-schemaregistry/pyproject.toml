@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-schemaregistry"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental Confluent-compatible schema-registry adapter for ETLantic."
 readme = "README.md"
 license = "MIT"

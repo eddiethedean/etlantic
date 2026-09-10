@@ -18,6 +18,7 @@ from etlantic import (
     Profile,
     Transformation,
 )
+from etlantic.transform import functions as F
 
 
 class RawCustomer(Data):
@@ -36,15 +37,12 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("local")
-def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
-    return [
-        Customer(
-            customer_id=row.customer_id,
-            full_name=f"{row.first_name} {row.last_name}",
-        )
-        for row in customers
-    ]
+@NormalizeCustomers.portable
+def normalize_customers(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
+    )
 
 
 class CustomerPipeline(Pipeline):
@@ -68,7 +66,11 @@ def run_example() -> tuple[PipelineRuntime, object]:
             RawCustomer(customer_id=2, first_name="Grace", last_name="Hopper"),
         ],
     )
-    profile = Profile(name="prefect-demo", orchestrator="prefect")
+    profile = Profile(
+        name="prefect-demo",
+        orchestrator="prefect",
+        portable_transform_policy="require",
+    )
     report = CustomerPipeline.run(profile=profile, runtime=runtime)
     return runtime, report
 

@@ -1,5 +1,10 @@
 # Examples
 
+General examples use portable ETLantic transformations. They define logic once
+with `@Transformation.portable`; engine-specific
+`@Transformation.implementation(...)` bodies appear only in specialist escape-
+hatch or interchange examples and are not eligible for adaptive execution.
+
 ## Green path
 
 1. Install with `pip install etlantic`
@@ -103,6 +108,8 @@ uv run python examples/dataframe_parity.py polars
 uv run python examples/dataframe_parity.py pandas
 ```
 
+The same portable transformation body is compiled by both engines.
+
 ### SQL to SQL (CI)
 
 ```bash
@@ -122,6 +129,9 @@ PostgreSQL.
 uv sync --group pyspark
 uv run python examples/pyspark_local.py
 ```
+
+This uses a portable transformation with the PySpark compiler and local Spark
+provider; the body contains no PySpark expressions.
 
 ### Airflow compile (CI)
 

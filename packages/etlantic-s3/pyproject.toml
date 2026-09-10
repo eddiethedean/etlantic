@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-s3"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental S3-compatible JSON connector for ETLantic."
 readme = "README.md"
 license = "MIT"

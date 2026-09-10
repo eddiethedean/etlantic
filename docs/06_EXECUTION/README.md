@@ -1,14 +1,13 @@
 # Execution
 
 !!! success "Available"
-    Portable Polars + PySpark + Pandas relational compilation (shipped since
-    0.14) plus SQL portable lowering (since 0.15) remain current. ETLantic
-    executes registered native implementations and, when
-    `Profile.portable_transform_policy` is `prefer` or `require`, can compile
-    and run Polars/PySpark/Pandas [DTCS](../04_TRANSFORMATIONS/DTCS.md) plans through `etlantic-polars` /
-    `etlantic-pyspark` / `etlantic-pandas` without a native
-    `@implementation(...)` for the advertised kernel +
-    `portable-relational/1` claim set. See
+    ETLantic's qualified portable [DTCS](../04_TRANSFORMATIONS/DTCS.md) baseline
+    runs the same relational definition on Local, Polars, Pandas, SQL, PySpark,
+    DataFusion, and DuckDB. Prefer
+    `@Transformation.portable` with
+    `Profile.portable_transform_policy="require"`; native implementations are
+    engine-specific escape hatches and are not eligible for adaptive
+    execution. See
     [Portable Transformations](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md)
     and
     [`examples/portable_polars_kernel.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/portable_polars_kernel.py).
@@ -30,8 +29,9 @@ external systems perform backend-specific work.
 
 This section explains **shipped** operator paths:
 
-- Execute Pipeline Plans (local, Polars, Pandas, SQL, PySpark)
-- Select execution engines and register native / portable implementations
+- Execute Pipeline Plans (Local, Polars, Pandas, SQL, PySpark, DataFusion,
+  DuckDB)
+- Select execution engines and compile portable transformations
 - Resolve secrets through shipped providers
 - Handle retries and failures where documented
 - Report diagnostics and run reports

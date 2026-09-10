@@ -13,7 +13,7 @@
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```

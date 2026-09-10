@@ -105,7 +105,7 @@ def run_compat_campaign() -> dict[str, Any]:
     )
     failed = [c["id"] for c in cases if c["status"] == "fail"]
     return {
-        "matrix_version": "0.50.0",
+        "matrix_version": "0.50.1",
         "campaign": "043-C",
         "cases": cases,
         "pass": not failed,

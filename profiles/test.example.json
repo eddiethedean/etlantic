@@ -4,6 +4,7 @@
   "validation_policy": "strict",
   "orchestrator": "local",
   "dataframe_engine": "local",
+  "portable_transform_policy": "require",
   "run_history_provider": "memory",
   "observability_delivery": "best_effort",
   "assets": {

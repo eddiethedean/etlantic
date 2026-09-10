@@ -5,7 +5,7 @@ Beta). Built on `etlantic.ide` analysis and
 [pygls](https://pygls.readthedocs.io/).
 
 ```bash
-python -m pip install 'etlantic[lsp]==0.50.0'
+python -m pip install 'etlantic[lsp]==0.50.1'
 etlantic-lsp
 ```
 

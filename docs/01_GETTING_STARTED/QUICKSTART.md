@@ -19,7 +19,7 @@ block you. See [Installation](INSTALLATION.md) for full options.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 python -m etlantic --version   # expect 0.50.0
 ```
 
@@ -29,7 +29,7 @@ python -m etlantic --version   # expect 0.50.0
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -3.11 -m pip install --upgrade pip
-py -3.11 -m pip install 'etlantic==0.50.0'
+py -3.11 -m pip install 'etlantic==0.50.1'
 py -3.11 -m etlantic --version
 ```
 
@@ -51,8 +51,10 @@ This creates `pipeline.py` (`SamplePipeline`), `profiles/development.json`,
 sample `data/sample.json`, and `.etlantic/` workspace directories.
 
 The generated profile uses `dataframe_engine: "local"` — the built-in local
-Python runtime (not Polars/Pandas). Add those engines later via
-[Engine selection](ENGINE_SELECTION.md).
+Python runtime (not Polars/Pandas) — and
+`portable_transform_policy: "require"`. The generated transformation is an
+engine-neutral ETLantic definition, so changing engines later does not require
+rewriting its body. Add an engine via [Engine selection](ENGINE_SELECTION.md).
 
 ## 3. Validate and run (first success)
 
@@ -101,67 +103,68 @@ Skip if you only want the five-minute green path; return here when you want
 to feel validate-before-write.
 
 The `etlantic init` scaffold defines `Identity` **in** `pipeline.py` (it is not
-imported from `etlantic`). Edit only the `Load` annotation so the load expects
-a different contract than the upstream step produces.
+imported from `etlantic`). Its `@Identity.portable` body is compiled by the
+selected engine. Edit only the `Load` annotation so the load expects a
+different contract than the upstream step produces.
 
 **Before** (generated):
 
 ```python
-from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+import etlantic as etl
 
 
-class Row(Data):
+class Row(etl.Data):
     id: int
     name: str
 
 
-class Identity(Transformation):
-    rows: Input[Row]
-    result: Output[Row]
+class Identity(etl.Transformation):
+    rows: etl.Input[Row]
+    result: etl.Output[Row]
 
 
-@Identity.implementation("local")
-def identity_local(rows: list[Row]) -> list[Row]:
-    return list(rows)
+@Identity.portable
+def identity(rows):
+    return rows
 
 
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
+class SamplePipeline(etl.Pipeline):
+    raw: etl.Extract[Row] = etl.Extract(asset="rows")
     step = Identity.step(rows=raw)
-    out: Load[Row] = Load(input=step.result, asset="out")
+    out: etl.Load[Row] = etl.Load(input=step.result, asset="out")
 ```
 
 **After** (broken on purpose — add `Other` and change only the `Load` line):
 
 ```python
-from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+import etlantic as etl
 
 
-class Row(Data):
+class Row(etl.Data):
     id: int
     name: str
 
 
-class Other(Data):
+class Other(etl.Data):
     id: int
     name: str
 
 
-class Identity(Transformation):
-    rows: Input[Row]
-    result: Output[Row]
+class Identity(etl.Transformation):
+    rows: etl.Input[Row]
+    result: etl.Output[Row]
 
 
-@Identity.implementation("local")
-def identity_local(rows: list[Row]) -> list[Row]:
-    return list(rows)
+@Identity.portable
+def identity(rows):
+    return rows
 
 
-class SamplePipeline(Pipeline):
-    raw: Extract[Row] = Extract(asset="rows")
+class SamplePipeline(etl.Pipeline):
+    raw: etl.Extract[Row] = etl.Extract(asset="rows")
     step = Identity.step(rows=raw)
     # Broken: Load expects Other but step.result is still Row
-    out: Load[Other] = Load(input=step.result, asset="out")
+    out: etl.Load[Other] = etl.Load(input=step.result, asset="out")
 ```
 
 Optional equivalent as a unified diff (same scaffold imports):
@@ -201,7 +204,7 @@ PMPIPE210: The step "out" expects Other on "input", but received Row from "step.
 `data/out.json` must not gain a new successful write until you restore
 `Load[Row]`. That is the product promise: validate before write.
 
-Restore `out: Load[Row] = Load(input=step.result, asset="out")` (and remove
+Restore `out: etl.Load[Row] = etl.Load(input=step.result, asset="out")` (and remove
 `Other` if unused). Continue with an intentional uppercase transform in
 [First Pipeline](FIRST_PIPELINE.md)—you can skip the wiring demo there if you
 just completed this step.

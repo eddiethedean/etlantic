@@ -16,7 +16,7 @@
 - Prefer named profiles (`development`, `test`, `production`).
 - Production fail-closed plugin trust uses **`Profile.security_mode`** (not name alone).
 - Production profiles require a non-empty `plugin_allowlist`.
-- Keep plugin package versions on the **same minor** as core (`==0.50.0`).
+- Keep plugin package versions on the **same minor** as core (`==0.50.1`).
 - Prefer `python -m etlantic … --profile <name>` for validate / plan / run.
 
 ## Related

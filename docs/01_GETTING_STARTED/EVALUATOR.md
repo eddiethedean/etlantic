@@ -1,6 +1,7 @@
 # Evaluator Brief
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.0 (published Beta); 0.50.1 release
+> candidate compatibility update pending publication.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -165,14 +166,14 @@ How to read status labels in deeper chapters:
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.50.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.50.1`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.50.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.50.1`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
 8. [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) if

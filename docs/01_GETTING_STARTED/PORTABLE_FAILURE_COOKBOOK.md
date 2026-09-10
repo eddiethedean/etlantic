@@ -31,7 +31,7 @@ definition is expected for advanced profiles. See
 ## Common failures
 
 1. **No compiler discovered** — install the engine package
-   (`etlantic-polars==0.50.0`, …) and match core minor.
+   (`etlantic-polars==0.50.1`, …) and match core minor.
 2. **`require` with incomplete coverage** — switch to `prefer` for pilots, or
    narrow the portable definition to supported profiles.
 3. **Native-only implementation present, policy `require`** — portable path is

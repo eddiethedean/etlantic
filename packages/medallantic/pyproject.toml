@@ -1,6 +1,6 @@
 [project]
 name = "medallantic"
-version = "0.50.0"
+version = "0.50.1"
 description = "Engine-agnostic medallion facade on ETLantic (native authoring + SparkForge IR migrate)."
 readme = "README.md"
 license = "MIT"

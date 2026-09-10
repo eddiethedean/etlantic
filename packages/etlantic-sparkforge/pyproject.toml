@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-sparkforge"
-version = "0.50.0"
+version = "0.50.1"
 description = "Final compatibility redirect to Medallantic (deprecated)."
 readme = "README.md"
 license = "MIT"

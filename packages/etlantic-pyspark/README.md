@@ -14,16 +14,32 @@ pip install etlantic-pyspark
 pip install "etlantic-pyspark[delta]"
 ```
 
-## Native Spark plugin
+## Portable transform compiler
 
 ```python
 from etlantic import Profile
 
-Profile(name="spark-local", spark_engine="pyspark")
+Profile(
+    name="spark-local",
+    spark_engine="pyspark",
+    portable_transform_policy="require",
+)
 ```
 
-Register `@Transformation.implementation("pyspark")` handlers that take
-Spark DataFrames (or lists of contract models) and return Spark DataFrames.
+Entry point: `etlantic.transform_compilers` →
+`etlantic_pyspark:create_transform_compiler`.
+
+Claims `portable-relational-kernel/1` and `portable-relational/1`. Lowers
+`dtcs.transform-plan/2` to native Spark DataFrame/Column expressions. This is
+the recommended transformation path and remains eligible for adaptive
+execution. Automatic Python/Pandas UDF fallback is forbidden.
+
+## Native Spark plugin
+
+Register `@Transformation.implementation("pyspark")` handlers only for Spark
+behavior outside the portable compiler's claims. They take Spark DataFrames
+(or lists of contract models), return Spark DataFrames, pin the step to
+PySpark, and are not eligible for adaptive execution.
 
 ### Native capabilities
 
@@ -35,22 +51,14 @@ Spark DataFrames (or lists of contract models) and return Spark DataFrames.
 - Delta-compatible write intents (append/overwrite/merge) when Delta is enabled
 - Structured Streaming foundation (**experimental**)
 
-## Portable transform compiler
-
-Entry point: `etlantic.transform_compilers` →
-`etlantic_pyspark:create_transform_compiler`.
-
-Claims `portable-relational-kernel/1` and `portable-relational/1`. Lowers
-`dtcs.transform-plan/2` to native Spark DataFrame/Column expressions. Automatic
-Python/Pandas UDF fallback is forbidden on the portable path (native UDF policy
-stays separate). Default CI uses sparkless; set
+Native UDF policy stays separate. Default CI uses sparkless; set
 `SPARKLESS_TEST_MODE=pyspark` for real JVM Catalyst checks.
 
 **Not included:** managed cloud providers (Databricks/EMR/Connect).
 
 ## Links
 
-[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.50.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.50.0/10_REFERENCE/COMPATIBILITY/) ·
+[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/PYSPARK_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.50.1/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pyspark) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

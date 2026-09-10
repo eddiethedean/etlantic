@@ -21,7 +21,7 @@ graduates the integrated control plane for `isolated-deployment` and
 
 Experimental features remain experimental. Broader deployment topology,
 compliance attestations, and HA remain adopter-owned today. Supply
-chain for v0.50.0 publishes as a SHA-256 artifact manifest and GitHub
+chain for v0.50.1 publishes as a SHA-256 artifact manifest and GitHub
 provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
@@ -50,7 +50,7 @@ multi-tenant claims.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.50.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.50.1` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.

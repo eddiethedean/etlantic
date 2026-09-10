@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-pandas"
-version = "0.50.0"
+version = "0.50.1"
 description = "Pandas dataframe execution plugin for ETLantic."
 readme = "README.md"
 license = "MIT"

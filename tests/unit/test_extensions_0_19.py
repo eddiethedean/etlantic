@@ -17,6 +17,12 @@ def test_metadata_within_budget_ok() -> None:
     validate_extension_metadata({"etlantic.note": "ok"})
 
 
+def test_builtin_runtime_report_metadata_keys_are_valid() -> None:
+    validate_extension_metadata(
+        {"dataframe": {}, "sql": {}, "spark": {}, "spark_schema": {}}
+    )
+
+
 def test_metadata_size_budget_rejected() -> None:
     # Payload must exceed MAX_METADATA_BYTES after JSON encoding.
     oversized = {"etlantic.blob": "x" * (MAX_METADATA_BYTES + 1)}

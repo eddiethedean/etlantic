@@ -29,7 +29,7 @@ from etlantic_duckdb.config import DuckDBConfig
 from etlantic_duckdb.connection import DuckDBConnectionManager
 from etlantic_duckdb.dialect import DuckDBCompiler, quote_identifier, statement_digest
 
-__version__ = "0.50.0"
+__version__ = "0.50.1"
 
 
 def create_plugin() -> DuckDBSqlPlugin:

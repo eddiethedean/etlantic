@@ -11,7 +11,7 @@ Use the curated root (`import etlantic as etl`) for a tiny in-process pipeline.
 Same install as [Installation](INSTALLATION.md):
 
 ```bash
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 ```
 
 ## Author, validate, plan, run
@@ -30,9 +30,9 @@ class Identity(etl.Transformation):
     result: etl.Output[Row]
 
 
-@Identity.implementation("local")
-def identity_local(rows: list[Row]) -> list[Row]:
-    return list(rows)
+@Identity.portable
+def identity(rows):
+    return rows
 
 
 class Demo(etl.Pipeline):
@@ -41,7 +41,11 @@ class Demo(etl.Pipeline):
     out: etl.Load[Row] = etl.Load(input=step.result, asset="out")
 
 
-profile = etl.Profile(name="sdk-demo", assets={"rows": "memory", "out": "memory"})
+profile = etl.Profile(
+    name="sdk-demo",
+    portable_transform_policy="require",
+    assets={"rows": "memory", "out": "memory"},
+)
 runtime = etl.PipelineRuntime()
 runtime.memory.seed(
     "rows",
@@ -58,6 +62,9 @@ print(runtime.memory.get("out"))
 ## Notes
 
 - Curated symbols match `_CURATED` — see [API reference](../10_REFERENCE/API_REFERENCE.md).
+- Portable ETLantic transformations are the default authoring style. Native
+  `@implementation(...)` bodies are engine-specific escape hatches and are not
+  eligible for adaptive execution.
 - **Primary path remains CLI** `init` → validate → run. Use this page only after
   first file-backed success.
 - Next: [First Pipeline](FIRST_PIPELINE.md) (if you skipped it),

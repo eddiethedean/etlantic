@@ -6,7 +6,7 @@
 
 | Symptom | Fix |
 |---|---|
-| Docs version is newer than `etlantic --version` | `python -m pip install 'etlantic==0.50.0'` (pin plugins to the same version) |
+| Docs version is newer than `etlantic --version` | `python -m pip install 'etlantic==0.50.1'` (pin plugins to the same version) |
 | `etlantic init` refuses a non-empty directory | Create an **empty** subdirectory, then `cd` into it before `init` |
 | `etlantic: command not found` | Prefer `python -m etlantic …` so the active interpreter is used |
 | Run succeeds but `data/out.json` has no Ada/Grace | Seed files under `data/` are required; re-check the Quickstart JSON seeds and the same `--profile` |
@@ -37,7 +37,7 @@ Until you have the docs train version, upgrade from PyPI:
 
 ```bash
 python -m pip uninstall -y etlantic
-python -m pip install 'etlantic==0.50.0'
+python -m pip install 'etlantic==0.50.1'
 python -m etlantic --version   # expect 0.50.0
 ```
 
@@ -81,13 +81,13 @@ From PyPI:
 
 ```bash
 python -m pip install --upgrade \
-  'etlantic-polars==0.50.0' 'etlantic-pandas==0.50.0'
+  'etlantic-polars==0.50.1' 'etlantic-pandas==0.50.1'
 python -m pip install --upgrade \
-  'etlantic-sql==0.50.0' 'etlantic-pyspark==0.50.0'
+  'etlantic-sql==0.50.1' 'etlantic-pyspark==0.50.1'
 python -m pip install --upgrade \
-  'etlantic-airflow==0.50.0' 'etlantic-prefect==0.50.0'
+  'etlantic-airflow==0.50.1' 'etlantic-prefect==0.50.1'
 python -m pip install --upgrade \
-  'medallantic==0.50.0'
+  'medallantic==0.50.1'
 ```
 
 From a checkout:
@@ -121,7 +121,7 @@ versions and install matching pins, for example:
 
 ```bash
 python -m pip install --upgrade --force-reinstall \
-  'etlantic==0.50.0' 'etlantic-polars==0.50.0'
+  'etlantic==0.50.1' 'etlantic-polars==0.50.1'
 ```
 
 Use the plugin distribution relevant to your engine in place of
@@ -152,7 +152,7 @@ python -m pip show etlantic etlantic-polars
 ```
 
 If no transform compiler appears for Polars, install a matching
-`etlantic-polars==0.50.0` into the same environment as core. Entry-point
+`etlantic-polars==0.50.1` into the same environment as core. Entry-point
 discovery uses installed distribution metadata, so reinstall the plugin after
 editable-install or interpreter changes.
 ## `PMXFORM301` unsupported action or function
@@ -174,7 +174,7 @@ native `@implementation(...)`, or use
 | `PMCFG110` / `PMCFG111` | Legacy `bindings`-only profile | Prefer `assets`; `etlantic profile migrate` or `--accept-legacy-bindings` once |
 | `PMPLUG401` | Production `plugin_allowlist` is empty | Set a non-empty allowlist (see `prod.example.json`); do not use bare `--profile production` for CI |
 | `PMPLUG402` | Plugin name/version not permitted by allowlist | Add the package with a matching pin, or install the allowlisted version |
-| `PMPLUG403` | Allowlist pin is not a valid version specifier | Fix the pin syntax (`==0.50.0`, `>=0.50.0,<0.51`, …) |
+| `PMPLUG403` | Allowlist pin is not a valid version specifier | Fix the pin syntax (`==0.50.1`, `>=0.50.0,<0.51`, …) |
 | `PMXFORM301` | Portable action unsupported on selected compiler | Narrow portable IR, switch engine, or add `@implementation` |
 | `PMEXEC410` | Report persistence failed after publication | Inspect terminal status; recover orphaned writes; do not assume success |
 | `PMEXEC416` | Missing callable reader on storage binding | Register a reader or use a supported binding |
@@ -190,7 +190,7 @@ Full catalog: [Diagnostics](../10_REFERENCE/DIAGNOSTICS.md).
 The built-in `production` profile intentionally has an empty plugin allowlist
 and fails closed. Create an explicit production Profile JSON with a non-empty
 `plugin_allowlist` containing exact trusted plugin versions such as
-`"etlantic-polars": "==0.50.0"`. The allowlist permits discovery; it does not
+`"etlantic-polars": "==0.50.1"`. The allowlist permits discovery; it does not
 install plugins or resolve assets. See
 [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).
 
@@ -250,22 +250,22 @@ Do not silently switch profile names within one workflow.
 
 | Need | Install | Docs path |
 |---|---|---|
-| Polars on an `init` project | `pip install 'etlantic[polars]==0.50.0'` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Pandas on an `init` project | `pip install 'etlantic[pandas]==0.50.0'` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
-| SQL hello (SQLite) | `pip install 'etlantic[sql]==0.50.0'` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) |
+| Polars on an `init` project | `pip install 'etlantic[polars]==0.50.1'` | [Polars tutorial](../06_EXECUTION/POLARS_TUTORIAL.md) |
+| Pandas on an `init` project | `pip install 'etlantic[pandas]==0.50.1'` | [Pandas tutorial](../06_EXECUTION/PANDAS_TUTORIAL.md) |
+| SQL hello (SQLite) | `pip install 'etlantic[sql]==0.50.1'` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) |
 | Production trust / allowlist | core only | [Capabilities CI starter](CAPABILITIES.md#ci-starter) |
 
 Clone companions (optional, not in the wheel):
 
 | Need | Install | Example |
 |---|---|---|
-| Polars portable kernel | `pip install 'etlantic-polars==0.50.0'` | `examples/portable_polars_kernel.py` |
-| Polars / Pandas native | `pip install 'etlantic-polars==0.50.0' 'etlantic-pandas==0.50.0'` | `examples/dataframe_parity.py` |
+| Polars portable kernel | `pip install 'etlantic-polars==0.50.1'` | `examples/portable_polars_kernel.py` |
+| Polars / Pandas native | `pip install 'etlantic-polars==0.50.1' 'etlantic-pandas==0.50.1'` | `examples/dataframe_parity.py` |
 | Polars ↔ Pandas Gate A | same as above | `examples/interchange_polars_pandas.py` |
-| SQL fusion demo | `pip install 'etlantic-sql==0.50.0'` | `examples/sql_to_sql.py` |
-| PySpark | `pip install 'etlantic-pyspark==0.50.0'` (+ Java) | `examples/pyspark_local.py` |
-| Airflow compile | `pip install 'etlantic-airflow==0.50.0'` | `examples/airflow_compile.py` |
-| Medallantic | `pip install 'medallantic==0.50.0'` | `tests/medallantic/` |
+| SQL fusion demo | `pip install 'etlantic-sql==0.50.1'` | `examples/sql_to_sql.py` |
+| PySpark | `pip install 'etlantic-pyspark==0.50.1'` (+ Java) | `examples/pyspark_local.py` |
+| Airflow compile | `pip install 'etlantic-airflow==0.50.1'` | `examples/airflow_compile.py` |
+| Medallantic | `pip install 'medallantic==0.50.1'` | `tests/medallantic/` |
 
 Airflow compilation is available via `etlantic-airflow`. The shipped
 `etlantic-prefect` local MVP is a direct-execution scheduler
@@ -279,7 +279,7 @@ Pandas boundaries and remains available in 0.37.
 
 | Symptom | Fix |
 |---|---|
-| Plugin not discovered | Install `etlantic-polars==0.50.0` **and** `etlantic-pandas==0.50.0`; match core minor |
+| Plugin not discovered | Install `etlantic-polars==0.50.1` **and** `etlantic-pandas==0.50.1`; match core minor |
 | Plan fails closed on descriptor / mechanism | Both plugins must advertise compatible `interchange_mechanisms`; see Plugin SDK |
 | Expecting PySpark or SQL Gate A | Out of scope — stay on Polars↔Pandas or keep a single engine |
 | Treating Arrow helpers as Gate A | Best-effort Arrow conversion is **not** the Gate A contract; use planned descriptors / evidence |
@@ -292,7 +292,7 @@ See [Interchange Gate A FAQ](INTERCHANGE_GATE_A_FAQ.md) and
 ## PySpark fails before ETLantic executes a step
 
 PySpark requires a compatible Java runtime as well as
-`etlantic-pyspark==0.50.0`. Check both from the same environment:
+`etlantic-pyspark==0.50.1`. Check both from the same environment:
 
 ```bash
 java -version
@@ -305,7 +305,7 @@ must be fixed before ETLantic can create a local Spark session.
 
 ## SQL reports a missing or invalid connection URL
 
-Install `etlantic-sql==0.50.0`, select `Profile(sql_engine="sql")`, and provide
+Install `etlantic-sql==0.50.1`, select `Profile(sql_engine="sql")`, and provide
 the URL expected by your binding or example. For the reference PostgreSQL
 path:
 

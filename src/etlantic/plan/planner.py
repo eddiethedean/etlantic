@@ -32,6 +32,7 @@ from etlantic.plan.artifacts import (
     artifact_identity,
     cache_identity,
 )
+from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import (
     PLAN_SCHEMA,
     OutputResolution,
@@ -788,7 +789,9 @@ def _select_implementations_from_definition(
         transform_id = node.transformation_id or "unknown"
         xf = xf_by_id.get(transform_id)
         portable_plan = (
-            dict(xf.portable_plan) if xf is not None and xf.portable_plan else None
+            mutable_copy(xf.portable_plan)
+            if xf is not None and xf.portable_plan
+            else None
         )
         explicit_override = node.name in context.profile.implementation_overrides
         requested_engine = engine
@@ -1066,7 +1069,7 @@ def _select_implementations(
                         k: list(v) for k, v in portable_def.requirements.items()
                     },
                     support_summary=_support_summary(report, compiler),
-                    portable_plan=dict(portable_def.plan),
+                    portable_plan=mutable_copy(portable_def.plan),
                     metadata={
                         "compiler_capabilities": info.capabilities.to_dict(),
                         "support_summary": _support_summary(report, compiler),

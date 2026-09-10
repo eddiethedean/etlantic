@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-openlineage"
-version = "0.50.0"
+version = "0.50.1"
 description = "Experimental outbound OpenLineage export for ETLantic CP2."
 readme = "README.md"
 license = "MIT"

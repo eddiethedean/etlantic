@@ -92,7 +92,7 @@ ETLantic planning and runtime.
 ## Compatibility policy
 
 - Claim only capabilities your compiler passes in the public suite.
-- Pin `etlantic` (and this suite) to the minor you certified against (`==0.50.0`).
+- Pin `etlantic` (and this suite) to the minor you certified against (`==0.50.1`).
 - Fail closed at `analyze()` for unsupported modes; do not degrade silently.
 - Keep plans, explain payloads, and diagnostics secret-free.
 

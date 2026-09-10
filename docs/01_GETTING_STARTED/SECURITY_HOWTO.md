@@ -21,8 +21,8 @@ production = Profile(
     security_mode="production",
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
-        "etlantic-sql": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
+        "etlantic-sql": "==0.50.1",
     },
 )
 ```
@@ -65,13 +65,13 @@ Example starter (trim allowlist to packages you install):
   "validation_policy": "strict",
   "portable_transform_policy": "require",
   "plugin_allowlist": {
-    "etlantic-polars": "==0.50.0"
+    "etlantic-polars": "==0.50.1"
   },
   "assets": {}
 }
 ```
 
-Pin core and plugins to the same minor (`==0.50.0`).
+Pin core and plugins to the same minor (`==0.50.1`).
 
 ## 5. Know the shipped security diagnostics
 

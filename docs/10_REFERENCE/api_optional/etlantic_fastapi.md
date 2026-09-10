@@ -15,7 +15,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-fastapi==0.50.0'
+pip install 'etlantic-fastapi==0.50.1'
 ```
 
 ```python

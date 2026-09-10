@@ -43,7 +43,7 @@ the 0.47 evidence; live Kind is skip `047-K-01`. Capacity envelope:
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.50.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.50.1` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -67,7 +67,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.50.0`.
+1. Install `etlantic-prefect==0.50.1`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.

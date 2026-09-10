@@ -132,8 +132,8 @@ Optional plugins document factories in package READMEs. See
 | API | Returns | Important failures / side effects |
 |---|---|---|
 | `Transformation.step(**bindings)` | A symbolic `Step`; no user code runs | Unknown bindings raise `ModelDefinitionError` |
-| `Transformation.implementation(engine)` | Decorator returning the original callable | Registration replaces same class/engine in-process |
-| `Transformation.portable` | Decorator registering a symbolic definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) |
+| `Transformation.portable` | Decorator registering the recommended engine-neutral definition | Authoring errors raise `ModelDefinitionError` (`PMXFORM*`) |
+| `Transformation.implementation(engine)` | Decorator returning an engine-specific escape-hatch callable | Registration replaces same class/engine in-process; not adaptive-execution eligible |
 | `Pipeline.validate(...)` | `ValidationReport` | Does not execute transforms; empty production allowlist fails closed |
 | `Pipeline.plan(...)` | Immutable, secret-free `PipelinePlan` | Missing plugins/assets/capabilities fail planning; nested mappings/lists/sets are frozen via `deep_freeze` (dataclasses/unknown objects unchanged) |
 | `Pipeline.run(...)` / `arun(...)` | `PipelineRunReport` | Verifies plan fingerprint before execution; storage side effects follow the plan |

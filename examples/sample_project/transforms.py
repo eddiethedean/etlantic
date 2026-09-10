@@ -1,6 +1,7 @@
 """Transformations for the sample project."""
 
 from etlantic import Input, Output, Transformation
+from etlantic.transform import functions as F
 
 from .contracts import Customer, RawCustomer
 
@@ -10,12 +11,9 @@ class NormalizeCustomers(Transformation):
     result: Output[Customer]
 
 
-@NormalizeCustomers.implementation("local")
-def normalize_customers(customers: list[RawCustomer]) -> list[Customer]:
-    return [
-        Customer(
-            customer_id=customer.customer_id,
-            full_name=f"{customer.first_name} {customer.last_name}",
-        )
-        for customer in customers
-    ]
+@NormalizeCustomers.portable
+def normalize_customers(customers):
+    return customers.select(
+        "customer_id",
+        F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
+    )

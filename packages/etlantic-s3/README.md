@@ -14,10 +14,10 @@ prepare/commit.
 ## Install
 
 ```bash
-pip install 'etlantic-s3==0.50.0'
+pip install 'etlantic-s3==0.50.1'
 # Live AWS (opt-in later; not required for CI):
-# pip install 'etlantic-s3[aws]==0.50.0'
-# pip install 'etlantic==0.50.0'
+# pip install 'etlantic-s3[aws]==0.50.1'
+# pip install 'etlantic==0.50.1'
 ```
 
 Core dependency: `etlantic>=0.50.0,<0.51`. Optional: `boto3`, `pyarrow`.

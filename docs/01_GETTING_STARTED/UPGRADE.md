@@ -297,7 +297,7 @@ See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.50.0` and matching plugins / `medallantic==0.50.0` | Mix 0.49 plugins with a 0.50 core |
+| Pin `etlantic==0.50.1` and matching plugins / `medallantic==0.50.1` | Mix 0.49 plugins with a 0.50 core |
 | Replan 0.49 portable descriptors and retain requirement-level evidence | Reuse stale or evidence-free plans |
 | Keep production plugin and resource allowlists explicit | Embed secrets, rows, or payloads in plans or evidence |
 

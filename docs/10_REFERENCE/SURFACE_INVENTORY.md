@@ -152,7 +152,7 @@ Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.50.0`). Details:
+Pin to the same minor as core (`==0.50.1`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |

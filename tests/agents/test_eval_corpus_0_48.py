@@ -109,6 +109,9 @@ def test_default_guidance_mentions_public_surface(tmp_path) -> None:
     assert "etlantic context" in agents
     assert "etlantic proposal" in agents
     assert "etlantic.agents" in agents
+    assert "@Transformation.portable" in agents
+    assert 'portable_transform_policy="require"' in agents
+    assert "not eligible for adaptive" in agents
 
 
 @pytest.mark.skipif(

@@ -38,7 +38,7 @@ profile = Profile(
     security_domain="production",
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
     },
     assets={
         "customer_source": "json",

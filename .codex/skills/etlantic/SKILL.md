@@ -9,6 +9,12 @@ Use public CLI commands (`init`, `doctor`, `validate`, `inspect`, `plan`, `profi
 prefer `import etlantic as etl` (curated root + lazy namespaces) or
 public SDK imports (`etlantic.dataframe`, `.sql`, `.spark`, `.orchestration`, `.viz`, `.secrets`, `.testing`, `.quality`, `.connectors`, `.control_plane`, `.optimization`, `.streaming`, `.resources`, `.agents`).
 
+Define new transformation logic with `@Transformation.portable` and ETLantic
+expressions (`etl.transform.functions`) by default. Use
+`portable_transform_policy="require"` for new profiles. Native
+`@Transformation.implementation(engine)` bodies are explicit engine-specific
+escape hatches and are not eligible for adaptive execution.
+
 For FastAPI, use `ETLanticAPI` / `include_router` / `create_app` for the CP1
 control plane. `create_reference_app` is only a thin, non-CP authoring demo.
 Continuous landing-zone directory watchers are optional submitters, never core

@@ -19,8 +19,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.0",
-        "etlantic-sql": "==0.50.0",
+        "etlantic-polars": "==0.50.1",
+        "etlantic-sql": "==0.50.1",
     },
     assets={"customer_source": "customers"},
 )

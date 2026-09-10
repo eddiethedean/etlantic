@@ -11,10 +11,10 @@ compilation on Pandas. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-pandas==0.50.0'
+pip install 'etlantic-pandas==0.50.1'
 # Optional Arrow interchange:
-pip install 'etlantic-pandas[arrow]==0.50.0'
-# pip install 'etlantic==0.50.0'
+pip install 'etlantic-pandas[arrow]==0.50.1'
+# pip install 'etlantic==0.50.1'
 ```
 
 ## Dataframe plugin
@@ -35,6 +35,8 @@ The `etlantic.transform_compilers` entry point named `pandas` exposes
 `dtcs:profile/portable-relational/1`, including joins, unions, grouping,
 aggregation, ordering, deduplication, and limits without requiring a native
 `@implementation("pandas")`.
+This is the recommended transformation path and remains eligible for adaptive
+execution; a native Pandas body pins its step to Pandas.
 
 ```python
 from etlantic import Profile
@@ -58,7 +60,7 @@ run_portable_transform_conformance_suite(create_transform_compiler())
 
 ## Links
 
-[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.50.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.50.0/10_REFERENCE/COMPATIBILITY/) ·
+[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.50.1/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

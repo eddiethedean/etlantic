@@ -7,6 +7,7 @@ globs:
 # ETLantic
 
 - Prefer `import etlantic as etl`; also use public imports: dataframe, sql, spark, orchestration, viz, secrets, testing, quality, connectors, control_plane, optimization, streaming, resources, agents.
+- Prefer `@Transformation.portable` with ETLantic expressions and `portable_transform_policy="require"`; native `@Transformation.implementation(engine)` bodies are engine-specific escape hatches and are not eligible for adaptive execution.
 - CLI: validate → plan → compile/generate; prefer `--format json` or `sarif` in CI.
 - Airflow compile requires optional `etlantic-airflow`.
 - FastAPI CP1 uses `ETLanticAPI` / `include_router` / `create_app`; `create_reference_app` is a thin non-CP demo, and watchers remain optional submitters.
