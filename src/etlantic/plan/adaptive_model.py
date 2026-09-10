@@ -14,7 +14,7 @@ from typing import Any, Literal, TypeAlias
 from etlantic.model import LogicalGraph
 from etlantic.plan.freeze import deep_freeze, mutable_copy
 from etlantic.plan.model import PipelinePlan
-from etlantic.plan.physical import PhysicalDAG
+from etlantic.plan.physical import PHYSICAL_UNIT_SCHEMA, PhysicalDAG
 
 ADAPTIVE_PLAN_SCHEMA = "etlantic.plan/2"
 ADAPTIVE_LIMITS_VERSION = "etlantic.adaptive-limits/1"
@@ -52,6 +52,10 @@ class TargetDescriptor:
         protocol_versions = _validated_string_map(
             self.protocol_versions, "target descriptor protocol_versions"
         )
+        if not isinstance(self.capability_fingerprint, str):
+            raise ValueError(
+                "PMADP201: target descriptor capability_fingerprint must be a string"
+            )
         if isinstance(self.evidence_refs, (str, bytes)):
             raise ValueError("PMADP202: evidence_refs must be an array")
         if any(
@@ -314,6 +318,8 @@ class AdaptiveRegion:
             raise ValueError("PMADP402: adaptive region dependencies must be non-blank")
         if len(set(dependencies)) != len(dependencies):
             raise ValueError("PMADP402: adaptive region dependencies must be unique")
+        if type(self.fused) is not bool:
+            raise ValueError("PMADP400: adaptive region fused must be a boolean")
         object.__setattr__(self, "logical_nodes", nodes)
         object.__setattr__(self, "dependencies", dependencies)
         metadata = _validated_metadata(self.metadata, "adaptive region metadata")
@@ -339,7 +345,7 @@ class AdaptiveRegion:
             target_id=data["target_id"],
             logical_nodes=tuple(data.get("logical_nodes", ())),
             dependencies=tuple(data.get("dependencies", ())),
-            fused=bool(data.get("fused", False)),
+            fused=data.get("fused", False),
             security_domain=data.get("security_domain", "default"),
             metadata=data.get("metadata", {}),
         )
@@ -398,6 +404,10 @@ class AdaptivePipelinePlan:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP400: adaptive plan {name} is required")
+        # An empty string is used transiently while constructing the content
+        # fingerprint; deserialized/wire plans are required to carry a value.
+        if not isinstance(self.fingerprint, str):
+            raise ValueError("PMADP400: adaptive plan fingerprint must be a string")
         if not isinstance(self.logical_graph, LogicalGraph):
             raise ValueError("PMADP400: adaptive plan logical_graph is required")
         node_order = tuple(self.logical_graph.node_names())
@@ -413,10 +423,6 @@ class AdaptivePipelinePlan:
             if not selected_tuple or len(set(selected_tuple)) != len(selected_tuple):
                 raise ValueError(
                     "PMADP403: selected_nodes must be null or non-empty and unique"
-                )
-            if set(selected_tuple) == node_names:
-                raise ValueError(
-                    "PMADP403: full adaptive scope must use selected_nodes=null"
                 )
             if not set(selected_tuple) <= node_names:
                 raise ValueError(
@@ -457,7 +463,11 @@ class AdaptivePipelinePlan:
             for node in selected_tuple
             for target in inventory.eligible_target_order
         ]
-        if set(actual_pairs) != set(expected_pairs):
+        if (
+            len(actual_pairs) != len(expected_pairs)
+            or len(set(actual_pairs)) != len(actual_pairs)
+            or set(actual_pairs) != set(expected_pairs)
+        ):
             raise ValueError("PMADP220: candidate matrix is incomplete or duplicated")
         candidate_by_pair = {
             (candidate.node_name, candidate.target_id): candidate
@@ -514,6 +524,28 @@ class AdaptivePipelinePlan:
         )
         if not protocol_versions:
             raise ValueError("PMADP201: adaptive plan protocol_versions are required")
+        unknown_protocol_versions = sorted(
+            set(protocol_versions) - {"plan", "physical_unit"}
+        )
+        if unknown_protocol_versions:
+            raise ValueError(
+                "PMADP400: unknown adaptive plan protocol_versions field(s): "
+                + ", ".join(unknown_protocol_versions)
+            )
+        if protocol_versions.get("plan") != ADAPTIVE_PLAN_SCHEMA:
+            raise ValueError(
+                "PMADP400: adaptive plan protocol_versions.plan must be "
+                f"{ADAPTIVE_PLAN_SCHEMA!r}"
+            )
+        if protocol_versions.get("physical_unit") != PHYSICAL_UNIT_SCHEMA:
+            raise ValueError(
+                "PMADP400: adaptive plan protocol_versions.physical_unit must be "
+                f"{PHYSICAL_UNIT_SCHEMA!r}"
+            )
+        if isinstance(self.objective, (str, bytes)) or not isinstance(
+            self.objective, (list, tuple)
+        ):
+            raise ValueError("PMADP321: adaptive plan objective must be an array")
         objective = tuple(self.objective)
         if any(
             type(value) is not int and not isinstance(value, str) for value in objective
@@ -597,6 +629,8 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 f"PMADP400: unsupported adaptive plan schema {data.get('schema')!r}"
             )
+        if not isinstance(data["fingerprint"], str) or not data["fingerprint"].strip():
+            raise ValueError("PMADP400: adaptive plan fingerprint is required")
         plan = cls(
             schema=ADAPTIVE_PLAN_SCHEMA,
             plan_id=data["plan_id"],
@@ -617,7 +651,7 @@ class AdaptivePipelinePlan:
             decisions=tuple(
                 AdaptiveDecision.from_dict(item) for item in data["decisions"]
             ),
-            objective=tuple(data["objective"]),
+            objective=data["objective"],
             regions=tuple(AdaptiveRegion.from_dict(item) for item in data["regions"]),
             physical_dag=PhysicalDAG.from_dict(data["physical_dag"]),
             protocol_versions=data["protocol_versions"],

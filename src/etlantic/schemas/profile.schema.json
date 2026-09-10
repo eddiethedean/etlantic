@@ -186,7 +186,9 @@
       "then": {
         "required": ["eligible_targets"],
         "properties": {
-          "eligible_targets": { "minItems": 1 }
+          "eligible_targets": { "minItems": 1 },
+          "orchestrator": { "const": "local" },
+          "spark_streaming": { "const": false }
         }
       }
     }

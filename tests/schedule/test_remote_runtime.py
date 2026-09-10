@@ -24,6 +24,23 @@ def test_negotiate_submit_and_recover() -> None:
     assert recovered.disconnected is False
 
 
+def test_remote_runtime_rejects_adaptive_plan_before_acceptance() -> None:
+    host = FakeRemoteHost()
+    session = host.negotiate(
+        {
+            "version": "0.50.1",
+            "capabilities": {"map": True, "branch": True, "stream": True},
+        }
+    )
+    plan = {"schema": "etlantic.plan/2", "fingerprint": "adaptive"}
+    envelope = host.sign_plan(plan, nonce="adaptive-plan")
+
+    with pytest.raises(ValueError, match="PMADP500"):
+        host.submit(session.session_id, envelope, plan)
+
+    assert session.submitted == []
+
+
 def test_version_skew_rejects_other_minor() -> None:
     host = FakeRemoteHost()
     with pytest.raises(ValueError, match="PMFED101"):

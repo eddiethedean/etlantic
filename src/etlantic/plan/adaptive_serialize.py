@@ -35,7 +35,7 @@ def verify_adaptive_fingerprint(plan: AdaptivePipelinePlan) -> None:
     expected = adaptive_plan_fingerprint(plan)
     if plan.fingerprint != expected:
         raise ValueError(
-            "AdaptivePipelinePlan fingerprint mismatch: "
+            "PMADP401: AdaptivePipelinePlan fingerprint mismatch: "
             f"embedded={plan.fingerprint!r} computed={expected!r}"
         )
 

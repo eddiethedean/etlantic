@@ -59,6 +59,22 @@ class PrefectScheduler:
         request: RunRequest,
         context: SchedulingContext,
     ) -> SchedulerSupportReport:
+        from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
+
+        if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+            return SchedulerSupportReport(
+                supported=False,
+                findings=(
+                    SchedulerSupportFinding(
+                        code="PMADP500",
+                        requirement="etlantic.plan/2",
+                        reason=(
+                            "PrefectScheduler does not advertise adaptive "
+                            "physical-unit execution"
+                        ),
+                    ),
+                ),
+            )
         findings: list[SchedulerSupportFinding] = []
         if plan.logical_graph is None or not plan.logical_graph.nodes:
             findings.append(
@@ -158,10 +174,15 @@ class PrefectScheduler:
         )
         report = self.analyze(plan, request=request, context=ctx)
         if not report.supported:
-            from etlantic.exceptions import ETLanticError
+            from etlantic.exceptions import PipelineExecutionError
 
             detail = "; ".join(f"{f.code}: {f.reason}" for f in report.findings)
-            raise ETLanticError(f"PrefectScheduler rejected plan: {detail}")
+            code = report.findings[0].code if report.findings else None
+            raise PipelineExecutionError(
+                f"PrefectScheduler rejected plan: {detail}",
+                code=code,
+                stage="admission",
+            )
 
         from prefect.flows import flow
 

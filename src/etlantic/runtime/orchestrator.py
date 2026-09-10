@@ -651,8 +651,16 @@ class LocalOrchestrator:
 
     async def execute(self) -> PipelineRunReport:
         from etlantic.lifecycle.lifespan import run_lifespan
+        from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
         from etlantic.plan.serialize import verify_plan_fingerprint
 
+        if getattr(self.plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+            raise PipelineExecutionError(
+                "PMADP500: local runtime does not advertise adaptive "
+                "physical-unit execution",
+                code="PMADP500",
+                stage="admission",
+            )
         verify_plan_fingerprint(self.plan)
         self._validate_cancellation_policy()
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"

@@ -24,4 +24,14 @@ def test_adaptive_contract_freeze_is_accepted_and_non_graduating() -> None:
     assert data["portable_boundary"]["portable_candidates_only"] is True
     assert data["portable_boundary"]["native_bodies_are_adaptive_candidates"] is False
     assert data["consumer_contract"]["unsupported_consumer_diagnostic"] == "PMADP500"
+    assert data["limits"] == {
+        "selected_logical_nodes": 256,
+        "eligible_placement_targets": 8,
+        "candidates_per_node": 8,
+        "candidate_records": 2048,
+        "solver_state_expansions": 1_000_000,
+        "explain_evidence_items_per_node_target": 8,
+        "adaptive_explain_bytes": 4 * 1024 * 1024,
+        "planner_transient_bytes": 256 * 1024 * 1024,
+    }
     assert ADR.is_file()

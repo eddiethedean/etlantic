@@ -149,6 +149,22 @@ class LocalScheduler:
         request: RunRequest,
         context: SchedulingContext,
     ) -> SchedulerSupportReport:
+        from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
+
+        if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+            return SchedulerSupportReport(
+                supported=False,
+                findings=(
+                    SchedulerSupportFinding(
+                        code="PMADP500",
+                        requirement="etlantic.plan/2",
+                        reason=(
+                            "LocalScheduler does not advertise adaptive "
+                            "physical-unit execution"
+                        ),
+                    ),
+                ),
+            )
         findings: list[SchedulerSupportFinding] = []
         # Local scheduler schedules logical graph nodes (physical_units are
         # advisory metadata until fusion-driven unit scheduling lands).
@@ -210,10 +226,15 @@ class LocalScheduler:
             ),
         )
         if not report.supported:
-            from etlantic.exceptions import ETLanticError
+            from etlantic.exceptions import PipelineExecutionError
 
             detail = "; ".join(f"{f.code}: {f.reason}" for f in report.findings)
-            raise ETLanticError(f"LocalScheduler rejected plan: {detail}")
+            code = report.findings[0].code if report.findings else None
+            raise PipelineExecutionError(
+                f"LocalScheduler rejected plan: {detail}",
+                code=code,
+                stage="admission",
+            )
 
         from etlantic.runtime.orchestrator import LocalOrchestrator
 

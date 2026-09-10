@@ -20,6 +20,28 @@ ExecutionStrategy = Literal["explicit", "adaptive"]
 AdaptiveFallback = Literal["error", "explicit"]
 
 
+class _ImmutableStringMap(Mapping[str, str]):
+    """Deepcopy-compatible immutable mapping for target version constraints."""
+
+    __slots__ = ("_values",)
+
+    def __init__(self, values: Mapping[str, str]) -> None:
+        self._values = dict(values)
+
+    def __getitem__(self, key: str) -> str:
+        return self._values[key]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> _ImmutableStringMap:
+        del memo
+        return _ImmutableStringMap(self._values)
+
+
 @dataclass(frozen=True, slots=True)
 class PlacementTarget:
     """Secret-free, profile-authored description of an adaptive target.
@@ -37,7 +59,7 @@ class PlacementTarget:
     location: str = "local"
     security_domain: str = "default"
     required_capabilities: tuple[str, ...] = ()
-    version_constraints: dict[str, str] = field(default_factory=dict)
+    version_constraints: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for name in ("engine", "location", "security_domain"):
@@ -72,7 +94,9 @@ class PlacementTarget:
             )
         _reject_secret_like_target_values(self)
         object.__setattr__(self, "required_capabilities", tuple(capabilities))
-        object.__setattr__(self, "version_constraints", dict(constraints))
+        object.__setattr__(
+            self, "version_constraints", _ImmutableStringMap(constraints)
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return the canonical JSON representation."""
@@ -483,7 +507,9 @@ class Profile:
         strategy = _parse_execution_strategy(execution_strategy)
         fallback = _parse_adaptive_fallback(adaptive_fallback)
         targets = _coerce_placement_targets(placement_targets)
-        if isinstance(eligible_targets, str):
+        if isinstance(eligible_targets, (str, bytes)) or not isinstance(
+            eligible_targets, (list, tuple)
+        ):
             raise ValueError("PMADP102: eligible_targets must be an array")
         eligible = tuple(eligible_targets)
         if any(not isinstance(value, str) or not value.strip() for value in eligible):
@@ -821,11 +847,13 @@ class Profile:
                 data.get("portable_transform_policy")
             ),
             execution_strategy=_parse_execution_strategy(
-                data.get("execution_strategy")
+                data.get("execution_strategy", "explicit")
             ),
             placement_targets=_coerce_placement_targets(data.get("placement_targets")),
-            eligible_targets=tuple(data.get("eligible_targets") or ()),
-            adaptive_fallback=_parse_adaptive_fallback(data.get("adaptive_fallback")),
+            eligible_targets=data.get("eligible_targets", ()),
+            adaptive_fallback=_parse_adaptive_fallback(
+                data.get("adaptive_fallback", "error")
+            ),
             tenant=str(data.get("tenant") or "default"),
             environment=str(data.get("environment") or "default"),
             safe_io=dict(data.get("safe_io") or {}),
@@ -928,7 +956,9 @@ def _coerce_placement_targets(
 
 
 def _parse_execution_strategy(value: Any) -> ExecutionStrategy:
-    strategy = str(value or "explicit").strip().lower()
+    if value is None:
+        raise ValueError("PMADP100: execution_strategy must not be null")
+    strategy = str(value).strip().lower()
     if strategy not in {"explicit", "adaptive"}:
         raise ValueError(
             f"PMADP100: execution_strategy must be explicit|adaptive, got {value!r}"
@@ -937,7 +967,9 @@ def _parse_execution_strategy(value: Any) -> ExecutionStrategy:
 
 
 def _parse_adaptive_fallback(value: Any) -> AdaptiveFallback:
-    fallback = str(value or "error").strip().lower()
+    if value is None:
+        raise ValueError("PMADP100: adaptive_fallback must not be null")
+    fallback = str(value).strip().lower()
     if fallback not in {"error", "explicit"}:
         raise ValueError(
             f"PMADP100: adaptive_fallback must be error|explicit, got {value!r}"

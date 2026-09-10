@@ -23,6 +23,7 @@ from etlantic.control_plane import (
     require_authorized,
     require_authorized_run,
 )
+from etlantic.plan import ADAPTIVE_PLAN_SCHEMA
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
     AliasPutBody,
@@ -440,11 +441,20 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         )
         # Authz before existence disclosure.
         try:
-            api.definitions.get(ctx, definition_id)
+            definition = api.definitions.get(ctx, definition_id)
         except KeyError as exc:
             raise ControlPlaneError.not_found(
                 f"Definition {definition_id!r} not found"
             ) from exc
+        if definition.get("schema") == ADAPTIVE_PLAN_SCHEMA:
+            raise ControlPlaneError(
+                "PMADP500: control-plane acceptance does not advertise adaptive "
+                "etlantic.plan/2 support",
+                code="PMADP500",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
 
         body = body or RunSubmitBody()
         idem = (

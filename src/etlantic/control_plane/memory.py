@@ -265,7 +265,7 @@ class MemorySubmissionStore:
                 out.append(deepcopy(record))
                 if len(out) >= limit:
                     break
-            return out
+            return out if out else ()
 
 
 @dataclass
@@ -342,7 +342,8 @@ class MemoryEventStore:
                             "schema": "etlantic.control_plane.sse_cursor/1",
                         },
                     )
-            return [deepcopy(ev) for ev in bucket[start : start + limit]]
+            items = [deepcopy(ev) for ev in bucket[start : start + limit]]
+            return items if items else ()
 
 
 __all__ = [

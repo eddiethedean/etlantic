@@ -59,6 +59,7 @@
     "candidates_per_node": 8,
     "candidate_records": 2048,
     "solver_state_expansions": 1000000,
+    "explain_evidence_items_per_node_target": 8,
     "adaptive_explain_bytes": 4194304,
     "planner_transient_bytes": 268435456
   },

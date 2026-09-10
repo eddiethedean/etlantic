@@ -137,6 +137,26 @@ def test_definition_id_forced_from_path() -> None:
     assert record["definition_id"] == "pipe"
 
 
+def test_submit_rejects_adaptive_plan_before_acceptance() -> None:
+    client, subs, events, api = _wired()
+    api.definitions.put(
+        _ctx(),
+        "adaptive",
+        {"schema": "etlantic.plan/2", "fingerprint": "adaptive-plan"},
+    )
+
+    response = client.post(
+        "/v1/definitions/adaptive/runs",
+        headers={"X-Principal": "alice", "Idempotency-Key": "adaptive-run"},
+        json={"payload": {"plan_fingerprint": "adaptive-plan"}},
+    )
+
+    assert response.status_code >= 400, response.text
+    assert "PMADP500" in response.text
+    assert subs.poll_accepted(_ctx(), limit=10) == ()
+    assert events.list_after_cursor(_ctx(), None, limit=10) == ()
+
+
 def test_poll_accepted_scoped_to_caller_tenant() -> None:
     client, subs, _, _ = _wired()
     alice_headers = {"X-Principal": "alice", "Idempotency-Key": "idem-a"}

@@ -253,6 +253,13 @@ class PhysicalDAG:
             raise ValueError(
                 "PMADP403: logical_to_physical must match unit logical attribution"
             )
+        if any(
+            unit_map[unit_id].kind is not PhysicalUnitKind.COMPUTE
+            for unit_id in mapping.values()
+        ):
+            raise ValueError(
+                "PMADP403: logical_to_physical must reference compute units"
+            )
         object.__setattr__(self, "units", units)
         object.__setattr__(self, "logical_to_physical", deep_freeze(mapping))
         object.__setattr__(self, "topological_order", order)

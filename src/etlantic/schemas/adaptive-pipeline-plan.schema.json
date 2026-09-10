@@ -39,7 +39,15 @@
         "topological_order": {"type": "array", "items": {"type": "string"}}
       }
     },
-    "protocol_versions": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "\\S"}},
+    "protocol_versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plan", "physical_unit"],
+      "properties": {
+        "plan": {"const": "etlantic.plan/2"},
+        "physical_unit": {"const": "etlantic.physical_unit/1"}
+      }
+    },
     "profile_snapshot": {"type": "object"},
     "security_domain": {"type": "string", "pattern": "\\S"},
     "metadata": {"type": "object"}
@@ -148,7 +156,17 @@
         "evidence_refs": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
         "objective_facts": {"type": "object", "additionalProperties": {"type": "integer"}},
         "metadata": {"type": "object"}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "rejected"}}},
+          "then": {"properties": {"reason_codes": {"minItems": 1}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "eligible"}}},
+          "then": {"properties": {"reason_codes": {"maxItems": 0}}}
+        }
+      ]
     },
     "decision": {
       "type": "object",

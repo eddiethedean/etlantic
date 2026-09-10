@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,14 +31,27 @@ from etlantic import (
     Transformation,
 )
 from etlantic.exceptions import ETLanticError
-from etlantic.runtime.scheduler import SCHEDULER_PROTOCOL
+from etlantic.runtime.request import RunRequest
+from etlantic.runtime.scheduler import SCHEDULER_PROTOCOL, SchedulingContext
 from etlantic.runtime.scheduler_discovery import (
     discover_scheduler_plugins,
     resolve_scheduler,
 )
 from etlantic.runtime.state import RunStatus
+from etlantic_prefect import PrefectScheduler
 
 pytestmark = pytest.mark.prefect
+
+
+def test_prefect_scheduler_rejects_adaptive_plan_during_analysis() -> None:
+    report = PrefectScheduler().analyze(
+        SimpleNamespace(schema="etlantic.plan/2"),  # type: ignore[arg-type]
+        request=RunRequest(),
+        context=SchedulingContext(),
+    )
+
+    assert report.supported is False
+    assert [finding.code for finding in report.findings] == ["PMADP500"]
 
 
 class _Raw(Data):

@@ -123,6 +123,7 @@ The following are protocol limits, not Profile configuration:
 | Candidates per node | 8 | `PMADP302` |
 | Candidate/rejection records | 2,048 | `PMADP303` |
 | Solver state expansions | 1,000,000 | `PMADP304` |
+| Explain evidence items per node-target record | 8 | Supporting evidence is truncated with a canonical marker and omitted count |
 | Serialized adaptive explain artifact | 4 MiB | `PMADP305` |
 | Planner-owned transient budget | 256 MiB | `PMADP306` |
 

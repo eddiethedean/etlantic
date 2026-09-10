@@ -162,10 +162,17 @@ class FakeRemoteHost:
     def submit(
         self, session_id: str, envelope: Mapping[str, Any], plan: Mapping[str, Any]
     ) -> dict[str, Any]:
+        from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
+
         session = self.sessions[session_id]
         if session.disconnected:
             raise ValueError(
                 fed_diagnostic("stale_fence", "Session disconnected.").code
+            )
+        if plan.get("schema") == ADAPTIVE_PLAN_SCHEMA:
+            raise ValueError(
+                "PMADP500: remote runtime does not advertise adaptive "
+                "etlantic.plan/2 acceptance"
             )
         self.verify_plan(envelope, plan)
         text = json.dumps(plan, sort_keys=True).lower()
