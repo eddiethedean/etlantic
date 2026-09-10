@@ -1,6 +1,6 @@
 # What's New in ETLantic 0.50
 
-> **Status: 0.50.0 release candidate; independent Sol approval pending.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 ETLantic 0.50 freezes and technically qualifies the shared portable
 transformation baseline across Local, Polars, Pandas, SQL (SQLite and
@@ -31,7 +31,7 @@ and the [0.50 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md).
 | Pandas | Eager dataframe execution |
 | SQL | SQLite and real PostgreSQL relation paths |
 | PySpark | Real-JVM native logical plans |
-| DataFusion | Native lazy logical plans; release classification remains Provisional pending Sol |
+| DataFusion | Native lazy logical plans; release classification remains Provisional (Alpha) |
 | DuckDB | Native relation execution and required pushdown evidence |
 
 0.50 does not claim a common advanced profile, adaptive execution, streaming,

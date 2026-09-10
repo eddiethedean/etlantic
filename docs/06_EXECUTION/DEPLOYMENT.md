@@ -1,6 +1,6 @@
 # Deployment
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** This guide describes the bounded,
+> **Status: Available in ETLantic 0.50.0 (published Beta).** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 

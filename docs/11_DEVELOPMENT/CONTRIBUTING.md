@@ -1,6 +1,6 @@
 # Contributing
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 ETLantic welcomes contributions to documentation, typed authoring APIs,
 validation, planning, plugins, tests, and examples.

@@ -1,6 +1,6 @@
 # Control plane API (CP1–CP4 + CP-GA)
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** CP1–CP4 are foundations;
+> **Status: Available in ETLantic 0.50.0 (published Beta).** CP1–CP4 are foundations;
 > **CPn alone ≠ GA**. Production multi-tenant is **Available** for Supported
 > profiles (`isolated-deployment`, `dedicated-schema`); `shared-service`
 > remains Experimental; community **non-SLA**.

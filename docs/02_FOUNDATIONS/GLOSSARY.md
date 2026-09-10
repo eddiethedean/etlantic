@@ -1,6 +1,6 @@
 # Glossary
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 This glossary defines the core terminology used throughout the
 ETLantic documentation. Unless otherwise noted, these definitions
@@ -9,7 +9,7 @@ terms are used in other ETL frameworks.
 
 ## Available
 
-In the current minor (0.49): documented, tested, and covered by the Beta
+In the current minor (0.50): documented, tested, and covered by the Beta
 support policy (current minor only, community **non-SLA**). Contrast
 [Experimental](#experimental). See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
 

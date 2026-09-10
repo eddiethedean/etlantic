@@ -1,6 +1,6 @@
 # ETLantic 0.50 User Guide
 
-> **Status: Beta release candidate; publication pending independent release approval.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.

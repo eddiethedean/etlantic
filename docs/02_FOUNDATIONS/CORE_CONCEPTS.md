@@ -1,6 +1,6 @@
 # Core Concepts
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 ETLantic is easiest to understand as a sequence of distinct models rather
 than as one large framework object.

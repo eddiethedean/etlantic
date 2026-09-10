@@ -1,6 +1,6 @@
 # Learning path
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** One ordered ladder from first
+> **Status: Available in ETLantic 0.50.0 (published Beta).** One ordered ladder from first
 > install to week-2 CI. First paste still lives on the
 > [docs home green path](../README.md).
 

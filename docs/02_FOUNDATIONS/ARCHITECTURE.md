@@ -1,6 +1,6 @@
 # Architecture
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 ETLantic is a typed modeling, validation, planning, and coordination
 framework for data pipelines.

@@ -1,8 +1,8 @@
 # Exit Gate 0.50 — Seven-Engine Portable Execution and Pushdown Conformance
 
-> **Status: Technical qualification complete; Sol review pending.** The checked-in
-> evidence records a passing real-backend campaign, but does not itself grant
-> release approval. The final decision is recorded by
+> **Status: Verified for the published ETLantic 0.50.0 release.** The checked-in
+> evidence records a passing real-backend campaign and the independent release
+> decision is recorded by
 > [task #109](https://github.com/eddiethedean/etlantic/issues/109).
 
 See the [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md),
@@ -40,34 +40,34 @@ before any release decision.
 
 | # | Measure | Required | Current | Owner |
 |---|---|---:|---|---|
-| 1 | Normative manifest freezes DTCS plan/profile identity, 12 actions, 23 scalar and 7 aggregate functions, governed operators, aliases, types, modes, joins, unions, collisions, and semantic edge cases | Pass | **Evidence complete — review pending** | #103, #106 |
-| 2 | `/2` profile aliases prove exact normalization to the `/1` baseline or are removed with migration evidence | Pass | **Evidence complete — review pending** | #106, #109 |
-| 3 | `etlantic.transform-compiler/1` remains additive, legacy omissions normalize to `unknown`, and 0.49 `etlantic.plan/1` fixtures remain readable but fail preflight until replanned | Pass | **Evidence complete — review pending** | #106 |
-| 4 | Every advertised baseline claim maps to a mandatory public fixture and every required baseline item is claimed | 100% | **Evidence complete — review pending** | #107 |
-| 5 | Applicability, requirement obligation (`required`, `preferred`, `informational`), and target support (`supported_exact`, `supported_with_lowering`, `unsupported`, `unavailable`, `unknown`) are independently represented and fingerprinted | Pass | **Evidence complete — review pending** | #103, #106 |
-| 6 | Required unknown, omitted, unsupported, unavailable, ambiguous, and unresolved-conditional requirements fail during validation/planning with stable diagnostics | Pass | **Evidence complete — review pending** | #103, #106, #107 |
-| 7 | Lowering-backed support records a stable lowering identity, resolved conditions, proof evidence, and physical effects; invalid or data-dependent conditions fail closed | Pass | **Evidence complete — review pending** | #106, #107 |
-| 8 | Every declared boundary emits one deterministic applicability/outcome finding; required SQL, DuckDB, PySpark, and DataFusion native-plan boundaries have positive executable proof | Pass | **Evidence complete — review pending** | #96–#108, #118 |
-| 9 | Local validates, plans, and runs the canonical portable-only pipeline with no optional engine dependency | Pass | **Evidence complete — review pending** | #96 |
-| 10 | Polars passes the complete baseline in both claimed eager/lazy modes | Pass | **Evidence complete — review pending** | #97 |
-| 11 | Pandas passes the complete baseline with index-neutral, explicit dtype/null behavior | Pass | **Evidence complete — review pending** | #98 |
-| 12 | SQLite and PostgreSQL run portable SQL through normal pipeline dispatch and preserve handles until declared boundaries | Pass | **Evidence complete — review pending** | #99 |
-| 13 | SQL parameters remain bound and portable syntax cannot introduce raw/trusted fragments | Pass | **Evidence complete — review pending** | #99 |
-| 14 | Real JVM PySpark passes the complete baseline without Python/Pandas UDF fallback | Pass | **Evidence complete — review pending** | #100 |
-| 15 | `spark` and `pyspark` resolve to one authorized identity, or the alias is removed with compatibility evidence | Pass | **Evidence complete — review pending** | #100 |
-| 16 | DataFusion analysis, native lowering, execution, and Arrow boundaries pass the complete baseline | Pass | **Evidence complete — review pending** | #101 |
-| 17 | DuckDB native package passes baseline execution and emits complete pushdown findings with explain/boundary evidence | Pass | **Evidence complete — review pending** | #118 |
-| 18 | Every engine emits truthful requirement-level evidence; shared negative fixtures cover partial, unavailable, unknown, and rejected slices; only complete manifest coverage earns baseline qualification | Pass | **Evidence complete — review pending** | #96–#109, #118 |
-| 19 | One unchanged authored pipeline validates, plans, and runs on all seven baseline engines | 7/7 | **Evidence complete — review pending** | #108, #118 |
-| 20 | Normalized differential and pushdown corpus agrees for nulls, empty input, Unicode, numerics, ordering, joins, unions, aggregation, deduplication, and declared boundaries | 7/7 | **Evidence complete — review pending** | #108, #118 |
-| 21 | The 0.50 evidence artifact drives a 0.51-style per-node eligibility fixture without engine-name or aggregate-qualification inference | Pass | **Evidence complete — review pending** | #106–#109 |
-| 22 | Required support failures eliminate candidates before preference scoring; preferred unknowns receive no positive benefit | Pass | **Evidence complete — review pending** | #107, #108 |
-| 23 | Every optional engine passes clean isolated install/import and core dependency-boundary checks | Pass | **Evidence complete — review pending** | #96–#101, #108, #118 |
-| 24 | Plans, reports, diagnostics, examples, and evidence contain no source rows, executable objects, raw SQL escape hatches, or secrets | Pass | **Evidence complete — review pending** | #106–#109 |
-| 25 | Capability matrix is generated from or verified against machine-readable requirement-level release evidence | Pass | **Evidence complete — review pending** | #108, #109 |
-| 26 | Reference, migration, rollback, 0.51 handoff, example, and explicit non-claim documentation passes strict checks | Pass | **Evidence complete — review pending** | #109 |
-| 27 | No unresolved critical/high correctness, compatibility, security, or data-loss finding | 0 | **Evidence complete — review pending** | #109 |
-| 28 | Final evidence locations, commands, outcomes, approvers, limitations, and decision are recorded | Pass | **Evidence complete — review pending** | #109 |
+| 1 | Normative manifest freezes DTCS plan/profile identity, 12 actions, 23 scalar and 7 aggregate functions, governed operators, aliases, types, modes, joins, unions, collisions, and semantic edge cases | Pass | **Evidence complete — verified for v0.50.0 release** | #103, #106 |
+| 2 | `/2` profile aliases prove exact normalization to the `/1` baseline or are removed with migration evidence | Pass | **Evidence complete — verified for v0.50.0 release** | #106, #109 |
+| 3 | `etlantic.transform-compiler/1` remains additive, legacy omissions normalize to `unknown`, and 0.49 `etlantic.plan/1` fixtures remain readable but fail preflight until replanned | Pass | **Evidence complete — verified for v0.50.0 release** | #106 |
+| 4 | Every advertised baseline claim maps to a mandatory public fixture and every required baseline item is claimed | 100% | **Evidence complete — verified for v0.50.0 release** | #107 |
+| 5 | Applicability, requirement obligation (`required`, `preferred`, `informational`), and target support (`supported_exact`, `supported_with_lowering`, `unsupported`, `unavailable`, `unknown`) are independently represented and fingerprinted | Pass | **Evidence complete — verified for v0.50.0 release** | #103, #106 |
+| 6 | Required unknown, omitted, unsupported, unavailable, ambiguous, and unresolved-conditional requirements fail during validation/planning with stable diagnostics | Pass | **Evidence complete — verified for v0.50.0 release** | #103, #106, #107 |
+| 7 | Lowering-backed support records a stable lowering identity, resolved conditions, proof evidence, and physical effects; invalid or data-dependent conditions fail closed | Pass | **Evidence complete — verified for v0.50.0 release** | #106, #107 |
+| 8 | Every declared boundary emits one deterministic applicability/outcome finding; required SQL, DuckDB, PySpark, and DataFusion native-plan boundaries have positive executable proof | Pass | **Evidence complete — verified for v0.50.0 release** | #96–#108, #118 |
+| 9 | Local validates, plans, and runs the canonical portable-only pipeline with no optional engine dependency | Pass | **Evidence complete — verified for v0.50.0 release** | #96 |
+| 10 | Polars passes the complete baseline in both claimed eager/lazy modes | Pass | **Evidence complete — verified for v0.50.0 release** | #97 |
+| 11 | Pandas passes the complete baseline with index-neutral, explicit dtype/null behavior | Pass | **Evidence complete — verified for v0.50.0 release** | #98 |
+| 12 | SQLite and PostgreSQL run portable SQL through normal pipeline dispatch and preserve handles until declared boundaries | Pass | **Evidence complete — verified for v0.50.0 release** | #99 |
+| 13 | SQL parameters remain bound and portable syntax cannot introduce raw/trusted fragments | Pass | **Evidence complete — verified for v0.50.0 release** | #99 |
+| 14 | Real JVM PySpark passes the complete baseline without Python/Pandas UDF fallback | Pass | **Evidence complete — verified for v0.50.0 release** | #100 |
+| 15 | `spark` and `pyspark` resolve to one authorized identity, or the alias is removed with compatibility evidence | Pass | **Evidence complete — verified for v0.50.0 release** | #100 |
+| 16 | DataFusion analysis, native lowering, execution, and Arrow boundaries pass the complete baseline | Pass | **Evidence complete — verified for v0.50.0 release** | #101 |
+| 17 | DuckDB native package passes baseline execution and emits complete pushdown findings with explain/boundary evidence | Pass | **Evidence complete — verified for v0.50.0 release** | #118 |
+| 18 | Every engine emits truthful requirement-level evidence; shared negative fixtures cover partial, unavailable, unknown, and rejected slices; only complete manifest coverage earns baseline qualification | Pass | **Evidence complete — verified for v0.50.0 release** | #96–#109, #118 |
+| 19 | One unchanged authored pipeline validates, plans, and runs on all seven baseline engines | 7/7 | **Evidence complete — verified for v0.50.0 release** | #108, #118 |
+| 20 | Normalized differential and pushdown corpus agrees for nulls, empty input, Unicode, numerics, ordering, joins, unions, aggregation, deduplication, and declared boundaries | 7/7 | **Evidence complete — verified for v0.50.0 release** | #108, #118 |
+| 21 | The 0.50 evidence artifact drives a 0.51-style per-node eligibility fixture without engine-name or aggregate-qualification inference | Pass | **Evidence complete — verified for v0.50.0 release** | #106–#109 |
+| 22 | Required support failures eliminate candidates before preference scoring; preferred unknowns receive no positive benefit | Pass | **Evidence complete — verified for v0.50.0 release** | #107, #108 |
+| 23 | Every optional engine passes clean isolated install/import and core dependency-boundary checks | Pass | **Evidence complete — verified for v0.50.0 release** | #96–#101, #108, #118 |
+| 24 | Plans, reports, diagnostics, examples, and evidence contain no source rows, executable objects, raw SQL escape hatches, or secrets | Pass | **Evidence complete — verified for v0.50.0 release** | #106–#109 |
+| 25 | Capability matrix is generated from or verified against machine-readable requirement-level release evidence | Pass | **Evidence complete — verified for v0.50.0 release** | #108, #109 |
+| 26 | Reference, migration, rollback, 0.51 handoff, example, and explicit non-claim documentation passes strict checks | Pass | **Evidence complete — verified for v0.50.0 release** | #109 |
+| 27 | No unresolved critical/high correctness, compatibility, security, or data-loss finding | 0 | **Evidence complete — verified for v0.50.0 release** | #109 |
+| 28 | Final evidence locations, commands, outcomes, approvers, limitations, and decision are recorded | Pass | **Evidence complete — verified for v0.50.0 release** | #109 |
 
 ## Required Evidence Manifest
 

@@ -1,6 +1,6 @@
 # Sample project layout
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** A multi-file layout matching how
+> **Status: Available in ETLantic 0.50.0 (published Beta).** A multi-file layout matching how
 > teams usually organize contracts, transforms, and pipelines.
 
 Runnable copy: `examples/sample_project/`.

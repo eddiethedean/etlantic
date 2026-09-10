@@ -1,6 +1,6 @@
 # Quickstart
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** Use `python -m etlantic init` for the
+> **Status: Available in ETLantic 0.50.0 (published Beta).** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 > Budget ~5–10 minutes for first success; optional validation aha below adds a
 > few minutes.

@@ -1,7 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic 0.50.0 is a technically qualified Beta release candidate;
-> independent Sol approval remains pending.
+> **Status: ETLantic 0.50.0 is a published, technically qualified Beta release.**
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
@@ -65,7 +64,7 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.50** portable-engine release candidate.
+Status is relative to the **0.50** portable-engine release.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
 in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;
@@ -76,7 +75,7 @@ evidence remains in **0.38**.
 |---|---|---|---|
 | [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.50 portable-engine baseline technically qualified; 0.51 adaptive planning next | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) § 0.50 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
-| [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Technical qualification complete; review pending | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
+| [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Planned following milestone | Frozen Profile contract, bounded node placement, connected target regions, authoritative `/2` physical DAGs, and a local Polars↔Pandas launch matrix with DuckDB as a future candidate | [Exit gate 0.51](EXIT_GATE_0_51.md) (Not started) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |
 | [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) | Accepted | Proposals untrusted; read-only default; no vendor SDK in core | 0.48 |

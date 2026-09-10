@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending (shipped Beta).**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 Practical questions for ETLantic **0.50.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
@@ -79,7 +79,7 @@ SaaS. See [Capabilities](CAPABILITIES.md) and
 
 ## Available vs Experimental?
 
-**Available** means it is in the 0.49 product envelope: documented, tested, and
+**Available** means it is in the 0.50 product envelope: documented, tested, and
 covered by the Beta support policy (current minor only, no SLA).
 **Experimental** means Alpha extras (Kafka, Iceberg, MCP, DataFusion, k8s,
 Spark Connect, `shared-service` isolation) that may change or stay fake-first.
@@ -96,11 +96,11 @@ separate products. There is still no hosted SaaS.
 See [Embeddable HTTP API](../06_EXECUTION/CONTROL_PLANE.md) and
 [What's new in 0.43](WHATS_NEW_0_43.md).
 
-## What will 0.49 not do?
+## What does 0.50 not do?
 
 Proposals never apply files, submit runs, or grant tools. There is no write MCP
 in core, no vendor AI SDK, and no silent optimizer. Schedules never embed
-payloads or secrets. See [What's new in 0.49](WHATS_NEW_0_49.md).
+payloads or secrets. See [What's new in 0.50](WHATS_NEW_0_50.md).
 
 ## Thin FastAPI app vs control plane?
 

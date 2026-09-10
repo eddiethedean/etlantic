@@ -1,17 +1,16 @@
 # Current Capabilities and Limitations
 
-> **Status: ETLantic 0.50.0 release candidate (Beta); independent Sol approval pending.** What is implemented and technically qualified for
+> **Status: Available in ETLantic 0.50.0 (published Beta).** What is implemented and technically qualified for
 > controlled single-tenant pilots and Supported multi-tenant profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.50 release candidate)
+## What works today (0.50)
 
-ETLantic 0.50.0 is a **Beta release candidate** for documented, controlled,
-single-tenant pilots. Until Sol grants release approval, use a source checkout;
-do not assume `etlantic==0.50.0` is published. You can embed an
+ETLantic 0.50.0 is a **published Beta** for documented, controlled,
+single-tenant pilots (install `etlantic==0.50.0` from PyPI). You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -53,7 +52,7 @@ Fit check: [Compare](COMPARE.md).
 
 ## Limits
 
-| Topic | ETLantic 0.50 release candidate |
+| Topic | ETLantic 0.50 |
 |---|---|
 | Maturity | Beta |
 | Suitable for | Controlled single-tenant pilots; Supported multi-tenant profiles |
@@ -99,7 +98,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in the 0.50 release candidate
+## Available in 0.50
 
 ### Human-governed AI
 
@@ -248,7 +247,7 @@ Public surface classes:
 | Capability | Status |
 |---|---|
 | Structured Streaming foundation | **Experimental** |
-| `etlantic-datafusion` | **Provisional** portable dataframe/compiler engine pending Sol release approval |
+| `etlantic-datafusion` | **Provisional** portable dataframe/compiler engine; included in the published 0.50 qualification envelope |
 | VS Code reference extension (`editors/vscode`) | **Experimental** |
 | `etlantic-k8s` | **Experimental** (FakeKubernetes; live skip `047-K-01`) |
 | `etlantic-spark-connect` | **Experimental** (fake SparkProvider; live skip `047-S-01`) |
@@ -268,7 +267,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | FastAPI scheduler/runner service and remote federation | **Available in the bounded 0.47 envelope** — gateway routes plus separate scheduler/worker processes; see [What's new in 0.47](WHATS_NEW_0_47.md) and [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) |
 | Human-governed AI context/proposals | **Available in the bounded 0.49 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.49](WHATS_NEW_0_49.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
-| Baseline portable execution across first-party engines | **Technical qualification complete; release review pending** for 0.50: the frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB passed the recorded real-backend campaign and pushdown contract. See the [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [evidence gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [evidence index](../11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json). |
+| Baseline portable execution across first-party engines | **Published and technically qualified** for 0.50: the frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB passed the recorded real-backend campaign and pushdown contract. See the [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [evidence gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [evidence index](../11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json). |
 | Adaptive heterogeneous planning and executable physical DAGs | **Planned, not currently available** for 0.51: opt-in static-batch local execution with bounded `/2` plans; proposed qualification is Local/Polars/Pandas single-target plus directional Polars↔Pandas Gate A — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md), [not-started exit gate](../11_DEVELOPMENT/EXIT_GATE_0_51.md), and [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |

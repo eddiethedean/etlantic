@@ -1,6 +1,6 @@
 # Secrets decision tree (0.37)
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** Normative rules for `SecretRef`
+> **Status: Available in ETLantic 0.50.0 (published Beta).** Normative rules for `SecretRef`
 > and environment providers. Plans and reports stay secret-free.
 
 ## Rules

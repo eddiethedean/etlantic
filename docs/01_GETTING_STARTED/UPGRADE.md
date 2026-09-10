@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending (shipped Beta).**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or

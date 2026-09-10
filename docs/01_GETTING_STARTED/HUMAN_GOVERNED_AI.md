@@ -1,6 +1,6 @@
 # Human-governed AI
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** Budget ~15 minutes after
+> **Status: Available in ETLantic 0.50.0 (published Beta).** Budget ~15 minutes after
 > [Quickstart](QUICKSTART.md). PyPI only — no MCP extra and no clone.
 
 Treat every proposal as untrusted. This tutorial **validates** a proposal; it
@@ -68,6 +68,7 @@ non-zero exit and `PMPROP*` (`untrusted` / forbidden action).
 ## What this is not
 
 - Experimental `etlantic-mcp` is optional and fake-first — skip it here.
-- Write MCP tools, vendor AI SDKs, and autonomous submit are out of 0.49.
-- See [What's new in 0.49](WHATS_NEW_0_49.md) and
+- Write MCP tools, vendor AI SDKs, and autonomous submit remain outside the
+  0.50 core contract.
+- See [What's new in 0.50](WHATS_NEW_0_50.md) and
   [Agents API](../10_REFERENCE/API_AGENTS.md).

@@ -176,8 +176,25 @@ def check_nav_page_status_markers() -> None:
 
 
 def check_release_candidate_claims() -> None:
-    """Keep docs aligned while the 0.50 package publication is pending."""
+    """Keep release-facing documentation aligned with publication state."""
     facts = load_release_facts()
+    if facts.get("publication_status") == "published":
+        stale = (
+            "publication pending",
+            "independent Sol approval pending",
+            "Sol approval pending",
+        )
+        violations: list[str] = []
+        for path in (ROOT / "docs").rglob("*.md"):
+            text = path.read_text(encoding="utf-8")
+            if any(token in text for token in stale):
+                violations.append(path.relative_to(ROOT).as_posix())
+        if violations:
+            raise SystemExit(
+                "published-release docs contain stale pending-publication wording:\n- "
+                + "\n- ".join(sorted(violations))
+            )
+        return
     if str(facts.get("maturity", "")).lower() != "beta":
         return
     prohibited = ("Available in ETLantic 0.50.0", "published on PyPI")
@@ -707,13 +724,19 @@ def check_release_surface_version_drift(package_version: str) -> None:
         )
 
     roadmap = (ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+    release_facts = load_release_facts()
+    expected_status = (
+        "Published / shipped evidence"
+        if release_facts.get("publication_status") == "published"
+        else "Gate-ready for tag/publish"
+    )
     current_row = re.compile(
         rf"(?m)^\| Current \| {re.escape(current_minor)} \| [^|]+ "
-        r"\| Gate-ready for tag/publish \|$"
+        rf"\| {re.escape(expected_status)} \|$"
     )
     if current_row.search(roadmap) is None:
         raise SystemExit(
-            "ROADMAP.md must mark the current release gate-ready for tag/publish"
+            f"ROADMAP.md must mark the current release {expected_status.lower()}"
         )
 
     planning_hub = (ROOT / "docs/11_DEVELOPMENT/PLAN_INDEX.md").read_text(

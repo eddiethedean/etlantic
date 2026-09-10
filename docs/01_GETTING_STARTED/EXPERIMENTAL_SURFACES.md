@@ -1,6 +1,6 @@
-# Experimental surfaces (0.49)
+# Experimental surfaces (0.50)
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending as a map of Experimental APIs.**
+> **Status: Available in ETLantic 0.50.0 (published Beta) as a map of Experimental APIs.**
 > These are **not** part of the Beta Supported claim. Prefer Available paths on
 > [Capabilities](CAPABILITIES.md).
 

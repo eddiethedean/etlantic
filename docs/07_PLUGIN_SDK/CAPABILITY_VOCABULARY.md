@@ -1,6 +1,6 @@
 # Capability Vocabulary
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending** via `etlantic.capabilities`.
+> **Status: Available in ETLantic 0.50.0 (published Beta)** via `etlantic.capabilities`.
 
 Plugins declare what they support through `PluginCapabilities`. The vocabulary
 is versioned independently of package and protocol versions as

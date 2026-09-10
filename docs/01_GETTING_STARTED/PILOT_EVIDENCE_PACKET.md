@@ -1,6 +1,6 @@
 # Pilot evidence packet
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** Reproducible checklist for a
+> **Status: Available in ETLantic 0.50.0 (published Beta).** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 

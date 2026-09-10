@@ -8,7 +8,7 @@ response time.
 
 ## What we support
 
-- Bug reports against the **current release candidate line** (`0.50.x`)
+- Bug reports against the **current published minor line** (`0.50.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 

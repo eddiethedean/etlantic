@@ -1,6 +1,6 @@
 # Reports and history
 
-> **Status: ETLantic 0.50.0 release candidate; publication pending.** Operator hub for run reports,
+> **Status: Available in ETLantic 0.50.0 (published Beta).** Operator hub for run reports,
 > durable history, and `durable_audit`. Protocol detail lives under Plugin SDK.
 
 ## What to use when

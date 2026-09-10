@@ -18,7 +18,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.50 | Seven-engine portable execution and pushdown conformance | Gate-ready for tag/publish |
+| Current | 0.50 | Seven-engine portable execution and pushdown conformance | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |
@@ -37,7 +37,7 @@ through **0.37** (stable foundation) are shipped.
 | Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.55 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.50 portable-engine baseline technically qualified; review pending) |
+| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.50 portable-engine baseline published and technically qualified) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

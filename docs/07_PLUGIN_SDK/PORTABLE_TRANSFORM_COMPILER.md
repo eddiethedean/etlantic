@@ -1,12 +1,11 @@
 # Portable Transformation Compiler Protocol
 
-> **Status: Beta release candidate; publication pending independent release approval.**
+> **Status: Available in ETLantic 0.50.0 (published Beta).**
 
-!!! info "0.50 release candidate"
+!!! info "0.50 published release"
     `etlantic.transform-compiler/1` is the requirement-level support protocol.
     The qualification matrix covers Local, Polars, Pandas, SQL, PySpark,
-    DataFusion, and DuckDB. Publication and compatibility claims remain subject
-    to independent release approval; third parties must pass
+    DataFusion, and DuckDB. Third parties must pass
     `run_portable_transform_conformance_suite` for every advertised claim.
 
 A portable transformation compiler translates a validated
@@ -113,7 +112,7 @@ and pass the public conformance fixtures for:
 | Modes | Eager required; Pandas additionally `lazy=False`; join `collisionPolicy` **fail** only |
 | Outside claim set | Fail closed in `analyze()` / planning (`PMXFORM3xx`) with action/expression paths |
 
-The 0.50 release candidate records this baseline independently for seven
+The 0.50 release records this baseline independently for seven
 engines. Claims are requirement-level and evidence-backed; unsupported,
 unavailable, and unknown requirements are distinct and fail closed for required
 obligations. Relational-extended, temporal-IANA, nondeterministic, and window

@@ -1,6 +1,6 @@
 # Migration 0.49 → 0.50
 
-> **Status: Applies to the ETLantic 0.50.0 Beta release candidate.**
+> **Status: Applies to the published ETLantic 0.50.0 Beta release.**
 
 ## Repin the lockstep packages
 
