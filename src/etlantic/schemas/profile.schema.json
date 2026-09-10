@@ -134,32 +134,36 @@
     },
     "placement_targets": {
       "type": "object",
+      "propertyNames": { "pattern": "\\S" },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
         "required": ["engine"],
         "properties": {
-          "engine": { "type": "string", "minLength": 1 },
-          "compiler": { "type": ["string", "null"] },
-          "executor": { "type": ["string", "null"] },
-          "connector": { "type": ["string", "null"] },
-          "resource": { "type": ["string", "null"] },
-          "location": { "type": "string", "minLength": 1 },
-          "security_domain": { "type": "string", "minLength": 1 },
+          "engine": { "type": "string", "pattern": "\\S" },
+          "compiler": { "type": ["string", "null"], "pattern": "\\S" },
+          "executor": { "type": ["string", "null"], "pattern": "\\S" },
+          "connector": { "type": ["string", "null"], "pattern": "\\S" },
+          "resource": { "type": ["string", "null"], "pattern": "\\S" },
+          "location": { "type": "string", "pattern": "\\S" },
+          "security_domain": { "type": "string", "pattern": "\\S" },
           "required_capabilities": {
             "type": "array",
-            "items": { "type": "string", "minLength": 1 }
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "\\S" }
           },
           "version_constraints": {
             "type": "object",
-            "additionalProperties": { "type": "string", "minLength": 1 }
+            "propertyNames": { "pattern": "\\S" },
+            "additionalProperties": { "type": "string", "pattern": "\\S" }
           }
         }
       }
     },
     "eligible_targets": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 }
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "\\S" }
     },
     "adaptive_fallback": {
       "type": "string",
@@ -172,5 +176,19 @@
     "execution": { "type": "object" },
     "metadata": { "type": "object" }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": ["execution_strategy"],
+        "properties": { "execution_strategy": { "const": "adaptive" } }
+      },
+      "then": {
+        "required": ["eligible_targets"],
+        "properties": {
+          "eligible_targets": { "minItems": 1 }
+        }
+      }
+    }
+  ]
 }

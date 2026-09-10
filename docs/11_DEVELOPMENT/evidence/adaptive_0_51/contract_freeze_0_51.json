@@ -1,0 +1,111 @@
+{
+  "schema": "etlantic.adaptive-contract-freeze/1",
+  "phase": "0.51",
+  "status": "accepted",
+  "accepted_on": "2026-09-10",
+  "authority": {
+    "adr": "ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG",
+    "implementation_plan": "docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md",
+    "exit_gate": "docs/11_DEVELOPMENT/EXIT_GATE_0_51.md",
+    "phase_zero_tasks": [41, 82],
+    "final_release_decision_task": 95
+  },
+  "availability": {
+    "adaptive_execution": "unavailable_pending_later_increment_evidence",
+    "explicit_plan_schema": "etlantic.plan/1",
+    "adaptive_plan_schema": "etlantic.plan/2",
+    "physical_unit_schema": "etlantic.physical_unit/1",
+    "stored_adaptive_downgrade": false
+  },
+  "profile": {
+    "execution_strategy": ["explicit", "adaptive"],
+    "default_execution_strategy": "explicit",
+    "adaptive_fields": [
+      "execution_strategy",
+      "placement_targets",
+      "eligible_targets",
+      "adaptive_fallback"
+    ],
+    "default_adaptive_fallback": "error",
+    "adaptive_requires_eligible_target": true,
+    "eligible_target_order": "profile_declared_duplicate_free"
+  },
+  "portable_boundary": {
+    "portable_candidates_only": true,
+    "native_bodies_are_adaptive_candidates": false,
+    "planning_is_data_only": true,
+    "authorize_before_load": true,
+    "resolved_secrets_or_source_rows_allowed": false
+  },
+  "selection": {
+    "full_scope_selected_nodes": null,
+    "partial_scope_requires_sliced_logical_graph": true,
+    "runtime_selection_requires_replan_when_different": true,
+    "candidate_order": ["selected_node_order", "eligible_target_order"],
+    "objective": [
+      "-proven_local_io_nodes",
+      "-proven_pushdown_actions",
+      "cross_target_logical_edges",
+      "collection_units",
+      "durable_materialization_units",
+      "-safely_fusible_logical_edges",
+      "target_priority_vector",
+      "target_identity_vector"
+    ]
+  },
+  "limits": {
+    "selected_logical_nodes": 256,
+    "eligible_placement_targets": 8,
+    "candidates_per_node": 8,
+    "candidate_records": 2048,
+    "solver_state_expansions": 1000000,
+    "adaptive_explain_bytes": 4194304,
+    "planner_transient_bytes": 268435456
+  },
+  "physical_unit_kinds": [
+    "compute",
+    "transfer",
+    "collection",
+    "validation",
+    "materialization",
+    "reuse",
+    "publication"
+  ],
+  "consumer_contract": {
+    "unsupported_consumer_diagnostic": "PMADP500",
+    "unsupported_consumers_reject_before_external_io": true,
+    "external_compile": "reject",
+    "control_plane": "reject",
+    "durable_federated_remote": "reject",
+    "streaming_and_runtime_expansion": "reject"
+  },
+  "report_metadata": {
+    "schema": "etlantic.run_report/1",
+    "migration_scope": "StepRunReport.metadata",
+    "writer_keys": [
+      "etlantic.dataframe",
+      "etlantic.sql",
+      "etlantic.spark",
+      "etlantic.spark_schema"
+    ],
+    "legacy_aliases": ["dataframe", "sql", "spark", "spark_schema"],
+    "namespaced_value_wins_collision": true
+  },
+  "diagnostic_ranges": {
+    "profile": "PMADP100-PMADP119",
+    "selection": "PMADP120-PMADP139",
+    "inventory": "PMADP200-PMADP219",
+    "candidate_and_boundary": "PMADP220-PMADP259",
+    "resource_limits": "PMADP300-PMADP306",
+    "solver": "PMADP320-PMADP339",
+    "physical_validation": "PMADP400-PMADP429",
+    "admission": "PMADP500-PMADP519",
+    "lifecycle": "PMADP520-PMADP549"
+  },
+  "verification_commands": [
+    ".venv/bin/pytest -q tests/docs/test_adaptive_contract_freeze_0_51.py",
+    ".venv/bin/python scripts/check_docs.py",
+    ".venv/bin/python scripts/check_surface_inventory.py",
+    ".venv/bin/python scripts/check_diagnostic_stability.py"
+  ]
+}

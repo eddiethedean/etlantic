@@ -1,9 +1,11 @@
 # Exit Gate 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
-> **Status: Not started.** This document defines the evidence contract before
-> implementation. It does not claim that adaptive planning or `/2` execution is
-> currently available. The shipped 0.50.1 portable evidence is a required input,
-> not an adaptive-runtime qualification. The final decision is owned by
+> **Status: Phase 0 contract accepted; qualification evidence pending.**
+> [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the
+> machine-readable contract freeze establish the implementation boundary. This
+> does not claim that adaptive planning or `/2` execution is available. The
+> shipped 0.50.1 portable evidence is a required input, not an adaptive-runtime
+> qualification. The final decision remains owned by
 > [#95](https://github.com/eddiethedean/etlantic/issues/95).
 
 See the [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md),
@@ -37,7 +39,7 @@ documentation evidence required of the initial rows.
 
 | # | Measure | Required | Current | Owner |
 |---|---|---:|---|---|
-| 1 | ADR freezes Profile precedence, target identity, `/1`–`/2`, unit protocol, fallback, selection, bounds, and diagnostics | Pass | **Not started** | #41 |
+| 1 | ADR freezes Profile precedence, target identity, `/1`–`/2`, unit protocol, fallback, selection, bounds, and diagnostics | Pass | **Accepted — ADR-025 and `contract_freeze_0_51.json`** | #41 |
 | 2 | Ordinary explicit profiles retain canonical `/1` bytes, fingerprints, semantics, and reader behavior; opted-in fallback adds only `etlantic.adaptive_fallback` metadata | Pass | **Not started** | #42–#44 |
 | 3 | Unsupported old readers and all unqualified `/2` consumers reject before external I/O | Pass | **Not started** | #44, #90, #92, #94 |
 | 4 | Production discovery authorizes before load across every applicable extension family | Pass | **Not started** | #45–#49, #78 |

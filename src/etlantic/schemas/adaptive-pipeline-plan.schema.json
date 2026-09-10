@@ -12,17 +12,17 @@
     "pipeline_name": {"type": "string", "minLength": 1},
     "profile_name": {"type": "string", "minLength": 1},
     "fingerprint": {"type": "string", "minLength": 1},
-    "logical_graph": {"type": "object"},
-    "selected_nodes": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
+    "logical_graph": {"$ref": "#/$defs/logicalGraph"},
+    "selected_nodes": {"type": ["array", "null"], "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "\\S"}},
     "inventory": {
       "type": "object",
       "additionalProperties": false,
       "required": ["targets", "eligible_target_order", "fingerprint", "evidence_refs"],
       "properties": {
         "targets": {"type": "array", "items": {"$ref": "#/$defs/target"}},
-        "eligible_target_order": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "fingerprint": {"type": "string"},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}}
+        "eligible_target_order": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
+        "fingerprint": {"type": "string", "pattern": "\\S"},
+        "evidence_refs": {"type": "array", "items": {"type": "string", "pattern": "\\S"}}
       }
     },
     "candidates": {"type": "array", "items": {"$ref": "#/$defs/candidate"}},
@@ -39,12 +39,50 @@
         "topological_order": {"type": "array", "items": {"type": "string"}}
       }
     },
-    "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+    "protocol_versions": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "\\S"}},
     "profile_snapshot": {"type": "object"},
-    "security_domain": {"type": "string"},
+    "security_domain": {"type": "string", "pattern": "\\S"},
     "metadata": {"type": "object"}
   },
   "$defs": {
+    "logicalNode": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": {"type": "string"},
+        "kind": {"type": "string"},
+        "binding": {"type": ["string", "null"]},
+        "asset": {"type": ["string", "null"]},
+        "transformation": {"type": ["string", "null"]},
+        "transformation_name": {"type": ["string", "null"]},
+        "contract": {"type": ["string", "null"]},
+        "metadata": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "logicalEdge": {
+      "type": "object",
+      "required": ["producer_node", "consumer_node"],
+      "properties": {
+        "producer_node": {"type": "string"},
+        "producer_port": {"type": "string"},
+        "consumer_node": {"type": "string"},
+        "consumer_port": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "logicalGraph": {
+      "type": "object",
+      "required": ["pipeline_id", "pipeline_name", "nodes"],
+      "properties": {
+        "pipeline_id": {"type": "string"},
+        "pipeline_name": {"type": "string"},
+        "nodes": {"type": "array", "items": {"$ref": "#/$defs/logicalNode"}},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/logicalEdge"}},
+        "metadata": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
     "physical_unit": {
       "type": "object",
       "additionalProperties": false,
@@ -66,13 +104,13 @@
           }
         },
         "target_identity": {"type": "string", "minLength": 1},
-        "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "logical_nodes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "\\S"}},
         "input_contracts": {"type": "array", "items": {"type": "object"}},
         "output_contracts": {"type": "array", "items": {"type": "object"}},
         "policy": {"type": "object"},
         "retry_policy": {"type": "object"},
         "ownership": {"type": "object"},
-        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string", "pattern": "\\S"}},
         "metadata": {"type": "object"}
       }
     },
@@ -84,15 +122,15 @@
         "target_id": {"type": "string", "minLength": 1},
         "identity": {"type": "string", "minLength": 1},
         "engine": {"type": "string", "minLength": 1},
-        "compiler": {"type": ["string", "null"]},
-        "executor": {"type": ["string", "null"]},
-        "connector": {"type": ["string", "null"]},
-        "resource": {"type": ["string", "null"]},
-        "location": {"type": "string", "minLength": 1},
-        "security_domain": {"type": "string", "minLength": 1},
-        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+        "compiler": {"type": ["string", "null"], "pattern": "\\S"},
+        "executor": {"type": ["string", "null"], "pattern": "\\S"},
+        "connector": {"type": ["string", "null"], "pattern": "\\S"},
+        "resource": {"type": ["string", "null"], "pattern": "\\S"},
+        "location": {"type": "string", "pattern": "\\S"},
+        "security_domain": {"type": "string", "pattern": "\\S"},
+        "protocol_versions": {"type": "object", "additionalProperties": {"type": "string", "pattern": "\\S"}},
         "capability_fingerprint": {"type": "string"},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+        "evidence_refs": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
         "metadata": {"type": "object"}
       }
     },
@@ -101,13 +139,13 @@
       "additionalProperties": false,
       "required": ["candidate_id", "node_name", "target_id", "kind", "status", "reason_codes", "evidence_refs", "objective_facts", "metadata"],
       "properties": {
-        "candidate_id": {"type": "string", "minLength": 1},
-        "node_name": {"type": "string", "minLength": 1},
-        "target_id": {"type": "string", "minLength": 1},
+        "candidate_id": {"type": "string", "pattern": "\\S"},
+        "node_name": {"type": "string", "pattern": "\\S"},
+        "target_id": {"type": "string", "pattern": "\\S"},
         "kind": {"enum": ["source", "sink", "compute"]},
         "status": {"enum": ["eligible", "rejected"]},
-        "reason_codes": {"type": "array", "items": {"type": "string"}},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+        "reason_codes": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
+        "evidence_refs": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
         "objective_facts": {"type": "object", "additionalProperties": {"type": "integer"}},
         "metadata": {"type": "object"}
       }
@@ -127,12 +165,12 @@
       "additionalProperties": false,
       "required": ["identity", "target_id", "logical_nodes", "dependencies", "fused", "security_domain", "metadata"],
       "properties": {
-        "identity": {"type": "string", "minLength": 1},
-        "target_id": {"type": "string", "minLength": 1},
-        "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "dependencies": {"type": "array", "items": {"type": "string"}},
+        "identity": {"type": "string", "pattern": "\\S"},
+        "target_id": {"type": "string", "pattern": "\\S"},
+        "logical_nodes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "\\S"}},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "\\S"}},
         "fused": {"type": "boolean"},
-        "security_domain": {"type": "string"},
+        "security_domain": {"type": "string", "pattern": "\\S"},
         "metadata": {"type": "object"}
       }
     }

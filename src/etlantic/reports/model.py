@@ -12,15 +12,26 @@ from etlantic.runtime.state import RunStatus, StepStatus
 REPORT_SCHEMA = "etlantic.run_report/1"
 
 
-def _validated_report_metadata(value: Any, *, path: str) -> dict[str, Any]:
+def _validated_report_metadata(
+    value: Any, *, path: str, migrate_builtin_aliases: bool = False
+) -> dict[str, Any]:
     from etlantic.extensions import (
+        LEGACY_REPORT_METADATA_ALIASES,
+        STEP_REPORT_METADATA_ALIASES,
         migrate_report_metadata_keys,
         validate_extension_metadata,
     )
 
     # Rewrite known 0.35 bare keys before validation so loads are warning-clean
     # and rewrites are deterministic (036-C04).
-    metadata = migrate_report_metadata_keys(dict(value or {}))
+    metadata = migrate_report_metadata_keys(
+        dict(value or {}),
+        aliases=(
+            STEP_REPORT_METADATA_ALIASES
+            if migrate_builtin_aliases
+            else LEGACY_REPORT_METADATA_ALIASES
+        ),
+    )
     # Secret-key rejection is unconditional inside validate_extension_metadata;
     # keep namespace warnings (not raises) for remaining unknown bare keys.
     validate_extension_metadata(metadata, path=path, strict=False)
@@ -321,7 +332,9 @@ class PipelineRunReport:
                 records_out=item.get("records_out"),
                 implementation=item.get("implementation"),
                 metadata=_validated_report_metadata(
-                    item.get("metadata"), path="step.metadata"
+                    item.get("metadata"),
+                    path="step.metadata",
+                    migrate_builtin_aliases=True,
                 ),
             )
             for item in (data.get("steps") or ())

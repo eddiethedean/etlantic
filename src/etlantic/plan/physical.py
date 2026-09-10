@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -71,7 +72,7 @@ class PhysicalUnit:
             raise ValueError("PMADP400: physical unit identity must be non-blank")
         try:
             kind = PhysicalUnitKind(self.kind)
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(
                 f"PMADP400: unknown physical unit kind {self.kind!r}"
             ) from exc
@@ -80,11 +81,15 @@ class PhysicalUnit:
             or not self.target_identity.strip()
         ):
             raise ValueError("PMADP201: physical unit target identity is required")
+        if isinstance(self.logical_nodes, (str, bytes)):
+            raise ValueError("PMADP403: physical unit logical_nodes must be an array")
         nodes = tuple(self.logical_nodes)
         if any(not isinstance(node, str) or not node.strip() for node in nodes):
             raise ValueError("PMADP403: physical unit logical_nodes must be non-blank")
         if len(set(nodes)) != len(nodes):
             raise ValueError("PMADP403: physical unit logical_nodes must be unique")
+        if isinstance(self.dependencies, (str, bytes)):
+            raise ValueError("PMADP402: physical unit dependencies must be an array")
         dependencies = tuple(
             dep
             if isinstance(dep, PhysicalDependency)
@@ -99,16 +104,31 @@ class PhysicalUnit:
         object.__setattr__(self, "kind", kind)
         object.__setattr__(self, "logical_nodes", nodes)
         object.__setattr__(self, "dependencies", dependencies)
-        for name in (
-            "input_contracts",
-            "output_contracts",
-            "policy",
-            "retry_policy",
-            "ownership",
-            "protocol_versions",
-            "metadata",
+        input_contracts = _validated_object_sequence(
+            self.input_contracts, "physical unit input_contracts"
+        )
+        output_contracts = _validated_object_sequence(
+            self.output_contracts, "physical unit output_contracts"
+        )
+        policy = _validated_object_mapping(self.policy, "physical unit policy")
+        retry_policy = _validated_object_mapping(
+            self.retry_policy, "physical unit retry_policy"
+        )
+        ownership = _validated_object_mapping(self.ownership, "physical unit ownership")
+        protocol_versions = _validated_string_map(
+            self.protocol_versions, "physical unit protocol_versions"
+        )
+        metadata = _validated_object_mapping(self.metadata, "physical unit metadata")
+        for name, value in (
+            ("input_contracts", input_contracts),
+            ("output_contracts", output_contracts),
+            ("policy", policy),
+            ("retry_policy", retry_policy),
+            ("ownership", ownership),
+            ("protocol_versions", protocol_versions),
+            ("metadata", metadata),
         ):
-            object.__setattr__(self, name, deep_freeze(getattr(self, name)))
+            object.__setattr__(self, name, deep_freeze(value))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -215,12 +235,23 @@ class PhysicalDAG:
         mapping = dict(self.logical_to_physical)
         if len(mapping) != len(self.logical_to_physical):
             raise ValueError("PMADP403: duplicate logical physical attribution")
+        if any(not isinstance(node, str) or not node.strip() for node in mapping):
+            raise ValueError(
+                "PMADP403: logical_to_physical node names must be non-blank"
+            )
         if any(unit_id not in unit_map for unit_id in mapping.values()):
             raise ValueError("PMADP403: logical_to_physical references an unknown unit")
         attributed = {node for unit in units for node in unit.logical_nodes}
         if any(node not in mapping for node in attributed):
             raise ValueError(
                 "PMADP403: physical attribution is missing a primary mapping"
+            )
+        if any(
+            node not in unit_map[unit_id].logical_nodes
+            for node, unit_id in mapping.items()
+        ):
+            raise ValueError(
+                "PMADP403: logical_to_physical must match unit logical attribution"
             )
         object.__setattr__(self, "units", units)
         object.__setattr__(self, "logical_to_physical", deep_freeze(mapping))
@@ -266,3 +297,40 @@ def _require_fields(data: Mapping[str, Any], required: set[str], label: str) -> 
     missing = sorted(required - set(data))
     if missing:
         raise ValueError(f"PMADP400: {label} is missing field(s): {', '.join(missing)}")
+
+
+def _validated_string_map(value: Mapping[str, str], label: str) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"PMADP400: {label} must be an object")
+    result = dict(value)
+    if any(
+        not isinstance(key, str)
+        or not key.strip()
+        or not isinstance(item, str)
+        or not item.strip()
+        for key, item in result.items()
+    ):
+        raise ValueError(f"PMADP400: {label} must map non-blank strings to strings")
+    return result
+
+
+def _validated_object_mapping(value: Mapping[str, Any], label: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"PMADP400: {label} must be an object")
+    result = dict(value)
+    try:
+        json.dumps(mutable_copy(result), separators=(",", ":"), sort_keys=True)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PMADP400: {label} must be JSON-serializable") from exc
+    return result
+
+
+def _validated_object_sequence(
+    value: tuple[Mapping[str, Any], ...], label: str
+) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)):
+        raise ValueError(f"PMADP400: {label} must be an array")
+    result: list[dict[str, Any]] = []
+    for item in value:
+        result.append(_validated_object_mapping(item, f"{label} item"))
+    return tuple(result)

@@ -63,6 +63,10 @@ Accepted 0.48 human-governed AI freeze:
 
 - [ADR-024: Human-Governed AI Workflows](adr/ADR-024-HUMAN-GOVERNED-AI.md)
 
+Accepted 0.51 adaptive execution contract freeze:
+
+- [ADR-025: Adaptive Execution and Physical-DAG Contract](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md)
+
 Accepted registry and isolation decision (0.40 Wave 0):
 
 - [ADR-017: Registry Records, Revisions, and Isolation Profiles](adr/ADR-017-REGISTRY-AND-ISOLATION.md)

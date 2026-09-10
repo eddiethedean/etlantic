@@ -7,11 +7,10 @@ plan_last_reviewed: 0.50.1
 
 # ETLantic 0.51 Implementation Plan
 
-> **Status: Planned after published ETLantic 0.50.1.** The current repository
-> implements explicit `etlantic.plan/1` planning and logical-node scheduling;
-> adaptive Profile fields, authoritative `etlantic.plan/2`, and physical-unit
-> scheduling are not implemented. This plan was audited against the 0.50.1
-> release surface and evidence set before 0.51 implementation begins.
+> **Status: Phase 0 contract freeze accepted after published ETLantic 0.50.1.**
+> [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) freezes the
+> adaptive boundary. Later increments remain evidence-gated; acceptance does
+> not claim that adaptive planning or physical-unit execution is available.
 
 Phase 0.51 turns the existing multi-engine planning, capability, optimization,
 interchange, and hybrid-runtime foundations into an opt-in adaptive execution

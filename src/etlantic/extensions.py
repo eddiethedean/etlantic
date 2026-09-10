@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 import warnings
+from collections.abc import Mapping
 from typing import Any
 
 EXTENSION_NAMESPACE_PREFIXES: tuple[str, ...] = ("etlantic.", "plugin:")
@@ -95,18 +96,30 @@ def namespaced_extension_items(
 
 # Known legacy bare keys written by first-party packages before 0.36.
 # Migration rewrites these to namespaced keys without semantic loss.
-REPORT_METADATA_ALIASES: dict[str, str] = {
-    "dataframe": "etlantic.dataframe",
-    "sql": "etlantic.sql",
-    "spark": "etlantic.spark",
-    "spark_schema": "etlantic.spark_schema",
+LEGACY_REPORT_METADATA_ALIASES: dict[str, str] = {
     "prefect_run_id": "etlantic.prefect.run_id",
     "prefect_task_correlation": "etlantic.prefect.task_correlation",
 }
 
+# Built-in engine keys are a StepRunReport contract in 0.51. They must not be
+# rewritten in report-level or other metadata namespaces.
+STEP_REPORT_METADATA_ALIASES: dict[str, str] = {
+    "dataframe": "etlantic.dataframe",
+    "sql": "etlantic.sql",
+    "spark": "etlantic.spark",
+    "spark_schema": "etlantic.spark_schema",
+    **LEGACY_REPORT_METADATA_ALIASES,
+}
+
+# Public compatibility alias retained for callers that inspect the complete
+# set of known report aliases.
+REPORT_METADATA_ALIASES = STEP_REPORT_METADATA_ALIASES
+
 
 def migrate_report_metadata_keys(
     metadata: dict[str, Any] | None,
+    *,
+    aliases: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Rewrite known bare report metadata keys to namespaced equivalents.
 
@@ -117,7 +130,7 @@ def migrate_report_metadata_keys(
     if not metadata:
         return {}
     out = dict(metadata)
-    for bare, namespaced in REPORT_METADATA_ALIASES.items():
+    for bare, namespaced in (aliases or LEGACY_REPORT_METADATA_ALIASES).items():
         if bare not in out:
             continue
         if namespaced not in out:

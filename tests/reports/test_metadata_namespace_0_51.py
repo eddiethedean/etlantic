@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import warnings
+
+import pytest
+
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.state import StepStatus
 
@@ -28,9 +32,13 @@ def _report(metadata: dict[str, object]) -> dict[str, object]:
     }
 
 
-def test_bare_built_in_metadata_is_migrated_without_warning() -> None:
-    report = PipelineRunReport.from_dict(_report({"dataframe": {"rows": 1}}))
-    assert report.steps[0].metadata == {"etlantic.dataframe": {"rows": 1}}
+@pytest.mark.parametrize("legacy", ["dataframe", "sql", "spark", "spark_schema"])
+def test_bare_built_in_metadata_is_migrated_without_warning(legacy: str) -> None:
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        report = PipelineRunReport.from_dict(_report({legacy: {"rows": 1}}))
+    assert not caught
+    assert report.steps[0].metadata == {f"etlantic.{legacy}": {"rows": 1}}
 
 
 def test_namespaced_metadata_wins_collision_and_reserializes_canonically() -> None:
@@ -45,3 +53,12 @@ def test_namespaced_metadata_wins_collision_and_reserializes_canonically() -> No
     assert report.steps[0].metadata == {"etlantic.sql": {"source": "canonical"}}
     again = PipelineRunReport.from_dict(report.to_dict())
     assert again.to_dict() == report.to_dict()
+
+
+def test_built_in_alias_migration_is_limited_to_step_metadata() -> None:
+    document = _report({})
+    document["metadata"] = {"dataframe": {"owner": "report-extension"}}
+
+    report = PipelineRunReport.from_dict(document)
+
+    assert report.metadata == {"dataframe": {"owner": "report-extension"}}

@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
 from etlantic.exceptions import PipelineValidationError
 from etlantic.profile import PlacementTarget, Profile
+
+jsonschema = pytest.importorskip("jsonschema")
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class Row(Data):
@@ -94,3 +99,28 @@ def test_target_secret_like_field_rejected() -> None:
 def test_adaptive_planning_fails_closed_until_solver_gate() -> None:
     with pytest.raises(PipelineValidationError, match="PMADP221"):
         Sample.plan(profile=_adaptive())
+
+
+@pytest.mark.parametrize(
+    "target, eligible",
+    [
+        ({"engine": "local", "compiler": ""}, ["local"]),
+        ({"engine": "local"}, ["local", "local"]),
+    ],
+)
+def test_profile_json_schema_rejects_python_invalid_adaptive_forms(
+    target: dict[str, object], eligible: list[str]
+) -> None:
+    schema = json.loads(
+        (ROOT / "src/etlantic/schemas/profile.schema.json").read_text(encoding="utf-8")
+    )
+    document = {
+        "name": "adaptive-local",
+        "security_mode": "development",
+        "execution_strategy": "adaptive",
+        "placement_targets": {"local": target},
+        "eligible_targets": eligible,
+    }
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(schema).validate(document)

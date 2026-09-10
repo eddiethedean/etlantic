@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
+from etlantic.orchestration import compile_plan
 from etlantic.plan import (
     ADAPTIVE_PLAN_SCHEMA,
     AdaptiveDecision,
@@ -24,6 +26,10 @@ from etlantic.plan import (
     plan_to_json,
 )
 from etlantic.plan.adaptive_serialize import adaptive_plan_fingerprint
+
+jsonschema = pytest.importorskip("jsonschema")
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class Row(Data):
@@ -130,6 +136,124 @@ def test_adaptive_nested_records_are_immutable() -> None:
         plan.physical_dag.logical_to_physical["raw"] = "other"  # type: ignore[index]
 
 
+def test_adaptive_top_level_sequences_are_deeply_immutable() -> None:
+    plan = replace(_plan(), objective=[0, 0, 0])  # type: ignore[arg-type]
+
+    assert isinstance(plan.objective, tuple)
+
+
+def test_adaptive_metadata_rejects_live_backend_objects() -> None:
+    with pytest.raises(ValueError, match="PMADP"):
+        replace(_plan(), metadata={"etlantic.backend": object()})
+
+
+def test_target_descriptor_rejects_non_string_protocol_versions() -> None:
+    with pytest.raises(ValueError, match="PMADP"):
+        TargetDescriptor(
+            target_id="local",
+            identity="target-1",
+            engine="local",
+            protocol_versions={"compiler": 1},  # type: ignore[dict-item]
+        )
+
+
+def test_candidate_record_rejects_blank_identity_fields() -> None:
+    with pytest.raises(ValueError, match="PMADP"):
+        CandidateRecord(
+            candidate_id="",
+            node_name="raw",
+            target_id="local",
+            kind="source",
+            status="eligible",
+        )
+
+
 def test_adaptive_external_consumer_rejected_before_compilation() -> None:
     with pytest.raises(ValueError, match="PMADP500"):
         _plan().compile(target="airflow")
+
+
+def test_public_compile_rejects_adaptive_before_plugin_discovery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected_discovery(*args: object, **kwargs: object) -> object:
+        raise AssertionError("orchestrator discovery must not run for /2")
+
+    monkeypatch.setattr(
+        "etlantic.orchestration.compile.discover_orchestrator_plugins",
+        unexpected_discovery,
+    )
+
+    with pytest.raises(ValueError, match="PMADP500"):
+        compile_plan(_plan(), target="airflow")  # type: ignore[arg-type]
+
+
+def test_partial_adaptive_plan_rejects_unsliced_logical_graph() -> None:
+    data = _plan().to_dict()
+    data["selected_nodes"] = ["raw"]
+    data["candidates"] = [
+        candidate for candidate in data["candidates"] if candidate["node_name"] == "raw"
+    ]
+    data["decisions"] = [
+        decision for decision in data["decisions"] if decision["node_name"] == "raw"
+    ]
+    data["regions"][0]["logical_nodes"] = ["raw"]
+    data["physical_dag"]["units"][0]["logical_nodes"] = ["raw"]
+    data["physical_dag"]["logical_to_physical"] = {"raw": "unit-1"}
+
+    with pytest.raises(ValueError, match="PMADP403"):
+        AdaptivePipelinePlan.from_dict(data, verify=False)
+
+
+def test_physical_primary_mapping_must_match_compute_unit_attribution() -> None:
+    with pytest.raises(ValueError, match="PMADP403"):
+        PhysicalDAG(
+            units=(
+                PhysicalUnit(
+                    identity="unit-raw",
+                    kind="compute",
+                    target_identity="target-1",
+                    logical_nodes=("raw",),
+                ),
+                PhysicalUnit(
+                    identity="unit-out",
+                    kind="compute",
+                    target_identity="target-1",
+                    logical_nodes=("out",),
+                ),
+            ),
+            logical_to_physical={"raw": "unit-out", "out": "unit-raw"},
+            topological_order=("unit-raw", "unit-out"),
+        )
+
+
+def test_candidate_matrix_is_canonical_node_then_target_order() -> None:
+    data = _plan().to_dict()
+    data["candidates"] = list(reversed(data["candidates"]))
+
+    restored = AdaptivePipelinePlan.from_dict(data, verify=False)
+
+    assert [candidate.node_name for candidate in restored.candidates] == ["raw", "out"]
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("logical_graph", {}),
+        ("selected_nodes", []),
+        ("selected_nodes", ["raw", "raw"]),
+    ],
+)
+def test_adaptive_json_schema_rejects_model_invalid_documents(
+    field: str, value: object
+) -> None:
+    schema = json.loads(
+        (ROOT / "src/etlantic/schemas/adaptive-pipeline-plan.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    document = _plan().to_dict()
+    document[field] = value
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(schema).validate(document)

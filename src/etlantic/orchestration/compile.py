@@ -125,6 +125,13 @@ def compile_plan(
         OrchestrationCompilationError: When the plugin is missing or compilation
             diagnostics include errors (codes such as ``PMORCH300``).
     """
+    from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
+
+    if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+        raise ValueError(
+            "PMADP500: external compilation does not advertise adaptive "
+            "etlantic.plan/2 and etlantic.physical_unit/1 support"
+        )
     from etlantic.plan.serialize import verify_plan_fingerprint
 
     verify_plan_fingerprint(plan)

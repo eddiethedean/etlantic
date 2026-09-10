@@ -6,6 +6,7 @@ does not discover plugins, solve placement, or execute physical units.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeAlias
@@ -42,16 +43,26 @@ class TargetDescriptor:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP201: target descriptor {name} is required")
+        for name in ("compiler", "executor", "connector", "resource"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(
+                    f"PMADP201: target descriptor {name} must be a non-blank string or null"
+                )
+        protocol_versions = _validated_string_map(
+            self.protocol_versions, "target descriptor protocol_versions"
+        )
+        if isinstance(self.evidence_refs, (str, bytes)):
+            raise ValueError("PMADP202: evidence_refs must be an array")
         if any(
             not isinstance(value, str) or not value.strip()
             for value in self.evidence_refs
         ):
             raise ValueError("PMADP202: evidence_refs must contain non-blank strings")
         object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
-        object.__setattr__(
-            self, "protocol_versions", deep_freeze(dict(self.protocol_versions))
-        )
-        object.__setattr__(self, "metadata", deep_freeze(dict(self.metadata)))
+        object.__setattr__(self, "protocol_versions", deep_freeze(protocol_versions))
+        metadata = _validated_metadata(self.metadata, "target descriptor metadata")
+        object.__setattr__(self, "metadata", deep_freeze(metadata))
         _reject_secret_material(self.to_dict())
 
     def to_dict(self) -> dict[str, Any]:
@@ -112,10 +123,23 @@ class AdaptiveInventory:
         if len(set(target_ids)) != len(target_ids):
             raise ValueError("PMADP201: inventory target ids must be unique")
         order = tuple(self.eligible_target_order)
+        if any(
+            not isinstance(target_id, str) or not target_id.strip()
+            for target_id in order
+        ):
+            raise ValueError(
+                "PMADP201: inventory eligible order must contain target ids"
+            )
         if len(set(order)) != len(order) or set(order) != set(target_ids):
             raise ValueError(
                 "PMADP201: inventory eligible order must cover every target once"
             )
+        if not isinstance(self.fingerprint, str) or not self.fingerprint.strip():
+            raise ValueError("PMADP201: inventory fingerprint is required")
+        if isinstance(self.evidence_refs, (str, bytes)) or any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
+        ):
+            raise ValueError("PMADP202: inventory evidence_refs must contain strings")
         object.__setattr__(self, "targets", targets)
         object.__setattr__(self, "eligible_target_order", order)
         object.__setattr__(self, "evidence_refs", tuple(self.evidence_refs))
@@ -161,24 +185,39 @@ class CandidateRecord:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        for name in ("candidate_id", "node_name", "target_id"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PMADP220: candidate {name} is required")
         if self.kind not in {"source", "sink", "compute"}:
             raise ValueError(f"PMADP220: unknown candidate kind {self.kind!r}")
         if self.status not in {"eligible", "rejected"}:
             raise ValueError(f"PMADP220: unknown candidate status {self.status!r}")
+        if isinstance(self.reason_codes, (str, bytes)) or isinstance(
+            self.evidence_refs, (str, bytes)
+        ):
+            raise ValueError("PMADP220: candidate references must be arrays")
+        if any(
+            not isinstance(value, str) or not value.strip()
+            for value in (*self.reason_codes, *self.evidence_refs)
+        ):
+            raise ValueError("PMADP220: candidate references must be non-blank strings")
         if not self.reason_codes and self.status == "rejected":
             raise ValueError("PMADP221: rejected candidate requires reason_codes")
         if self.status == "eligible" and self.reason_codes:
             raise ValueError(
                 "PMADP220: eligible candidate cannot contain rejection reasons"
             )
-        if any(not isinstance(value, int) for value in self.objective_facts.values()):
+        objective_facts = _validated_integer_map(
+            self.objective_facts, "candidate objective_facts"
+        )
+        if any(type(value) is not int for value in objective_facts.values()):
             raise ValueError("PMADP321: candidate objective facts must be integers")
         for name in ("reason_codes", "evidence_refs"):
             object.__setattr__(self, name, tuple(getattr(self, name)))
-        object.__setattr__(
-            self, "objective_facts", deep_freeze(dict(self.objective_facts))
-        )
-        object.__setattr__(self, "metadata", deep_freeze(dict(self.metadata)))
+        object.__setattr__(self, "objective_facts", deep_freeze(objective_facts))
+        metadata = _validated_metadata(self.metadata, "candidate metadata")
+        object.__setattr__(self, "metadata", deep_freeze(metadata))
         _reject_secret_material(self.to_dict())
 
     def to_dict(self) -> dict[str, Any]:
@@ -219,6 +258,12 @@ class AdaptiveDecision:
     candidate_id: str
     target_id: str
 
+    def __post_init__(self) -> None:
+        for name in ("node_name", "candidate_id", "target_id"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PMADP320: adaptive decision {name} is required")
+
     def to_dict(self) -> dict[str, str]:
         return {
             "node_name": self.node_name,
@@ -250,14 +295,29 @@ class AdaptiveRegion:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        for name in ("identity", "target_id", "security_domain"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PMADP403: adaptive region {name} is required")
         nodes = tuple(self.logical_nodes)
-        if not nodes or len(set(nodes)) != len(nodes):
+        if (
+            not nodes
+            or any(not isinstance(node, str) or not node.strip() for node in nodes)
+            or len(set(nodes)) != len(nodes)
+        ):
             raise ValueError("PMADP403: adaptive regions require unique logical nodes")
-        if len(set(self.dependencies)) != len(self.dependencies):
+        dependencies = tuple(self.dependencies)
+        if any(
+            not isinstance(dependency, str) or not dependency.strip()
+            for dependency in dependencies
+        ):
+            raise ValueError("PMADP402: adaptive region dependencies must be non-blank")
+        if len(set(dependencies)) != len(dependencies):
             raise ValueError("PMADP402: adaptive region dependencies must be unique")
         object.__setattr__(self, "logical_nodes", nodes)
-        object.__setattr__(self, "dependencies", tuple(self.dependencies))
-        object.__setattr__(self, "metadata", deep_freeze(dict(self.metadata)))
+        object.__setattr__(self, "dependencies", dependencies)
+        metadata = _validated_metadata(self.metadata, "adaptive region metadata")
+        object.__setattr__(self, "metadata", deep_freeze(metadata))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -328,35 +388,82 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 f"PMADP400: adaptive plan schema must be {ADAPTIVE_PLAN_SCHEMA!r}"
             )
-        node_names = set(self.logical_graph.node_names())
-        selected = (
-            node_names if self.selected_nodes is None else set(self.selected_nodes)
-        )
+        for name in (
+            "plan_id",
+            "pipeline_id",
+            "pipeline_name",
+            "profile_name",
+            "security_domain",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PMADP400: adaptive plan {name} is required")
+        if not isinstance(self.logical_graph, LogicalGraph):
+            raise ValueError("PMADP400: adaptive plan logical_graph is required")
+        node_order = tuple(self.logical_graph.node_names())
+        node_names = set(node_order)
         if self.selected_nodes is not None:
-            if not self.selected_nodes or len(set(self.selected_nodes)) != len(
-                self.selected_nodes
+            if isinstance(self.selected_nodes, (str, bytes)):
+                raise ValueError("PMADP403: selected_nodes must be an array")
+            selected_tuple = tuple(self.selected_nodes)
+            if any(
+                not isinstance(node, str) or not node.strip() for node in selected_tuple
             ):
+                raise ValueError("PMADP403: selected_nodes must contain node names")
+            if not selected_tuple or len(set(selected_tuple)) != len(selected_tuple):
                 raise ValueError(
                     "PMADP403: selected_nodes must be null or non-empty and unique"
                 )
-            if not selected <= node_names:
+            if set(selected_tuple) == node_names:
+                raise ValueError(
+                    "PMADP403: full adaptive scope must use selected_nodes=null"
+                )
+            if not set(selected_tuple) <= node_names:
                 raise ValueError(
                     "PMADP403: selected_nodes references an unknown logical node"
                 )
+            if set(selected_tuple) != node_names:
+                raise ValueError(
+                    "PMADP403: logical_graph must be the selected scope slice"
+                )
+            if selected_tuple != tuple(
+                node for node in node_order if node in set(selected_tuple)
+            ):
+                raise ValueError(
+                    "PMADP403: selected_nodes order must match the logical graph"
+                )
+        else:
+            selected_tuple = node_order
+        selected = set(selected_tuple)
+        inventory = (
+            self.inventory
+            if isinstance(self.inventory, AdaptiveInventory)
+            else AdaptiveInventory.from_dict(self.inventory)
+        )
         candidates = tuple(
             candidate
             if isinstance(candidate, CandidateRecord)
             else CandidateRecord.from_dict(candidate)
             for candidate in self.candidates
         )
-        keys = {(candidate.node_name, candidate.target_id) for candidate in candidates}
-        expected = {
+        candidate_ids = [candidate.candidate_id for candidate in candidates]
+        if len(set(candidate_ids)) != len(candidate_ids):
+            raise ValueError("PMADP220: candidate ids must be unique")
+        actual_pairs = [
+            (candidate.node_name, candidate.target_id) for candidate in candidates
+        ]
+        expected_pairs = [
             (node, target)
-            for node in selected
-            for target in self.inventory.eligible_target_order
-        }
-        if keys != expected or len(keys) != len(candidates):
+            for node in selected_tuple
+            for target in inventory.eligible_target_order
+        ]
+        if set(actual_pairs) != set(expected_pairs):
             raise ValueError("PMADP220: candidate matrix is incomplete or duplicated")
+        candidate_by_pair = {
+            (candidate.node_name, candidate.target_id): candidate
+            for candidate in candidates
+        }
+        candidates = tuple(candidate_by_pair[pair] for pair in expected_pairs)
         candidate_map = {candidate.candidate_id: candidate for candidate in candidates}
         decisions = tuple(
             decision
@@ -364,12 +471,13 @@ class AdaptivePipelinePlan:
             else AdaptiveDecision.from_dict(decision)
             for decision in self.decisions
         )
-        if {decision.node_name for decision in decisions} != selected or len(
-            decisions
-        ) != len(selected):
+        decision_nodes = [decision.node_name for decision in decisions]
+        if set(decision_nodes) != selected or len(decision_nodes) != len(selected):
             raise ValueError(
                 "PMADP320: decisions must select exactly one candidate per node"
             )
+        decisions_by_node = {decision.node_name: decision for decision in decisions}
+        decisions = tuple(decisions_by_node[node] for node in selected_tuple)
         for decision in decisions:
             candidate = candidate_map.get(decision.candidate_id)
             if (
@@ -401,22 +509,36 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 "PMADP403: physical DAG coverage must match selected nodes"
             )
-        if (
-            not isinstance(self.protocol_versions, Mapping)
-            or not self.protocol_versions
-        ):
+        protocol_versions = _validated_string_map(
+            self.protocol_versions, "adaptive plan protocol_versions"
+        )
+        if not protocol_versions:
             raise ValueError("PMADP201: adaptive plan protocol_versions are required")
+        objective = tuple(self.objective)
+        if any(
+            type(value) is not int and not isinstance(value, str) for value in objective
+        ):
+            raise ValueError(
+                "PMADP321: adaptive plan objective must be integer/string values"
+            )
+        profile_snapshot = _validated_json_mapping(
+            self.profile_snapshot, "adaptive plan profile_snapshot"
+        )
+        metadata = _validated_metadata(self.metadata, "adaptive plan metadata")
+        object.__setattr__(
+            self,
+            "selected_nodes",
+            None if self.selected_nodes is None else selected_tuple,
+        )
+        object.__setattr__(self, "inventory", inventory)
         object.__setattr__(self, "candidates", candidates)
         object.__setattr__(self, "decisions", decisions)
         object.__setattr__(self, "regions", regions)
         object.__setattr__(self, "physical_dag", dag)
-        object.__setattr__(
-            self, "protocol_versions", deep_freeze(dict(self.protocol_versions))
-        )
-        object.__setattr__(
-            self, "profile_snapshot", deep_freeze(dict(self.profile_snapshot))
-        )
-        object.__setattr__(self, "metadata", deep_freeze(dict(self.metadata)))
+        object.__setattr__(self, "objective", objective)
+        object.__setattr__(self, "protocol_versions", deep_freeze(protocol_versions))
+        object.__setattr__(self, "profile_snapshot", deep_freeze(profile_snapshot))
+        object.__setattr__(self, "metadata", deep_freeze(metadata))
         _reject_secret_material(self.to_dict())
 
     def to_dict(self) -> dict[str, Any]:
@@ -552,6 +674,52 @@ def _reject_secret_material(value: Any) -> None:
     elif isinstance(value, (list, tuple)):
         for child in value:
             _reject_secret_material(child)
+
+
+def _validated_string_map(value: Mapping[str, str], label: str) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"PMADP400: {label} must be an object")
+    result = dict(value)
+    if any(
+        not isinstance(key, str)
+        or not key.strip()
+        or not isinstance(item, str)
+        or not item.strip()
+        for key, item in result.items()
+    ):
+        raise ValueError(f"PMADP400: {label} must map non-blank strings to strings")
+    return result
+
+
+def _validated_integer_map(value: Mapping[str, int], label: str) -> dict[str, int]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"PMADP321: {label} must be an object")
+    result = dict(value)
+    if any(not isinstance(key, str) or not key.strip() for key in result):
+        raise ValueError(f"PMADP321: {label} keys must be non-blank strings")
+    return result
+
+
+def _validated_json_mapping(value: Mapping[str, Any], label: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"PMADP101: {label} must be an object")
+    result = dict(value)
+    try:
+        json.dumps(mutable_copy(result), separators=(",", ":"), sort_keys=True)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PMADP101: {label} must be JSON-serializable") from exc
+    return result
+
+
+def _validated_metadata(value: Mapping[str, Any], label: str) -> dict[str, Any]:
+    result = _validated_json_mapping(value, label)
+    from etlantic.extensions import validate_extension_metadata
+
+    try:
+        validate_extension_metadata(result, path=label, strict=False)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PMADP101: invalid {label}: {exc}") from exc
+    return result
 
 
 PlanDocument: TypeAlias = AdaptivePipelinePlan | PipelinePlan
