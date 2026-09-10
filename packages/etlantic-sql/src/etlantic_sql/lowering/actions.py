@@ -534,19 +534,36 @@ def _expression_is_decimal(
     if kind == "literal":
         value = node.get("value")
         return isinstance(value, dict) and value.get("type") == "decimal"
-    if kind in {"binary", "unary"}:
-        children = (
-            (node.get("left"), node.get("right"))
-            if kind == "binary"
-            else (node.get("operand", node.get("expr")),)
-        )
+    if kind == "binary":
+        # Only arithmetic operators preserve a Decimal result.  Comparisons
+        # and boolean operators may inspect Decimal operands but produce
+        # booleans, which must not select the Decimal aggregate UDF.
+        if str(node.get("op") or "") not in {
+            "add",
+            "sub",
+            "subtract",
+            "mul",
+            "multiply",
+            "div",
+            "divide",
+            "modulo",
+        }:
+            return False
         return any(
             _expression_is_decimal(
                 child,
                 decimal_columns=decimal_columns,
                 parameters=parameters,
             )
-            for child in children
+            for child in (node.get("left"), node.get("right"))
+        )
+    if kind == "unary":
+        if str(node.get("op") or "negate") != "negate":
+            return False
+        return _expression_is_decimal(
+            node.get("operand", node.get("expr")),
+            decimal_columns=decimal_columns,
+            parameters=parameters,
         )
     if kind == "call":
         callee = str(node.get("callee") or "")
@@ -559,6 +576,51 @@ def _expression_is_decimal(
             "dtcs:is_missing",
             "dtcs:is_invalid",
             "dtcs:to_string",
+            "dtcs:lower",
+            "dtcs:upper",
+            "dtcs:concat",
+            "dtcs:concat_ws",
+            "dtcs:substr",
+            "dtcs:replace",
+            "dtcs:length",
+            "dtcs:case_when",
+            "dtcs:count",
+            "dtcs:count_all",
+            "dtcs:count_distinct",
+        }:
+            if callee != "dtcs:case_when":
+                return False
+            # Conditions are predicates; only the value branches and the
+            # final else branch determine the case expression's result type.
+            args = list(node.get("args") or ())
+            value_args = args[1::2] + (args[-1:] if len(args) % 2 else [])
+            return any(
+                _expression_is_decimal(
+                    child,
+                    decimal_columns=decimal_columns,
+                    parameters=parameters,
+                )
+                for child in value_args
+            )
+        if callee not in {
+            "dtcs:abs",
+            "dtcs:round",
+            "dtcs:floor",
+            "dtcs:ceil",
+            "dtcs:power",
+            "dtcs:sqrt",
+            "dtcs:least",
+            "dtcs:greatest",
+            "dtcs:coalesce",
+            "dtcs:if_null",
+            "dtcs:null_if",
+            # The aggregate call itself is the value being classified; its
+            # argument determines whether the aggregate must preserve Decimal
+            # precision.
+            "dtcs:sum",
+            "dtcs:average",
+            "dtcs:min",
+            "dtcs:max",
         }:
             return False
         return any(

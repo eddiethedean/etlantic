@@ -54,6 +54,21 @@ def _decimal_case(
 
 
 def _decimal_sum_case(rows: list[dict[str, Any]], expected: Decimal) -> FixtureCase:
+    return _aggregate_case(
+        callee="dtcs:sum",
+        expression=F.col("amount").node,
+        rows=rows,
+        expected=expected,
+    )
+
+
+def _aggregate_case(
+    *,
+    callee: str,
+    expression: dict[str, Any],
+    rows: list[dict[str, Any]],
+    expected: Any,
+) -> FixtureCase:
     return FixtureCase(
         name="decimal_sum_contract",
         required_profiles=frozenset(),
@@ -76,8 +91,8 @@ def _decimal_sum_case(rows: list[dict[str, Any]], expected: Decimal) -> FixtureC
                                     "name": "total",
                                     "expression": {
                                         "kind": "call",
-                                        "callee": "dtcs:sum",
-                                        "args": [F.col("amount").node],
+                                        "callee": callee,
+                                        "args": [expression],
                                     },
                                 }
                             ],
@@ -203,5 +218,39 @@ def test_duckdb_decimal_field_and_sum_preserve_precision() -> None:
     case = _decimal_sum_case(
         rows=[{"amount": value}, {"amount": Decimal("0.000000000000000001")}],
         expected=Decimal("1234567890.123456789012345679"),
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sqlite_decimal_predicate_does_not_change_integer_aggregate_type() -> None:
+    from etlantic_sql import create_transform_compiler
+
+    predicate_value = F.when(
+        F.col("amount") > F.lit(Decimal("0")),
+        1,
+    ).otherwise(0)
+    case = _aggregate_case(
+        callee="dtcs:sum",
+        expression=predicate_value.node,
+        rows=[{"amount": Decimal("1.5")}, {"amount": Decimal("-1.0")}],
+        expected=1,
+    )
+    _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_sqlite_decimal_predicate_does_not_break_string_min_aggregate() -> None:
+    from etlantic_sql import create_transform_compiler
+
+    value = F.when(
+        F.col("amount") > F.lit(Decimal("0")),
+        "yes",
+    ).otherwise("no")
+    case = _aggregate_case(
+        callee="dtcs:min",
+        expression=value.node,
+        rows=[{"amount": Decimal("1.5")}, {"amount": Decimal("-1.0")}],
+        expected="no",
     )
     _run(create_transform_compiler(), case)
