@@ -1,6 +1,6 @@
 # Building an ETLantic Plugin
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 This is the canonical guide for creating and maintaining an independently
 distributed ETLantic plugin. Reference plugins in the ETLantic repository and

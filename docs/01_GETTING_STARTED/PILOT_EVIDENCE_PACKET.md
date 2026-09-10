@@ -1,6 +1,6 @@
 # Pilot evidence packet
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Reproducible checklist for a
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -16,7 +16,7 @@ Related evaluator pages (also in this packet):
 |---|---|
 | Core | `etlantic==0.50.1` |
 | Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.50.1` if you need a frozen tree) |
-| Optional engines | Matching `0.50.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
+| Optional engines | Matching `0.50.1` plugins (`etlantic-polars`, `etlantic-sql`, …) |
 | Facade | `medallantic==0.50.1` when used |
 
 ## Topology (reference)
@@ -56,7 +56,7 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 
 ## Sign-off checklist
 
-- [ ] `etlantic --version` prints `0.50.0`
+- [ ] `etlantic --version` prints `0.50.1`
 - [ ] Quickstart succeeds and intentional `PMPIPE210` fails closed
 - [ ] Production profile has `plugin_allowlist`
 - [ ] Docs consulted from `/en/v0.50.1/` for the pin

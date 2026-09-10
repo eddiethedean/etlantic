@@ -1,6 +1,6 @@
 # Foundations
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 The Foundations section defines ETLantic's product identity, architectural
 boundaries, vocabulary, and documentation stability model.

@@ -1,7 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.50.0 (published Beta); current reference
-> reviewed for the 0.50.1 release candidate.**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.
@@ -78,7 +77,7 @@ Standards and plugins retain their own namespaces, such as `ODCS`, `DTCS`,
 
 ## Practical code index
 
-These codes are emitted by the installed ETLantic package (currently **0.50.0** /
+These codes are emitted by the installed ETLantic package (currently **0.50.1** /
 0.47.x).
 The message, path, metadata, and severity provide the case-specific detail.
 

@@ -1,7 +1,7 @@
 # etlantic-iceberg (Experimental)
 
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Apache Iceberg connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43** via PyIceberg.
 Install when pipelines need Experimental `iceberg` source/sink/storage

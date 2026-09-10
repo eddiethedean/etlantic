@@ -1,6 +1,6 @@
 # Cookbook
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Short recipes for shipped workflows.
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Short recipes for shipped workflows.
 > Prefer these over Design Studies.
 
 ## Worked recipes

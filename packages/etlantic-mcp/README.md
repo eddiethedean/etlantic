@@ -1,6 +1,6 @@
 # etlantic-mcp (Experimental / Preview)
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Fake-first read-only MCP server for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live MCP-client interop is opt-in via `ETLANTIC_MCP_LIVE` and is skipped in CI (`048-M-01`).
 

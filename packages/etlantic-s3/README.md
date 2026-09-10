@@ -1,7 +1,7 @@
 # etlantic-s3 (Experimental / Preview)
 
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 S3-compatible object-store connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `s3` source/sink/storage connectors (fake/CI path

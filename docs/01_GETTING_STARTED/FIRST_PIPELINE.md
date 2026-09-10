@@ -1,7 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.50.0 (published Beta); updated for the
-> 0.50.1 release candidate.** Extends the project from
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"

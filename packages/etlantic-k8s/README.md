@@ -1,6 +1,6 @@
 # etlantic-k8s (Experimental / Preview)
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Fake-first Kubernetes resource provider for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live Kind clusters are opt-in via `ETLANTIC_K8S_CONTEXT` and are skipped in CI (`047-K-01`).
 

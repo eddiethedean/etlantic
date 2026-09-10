@@ -4,7 +4,7 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.50.0** is the current published portable-engine line
+**0.50.1** is the current published portable-engine patch
 (**Beta**): seven-engine baseline execution, requirement-level evidence, and
 pushdown conformance. Prior
 **0.49** qualified optional DuckDB; prior **0.48** closed human-governed AI

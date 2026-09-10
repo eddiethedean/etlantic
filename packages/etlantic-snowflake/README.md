@@ -1,7 +1,7 @@
 # etlantic-snowflake (Experimental)
 
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Native Snowflake connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `snowflake` source/sink/storage connectors. CI

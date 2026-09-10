@@ -1,6 +1,6 @@
 # What's New in ETLantic 0.50
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 ETLantic 0.50 freezes and technically qualifies the shared portable
 transformation baseline across Local, Polars, Pandas, SQL (SQLite and
@@ -10,7 +10,7 @@ semantics, and each engine's declared pushdown boundaries.
 
 ## Upgrade impact
 
-- Pin core and every first-party plugin to `0.50.0`; plugin requirements use
+- Pin core and every first-party plugin to `0.50.1`; plugin requirements use
   `etlantic>=0.50.0,<0.51`.
 - Replan stored 0.49 portable descriptors. Evidence-free or stale compiler
   support records fail runtime preflight before I/O.

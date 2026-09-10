@@ -1,7 +1,6 @@
 # Frequently Asked Questions
 
-> **Status: Available in ETLantic 0.50.0 (published Beta); updated for the
-> 0.50.1 release candidate.**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 Practical questions for ETLantic **0.50.1**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
@@ -71,7 +70,7 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic 0.50 production-supported?
 
-ETLantic **0.50.0** is **Beta**, community-supported, with no SLA. Use it for
+ETLantic **0.50.1** is **Beta**, community-supported, with no SLA. Use it for
 documented single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant

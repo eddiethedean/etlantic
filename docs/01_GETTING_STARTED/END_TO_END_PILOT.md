@@ -1,6 +1,6 @@
 # End-to-end pilot
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Pip-only walkthrough from `init`
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Pip-only walkthrough from `init`
 > through reshape, optional quality, SARIF validate, run, and `report query`.
 > No repository clone required.
 
@@ -18,7 +18,7 @@ mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```
 
-Confirm `python -m etlantic --version` prints `0.50.0`.
+Confirm `python -m etlantic --version` prints `0.50.1`.
 
 ## 2. Reshape transform
 

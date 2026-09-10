@@ -1,6 +1,6 @@
 # Glossary
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 This glossary defines the core terminology used throughout the
 ETLantic documentation. Unless otherwise noted, these definitions

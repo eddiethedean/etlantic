@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-fastapi API
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Dual surface: **CP1 control plane**
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Dual surface: **CP1 control plane**
 > (`ETLanticAPI`, `include_router`, `create_app`) is primary; `create_reference_app`
 > is a non-CP sync demo. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 > Adopter guide: [Embeddable HTTP API](../../06_EXECUTION/CONTROL_PLANE.md).

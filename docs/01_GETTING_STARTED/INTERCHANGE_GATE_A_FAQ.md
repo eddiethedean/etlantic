@@ -1,6 +1,6 @@
 # Interchange Gate A FAQ
 
-> **Status: Available in ETLantic 0.50.0 (published Beta) (Gate A).** Public versioned tabular
+> **Status: Available in ETLantic 0.50.1 (published Beta) (Gate A).** Public versioned tabular
 > interchange for Polars ↔ Pandas boundaries.
 
 ## What shipped in Gate A?

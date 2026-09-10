@@ -1,6 +1,6 @@
 # etlantic-schemaregistry (Experimental / Preview)
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Confluent-compatible schema-registry adapter over the core wire protocol.
 Live Confluent HTTP is skipped unless `ETLANTIC_SCHEMA_REGISTRY_URL` is set.
 

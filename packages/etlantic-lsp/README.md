@@ -1,6 +1,6 @@
 # etlantic-lsp
 
-Editor-neutral language server for ETLantic pipelines (**0.50.0** published
+Editor-neutral language server for ETLantic pipelines (**0.50.1** published
 Beta). Built on `etlantic.ide` analysis and
 [pygls](https://pygls.readthedocs.io/).
 

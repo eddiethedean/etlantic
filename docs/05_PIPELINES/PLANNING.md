@@ -1,6 +1,6 @@
 # Planning
 
-> **Status: Available in ETLantic 0.50.0 (published Beta)** for deterministic
+> **Status: Available in ETLantic 0.50.1 (published Beta)** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs, plus
 > advisory optimization via `etlantic plan optimize` / `etl.optimization`.
 > Plans are secret-free and do not execute transforms. Some advanced analysis

@@ -4,7 +4,7 @@ Optional bridge between ETLantic `Data` contracts and
 [SQLModel](https://sqlmodel.tiangolo.com/) table models, plus optional CP1
 control-plane reference stores. Install when you need `contract_to_sqlmodel`
 helpers or SQLModel-backed definition/submission stores for local CP1 demos.
-Package version is **0.50.0** — pin with core.
+Package version is **0.50.1** — pin with core.
 
 ## Install
 

@@ -1,7 +1,6 @@
 # Evaluator Brief
 
-> **Status: Available in ETLantic 0.50.0 (published Beta); 0.50.1 release
-> candidate compatibility update pending publication.**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -104,7 +103,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.50.0** is a **Beta** (PyPI) release suitable for documented
+ETLantic **0.50.1** is a **Beta** (PyPI) release suitable for documented
 single-tenant pilots and Supported multi-tenant profiles. Shipped trust
 controls do not make an arbitrary shared-service topology safe.
 

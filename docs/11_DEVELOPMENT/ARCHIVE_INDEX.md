@@ -1,6 +1,6 @@
 # Documentation archive index
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 > **Not product docs.** Historical migrations, design studies, future-protocol
 > stubs, and maintainer records. Prefer

@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic 0.50.0 is a published, technically qualified Beta release.**
+> **Status: ETLantic 0.50.1 is the published Beta patch on the technically qualified 0.50 line.**
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /

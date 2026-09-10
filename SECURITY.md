@@ -1,8 +1,7 @@
 # Security Policy
 
-ETLantic 0.50.1 is a **Beta patch release candidate** suitable for documented
-single-tenant pilots. ETLantic 0.50.0 remains the current published patch until
-0.50.1 is tagged. You can embed an HTTP control plane with **Supported** isolation
+ETLantic 0.50.1 is the **current published Beta patch** suitable for documented
+single-tenant pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports
 concerning the published package, contract loading, planning, optimization,

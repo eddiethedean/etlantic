@@ -1,6 +1,6 @@
 # Security Verification Matrix (0.37)
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Single-tenant pilot envelope only.
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Single-tenant pilot envelope only.
 
 Machine-readable companion:
 [`security-verification-matrix.json`](security-verification-matrix.json)

@@ -1,7 +1,7 @@
 # etlantic-prefect
 
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Optional Prefect **ExecutionScheduler** for ETLantic (`etlantic.scheduler/1`).
 The local MVP is shipped in ETLantic 0.20.
 

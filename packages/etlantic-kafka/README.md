@@ -1,6 +1,6 @@
 # etlantic-kafka (Experimental / Preview)
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Fake-first Kafka source/sink for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live brokers are opt-in via `ETLANTIC_KAFKA_BOOTSTRAP` and are not required for CI.
 

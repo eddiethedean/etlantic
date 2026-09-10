@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 
 <div class="etlantic-path-grid">

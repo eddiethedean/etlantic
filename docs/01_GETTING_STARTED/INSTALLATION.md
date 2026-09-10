@@ -1,9 +1,9 @@
-# Installing ETLantic 0.50.0
+# Installing ETLantic 0.50.1
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
-ETLantic **0.50.0** supports Python 3.11–3.13 and is published on
-[PyPI](https://pypi.org/project/etlantic/0.50.0/).
+ETLantic **0.50.1** supports Python 3.11–3.13 and is published on
+[PyPI](https://pypi.org/project/etlantic/0.50.1/).
 
 !!! tip "PyPI user vs contributor clone"
     | Audience | Path |
@@ -19,12 +19,12 @@ ETLantic **0.50.0** supports Python 3.11–3.13 and is published on
 ## Install core (Day-0 — 2 minutes)
 
 Use a virtual environment. Prefer `python -m pip` and `python -m etlantic` so
-the interpreter you intend is the one that runs. Pin **0.50.0** for
+the interpreter you intend is the one that runs. Pin **0.50.1** for
 reproducible evaluation.
 
 ### pip
 
-The pinned PyPI commands below install the published `0.50.0` release.
+The pinned PyPI commands below install the published `0.50.1` release.
 
 ```bash
 python -m venv .venv
@@ -108,7 +108,7 @@ python -m etlantic --version
 
 ## Optional engine plugins
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
-explicitly and **match the core minor** (`0.50.0` with `0.50.0`).
+explicitly and **match the core patch** (`0.50.1` with `0.50.1`).
 
 **Primary install (separate packages):**
 

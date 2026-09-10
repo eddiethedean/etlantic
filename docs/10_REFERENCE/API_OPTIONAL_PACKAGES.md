@@ -7,7 +7,7 @@ audience: developer
 
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Per-package API pages for first-party
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Per-package API pages for first-party
 > optional packages. Install/overview hub:
 > [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).

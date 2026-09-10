@@ -1,6 +1,6 @@
 # Migration 0.49 → 0.50
 
-> **Status: Applies to the published ETLantic 0.50.0 Beta release.**
+> **Status: Applies to the published ETLantic 0.50.x Beta line.**
 
 ## Repin the lockstep packages
 
@@ -8,7 +8,7 @@ Install core and every first-party plugin on the same minor line. Official
 plugin metadata requires `etlantic>=0.50.0,<0.51`.
 
 ```bash
-python -m pip install 'etlantic==0.50.0' 'etlantic-polars==0.50.0'
+python -m pip install 'etlantic==0.50.1' 'etlantic-polars==0.50.1'
 ```
 
 Do not mix 0.49 and 0.50 packages. Production profiles must retain explicit

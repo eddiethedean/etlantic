@@ -1,6 +1,6 @@
 # Troubleshooting
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 ## Quickstart stuck?
 
@@ -26,7 +26,7 @@ py -3.11 --version
 
 ## Installed version is older than the docs
 
-These docs describe ETLantic **0.50.0**. Confirm what you installed:
+These docs describe ETLantic **0.50.1**. Confirm what you installed:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"

@@ -1,6 +1,6 @@
 # Embeddable HTTP API
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Embed `etlantic-fastapi` in a host
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Embed `etlantic-fastapi` in a host
 > application. Isolation is **Supported** for `isolated-deployment` and
 > `dedicated-schema` (since 0.43). `shared-service` remains Experimental.
 > There is no hosted SaaS.

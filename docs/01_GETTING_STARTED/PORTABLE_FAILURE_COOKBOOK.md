@@ -1,6 +1,6 @@
 # Portable Failure Cookbook
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Practical failure modes for
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Practical failure modes for
 > `@Transformation.portable` and compiler selection.
 
 ## Policy first

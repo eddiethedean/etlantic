@@ -1,6 +1,6 @@
 # Support Policy (maintainers)
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 > **Canonical adopter policy:** root
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).

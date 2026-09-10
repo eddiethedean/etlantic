@@ -1,6 +1,6 @@
 # etlantic-spark-connect (Experimental / Preview)
 
-Version **0.50.0** (lockstep with ETLantic core).
+Version **0.50.1** (lockstep with ETLantic core).
 Fake-first Spark Connect `SparkProvider` for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live Databricks/EMR/Spark Connect endpoints are opt-in via
 `ETLANTIC_SPARK_CONNECT_URL` and are skipped in CI (`047-S-01`).

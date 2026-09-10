@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-polars API
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).** Polars dataframe plugin + portable compiler.
+> **Status: Available in ETLantic 0.50.1 (published Beta).** Polars dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

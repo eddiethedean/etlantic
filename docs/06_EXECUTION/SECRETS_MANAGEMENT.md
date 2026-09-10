@@ -1,6 +1,6 @@
 # Secrets Management
 
-> **Status: Available in ETLantic 0.50.0 (published Beta).**
+> **Status: Available in ETLantic 0.50.1 (published Beta).**
 
 > **Available:** `env` and mounted-file secret providers (0.5+).
 > Optional OS keyring provider via `etlantic-keyring` (0.9+).
