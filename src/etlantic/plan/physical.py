@@ -344,6 +344,47 @@ class PhysicalDAG:
             "topological_order": list(self.topological_order),
         }
 
+    def validate_logical_paths(
+        self, logical_edges: tuple[tuple[str, str], ...]
+    ) -> None:
+        """Validate logical-edge reachability against the physical topology.
+
+        The logical graph is authoritative.  Per-unit predecessor metadata is
+        explanatory only and therefore cannot be used to decide whether a
+        logical edge has a physical realization.
+        """
+        unit_map = {unit.identity: unit for unit in self.units}
+        for producer, consumer in logical_edges:
+            producer_id = self.logical_to_physical.get(producer)
+            consumer_id = self.logical_to_physical.get(consumer)
+            if producer_id is None or consumer_id is None:
+                raise ValueError(
+                    "PMADP403: logical edge references an unmapped logical node"
+                )
+            # Fused historical /2 documents legitimately cover both endpoints
+            # with the same compute unit.
+            if producer_id == consumer_id:
+                continue
+            seen: set[str] = set()
+            frontier = [
+                dependency.unit_id for dependency in unit_map[consumer_id].dependencies
+            ]
+            while frontier:
+                unit_id = frontier.pop()
+                if unit_id in seen:
+                    continue
+                seen.add(unit_id)
+                if unit_id == producer_id:
+                    break
+                frontier.extend(
+                    dependency.unit_id for dependency in unit_map[unit_id].dependencies
+                )
+            else:
+                raise ValueError(
+                    f"PMADP403: logical edge {producer!r} -> {consumer!r} "
+                    "has no physical dependency path"
+                )
+
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PhysicalDAG:
         _reject_unknown(

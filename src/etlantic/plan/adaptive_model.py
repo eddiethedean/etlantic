@@ -553,6 +553,12 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 "PMADP403: physical DAG coverage must match selected nodes"
             )
+        dag.validate_logical_paths(
+            tuple(
+                (edge.producer_node, edge.consumer_node)
+                for edge in self.logical_graph.edges
+            )
+        )
         units_by_id = {unit.identity: unit for unit in dag.units}
         for unit in dag.units:
             if unit.target_identity not in target_identities:

@@ -9,6 +9,8 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,27 +26,33 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "adaptive_solver_conformance_0_51.json": (
         ("AC-052-006", "test_candidate_matrix_is_canonical_node_then_target_order"),
-        ("AC-052-008", "test_final_052_007_solver_handles_prunable_in_scope_plan"),
+        ("AC-052-006", "test_adaptive_candidate_analysis_is_analyze_only"),
+        ("AC-052-008", "test_adaptive_solver_matches_seeded_oracle_corpus"),
+        ("AC-052-008", "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"),
     ),
     "adaptive_resource_budget_0_51.json": (
         ("AC-052-003", "test_final_052_001_target_limit_precedes_plugin_discovery"),
-        ("AC-052-009", "test_final_052_007_solver_handles_prunable_in_scope_plan"),
+        ("AC-052-009", "test_adaptive_resource_limits_fail_before_crossing"),
+        ("AC-052-009", "test_adaptive_bytes_ignore_target_mapping_insertion_order"),
     ),
     "adaptive_physical_dag_conformance_0_51.json": (
-        ("AC-052-010", "test_adaptive_plan_binds_regions_to_inventory_and_decisions"),
-        ("AC-052-011", "test_adaptive_plan_binds_physical_units_to_target_inventory"),
+        ("AC-052-010", "test_adaptive_regions_are_maximal_and_unfused_without_proof"),
+        ("AC-052-011", "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds"),
+        (
+            "AC-052-012",
+            "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata",
+        ),
     ),
     "adaptive_runtime_conformance_0_51.json": (
-        ("AC-052-016", "test_adaptive_execution_rejects_before_runtime"),
-        ("AC-052-016", "test_local_scheduler_rejects_adaptive_before_runtime_access"),
+        ("AC-052-016", "test_adaptive_release_side_effect_sentinels"),
     ),
     "adaptive_consumer_matrix_0_51.json": (
         ("AC-052-001", "test_adaptive_report_path_uses_same_plan_dispatch"),
-        ("AC-052-015", "test_final_052_009_public_planning_types_use_plan_document"),
+        ("AC-052-015", "test_adaptive_surface_projections_share_plan_identity"),
     ),
     "adaptive_explain_identity_0_51.json": (
-        ("AC-052-013", "test_adaptive_plan_is_verified_and_explainable"),
-        ("AC-052-014", "test_final_052_008_diff_classifies_evidence_only_change"),
+        ("AC-052-013", "test_adaptive_explain_uses_the_bounded_summary"),
+        ("AC-052-014", "test_adaptive_diff_covers_semantic_and_cross_schema_changes"),
     ),
     "adaptive_security_matrix_0_51.json": (
         (
@@ -57,7 +65,7 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         ("AC-052-002", "test_explicit_plan_snapshot_omits_dormant_adaptive_policy"),
         ("AC-052-007", "test_final_052_003_fallback_report_and_integrity"),
         ("AC-052-012", "test_adaptive_wire_round_trip_and_dispatch"),
-        ("AC-052-018", "adaptive_release_campaign"),
+        ("AC-052-018", "test_adaptive_release_evidence_contract_is_ci_gated"),
     ),
 }
 
@@ -68,25 +76,35 @@ VERIFICATION_FILES = (
     "tests/plan/test_phase_0_52_review_blockers.py",
 )
 
-REVISION_INPUTS = (
-    "src/etlantic/planning/adaptive.py",
-    "src/etlantic/plan/adaptive_model.py",
-    "src/etlantic/plan/adaptive_serialize.py",
-    "src/etlantic/plan/diff.py",
-    "src/etlantic/plan/planner.py",
-    "src/etlantic/plugin_lifecycle/__init__.py",
-    "src/etlantic/plugins/coordinator.py",
-    "src/etlantic/profile.py",
-    "src/etlantic/registry.py",
-    "scripts/check_adaptive_0_52.py",
+REVISION_FILES = (
     ".github/workflows/checks.yml",
-    *VERIFICATION_FILES,
+    "docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md",
+    "mkdocs.yml",
+    "pyproject.toml",
+    "scripts/check_adaptive_0_52.py",
+    "uv.lock",
 )
+REVISION_TREES = ("src/etlantic", "packages", "tests")
+REVISION_SUFFIXES = {".json", ".py", ".pyi", ".toml", ".yaml", ".yml"}
 
 
 def _source_revision() -> str:
     digest = hashlib.sha256()
-    for relative in sorted(REVISION_INPUTS):
+    inputs = {Path(relative) for relative in REVISION_FILES}
+    tracked = subprocess.run(
+        ["git", "ls-files", "--", *REVISION_TREES],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    inputs.update(
+        Path(relative)
+        for relative in tracked
+        if Path(relative).suffix in REVISION_SUFFIXES
+    )
+    for relative_path in sorted(inputs, key=lambda path: path.as_posix()):
+        relative = relative_path.as_posix()
         path = ROOT / relative
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
@@ -121,45 +139,102 @@ def _verified_plan_fingerprint() -> str:
     return plan.fingerprint
 
 
-def _run_campaign() -> tuple[bool, str, set[str]]:
-    command = [
-        sys.executable,
-        "-m",
-        "pytest",
-        "-q",
-        "-vv",
-        *VERIFICATION_FILES,
-        "-k",
-        "not final_052_006",
-    ]
-    completed = subprocess.run(
-        command,
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+def _run_campaign() -> tuple[bool, str, set[str], dict[str, int]]:
+    with tempfile.TemporaryDirectory(prefix="etlantic-adaptive-evidence-") as temp:
+        report = Path(temp) / "pytest.xml"
+        command = [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-vv",
+            "-s",
+            *VERIFICATION_FILES,
+            "-k",
+            "not final_052_006",
+            f"--junitxml={report}",
+        ]
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        passed = set()
+        if report.exists():
+            for case in ET.parse(report).iter("testcase"):
+                if not any(
+                    case.find(outcome) is not None
+                    for outcome in ("failure", "error", "skipped")
+                ):
+                    passed.add(str(case.attrib.get("name", "")).split("[", 1)[0])
     output = completed.stdout + completed.stderr
-    passed = {
-        match.group(1)
-        for match in re.finditer(r"::([A-Za-z0-9_]+) PASSED(?:\s|$)", output)
+    marker = re.findall(r"ETLANTIC_ADAPTIVE_SIDE_EFFECT_COUNTS=(\{[^\n]+\})", output)
+    counts = json.loads(marker[-1]) if marker else {}
+    return completed.returncode == 0, output, passed, counts
+
+
+def _supported_platforms() -> list[dict[str, str]]:
+    workflow = (ROOT / ".github/workflows/checks.yml").read_text(encoding="utf-8")
+    os_match = re.search(r"os:\s*\[([^]]+)\]", workflow)
+    python_match = re.search(r"python-version:\s*\[([^]]+)\]", workflow)
+    if os_match is None or python_match is None:
+        raise RuntimeError("adaptive CI platform matrix is not an inline list")
+    step = workflow.split("- name: Adaptive 0.52 evidence verifier", 1)[1].split(
+        "- name:", 1
+    )[0]
+    if "if:" in step:
+        raise RuntimeError(
+            "adaptive evidence verifier is not enabled on every matrix row"
+        )
+    operating_systems = [item.strip(" \"'") for item in os_match.group(1).split(",")]
+    python_versions = [item.strip(" \"'") for item in python_match.group(1).split(",")]
+    return [
+        {
+            "os": operating_system,
+            "python": python_version,
+            "verification": "github-actions:checks/adaptive-evidence",
+        }
+        for operating_system in operating_systems
+        for python_version in python_versions
+    ]
+
+
+def _scan_payload(payload: dict[str, object]) -> dict[str, bool]:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    secret_value = re.search(
+        r'"(?:api[_-]?key|authorization|password|secret|token)"\s*:\s*"(?!\*\*\*)[^\"]+"',
+        encoded,
+        re.IGNORECASE,
+    )
+    source_rows = re.search(
+        r'"(?:preview_rows|sample_rows|source_rows)"\s*:', encoded, re.IGNORECASE
+    )
+    return {
+        "absolute_repository_path": str(ROOT) in encoded,
+        "source_rows": source_rows is not None,
+        "secrets": secret_value is not None,
     }
-    return completed.returncode == 0, output, passed
 
 
 def _payloads() -> tuple[dict[str, dict[str, object]], str]:
-    passed, output, passed_tests = _run_campaign()
+    passed, output, passed_tests, side_effect_counts = _run_campaign()
     if not passed:
         raise RuntimeError("adaptive release campaign failed:\n" + output)
+    if side_effect_counts != {"compile": 0, "execute": 0, "io": 0}:
+        raise RuntimeError(
+            "adaptive side-effect evidence missing or non-zero: "
+            + repr(side_effect_counts)
+        )
     revision = _source_revision()
     fingerprint = _verified_plan_fingerprint()
+    supported_platforms = _supported_platforms()
     payloads: dict[str, dict[str, object]] = {}
     for name, campaign in CAMPAIGNS.items():
         scenarios = []
         for criterion, proof in campaign:
-            scenario_passed = (
-                proof in passed_tests or proof == "adaptive_release_campaign"
-            )
+            scenario_passed = proof in passed_tests
             scenarios.append(
                 {
                     "id": proof,
@@ -172,7 +247,14 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
                     "plan_fingerprint": fingerprint,
                 }
             )
-        payloads[name] = {
+        if not all(item["result"] == "pass" for item in scenarios):
+            missing = [
+                item["verification"] for item in scenarios if item["result"] != "pass"
+            ]
+            raise RuntimeError(
+                "adaptive evidence proof was not observed: " + ", ".join(missing)
+            )
+        payload: dict[str, object] = {
             "schema": "etlantic.adaptive-evidence/1",
             "artifact": name,
             "repository_revision": revision,
@@ -181,37 +263,25 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
             "result": "pass",
             "scenario_count": len(scenarios),
             "passed_scenarios": sum(item["result"] == "pass" for item in scenarios),
-            # The committed artifact is canonical across runners.  Supported
-            # runtime rows are declared as data, while the executing runner is
-            # intentionally not part of the fingerprinted payload.
-            "supported_platforms": [
-                {"os": "ubuntu-latest", "python": "3.11"},
-                {"os": "ubuntu-latest", "python": "3.12"},
-                {"os": "ubuntu-latest", "python": "3.13"},
-                {"os": "macos-latest", "python": "3.11"},
-                {"os": "macos-latest", "python": "3.12"},
-                {"os": "macos-latest", "python": "3.13"},
-                {"os": "windows-latest", "python": "3.11"},
-                {"os": "windows-latest", "python": "3.12"},
-                {"os": "windows-latest", "python": "3.13"},
-            ],
-            "side_effect_counts": {"compile": 0, "execute": 0, "io": 0},
-            "source_scan": {
-                "absolute_repository_path": False,
-                "source_rows": False,
-                "secrets": False,
-            },
+            "supported_platforms": supported_platforms,
+            "side_effect_counts": side_effect_counts,
             "scenarios": scenarios,
             "verification_command": [
                 "python",
                 "-m",
                 "pytest",
                 "-q",
+                "-vv",
+                "-s",
                 *VERIFICATION_FILES,
                 "-k",
                 "not final_052_006",
             ],
         }
+        payload["source_scan"] = _scan_payload(payload)
+        if any(payload["source_scan"].values()):  # type: ignore[union-attr]
+            raise RuntimeError(f"adaptive evidence scan failed for {name}")
+        payloads[name] = payload
     findings = (
         "# Adaptive 0.52 Evidence\n\n"
         "**Status:** Generated executable release evidence.\n\n"

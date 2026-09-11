@@ -1,11 +1,11 @@
 {
   "artifact": "adaptive_solver_conformance_0_51.json",
-  "passed_scenarios": 2,
+  "passed_scenarios": 4,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:2a7906de30c13ae020b4bd33d9fdca8bd7cc9a126b80885d77f2d636d9974caf",
+  "repository_revision": "sha256:cafa34f2a35d69779c6842b7640d1b5e44fa972966e87e59d31dc2c6128a5ef6",
   "result": "pass",
-  "scenario_count": 2,
+  "scenario_count": 4,
   "scenarios": [
     {
       "acceptance_criterion": "AC-052-006",
@@ -18,14 +18,34 @@
       "verification": "test_candidate_matrix_is_canonical_node_then_target_order"
     },
     {
+      "acceptance_criterion": "AC-052-006",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_adaptive_candidate_analysis_is_analyze_only",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "result": "pass",
+      "verification": "test_adaptive_candidate_analysis_is_analyze_only"
+    },
+    {
       "acceptance_criterion": "AC-052-008",
       "actual": "pass",
       "executed": true,
       "expected": "pass",
-      "id": "test_final_052_007_solver_handles_prunable_in_scope_plan",
+      "id": "test_adaptive_solver_matches_seeded_oracle_corpus",
       "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
       "result": "pass",
-      "verification": "test_final_052_007_solver_handles_prunable_in_scope_plan"
+      "verification": "test_adaptive_solver_matches_seeded_oracle_corpus"
+    },
+    {
+      "acceptance_criterion": "AC-052-008",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "result": "pass",
+      "verification": "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",
@@ -42,39 +62,48 @@
   "supported_platforms": [
     {
       "os": "ubuntu-latest",
-      "python": "3.11"
+      "python": "3.11",
+      "verification": "github-actions:checks/adaptive-evidence"
     },
     {
       "os": "ubuntu-latest",
-      "python": "3.12"
+      "python": "3.12",
+      "verification": "github-actions:checks/adaptive-evidence"
     },
     {
       "os": "ubuntu-latest",
-      "python": "3.13"
-    },
-    {
-      "os": "macos-latest",
-      "python": "3.11"
-    },
-    {
-      "os": "macos-latest",
-      "python": "3.12"
-    },
-    {
-      "os": "macos-latest",
-      "python": "3.13"
+      "python": "3.13",
+      "verification": "github-actions:checks/adaptive-evidence"
     },
     {
       "os": "windows-latest",
-      "python": "3.11"
+      "python": "3.11",
+      "verification": "github-actions:checks/adaptive-evidence"
     },
     {
       "os": "windows-latest",
-      "python": "3.12"
+      "python": "3.12",
+      "verification": "github-actions:checks/adaptive-evidence"
     },
     {
       "os": "windows-latest",
-      "python": "3.13"
+      "python": "3.13",
+      "verification": "github-actions:checks/adaptive-evidence"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.11",
+      "verification": "github-actions:checks/adaptive-evidence"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.12",
+      "verification": "github-actions:checks/adaptive-evidence"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.13",
+      "verification": "github-actions:checks/adaptive-evidence"
     }
   ],
   "verification_command": [
@@ -82,6 +111,8 @@
     "-m",
     "pytest",
     "-q",
+    "-vv",
+    "-s",
     "tests/plan/test_adaptive_planner_0_52.py",
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
