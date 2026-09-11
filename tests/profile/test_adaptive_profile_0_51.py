@@ -127,6 +127,7 @@ def test_target_secret_like_field_rejected() -> None:
     ("field", "value"),
     [
         ("resource", "postgres://user:pass@host/db"),
+        ("resource", "postgres://token@host/db"),
         ("location", "s3://AKIA:secret@bucket/path"),
         ("compiler", "token=resolved-secret"),
         ("executor", "Bearer resolved-secret"),
@@ -141,6 +142,13 @@ def test_target_from_dict_rejects_credential_url() -> None:
     with pytest.raises(ValueError, match="PMADP101"):
         PlacementTarget.from_dict(
             {"engine": "local", "resource": "postgres://user:pass@host/db"}
+        )
+
+
+def test_target_from_dict_rejects_camel_case_secret_key() -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PlacementTarget.from_dict(
+            {"engine": "local", "version_constraints": {"clientSecret": "x"}}
         )
 
 

@@ -224,7 +224,7 @@ _SECRET_KEY_FRAGMENT_RE = re.compile(
     re.IGNORECASE,
 )
 
-_URL_USERINFO_VALUE_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@")
+_URL_USERINFO_VALUE_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+@")
 _SECRET_ASSIGNMENT_VALUE_RE = re.compile(
     r"(?i)(?:^|[?&\s;])(?:password|passwd|pwd|secret|secret_value|token|"
     r"api[_-]?key|credential|authorization)\s*[:=]"
@@ -233,7 +233,8 @@ _BEARER_VALUE_RE = re.compile(r"(?i)^bearer\s+\S+")
 
 
 def _is_secret_like_key(key: str) -> bool:
-    key_l = str(key).lower().replace("-", "_")
+    key_l = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key))
+    key_l = re.sub(r"[\s-]+", "_", key_l).lower()
     if key_l in _STRICT_SECRET_KEYS:
         return True
     return bool(_SECRET_KEY_FRAGMENT_RE.search(key_l))
@@ -294,7 +295,16 @@ _SOURCE_ROW_KEYS = frozenset(
 )
 
 
-def _looks_like_source_row_json(value: Any) -> bool:
+_ROW_CONTAINER_KEYS = frozenset({"metadata", "profile_snapshot"})
+
+
+def _is_tabular_value(value: Any) -> bool:
+    if not isinstance(value, (list, tuple)) or not value:
+        return False
+    return all(isinstance(item, (Mapping, list, tuple)) for item in value)
+
+
+def _looks_like_source_row_json(value: Any, *, context: bool) -> bool:
     if not isinstance(value, str):
         return False
     text = value.strip()
@@ -305,30 +315,48 @@ def _looks_like_source_row_json(value: Any) -> bool:
     except (TypeError, ValueError, json.JSONDecodeError):
         return False
     if isinstance(decoded, list):
-        return bool(decoded)
-    return isinstance(decoded, Mapping) and _looks_like_source_row_payload(decoded)
+        return context and _is_tabular_value(decoded)
+    return isinstance(decoded, Mapping) and _looks_like_source_row_payload(
+        decoded, context=context
+    )
 
 
-def _looks_like_source_row_payload(value: Any) -> bool:
+def _looks_like_source_row_payload(value: Any, *, context: bool = False) -> bool:
     """Return whether a nested value contains recognizable source-row data."""
     if isinstance(value, Mapping):
         for key, child in value.items():
-            key_l = str(key).lower().replace("-", "_")
-            if (
+            key_l = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key))
+            key_l = re.sub(r"[\s-]+", "_", key_l).lower()
+            row_key = (
                 key_l in _SOURCE_ROW_KEYS
                 or key_l.endswith("_rows")
                 or "sample" in key_l
+            )
+            if row_key and (
+                isinstance(child, Mapping)
+                or _is_tabular_value(child)
+                or _looks_like_source_row_json(child, context=True)
             ):
                 return True
-            if _looks_like_source_row_json(child):
+            child_context = context or key_l in _ROW_CONTAINER_KEYS
+            if child_context and (
+                _is_tabular_value(child)
+                or _looks_like_source_row_json(child, context=True)
+            ):
+                return True
+            if _looks_like_source_row_json(child, context=child_context):
                 return True
             if isinstance(
                 child, (Mapping, list, tuple)
-            ) and _looks_like_source_row_payload(child):
+            ) and _looks_like_source_row_payload(child, context=child_context):
                 return True
         return False
     if isinstance(value, (list, tuple)):
-        return any(_looks_like_source_row_payload(item) for item in value)
+        if context and _is_tabular_value(value):
+            return True
+        return any(
+            _looks_like_source_row_payload(item, context=context) for item in value
+        )
     return False
 
 

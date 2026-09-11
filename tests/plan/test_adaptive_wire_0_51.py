@@ -210,9 +210,11 @@ def test_physical_unit_rejects_secret_like_metadata() -> None:
     "metadata",
     [
         {"client_secret": "resolved-secret"},
+        {"clientSecret": "resolved-secret"},
         {"authorization": "Bearer resolved-secret"},
         {"endpoint": "postgres://user:pass@host/db"},
         {"nested": {"sample_rows": [{"id": 1}]}},
+        {"etlantic.preview": [{"id": 1}]},
     ],
 )
 def test_physical_unit_rejects_nested_sensitive_envelope_values(
@@ -238,12 +240,24 @@ def test_physical_unit_from_dict_rejects_credential_url() -> None:
         PhysicalUnit.from_dict(payload)
 
 
+def test_physical_unit_allows_scalar_policy_metadata_values() -> None:
+    unit = PhysicalUnit(
+        identity="unit-scalar",
+        kind="compute",
+        target_identity="target-1",
+        policy={"values": "normalized"},
+        metadata={"etlantic.rule": {"payload": "metadata-only"}},
+    )
+    assert unit.to_dict()["policy"] == {"values": "normalized"}
+
+
 @pytest.mark.parametrize(
     ("field", "payload"),
     [
         ("metadata", {"sample_rows": [{"customer_id": 7}]}),
         ("profile_snapshot", {"source_rows": [{"customer_id": 7}]}),
         ("metadata", {"evidence": [{"details": {"rows": [[7, "Ada"]]}}]}),
+        ("metadata", {"etlantic.preview": [{"customer_id": 7}]}),
     ],
 )
 def test_adaptive_plan_rejects_source_rows_in_all_wire_sections(
@@ -258,6 +272,11 @@ def test_adaptive_plan_json_rejects_source_rows() -> None:
     payload["profile_snapshot"] = {"source_rows": [{"customer_id": 7}]}
     with pytest.raises(ValueError, match="PMADP101"):
         plan_from_json(json.dumps(payload))
+
+
+def test_adaptive_plan_allows_scalar_profile_snapshot_values() -> None:
+    plan = replace(_plan(), profile_snapshot={"data": "metadata-only"})
+    assert plan.to_dict()["profile_snapshot"] == {"data": "metadata-only"}
 
 
 def test_target_descriptor_rejects_non_string_protocol_versions() -> None:
