@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from etlantic.authoring.definition import PipelineDefinition
 from etlantic.authoring.normalize import logical_graph_from_definition
@@ -15,14 +15,14 @@ from etlantic.authoring.types import (
 from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
 from etlantic.exceptions import PipelineValidationError
 from etlantic.model import LogicalGraph, NodeKind
-from etlantic.plan.model import PipelinePlan
+from etlantic.plan.adaptive_model import PlanDocument
 from etlantic.registry import PlanningContext
 
 
 def build_graph(pipeline: PipelineLike) -> LogicalGraph:
     """Return the logical graph for a class or definition."""
     if is_pipeline_class(pipeline):
-        return pipeline.build_graph()
+        return cast(Any, pipeline).build_graph()
     assert isinstance(pipeline, PipelineDefinition)
     return logical_graph_from_definition(pipeline)
 
@@ -342,6 +342,8 @@ def _validate_definition_policy(
     policy: Any,
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
+    if getattr(context.profile, "execution_strategy", "explicit") == "adaptive":
+        return diagnostics
     if not getattr(policy, "require_implementations", False):
         return diagnostics
     from etlantic.transform.discovery import discover_transform_compilers_for_profile
@@ -382,7 +384,7 @@ def plan_pipeline_like(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
-) -> PipelinePlan:
+) -> PlanDocument:
     """Plan a pipeline class or PipelineDefinition."""
     from etlantic.plan.planner import plan_pipeline
 
@@ -402,7 +404,7 @@ def _plan_definition(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
-) -> PipelinePlan:
+) -> PlanDocument:
     from etlantic.plan import planner as planner_mod
 
     defn, ctx, _resolve_report = resolve_definition(

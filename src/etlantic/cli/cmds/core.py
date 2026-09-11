@@ -6,7 +6,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 
@@ -18,6 +18,7 @@ from etlantic.cli.trust_exit import trust_exit_from_report, validation_exit_from
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.plan.diff import diff_plans, render_plan_explain_human
 from etlantic.plan.explain import explain_plan
+from etlantic.plan.model import PipelinePlan
 from etlantic.plan.planner import plan_pipeline_with_report
 from etlantic.plan.serialize import plan_to_json
 from etlantic.registry import PlanningContext
@@ -245,7 +246,8 @@ def register_core_commands(
         resolved, _source = cli.resolve_profile(
             profile, allow_adhoc_profile=allow_adhoc_profile
         )
-        cli.ensure_plugins(resolved, fmt=fmt)
+        if getattr(resolved, "execution_strategy", "explicit") != "adaptive":
+            cli.ensure_plugins(resolved, fmt=fmt)
         pipeline_cls = cli.load_target(target)
         selection = build_selection(run_one=run_one, run_until=run_until, nodes=nodes)
         context = PlanningContext.create(
@@ -300,6 +302,10 @@ def register_core_commands(
         resolved, _source = cli.resolve_profile(
             profile, allow_adhoc_profile=allow_adhoc_profile
         )
+        if getattr(resolved, "execution_strategy", "explicit") == "adaptive":
+            raise typer.BadParameter(
+                "PMADP500: optimization is not available for adaptive /2 plans"
+            )
         cli.ensure_plugins(resolved, fmt=fmt)
         pipeline_cls = cli.load_target(target)
         context = PlanningContext.create(
@@ -344,7 +350,9 @@ def register_core_commands(
 
         result = optimize_plan(plan, profile=opt_profile, policy=opt_policy)  # type: ignore[arg-type]
         explanation = explain_optimization(result)
-        shadow = compare_shadow(plan, result.optimized_plan, result=result)
+        shadow = compare_shadow(
+            cast(PipelinePlan, plan), result.optimized_plan, result=result
+        )
         payload = {
             "baseline": {
                 "plan_id": plan.plan_id,
@@ -486,17 +494,22 @@ def register_core_commands(
             path = Path(ref)
             if path.suffix == ".json" and path.exists():
                 from etlantic.authoring.definition import PIPELINE_SCHEMA
-                from etlantic.plan.model import PLAN_SCHEMA, PipelinePlan
+                from etlantic.plan.model import PLAN_SCHEMA
+                from etlantic.plan.serialize import plan_from_json
 
                 payload = json.loads(path.read_text(encoding="utf-8"))
                 schema = str(payload.get("schema") or "")
                 if schema == PLAN_SCHEMA or schema.startswith("etlantic.plan/"):
-                    return PipelinePlan.from_dict(payload)
+                    return plan_from_json(path.read_text(encoding="utf-8"))
                 if schema == PIPELINE_SCHEMA or schema.startswith("etlantic.pipeline/"):
                     resolved, _ = cli.resolve_profile(
                         profile, allow_adhoc_profile=allow_adhoc_profile
                     )
-                    cli.ensure_plugins(resolved)
+                    if (
+                        getattr(resolved, "execution_strategy", "explicit")
+                        != "adaptive"
+                    ):
+                        cli.ensure_plugins(resolved)
                     context = PlanningContext.create(
                         profile=resolved,
                         registry=cli.runtime.registry,
@@ -513,7 +526,7 @@ def register_core_commands(
                     return plan
                 # Legacy plan JSON without schema: attempt plan decode.
                 try:
-                    return PipelinePlan.from_dict(payload)
+                    return plan_from_json(path.read_text(encoding="utf-8"))
                 except Exception as exc:
                     _LOG.debug(
                         "Legacy plan decode failed for %s; treating as pipeline target: %s",
@@ -541,7 +554,8 @@ def register_core_commands(
             resolved, _ = cli.resolve_profile(
                 profile, allow_adhoc_profile=allow_adhoc_profile
             )
-            cli.ensure_plugins(resolved)
+            if getattr(resolved, "execution_strategy", "explicit") != "adaptive":
+                cli.ensure_plugins(resolved)
             context = PlanningContext.create(
                 profile=resolved,
                 registry=cli.runtime.registry,

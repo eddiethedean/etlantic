@@ -30,6 +30,11 @@ def phase_capability(
     diagnostics: list[Diagnostic] = []
     registry = get_engine_registry()
     profile = context.profile
+    # Adaptive placement validates each eligible target in the planner's
+    # candidate phase.  Do not pre-reject it against the explicit primary
+    # engine, which may intentionally be absent or heterogeneous.
+    if getattr(profile, "execution_strategy", "explicit") == "adaptive":
+        return diagnostics
     engine_name = registry.primary_engine(profile)
     available = context.registry.engines.get(engine_name)
     if available is None:

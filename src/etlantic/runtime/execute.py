@@ -6,7 +6,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import anyio
 
@@ -112,8 +112,14 @@ async def arun_pipeline(
     from etlantic.profile import resolve_profile
 
     request = request or RunRequest()
-    runtime = runtime or PipelineRuntime()
     resolved = resolve_profile(profile)
+    if getattr(resolved, "execution_strategy", "explicit") == "adaptive":
+        raise PipelineExecutionError(
+            "PMADP500: adaptive etlantic.plan/2 execution is not available in 0.52",
+            code="PMADP500",
+            stage="admission",
+        )
+    runtime = runtime or PipelineRuntime()
     trust_diags = runtime.ensure_plugins_for_profile(resolved)
     from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 
@@ -150,7 +156,8 @@ async def arun_pipeline(
         profile=profile,
         selection=selection,
     )
-    request = _merge_plan_policies(request, plan)
+    explicit_plan = cast(PipelinePlan, plan)
+    request = _merge_plan_policies(request, explicit_plan)
 
     store = artifact_store or getattr(runtime, "_artifact_store", None)
     if store is None:
@@ -161,31 +168,32 @@ async def arun_pipeline(
 
     if request.invalidation is not InvalidationMode.NONE:
         consumers: dict[str, set[str]] = {
-            n.name: set() for n in plan.logical_graph.nodes
+            n.name: set() for n in explicit_plan.logical_graph.nodes
         }
-        for edge in plan.logical_graph.edges:
+        for edge in explicit_plan.logical_graph.edges:
             consumers.setdefault(edge.producer_node, set()).add(edge.consumer_node)
         targets = set()
         selected = list(
-            plan.selected_nodes or [n.name for n in plan.logical_graph.nodes]
+            explicit_plan.selected_nodes
+            or [n.name for n in explicit_plan.logical_graph.nodes]
         )
         for name in selected:
             targets |= invalidation_targets(
-                graph_nodes=[n.name for n in plan.logical_graph.nodes],
+                graph_nodes=[n.name for n in explicit_plan.logical_graph.nodes],
                 target=name,
                 mode=request.invalidation,
                 downstream=consumers,
             )
         # Invalidate logical outputs for affected nodes.
         keys = set()
-        for node in plan.logical_graph.nodes:
+        for node in explicit_plan.logical_graph.nodes:
             if node.name in targets:
                 for port in node.outputs or ():
                     keys.add(f"{node.name}.{port.name}")
                 keys.add(node.name)
         store.invalidate(keys)
         # Also clear memory bindings for sinks/sources on invalidated nodes.
-        for node in plan.logical_graph.nodes:
+        for node in explicit_plan.logical_graph.nodes:
             if node.name in targets and node.binding:
                 runtime.memory._store.pop(node.binding, None)
 
@@ -193,7 +201,7 @@ async def arun_pipeline(
 
     orchestrator_name = str(
         getattr(resolved, "orchestrator", None)
-        or (plan.execution_settings or {}).get("orchestrator")
+        or (explicit_plan.execution_settings or {}).get("orchestrator")
         or "local"
     )
     scheduler_plugins = getattr(runtime, "scheduler_plugins", None)
@@ -204,7 +212,7 @@ async def arun_pipeline(
     run_id = f"run-{uuid.uuid4().hex[:12]}"
     async with runtime.session():
         return await scheduler.execute(
-            plan,
+            explicit_plan,
             request=request,
             runtime=runtime,
             pipeline_cls=pipeline_for_scheduler,
@@ -212,9 +220,9 @@ async def arun_pipeline(
             artifact_store=store,
             context=SchedulingContext(
                 run_id=run_id,
-                pipeline_id=plan.pipeline_id,
-                plan_id=plan.plan_id,
-                profile_name=plan.profile_name,
+                pipeline_id=explicit_plan.pipeline_id,
+                plan_id=explicit_plan.plan_id,
+                profile_name=explicit_plan.profile_name,
             ),
         )
 

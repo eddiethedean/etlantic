@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.model import PipelinePlan
 
 
@@ -19,6 +20,7 @@ class PlanDiff:
     changed_regions: list[dict[str, Any]] = field(default_factory=list)
     changed_boundaries: list[dict[str, Any]] = field(default_factory=list)
     changed_capability_decisions: list[dict[str, Any]] = field(default_factory=list)
+    changed_adaptive: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -29,6 +31,7 @@ class PlanDiff:
             "changed_regions": self.changed_regions,
             "changed_boundaries": self.changed_boundaries,
             "changed_capability_decisions": self.changed_capability_decisions,
+            "changed_adaptive": self.changed_adaptive,
         }
 
 
@@ -44,8 +47,49 @@ def _step_signature(plan: PipelinePlan, node_name: str) -> dict[str, Any]:
     }
 
 
-def diff_plans(left: PipelinePlan, right: PipelinePlan) -> PlanDiff:
+def diff_plans(left: PlanDocument, right: PlanDocument) -> PlanDiff:
     """Compare two plans for structural differences."""
+    if isinstance(left, AdaptivePipelinePlan) or isinstance(
+        right, AdaptivePipelinePlan
+    ):
+        if not isinstance(left, AdaptivePipelinePlan) or not isinstance(
+            right, AdaptivePipelinePlan
+        ):
+            return PlanDiff(
+                equal=False,
+                left_fingerprint=left.fingerprint,
+                right_fingerprint=right.fingerprint,
+                changed_adaptive=[
+                    {"schema": {"left": left.schema, "right": right.schema}}
+                ],
+            )
+        left_data = left.to_dict()
+        right_data = right.to_dict()
+        changed: list[dict[str, Any]] = []
+        for key in (
+            "logical_graph",
+            "inventory",
+            "candidates",
+            "decisions",
+            "objective",
+            "regions",
+            "physical_dag",
+            "profile_snapshot",
+        ):
+            if left_data.get(key) != right_data.get(key):
+                changed.append(
+                    {
+                        "field": key,
+                        "left": left_data.get(key),
+                        "right": right_data.get(key),
+                    }
+                )
+        return PlanDiff(
+            equal=left.fingerprint == right.fingerprint and not changed,
+            left_fingerprint=left.fingerprint,
+            right_fingerprint=right.fingerprint,
+            changed_adaptive=changed,
+        )
     equal_fp = left.fingerprint == right.fingerprint
     left_nodes = {n.name for n in left.logical_graph.nodes}
     right_nodes = {n.name for n in right.logical_graph.nodes}
@@ -69,8 +113,8 @@ def diff_plans(left: PipelinePlan, right: PipelinePlan) -> PlanDiff:
     if left_boundaries != right_boundaries:
         changed_boundaries.append({"left": left_boundaries, "right": right_boundaries})
 
-    left_caps = [c.to_dict() for c in left.capability_decisions]
-    right_caps = [c.to_dict() for c in right.capability_decisions]
+    left_caps = [dict(c) for c in left.capability_decisions]
+    right_caps = [dict(c) for c in right.capability_decisions]
     changed_caps: list[dict[str, Any]] = []
     if left_caps != right_caps:
         changed_caps.append({"left": left_caps, "right": right_caps})

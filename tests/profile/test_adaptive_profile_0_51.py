@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
-from etlantic.exceptions import PipelineValidationError
 from etlantic.profile import PlacementTarget, Profile
 
 jsonschema = pytest.importorskip("jsonschema")
@@ -204,9 +203,10 @@ def test_profile_from_dict_rejects_string_eligible_targets() -> None:
         )
 
 
-def test_adaptive_planning_fails_closed_until_solver_gate() -> None:
-    with pytest.raises(PipelineValidationError, match="PMADP221"):
-        Sample.plan(profile=_adaptive())
+def test_adaptive_planning_produces_plan_document() -> None:
+    plan = Sample.plan(profile=_adaptive())
+    assert plan.schema == "etlantic.plan/2"
+    assert plan.physical_dag.logical_to_physical.keys() == {"raw", "out"}
 
 
 @pytest.mark.parametrize(

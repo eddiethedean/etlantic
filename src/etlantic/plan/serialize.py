@@ -91,12 +91,12 @@ def plan_from_json(text: str, *, verify: bool = True) -> PlanDocument:
     """Deserialize a plan from JSON text.
 
     Args:
-        text: UTF-8 JSON object matching ``etlantic.plan/1``.
+        text: UTF-8 JSON object matching ``etlantic.plan/1`` or ``etlantic.plan/2``.
         verify: When True (default), validate wire ``schema`` and recompute the
             fingerprint after :meth:`PipelinePlan.from_dict`.
 
     Returns:
-        Parsed :class:`~etlantic.plan.model.PipelinePlan`.
+        Parsed :class:`~etlantic.plan.adaptive_model.PlanDocument`.
 
     Raises:
         ValueError: When JSON is not an object, schema is missing/unknown, or

@@ -26,6 +26,7 @@ from etlantic.interchange.tabular import (
 )
 from etlantic.interchange.tabular.reconcile import interchange_evidence_refs
 from etlantic.model import LogicalGraph, Node, NodeKind
+from etlantic.plan.adaptive_model import PlanDocument
 from etlantic.plan.artifacts import (
     ArtifactRef,
     ArtifactStrategy,
@@ -146,12 +147,12 @@ def plan_pipeline(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
-) -> PipelinePlan:
-    """Resolve a validated logical pipeline into a secret-free :class:`PipelinePlan`.
+) -> PlanDocument:
+    """Resolve a validated logical pipeline into a secret-free plan document.
 
     Validates the pipeline for the resolved profile, then builds the immutable
-    plan IR (schema ``etlantic.plan/1``). No transformation code runs during
-    planning.
+    plan IR (schema ``etlantic.plan/1`` or opt-in ``etlantic.plan/2``). No
+    transformation code runs during planning.
 
     Args:
         pipeline_cls: Pipeline class or ``PipelineDefinition`` to plan.
@@ -162,7 +163,7 @@ def plan_pipeline(
         selection: Optional partial-run selection (``run_one``, ``run_until``).
 
     Returns:
-        Immutable, fingerprinted :class:`~etlantic.plan.model.PipelinePlan`.
+        Immutable, fingerprinted :class:`~etlantic.plan.adaptive_model.PlanDocument`.
 
     Raises:
         PipelineValidationError: When validation reports errors.
@@ -187,7 +188,11 @@ def plan_pipeline(
             report=report,
         )
     if ctx.profile.execution_strategy == "adaptive":
-        raise _adaptive_unavailable()
+        from etlantic.planning.adaptive import build_adaptive_plan
+
+        return build_adaptive_plan(
+            pipeline_cls, ctx, selection=selection or ctx.selection
+        )
     return _build_plan(pipeline_cls, ctx, selection=selection or ctx.selection)
 
 
@@ -197,7 +202,7 @@ def plan_pipeline_with_report(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
-) -> tuple[PipelinePlan | None, ValidationReport]:
+) -> tuple[PlanDocument | None, ValidationReport]:
     """Plan a pipeline and always return the validation report.
 
     Same validation and planning rules as :func:`plan_pipeline`, but returns
@@ -242,6 +247,12 @@ def plan_pipeline_with_report(
     if report.has_errors:
         return None, report
     try:
+        if ctx.profile.execution_strategy == "adaptive":
+            from etlantic.planning.adaptive import build_adaptive_plan
+
+            return build_adaptive_plan(
+                pipeline_cls, ctx, selection=selection or ctx.selection
+            ), report
         return _build_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection
         ), report
@@ -288,10 +299,17 @@ def _build_plan_from_definition(
     context: PlanningContext,
     *,
     selection: dict[str, Any] | None = None,
-) -> PipelinePlan:
+) -> PlanDocument:
     """Build a plan from an unresolved PipelineDefinition."""
     if context.profile.execution_strategy == "adaptive":
-        raise _adaptive_unavailable()
+        from etlantic.planning.adaptive import build_adaptive_plan
+
+        return build_adaptive_plan(
+            None,
+            context,
+            selection=selection or context.selection,
+            definition=definition,
+        )
     return _build_plan(None, context, selection=selection, definition=definition)
 
 

@@ -306,6 +306,11 @@ def _phase_policy(
     policy: ValidationPolicy,
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
+    if getattr(context.profile, "execution_strategy", "explicit") == "adaptive":
+        # Adaptive candidate eligibility is evaluated per target after the
+        # selected slice is known.  Explicit-engine implementation checks here
+        # would reject valid heterogeneous profiles too early.
+        return diagnostics
     if not policy.require_implementations:
         return diagnostics
     portable_policy = (
@@ -359,7 +364,7 @@ def _phase_policy(
                     ),
                     requirements=portable_def.requirements,
                 )
-                target = {
+                target: dict[str, Any] = {
                     "engine": compiler.info.engine,
                     "compiler": compiler.info.name,
                     "version": compiler.info.version,

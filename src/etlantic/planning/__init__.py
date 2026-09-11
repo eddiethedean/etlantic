@@ -1,5 +1,6 @@
 """Plan builder stages (internal refactor surface)."""
 
+from etlantic.planning.adaptive import build_adaptive_plan
 from etlantic.planning.builder import PlanBuilder, build_plan
 from etlantic.planning.capabilities import (
     assert_capabilities_supported,
@@ -23,6 +24,7 @@ __all__ = [
     "assert_sql_engines_available",
     "assert_sql_write_capabilities",
     "assert_storage_delta_capabilities",
+    "build_adaptive_plan",
     "build_plan",
     "is_dataframe_engine",
 ]
