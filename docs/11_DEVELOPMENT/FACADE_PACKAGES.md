@@ -1,6 +1,6 @@
 # Facade packages
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.** Defines first-party **facade**
+> **Status: Available in ETLantic 0.51.0 (published Beta).** Defines first-party **facade**
 > packages — domain-specific authoring layers that lower to ETLantic public
 > definitions without adding domain vocabulary to core wire schemas.
 

@@ -1,6 +1,6 @@
 # Run a Local PySpark Batch
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.** Structured Streaming remains
+> **Status: Available in ETLantic 0.51.0 (published Beta).** Structured Streaming remains
 > experimental.
 
 !!! warning "Clone-assisted path"

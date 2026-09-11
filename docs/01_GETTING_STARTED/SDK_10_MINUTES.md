@@ -1,6 +1,6 @@
 # SDK 10-minute tutorial
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.** Secondary path — complete the CLI
+> **Status: Available in ETLantic 0.51.0 (published Beta).** Secondary path — complete the CLI
 > [Quickstart](QUICKSTART.md) (Ada/Grace in `data/out.json`) first. This page
 > is for SDK muscle memory after that green path. No clone required.
 

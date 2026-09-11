@@ -1,6 +1,6 @@
 # Security howto (day-2 ops)
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.** Operational checklist for pilots.
+> **Status: Available in ETLantic 0.51.0 (published Beta).** Operational checklist for pilots.
 > Full threat model: [Security](../02_FOUNDATIONS/SECURITY.md).
 
 ## 1. Prefer `python -m etlantic`

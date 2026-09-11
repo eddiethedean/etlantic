@@ -1,6 +1,6 @@
 # What's New in ETLantic 0.51
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.51.0 (published Beta).**
 
 ETLantic 0.51.0 ships the first closed foundation for adaptive heterogeneous
 planning without claiming an adaptive planner or runtime. It adds opt-in

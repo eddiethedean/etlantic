@@ -6,7 +6,7 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.51.0** (Beta release candidate) — the opt-in
+**Current release:** ETLantic **0.51.0** (published Beta) — the opt-in
 adaptive Profile and `/2` wire foundation plus the run-report metadata
 namespace migration. Adaptive planning and physical-DAG execution remain
 unavailable and fail closed. The release preserves the technically qualified
@@ -21,7 +21,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.51 | Adaptive Profile and `/2` wire foundation; adaptive planning/execution unavailable | Gate-ready for tag/publish |
+| Current | 0.51 | Adaptive Profile and `/2` wire foundation; adaptive planning/execution unavailable | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |

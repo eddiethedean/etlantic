@@ -1,6 +1,6 @@
 # Current Capabilities and Limitations
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.** What is implemented and technically
+> **Status: Available in ETLantic 0.51.0 (published Beta).** What is implemented and technically
 > qualified for controlled single-tenant pilots and Supported multi-tenant
 > profiles.
 
@@ -10,8 +10,8 @@
 
 ## What works today (0.51)
 
-ETLantic 0.51.0 is a **Beta release candidate** for documented, controlled,
-single-tenant pilots (install `etlantic==0.51.0` from PyPI after publication). You can embed an
+ETLantic 0.51.0 is the **published Beta release** for documented, controlled,
+single-tenant pilots (install `etlantic==0.51.0` from PyPI). You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and

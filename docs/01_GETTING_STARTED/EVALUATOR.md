@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.51.0 (published Beta).**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 

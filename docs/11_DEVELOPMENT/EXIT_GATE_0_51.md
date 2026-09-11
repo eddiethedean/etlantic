@@ -1,6 +1,6 @@
 # Exit Gate 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
-> **Status: 0.51.0 foundation release candidate; adaptive qualification pending.**
+> **Status: 0.51.0 foundation release published; adaptive qualification pending.**
 > [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the
 > machine-readable contract freeze establish the implementation boundary.
 > Profile policy, report metadata migration, and the closed `/2` wire model are

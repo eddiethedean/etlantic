@@ -1,6 +1,6 @@
 # Polars ↔ Pandas Interchange
 
-!!! success "**Status: ETLantic 0.51.0 release candidate; publication pending**"
+!!! success "**Status: Available in ETLantic 0.51.0 (published Beta)**"
     Gate A versioned tabular interchange (`etlantic.interchange/1`) shipped in
     0.18.0 for compatible Polars↔Pandas cross-engine boundaries.
 

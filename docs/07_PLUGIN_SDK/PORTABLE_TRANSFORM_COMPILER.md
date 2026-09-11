@@ -1,6 +1,6 @@
 # Portable Transformation Compiler Protocol
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.51.0 (published Beta).**
 
 !!! info "0.50 published release"
     `etlantic.transform-compiler/1` is the requirement-level support protocol.

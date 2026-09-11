@@ -1,15 +1,14 @@
 # Support
 
-ETLantic **0.51.0** is a **Beta release candidate** suitable for documented
-single-tenant pilots. ETLantic 0.50.1 remains the current published release
-until 0.51.0 is tagged. You can embed an HTTP control plane with **Supported** isolation
+ETLantic **0.51.0** is the **current published Beta release** suitable for documented
+single-tenant pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed
 response time.
 
 ## What we support
 
-- Bug reports against the **current release-candidate minor line** (`0.51.x`)
+- Bug reports against the **current published minor line** (`0.51.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 

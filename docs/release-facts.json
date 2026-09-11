@@ -5,7 +5,7 @@
   "previous_minor": "0.50",
   "next_minor": "0.52",
   "maturity": "Beta",
-  "publication_status": "release-candidate",
+  "publication_status": "published",
   "support_line": "0.51.x",
   "suitable_for": "Documented single-tenant pilots; production multi-tenant for Supported isolation profiles; technically qualified seven-engine portable baseline; opt-in adaptive profile and plan/2 wire foundation with adaptive planning and execution unavailable",
   "support_policy": "Community; no SLA",
@@ -18,5 +18,5 @@
   "docs_latest_url": "https://etlantic.readthedocs.io/en/latest/",
   "pypi_url": "https://pypi.org/project/etlantic/0.51.0/",
   "github_release_url": "https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0",
-  "released_on": null
+  "released_on": "2026-09-11"
 }

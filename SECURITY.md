@@ -1,8 +1,7 @@
 # Security Policy
 
-ETLantic 0.51.0 is a **Beta release candidate** suitable for documented
-single-tenant pilots. ETLantic 0.50.1 remains the current published release
-until 0.51.0 is tagged. You can embed an HTTP control plane with **Supported** isolation
+ETLantic 0.51.0 is the **current published Beta release** suitable for documented
+single-tenant pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports
 concerning the published package, contract loading, planning, optimization,
@@ -13,8 +12,8 @@ and PySpark plugins, documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.51.x | Current supported Beta line once published; security fixes are released on this line |
-| 0.50.x | Current published Beta line until 0.51.0 is tagged; then upgrade to 0.51.x |
+| 0.51.x | Current supported Beta line; security fixes are released on this line |
+| 0.50.x | Previous Beta line; upgrade to 0.51.x |
 | 0.49.x and earlier | Not actively maintained; upgrade to the current line |
 
 Backports to older minor lines are not provided. Upgrade to the latest 0.51.x

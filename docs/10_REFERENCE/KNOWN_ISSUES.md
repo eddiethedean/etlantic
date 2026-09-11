@@ -1,6 +1,6 @@
 # Known Limitations
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.51.0 (published Beta).**
 
 ETLantic **0.51.x** is a **Beta** release suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.

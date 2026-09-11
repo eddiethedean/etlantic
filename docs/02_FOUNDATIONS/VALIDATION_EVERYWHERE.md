@@ -1,6 +1,6 @@
 # Validation Everywhere
 
-> **Status: ETLantic 0.51.0 release candidate; publication pending.**
+> **Status: Available in ETLantic 0.51.0 (published Beta).**
 
 ETLantic models ETL with validation at every meaningful boundary.
 
