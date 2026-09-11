@@ -89,7 +89,8 @@ def _source_revision() -> str:
         path = ROOT / relative
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        source = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        digest.update(source)
         digest.update(b"\0")
     return f"sha256:{digest.hexdigest()}"
 

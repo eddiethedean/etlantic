@@ -2,7 +2,7 @@
   "artifact": "adaptive_solver_conformance_0_51.json",
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:f209eff0264a8e9146eb809f6c0214ee8b0ca0d26f15db8a4cc10159a3e4b4af",
+  "repository_revision": "sha256:6731c6c1ae72479576fc32ab4820b553e3dac0ba795393988a5087b7fbc1c740",
   "result": "pass",
   "scenarios": [
     {
