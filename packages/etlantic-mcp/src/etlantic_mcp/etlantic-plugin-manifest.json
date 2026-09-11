@@ -2,7 +2,7 @@
   "capabilities": [
     "mcp"
   ],
-  "digest": "sha256:af781108ed8d49121ca24fb278f7b798f7ae24420ca7834ac1123bc2f85eba71",
+  "digest": "sha256:cc6444c835be7e925dcf290e9e0b87c9ad8cdcafc5606823325e8bed850b8278",
   "entries": [
     {
       "capabilities": [
@@ -23,5 +23,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.50.1"
+  "version": "0.51.0"
 }

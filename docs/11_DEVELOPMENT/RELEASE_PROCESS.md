@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.50.0,<0.51`.
+Official plugins declare `etlantic>=0.51.0,<0.52`.
 
 ## Package categories
 
@@ -27,7 +27,7 @@ Official plugins declare `etlantic>=0.50.0,<0.51`.
 | Compatibility redirect | `etlantic-sparkforge` | Inactive (final release) | Deprecated redirect |
 | Reference adapter | `etlantic-fastapi` | Beta | Beta |
 | Reference adapter | `etlantic-lsp` | Beta | Beta |
-| Provisional | `etlantic-datafusion` | Alpha | 0.50 technical qualification recorded; independent review pending |
+| Provisional | `etlantic-datafusion` | Alpha | 0.50 technical qualification recorded and retained |
 
 See [Facade packages](FACADE_PACKAGES.md). Evaluators should treat narrative
 Beta / single-tenant boundaries in [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)
@@ -221,7 +221,7 @@ Recommended order:
 ## Plugin Releases
 
 Plugins are separately installable and declare a tested minor bound (for
-**0.49** plugins, `etlantic>=0.50.0,<0.51`). A core
+**0.51** plugins, `etlantic>=0.51.0,<0.52`). A core
 release should not require third-party plugins to release simultaneously unless
 the SDK compatibility range changes.
 

@@ -1,7 +1,7 @@
 # etlantic-pyspark
 
 PySpark reference execution plugin **and** portable transform compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.50.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.51.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.
@@ -58,7 +58,7 @@ Native UDF policy stays separate. Default CI uses sparkless; set
 
 ## Links
 
-[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.50.1/06_EXECUTION/PYSPARK_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.50.1/10_REFERENCE/COMPATIBILITY/) ·
+[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.51.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.51.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pyspark) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

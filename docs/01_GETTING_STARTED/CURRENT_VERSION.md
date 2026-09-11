@@ -1,11 +1,11 @@
-# ETLantic 0.50 User Guide
+# ETLantic 0.51 User Guide
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.50.1** is the current **published Beta** release for documented
+ETLantic **0.51.0** is the current **Beta release candidate** for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported**
 isolation profiles (`isolated-deployment`, `dedicated-schema`). There is no
 hosted multi-tenant SaaS. The line includes **human-governed AI**
@@ -16,11 +16,16 @@ Kafka, schema-registry, Kubernetes, Spark Connect, and MCP extras remain
 Experimental. `shared-service` remains Experimental. Support is community
 **non-SLA**.
 
+0.51.0 also includes the opt-in adaptive Profile and `etlantic.plan/2` wire
+foundation. Adaptive planning and execution are not available in this release;
+keep executable Profiles explicit. Unsupported `/2` consumers fail closed
+before external I/O.
+
 ## After first success
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — what you can use today
-3. [What's new in 0.50](WHATS_NEW_0_50.md)
+3. [What's new in 0.51](WHATS_NEW_0_51.md)
 4. [Learning path](LEARNING_PATH.md)
 5. [Upgrade](UPGRADE.md) if migrating from an earlier minor
 
@@ -36,6 +41,7 @@ under `etl.control_plane`. IDE surfaces live under `etlantic.ide` with optional
 
 | Goal | Guide |
 |---|---|
+| Evaluate the adaptive contract foundation | [What's new in 0.51](WHATS_NEW_0_51.md) / [Migration 0.50 → 0.51](../11_DEVELOPMENT/MIGRATION_0_50_TO_0_51.md) |
 | Adopt human-governed AI | [Human-governed AI tutorial](HUMAN_GOVERNED_AI.md) / [What's new in 0.49](WHATS_NEW_0_49.md) |
 | Adopt scheduler/runner and federation | [Scheduler tutorial](SCHEDULER_TUTORIAL.md) / [What's new in 0.47](WHATS_NEW_0_47.md) |
 | Adopt streaming and dynamic control | [What's new in 0.46](WHATS_NEW_0_46.md) / [Migration 0.45 → 0.46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |

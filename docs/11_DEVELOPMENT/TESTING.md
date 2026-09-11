@@ -1,6 +1,6 @@
 # Testing
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 ## Test-cost matrix (order of magnitude)
 

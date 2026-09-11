@@ -1,6 +1,6 @@
 [project]
 name = "etlantic"
-version = "0.50.1"
+version = "0.51.0"
 description = "Typed, contract-driven data pipeline modeling for Python."
 readme = "README.md"
 license = "MIT"
@@ -31,39 +31,39 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["etlantic-polars==0.50.1"]
-pandas = ["etlantic-pandas==0.50.1"]
-sql = ["etlantic-sql==0.50.1"]
-postgresql = ["etlantic-sql==0.50.1"]
-pyspark = ["etlantic-pyspark==0.50.1"]
-spark = ["etlantic-pyspark==0.50.1"]
-airflow = ["etlantic-airflow==0.50.1"]
-prefect = ["etlantic-prefect==0.50.1"]
-keyring = ["etlantic-keyring==0.50.1"]
-sqlmodel = ["etlantic-sqlmodel==0.50.1"]
-medallantic = ["medallantic==0.50.1"]
-sparkforge = ["etlantic-sparkforge==0.50.1"]
-fastapi = ["etlantic-fastapi==0.50.1"]
-datafusion = ["etlantic-datafusion==0.50.1"]
-s3 = ["etlantic-s3==0.50.1"]
-kafka = ["etlantic-kafka==0.50.1"]
-k8s = ["etlantic-k8s==0.50.1"]
-spark-connect = ["etlantic-spark-connect==0.50.1"]
-schemaregistry = ["etlantic-schemaregistry==0.50.1"]
-iceberg = ["etlantic-iceberg==0.50.1"]
-snowflake = ["etlantic-snowflake==0.50.1"]
-openlineage = ["etlantic-openlineage==0.50.1"]
-mcp = ["etlantic-mcp==0.50.1"]
+polars = ["etlantic-polars==0.51.0"]
+pandas = ["etlantic-pandas==0.51.0"]
+sql = ["etlantic-sql==0.51.0"]
+postgresql = ["etlantic-sql==0.51.0"]
+pyspark = ["etlantic-pyspark==0.51.0"]
+spark = ["etlantic-pyspark==0.51.0"]
+airflow = ["etlantic-airflow==0.51.0"]
+prefect = ["etlantic-prefect==0.51.0"]
+keyring = ["etlantic-keyring==0.51.0"]
+sqlmodel = ["etlantic-sqlmodel==0.51.0"]
+medallantic = ["medallantic==0.51.0"]
+sparkforge = ["etlantic-sparkforge==0.51.0"]
+fastapi = ["etlantic-fastapi==0.51.0"]
+datafusion = ["etlantic-datafusion==0.51.0"]
+s3 = ["etlantic-s3==0.51.0"]
+kafka = ["etlantic-kafka==0.51.0"]
+k8s = ["etlantic-k8s==0.51.0"]
+spark-connect = ["etlantic-spark-connect==0.51.0"]
+schemaregistry = ["etlantic-schemaregistry==0.51.0"]
+iceberg = ["etlantic-iceberg==0.51.0"]
+snowflake = ["etlantic-snowflake==0.51.0"]
+openlineage = ["etlantic-openlineage==0.51.0"]
+mcp = ["etlantic-mcp==0.51.0"]
 otel = ["opentelemetry-api>=1.36,<2"]
 observability = ["opentelemetry-api>=1.36,<2"]
 arrow = ["pyarrow>=14"]
 notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
-lsp = ["etlantic-lsp==0.50.1"]
+lsp = ["etlantic-lsp==0.51.0"]
 dataframes = [
-    "etlantic-polars==0.50.1",
-    "etlantic-pandas==0.50.1",
+    "etlantic-polars==0.51.0",
+    "etlantic-pandas==0.51.0",
 ]
-duckdb = ["etlantic-duckdb==0.50.1"]
+duckdb = ["etlantic-duckdb==0.51.0"]
 
 [project.scripts]
 etlantic = "etlantic.cli:run"

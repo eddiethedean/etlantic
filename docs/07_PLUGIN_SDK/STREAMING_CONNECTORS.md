@@ -22,7 +22,7 @@ run_streaming_conformance_suite()
 
 ## Kafka extra
 
-Install `etlantic-kafka==0.50.1`. Default tests use in-process `FakeKafka`.
+Install `etlantic-kafka==0.51.0`. Default tests use in-process `FakeKafka`.
 Live brokers require `ETLANTIC_KAFKA_BOOTSTRAP` and are skipped in CI.
 
 Production profiles must pin the package on `Profile.plugin_allowlist`.

@@ -1,7 +1,7 @@
 # Public Surface Inventory (0.50)
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Canonical public surface for the
-> **0.50 reference envelope**.
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Canonical public surface for the
+> **0.51 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,7 +10,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.50 reference envelope |
+| `stable` | Supported within the documented 0.51 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a stable-foundation obligation |
 | `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |
@@ -152,7 +152,7 @@ Landing-zone incremental state uses wire schema `etlantic.landing_checkpoint/1`
 
 ## Optional packages
 
-Pin to the same minor as core (`==0.50.1`). Details:
+Pin to the same minor as core (`==0.51.0`). Details:
 [Optional packages](OPTIONAL_PACKAGES.md).
 
 | Package | Role |
@@ -169,7 +169,7 @@ Pin to the same minor as core (`==0.50.1`). Details:
 | `medallantic` | Engine-agnostic medallion facade and SparkForge migration adapter |
 | `etlantic-fastapi` | Dual surface: CP1 `ETLanticAPI` + thin `create_reference_app` (CP1 ≠ multi-tenant GA) |
 | `etlantic-lsp` | Editor-neutral language server (`etlantic[lsp]`) |
-| `etlantic-datafusion` | DataFusion portable baseline technically qualified for 0.50; Sol review pending |
+| `etlantic-datafusion` | DataFusion portable baseline technically qualified for 0.50 |
 | `etlantic-s3` | **Experimental** S3 connector (Alpha) |
 | `etlantic-kafka` | **Experimental** Kafka connector (fake-first; Alpha) |
 | `etlantic-k8s` | **Experimental** Kubernetes resource provider (FakeKubernetes; Alpha) |

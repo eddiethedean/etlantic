@@ -1,6 +1,6 @@
 # Documentation archive index
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 > **Not product docs.** Historical migrations, design studies, future-protocol
 > stubs, and maintainer records. Prefer

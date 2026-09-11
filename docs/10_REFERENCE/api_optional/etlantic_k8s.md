@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.50.0"
-current_minor: "0.50"
+current_minor: "0.51"
 audience: developer
 ---
 
@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-k8s==0.50.1'
+pip install 'etlantic-k8s==0.51.0'
 ```
 
 ```python

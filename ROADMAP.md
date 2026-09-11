@@ -6,10 +6,11 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.50.1** (published Beta) — portable-first
-scaffolding/documentation plus compatible planner and report-metadata fixes.
-It preserves the technically qualified seven-engine portable baseline from
-0.50.0.
+**Current release:** ETLantic **0.51.0** (Beta release candidate) — the opt-in
+adaptive Profile and `/2` wire foundation plus the run-report metadata
+namespace migration. Adaptive planning and physical-DAG execution remain
+unavailable and fail closed. The release preserves the technically qualified
+seven-engine portable baseline from 0.50.1.
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
@@ -20,7 +21,8 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
+| Current | 0.51 | Adaptive Profile and `/2` wire foundation; adaptive planning/execution unavailable | Gate-ready for tag/publish |
+| Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
 | Previous | 0.47 | FastAPI scheduler/runner service and remote execution federation | Gate-ready / shipped evidence |
@@ -33,13 +35,12 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Later | 0.52 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.53 | Operator Console | Planned |
 | Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.55 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.50 portable-engine baseline published and technically qualified) |
+| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 adaptive contract/wire foundation prepared) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -4399,8 +4400,10 @@ claim.
 
 ## 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
-Planned: [IMPLEMENTATION_PLAN_0_51](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md),
-[EXIT_GATE_0_51](docs/11_DEVELOPMENT/EXIT_GATE_0_51.md) (Not started),
+Foundation in 0.51.0; adaptive availability remains planned:
+[IMPLEMENTATION_PLAN_0_51](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md),
+[EXIT_GATE_0_51](docs/11_DEVELOPMENT/EXIT_GATE_0_51.md) (foundation release ready;
+adaptive qualification pending),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30).
 
 **Objective:** let pipeline authors retain explicit engine selection or opt into

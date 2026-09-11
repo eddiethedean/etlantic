@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.50.1"
+__version__ = "0.51.0"
 
 from etlantic_kafka.connectors import (
     KafkaSinkConnector,

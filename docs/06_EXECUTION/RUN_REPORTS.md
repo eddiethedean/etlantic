@@ -1,6 +1,6 @@
 # Run Reports
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Every successful or failed local
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Every successful or failed local
 > (and plugin-backed) run returns a structured `PipelineRunReport`.
 
 Every ETLantic run returns a structured `PipelineRunReport`.

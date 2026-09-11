@@ -1,6 +1,6 @@
 # Security Model
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a
@@ -317,8 +317,8 @@ production = Profile(
     dataframe_engine="polars",
     portable_transform_policy="require",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.1",
-        "etlantic-airflow": "==0.50.1",
+        "etlantic-polars": "==0.51.0",
+        "etlantic-airflow": "==0.51.0",
     },
 )
 ```
@@ -742,8 +742,8 @@ production = Profile(
     security_mode="production",  # required for fail-closed trust
     security_domain="production",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.1",
-        "etlantic-sql": "==0.50.1",
+        "etlantic-polars": "==0.51.0",
+        "etlantic-sql": "==0.51.0",
     },
 )
 ```

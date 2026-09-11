@@ -11,7 +11,7 @@ def test_negotiate_submit_and_recover() -> None:
     host = FakeRemoteHost()
     session = host.negotiate(
         {
-            "version": "0.50.1",
+            "version": "0.51.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )
@@ -28,7 +28,7 @@ def test_remote_runtime_rejects_adaptive_plan_before_acceptance() -> None:
     host = FakeRemoteHost()
     session = host.negotiate(
         {
-            "version": "0.50.1",
+            "version": "0.51.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )
@@ -56,14 +56,14 @@ def test_same_minor_patch_is_compatible() -> None:
     host = FakeRemoteHost()
     session = host.negotiate(
         {
-            "version": "0.50.1",
+            "version": "0.51.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )
     assert session.session_id
     host = FakeRemoteHost()
     with pytest.raises(ValueError, match="PMFED110"):
-        host.negotiate({"version": "0.50.1", "capabilities": {"map": False}})
+        host.negotiate({"version": "0.51.0", "capabilities": {"map": False}})
 
 
 def test_placement_rejects_before_transfer() -> None:
@@ -87,7 +87,7 @@ def test_tamper_partial_replay() -> None:
     dirty = {"fingerprint": "abc", "payload": {"row": 1}}
     session = host.negotiate(
         {
-            "version": "0.50.1",
+            "version": "0.51.0",
             "capabilities": {"map": True, "branch": True, "stream": True},
         }
     )

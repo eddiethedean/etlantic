@@ -1,6 +1,6 @@
 # Production Profiles
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 ETLantic 0.43.0 treats production configuration as an explicit trust boundary
 via `Profile.security_mode == "production"`. The built-in `production` profile
@@ -38,7 +38,7 @@ profile = Profile(
     security_domain="production",
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.50.1",
+        "etlantic-polars": "==0.51.0",
     },
     assets={
         "customer_source": "json",

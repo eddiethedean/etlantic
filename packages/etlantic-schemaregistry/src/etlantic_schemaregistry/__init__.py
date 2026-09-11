@@ -6,7 +6,7 @@ import os
 
 from etlantic.streaming.registry import InMemorySchemaRegistry
 
-__version__ = "0.50.1"
+__version__ = "0.51.0"
 
 
 def live_registry_url() -> str | None:

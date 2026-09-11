@@ -1,6 +1,6 @@
 # Code of Conduct
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 ETLantic contributors, maintainers, and community participants must keep project
 spaces respectful, technically focused, and safe.

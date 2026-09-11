@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-09-11
+
+### Adopter summary
+
+| | |
+|---|---|
+| Who must act | Users upgrading core or any first-party plugin; report consumers that inspect built-in step metadata; early adopters evaluating the adaptive contract foundation |
+| Breaking | First-party packages move to the lockstep `0.51.x` compatibility line; new runtime reports use namespaced built-in step metadata keys |
+| Upgrade | Install `etlantic==0.51.0` with matching first-party plugins; keep `execution_strategy="explicit"` for executable plans |
+| Rollback | Re-pin the complete 0.50.1 package set; do not downgrade stored `etlantic.plan/2` documents to `/1` |
+| Security | Adaptive documents are closed, fingerprinted, immutable, bounded, and reject secrets/source rows; unqualified consumers reject `/2` before plugin discovery or external I/O |
+
+### Added
+
+- Opt-in adaptive Profile policy and immutable `PlacementTarget` descriptors.
+- A closed `etlantic.plan/2` `AdaptivePipelinePlan` wire model with canonical
+  serialization, fingerprint verification, JSON Schema validation, physical
+  unit records, and schema-dispatching plan readers.
+
+### Changed
+
+- Runtime writers emit namespaced built-in step metadata (`etlantic.dataframe`,
+  `etlantic.sql`, `etlantic.spark`, and `etlantic.spark_schema`). The `/1`
+  report reader migrates the corresponding 0.50 bare aliases without warnings;
+  namespaced values win collisions.
+- Core and all first-party packages now use the lockstep 0.51 compatibility
+  floor `etlantic>=0.51.0,<0.52`.
+
+### Safety boundary
+
+- Adaptive planning, candidate discovery, solver selection, physical-DAG
+  execution, and adaptive external compilation are not available in 0.51.0.
+  Opted-in planning fails closed with `PMADP221`; `/2` execution consumers
+  reject before external I/O.
+- Existing explicit profiles continue to produce and execute canonical
+  `etlantic.plan/1` plans.
+
 ## [0.50.1] - 2026-09-09
 
 ### Adopter summary
@@ -1939,7 +1976,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.50.1...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.51.0...HEAD
+[0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0
 [0.50.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.1
 [0.50.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.0
 [0.49.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.49.0

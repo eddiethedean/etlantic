@@ -1,6 +1,6 @@
 # Run History Provider
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Reference file and in-memory
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Reference file and in-memory
 > providers ship in core; storage-specific backends stay in optional plugins.
 
 Run history providers persist secret-free lifecycle events and terminal run

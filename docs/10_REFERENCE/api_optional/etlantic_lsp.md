@@ -1,20 +1,20 @@
 ---
 status: available
 since: "0.45.0"
-current_minor: "0.50"
+current_minor: "0.51"
 audience: developer
 ---
 
 # etlantic-lsp API
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Editor-neutral language server
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Editor-neutral language server
 > wrapping `etlantic.ide` analysis. Install via `etlantic[lsp]` or
-> `etlantic-lsp==0.50.1`. VS Code reference client remains **Experimental**.
+> `etlantic-lsp==0.51.0`. VS Code reference client remains **Experimental**.
 
 ## Setup
 
 ```bash
-pip install 'etlantic[lsp]==0.50.1'
+pip install 'etlantic[lsp]==0.51.0'
 etlantic-lsp
 # or: python -m etlantic_lsp
 ```

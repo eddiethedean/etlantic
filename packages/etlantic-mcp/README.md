@@ -1,6 +1,6 @@
 # etlantic-mcp (Experimental / Preview)
 
-Version **0.50.1** (lockstep with ETLantic core).
+Version **0.51.0** (lockstep with ETLantic core).
 Fake-first read-only MCP server for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live MCP-client interop is opt-in via `ETLANTIC_MCP_LIVE` and is skipped in CI (`048-M-01`).
 
@@ -9,10 +9,10 @@ Live MCP-client interop is opt-in via `ETLANTIC_MCP_LIVE` and is skipped in CI (
 ## Install
 
 ```bash
-pip install 'etlantic-mcp==0.50.1'
+pip install 'etlantic-mcp==0.51.0'
 ```
 
-Core dependency: `etlantic>=0.50.0,<0.51`. No MCP SDK in the default extra.
+Core dependency: `etlantic>=0.51.0,<0.52`. No MCP SDK in the default extra.
 
 ## Entry points
 

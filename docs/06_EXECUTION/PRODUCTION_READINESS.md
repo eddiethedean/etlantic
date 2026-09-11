@@ -1,17 +1,17 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).**
+> **Status: ETLantic 0.51.0 release candidate; publication pending.**
 
 ## Residual evaluation lead
 
-| Topic | 0.50 |
+| Topic | 0.51 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no SLA** |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
-ETLantic 0.50.0 is a **Beta** release suitable for the documented single-tenant
+ETLantic 0.51.0 is a **Beta** release suitable for the documented single-tenant
 pilot deployment on this page plus production multi-tenant for Supported
 isolation profiles. The milestone name “production readiness” (M6)
 means the observability / run-history *pilot* slice—it does
@@ -21,7 +21,7 @@ graduates the integrated control plane for `isolated-deployment` and
 
 Experimental features remain experimental. Broader deployment topology,
 compliance attestations, and HA remain adopter-owned today. Supply
-chain for v0.50.1 publishes as a SHA-256 artifact manifest and GitHub
+chain for v0.51.0 publishes as a SHA-256 artifact manifest and GitHub
 provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
@@ -50,7 +50,7 @@ multi-tenant claims.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.50.1` and matching plugins in a lockfile.
+1. Pin `etlantic==0.51.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -100,7 +100,7 @@ reference controls are shipped:
 
 ## Shipped / adopter-owned / residual (0.39)
 
-| Concern | 0.50 status |
+| Concern | 0.51 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

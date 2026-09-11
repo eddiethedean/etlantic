@@ -8,7 +8,7 @@
     "schema_inspection",
     "portable_transform"
   ],
-  "digest": "sha256:f0a08b0f37bad6f2d57d12ee8017d15425c34a889e999f55b35cbb3aeee8613c",
+  "digest": "sha256:1a7894ef5e168419edcba8a327f82beaad22b13b37340ffba1f01926020d2230",
   "entries": [
     {
       "capabilities": [
@@ -43,5 +43,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.50.1"
+  "version": "0.51.0"
 }

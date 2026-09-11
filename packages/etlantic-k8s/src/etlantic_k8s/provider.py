@@ -13,7 +13,7 @@ from etlantic.resources.protocol import (
     ResourceRequest,
 )
 
-_PKG_VERSION = "0.50.1"
+_PKG_VERSION = "0.51.0"
 
 
 def live_configured() -> bool:

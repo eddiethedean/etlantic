@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from etlantic.service import AuthoringService, PolicyContext
 
-__version__ = "0.50.1"
+__version__ = "0.51.0"
 from etlantic_fastapi.api import ETLanticAPI, create_app, include_router
 from etlantic_fastapi.auth import (
     ContextFactory,

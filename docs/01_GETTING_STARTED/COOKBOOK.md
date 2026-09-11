@@ -1,6 +1,6 @@
 # Cookbook
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Short recipes for shipped workflows.
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Short recipes for shipped workflows.
 > Prefer these over Design Studies.
 
 ## Worked recipes
@@ -11,7 +11,7 @@
 python -m venv .venv && source .venv/bin/activate
 # Windows PowerShell: py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install 'etlantic==0.50.1'
+python -m pip install 'etlantic==0.51.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 python -m etlantic validate pipeline.py:SamplePipeline --profile development
@@ -26,7 +26,7 @@ The `init` scaffold defines a portable transformation. Install the Polars
 plugin and change the engine; do not add a Polars-specific body.
 
 ```bash
-python -m pip install 'etlantic[polars]==0.50.1'
+python -m pip install 'etlantic[polars]==0.51.0'
 ```
 
 Follow the [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md),
@@ -42,7 +42,7 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 
 ```bash
 cp path/to/prod.example.json profiles/prod.json
-# edit plugin_allowlist pins to ==0.50.1 and fill assets
+# edit plugin_allowlist pins to ==0.51.0 and fill assets
 python -m etlantic validate pipeline.py:SamplePipeline --profile profiles/prod.json
 ```
 

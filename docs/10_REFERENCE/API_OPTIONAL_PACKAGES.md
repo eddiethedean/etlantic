@@ -1,13 +1,13 @@
 ---
 status: available
 since: "0.45.0"
-current_minor: "0.50"
+current_minor: "0.51"
 audience: developer
 ---
 
 # API — Optional packages
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Per-package API pages for first-party
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Per-package API pages for first-party
 > optional packages. Install/overview hub:
 > [Optional Packages](OPTIONAL_PACKAGES.md). Core symbols:
 > [Python API Reference](API_REFERENCE.md).
@@ -27,7 +27,7 @@ install and narrative home.
 - [etlantic-prefect](api_optional/etlantic_prefect.md) — Prefect local scheduler MVP
 - [etlantic-keyring](api_optional/etlantic_keyring.md) — OS keyring secret provider
 - [etlantic-sqlmodel](api_optional/etlantic_sqlmodel.md) — SQLModel bridge helpers
-- [etlantic-datafusion](api_optional/etlantic_datafusion.md) — DataFusion portable baseline technically qualified for 0.50; Sol review pending
+- [etlantic-datafusion](api_optional/etlantic_datafusion.md) — DataFusion portable baseline technically qualified for 0.50
 - [etlantic-s3](api_optional/etlantic_s3.md) — Experimental S3-compatible connectors
 - [etlantic-kafka](api_optional/etlantic_kafka.md) — Experimental Kafka connectors (fake/CI)
 - [etlantic-k8s](api_optional/etlantic_k8s.md) — Experimental Kubernetes resource provider (fake/CI)

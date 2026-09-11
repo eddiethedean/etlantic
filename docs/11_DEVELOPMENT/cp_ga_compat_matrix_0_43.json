@@ -1,5 +1,5 @@
 {
-  "matrix_version": "0.50.1",
+  "matrix_version": "0.51.0",
   "campaign": "043-C",
   "cases": [
     {
@@ -14,8 +14,8 @@
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.50.0,<0.51",
-      "installed": "0.50.1"
+      "policy": ">=0.51.0,<0.52",
+      "installed": "0.51.0"
     }
   ],
   "pass": true,

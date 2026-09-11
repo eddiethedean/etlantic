@@ -1,6 +1,6 @@
 # Execute with Pandas
 
-> **Status: Available in ETLantic 0.50.1 (published Beta).** Prefer the **PyPI path** after
+> **Status: ETLantic 0.51.0 release candidate; publication pending.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 !!! tip "PyPI vs clone"
@@ -16,7 +16,7 @@ and select the engine. Do not rewrite the transformation with Pandas APIs.
 ### 1. Install
 
 ```bash
-python -m pip install 'etlantic[pandas]==0.50.1'
+python -m pip install 'etlantic[pandas]==0.51.0'
 ```
 
 ### 2. Select the engine
@@ -49,8 +49,8 @@ cat data/out.json
 Repository scripts under `examples/` are **not** in the PyPI wheel.
 
 ```bash
-python -m pip install 'etlantic==0.50.1' 'etlantic-pandas==0.50.1'
-git clone --branch v0.50.1 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.51.0' 'etlantic-pandas==0.51.0'
+git clone --branch v0.51.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas
 ```
