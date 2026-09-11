@@ -2,12 +2,8 @@
   "artifact": "adaptive_inventory_conformance_0_51.json",
   "passed_scenarios": 2,
   "planner_version": "0.52",
-  "platform": {
-    "os": "darwin",
-    "python": "3.11.15"
-  },
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:03aa18e5839cac5090eb5e95c56e74013cd2772f8c9ef289e786b3476bacae81",
+  "repository_revision": "sha256:2a7906de30c13ae020b4bd33d9fdca8bd7cc9a126b80885d77f2d636d9974caf",
   "result": "pass",
   "scenario_count": 2,
   "scenarios": [
@@ -43,6 +39,44 @@
     "secrets": false,
     "source_rows": false
   },
+  "supported_platforms": [
+    {
+      "os": "ubuntu-latest",
+      "python": "3.11"
+    },
+    {
+      "os": "ubuntu-latest",
+      "python": "3.12"
+    },
+    {
+      "os": "ubuntu-latest",
+      "python": "3.13"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.11"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.12"
+    },
+    {
+      "os": "macos-latest",
+      "python": "3.13"
+    },
+    {
+      "os": "windows-latest",
+      "python": "3.11"
+    },
+    {
+      "os": "windows-latest",
+      "python": "3.12"
+    },
+    {
+      "os": "windows-latest",
+      "python": "3.13"
+    }
+  ],
   "verification_command": [
     "python",
     "-m",

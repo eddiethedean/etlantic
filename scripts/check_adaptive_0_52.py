@@ -181,7 +181,20 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
             "result": "pass",
             "scenario_count": len(scenarios),
             "passed_scenarios": sum(item["result"] == "pass" for item in scenarios),
-            "platform": {"python": sys.version.split()[0], "os": sys.platform},
+            # The committed artifact is canonical across runners.  Supported
+            # runtime rows are declared as data, while the executing runner is
+            # intentionally not part of the fingerprinted payload.
+            "supported_platforms": [
+                {"os": "ubuntu-latest", "python": "3.11"},
+                {"os": "ubuntu-latest", "python": "3.12"},
+                {"os": "ubuntu-latest", "python": "3.13"},
+                {"os": "macos-latest", "python": "3.11"},
+                {"os": "macos-latest", "python": "3.12"},
+                {"os": "macos-latest", "python": "3.13"},
+                {"os": "windows-latest", "python": "3.11"},
+                {"os": "windows-latest", "python": "3.12"},
+                {"os": "windows-latest", "python": "3.13"},
+            ],
             "side_effect_counts": {"compile": 0, "execute": 0, "io": 0},
             "source_scan": {
                 "absolute_repository_path": False,
