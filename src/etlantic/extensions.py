@@ -225,6 +225,11 @@ _SECRET_KEY_FRAGMENT_RE = re.compile(
 )
 
 _URL_USERINFO_VALUE_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+:[^/@\s]+@")
+_SECRET_ASSIGNMENT_VALUE_RE = re.compile(
+    r"(?i)(?:^|[?&\s;])(?:password|passwd|pwd|secret|secret_value|token|"
+    r"api[_-]?key|credential|authorization)\s*[:=]"
+)
+_BEARER_VALUE_RE = re.compile(r"(?i)^bearer\s+\S+")
 
 
 def _is_secret_like_key(key: str) -> bool:
@@ -235,7 +240,7 @@ def _is_secret_like_key(key: str) -> bool:
 
 
 def _reject_nested_secret_material(value: Any, *, path: str) -> None:
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         for key, child in value.items():
             if _is_secret_like_key(str(key)):
                 raise ValueError(
@@ -243,11 +248,93 @@ def _reject_nested_secret_material(value: Any, *, path: str) -> None:
                     "failing closed under strict production metadata."
                 )
             _reject_nested_secret_material(child, path=f"{path}.{key}")
-    elif isinstance(value, list):
+    elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
             _reject_nested_secret_material(item, path=f"{path}[{index}]")
-    elif isinstance(value, str) and _URL_USERINFO_VALUE_RE.search(value):
+    elif isinstance(value, str):
+        if _URL_USERINFO_VALUE_RE.search(value):
+            raise ValueError(
+                f"{path} contains a URL with userinfo credentials; "
+                "failing closed under strict production metadata."
+            )
+        if _SECRET_ASSIGNMENT_VALUE_RE.search(value) or _BEARER_VALUE_RE.search(value):
+            raise ValueError(
+                f"{path} contains a credential-bearing value; "
+                "failing closed under strict production metadata."
+            )
+
+
+_SOURCE_ROW_KEYS = frozenset(
+    {
+        "rows",
+        "sample_rows",
+        "source_rows",
+        "data_rows",
+        "records",
+        "payload_rows",
+        "cells",
+        "table_data",
+        "row_data",
+        "source_data",
+        "row",
+        "record",
+        "records_sample",
+        "row_sample",
+        "row_samples",
+        "preview",
+        "data",
+        "samples",
+        "payload",
+        "examples",
+        "table",
+        "items",
+        "values",
+        "export",
+    }
+)
+
+
+def _looks_like_source_row_json(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if len(text) < 2 or not text.startswith(("[", "{")):
+        return False
+    try:
+        decoded = json.loads(text)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return False
+    if isinstance(decoded, list):
+        return bool(decoded)
+    return isinstance(decoded, Mapping) and _looks_like_source_row_payload(decoded)
+
+
+def _looks_like_source_row_payload(value: Any) -> bool:
+    """Return whether a nested value contains recognizable source-row data."""
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            key_l = str(key).lower().replace("-", "_")
+            if (
+                key_l in _SOURCE_ROW_KEYS
+                or key_l.endswith("_rows")
+                or "sample" in key_l
+            ):
+                return True
+            if _looks_like_source_row_json(child):
+                return True
+            if isinstance(
+                child, (Mapping, list, tuple)
+            ) and _looks_like_source_row_payload(child):
+                return True
+        return False
+    if isinstance(value, (list, tuple)):
+        return any(_looks_like_source_row_payload(item) for item in value)
+    return False
+
+
+def _reject_nested_source_row_material(value: Any, *, path: str) -> None:
+    if _looks_like_source_row_payload(value):
         raise ValueError(
-            f"{path} contains a URL with userinfo credentials; "
-            "failing closed under strict production metadata."
+            f"{path} contains source-row payload; failing closed under strict "
+            "metadata policy."
         )

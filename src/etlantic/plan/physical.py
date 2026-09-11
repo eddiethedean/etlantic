@@ -8,6 +8,10 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from etlantic.extensions import (
+    _reject_nested_secret_material,
+    _reject_nested_source_row_material,
+)
 from etlantic.plan.freeze import deep_freeze, mutable_copy
 
 PHYSICAL_UNIT_SCHEMA = "etlantic.physical_unit/1"
@@ -120,17 +124,22 @@ class PhysicalUnit:
             self.protocol_versions, "physical unit protocol_versions"
         )
         metadata = _validated_object_mapping(self.metadata, "physical unit metadata")
-        _reject_secret_material(
-            {
-                "input_contracts": input_contracts,
-                "output_contracts": output_contracts,
-                "policy": policy,
-                "retry_policy": retry_policy,
-                "ownership": ownership,
-                "protocol_versions": protocol_versions,
-                "metadata": metadata,
-            }
-        )
+        envelope = {
+            "input_contracts": input_contracts,
+            "output_contracts": output_contracts,
+            "policy": policy,
+            "retry_policy": retry_policy,
+            "ownership": ownership,
+            "protocol_versions": protocol_versions,
+            "metadata": metadata,
+        }
+        try:
+            _reject_nested_secret_material(envelope, path="physical unit")
+            _reject_nested_source_row_material(envelope, path="physical unit")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"PMADP101: invalid physical unit envelope: {exc}"
+            ) from exc
         for name, value in (
             ("input_contracts", input_contracts),
             ("output_contracts", output_contracts),
@@ -361,28 +370,3 @@ def _validated_object_sequence(
     for item in value:
         result.append(_validated_object_mapping(item, f"{label} item"))
     return tuple(result)
-
-
-def _reject_secret_material(value: Any) -> None:
-    """Reject secret-like keys from standalone physical-unit records."""
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            lowered = str(key).lower()
-            if any(
-                token in lowered
-                for token in (
-                    "password",
-                    "passwd",
-                    "secret_value",
-                    "token",
-                    "api_key",
-                    "credential",
-                )
-            ):
-                raise ValueError(
-                    f"PMADP101: physical unit contains secret-like field {key!r}"
-                )
-            _reject_secret_material(child)
-    elif isinstance(value, (list, tuple)):
-        for child in value:
-            _reject_secret_material(child)

@@ -206,6 +206,60 @@ def test_physical_unit_rejects_secret_like_metadata() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"client_secret": "resolved-secret"},
+        {"authorization": "Bearer resolved-secret"},
+        {"endpoint": "postgres://user:pass@host/db"},
+        {"nested": {"sample_rows": [{"id": 1}]}},
+    ],
+)
+def test_physical_unit_rejects_nested_sensitive_envelope_values(
+    metadata: dict[str, object],
+) -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PhysicalUnit(
+            identity="unit-sensitive",
+            kind="compute",
+            target_identity="target-1",
+            metadata=metadata,
+        )
+
+
+def test_physical_unit_from_dict_rejects_credential_url() -> None:
+    payload = PhysicalUnit(
+        identity="unit-safe",
+        kind="compute",
+        target_identity="target-1",
+    ).to_dict()
+    payload["metadata"] = {"endpoint": "postgres://user:pass@host/db"}
+    with pytest.raises(ValueError, match="PMADP101"):
+        PhysicalUnit.from_dict(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "payload"),
+    [
+        ("metadata", {"sample_rows": [{"customer_id": 7}]}),
+        ("profile_snapshot", {"source_rows": [{"customer_id": 7}]}),
+        ("metadata", {"evidence": [{"details": {"rows": [[7, "Ada"]]}}]}),
+    ],
+)
+def test_adaptive_plan_rejects_source_rows_in_all_wire_sections(
+    field: str, payload: dict[str, object]
+) -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        replace(_plan(), **{field: payload})
+
+
+def test_adaptive_plan_json_rejects_source_rows() -> None:
+    payload = json.loads(plan_to_json(_plan()))
+    payload["profile_snapshot"] = {"source_rows": [{"customer_id": 7}]}
+    with pytest.raises(ValueError, match="PMADP101"):
+        plan_from_json(json.dumps(payload))
+
+
 def test_target_descriptor_rejects_non_string_protocol_versions() -> None:
     with pytest.raises(ValueError, match="PMADP"):
         TargetDescriptor(

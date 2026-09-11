@@ -67,7 +67,7 @@ class TargetDescriptor:
         object.__setattr__(self, "protocol_versions", deep_freeze(protocol_versions))
         metadata = _validated_metadata(self.metadata, "target descriptor metadata")
         object.__setattr__(self, "metadata", deep_freeze(metadata))
-        _reject_secret_material(self.to_dict())
+        _reject_wire_sensitive_material(self.to_dict(), path="target descriptor")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -226,7 +226,7 @@ class CandidateRecord:
         object.__setattr__(self, "objective_facts", deep_freeze(objective_facts))
         metadata = _validated_metadata(self.metadata, "candidate metadata")
         object.__setattr__(self, "metadata", deep_freeze(metadata))
-        _reject_secret_material(self.to_dict())
+        _reject_wire_sensitive_material(self.to_dict(), path="candidate")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -613,7 +613,7 @@ class AdaptivePipelinePlan:
         object.__setattr__(self, "protocol_versions", deep_freeze(protocol_versions))
         object.__setattr__(self, "profile_snapshot", deep_freeze(profile_snapshot))
         object.__setattr__(self, "metadata", deep_freeze(metadata))
-        _reject_secret_material(self.to_dict())
+        _reject_wire_sensitive_material(self.to_dict(), path="adaptive plan")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -728,28 +728,17 @@ def _validated_array(
     return tuple(value)
 
 
-def _reject_secret_material(value: Any) -> None:
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            lowered = str(key).lower()
-            if any(
-                token in lowered
-                for token in (
-                    "password",
-                    "passwd",
-                    "secret_value",
-                    "token",
-                    "api_key",
-                    "credential",
-                )
-            ):
-                raise ValueError(
-                    f"PMADP101: adaptive plan contains secret-like field {key!r}"
-                )
-            _reject_secret_material(child)
-    elif isinstance(value, (list, tuple)):
-        for child in value:
-            _reject_secret_material(child)
+def _reject_wire_sensitive_material(value: Any, *, path: str) -> None:
+    from etlantic.extensions import (
+        _reject_nested_secret_material,
+        _reject_nested_source_row_material,
+    )
+
+    try:
+        _reject_nested_secret_material(value, path=path)
+        _reject_nested_source_row_material(value, path=path)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PMADP101: invalid {path}: {exc}") from exc
 
 
 def _validated_string_map(value: Mapping[str, str], label: str) -> dict[str, str]:

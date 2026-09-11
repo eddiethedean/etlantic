@@ -123,6 +123,27 @@ def test_target_secret_like_field_rejected() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("resource", "postgres://user:pass@host/db"),
+        ("location", "s3://AKIA:secret@bucket/path"),
+        ("compiler", "token=resolved-secret"),
+        ("executor", "Bearer resolved-secret"),
+    ],
+)
+def test_target_scalar_references_reject_credentials(field: str, value: str) -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PlacementTarget(engine="local", **{field: value})
+
+
+def test_target_from_dict_rejects_credential_url() -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PlacementTarget.from_dict(
+            {"engine": "local", "resource": "postgres://user:pass@host/db"}
+        )
+
+
 def test_placement_target_version_constraints_are_immutable() -> None:
     target = PlacementTarget(
         engine="local",

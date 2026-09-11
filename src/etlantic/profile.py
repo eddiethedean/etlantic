@@ -166,19 +166,12 @@ class PlacementTarget:
 
 def _reject_secret_like_target_values(target: PlacementTarget) -> None:
     """Reject secret-bearing target metadata before it can enter a snapshot."""
-    secret_words = ("password", "passwd", "secret", "token", "api_key", "credential")
-    for _key, value in target.to_dict().items():
-        if isinstance(value, Mapping):
-            for nested_key, nested_value in value.items():
-                lowered = str(nested_key).lower()
-                if any(word in lowered for word in secret_words):
-                    raise ValueError(
-                        f"PMADP101: placement target contains secret-like field {nested_key!r}"
-                    )
-                if not isinstance(nested_value, str):
-                    raise ValueError(
-                        "PMADP101: placement target values must remain secret-free strings"
-                    )
+    from etlantic.extensions import _reject_nested_secret_material
+
+    try:
+        _reject_nested_secret_material(target.to_dict(), path="placement target")
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PMADP101: invalid placement target: {exc}") from exc
 
 
 _BINDINGS_REMOVED = (
