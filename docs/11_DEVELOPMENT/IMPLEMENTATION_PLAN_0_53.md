@@ -1,89 +1,88 @@
 ---
 title: ETLantic 0.53 Implementation Plan
-description: Implementation-grade plan for the separately deployable operator console.
+description: Implementation-grade plan for qualified local adaptive physical-DAG execution.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.51.0
 ---
 
 # ETLantic 0.53 Implementation Plan
 
-Phase 0.53 delivers a separately deployable, read-only-first operator console.
-It consumes the versioned control-plane API through a generated client and uses
-the shared artifact language from the [UI/UX plan](UI_UX_PLAN.md).
+Phase 0.53 makes the physical DAG planned in 0.52 executable for a deliberately
+small local static-batch envelope. It owns increment I2 and Phases 8–9 of the
+[adaptive program plan](IMPLEMENTATION_PLAN_0_51.md). The implementation may
+execute only fixture-qualified Local, Polars, and Pandas combinations; public
+availability is withheld until the independent 0.54 qualification gate.
 
 ## Outcome
 
-Authorized operators can inspect definitions, revisions, plans, diffs, runs,
-attempts, events, lineage, partitions, checkpoints, quality, schema, repairs,
-backfills, delivery objectives, deadline/escalation state, erasure operations,
-dynamic expansions and branches, dead-letter/redrive state, schema-registry
-compatibility, quotas, policy, approvals, audit, providers, and health.
-Privileged actions reuse API policy, idempotency, approval, and audit paths
-exactly.
+The local runtime atomically admits a complete `etlantic.plan/2` document,
+schedules only its physical dependencies, dispatches the exact stored target
+and unit kinds, and preserves retry, cancellation, cleanup, validation,
+publication, and logical-step reporting semantics.
 
-## Prerequisites And Non-Goals
+## Scope
 
-- 0.43 API/auth/event support and 0.44 artifact/interaction contracts are stable;
-  0.46–0.52 capabilities appear only where the server advertises them.
-- The console owns no source of truth, authorization rule, execution path, policy
-  engine, schema authority, or provider credential.
-- The core and API packages never depend on frontend code or its toolchain.
-- Preview rendering is bounded and hostile content is treated as data, not markup
-  or executable instruction.
+| Workstream | Deliverable | Completion evidence |
+|---|---|---|
+| 053-A | Whole-DAG live admission | Every mutable dependency rechecked before any resource acquisition or I/O |
+| 053-P | Physical execution protocol | Versioned seven-kind executor contract and fail-closed dispatch |
+| 053-S | Physical scheduler | Readiness derived only from stored physical dependencies with bounded concurrency |
+| 053-L | Local adapters and lifecycle | Local, Polars, and Pandas compute/handoff paths plus retry, cancellation, cleanup, and reconciliation |
+| 053-R | Reports and attribution | Namespaced built-in metadata and complete fused/logical-step attribution |
+| 053-D | Differential semantics | Fixture-gated comparison against explicit `/1` behavior for outputs and lifecycle |
 
-## Workstreams
+## Acceptance Criteria
 
-| ID | Workstream | Deliverables | Completion evidence |
-|---|---|---|---|
-| 053-F | Frontend foundation | Separate package/deployment, pinned generated client, session/bootstrap, capability negotiation, routing | Clean build/deploy and client/server compatibility matrix |
-| 053-R | Read surfaces | Scoped list/detail views for definitions through health; stable URLs and breadcrumbs | View fixture matrix, pagination, empty/error/loading states |
-| 053-E | Live events | Resumable run/event views, cursor persistence, history fallback, reconnect and duplicate suppression | Refresh/disconnect/cursor-expiry tests |
-| 053-A | Privileged actions | Cancel, retry, repair, backfill, approve, promote, authorize/retry erasure, suspend, containment actions through public API | Policy/idempotency/approval/audit equivalence traces |
-| 053-D | Objectives and dynamic execution | Deadline timelines, breach/escalation/recovery state, map/reduce children, branch decisions, stable identities, bounds, and capability explanations | Clock/reconnect/dedupe fixtures plus large bounded expansion and branch-state tests |
-| 053-P | Privacy and stream errors | Erasure request/plan/provider/reconciliation views plus payload-free DLQ/redrive and schema-compatibility views | No-subject/no-payload browser-state tests and partial/unsupported outcome fixtures |
-| 053-S | Security/privacy | Object authorization, non-enumeration, cache partitioning, bounded previews, CSP, hostile-content redaction | Two-tenant/two-workspace UI leakage campaign |
-| 053-U | Usability/accessibility | Keyboard/screen-reader flows, localization readiness, responsive layouts, latency budgets | WCAG-oriented audit, locale/pseudo-localization, performance report |
-| 053-T | Test fixtures | Deterministic generated-client mocks plus integrated API fixtures for all capability states | CI visual/interaction tests without production credentials |
-| 053-O | Operations | OCI image, configuration, health, telemetry, upgrade/rollback and incident runbooks | Deployment, version-skew, failover, and rollback drill |
+- **AC-053-01 — Atomic admission:** Any trust, version, capability, contract,
+  policy, resource, authorization, selection, or evidence drift starts zero
+  physical units and performs no external I/O.
+- **AC-053-02 — Runtime authority:** Readiness and dispatch come exclusively
+  from the stored physical DAG; the runtime never performs placement or silently
+  falls back to logical scheduling.
+- **AC-053-03 — Lifecycle:** Failure, retry, timeout, cancellation, transfer,
+  collection, materialization, reuse, validation, cleanup, and publication
+  preserve the explicit baseline or fail earlier safely.
+- **AC-053-04 — Publication safety:** Publication commits once or records an
+  explicit unknown outcome requiring reconciliation; no ambiguous retry can
+  duplicate an external effect.
+- **AC-053-05 — Attribution:** Fused units retain per-logical-step lifecycle and
+  report attribution, and new writers emit only namespaced built-in metadata.
+- **AC-053-06 — Bounded envelope:** Only the named Local/Polars/Pandas static-
+  batch fixture combinations can run. Every other `/2` consumer or topology
+  rejects before I/O.
 
 ## Delivery Sequence
 
-1. Freeze console information architecture, threat model, and generated-client
-   version policy.
-2. Implement read-only registry, plan, run, quality, schema, delivery-objective,
-   erasure, dynamic-control, dead-letter, and operations views.
-3. Add resumable live events, bounded previews, deadline/escalation timelines,
-   dynamic child/branch navigation, and lineage/partition navigation.
-4. Add privileged actions only through existing API commands and approvals.
-5. Complete accessibility, localization, hostile-content, isolation, and
-   performance qualification.
-6. Publish deployment artifacts and the supported server/client matrix.
+1. Freeze and implement the physical-unit executor protocol.
+2. Add whole-DAG admission and verify zero-I/O failure behavior.
+3. Add the dependency-driven physical scheduler.
+4. Implement fixture-gated Local, Polars, and Pandas adapters and handoffs.
+5. Complete lifecycle, reporting, failure-injection, and differential tests.
 
 ## Exit Gates
 
-- The console contains no independent database, authorization decision, schema
-  mutation, run scheduler, secret resolver, or provider control path.
-- Every mutation produces the same policy, idempotency, approval, state-machine,
-  and audit evidence as the equivalent API operation.
-- Unauthorized scope cannot leak through counts, search, links, error shape,
-  browser/server caches, history, event streams, downloadable artifacts, or
-  timing-sensitive pagination behavior.
-- Refresh and reconnect resume events without duplicating attempts or actions.
-- Hostile names, diagnostics, payloads, and artifact previews are bounded,
-  escaped, redacted, and covered by content-security policy.
-- Erasure and dead-letter views never place data-subject values or event
-  payloads in browser state, URLs, telemetry, caches, logs, or fixtures, and
-  cannot report completion while required effects remain unknown or
-  unreconciled.
-- Critical workflows pass keyboard and screen-reader review, localization
-  readiness, responsive layouts, and published latency budgets.
-- The console deploys, upgrades, rolls back, and version-negotiates independently
-  from ETLantic core and the control-plane API.
+- The adaptive-program ACs AC-016 through AC-019 and execution portions of
+  AC-021 through AC-023 are verified.
+- Every admission failure is proven to start zero units and perform zero reads,
+  staging, mutation, or publication.
+- Failure injection covers each physical-unit boundary, unsafe retry,
+  cancellation during handoff, cleanup, and unknown publication outcomes.
+- Adaptive and explicit fixtures agree on outputs, validation, lifecycle,
+  attribution, cleanup, and publication results.
+- Execution remains capability-gated and is not documented as Available before
+  the 0.54 release decision.
 
 ## Required Release Evidence
 
-- Generated-client compatibility and deployment report.
-- Full view/action-to-API traceability matrix.
-- Cross-tenant UI leakage and hostile-content report.
-- Event reconnect/refresh results.
-- Accessibility, localization, and performance audits.
+- Whole-DAG admission and unsupported-consumer report.
+- Physical scheduler and executor-protocol conformance report.
+- Lifecycle, cleanup, retry, cancellation, and publication campaign.
+- Adaptive-versus-explicit differential report.
+- Namespaced report-metadata and fused-attribution compatibility report.
+
+## Explicit Non-Scope
+
+- General third-party adaptive availability or maturity inheritance.
+- SQL, PySpark, DataFusion, DuckDB, remote, durable, federated, streaming, or
+  external-orchestrator `/2` execution.
+- Runtime replanning, speculative execution, or telemetry-driven placement.

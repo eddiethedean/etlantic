@@ -1,82 +1,81 @@
 ---
 title: ETLantic 0.55 Implementation Plan
-description: Implementation-grade incubation plan for a standalone TransformationModel package.
+description: Implementation-grade plan for brownfield metadata bridges and orchestration compilers.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.51.0
 ---
 
 # ETLantic 0.55 Implementation Plan
 
-Phase 0.55 incubates `TransformationModel` as a standalone typed modeling package
-under `packages/transformationmodel`. The
-[TransformationModel plan](TRANSFORMATIONMODEL_PLAN.md) remains the governing
-architecture, and [DTCS](../04_TRANSFORMATIONS/DTCS.md) remains the semantic
-authority throughout incubation.
+Phase 0.55 lets existing projects adopt ETLantic incrementally through static
+metadata readers, semantic comparison, safe skeleton generation, and
+orchestration compilers. The
+[adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs brownfield and
+interoperability boundaries.
 
 ## Outcome
 
-An independent Python consumer can model typed transformations and references,
-round-trip supported DTCS deterministically, inspect diagnostics/diffs/fidelity,
-and integrate through a stable public protocol without importing ETLantic,
-execution engines, backend adapters, orchestration, secrets, or external effects.
+Teams can import metadata from real dbt and ETL projects without executing their
+code, identify what ETLantic can and cannot preserve, generate reviewable
+skeletons, compile qualified pipelines to Dagster, Prefect, or Argo, and compare
+old and new paths side by side without a flag-day migration.
 
 ## Prerequisites And Non-Goals
 
-- The existing DTCS boundary, ETLantic authoring surface, and plugin ecosystem
-  have characterization tests before extraction begins.
-- ETLantic keeps its direct DTCS dependency until the standalone package proves
-  semantic completeness and lifecycle stability; extraction is not a flag-day
-  replacement.
-- The package models transformations only. Execution engines, data access,
-  state/checkpoints, connectors, secrets, policy, orchestration, and medallion
-  abstractions are out of scope.
-- Lossy or unsupported DTCS constructs remain explicit and never round-trip as
-  silently changed semantics.
+- Stable registry identities, semantic plan diff, generated-code preservation,
+  and conformance protocols from earlier phases are available, including 0.46
+  bounded dynamic-control identities and capability rules.
+- Readers parse supported static artifacts only; they do not execute Jinja,
+  macros, Python project code, hooks, or package installation.
+- External dbt or orchestration ownership can remain authoritative. Import does
+  not silently transfer ownership to ETLantic.
+- Compilers reject semantics they cannot preserve; they do not approximate
+  retries, partitions, schedules, assets, state, policy, dynamic mapping,
+  branch/failure/compensation behavior, or external effects.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 055-B | Boundary characterization | Import/dependency map, DTCS semantic corpus, ETLantic/plugin usage inventory, extraction ADRs | Baseline characterization suite passing before moves |
-| 055-M | Public model | Typed transformation, reference, expression, capability, diagnostic, diff, and fidelity protocols | Independent API/type tests and `py.typed` verification |
-| 055-D | DTCS interop | Deterministic import/export, canonicalization, fingerprint, version negotiation, explicit lossy handling | Cross-platform golden round-trip corpus |
-| 055-E | Extraction | Incremental move from ETLantic internals; compatibility adapters; no circular or private dependency | Dependency-boundary and import-graph enforcement |
-| 055-P | Plugin compatibility | Stable extension protocol, conformance, version/deprecation rules, third-party fixture | External plugin compatibility matrix |
-| 055-I | ETLantic integration | ETLantic consumes the public package for qualified paths while retaining guarded fallback during incubation | Full ETLantic suite plus before/after semantic comparison |
-| 055-R | Release engineering | Independent package metadata, semver policy, supported Python matrix, docs/examples, publish rehearsal | Clean-environment build/install and independent consumer demo |
+| 055-D | dbt bridge | Manifest/catalog/run-results readers; model/source/test/exposure/metric metadata; stable identity mapping | Versioned public dbt artifact corpus with no code/Jinja execution |
+| 055-M | ETL migration model | Sources, transforms, joins, filters, assertions, schedules, retries, partitions, dynamic maps/reduces, conditions, failure/compensation paths, effects, ownership, fidelity states | Representative framework-neutral migration fixtures |
+| 055-G | Skeleton generation | Safe ETLantic project skeletons, TODO/fidelity markers, user-region preservation, repeatable regeneration | Golden output and incremental re-run tests |
+| 055-S | Semantic diff | Source/field/transform/quality/state/schedule/dynamic-control/effect comparison with explicit unsupported/lossy results | Side-by-side fixture report and false-equivalence tests |
+| 055-O | Orchestration compilers | Dagster definitions compiler, expanded Prefect deployment adapter, Argo workflow compiler, including truthful 0.46 dynamic-control lowering/rejection | Backend conformance and rejection matrix |
+| 055-V | Side-by-side validation | Shadow/dual-run correlation, bounded result/quality/lineage comparison, cutover evidence | Realistic incremental migration campaign |
+| 055-F | Fixture ecosystem | Versioned real-world-shape projects, anonymized metadata, compatibility matrix, contribution guide | CI corpus across supported artifact/backend versions |
 
 ## Delivery Sequence
 
-1. Characterize current DTCS semantics, imports, fingerprints, diagnostics, and
-   plugin behaviors before changing ownership.
-2. Freeze the minimal standalone public protocol and prohibited dependency list.
-3. Implement the package and deterministic DTCS interop beside existing code.
-4. Migrate qualified ETLantic paths incrementally through compatibility adapters.
-5. Qualify third-party plugin behavior and independent consumers.
-6. Decide promotion, further incubation, or rollback from evidence; do not remove
-   direct DTCS authority merely to meet a date.
+1. Freeze fidelity vocabulary and the framework-neutral migration model.
+2. Implement static dbt artifact readers against versioned fixtures.
+3. Add semantic diff and safe skeleton generation before orchestration output.
+4. Qualify Dagster, Prefect, and Argo compilers independently.
+5. Add side-by-side validation and incremental ownership/cutover workflows.
+6. Publish support matrices per source artifact and orchestration backend.
 
 ## Exit Gates
 
-- A clean independent consumer installs and uses `transformationmodel` without
-  ETLantic or any execution/backend/orchestration dependency.
-- Supported DTCS import/export, canonical fingerprints, diagnostics, and diffs
-  are deterministic across the supported operating-system and Python matrix.
-- Every unsupported or lossy construct has a stable fidelity result and cannot be
-  mistaken for an exact round trip.
-- The full ETLantic test suite passes through the public package boundary with
-  semantic comparison to the pre-extraction baseline.
-- The public protocol has semver, compatibility, deprecation, Python support, and
-  `py.typed` commitments and does not depend on ETLantic internals.
-- The package contains no engine, connector, secret, state, policy,
-  orchestration, external-effect, or medallion concern.
-- Promotion away from direct DTCS authority occurs only through a separate,
-  evidence-backed decision after incubation.
+- Brownfield inspection performs no project code, Jinja, hook, macro, dependency,
+  secret, network, or data execution.
+- Every imported element has provenance and an exact, lossy, unsupported, or
+  externally-owned fidelity status.
+- Skeleton generation is deterministic, reviewable, preserves user regions, and
+  does not overwrite existing ownership without an explicit operation.
+- Semantic diff never labels unsupported behavior equivalent.
+- Each compiler preserves declared semantics or fails before emitting a runnable
+  artifact with a stable capability diagnostic.
+- Supported map/reduce and conditional/failure/compensation constructs retain
+  stable logical and expanded identities, bounds, retry/replay behavior, and
+  report correlation on every compiler that claims them.
+- A realistic project adopts ETLantic incrementally, retains an external owner
+  where chosen, runs side-by-side, and produces cutover evidence without a
+  flag-day rewrite.
 
 ## Required Release Evidence
 
-- Boundary/import dependency report.
-- Cross-platform DTCS round-trip/fingerprint corpus.
-- ETLantic semantic regression comparison.
-- Third-party plugin compatibility matrix.
-- Independent consumer and clean publish/install rehearsal.
+- Static-reader no-execution security report.
+- Import fidelity and semantic-diff corpus.
+- Generator determinism/preservation report.
+- Per-backend compiler conformance and rejection matrix.
+- Incremental brownfield migration case study with side-by-side evidence.

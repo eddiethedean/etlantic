@@ -518,11 +518,14 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.48 — AI-Assisted, Human-Governed Engineering",
         "## 0.49 — DuckDB Engine Package",
         "## 0.50 — Baseline Portable Execution Across First-Party Engines",
-        "## 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs",
-        "## 0.52 — Brownfield Adoption Bridges",
-        "## 0.53 — Operator Console",
-        "## 0.54 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.55 — TransformationModel Incubation",
+        "## 0.51 — Adaptive Contract and Physical-DAG Foundation",
+        "## 0.52 — Adaptive Planning, Physical Lowering, and Explainability",
+        "## 0.53 — Local Adaptive Physical-DAG Execution",
+        "## 0.54 — Adaptive Conformance, Qualification, and Graduation",
+        "## 0.55 — Brownfield Adoption Bridges",
+        "## 0.56 — Operator Console",
+        "## 0.57 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.58 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -548,18 +551,30 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.52": (
             "IMPLEMENTATION_PLAN_0_52.md",
-            "brownfield metadata bridges",
+            "adaptive placement planning",
         ),
         "0.53": (
             "IMPLEMENTATION_PLAN_0_53.md",
-            "operator console",
+            "local adaptive physical-DAG execution",
         ),
         "0.54": (
             "IMPLEMENTATION_PLAN_0_54.md",
-            "provider packs",
+            "adaptive conformance",
         ),
         "0.55": (
             "IMPLEMENTATION_PLAN_0_55.md",
+            "brownfield metadata bridges",
+        ),
+        "0.56": (
+            "IMPLEMENTATION_PLAN_0_56.md",
+            "operator console",
+        ),
+        "0.57": (
+            "IMPLEMENTATION_PLAN_0_57.md",
+            "provider packs",
+        ),
+        "0.58": (
+            "IMPLEMENTATION_PLAN_0_58.md",
             "TransformationModel",
         ),
     }

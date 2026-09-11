@@ -1,13 +1,13 @@
 ---
 title: Forward Implementation Plans
-description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.55.
+description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.58.
 plan_status: current
-plan_last_reviewed: 0.50.0
+plan_last_reviewed: 0.51.0
 ---
 
 # Forward Implementation Plans
 
-This document is the delivery contract for ETLantic phases 0.39 through 0.55.
+This document is the delivery contract for ETLantic phases 0.39 through 0.58.
 The [roadmap summary](ROADMAP_SUMMARY.md) defines product intent, while the
 phase plans linked below define implementation order, evidence, and exit gates.
 Integrated domain plans remain authoritative for cross-release architecture.
@@ -28,11 +28,14 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.48 | Human-governed AI workflows | [0.48](IMPLEMENTATION_PLAN_0_48.md) ([ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md) Accepted, [exit gate](EXIT_GATE_0_48.md) Met) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.49 | Full optional DuckDB engine package development | [0.49](IMPLEMENTATION_PLAN_0_49.md), [gate](EXIT_GATE_0_49.md), [epic #110](https://github.com/eddiethedean/etlantic/issues/110) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
 | 0.50 | Seven-engine baseline portable execution, DuckDB qualification, pushdown conformance, and requirement-level evidence for adaptive planning | [0.50](IMPLEMENTATION_PLAN_0_50.md) ([epic #102](https://github.com/eddiethedean/etlantic/issues/102)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
-| 0.51 | Opt-in static-batch adaptive placement and authoritative `/2` physical DAGs on qualified local runtimes | [0.51](IMPLEMENTATION_PLAN_0_51.md) ([ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) accepted; [exit gate](EXIT_GATE_0_51.md) qualification pending; [epic #30](https://github.com/eddiethedean/etlantic/issues/30)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
-| 0.52 | Brownfield bridges and orchestration compilers | [0.52](IMPLEMENTATION_PLAN_0_52.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.53 | Operator console | [0.53](IMPLEMENTATION_PLAN_0_53.md) | [UI/UX](UI_UX_PLAN.md) |
-| 0.54 | Managed-runtime and provider packs | [0.54](IMPLEMENTATION_PLAN_0_54.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.55 | TransformationModel incubation | [0.55](IMPLEMENTATION_PLAN_0_55.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
+| 0.51 | Adaptive Profile, report compatibility, and closed `/2` wire foundation; no adaptive planning or execution | [0.51](IMPLEMENTATION_PLAN_0_51.md) ([ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) accepted; [exit gate](EXIT_GATE_0_51.md) foundation published; [epic #30](https://github.com/eddiethedean/etlantic/issues/30)) | [Developer roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) |
+| 0.52 | Adaptive inventory, candidates, exact placement, physical lowering, and explain/diff | [0.52](IMPLEMENTATION_PLAN_0_52.md) | [0.51 adaptive program contract](IMPLEMENTATION_PLAN_0_51.md) |
+| 0.53 | Whole-DAG admission and local adaptive physical execution | [0.53](IMPLEMENTATION_PLAN_0_53.md) | [0.51 adaptive program contract](IMPLEMENTATION_PLAN_0_51.md) |
+| 0.54 | Adaptive conformance, qualification, and exact-matrix graduation | [0.54](IMPLEMENTATION_PLAN_0_54.md) | [0.51 adaptive program contract](IMPLEMENTATION_PLAN_0_51.md) |
+| 0.55 | Brownfield bridges and orchestration compilers | [0.55](IMPLEMENTATION_PLAN_0_55.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.56 | Operator console | [0.56](IMPLEMENTATION_PLAN_0_56.md) | [UI/UX](UI_UX_PLAN.md) |
+| 0.57 | Managed-runtime and provider packs | [0.57](IMPLEMENTATION_PLAN_0_57.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.58 | TransformationModel incubation | [0.58](IMPLEMENTATION_PLAN_0_58.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
 
 ## Authority And Change Control
 

@@ -1,26 +1,27 @@
 ---
 title: ETLantic 0.51 Implementation Plan
-description: Implementation-grade plan for deterministic adaptive heterogeneous execution planning and executable physical DAGs.
+description: Governing adaptive-execution program plan; 0.51 shipped the contract and wire foundation and 0.52–0.54 own planning, execution, and graduation.
 plan_status: current
-plan_last_reviewed: 0.50.1
+plan_last_reviewed: 0.51.0
 ---
 
 # ETLantic 0.51 Implementation Plan
 
-> **Status: Phase 0 contract freeze accepted after published ETLantic 0.50.1.**
+> **Status: 0.51 foundation published; follow-on delivery assigned to 0.52–0.54.**
 > [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) freezes the
-> adaptive boundary. Later increments remain evidence-gated; acceptance does
-> not claim that adaptive planning or physical-unit execution is available.
+> adaptive boundary. 0.52 owns planning/explain, 0.53 owns local physical
+> execution, and 0.54 owns qualification/graduation. None of those later
+> capabilities is implied by the 0.51.0 foundation release.
 
-Phase 0.51 turns the existing multi-engine planning, capability, optimization,
-interchange, and hybrid-runtime foundations into an opt-in adaptive execution
-strategy for static batch graphs. It converts one ETLantic logical plan into a
-deterministic, inspectable, and executable physical DAG spanning multiple
-trusted, profile-bound placement targets.
+The 0.51–0.54 adaptive program turns the existing multi-engine planning,
+capability, optimization, interchange, and hybrid-runtime foundations into an
+opt-in adaptive execution strategy for static batch graphs. It converts one
+ETLantic logical plan into a deterministic, inspectable, and executable
+physical DAG spanning multiple trusted, profile-bound placement targets.
 
 The governing backlog is
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30). Its ten stories
-and implementation tasks are the delivery ledger for this phase.
+and implementation tasks remain the delivery ledger for the 0.51–0.54 program.
 
 ## Current 0.50.1 Baseline
 
@@ -140,7 +141,7 @@ interchange evidence admit its complete placement target.
 - renaming third-party metadata, logical-plan metadata, or unrelated extension
   keys;
 - fixing unrelated engine/compiler defects unless they invalidate a proposed
-  0.51 qualification row.
+  adaptive qualification row.
 
 ## Frozen Phase Boundaries
 
@@ -596,7 +597,7 @@ types, wire fields, diagnostics, invariants, ACs, and evidence remain unchanged.
 
 ## Initial Qualification Matrix
 
-The phase must qualify at least the rows below. #95 may remove a row whose
+The program must qualify at least the rows below. #95 may remove a row whose
 evidence does not pass; it cannot add a row without the same evidence. Connector,
 resource-provider, and engine maturity remain independent axes, so a qualified
 engine pair does not graduate an unrelated provider.
@@ -613,10 +614,10 @@ engine pair does not graduate an unrelated provider.
 
 SQL, PySpark, DataFusion, remote warehouses, external orchestrator compilation,
 durable/federated execution, streaming, and runtime-expanded graphs receive no
-0.51 adaptive availability claim. The 0.50 seven-engine qualification supplies
+initial adaptive availability claim. The 0.50 seven-engine qualification supplies
 portable semantic evidence for these engines but does not qualify their `/2`
 consumer, interchange, lifecycle, or publication behavior. DuckDB therefore
-remains Experimental in 0.51 until this phase's independent physical-DAG row
+remains Experimental until the 0.54 independent physical-DAG row
 passes. All unqualified combinations fail closed unless a later gate adds a
 qualified `/2` physical-DAG consumer and combination row.
 
@@ -764,10 +765,10 @@ path safe. An incomplete increment cannot advertise the claim of a later one.
 
 | Increment | Task spine | Merge condition | Public state after merge |
 |---|---|---|---|
-| **I0 — contract freeze** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; runtime-report metadata alias and collision rules fixed; exit-gate skeleton names every required artifact | Explicit `/1` unchanged; adaptive remains unavailable |
-| **I1 — plan and explain** | #45–#68, #74–#77, #91, #93 | Inventory, node candidates, exact bounded solver, connected regions, seven-kind lowering, explain/diff, oracle, and tamper evidence pass | Adaptive `/2` may be generated and inspected behind opt-in; every execution consumer rejects it before I/O |
-| **I2 — local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, namespaced step-report emission, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
-| **I3 — qualification** | #78–#81, #83–#87, #94–#95 | Public conformance, fixed launch topology, directional pair matrix, differential semantics, documentation, security scan, and final evidence decision pass | Only the published matrix becomes Available |
+| **I0 — 0.51 contract/wire foundation** | #41–#44, #82 | ADR accepted; Profile and `/2` schemas fixed; `/1` golden bytes pass; runtime-report metadata alias and collision rules fixed; exit-gate skeleton names every required artifact | Published in 0.51.0; explicit `/1` unchanged; adaptive remains unavailable |
+| **I1 — 0.52 plan and explain** | #45–#68, #74–#77, #91, #93 | Inventory, node candidates, exact bounded solver, connected regions, seven-kind lowering, explain/diff, oracle, and tamper evidence pass | Adaptive `/2` may be generated and inspected behind opt-in; every execution consumer rejects it before I/O |
+| **I2 — 0.53 local execution** | #88–#90, #69–#73, #92 | Versioned unit protocol, whole-DAG admission, physical scheduling, lifecycle/retry/publication semantics, namespaced step-report emission, and unsupported-consumer matrix pass | Qualified local static-batch fixtures may execute; no availability claim yet |
+| **I3 — 0.54 qualification** | #78–#81, #83–#87, #94–#95 | Public conformance, fixed launch topology, directional pair matrix, differential semantics, documentation, security scan, and final evidence decision pass | Only the published matrix becomes Available |
 
 ### Implementation ownership
 
@@ -815,8 +816,8 @@ The task-level critical path is:
 
 Documentation drafting starts once its source contract is frozen; it does not
 wait for I3. #82 creates and maintains the
-[0.51 exit gate](EXIT_GATE_0_51.md), while #95 alone records the final release
-decision.
+[adaptive evidence ledger](EXIT_GATE_0_51.md), while #95 alone records the 0.54
+graduation decision.
 
 ## Concrete Implementation Sequence
 
@@ -824,7 +825,7 @@ Each phase below is a reviewable merge boundary. A later phase may be developed
 in parallel only against merged contracts from its dependencies. New public
 behavior remains unavailable until the phase's merge gate passes.
 
-### Phase 0 — Contract and backlog freeze
+### Phase 0 — Contract and backlog freeze (0.51, shipped)
 
 - **Goal:** remove contradictory task language and record every public/wire
   decision before production code.
@@ -841,7 +842,7 @@ behavior remains unavailable until the phase's merge gate passes.
   backlog language removed. No production implementation starts before this
   gate.
 
-### Phase 1 — Profile policy and report-reader compatibility
+### Phase 1 — Profile policy and report-reader compatibility (0.51, shipped)
 
 - **Goal:** introduce opt-in policy without changing explicit planning and make
   legacy report reads ready before new writers ship.
@@ -859,7 +860,7 @@ behavior remains unavailable until the phase's merge gate passes.
   metadata migration pass; adaptive planning still returns an unavailable
   diagnostic.
 
-### Phase 2 — Closed `/2` and physical-unit wire model
+### Phase 2 — Closed `/2` and physical-unit wire model (0.51, shipped)
 
 - **Goal:** make adaptive plans representable and verifiable without making
   them executable.
@@ -879,7 +880,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 1. **Merge gate:** #43–#44; all execution consumers
   still reject `/2` with `PMADP500`.
 
-### Phase 3 — Trusted inventory and evidence lineage
+### Phase 3 — Trusted inventory and evidence lineage (0.52)
 
 - **Goal:** produce the complete bounded set of Profile-eligible target
   descriptors without touching a data plane.
@@ -896,7 +897,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 2. **Merge gate:** #45–#49; inventory fingerprint and
   diagnostics reproduce from fixture inputs.
 
-### Phase 4 — Complete candidate matrix
+### Phase 4 — Complete candidate matrix (0.52)
 
 - **Goal:** explain eligibility for every selected node × eligible target before
   optimization.
@@ -913,7 +914,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 3. **Merge gate:** #50–#54; matrix size and ordering are
   deterministic and every rejection has a stable code.
 
-### Phase 5 — Exact bounded placement solver
+### Phase 5 — Exact bounded placement solver (0.52)
 
 - **Goal:** select the globally best complete feasible assignment or return one
   stable failure.
@@ -931,7 +932,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 4. **Merge gate:** #55–#59, #91, and solver portions of
   #93 pass with identical fingerprints across repeated runs.
 
-### Phase 6 — Connected regions and physical lowering
+### Phase 6 — Connected regions and physical lowering (0.52)
 
 - **Goal:** turn an assignment into one closed, executable physical topology.
 - **Files:** new `adaptive_regions.py`, `adaptive_lowering.py`, physical
@@ -948,7 +949,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 5. **Merge gate:** #60–#68; schema round trips and
   physical validation pass before explain or runtime integration.
 
-### Phase 7 — Explain and diff projections
+### Phase 7 — Explain and diff projections (0.52)
 
 - **Goal:** expose decisions without recomputing them.
 - **Files:** `src/etlantic/plan/explain.py`, `diff.py`, CLI plan/inspect/diff
@@ -963,7 +964,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 6. **Merge gate:** #74–#77; explicit explain/diff
   fixtures remain compatible.
 
-### Phase 8 — Whole-DAG admission and physical execution protocol
+### Phase 8 — Whole-DAG admission and physical execution protocol (0.53)
 
 - **Goal:** define the live trust boundary and executor contract before any `/2`
   unit can run.
@@ -982,7 +983,7 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phase 6; may proceed in parallel with Phase 7. **Merge gate:**
   #88, #90, #92; `/2` remains execution-disabled until Phase 9 adapters pass.
 
-### Phase 9 — Local adapters, lifecycle, and report writers
+### Phase 9 — Local adapters, lifecycle, and report writers (0.53)
 
 - **Goal:** execute only the initially qualified local static-batch topologies
   with `/2` as authority.
@@ -1000,11 +1001,11 @@ behavior remains unavailable until the phase's merge gate passes.
 - **Depends on:** Phases 6 and 8. **Merge gate:** #69–#73 and #89; only fixture-
   gated Local/Polars/Pandas combinations can execute.
 
-### Phase 10 — Public conformance, documentation, and graduation
+### Phase 10 — Public conformance, documentation, and graduation (0.54)
 
-- **Goal:** prove and publish exactly the supported 0.51 claim.
+- **Goal:** prove and publish exactly the supported 0.54 adaptive claim.
 - **Files:** `src/etlantic/testing/adaptive.py`, fixed conformance fixtures,
-  `scripts/check_adaptive_0_51.py`, evidence directory, concepts/quickstart,
+  `scripts/check_adaptive_0_54.py`, evidence directory, concepts/quickstart,
   operations/rollback, backend participation, migration/API/CLI docs, roadmap,
   and release notes.
 - **Behavior:** expose third-party conformance without granting maturity; run
@@ -1185,7 +1186,7 @@ behavior remains unavailable until the phase's merge gate passes.
 ## Required Release Evidence
 
 - Accepted adaptive policy and physical-plan ADR.
-- Completed [0.51 exit gate](EXIT_GATE_0_51.md) with a dated #95 go/no-go
+- Completed [adaptive evidence ledger](EXIT_GATE_0_51.md) with a dated #95 go/no-go
   decision and no unresolved critical/high phase finding.
 - Profile/plan `/1`–`/2` reader-writer, verify-mode, unsupported-consumer, and
   deterministic-fingerprint report.

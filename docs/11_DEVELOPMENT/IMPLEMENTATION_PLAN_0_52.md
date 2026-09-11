@@ -1,81 +1,96 @@
 ---
 title: ETLantic 0.52 Implementation Plan
-description: Implementation-grade plan for brownfield metadata bridges and orchestration compilers.
+description: Implementation-grade plan for adaptive placement planning, physical lowering, and explainability.
 plan_status: current
-plan_last_reviewed: 0.37.0
+plan_last_reviewed: 0.51.0
 ---
 
 # ETLantic 0.52 Implementation Plan
 
-Phase 0.52 lets existing projects adopt ETLantic incrementally through static
-metadata readers, semantic comparison, safe skeleton generation, and
-orchestration compilers. The
-[adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs brownfield and
-interoperability boundaries.
+Phase 0.52 delivers the planning half of the adaptive-execution program frozen
+by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md). It builds on
+the 0.51 Profile, report-compatibility, and closed `etlantic.plan/2` wire
+foundation. The detailed algorithms, bounds, diagnostics, and acceptance
+criteria remain governed by the
+[adaptive program plan](IMPLEMENTATION_PLAN_0_51.md).
 
 ## Outcome
 
-Teams can import metadata from real dbt and ETL projects without executing their
-code, identify what ETLantic can and cannot preserve, generate reviewable
-skeletons, compile qualified pipelines to Dagster, Prefect, or Argo, and compare
-old and new paths side by side without a flag-day migration.
+An opted-in static-batch pipeline can produce a deterministic, inspectable
+`etlantic.plan/2` document containing a complete trusted target inventory,
+candidate matrix, exact placement decision, connected regions, an authoritative
+physical DAG, and stored explain/diff evidence. Adaptive `/2` execution remains
+unavailable in this phase and every execution consumer must reject before I/O.
 
-## Prerequisites And Non-Goals
+## Scope
 
-- Stable registry identities, semantic plan diff, generated-code preservation,
-  and conformance protocols from earlier phases are available, including 0.46
-  bounded dynamic-control identities and capability rules.
-- Readers parse supported static artifacts only; they do not execute Jinja,
-  macros, Python project code, hooks, or package installation.
-- External dbt or orchestration ownership can remain authoritative. Import does
-  not silently transfer ownership to ETLantic.
-- Compilers reject semantics they cannot preserve; they do not approximate
-  retries, partitions, schedules, assets, state, policy, dynamic mapping,
-  branch/failure/compensation behavior, or external effects.
+This phase owns Phases 3–7 and increment I1 of the adaptive program plan:
 
-## Workstreams
+| Workstream | Deliverable | Completion evidence |
+|---|---|---|
+| 052-I | Trusted inventory and evidence lineage | Deterministic authorize-before-load inventory with exact evidence digests |
+| 052-C | Complete candidate matrix | One truthful record per selected node × eligible target, including every rejection |
+| 052-S | Exact bounded solver | Independent-oracle equality, stable tie-breaking, permutation invariance, and deterministic resource limits |
+| 052-P | Connected regions and physical lowering | Maximal compatible regions and a validated seven-kind physical DAG with complete attribution |
+| 052-E | Explain and diff | Bounded, redacted Python/CLI/IDE/notebook projections derived only from the stored plan |
+| 052-R | Rejection boundary | Local, compile, control-plane, remote, streaming, and unqualified consumers reject `/2` before external I/O |
 
-| ID | Workstream | Deliverables | Completion evidence |
-|---|---|---|---|
-| 052-D | dbt bridge | Manifest/catalog/run-results readers; model/source/test/exposure/metric metadata; stable identity mapping | Versioned public dbt artifact corpus with no code/Jinja execution |
-| 052-M | ETL migration model | Sources, transforms, joins, filters, assertions, schedules, retries, partitions, dynamic maps/reduces, conditions, failure/compensation paths, effects, ownership, fidelity states | Representative framework-neutral migration fixtures |
-| 052-G | Skeleton generation | Safe ETLantic project skeletons, TODO/fidelity markers, user-region preservation, repeatable regeneration | Golden output and incremental re-run tests |
-| 052-S | Semantic diff | Source/field/transform/quality/state/schedule/dynamic-control/effect comparison with explicit unsupported/lossy results | Side-by-side fixture report and false-equivalence tests |
-| 052-O | Orchestration compilers | Dagster definitions compiler, expanded Prefect deployment adapter, Argo workflow compiler, including truthful 0.46 dynamic-control lowering/rejection | Backend conformance and rejection matrix |
-| 052-V | Side-by-side validation | Shadow/dual-run correlation, bounded result/quality/lineage comparison, cutover evidence | Realistic incremental migration campaign |
-| 052-F | Fixture ecosystem | Versioned real-world-shape projects, anonymized metadata, compatibility matrix, contribution guide | CI corpus across supported artifact/backend versions |
+## Acceptance Criteria
+
+- **AC-052-01 — Trusted inventory:** Every admitted placement target is
+  Profile-eligible, authorized before load, versioned, capability-complete, and
+  bound to immutable qualification evidence; denied or drifted targets are not
+  loaded or selected.
+- **AC-052-02 — Candidate truthfulness:** The selected logical scope has a
+  complete node × target matrix. Native bodies and unknown required evidence
+  never become adaptive candidates.
+- **AC-052-03 — Exact deterministic placement:** Identical semantic inputs
+  produce the same complete assignment, objective tuple, explanation, and `/2`
+  fingerprint, and the result matches the independent oracle within the frozen
+  bounds.
+- **AC-052-04 — Physical topology:** Regions and all seven physical-unit kinds
+  preserve logical coverage, protected boundaries, directional handoffs,
+  ownership, cleanup, retry, validation, and publication authority.
+- **AC-052-05 — Explainability:** Explain and diff projections expose stored
+  decisions and rejected alternatives consistently without replanning, while
+  remaining deterministic, bounded, and free of secrets and source rows.
+- **AC-052-06 — No execution claim:** Every `/2` execution or compilation
+  consumer rejects before connector discovery, resource acquisition, reads,
+  staging, or mutation.
 
 ## Delivery Sequence
 
-1. Freeze fidelity vocabulary and the framework-neutral migration model.
-2. Implement static dbt artifact readers against versioned fixtures.
-3. Add semantic diff and safe skeleton generation before orchestration output.
-4. Qualify Dagster, Prefect, and Argo compilers independently.
-5. Add side-by-side validation and incremental ownership/cutover workflows.
-6. Publish support matrices per source artifact and orchestration backend.
+1. Implement trusted inventory and immutable evidence lineage.
+2. Materialize the complete candidate matrix before optimization.
+3. Implement the exact bounded solver and independent oracle campaign.
+4. Form connected regions and lower the validated physical DAG.
+5. Project explain/diff from stored records and verify every rejection boundary.
 
 ## Exit Gates
 
-- Brownfield inspection performs no project code, Jinja, hook, macro, dependency,
-  secret, network, or data execution.
-- Every imported element has provenance and an exact, lossy, unsupported, or
-  externally-owned fidelity status.
-- Skeleton generation is deterministic, reviewable, preserves user regions, and
-  does not overwrite existing ownership without an explicit operation.
-- Semantic diff never labels unsupported behavior equivalent.
-- Each compiler preserves declared semantics or fails before emitting a runnable
-  artifact with a stable capability diagnostic.
-- Supported map/reduce and conditional/failure/compensation constructs retain
-  stable logical and expanded identities, bounds, retry/replay behavior, and
-  report correlation on every compiler that claims them.
-- A realistic project adopts ETLantic incrementally, retains an external owner
-  where chosen, runs side-by-side, and produces cutover evidence without a
-  flag-day rewrite.
+- The adaptive-program ACs AC-007 through AC-015 and the planning portions of
+  AC-021 through AC-023 are verified.
+- Fixed node, target, candidate, work-unit, transient-byte, and explain-size
+  boundaries accept their exact limit and reject the first excess.
+- Planning is invariant under process hash seeds and semantic-preserving graph,
+  registry, and component permutations.
+- `/1` canonical bytes, fingerprints, planning, and execution remain unchanged.
+- No `/2` unit can execute in this release, including through an old or optional
+  consumer.
 
 ## Required Release Evidence
 
-- Static-reader no-execution security report.
-- Import fidelity and semantic-diff corpus.
-- Generator determinism/preservation report.
-- Per-backend compiler conformance and rejection matrix.
-- Incremental brownfield migration case study with side-by-side evidence.
+- Trusted-inventory and evidence-lineage conformance report.
+- Candidate-matrix and exact-solver oracle report.
+- Deterministic resource-budget report.
+- Physical-DAG topology, attribution, tamper, and redaction report.
+- Cross-surface explain/diff identity report.
+- Unsupported-consumer before-I/O rejection matrix.
+
+## Explicit Non-Scope
+
+- Physical-unit execution, live admission, runtime scheduling, or publication.
+- Adaptive native transformation bodies, streaming, or runtime-expanded graphs.
+- SQL, PySpark, DataFusion, DuckDB, remote, federated, or external-orchestrator
+  adaptive availability.
+- Runtime replanning, telemetry feedback, trial execution, or cost prediction.

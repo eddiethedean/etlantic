@@ -39,7 +39,7 @@
 - Formal enterprise SLA / unbounded scale
 - `shared-service` production isolation (needs real RLS pack)
 - Embedded IdP or embedded OPA evaluate
-- Operator Console (0.53)
+- Operator Console (0.56)
 - Multi-process dual-API / OpenLineage reconciliation product drills
 
 ## See also

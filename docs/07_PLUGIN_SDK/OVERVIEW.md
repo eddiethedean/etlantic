@@ -66,7 +66,7 @@ These categories appear in design pages and are **not** Available as
 production live runtimes in **0.51.0**:
 
 - Live Kind / Databricks / EMR / Spark Connect — skipped (`047-K-01` /
-  `047-S-01`); enterprise packs are 0.54. The Experimental fakes
+  `047-S-01`); enterprise packs are 0.57. The Experimental fakes
   (`etlantic-k8s`, `etlantic-spark-connect`) are installable.
 - Registry plugins / approval workflows — shipped foundations in 0.40–0.43
   (CP2–CP4 / CP-GA); not a new plugin protocol here.

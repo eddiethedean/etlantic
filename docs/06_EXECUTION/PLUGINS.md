@@ -38,9 +38,9 @@ The following categories appear in older design pages and **must not** be
 treated as 0.38 APIs:
 
 - Managed resource providers — Experimental `etlantic-k8s` on
-  [Resource Provider](../07_PLUGIN_SDK/RESOURCE_PROVIDER.md); live packs 0.54
+  [Resource Provider](../07_PLUGIN_SDK/RESOURCE_PROVIDER.md); live packs 0.57
 - Registry plugins / approval workflows
-- Dagster orchestrator compiler (planned 0.52)
+- Dagster orchestrator compiler (planned 0.55)
 
 ## Next step
 

@@ -1,88 +1,93 @@
 ---
 title: ETLantic 0.54 Implementation Plan
-description: Implementation-grade plan for managed-runtime and provider packs.
+description: Implementation-grade plan for adaptive conformance, qualification, and availability graduation.
 plan_status: current
-plan_last_reviewed: 0.46.0
+plan_last_reviewed: 0.51.0
 ---
 
 # ETLantic 0.54 Implementation Plan
 
-Phase 0.54 packages qualified deployment and provider integrations without
-turning any cloud, secret manager, runtime, or connector into a core dependency.
-The [adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs provider
-maturity and support claims.
+Phase 0.54 independently qualifies the adaptive planner and local physical
+runtime delivered across 0.52 and 0.53. It owns increment I3 and Phase 10 of the
+[adaptive program plan](IMPLEMENTATION_PLAN_0_51.md). Only rows backed by the
+published evidence matrix become Available; all other combinations remain
+Experimental or unavailable.
 
 ## Outcome
 
-Operators can deploy supported ETLantic control-plane/runtime profiles with OCI
-images and Helm, use hardened Kubernetes and managed Spark execution, obtain
-credentials through workload identity and optional secret-provider packs, and
-select promoted cloud connector packs with explicit compatibility, cost, quota,
-region, lifecycle, and cleanup behavior.
+ETLantic publishes a reproducible, security-reviewed adaptive support matrix
+for fixed Local-only, Polars-only, Pandas-only, Polars→Pandas, and
+Pandas→Polars static-batch topologies, along with public provider conformance,
+operational rollback guidance, and precise compatibility/non-claim docs.
 
-## Prerequisites And Non-Goals
+## Scope
 
-- 0.43 qualification and 0.47 remote-provider **fake** conformance are
-  mandatory ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
-  [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). 0.47 ships
-  `FakeKubernetes` (`etlantic-k8s`) and an in-process Spark Connect fake
-  (`etlantic-spark-connect`); live Kind/cluster and live Databricks/EMR are
-  this phase. The console from 0.53 may observe providers but does not own
-  them.
-- Provider packs are independently versioned, allowlisted in production, and
-  capability-negotiated before plan acceptance.
-- Long-lived cloud credentials are not embedded in plans, reports, artifacts,
-  images, Helm values, examples, or test fixtures.
-- Infrastructure recipes are maintained examples with tested support matrices,
-  not claims that every topology or cloud service is supported.
+| Workstream | Deliverable | Completion evidence |
+|---|---|---|
+| 054-C | Public conformance | Provider-facing protocol, fixtures, and maturity rules that confer no authority by installation |
+| 054-T | Fixed topology campaign | Single-target and bidirectional Polars/Pandas handoff fixtures with exact physical evidence |
+| 054-D | Differential qualification | Output, validation, lifecycle, retry, cancellation, cleanup, attribution, and publication equivalence |
+| 054-S | Security and compatibility | Allowlists, evidence drift, redaction, tamper, old-reader, and unsupported-consumer matrices |
+| 054-O | Operations and rollback | Admission, disablement, drain, cleanup, reconciliation, and no-downgrade procedures |
+| 054-G | Graduation decision | Dated matrix, weakest-link maturity, owners, residual risks, and go/no-go record |
 
-## Workstreams
+## Acceptance Criteria
 
-| ID | Workstream | Deliverables | Completion evidence |
-|---|---|---|---|
-| 054-D | Distribution | Versioned OCI images, SBOM/attestations, Helm chart, configuration schema, upgrade/rollback hooks | Clean install, signed-image verification, upgrade/rollback matrix |
-| 054-K | Kubernetes hardening | Workload identity, network/storage policies, pod security, autoscaling, disruption, scoped cleanup | Isolated cluster, node-loss, policy, and orphan tests |
-| 054-S | Managed Spark | Promoted provider(s), runtime images, capability/cost/region model, cancellation/recovery | Live isolated conformance and workload comparison |
-| 054-X | Secret providers | AWS, Azure, GCP, and Vault provider packs; references, rotation, expiry, outage semantics | Missing/expired/rotated/outage and redaction suite |
-| 054-C | Connector packs | Promoted cloud connectors with schema, state, reliability, effect, erasure/delete/anonymize proof, quota, and cleanup conformance | Per-provider live isolated qualification matrix |
-| 054-E | Enterprise event providers | Qualified notification/escalation, dead-letter, and schema-registry provider packs where maintained demand justifies support | Live delivery/dedupe/redaction, DLQ/redrive, registry-outage, and compatibility matrix |
-| 054-G | Governance | Compatibility/support tiers, region/cost/quota metadata, deprecation, incident and security lifecycle | Published support matrix and provider retirement drill |
-| 054-I | Infrastructure recipes | Tested reference deployments, least-privilege identities, observability, backup/restore | Reproducible environment creation and recovery evidence |
+- **AC-054-01 — Public conformance:** Third-party providers can exercise the
+  same behavior-level planning and execution contract without gaining maturity
+  or production authority merely by passing a local test.
+- **AC-054-02 — Fixed launch matrix:** Every claimed single-target and
+  directional cross-target row passes exact topology, second-target dispatch,
+  handoff, validation, cleanup, attribution, and publication verification.
+- **AC-054-03 — Differential semantics:** The fixed matrix is equivalent to its
+  explicit `/1` baseline for outputs and all material lifecycle outcomes.
+- **AC-054-04 — Security and privacy:** Plans, diagnostics, reports, explain
+  artifacts, and evidence contain no resolved secret or source row; production
+  allowlists and policy domains fail closed.
+- **AC-054-05 — Compatibility:** Existing explicit profiles and `/1` bytes stay
+  unchanged, old readers fail safely, and every unqualified `/2` consumer
+  rejects before external I/O.
+- **AC-054-06 — Truthful graduation:** Documentation and machine-readable
+  evidence advertise only the exact passing matrix and retain all explicit
+  non-claims.
 
 ## Delivery Sequence
 
-1. Freeze package/version/support policy and the provider qualification matrix.
-2. Build signed distribution artifacts and validate clean deployment lifecycle.
-3. Harden the 0.47 Kubernetes (`etlantic-k8s`) and Spark Connect
-   (`etlantic-spark-connect`) Experimental extras against live isolated
-   conformance; promote Databricks/EMR packs only after that evidence.
-4. Add secret-provider packs and credential-rotation/outage behavior.
-5. Promote connector packs only after state, schema, reliability, effect,
-   erasure, and cleanup conformance pass in isolated accounts/projects.
-6. Promote notification/escalation, DLQ, and schema-registry packs only after
-   live authorization, redaction, retry, outage, and reconciliation evidence.
-7. Publish tested recipes, costs/quotas/regions, lifecycle policy, and runbooks.
+1. Freeze the public conformance protocol and exact launch matrix.
+2. Run single-target and bidirectional handoff qualification.
+3. Complete differential, security, compatibility, resource, and failure
+   campaigns across the supported Python and operating-system matrix.
+4. Publish concepts, operations, rollback, provider, migration, and API/CLI
+   documentation with runnable examples.
+5. Record the dated final matrix and release decision.
 
 ## Exit Gates
 
-- Every provider pack installs independently, is production-allowlisted
-  explicitly, advertises versioned capabilities, and fails closed when missing.
-- Credential references resolve through workload identity or a scoped provider;
-  secret values never appear in persistent artifacts or diagnostics.
-- Missing, expired, rotated, revoked, and unavailable credentials produce stable
-  redacted outcomes and do not fall back to broader ambient authority.
-- External effects use normalized pending/committed/failed/unknown state and
-  provider cleanup is tenant/workspace scoped and idempotent.
-- Each claimed provider passes live isolated conformance for identity, policy,
-  schema, state, reliability, effects, cancellation, recovery, and cleanup.
-- Distribution and recipes pass clean install, upgrade, rollback, backup/restore,
-  region/limit documentation, and dependency/SBOM verification.
-- No vendor SDK or managed-runtime dependency enters ETLantic core.
+- Every adaptive-program acceptance criterion AC-001 through AC-023 has a
+  reproducible passing artifact or an explicit non-applicable rationale.
+- All required adaptive evidence artifacts are digest-bound to the released
+  repository revision and contain no secrets or source rows.
+- Full unit, integration, conformance, type, lint, formatting, packaging,
+  documentation, compatibility, and security gates pass.
+- No unresolved critical or high-severity security, correctness,
+  compatibility, data-loss, or publication-safety finding remains in scope.
+- The final decision names the exact Available rows, weakest-link maturity,
+  residual risks, owners, and rollback trigger.
 
 ## Required Release Evidence
 
-- Signed distribution and Helm lifecycle report.
-- Per-provider support/conformance matrix.
-- Workload-identity and credential lifecycle/redaction report.
-- Failure, external-effect, and scoped-cleanup campaign.
-- Reference deployment reproducibility and recovery transcript.
+- Public adaptive-provider conformance report.
+- Fixed single-target and directional handoff matrix.
+- Adaptive-versus-explicit differential and failure-injection campaign.
+- Security, redaction, compatibility, and unsupported-consumer matrix.
+- Resource-budget and cross-platform determinism report.
+- Documentation/example transcript and dated graduation decision.
+
+## Explicit Non-Scope
+
+- Adaptive availability beyond the rows that independently pass this gate.
+- Native transformation bodies, SQL, PySpark, DataFusion, DuckDB, remote,
+  durable, federated, streaming, runtime-expanded, or external-orchestrator
+  `/2` execution unless separately qualified in a later release.
+- Universal cost prediction, runtime replanning, telemetry feedback, or
+  speculative execution.

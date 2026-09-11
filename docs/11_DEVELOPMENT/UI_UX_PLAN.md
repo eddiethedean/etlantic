@@ -6,7 +6,7 @@
 > artifacts, and Phase 4 developer intelligence (watch, `etlantic-lsp`, VS Code
 > reference client, notebooks) are available in published **0.45.0**. Interactive
 > HTML workspace (Phase 2), run dashboard (Phase 3), and hosted Operator Console
-> (Phase 5 / 0.53) remain planned and must pass their own accessibility,
+> (Phase 5 / 0.56) remain planned and must pass their own accessibility,
 > security, and operational gates.
 >
 > **Authority:** Current CLI and visualization guides define shipped behavior.
@@ -29,7 +29,7 @@ acceptance gates pass.
 
 Release-specific delivery and evidence are defined by the
 [0.45 developer-intelligence plan](IMPLEMENTATION_PLAN_0_44.md) and the
-[0.53 operator-console plan](IMPLEMENTATION_PLAN_0_53.md). This domain plan
+[0.56 operator-console plan](IMPLEMENTATION_PLAN_0_56.md). This domain plan
 continues to own shared interaction, accessibility, and artifact semantics.
 
 ## Product principles
@@ -114,7 +114,7 @@ The spike must:
   interaction latency, memory, and graph-size limits;
 - evaluate keyboard navigation, focus management, reduced motion,
   color-independent status, and screen-reader behavior;
-- propose the component/theme boundary and the reuse contract for the 0.53
+- propose the component/theme boundary and the reuse contract for the 0.56
   Operator Console;
 - prohibit arbitrary user-authored frontend code unless a later isolated
   extension design passes a separate security review.
@@ -166,7 +166,7 @@ dependencies outside ETLantic core.
 
 ## Phase 3 — Run dashboard and visual comparison
 
-**Roadmap alignment:** local read-only precursor to the 0.53 Operator Console.
+**Roadmap alignment:** local read-only precursor to the 0.56 Operator Console.
 
 ### Deliver
 
@@ -218,7 +218,7 @@ advisory planner/optimization explanation on the same IDE/CLI artifacts
 
 ## Phase 5 — Hosted, governed product experience
 
-**Roadmap alignment:** 0.39–0.43 establish the control-plane substrate; 0.53
+**Roadmap alignment:** 0.39–0.43 establish the control-plane substrate; 0.56
 delivers the read-only-first Operator Console and governed actions.
 
 ### Deliver

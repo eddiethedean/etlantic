@@ -1,16 +1,20 @@
 # Exit Gate 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
-> **Status: 0.51.0 foundation release published; adaptive qualification pending.**
+> **Status: 0.51.0 foundation release published; this record continues as the
+> adaptive-program evidence ledger for 0.52–0.54.**
 > [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the
 > machine-readable contract freeze establish the implementation boundary.
 > Profile policy, report metadata migration, and the closed `/2` wire model are
 > implemented and independently reviewed. This does not claim that adaptive
 > planning or `/2` execution is available. The
 > shipped 0.50.1 portable evidence is a required input, not an adaptive-runtime
-> qualification. The final decision remains owned by
+> qualification. The 0.54 graduation decision remains owned by
 > [#95](https://github.com/eddiethedean/etlantic/issues/95).
 
-See the [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md),
+See the [adaptive program plan](IMPLEMENTATION_PLAN_0_51.md), the
+[0.52 planning plan](IMPLEMENTATION_PLAN_0_52.md),
+[0.53 execution plan](IMPLEMENTATION_PLAN_0_53.md),
+[0.54 graduation plan](IMPLEMENTATION_PLAN_0_54.md),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30), and
 [0.51 milestone](https://github.com/eddiethedean/etlantic/milestone/1).
 
@@ -127,13 +131,16 @@ or allows new writers to emit the retired bare built-in keys.
 
 ## Go / No-Go
 
-**GO for the 0.51.0 foundation-only package release. NO-GO for any adaptive
-planning or execution availability claim.** The release may expose the opt-in
+**GO for the published 0.51.0 foundation-only package release. NO-GO for any
+adaptive planning or execution availability claim until its assigned follow-on
+gate passes.** The 0.51 release may expose the opt-in
 Profile contract, closed `/2` authoring/inspection/verification model, and
-report metadata migration only. #95 remains the authority for graduating the
-planner, solver, physical runtime, and combination matrix after every remaining
-row is linked to passing evidence. Experimental or unavailable providers cannot
-inherit the maturity of the wire foundation.
+report metadata migration only. 0.52 may graduate planning/inspection while
+keeping execution disabled; 0.53 may land fixture-qualified execution without
+an availability claim; #95 remains the authority for the 0.54 graduation of the
+planner, solver, physical runtime, and exact combination matrix after every
+remaining row is linked to passing evidence. Experimental or unavailable
+providers cannot inherit the maturity of the wire foundation.
 
 ## Explicit Non-Claims
 

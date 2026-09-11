@@ -51,7 +51,7 @@
 - Supported maturity for cloud reference packages (remain Experimental)
 - Independent third-party connector on PyPI (`038-X-01` soft-continue via
   in-repo EP proof; echo plugin follow-up)
-- TransformationModel incubation (**0.55**)
+- TransformationModel incubation (**0.58**)
 - DataFusion Gate B graduation
 - Dropping the PyPI Beta classifier
 

@@ -35,12 +35,15 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Later | 0.52 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.53 | Operator Console | Planned |
-| Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.55 | TransformationModel incubation | Proposed |
+| Next | 0.52 | Adaptive planning, physical lowering, and explain/diff | Planned |
+| Later | 0.53 | Local adaptive physical-DAG execution | Planned |
+| Later | 0.54 | Adaptive conformance, qualification, and graduation | Planned |
+| Later | 0.55 | Brownfield adoption bridges | Planning freeze |
+| Later | 0.56 | Operator Console | Planned |
+| Later | 0.57 | Managed runtime and enterprise provider packs | Planned |
+| Later | 0.58 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 adaptive contract/wire foundation prepared) |
+| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 adaptive contract/wire foundation published) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -209,9 +212,9 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 |---|---|---|
 | 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
 | 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.53 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.56 |
 | 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.53 Operator Console |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.56 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2460,7 +2463,7 @@ parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
-TransformationModel incubation (0.55) remain post-foundation phases.
+TransformationModel incubation (0.58) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3520,7 +3523,7 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.38 through 0.55 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.58 expand ETLantic around the stable-foundation model
 without turning the core into a storage system, server, catalog, scheduler,
 IDE, cloud control plane, or AI platform. Each initiative has one assigned
 phase or a named gate in an integrated multi-phase program; none is an
@@ -4106,7 +4109,7 @@ Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT
 (Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
 surfaces are not Available. Kubernetes and Spark Connect are Experimental
 in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
-**0.54**. Implementation of scheduler/worker processes, schedule HTTP routes,
+**0.57**. Implementation of scheduler/worker processes, schedule HTTP routes,
 or new packages is out of scope for this freeze.
 
 Deliver:
@@ -4139,10 +4142,10 @@ Deliver:
   terminal-state reconciliation, and bounded provider-owned cleanup;
   live Kind/cluster is skip `047-K-01`;
 - an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
-  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.54
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.57
   (skip `047-S-01`);
 - FastAPI gateway support without requiring FastAPI in workers;
-- Helm/OCI production images remain out of 0.47 (0.54 `054-D`).
+- Helm/OCI production images remain out of 0.47 (0.57 `057-D`).
 
 Acceptance:
 
@@ -4189,8 +4192,8 @@ and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
 
 **Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
 autonomous run submission; applying optimizations without approval;
-brownfield dbt/orchestrator import (0.52); operator console (0.53); live
-cloud providers (0.54); live paid-model eval as a release blocker
+brownfield dbt/orchestrator import (0.55); operator console (0.56); live
+cloud providers (0.57); live paid-model eval as a release blocker
 (skip `048-E-01`).
 
 Supported vs Experimental (claims only until the exit gate is Met):
@@ -4202,7 +4205,7 @@ Supported vs Experimental (claims only until the exit gate is Met):
   prompt-injection and false-authority tests.
 - **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
   interop is skip `048-M-01` if fixtures suffice.
-- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.52–0.54
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.55–0.57
   programs.
 
 0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
@@ -4398,21 +4401,21 @@ Advanced profiles, adaptive placement, streaming, federation, remote providers,
 external compilation, and cross-engine performance equivalence receive no 0.50
 claim.
 
-## 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
+## 0.51 — Adaptive Contract and Physical-DAG Foundation
 
-Foundation in 0.51.0; adaptive availability remains planned:
+Published in 0.51.0; adaptive planning and execution remain unavailable:
 [IMPLEMENTATION_PLAN_0_51](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_51.md),
 [EXIT_GATE_0_51](docs/11_DEVELOPMENT/EXIT_GATE_0_51.md) (foundation release ready;
 adaptive qualification pending),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30).
 
-**Objective:** let pipeline authors retain explicit engine selection or opt into
-a deterministic adaptive strategy for static batch graphs that assigns trusted,
-profile-bound placement targets to compatible logical nodes, forms connected
-execution regions, lowers validated cross-target handoffs, and executes the
-resulting physical DAG on a qualified local runtime.
+**Objective:** freeze and publish the opt-in Profile contract, closed
+`etlantic.plan/2` physical-DAG wire model, `/1` compatibility boundary, and
+runtime-report metadata migration without enabling adaptive planning or
+execution. The program contract below is delivered incrementally across
+0.51–0.54; the phase plans own each release gate.
 
-Deliver:
+Across 0.51–0.54, deliver:
 
 - an ADR and stable profile/plan contracts for explicit versus adaptive
   strategy, secret-free placement-target definitions, ordered eligible targets,
@@ -4434,7 +4437,7 @@ Deliver:
   evaluator and a versioned integer/enum objective for locality, pushdown,
   cross-target transitions, collection, materialization, fusion,
   configured-priority, and stable target identity;
-- fixed, non-configurable 0.51 ceilings of 256 selected nodes, eight
+- fixed, non-configurable adaptive-program ceilings of 256 selected nodes, eight
   targets/candidates per node, 2,048 candidate records, 1,000,000 solver state
   expansions, 4 MiB of serialized explain output, and 256 MiB of
   deterministically accounted planner-owned transient state;
@@ -4465,7 +4468,7 @@ and pushdown gate;
 DuckDB cross-target handoffs have no availability claim until each direction is
 independently qualified. SQL, PySpark, DataFusion, remote warehouses, external
 compilation, durable/federated execution, streaming, and runtime expansion
-receive no 0.51 adaptive claim.
+receive no initial adaptive availability claim.
 
 Acceptance:
 
@@ -4506,7 +4509,7 @@ Acceptance:
 - production neither imports nor selects a non-allowlisted plugin,
   optimization pass, resource provider, connector, or applicable
   schema-registry adapter;
-- runtime-expanded and streaming graphs fail closed in 0.51, and the gated
+- runtime-expanded and streaming graphs fail closed throughout the program, and the gated
   release claims Available adaptive behavior only for the published local-batch
   combination matrix; DuckDB remains Experimental until its 0.50 pushdown
   qualification and independent adaptive rows pass; and
@@ -4515,7 +4518,70 @@ Acceptance:
 - planner, optimizer, interchange, runtime, conformance, stable-foundation,
   compatibility, security, and documentation gates pass.
 
-## 0.52 — Brownfield Adoption Bridges
+## 0.52 — Adaptive Planning, Physical Lowering, and Explainability
+
+[IMPLEMENTATION_PLAN_0_52](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md)
+owns increment I1 and adaptive-program Phases 3–7.
+
+**Objective:** generate a deterministic, inspectable `etlantic.plan/2` from an
+opted-in static-batch logical plan without executing it.
+
+Deliver:
+
+- authorize-before-load target inventory with immutable evidence lineage;
+- a complete node × target candidate matrix, including rejected alternatives;
+- exact bounded placement with independent-oracle and permutation evidence;
+- connected regions and a validated seven-kind physical DAG; and
+- bounded, redacted explain/diff parity across Python, CLI, IDE, and notebooks.
+
+Acceptance requires unchanged `/1` behavior, deterministic fingerprints and
+resource bounds, complete physical attribution, and rejection by every `/2`
+execution or compilation consumer before I/O.
+
+## 0.53 — Local Adaptive Physical-DAG Execution
+
+[IMPLEMENTATION_PLAN_0_53](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_53.md)
+owns increment I2 and adaptive-program Phases 8–9.
+
+**Objective:** execute only fixture-qualified Local, Polars, and Pandas static-
+batch physical DAGs while preserving the stored plan as runtime authority.
+
+Deliver:
+
+- atomic whole-DAG live admission before resource acquisition or I/O;
+- a versioned seven-kind physical executor protocol and dependency scheduler;
+- Local, Polars, and Pandas adapters with directional handoff support;
+- safe retry, cancellation, cleanup, validation, and publication semantics; and
+- namespaced reports with complete fused/logical-step attribution.
+
+Acceptance requires zero-I/O admission failure, no runtime placement or logical-
+graph fallback, and adaptive-versus-explicit lifecycle equivalence. Public
+availability remains withheld pending 0.54 qualification.
+
+## 0.54 — Adaptive Conformance, Qualification, and Graduation
+
+[IMPLEMENTATION_PLAN_0_54](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_54.md)
+owns increment I3 and adaptive-program Phase 10.
+
+**Objective:** independently qualify and publish the exact adaptive matrix that
+is safe to claim as Available.
+
+Deliver:
+
+- public provider conformance without implicit maturity or authority;
+- Local-only, Polars-only, Pandas-only, Polars→Pandas, and Pandas→Polars
+  topology and differential campaigns;
+- full security, redaction, compatibility, resource, and consumer-rejection
+  evidence;
+- operational disablement, drain, cleanup, reconciliation, and rollback docs;
+  and
+- a dated weakest-link maturity matrix and go/no-go decision.
+
+Acceptance requires all adaptive-program ACs and release gates to pass. Only
+independently qualified rows graduate; every other engine, topology, execution
+mode, and consumer remains Experimental or unavailable.
+
+## 0.55 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4552,7 +4618,7 @@ Acceptance:
 - at least one real project adopts ETLantic incrementally without a flag-day
   rewrite.
 
-## 0.53 — Operator Console
+## 0.56 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4589,7 +4655,7 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.54 — Managed Runtime and Enterprise Provider Packs
+## 0.57 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
@@ -4625,7 +4691,7 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.55 — TransformationModel Incubation
+## 0.58 — TransformationModel Incubation
 
 **Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
@@ -4689,7 +4755,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.55, ETLantic may consume TransformationModel from the workspace behind
+During 0.58, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on

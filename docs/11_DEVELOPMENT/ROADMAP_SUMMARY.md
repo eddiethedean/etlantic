@@ -39,13 +39,15 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
 | Current | 0.51 | Adaptive Profile and `/2` wire foundation; planning/execution unavailable | Published foundation; [plan](IMPLEMENTATION_PLAN_0_51.md) and [exit gate](EXIT_GATE_0_51.md) |
 | Previous | 0.50 | Seven-engine portable execution and pushdown conformance | Published and technically qualified; [plan](IMPLEMENTATION_PLAN_0_50.md), [evidence gate](EXIT_GATE_0_50.md), and [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
-| Later | 0.51 | Adaptive heterogeneous planning and executable physical DAGs | Planned — [plan](IMPLEMENTATION_PLAN_0_51.md), [exit gate](EXIT_GATE_0_51.md) (Not started), [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
-| Later | 0.52 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.53 | Operator console | Planned |
-| Later | 0.54 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.55 | TransformationModel incubation | Proposed |
+| Next | 0.52 | Adaptive planning, physical lowering, and explain/diff | Planned — [plan](IMPLEMENTATION_PLAN_0_52.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/4), governed by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) |
+| Later | 0.53 | Local adaptive physical-DAG execution | Planned — [plan](IMPLEMENTATION_PLAN_0_53.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/5) |
+| Later | 0.54 | Adaptive conformance, qualification, and graduation | Planned — [plan](IMPLEMENTATION_PLAN_0_54.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/6) |
+| Later | 0.55 | Brownfield adoption bridges | Planning freeze — [milestone](https://github.com/eddiethedean/etlantic/milestone/7) |
+| Later | 0.56 | Operator console | Planned — [milestone](https://github.com/eddiethedean/etlantic/milestone/8) |
+| Later | 0.57 | Managed runtime and enterprise provider packs | Planned — [milestone](https://github.com/eddiethedean/etlantic/milestone/9) |
+| Later | 0.58 | TransformationModel incubation | Proposed — [milestone](https://github.com/eddiethedean/etlantic/milestone/10) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.55 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 foundation published; adaptive execution not yet qualified) |
+| Post-foundation | 0.38–0.58 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 foundation published; adaptive execution not yet qualified) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -62,7 +64,7 @@ outcomes without creating conflicting release numbers:
 3. A local run dashboard and visual plan/report comparison.
 4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.44.
 5. A hosted, governed experience after the 0.39–0.43 control-plane gates,
-  culminating in the read-only-first 0.53 Operator Console.
+  culminating in the read-only-first 0.56 Operator Console.
 
 All views remain projections of the same public artifacts and must preserve
 redaction, safe-I/O, authorization, accessibility, and bounded rendering.
@@ -294,7 +296,7 @@ See the
 [ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and
 [Exit gate 0.38](EXIT_GATE_0_38.md).
 
-TransformationModel incubation moves to 0.55.
+TransformationModel incubation moves to 0.58.
 
 ## First-class control-plane program
 
@@ -332,7 +334,7 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
   service plus remote execution federation — [Gate-ready](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
-  Spark Connect are Experimental fakes; live packs remain 0.54
+  Spark Connect are Experimental fakes; live packs remain 0.57
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed
   proposals — [Gate-ready](EXIT_GATE_0_48.md) /
   [ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md); MCP is Experimental
@@ -347,15 +349,23 @@ shared entry, evidence, and completion rules for all later phases.
   partial-support evidence for the 0.51 planner —
   [technical evidence](EXIT_GATE_0_50.md) complete and published,
   [epic #102](https://github.com/eddiethedean/etlantic/issues/102)
-- **[0.51](IMPLEMENTATION_PLAN_0_51.md):** deterministic adaptive heterogeneous
-  placement for static batch graphs, connected execution regions, authoritative
-  `etlantic.plan/2` physical DAGs on qualified local runtimes, and shared
-  explain/diff evidence — [exit gate](EXIT_GATE_0_51.md) (Not started),
+- **[0.51](IMPLEMENTATION_PLAN_0_51.md):** published adaptive Profile,
+  report-compatibility, and closed `etlantic.plan/2` wire foundation; adaptive
+  planning and execution remain unavailable — [exit gate](EXIT_GATE_0_51.md),
   [epic #30](https://github.com/eddiethedean/etlantic/issues/30)
-- **[0.52](IMPLEMENTATION_PLAN_0_52.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
-- **[0.53](IMPLEMENTATION_PLAN_0_53.md):** read-only-first operator console
-- **[0.54](IMPLEMENTATION_PLAN_0_54.md):** managed runtime and enterprise provider packs
-- **[0.55](IMPLEMENTATION_PLAN_0_55.md):** TransformationModel incubation
+- **[0.52](IMPLEMENTATION_PLAN_0_52.md):** trusted inventory, complete candidate
+  matrix, exact bounded placement, connected regions, physical lowering, and
+  cross-surface explain/diff; execution consumers still reject before I/O
+- **[0.53](IMPLEMENTATION_PLAN_0_53.md):** whole-DAG admission and local
+  physical-DAG execution for fixture-qualified Local, Polars, and Pandas paths;
+  availability remains gated
+- **[0.54](IMPLEMENTATION_PLAN_0_54.md):** public conformance, fixed launch
+  topology, differential qualification, security/compatibility evidence, and
+  exact-matrix graduation
+- **[0.55](IMPLEMENTATION_PLAN_0_55.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **[0.56](IMPLEMENTATION_PLAN_0_56.md):** read-only-first operator console
+- **[0.57](IMPLEMENTATION_PLAN_0_57.md):** managed runtime and enterprise provider packs
+- **[0.58](IMPLEMENTATION_PLAN_0_58.md):** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.
@@ -374,7 +384,7 @@ portable evidence needed to recover safely:
   roles, host-neutral recovery negotiation, fenced attempt attribution,
   resumable observation, and conformance semantics for retry, replay, repair,
   reconciliation, and manual review. The 0.47 gate is protocol plus in-process
-  fakes; live Kubernetes and managed Spark hardening remain 0.54.
+  fakes; live Kubernetes and managed Spark hardening remain 0.57.
 
 Before 0.47 ships, queue, worker, and scheduler leadership remain adopter-owned.
 The 0.47 optional service provides reference implementations behind public
@@ -392,7 +402,7 @@ frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), and stable
 foundation (**0.37**).
-TransformationModel incubation is deferred to **0.55** so connectivity,
+TransformationModel incubation is deferred to **0.58** so connectivity,
 interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference
