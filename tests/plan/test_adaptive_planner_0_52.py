@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 import anyio
 import pytest
 
@@ -16,6 +18,7 @@ from etlantic.plan import (
     plan_to_json,
 )
 from etlantic.profile import PlacementTarget, Profile
+from etlantic.registry import PlanningContext, PluginDescriptor, builtin_stub_registry
 from etlantic.runtime.execute import arun_pipeline
 
 
@@ -78,6 +81,42 @@ def test_adaptive_cross_target_requires_directional_handoff_evidence() -> None:
     )
     with pytest.raises(PipelineValidationError, match="PMADP320"):
         plan_pipeline(Sample, profile=profile)
+
+
+def test_adaptive_cross_target_accepts_fully_bound_content_evidence() -> None:
+    from etlantic.planning.adaptive import _handoff_contract
+
+    targets = {
+        "producer": PlacementTarget(engine="local"),
+        "consumer": PlacementTarget(engine="null"),
+    }
+    profile = adaptive_profile(
+        placement_targets=targets,
+        eligible_targets=("producer", "consumer"),
+        implementation_overrides={"raw": "producer", "out": "consumer"},
+    )
+    context = PlanningContext.create(profile, registry=builtin_stub_registry())
+    edge = Sample.build_graph().edges[0]
+    evidence = _handoff_contract(
+        targets["producer"], targets["consumer"], edge, context
+    )
+    evidence["evidence_ref"] = f"sha256:{hashlib.sha256(b'handoff').hexdigest()}"
+    context.registry.register_plugin(
+        PluginDescriptor(
+            name="verified-handoff",
+            kind="handoff",
+            version="1",
+            metadata={"handoff_evidence": [evidence]},
+        )
+    )
+
+    plan = plan_pipeline(Sample, context=context)
+    transfers = [unit for unit in plan.physical_dag.units if unit.kind == "transfer"]
+    assert len(transfers) == 1
+    expected_contract = {
+        key: value for key, value in evidence.items() if key != "evidence_ref"
+    }
+    assert dict(transfers[0].metadata["etlantic.handoff_contract"]) == expected_contract
 
 
 def test_adaptive_artifacts_redact_absolute_target_resources() -> None:

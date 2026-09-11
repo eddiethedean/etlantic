@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Phase 0.52 adaptive placement planning: trusted target inventory, complete
+  candidate matrices, exact branch-and-bound placement, physical-DAG lowering,
+  and schema-aware explain/diff surfaces for planning-only `etlantic.plan/2`
+  documents. Adaptive execution remains disabled until Phase 0.53.
+- Executable, revision-bound adaptive conformance evidence covering
+  AC-052-001 through AC-052-018, enforced by the CI evidence verifier.
+
 ## [0.51.0] - 2026-09-11
 
 ### Adopter summary

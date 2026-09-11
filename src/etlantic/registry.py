@@ -10,7 +10,8 @@ from typing import Any
 
 from etlantic._version import __version__
 from etlantic.capabilities import PluginCapabilities
-from etlantic.diagnostics import Diagnostic
+from etlantic.diagnostics import Diagnostic, Severity, ValidationReport
+from etlantic.exceptions import PipelineValidationError
 from etlantic.profile import Profile, resolve_profile
 from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
@@ -340,6 +341,23 @@ class PlanningContext:
             if isinstance(profile, Profile)
             else resolve_profile(profile, allow_adhoc_profile=allow_adhoc_profile)
         )
+        if (
+            resolved.execution_strategy == "adaptive"
+            and len(resolved.eligible_targets) > 8
+        ):
+            diagnostic = Diagnostic(
+                code="PMADP100",
+                severity=Severity.ERROR,
+                message="Adaptive planning supports at most 8 eligible targets.",
+                path=("profile", "eligible_targets"),
+                phase="policy",
+            )
+            raise PipelineValidationError(
+                f"{diagnostic.code}: {diagnostic.message}",
+                report=ValidationReport.from_diagnostics(
+                    [diagnostic], phases=("policy",)
+                ),
+            )
         caps = list(required_capabilities) if required_capabilities is not None else []
         from etlantic.engines import get_engine_registry
 
@@ -390,6 +408,16 @@ class PlanningContext:
                 reg.engines["local"] = replace(
                     local_caps, extras=frozenset(local_caps.extras) | {"batch"}
                 )
+            reg.register_plugin(
+                PluginDescriptor(
+                    name="local-portable",
+                    kind="compiler",
+                    version=__version__,
+                    engine="local",
+                    capabilities=reg.engines.get("local"),
+                    metadata={"etlantic.builtin": True},
+                )
+            )
         trust_records: list[dict[str, Any]] = []
         plan_diags: tuple[Diagnostic, ...] = ()
 

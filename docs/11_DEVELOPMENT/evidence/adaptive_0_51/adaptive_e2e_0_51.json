@@ -2,39 +2,61 @@
   "artifact": "adaptive_e2e_0_51.json",
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "working-tree",
+  "repository_revision": "sha256:8343b06e05f4dabf7a69f7c7cf83a1077e8480b8fd6b49620014baf449f7f0e6",
   "result": "pass",
   "scenarios": [
     {
-      "acceptance_criterion": "AC-052-018",
-      "actual_diagnostic": null,
-      "expected_diagnostic": null,
-      "id": "adaptive_e2e_0_51",
-      "plan_fingerprint": null,
+      "acceptance_criterion": "AC-052-002",
+      "actual": "pass",
+      "expected": "pass",
+      "id": "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
       "result": "pass",
-      "side_effect_sentinels": {
-        "imports": 0,
-        "io": 0,
-        "resources": 0
-      }
+      "verification": "test_explicit_plan_snapshot_omits_dormant_adaptive_policy"
+    },
+    {
+      "acceptance_criterion": "AC-052-007",
+      "actual": "pass",
+      "expected": "pass",
+      "id": "test_final_052_003_fallback_report_and_integrity",
+      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
+      "result": "pass",
+      "verification": "test_final_052_003_fallback_report_and_integrity"
+    },
+    {
+      "acceptance_criterion": "AC-052-012",
+      "actual": "pass",
+      "expected": "pass",
+      "id": "test_adaptive_wire_round_trip_and_dispatch",
+      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
+      "result": "pass",
+      "verification": "test_adaptive_wire_round_trip_and_dispatch"
+    },
+    {
+      "acceptance_criterion": "AC-052-018",
+      "actual": "pass",
+      "expected": "pass",
+      "id": "adaptive_release_campaign",
+      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
+      "result": "pass",
+      "verification": "adaptive_release_campaign"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",
-  "security_scan": {
-    "absolute_paths": 0,
-    "secrets": 0,
-    "source_rows": 0
-  },
-  "supported_matrix": {
-    "platform": [
-      "linux",
-      "macos",
-      "windows"
-    ],
-    "python": [
-      "3.11",
-      "3.12",
-      "3.13"
-    ]
+  "verification_command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/plan/test_adaptive_planner_0_52.py",
+    "tests/profile/test_adaptive_profile_0_51.py",
+    "tests/plan/test_adaptive_wire_0_51.py",
+    "tests/plan/test_phase_0_52_review_blockers.py",
+    "-k",
+    "not final_052_006"
+  ],
+  "verified_environment": {
+    "platform": "darwin",
+    "python": "3.11.15"
   }
 }

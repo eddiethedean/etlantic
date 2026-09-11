@@ -47,6 +47,19 @@ def _step_signature(plan: PipelinePlan, node_name: str) -> dict[str, Any]:
     }
 
 
+def _without_evidence(value: Any) -> Any:
+    """Remove explanatory evidence while retaining semantic constraints."""
+    if isinstance(value, dict):
+        return {
+            key: _without_evidence(item)
+            for key, item in value.items()
+            if key not in {"evidence_refs", "etlantic.handoff_evidence"}
+        }
+    if isinstance(value, list):
+        return [_without_evidence(item) for item in value]
+    return value
+
+
 def diff_plans(left: PlanDocument, right: PlanDocument) -> PlanDiff:
     """Compare two plans for structural differences."""
     if isinstance(left, AdaptivePipelinePlan) or isinstance(
@@ -60,7 +73,10 @@ def diff_plans(left: PlanDocument, right: PlanDocument) -> PlanDiff:
                 left_fingerprint=left.fingerprint,
                 right_fingerprint=right.fingerprint,
                 changed_adaptive=[
-                    {"schema": {"left": left.schema, "right": right.schema}}
+                    {
+                        "classification": "semantic",
+                        "schema": {"left": left.schema, "right": right.schema},
+                    }
                 ],
             )
         left_data = left.to_dict()
@@ -77,11 +93,20 @@ def diff_plans(left: PlanDocument, right: PlanDocument) -> PlanDiff:
             "profile_snapshot",
         ):
             if left_data.get(key) != right_data.get(key):
+                left_value = left_data.get(key)
+                right_value = right_data.get(key)
+                classification = (
+                    "explanatory"
+                    if key in {"inventory", "candidates", "physical_dag"}
+                    and _without_evidence(left_value) == _without_evidence(right_value)
+                    else "semantic"
+                )
                 changed.append(
                     {
+                        "classification": classification,
                         "field": key,
-                        "left": left_data.get(key),
-                        "right": right_data.get(key),
+                        "left": left_value,
+                        "right": right_value,
                     }
                 )
         return PlanDiff(

@@ -8,7 +8,7 @@ from etlantic.authoring.definition import PipelineDefinition
 from etlantic.authoring.lifecycle import validate_pipeline_like
 from etlantic.diagnostics import ValidationReport
 from etlantic.exceptions import PipelineValidationError
-from etlantic.plan.model import PipelinePlan
+from etlantic.plan.adaptive_model import PlanDocument
 from etlantic.registry import PlanningContext
 
 
@@ -26,7 +26,7 @@ def plan_preview(
     *,
     profile: str | Any | None = "development",
     context: PlanningContext | None = None,
-) -> tuple[PipelinePlan | None, ValidationReport]:
+) -> tuple[PlanDocument | None, ValidationReport]:
     """Plan preview that never executes and does not resolve secrets.
 
     Uses the normal planner after structural validation. Plugin imports follow

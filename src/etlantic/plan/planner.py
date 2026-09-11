@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
@@ -173,6 +174,10 @@ def plan_pipeline(
     from etlantic.validation import validate_pipeline
 
     if isinstance(pipeline_cls, PipelineDefinition):
+        if context is None:
+            context = _create_context_with_adaptive_preflight(
+                pipeline_cls, profile=profile, selection=selection
+            )
         return plan_pipeline_like(
             pipeline_cls,
             context=context,
@@ -180,7 +185,9 @@ def plan_pipeline(
             selection=selection,
         )
 
-    ctx = context or PlanningContext.create(profile=profile)
+    ctx = context or _create_context_with_adaptive_preflight(
+        pipeline_cls, profile=profile, selection=selection
+    )
     report = validate_pipeline(pipeline_cls, context=ctx)
     if report.has_errors:
         raise PipelineValidationError(
@@ -226,23 +233,25 @@ def plan_pipeline_with_report(
     from etlantic.validation import validate_pipeline
 
     if isinstance(pipeline_cls, PipelineDefinition):
-        ctx = context or PlanningContext.create(profile=profile)
+        ctx = context or _create_context_with_adaptive_preflight(
+            pipeline_cls, profile=profile, selection=selection
+        )
         report = validate_pipeline_like(pipeline_cls, context=ctx)
         if report.has_errors:
             return None, report
         try:
-            return (
-                plan_pipeline_like(
-                    pipeline_cls,
-                    context=ctx,
-                    selection=selection or ctx.selection,
-                ),
-                report,
+            plan = plan_pipeline_like(
+                pipeline_cls,
+                context=ctx,
+                selection=selection or ctx.selection,
             )
+            return plan, _adaptive_fallback_report(plan, report)
         except PipelineValidationError as exc:
             return None, exc.report if exc.report is not None else report
 
-    ctx = context or PlanningContext.create(profile=profile)
+    ctx = context or _create_context_with_adaptive_preflight(
+        pipeline_cls, profile=profile, selection=selection
+    )
     report = validate_pipeline(pipeline_cls, context=ctx)
     if report.has_errors:
         return None, report
@@ -250,14 +259,74 @@ def plan_pipeline_with_report(
         if ctx.profile.execution_strategy == "adaptive":
             from etlantic.planning.adaptive import build_adaptive_plan
 
-            return build_adaptive_plan(
+            plan = build_adaptive_plan(
                 pipeline_cls, ctx, selection=selection or ctx.selection
-            ), report
+            )
+            return plan, _adaptive_fallback_report(plan, report)
         return _build_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection
         ), report
     except PipelineValidationError as exc:
         return None, exc.report if exc.report is not None else report
+
+
+def _adaptive_fallback_report(
+    plan: PlanDocument, report: ValidationReport
+) -> ValidationReport:
+    """Merge a recorded adaptive fallback cause into reporting variants."""
+    fallback = dict(getattr(plan, "metadata", {}) or {}).get(
+        "etlantic.adaptive_fallback"
+    )
+    if not isinstance(fallback, Mapping):
+        return report
+    diagnostics: list[Diagnostic] = []
+    for raw in fallback.get("reason") or ():
+        if not isinstance(raw, Mapping):
+            continue
+        severity_value = str(raw.get("severity") or "error")
+        try:
+            severity = Severity(severity_value)
+        except ValueError:
+            severity = Severity.ERROR
+        diagnostics.append(
+            Diagnostic(
+                code=str(raw.get("code") or "PMADP320"),
+                severity=severity,
+                message=str(raw.get("message") or "Adaptive fallback was selected."),
+                path=tuple(str(value) for value in raw.get("path") or ()),
+                phase=(str(raw["phase"]) if raw.get("phase") is not None else None),
+            )
+        )
+    if not diagnostics:
+        return report
+    return report.merge(
+        ValidationReport.from_diagnostics(diagnostics, phases=("adaptive",))
+    )
+
+
+def _create_context_with_adaptive_preflight(
+    pipeline: Any,
+    *,
+    profile: str | Any | None,
+    selection: dict[str, Any] | None,
+) -> PlanningContext:
+    """Enforce adaptive graph limits before any plugin discovery occurs."""
+    from etlantic.profile import Profile, resolve_profile
+
+    resolved_profile = (
+        profile if isinstance(profile, Profile) else resolve_profile(profile)
+    )
+    if resolved_profile.execution_strategy == "adaptive":
+        from etlantic.planning.adaptive import _select_graph, _validate_scope
+
+        if isinstance(pipeline, type):
+            graph = pipeline.build_graph()
+        else:
+            from etlantic.authoring.normalize import logical_graph_from_definition
+
+            graph = logical_graph_from_definition(pipeline)
+        _validate_scope(_select_graph(graph, selection or {}))
+    return PlanningContext.create(profile=resolved_profile)
 
 
 def _selection_error(message: str) -> PipelineValidationError:

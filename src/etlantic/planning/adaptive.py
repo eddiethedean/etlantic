@@ -61,7 +61,9 @@ def _safe_ref(value: Any) -> Any:
         if value.startswith(("/", "\\")) or (
             len(value) > 2 and value[1] == ":" and value[2] in {"/", "\\"}
         ):
-            return f"path:{hashlib.sha256(value.encode('utf-8')).hexdigest()[:16]}"
+            normalized = value.replace("\\", "/").rstrip("/")
+            leaf = normalized.rsplit("/", 1)[-1] or "root"
+            return f"path:{leaf}"
         return value
     if isinstance(value, dict):
         return {str(k): _safe_ref(v) for k, v in value.items()}
@@ -245,8 +247,94 @@ def _inventory(context: PlanningContext) -> tuple[tuple[str, Any, Any], ...]:
             )
         seen_identity[identity] = target_id
         caps = context.registry.engines.get(target.engine)
+        if caps is not None and _missing_target_references(target, context):
+            caps = None
         result.append((target_id, target, caps))
     return tuple(result)
+
+
+def _missing_target_references(
+    target: Any, context: PlanningContext
+) -> tuple[str, ...]:
+    """Return declared target components without authorized static evidence."""
+    missing: list[str] = []
+    for component in ("compiler", "executor", "connector", "resource"):
+        ref = getattr(target, component)
+        if ref is None:
+            continue
+        # Absolute resource references are static profile data, not plugin ids.
+        # They are admitted without touching the filesystem and canonicalized
+        # to a repository-independent logical leaf before entering the plan.
+        if component == "resource" and (
+            ref.startswith(("/", "\\"))
+            or (len(ref) > 2 and ref[1] == ":" and ref[2] in {"/", "\\"})
+        ):
+            continue
+        if component == "resource" and ref in context.registry.bindings:
+            continue
+        if any(
+            _plugin_matches_component(descriptor, ref, component)
+            for descriptor in context.registry.plugins.values()
+        ):
+            continue
+        if component == "compiler" and any(
+            descriptor.compiler_name == ref or descriptor.identity == ref
+            for descriptor in context.registry.implementations.values()
+        ):
+            continue
+        if any(
+            record.get("authorization") == "allowed"
+            and _trust_group_matches_component(record.get("group"), component)
+            and ref
+            in {
+                record.get("name"),
+                record.get("distribution"),
+                record.get("engine"),
+                record.get("package"),
+            }
+            for record in context.plugin_trust_records
+        ):
+            continue
+        missing.append(component)
+    return tuple(missing)
+
+
+def _plugin_matches_component(descriptor: Any, reference: str, component: str) -> bool:
+    if reference not in {descriptor.name, descriptor.engine}:
+        return False
+    kind = str(descriptor.kind).lower()
+    allowed = {
+        "compiler": {"compiler", "transform_compiler", "dataframe", "sql", "spark"},
+        "executor": {"runtime", "dataframe", "sql", "spark", "orchestrator"},
+        "connector": {"connector"},
+        "resource": {"resource", "resource_provider"},
+    }
+    return kind in allowed[component]
+
+
+def _trust_group_matches_component(group: Any, component: str) -> bool:
+    text = str(group or "")
+    if component == "connector":
+        return text in {
+            "etlantic.source_connectors",
+            "etlantic.sink_connectors",
+            "etlantic.storage_connectors",
+        }
+    if component == "compiler":
+        return text in {
+            "etlantic.transform_compilers",
+            "etlantic.dataframe_plugins",
+            "etlantic.sql_plugins",
+            "etlantic.spark_plugins",
+        }
+    if component == "executor":
+        return text in {
+            "etlantic.dataframe_plugins",
+            "etlantic.sql_plugins",
+            "etlantic.spark_plugins",
+            "etlantic.orchestrator_plugins",
+        }
+    return text == "etlantic.resource_providers"
 
 
 def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInventory:
@@ -420,6 +508,38 @@ def _fallback_allowed(candidates: tuple[CandidateRecord, ...]) -> bool:
     return not any(code in hard for code in rejected)
 
 
+def _handoff_contract(
+    source_target: Any,
+    destination_target: Any,
+    edge: Any,
+    context: PlanningContext,
+) -> dict[str, str]:
+    """Build the complete canonical key for directional handoff evidence."""
+    source = source_target.engine
+    destination = destination_target.engine
+    source_caps = context.registry.engines.get(source)
+    destination_caps = context.registry.engines.get(destination)
+    return {
+        "producer_target_identity": _target_identity(source_target),
+        "consumer_target_identity": _target_identity(destination_target),
+        "schema_fingerprint": _digest(
+            {
+                "producer_contract_id": edge.producer_contract_id,
+                "consumer_contract_id": edge.consumer_contract_id,
+            }
+        ),
+        "format": "etlantic.contract/1",
+        "mode": "batch",
+        "durability": "ephemeral",
+        "producer_capability_fingerprint": _digest(
+            source_caps.to_dict() if source_caps is not None else {}
+        ),
+        "consumer_capability_fingerprint": _digest(
+            destination_caps.to_dict() if destination_caps is not None else {}
+        ),
+    }
+
+
 def _handoff_evidence(
     source_target: Any,
     destination_target: Any,
@@ -429,14 +549,12 @@ def _handoff_evidence(
     """Return positive directional evidence for a target-to-target edge.
 
     Evidence is supplied by an authorized implementation/plugin descriptor and
-    is deliberately negative when absent.  The accepted metadata forms are a
-    directional mapping keyed by ``source_engine->destination_engine`` or a
-    list of records containing matching ``source``/``destination`` engines.
+    is deliberately negative when absent. Each record must bind both target
+    identities, the edge schema, format/mode/durability, and both capability
+    fingerprints; engine-pair declarations alone are not proof.
     """
-    source = source_target.engine
-    destination = destination_target.engine
+    contract = _handoff_contract(source_target, destination_target, edge, context)
     refs: list[str] = []
-    records: list[dict[str, Any]] = []
     for descriptor in (
         *context.registry.implementations.values(),
         *context.registry.plugins.values(),
@@ -445,28 +563,27 @@ def _handoff_evidence(
         raw = metadata.get("handoff_evidence") or metadata.get(
             "etlantic.handoff_evidence"
         )
-        if isinstance(raw, dict):
-            value = raw.get(f"{source}->{destination}")
-            if value:
-                refs.extend(
-                    [str(value)] if isinstance(value, str) else [str(x) for x in value]
-                )
-        elif isinstance(raw, (list, tuple)):
-            records.extend(x for x in raw if isinstance(x, dict))
-        elif isinstance(raw, str):
-            # A scalar is only valid when the descriptor declares the exact
-            # directional pair alongside it.
-            if (
-                metadata.get("source_engine") == source
-                and metadata.get("destination_engine") == destination
-            ):
-                refs.append(raw)
-    for record in records:
-        if record.get("source") == source and record.get("destination") == destination:
+        records = raw if isinstance(raw, (list, tuple)) else ()
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            if any(record.get(key) != value for key, value in contract.items()):
+                continue
             ref = record.get("evidence_ref") or record.get("identity")
-            if ref:
-                refs.append(str(ref))
+            if isinstance(ref, str) and _is_content_evidence_ref(ref):
+                refs.append(ref)
     return tuple(sorted(set(refs))[:MAX_EVIDENCE]) if refs else ()
+
+
+def _is_content_evidence_ref(reference: str) -> bool:
+    """Accept only explicit SHA-256 content identities as positive proof."""
+    prefix, separator, digest = reference.partition(":")
+    return (
+        prefix == "sha256"
+        and separator == ":"
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    )
 
 
 def _assignment_handoffs(
@@ -488,10 +605,6 @@ def _assignment_handoffs(
             continue
         refs = _handoff_evidence(source, destination, edge, context)
         if not refs:
-            return None
-        if source.security_domain != destination.security_domain and not bool(
-            getattr(context.profile, "allow_cross_domain_handoff", False)
-        ):
             return None
         evidence[
             (
@@ -653,6 +766,78 @@ def _solve(
     best_score: tuple[int | str, ...] | None = None
     best: tuple[AdaptiveDecision, ...] | None = None
     expansions = 0
+    identity_by_target = {
+        target.target_id: target.identity for target in inventory.targets
+    }
+
+    def lower_bound(chosen: list[CandidateRecord]) -> tuple[int | str, ...]:
+        """Return an optimistic lexicographic bound for every completion."""
+        fixed = {
+            ordered_nodes[index]: candidate for index, candidate in enumerate(chosen)
+        }
+
+        def options(node_name: str) -> list[CandidateRecord]:
+            candidate = fixed.get(node_name)
+            return [candidate] if candidate is not None else by_node[node_name]
+
+        local_io = sum(
+            max(
+                c.objective_facts.get("proven_local_io_nodes", 0) for c in options(node)
+            )
+            for node in ordered_nodes
+        )
+        pushdown = sum(
+            max(
+                c.objective_facts.get("proven_pushdown_actions", 0)
+                for c in options(node)
+            )
+            for node in ordered_nodes
+        )
+        durable = sum(
+            min(
+                c.objective_facts.get("durable_materialization_units", 0)
+                for c in options(node)
+            )
+            for node in ordered_nodes
+        )
+        cross = 0
+        fusible = 0
+        for edge in graph.edges:
+            producer_options = options(edge.producer_node)
+            consumer_options = options(edge.consumer_node)
+            same_target_pairs = [
+                (producer, consumer)
+                for producer in producer_options
+                for consumer in consumer_options
+                if producer.target_id == consumer.target_id
+            ]
+            if not same_target_pairs:
+                cross += 1
+                continue
+            fusible += max(
+                min(
+                    producer.objective_facts.get("safely_fusible_logical_edges", 0),
+                    consumer.objective_facts.get("safely_fusible_logical_edges", 0),
+                )
+                for producer, consumer in same_target_pairs
+            )
+        priorities = tuple(
+            min(priority[c.target_id] for c in options(node)) for node in ordered_nodes
+        )
+        identities = tuple(
+            min(identity_by_target[c.target_id] for c in options(node))
+            for node in ordered_nodes
+        )
+        return (
+            -local_io,
+            -pushdown,
+            cross,
+            0,
+            durable,
+            -fusible,
+            *priorities,
+            *identities,
+        )
 
     def visit(index: int, chosen: list[CandidateRecord]) -> None:
         nonlocal best_score, best, expansions
@@ -663,6 +848,8 @@ def _solve(
                 "Adaptive solver expansion limit exceeded.",
                 path=("adaptive", "solver"),
             )
+        if best_score is not None and lower_bound(chosen) >= best_score:
+            return
         if index == len(ordered_nodes):
             decisions = tuple(
                 AdaptiveDecision(node, candidate.candidate_id, candidate.target_id)
@@ -995,6 +1182,9 @@ def _physical_dag(
                     "etlantic.destination_target": _target_identity(destination),
                     "etlantic.edge": [edge.producer_node, edge.consumer_node],
                     "etlantic.handoff_evidence": list(handoff_refs),
+                    "etlantic.handoff_contract": _handoff_contract(
+                        source, destination, edge, context
+                    ),
                 },
             }
             dependencies[edge.consumer_node].append(PhysicalDependency(transfer_id))
@@ -1157,6 +1347,14 @@ def _explicit_fallback(
                     "schema": "etlantic.plan/1",
                 },
             },
+        )
+        from etlantic.plan.serialize import plan_fingerprint
+
+        fingerprint = plan_fingerprint(result)
+        result = replace(
+            result,
+            fingerprint=fingerprint,
+            plan_id=f"plan:{fingerprint[:16]}",
         )
     return result
 

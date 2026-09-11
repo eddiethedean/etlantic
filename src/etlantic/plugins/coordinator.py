@@ -389,7 +389,9 @@ def discover_planning_plugins(
 
     from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 
-    if should_discover_dataframe_plugins(dataframe_engine):
+    adaptive_scope = target_engines is not None
+
+    if adaptive_scope or should_discover_dataframe_plugins(dataframe_engine):
         lifecycle = discover_evaluate_authorize_load(
             "etlantic.dataframe_plugins",
             profile=profile,
@@ -402,7 +404,7 @@ def discover_planning_plugins(
 
         register_discovered_plugins(registry, plugins=lifecycle.loaded, profile=profile)
 
-    if should_discover_sql_plugins(sql_engine):
+    if adaptive_scope or should_discover_sql_plugins(sql_engine):
         lifecycle = discover_evaluate_authorize_load(
             "etlantic.sql_plugins",
             profile=profile,
@@ -415,7 +417,7 @@ def discover_planning_plugins(
 
         register_sql(registry, plugins=lifecycle.loaded, profile=profile)
 
-    if should_discover_spark_plugins(spark_engine):
+    if adaptive_scope or should_discover_spark_plugins(spark_engine):
         lifecycle = discover_evaluate_authorize_load(
             "etlantic.spark_plugins",
             profile=profile,
@@ -430,7 +432,7 @@ def discover_planning_plugins(
 
         register_spark(registry, plugins=lifecycle.loaded, profile=profile)
 
-    if include_compilers:
+    if adaptive_scope or include_compilers:
         from etlantic.transform.discovery import (
             TRANSFORM_COMPILER_ENTRY_POINT,
             register_discovered_compilers,
@@ -450,5 +452,43 @@ def discover_planning_plugins(
         register_discovered_compilers(
             registry, compilers=lifecycle.loaded, profile=profile
         )
+
+    if adaptive_scope:
+        from etlantic.connectors.discovery import (
+            CONNECTOR_ENTRY_POINT_GROUPS,
+            connector_key,
+        )
+        from etlantic.registry import PluginDescriptor
+
+        for group in CONNECTOR_ENTRY_POINT_GROUPS:
+            lifecycle = discover_evaluate_authorize_load(
+                group,
+                profile=profile,
+                key_fn=connector_key,
+                allowed_names=target_engines,
+            )
+            trust_records.extend(lifecycle.trust_records)
+            diagnostics.extend(lifecycle.diagnostics)
+            trust_by_name = {
+                str(record.get("name")): record for record in lifecycle.trust_records
+            }
+            for name in sorted(lifecycle.loaded):
+                record = trust_by_name.get(name, {})
+                registry.register_plugin(
+                    PluginDescriptor(
+                        name=name,
+                        kind="connector",
+                        version=str(record.get("version") or "0.0.0"),
+                        engine=(
+                            str(record["engine"])
+                            if record.get("engine") is not None
+                            else None
+                        ),
+                        metadata={
+                            "etlantic.entry_point_group": group,
+                            "etlantic.authorization": "allowed",
+                        },
+                    )
+                )
 
     return trust_records, diagnostics

@@ -78,6 +78,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_portable_0_50.py
 
+      - name: Adaptive 0.52 evidence verifier
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_adaptive_0_52.py
+
       - name: Release readiness check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_release.py

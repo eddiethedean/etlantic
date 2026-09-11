@@ -6,7 +6,7 @@ import inspect
 import itertools
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from etlantic.contracts import is_data_contract_type
 from etlantic.identity import contract_id, node_id, pipeline_id
@@ -20,6 +20,9 @@ from etlantic.model import (
 )
 from etlantic.refs import OutputRef, as_output_ref
 from etlantic.transformation import Step
+
+if TYPE_CHECKING:
+    from etlantic.plan.adaptive_model import PlanDocument
 
 T = TypeVar("T")
 
@@ -469,7 +472,7 @@ class Pipeline(metaclass=_PipelineMeta):
         *,
         context: Any = None,
         selection: dict[str, Any] | None = None,
-    ) -> Any:
+    ) -> PlanDocument:
         """Resolve an immutable, secret-free execution plan.
 
         Args:
@@ -478,8 +481,9 @@ class Pipeline(metaclass=_PipelineMeta):
             selection: Optional partial-run selection mapping.
 
         Returns:
-            A deterministic ``PipelinePlan``. Planning does not execute user
-            transformation code or resolve secret values.
+            A deterministic ``PlanDocument`` (``etlantic.plan/1`` or opt-in
+            ``etlantic.plan/2``). Planning does not execute user transformation
+            code or resolve secret values.
 
         Raises:
             PipelineValidationError: When validation reports errors.

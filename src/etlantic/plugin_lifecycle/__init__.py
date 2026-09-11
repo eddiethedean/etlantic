@@ -408,9 +408,7 @@ def discover_evaluate_authorize_load(
 
     authorized, a_diags, events = authorize_plugins(discovered, profile, run_id=run_id)
     result.diagnostics.extend(a_diags)
-    result.authorized = authorized
     result.security_events.extend(events)
-    result.trust_records = [item.trust_record() for item in authorized]
 
     # Adaptive planning narrows the authorized set to the references declared
     # by eligible placement targets.  Filtering happens after discovery,
@@ -426,6 +424,8 @@ def discover_evaluate_authorize_load(
                 item.distribution_name is not None and item.distribution_name in allowed
             )
         ]
+    result.authorized = authorized
+    result.trust_records = [item.trust_record() for item in authorized]
 
     probe_enabled = bool(profile is not None and profile.require_plugin_probe)
     if probe_enabled:
