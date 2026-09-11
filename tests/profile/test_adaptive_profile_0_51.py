@@ -159,6 +159,17 @@ def test_target_from_dict_rejects_acronym_secret_key() -> None:
         )
 
 
+@pytest.mark.parametrize("capabilities", [None, {"batch": True}, 7])
+def test_target_constructor_rejects_non_array_capabilities(
+    capabilities: object,
+) -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PlacementTarget(
+            engine="local",
+            required_capabilities=capabilities,  # type: ignore[arg-type]
+        )
+
+
 def test_placement_target_version_constraints_are_immutable() -> None:
     target = PlacementTarget(
         engine="local",

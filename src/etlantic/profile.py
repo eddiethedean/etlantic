@@ -73,7 +73,11 @@ class PlacementTarget:
                     f"PMADP101: placement target {name} must be a non-blank string or null"
                 )
         capabilities = self.required_capabilities
-        if isinstance(capabilities, str) or any(
+        if not isinstance(capabilities, (list, tuple)):
+            raise ValueError(
+                "PMADP101: placement target required_capabilities must be an array"
+            )
+        if any(
             not isinstance(value, str) or not value.strip() for value in capabilities
         ):
             raise ValueError(

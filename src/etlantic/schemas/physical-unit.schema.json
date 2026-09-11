@@ -22,7 +22,7 @@
       }
     },
     "target_identity": {"type": "string", "minLength": 1},
-    "logical_nodes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "logical_nodes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "\\S"}},
     "input_contracts": {"type": "array", "items": {"type": "object"}},
     "output_contracts": {"type": "array", "items": {"type": "object"}},
     "policy": {"type": "object"},

@@ -195,9 +195,16 @@ class CandidateRecord:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP220: candidate {name} is required")
-        if self.kind not in {"source", "sink", "compute"}:
+        if not isinstance(self.kind, str) or self.kind not in {
+            "source",
+            "sink",
+            "compute",
+        }:
             raise ValueError(f"PMADP220: unknown candidate kind {self.kind!r}")
-        if self.status not in {"eligible", "rejected"}:
+        if not isinstance(self.status, str) or self.status not in {
+            "eligible",
+            "rejected",
+        }:
             raise ValueError(f"PMADP220: unknown candidate status {self.status!r}")
         reason_codes = _validated_array(
             self.reason_codes, "candidate reason_codes", code="PMADP220"

@@ -9,9 +9,10 @@ Recommended application and tutorial import style (0.22+)::
 
 Curated root symbols (stable): ``Data``, ``Transformation``, ``Pipeline``,
 ``Extract``, ``Load``, ``Input``, ``Output``, ``Parameter``, ``Profile``,
-``PipelineRuntime``, ``PipelinePlan``, ``plan_pipeline``, ``explain_plan``,
-``ValidationReport``, ``PipelineRunReport``, ``SecretRef``, ``compile_plan``,
-and ``__version__``.
+``PlacementTarget``, ``PipelineRuntime``, ``PipelinePlan``,
+``AdaptivePipelinePlan``, ``plan_pipeline``, ``explain_plan``,
+``ValidationReport``, ``PipelineRunReport``, ``SecretRef``, ``compile_plan``, and
+``__version__``.
 
 Lazy namespaces (import-safe; no optional engines until accessed):
 ``transform``, ``dataframe``, ``sql``, ``spark``, ``orchestration``, ``viz``,

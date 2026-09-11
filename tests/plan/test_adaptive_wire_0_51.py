@@ -500,6 +500,24 @@ def _set_physical_dependencies_to_object(document: dict[str, Any]) -> None:
     document["physical_dag"]["units"][0]["dependencies"] = {}
 
 
+def _set_candidate_kind_to_object(document: dict[str, Any]) -> None:
+    document["candidates"][0]["kind"] = {}
+
+
+def _set_dependency_kind_to_object(document: dict[str, Any]) -> None:
+    document["physical_dag"]["units"][0]["dependencies"] = [
+        {"unit_id": "other", "kind": {}}
+    ]
+
+
+def _set_logical_mapping_value_to_array(document: dict[str, Any]) -> None:
+    document["physical_dag"]["logical_to_physical"]["raw"] = []
+
+
+def _set_topological_order_item_to_array(document: dict[str, Any]) -> None:
+    document["physical_dag"]["topological_order"] = [[]]
+
+
 @pytest.mark.parametrize(
     "mutate",
     [_set_target_evidence_refs_to_scalar, _set_physical_dependencies_to_object],
@@ -512,6 +530,25 @@ def test_adaptive_plan_rejects_non_array_nested_fields(
 
     with pytest.raises(ValueError, match="PMADP"):
         AdaptivePipelinePlan.from_dict(document, verify=False)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        _set_candidate_kind_to_object,
+        _set_dependency_kind_to_object,
+        _set_logical_mapping_value_to_array,
+        _set_topological_order_item_to_array,
+    ],
+)
+def test_adaptive_json_decoder_rejects_unhashable_field_values_with_diagnostic(
+    mutate: Callable[[dict[str, Any]], None],
+) -> None:
+    document = _plan().to_dict()
+    mutate(document)
+
+    with pytest.raises(ValueError, match="PMADP"):
+        plan_from_json(json.dumps(document), verify=False)
 
 
 @pytest.mark.parametrize(
@@ -547,6 +584,21 @@ def test_adaptive_json_schema_rejects_rejected_candidate_without_reason() -> Non
     document["candidates"][0]["status"] = "rejected"
     document["candidates"][0]["reason_codes"] = []
 
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(schema).validate(document)
+
+
+def test_physical_unit_json_schema_rejects_duplicate_logical_nodes() -> None:
+    schema = json.loads(
+        (ROOT / "src/etlantic/schemas/physical-unit.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    document = _plan().physical_dag.units[0].to_dict()
+    document["logical_nodes"] = ["raw", "raw"]
+
+    with pytest.raises(ValueError, match="PMADP403"):
+        PhysicalUnit.from_dict(document)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(schema).validate(document)
 

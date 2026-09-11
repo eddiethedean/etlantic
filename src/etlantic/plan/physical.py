@@ -39,7 +39,11 @@ class PhysicalDependency:
     def __post_init__(self) -> None:
         if not isinstance(self.unit_id, str) or not self.unit_id.strip():
             raise ValueError("PMADP402: physical dependency unit_id must be non-blank")
-        if self.kind not in {"data", "control", "lifecycle"}:
+        if not isinstance(self.kind, str) or self.kind not in {
+            "data",
+            "control",
+            "lifecycle",
+        }:
             raise ValueError(
                 f"PMADP400: unknown physical dependency kind {self.kind!r}"
             )
@@ -242,6 +246,12 @@ class PhysicalDAG:
         order = _validated_array(
             self.topological_order, "physical DAG topological_order", code="PMADP402"
         )
+        if any(
+            not isinstance(unit_id, str) or not unit_id.strip() for unit_id in order
+        ):
+            raise ValueError(
+                "PMADP402: physical topological order must contain unit ids"
+            )
         if set(order) != set(ids) or len(order) != len(ids):
             raise ValueError(
                 "PMADP402: physical topological order must cover every unit"
@@ -259,6 +269,13 @@ class PhysicalDAG:
         if any(not isinstance(node, str) or not node.strip() for node in mapping):
             raise ValueError(
                 "PMADP403: logical_to_physical node names must be non-blank"
+            )
+        if any(
+            not isinstance(unit_id, str) or not unit_id.strip()
+            for unit_id in mapping.values()
+        ):
+            raise ValueError(
+                "PMADP403: logical_to_physical unit ids must be non-blank strings"
             )
         if any(unit_id not in unit_map for unit_id in mapping.values()):
             raise ValueError("PMADP403: logical_to_physical references an unknown unit")
