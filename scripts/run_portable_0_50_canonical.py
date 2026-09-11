@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from typing import Any
+from typing import Any, cast
 
 from etlantic import (
     Data,
@@ -19,7 +19,7 @@ from etlantic import (
     Profile,
     Transformation,
 )
-from etlantic.plan import plan_pipeline
+from etlantic.plan import PipelinePlan, plan_pipeline
 from etlantic.registry import PlanningContext
 from etlantic.runtime import RunStatus
 from etlantic.transform import functions as F
@@ -162,7 +162,7 @@ def _run(engine: str) -> list[dict[str, Any]]:
     # This is deliberately the same plan and same profile that the runtime
     # consumes below.  The campaign must not replace it with direct compiler
     # calls or a raw hand-authored plan.
-    plan = plan_pipeline(_CanonicalPipeline, context=context)
+    plan = cast(PipelinePlan, plan_pipeline(_CanonicalPipeline, context=context))
     implementation = plan.implementations["transformed"]
     if implementation.kind != "portable_compiled" or implementation.engine != engine:
         raise AssertionError(
