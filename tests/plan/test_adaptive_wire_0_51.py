@@ -211,6 +211,8 @@ def test_physical_unit_rejects_secret_like_metadata() -> None:
     [
         {"client_secret": "resolved-secret"},
         {"clientSecret": "resolved-secret"},
+        {"APIKey": "resolved-secret"},
+        {"APIKEY": "resolved-secret"},
         {"authorization": "Bearer resolved-secret"},
         {"endpoint": "postgres://user:pass@host/db"},
         {"nested": {"sample_rows": [{"id": 1}]}},
@@ -258,6 +260,9 @@ def test_physical_unit_allows_scalar_policy_metadata_values() -> None:
         ("profile_snapshot", {"source_rows": [{"customer_id": 7}]}),
         ("metadata", {"evidence": [{"details": {"rows": [[7, "Ada"]]}}]}),
         ("metadata", {"etlantic.preview": [{"customer_id": 7}]}),
+        ("metadata", {"etlantic.preview": {"customer_id": 7}}),
+        ("metadata", {"etlantic.SOURCEROWS": {"customer_id": 7}}),
+        ("profile_snapshot", {"diagnostic": [{"customer_id": 7}]}),
     ],
 )
 def test_adaptive_plan_rejects_source_rows_in_all_wire_sections(
@@ -277,6 +282,21 @@ def test_adaptive_plan_json_rejects_source_rows() -> None:
 def test_adaptive_plan_allows_scalar_profile_snapshot_values() -> None:
     plan = replace(_plan(), profile_snapshot={"data": "metadata-only"})
     assert plan.to_dict()["profile_snapshot"] == {"data": "metadata-only"}
+
+
+def test_adaptive_plan_allows_schema_valid_structured_metadata() -> None:
+    schema = json.loads(
+        (ROOT / "src/etlantic/schemas/adaptive-pipeline-plan.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    document = _plan().to_dict()
+    document["metadata"] = {"etlantic.rules": [{"name": "quality", "enabled": True}]}
+    jsonschema.Draft202012Validator(schema).validate(document)
+
+    restored = AdaptivePipelinePlan.from_dict(document, verify=False)
+
+    assert restored.to_dict()["metadata"] == document["metadata"]
 
 
 def test_target_descriptor_rejects_non_string_protocol_versions() -> None:

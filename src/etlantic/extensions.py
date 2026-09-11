@@ -224,6 +224,24 @@ _SECRET_KEY_FRAGMENT_RE = re.compile(
     re.IGNORECASE,
 )
 
+_COMPACT_SECRET_KEY_SUFFIXES = frozenset(
+    {
+        "secretvalue",
+        "apikey",
+        "apitoken",
+        "accesskey",
+        "accesstoken",
+        "privatekey",
+        "clientsecret",
+        "connectionstring",
+        "jdbcurl",
+        "databaseurl",
+        "dburl",
+        "awssecretaccesskey",
+        "awsaccesskeyid",
+    }
+)
+
 _URL_USERINFO_VALUE_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]+@")
 _SECRET_ASSIGNMENT_VALUE_RE = re.compile(
     r"(?i)(?:^|[?&\s;])(?:password|passwd|pwd|secret|secret_value|token|"
@@ -232,12 +250,25 @@ _SECRET_ASSIGNMENT_VALUE_RE = re.compile(
 _BEARER_VALUE_RE = re.compile(r"(?i)^bearer\s+\S+")
 
 
+def _normalize_metadata_key(key: Any) -> str:
+    """Normalize metadata keys, including acronym and namespace boundaries."""
+    key_text = str(key)
+    key_text = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key_text)
+    key_text = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key_text)
+    key_text = re.sub(r"[^A-Za-z0-9]+", "_", key_text)
+    return key_text.strip("_").lower()
+
+
 def _is_secret_like_key(key: str) -> bool:
-    key_l = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key))
-    key_l = re.sub(r"[\s-]+", "_", key_l).lower()
+    key_l = _normalize_metadata_key(key)
     if key_l in _STRICT_SECRET_KEYS:
         return True
-    return bool(_SECRET_KEY_FRAGMENT_RE.search(key_l))
+    if _SECRET_KEY_FRAGMENT_RE.search(key_l):
+        return True
+    compact_key = key_l.replace("_", "")
+    return any(
+        compact_key.endswith(secret_key) for secret_key in _COMPACT_SECRET_KEY_SUFFIXES
+    )
 
 
 def _reject_nested_secret_material(value: Any, *, path: str) -> None:
@@ -297,6 +328,8 @@ _SOURCE_ROW_KEYS = frozenset(
 
 _ROW_CONTAINER_KEYS = frozenset({"metadata", "profile_snapshot"})
 
+_COMPACT_SOURCE_ROW_KEYS = frozenset(key.replace("_", "") for key in _SOURCE_ROW_KEYS)
+
 
 def _is_tabular_value(value: Any) -> bool:
     if not isinstance(value, (list, tuple)) or not value:
@@ -316,8 +349,30 @@ def _looks_like_source_row_json(value: Any, *, context: bool) -> bool:
         return False
     if isinstance(decoded, list):
         return context and _is_tabular_value(decoded)
-    return isinstance(decoded, Mapping) and _looks_like_source_row_payload(
-        decoded, context=context
+    if not isinstance(decoded, Mapping):
+        return False
+    if context and decoded:
+        return True
+    return _looks_like_source_row_payload(decoded, context=context)
+
+
+def _is_namespaced_extension_key(key: Any) -> bool:
+    key_text = str(key).strip().lower()
+    return key_text.startswith(("etlantic.", "plugin:"))
+
+
+def _is_source_row_key(key: Any) -> bool:
+    key_l = _normalize_metadata_key(key)
+    key_tail = key_l.rsplit("_", 1)[-1]
+    compact_tail = key_tail.replace("_", "")
+    return (
+        key_l in _SOURCE_ROW_KEYS
+        or key_l.endswith("_rows")
+        or "sample" in key_l
+        or key_tail in _SOURCE_ROW_KEYS
+        or key_tail.endswith("_rows")
+        or "sample" in key_tail
+        or compact_tail in _COMPACT_SOURCE_ROW_KEYS
     )
 
 
@@ -325,13 +380,9 @@ def _looks_like_source_row_payload(value: Any, *, context: bool = False) -> bool
     """Return whether a nested value contains recognizable source-row data."""
     if isinstance(value, Mapping):
         for key, child in value.items():
-            key_l = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key))
-            key_l = re.sub(r"[\s-]+", "_", key_l).lower()
-            row_key = (
-                key_l in _SOURCE_ROW_KEYS
-                or key_l.endswith("_rows")
-                or "sample" in key_l
-            )
+            key_l = _normalize_metadata_key(key)
+            row_key = _is_source_row_key(key)
+            namespaced_key = _is_namespaced_extension_key(key)
             if row_key and (
                 isinstance(child, Mapping)
                 or _is_tabular_value(child)
@@ -339,12 +390,18 @@ def _looks_like_source_row_payload(value: Any, *, context: bool = False) -> bool
             ):
                 return True
             child_context = context or key_l in _ROW_CONTAINER_KEYS
-            if child_context and (
-                _is_tabular_value(child)
-                or _looks_like_source_row_json(child, context=True)
+            if (
+                child_context
+                and not namespaced_key
+                and (
+                    _is_tabular_value(child)
+                    or _looks_like_source_row_json(child, context=True)
+                )
             ):
                 return True
-            if _looks_like_source_row_json(child, context=child_context):
+            if _looks_like_source_row_json(
+                child, context=child_context and not namespaced_key
+            ):
                 return True
             if isinstance(
                 child, (Mapping, list, tuple)
@@ -352,8 +409,6 @@ def _looks_like_source_row_payload(value: Any, *, context: bool = False) -> bool
                 return True
         return False
     if isinstance(value, (list, tuple)):
-        if context and _is_tabular_value(value):
-            return True
         return any(
             _looks_like_source_row_payload(item, context=context) for item in value
         )

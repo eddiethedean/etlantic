@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import assert_type
+
 import etlantic as etl
 from etlantic import Data, Pipeline, Profile
 
@@ -20,3 +22,5 @@ def _uses_namespaces() -> None:
     assert issubclass(Customer, Data)
     assert issubclass(etl.Pipeline, Pipeline)
     assert Profile is etl.Profile
+    assert_type(etl.AdaptivePipelinePlan, type[etl.AdaptivePipelinePlan])
+    assert_type(etl.PlacementTarget, type[etl.PlacementTarget])

@@ -152,6 +152,13 @@ def test_target_from_dict_rejects_camel_case_secret_key() -> None:
         )
 
 
+def test_target_from_dict_rejects_acronym_secret_key() -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PlacementTarget.from_dict(
+            {"engine": "local", "version_constraints": {"APIKey": "x"}}
+        )
+
+
 def test_placement_target_version_constraints_are_immutable() -> None:
     target = PlacementTarget(
         engine="local",
