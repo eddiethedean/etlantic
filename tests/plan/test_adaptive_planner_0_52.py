@@ -6,7 +6,7 @@ import anyio
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
-from etlantic.exceptions import PipelineExecutionError
+from etlantic.exceptions import PipelineExecutionError, PipelineValidationError
 from etlantic.plan import (
     AdaptivePipelinePlan,
     explain_plan,
@@ -65,3 +65,28 @@ def test_adaptive_execution_rejects_before_runtime() -> None:
             await arun_pipeline(Sample, profile=adaptive_profile())
 
     anyio.run(run)
+
+
+def test_adaptive_cross_target_requires_directional_handoff_evidence() -> None:
+    profile = adaptive_profile(
+        placement_targets={
+            "producer": PlacementTarget(engine="local"),
+            "consumer": PlacementTarget(engine="null"),
+        },
+        eligible_targets=("producer", "consumer"),
+        implementation_overrides={"raw": "producer", "out": "consumer"},
+    )
+    with pytest.raises(PipelineValidationError, match="PMADP320"):
+        plan_pipeline(Sample, profile=profile)
+
+
+def test_adaptive_artifacts_redact_absolute_target_resources() -> None:
+    profile = adaptive_profile(
+        placement_targets={
+            "local": PlacementTarget(
+                engine="local", resource="/private/etlantic/provider"
+            )
+        }
+    )
+    plan = plan_pipeline(Sample, profile=profile)
+    assert "/private/etlantic/provider" not in plan_to_json(plan)

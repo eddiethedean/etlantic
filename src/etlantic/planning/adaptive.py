@@ -54,6 +54,26 @@ ORACLE_MAX_ASSIGNMENTS = 65_536
 MAX_TRANSIENT_BYTES = 256 * 1024 * 1024
 
 
+def _safe_ref(value: Any) -> Any:
+    """Redact absolute filesystem references from adaptive artifacts."""
+    if isinstance(value, str):
+        # Preserve URLs and logical references; replace only absolute paths.
+        if value.startswith(("/", "\\")) or (
+            len(value) > 2 and value[1] == ":" and value[2] in {"/", "\\"}
+        ):
+            return f"path:{hashlib.sha256(value.encode('utf-8')).hexdigest()[:16]}"
+        return value
+    if isinstance(value, dict):
+        return {str(k): _safe_ref(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_safe_ref(v) for v in value]
+    return value
+
+
+def _target_identity(target: Any) -> str:
+    return _digest(_safe_ref(target.to_dict()))
+
+
 def build_adaptive_plan(
     pipeline_cls: type[Any] | None,
     context: PlanningContext,
@@ -90,7 +110,9 @@ def build_adaptive_plan(
             f"No viable adaptive target for node(s): {', '.join(missing)}.",
             path=("adaptive", "candidates"),
         )
-        if context.profile.adaptive_fallback == "explicit":
+        if context.profile.adaptive_fallback == "explicit" and _fallback_allowed(
+            candidates
+        ):
             return _explicit_fallback(
                 pipeline_cls,
                 context,
@@ -102,9 +124,9 @@ def build_adaptive_plan(
         raise error
 
     decisions = _solve(selected, candidates, targets, context)
-    _check_oracle(selected, candidates, targets, decisions)
+    _check_oracle(selected, candidates, targets, decisions, context)
     regions = _regions(selected, decisions, targets, context)
-    physical = _physical_dag(selected, decisions, targets, regions)
+    physical = _physical_dag(selected, decisions, targets, regions, context)
     inventory = _inventory_model(targets)
     objective = _objective(selected, decisions, candidates, inventory)
 
@@ -142,7 +164,7 @@ def build_adaptive_plan(
             "plan": ADAPTIVE_PLAN_SCHEMA,
             "physical_unit": PHYSICAL_UNIT_SCHEMA,
         },
-        profile_snapshot=profile.to_plan_snapshot(),
+        profile_snapshot=_safe_ref(profile.to_plan_snapshot()),
         security_domain=profile.security_domain,
         metadata=metadata,
     )
@@ -213,7 +235,7 @@ def _inventory(context: PlanningContext) -> tuple[tuple[str, Any, Any], ...]:
     seen_identity: dict[str, str] = {}
     for target_id in profile.eligible_targets:
         target = profile.placement_targets[target_id]
-        identity = target.identity()
+        identity = _target_identity(target)
         previous = seen_identity.get(identity)
         if previous is not None:
             raise _error(
@@ -230,16 +252,17 @@ def _inventory(context: PlanningContext) -> tuple[tuple[str, Any, Any], ...]:
 def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInventory:
     descriptors: list[TargetDescriptor] = []
     for target_id, target, caps in targets:
+        identity = _target_identity(target)
         capability_payload = caps.to_dict() if caps is not None else {}
         cap_fp = _digest(capability_payload)
         descriptor = TargetDescriptor(
             target_id=target_id,
-            identity=target.identity(),
+            identity=identity,
             engine=target.engine,
             compiler=target.compiler,
             executor=target.executor,
             connector=target.connector,
-            resource=target.resource,
+            resource=_safe_ref(target.resource),
             location=target.location,
             security_domain=target.security_domain,
             protocol_versions={
@@ -298,15 +321,11 @@ def _candidate_matrix(
                 context.profile.security_domain,
                 "default",
             }:
-                reasons.append("PMADP124")
+                reasons.append("PMADP125")
             unsupported_caps = [
                 req
                 for req in target.required_capabilities
-                if caps is None
-                or (
-                    (req != "batch" or target.engine != "local")
-                    and not caps.supports(req)
-                )
+                if caps is None or (not caps.supports(req))
             ]
             if unsupported_caps:
                 reasons.append("PMADP123")
@@ -348,7 +367,11 @@ def _candidate_matrix(
             evidence = _bounded_evidence(evidence_items)
             kind = "compute" if node.kind is NodeKind.STEP else node.kind.value
             candidate_id = _digest(
-                {"node": node.name, "target": target_id, "identity": target.identity()}
+                {
+                    "node": node.name,
+                    "target": target_id,
+                    "identity": _target_identity(target),
+                }
             )[:24]
             record = CandidateRecord(
                 candidate_id=f"candidate:{candidate_id}",
@@ -388,6 +411,97 @@ def _candidate_matrix(
                 )
             output.append(record)
     return tuple(output)
+
+
+def _fallback_allowed(candidates: tuple[CandidateRecord, ...]) -> bool:
+    """Fallback is limited to ordinary capability/implementation infeasibility."""
+    hard = {"PMADP101", "PMADP102", "PMADP124", "PMADP125"}
+    rejected = [code for candidate in candidates for code in candidate.reason_codes]
+    return not any(code in hard for code in rejected)
+
+
+def _handoff_evidence(
+    source_target: Any,
+    destination_target: Any,
+    edge: Any,
+    context: PlanningContext,
+) -> tuple[str, ...]:
+    """Return positive directional evidence for a target-to-target edge.
+
+    Evidence is supplied by an authorized implementation/plugin descriptor and
+    is deliberately negative when absent.  The accepted metadata forms are a
+    directional mapping keyed by ``source_engine->destination_engine`` or a
+    list of records containing matching ``source``/``destination`` engines.
+    """
+    source = source_target.engine
+    destination = destination_target.engine
+    refs: list[str] = []
+    records: list[dict[str, Any]] = []
+    for descriptor in (
+        *context.registry.implementations.values(),
+        *context.registry.plugins.values(),
+    ):
+        metadata = dict(getattr(descriptor, "metadata", {}) or {})
+        raw = metadata.get("handoff_evidence") or metadata.get(
+            "etlantic.handoff_evidence"
+        )
+        if isinstance(raw, dict):
+            value = raw.get(f"{source}->{destination}")
+            if value:
+                refs.extend(
+                    [str(value)] if isinstance(value, str) else [str(x) for x in value]
+                )
+        elif isinstance(raw, (list, tuple)):
+            records.extend(x for x in raw if isinstance(x, dict))
+        elif isinstance(raw, str):
+            # A scalar is only valid when the descriptor declares the exact
+            # directional pair alongside it.
+            if (
+                metadata.get("source_engine") == source
+                and metadata.get("destination_engine") == destination
+            ):
+                refs.append(raw)
+    for record in records:
+        if record.get("source") == source and record.get("destination") == destination:
+            ref = record.get("evidence_ref") or record.get("identity")
+            if ref:
+                refs.append(str(ref))
+    return tuple(sorted(set(refs))[:MAX_EVIDENCE]) if refs else ()
+
+
+def _assignment_handoffs(
+    graph: LogicalGraph,
+    decisions: tuple[AdaptiveDecision, ...],
+    targets: tuple[tuple[str, Any, Any], ...],
+    context: PlanningContext,
+) -> dict[tuple[str, str, str, str], tuple[str, ...]] | None:
+    target_map = {target_id: target for target_id, target, _ in targets}
+    decision_map = {d.node_name: d for d in decisions}
+    evidence: dict[tuple[str, str, str, str], tuple[str, ...]] = {}
+    for edge in graph.edges:
+        source = target_map[decision_map[edge.producer_node].target_id]
+        destination = target_map[decision_map[edge.consumer_node].target_id]
+        if (
+            decision_map[edge.producer_node].target_id
+            == decision_map[edge.consumer_node].target_id
+        ):
+            continue
+        refs = _handoff_evidence(source, destination, edge, context)
+        if not refs:
+            return None
+        if source.security_domain != destination.security_domain and not bool(
+            getattr(context.profile, "allow_cross_domain_handoff", False)
+        ):
+            return None
+        evidence[
+            (
+                edge.producer_node,
+                edge.producer_port,
+                edge.consumer_node,
+                edge.consumer_port,
+            )
+        ] = refs
+    return evidence
 
 
 def _transform_map(
@@ -554,6 +668,8 @@ def _solve(
                 AdaptiveDecision(node, candidate.candidate_id, candidate.target_id)
                 for node, candidate in zip(ordered_nodes, chosen, strict=True)
             )
+            if _assignment_handoffs(graph, decisions, targets, context) is None:
+                return
             score = _objective(graph, decisions, candidates, inventory)
             if best_score is None or score < best_score:
                 best_score, best = score, decisions
@@ -564,7 +680,12 @@ def _solve(
             chosen.pop()
 
     visit(0, [])
-    assert best is not None
+    if best is None:
+        raise _error(
+            "PMADP320",
+            "No viable adaptive assignment satisfies directional handoff and security policy.",
+            path=("adaptive", "solver"),
+        )
     return best
 
 
@@ -573,6 +694,7 @@ def _check_oracle(
     candidates: tuple[CandidateRecord, ...],
     targets: tuple[tuple[str, Any, Any], ...],
     selected: tuple[AdaptiveDecision, ...],
+    context: PlanningContext | None = None,
 ) -> None:
     """Cross-check small plans with an independently written exhaustive oracle."""
     if len(graph.nodes) > ORACLE_MAX_NODES or len(targets) > ORACLE_MAX_TARGETS:
@@ -588,6 +710,8 @@ def _check_oracle(
     if assignments > ORACLE_MAX_ASSIGNMENTS:
         return
     inventory = _inventory_model(targets)
+    if context is None:
+        return
     by_node = {
         node.name: tuple(
             candidate
@@ -606,6 +730,8 @@ def _check_oracle(
                 AdaptiveDecision(node.name, candidate.candidate_id, candidate.target_id)
                 for node, candidate in zip(graph.nodes, chosen, strict=True)
             )
+            if _assignment_handoffs(graph, decisions, targets, context) is None:
+                return
             score = _objective(graph, decisions, candidates, inventory)
             if best_score is None or (
                 score,
@@ -743,7 +869,7 @@ def _regions(
         members = sorted(members, key=names.index)
         target_id = by_node[members[0]]
         target = target_by_id[target_id]
-        region_id = f"region:{_digest({'target': target.identity(), 'nodes': members, 'security': target.security_domain, 'planner': '0.52'})[:24]}"
+        region_id = f"region:{_digest({'target': _target_identity(target), 'nodes': members, 'security': target.security_domain, 'planner': '0.52'})[:24]}"
         for member in members:
             region_identity_by_node[member] = region_id
         regions.append(
@@ -795,6 +921,7 @@ def _physical_dag(
     decisions: tuple[AdaptiveDecision, ...],
     targets: tuple[tuple[str, Any, Any], ...],
     regions: tuple[AdaptiveRegion, ...],
+    context: PlanningContext | None = None,
 ) -> PhysicalDAG:
     target_map = {name: target for name, target, _ in targets}
     decision_map = {d.node_name: d for d in decisions}
@@ -812,14 +939,14 @@ def _physical_dag(
         compute_payload = {
             "kind": "compute",
             "node": node.name,
-            "target": target.identity(),
+            "target": _target_identity(target),
         }
         uid = f"unit:{_digest(compute_payload)[:24]}"
         compute_ids[node.name] = uid
         node_tails[node.name] = uid
         unit_specs[uid] = {
             "kind": PhysicalUnitKind.COMPUTE,
-            "target_identity": target.identity(),
+            "target_identity": _target_identity(target),
             "logical_nodes": (node.name,),
             "metadata": {
                 "etlantic.engine": target.engine,
@@ -836,6 +963,17 @@ def _physical_dag(
         else:
             source = target_map[producer.target_id]
             destination = target_map[consumer.target_id]
+            handoff_refs = (
+                _handoff_evidence(source, destination, edge, context)
+                if context is not None
+                else ()
+            )
+            if not handoff_refs:
+                raise _error(
+                    "PMADP320",
+                    "Cross-target physical boundary lacks directional handoff evidence.",
+                    path=("physical_dag", "transfer"),
+                )
             transfer_payload = {
                 "kind": "transfer",
                 "edge": [
@@ -844,18 +982,19 @@ def _physical_dag(
                     edge.consumer_node,
                     edge.consumer_port,
                 ],
-                "source": source.identity(),
-                "destination": destination.identity(),
+                "source": _target_identity(source),
+                "destination": _target_identity(destination),
             }
             transfer_id = f"unit:{_digest(transfer_payload)[:24]}"
             unit_specs[transfer_id] = {
                 "kind": PhysicalUnitKind.TRANSFER,
-                "target_identity": destination.identity(),
+                "target_identity": _target_identity(destination),
                 "dependencies": (PhysicalDependency(compute_ids[edge.producer_node]),),
                 "metadata": {
-                    "etlantic.source_target": source.identity(),
-                    "etlantic.destination_target": destination.identity(),
+                    "etlantic.source_target": _target_identity(source),
+                    "etlantic.destination_target": _target_identity(destination),
                     "etlantic.edge": [edge.producer_node, edge.consumer_node],
+                    "etlantic.handoff_evidence": list(handoff_refs),
                 },
             }
             dependencies[edge.consumer_node].append(PhysicalDependency(transfer_id))
@@ -867,12 +1006,12 @@ def _physical_dag(
                 collection_payload = {
                     "kind": "collection",
                     "edge": transfer_id,
-                    "target": destination.identity(),
+                    "target": _target_identity(destination),
                 }
                 collection_id = f"unit:{_digest(collection_payload)[:24]}"
                 unit_specs[collection_id] = {
                     "kind": PhysicalUnitKind.COLLECTION,
-                    "target_identity": destination.identity(),
+                    "target_identity": _target_identity(destination),
                     "dependencies": (PhysicalDependency(transfer_id),),
                     "metadata": {
                         "etlantic.edge": [edge.producer_node, edge.consumer_node]
@@ -893,13 +1032,13 @@ def _physical_dag(
             payload = {
                 "kind": kind.value,
                 "node": node.name,
-                "target": target.identity(),
+                "target": _target_identity(target),
                 "value": node_metadata[flag],
             }
             uid = f"unit:{_digest(payload)[:24]}"
             unit_specs[uid] = {
                 "kind": kind,
-                "target_identity": target.identity(),
+                "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail),),
                 "metadata": {
                     "etlantic.logical_node": node.name,
@@ -912,12 +1051,12 @@ def _physical_dag(
             publication_payload = {
                 "kind": "publication",
                 "node": node.name,
-                "target": target.identity(),
+                "target": _target_identity(target),
             }
             uid = f"unit:{_digest(publication_payload)[:24]}"
             unit_specs[uid] = {
                 "kind": PhysicalUnitKind.PUBLICATION,
-                "target_identity": target.identity(),
+                "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail, "lifecycle"),),
                 "metadata": {"etlantic.logical_node": node.name},
             }
@@ -1000,10 +1139,26 @@ def _explicit_fallback(
     if definition is not None:
         from etlantic.plan.planner import _build_plan_from_definition
 
-        return _build_plan_from_definition(
+        result = _build_plan_from_definition(
             definition, explicit_context, selection=selection
         )
-    return plan_pipeline(pipeline_cls, context=explicit_context, selection=selection)
+    else:
+        result = plan_pipeline(
+            pipeline_cls, context=explicit_context, selection=selection
+        )
+    if hasattr(result, "metadata"):
+        result = replace(
+            result,
+            metadata={
+                **dict(getattr(result, "metadata", {}) or {}),
+                "etlantic.adaptive_fallback": {
+                    "reason": [d.to_dict() for d in report.diagnostics],
+                    "chosen_target": target_id,
+                    "schema": "etlantic.plan/1",
+                },
+            },
+        )
+    return result
 
 
 def _digest(value: Any) -> str:

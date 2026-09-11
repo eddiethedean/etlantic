@@ -5,7 +5,7 @@ Registries belong to a PlanningContext instance (ADR-004), never process globals
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from etlantic._version import __version__
@@ -346,10 +346,50 @@ class PlanningContext:
         engine_registry = get_engine_registry()
         if not caps:
             caps = engine_registry.default_capabilities(resolved)
-        engine = resolved.dataframe_engine or "local"
+        # Adaptive planning is driven by eligible placement targets rather
+        # than the legacy explicit-engine field.  Use a deterministic engine
+        # representative solely to trigger the scoped discovery lifecycle;
+        # the lifecycle itself is filtered to all declared target engines.
+        adaptive_target_engines = {
+            resolved.placement_targets[target_id].engine
+            for target_id in resolved.eligible_targets
+        }
+        adaptive_target_refs = {
+            ref
+            for target_id in resolved.eligible_targets
+            for ref in (
+                resolved.placement_targets[target_id].engine,
+                resolved.placement_targets[target_id].compiler,
+                resolved.placement_targets[target_id].executor,
+                resolved.placement_targets[target_id].connector,
+                resolved.placement_targets[target_id].resource,
+            )
+            if ref
+        }
+        if resolved.execution_strategy == "adaptive":
+            discovered_engine = next(
+                (
+                    name
+                    for name in sorted(adaptive_target_engines)
+                    if name not in {"local", "null"}
+                ),
+                "local",
+            )
+            engine = discovered_engine
+        else:
+            engine = resolved.dataframe_engine or "local"
         sql_engine = resolved.sql_engine
         spark_engine = resolved.spark_engine
         reg = registry if registry is not None else builtin_stub_registry()
+        if resolved.execution_strategy == "adaptive" and registry is None:
+            # The adaptive local target advertises the batch admission
+            # capability used by the plan-only local adapter.  Keep the
+            # explicit registry byte-compatible with historical `/1` plans.
+            local_caps = reg.engines.get("local")
+            if local_caps is not None and not local_caps.supports("batch"):
+                reg.engines["local"] = replace(
+                    local_caps, extras=frozenset(local_caps.extras) | {"batch"}
+                )
         trust_records: list[dict[str, Any]] = []
         plan_diags: tuple[Diagnostic, ...] = ()
 
@@ -417,6 +457,11 @@ class PlanningContext:
                 dataframe_engine=engine,
                 sql_engine=sql_engine,
                 spark_engine=spark_engine,
+                target_engines=(
+                    adaptive_target_refs
+                    if resolved.execution_strategy == "adaptive"
+                    else None
+                ),
             )
             plan_diags = tuple(discovered)
             reg._etlantic_planning_profile_key = planning_key  # type: ignore[attr-defined]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import Counter
 from typing import Any
 
 from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
@@ -208,4 +209,13 @@ def _explain_adaptive(plan: AdaptivePipelinePlan) -> dict[str, Any]:
             "physical_units": len(plan.physical_dag.units),
         },
         "omitted_sha256": hashlib.sha256(encoded).hexdigest(),
+        "rejection_reason_counts": dict(
+            sorted(
+                Counter(
+                    code
+                    for candidate in plan.candidates
+                    for code in candidate.reason_codes
+                ).items()
+            )
+        ),
     }

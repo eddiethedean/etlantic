@@ -139,6 +139,12 @@ def register_core_commands(
         resolved, source = cli.resolve_profile(
             profile, allow_adhoc_profile=allow_adhoc_profile
         )
+        if getattr(resolved, "execution_strategy", "explicit") == "adaptive":
+            # `/2` is planning-only in 0.52.  Reject before mutation prompts,
+            # plugin bootstrap, target import, or runtime construction.
+            raise typer.ClickException(
+                "PMADP500: adaptive etlantic.plan/2 execution is not available in 0.52"
+            )
         write_intent = "no_write" if no_write else "execute_and_persist"
         if preview or (fmt in {"human", "text"} and not cli.globals.quiet):
             cli.emit_mutation_preamble(

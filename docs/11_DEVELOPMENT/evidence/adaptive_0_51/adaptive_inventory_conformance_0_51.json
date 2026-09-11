@@ -1,0 +1,40 @@
+{
+  "artifact": "adaptive_inventory_conformance_0_51.json",
+  "planner_version": "0.52",
+  "public_schema": "etlantic.plan/2",
+  "repository_revision": "working-tree",
+  "result": "pass",
+  "scenarios": [
+    {
+      "acceptance_criterion": "AC-052-018",
+      "actual_diagnostic": null,
+      "expected_diagnostic": null,
+      "id": "adaptive_inventory_conformance_0_51",
+      "plan_fingerprint": null,
+      "result": "pass",
+      "side_effect_sentinels": {
+        "imports": 0,
+        "io": 0,
+        "resources": 0
+      }
+    }
+  ],
+  "schema": "etlantic.adaptive-evidence/1",
+  "security_scan": {
+    "absolute_paths": 0,
+    "secrets": 0,
+    "source_rows": 0
+  },
+  "supported_matrix": {
+    "platform": [
+      "linux",
+      "macos",
+      "windows"
+    ],
+    "python": [
+      "3.11",
+      "3.12",
+      "3.13"
+    ]
+  }
+}

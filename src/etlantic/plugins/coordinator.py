@@ -365,6 +365,7 @@ def discover_planning_plugins(
     dataframe_engine: str,
     sql_engine: str | None,
     spark_engine: str | None,
+    target_engines: set[str] | None = None,
 ) -> tuple[list[dict[str, Any]], list[Diagnostic]]:
     """Discover plugins required for planning based on profile engines."""
     coordinator = PluginDiscoveryCoordinator()
@@ -390,7 +391,10 @@ def discover_planning_plugins(
 
     if should_discover_dataframe_plugins(dataframe_engine):
         lifecycle = discover_evaluate_authorize_load(
-            "etlantic.dataframe_plugins", profile=profile, key_fn=_df_key
+            "etlantic.dataframe_plugins",
+            profile=profile,
+            key_fn=_df_key,
+            allowed_names=target_engines,
         )
         trust_records.extend(lifecycle.trust_records)
         diagnostics.extend(lifecycle.diagnostics)
@@ -400,7 +404,10 @@ def discover_planning_plugins(
 
     if should_discover_sql_plugins(sql_engine):
         lifecycle = discover_evaluate_authorize_load(
-            "etlantic.sql_plugins", profile=profile, key_fn=_generic_key
+            "etlantic.sql_plugins",
+            profile=profile,
+            key_fn=_generic_key,
+            allowed_names=target_engines,
         )
         trust_records.extend(lifecycle.trust_records)
         diagnostics.extend(lifecycle.diagnostics)
@@ -410,7 +417,10 @@ def discover_planning_plugins(
 
     if should_discover_spark_plugins(spark_engine):
         lifecycle = discover_evaluate_authorize_load(
-            "etlantic.spark_plugins", profile=profile, key_fn=_generic_key
+            "etlantic.spark_plugins",
+            profile=profile,
+            key_fn=_generic_key,
+            allowed_names=target_engines,
         )
         trust_records.extend(lifecycle.trust_records)
         diagnostics.extend(lifecycle.diagnostics)
@@ -433,6 +443,7 @@ def discover_planning_plugins(
             TRANSFORM_COMPILER_ENTRY_POINT,
             profile=profile,
             key_fn=transform_key,
+            allowed_names=target_engines,
         )
         trust_records.extend(lifecycle.trust_records)
         diagnostics.extend(lifecycle.diagnostics)

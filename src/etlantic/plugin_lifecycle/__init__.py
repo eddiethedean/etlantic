@@ -354,6 +354,7 @@ def discover_evaluate_authorize_load(
     run_id: str = "plan",
     key_fn: Callable[[DiscoveredPlugin, Any], str] | None = None,
     require_manifest: bool | None = None,
+    allowed_names: set[str] | frozenset[str] | None = None,
 ) -> PluginLifecycleResult:
     """Run the full 0.20 plugin lifecycle for one entry-point group."""
     result = PluginLifecycleResult()
@@ -410,6 +411,21 @@ def discover_evaluate_authorize_load(
     result.authorized = authorized
     result.security_events.extend(events)
     result.trust_records = [item.trust_record() for item in authorized]
+
+    # Adaptive planning narrows the authorized set to the references declared
+    # by eligible placement targets.  Filtering happens after discovery,
+    # evaluation, and authorization but before any entry point is loaded.
+    if allowed_names is not None:
+        allowed = {str(value) for value in allowed_names}
+        authorized = [
+            item
+            for item in authorized
+            if item.name in allowed
+            or (item.engine is not None and item.engine in allowed)
+            or (
+                item.distribution_name is not None and item.distribution_name in allowed
+            )
+        ]
 
     probe_enabled = bool(profile is not None and profile.require_plugin_probe)
     if probe_enabled:
