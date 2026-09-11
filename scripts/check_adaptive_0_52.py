@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -147,10 +146,6 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
         raise RuntimeError("adaptive release campaign failed:\n" + output)
     revision = _source_revision()
     fingerprint = _verified_plan_fingerprint()
-    matrix = {
-        "python": platform.python_version(),
-        "platform": platform.system().lower(),
-    }
     payloads: dict[str, dict[str, object]] = {}
     for name, campaign in CAMPAIGNS.items():
         scenarios = [
@@ -173,7 +168,6 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
             "planner_version": "0.52",
             "result": "pass",
             "scenarios": scenarios,
-            "verified_environment": matrix,
             "verification_command": [
                 "python",
                 "-m",

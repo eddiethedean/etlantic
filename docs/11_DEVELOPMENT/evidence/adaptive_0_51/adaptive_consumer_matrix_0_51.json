@@ -2,7 +2,7 @@
   "artifact": "adaptive_consumer_matrix_0_51.json",
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:8343b06e05f4dabf7a69f7c7cf83a1077e8480b8fd6b49620014baf449f7f0e6",
+  "repository_revision": "sha256:f209eff0264a8e9146eb809f6c0214ee8b0ca0d26f15db8a4cc10159a3e4b4af",
   "result": "pass",
   "scenarios": [
     {
@@ -36,9 +36,5 @@
     "tests/plan/test_phase_0_52_review_blockers.py",
     "-k",
     "not final_052_006"
-  ],
-  "verified_environment": {
-    "platform": "darwin",
-    "python": "3.11.15"
-  }
+  ]
 }
