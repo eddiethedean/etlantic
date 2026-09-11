@@ -454,6 +454,9 @@ class AdaptivePipelinePlan:
             if isinstance(self.inventory, AdaptiveInventory)
             else AdaptiveInventory.from_dict(self.inventory)
         )
+        target_ids = set(inventory.eligible_target_order)
+        targets_by_id = {target.target_id: target for target in inventory.targets}
+        target_identities = {target.identity for target in inventory.targets}
         candidates = _validated_array(self.candidates, "adaptive plan candidates")
         candidates = tuple(
             candidate
@@ -521,6 +524,19 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 "PMADP403: regions must partition selected logical nodes exactly"
             )
+        for region in regions:
+            if region.target_id not in target_ids:
+                raise ValueError(
+                    "PMADP403: adaptive region references unknown target "
+                    f"{region.target_id!r}"
+                )
+            if any(
+                decisions_by_node[node].target_id != region.target_id
+                for node in region.logical_nodes
+            ):
+                raise ValueError(
+                    "PMADP403: adaptive region target must match each node decision"
+                )
         dag = (
             self.physical_dag
             if isinstance(self.physical_dag, PhysicalDAG)
@@ -530,6 +546,21 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 "PMADP403: physical DAG coverage must match selected nodes"
             )
+        units_by_id = {unit.identity: unit for unit in dag.units}
+        for unit in dag.units:
+            if unit.target_identity not in target_identities:
+                raise ValueError(
+                    "PMADP403: physical unit references unknown target identity "
+                    f"{unit.target_identity!r}"
+                )
+        for node, unit_id in dag.logical_to_physical.items():
+            unit = units_by_id[unit_id]
+            decision = decisions_by_node[node]
+            expected_identity = targets_by_id[decision.target_id].identity
+            if unit.target_identity != expected_identity:
+                raise ValueError(
+                    "PMADP403: physical compute unit target must match node decision"
+                )
         protocol_versions = _validated_string_map(
             self.protocol_versions, "adaptive plan protocol_versions"
         )

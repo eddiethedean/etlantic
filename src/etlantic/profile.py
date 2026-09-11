@@ -899,13 +899,14 @@ class Profile:
             raise TypeError(
                 f"Profile.with_updates() got unexpected field(s): {', '.join(unknown)}"
             )
-        current = self.to_plan_snapshot()
+        # Updates operate on the public authoring representation rather than
+        # the execution snapshot.  Explicit-profile snapshots intentionally
+        # omit adaptive fields, but those fields may be dormant on an explicit
+        # profile and must survive unrelated updates (or an explicit-to-
+        # adaptive strategy change).
+        current = self.to_dict()
         if "assets" in kwargs:
-            current["bindings"] = dict(kwargs.pop("assets") or {})
-        # Internal snapshot uses plan-wire ``bindings``; map to assets so
-        # from_dict does not emit legacy PMCFG110 for authoring round-trips.
-        if "bindings" in current and "assets" not in current:
-            current["assets"] = dict(current.pop("bindings") or {})
+            current["assets"] = dict(kwargs.pop("assets") or {})
         current.update(kwargs)
         return Profile.from_dict(current)
 

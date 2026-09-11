@@ -155,6 +155,57 @@ def test_adaptive_metadata_rejects_live_backend_objects() -> None:
         replace(_plan(), metadata={"etlantic.backend": object()})
 
 
+def test_adaptive_plan_binds_regions_to_inventory_and_decisions() -> None:
+    plan = _plan()
+    region = replace(plan.regions[0], target_id="missing")
+    with pytest.raises(ValueError, match="PMADP403"):
+        replace(plan, regions=(region,))
+
+    other_target = TargetDescriptor(
+        target_id="other", identity="target-2", engine="local"
+    )
+    inventory = replace(
+        plan.inventory,
+        targets=(plan.inventory.targets[0], other_target),
+        eligible_target_order=("local", "other"),
+    )
+    candidates = tuple(
+        CandidateRecord(
+            candidate_id=f"{node}-other",
+            node_name=node,
+            target_id="other",
+            kind="source" if node == "raw" else "sink",
+            status="eligible",
+        )
+        for node in plan.logical_graph.node_names()
+    )
+    with pytest.raises(ValueError, match="PMADP403"):
+        replace(
+            plan,
+            inventory=inventory,
+            candidates=plan.candidates + candidates,
+            regions=(replace(plan.regions[0], target_id="other"),),
+        )
+
+
+def test_adaptive_plan_binds_physical_units_to_target_inventory() -> None:
+    plan = _plan()
+    unit = replace(plan.physical_dag.units[0], target_identity="missing")
+    dag = replace(plan.physical_dag, units=(unit,))
+    with pytest.raises(ValueError, match="PMADP403"):
+        replace(plan, physical_dag=dag)
+
+
+def test_physical_unit_rejects_secret_like_metadata() -> None:
+    with pytest.raises(ValueError, match="PMADP101"):
+        PhysicalUnit(
+            identity="unit-secret",
+            kind="compute",
+            target_identity="target-1",
+            metadata={"api_token": "resolved-secret"},
+        )
+
+
 def test_target_descriptor_rejects_non_string_protocol_versions() -> None:
     with pytest.raises(ValueError, match="PMADP"):
         TargetDescriptor(

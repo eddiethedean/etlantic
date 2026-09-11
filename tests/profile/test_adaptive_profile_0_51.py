@@ -66,6 +66,33 @@ def test_explicit_plan_snapshot_omits_dormant_adaptive_policy() -> None:
     }
 
 
+def test_profile_updates_preserve_dormant_adaptive_fields() -> None:
+    explicit = Profile(
+        name="explicit",
+        placement_targets={"dormant": PlacementTarget(engine="local")},
+        eligible_targets=(),
+    )
+
+    updated = explicit.with_updates(timeout_seconds=17)
+    assert "dormant" in updated.placement_targets
+    assert updated.timeout_seconds == 17
+
+
+def test_profile_updates_can_activate_dormant_adaptive_fields() -> None:
+    explicit = Profile(
+        name="explicit",
+        placement_targets={"dormant": PlacementTarget(engine="local")},
+        eligible_targets=(),
+    )
+
+    updated = explicit.with_updates(
+        execution_strategy="adaptive", eligible_targets=("dormant",)
+    )
+    assert updated.execution_strategy == "adaptive"
+    assert updated.eligible_targets == ("dormant",)
+    assert "dormant" in updated.placement_targets
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
