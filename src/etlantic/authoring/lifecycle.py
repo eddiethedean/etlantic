@@ -109,8 +109,17 @@ def _validate_definition(
     diagnostics.extend(
         _tag_phase(phase_capability(None, ctx, resolved_policy), "capability")
     )
+    from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
+
     diagnostics.extend(
-        _tag_phase(list(ctx.plugin_discovery_diagnostics), "plugin_discovery")
+        _tag_phase(
+            [
+                diagnostic
+                for diagnostic in ctx.plugin_discovery_diagnostics
+                if not is_non_blocking_trust_diagnostic(diagnostic)
+            ],
+            "plugin_discovery",
+        )
     )
     diagnostics.extend(_tag_phase(phase_plugin_trust(ctx), "plugin_trust"))
     for node in defn.nodes:

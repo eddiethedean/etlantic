@@ -298,6 +298,41 @@ class PhysicalDAG:
             raise ValueError(
                 "PMADP403: logical_to_physical must reference compute units"
             )
+        # Every declared logical predecessor must have a complete physical
+        # dependency path to its consumer.  This catches tampering that merely
+        # recomputes the outer plan fingerprint after disconnecting a unit.
+        for node, consumer_id in mapping.items():
+            consumer = unit_map[consumer_id]
+            predecessors = consumer.metadata.get("etlantic.logical_predecessors", ())
+            if not isinstance(predecessors, (list, tuple)):
+                raise ValueError(
+                    "PMADP403: logical predecessor metadata must be an array"
+                )
+            for predecessor in predecessors:
+                if predecessor not in mapping:
+                    raise ValueError(
+                        "PMADP403: logical predecessor is not mapped to a physical unit"
+                    )
+                expected = mapping[predecessor]
+                seen: set[str] = set()
+                frontier = [dep.unit_id for dep in consumer.dependencies]
+                reachable = False
+                while frontier:
+                    unit_id = frontier.pop()
+                    if unit_id in seen:
+                        continue
+                    seen.add(unit_id)
+                    if unit_id == expected:
+                        reachable = True
+                        break
+                    frontier.extend(
+                        dep.unit_id for dep in unit_map[unit_id].dependencies
+                    )
+                if not reachable:
+                    raise ValueError(
+                        f"PMADP403: logical edge {predecessor!r} -> {node!r} "
+                        "has no physical dependency path"
+                    )
         object.__setattr__(self, "units", units)
         object.__setattr__(self, "logical_to_physical", deep_freeze(mapping))
         object.__setattr__(self, "topological_order", order)

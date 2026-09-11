@@ -169,6 +169,33 @@ def render_plan_explain_human(explain: dict[str, Any]) -> str:
     lines.append(f"fingerprint: {explain.get('fingerprint')}")
     lines.append(f"profile: {explain.get('profile')}")
     lines.append("")
+    if explain.get("schema") == "etlantic.plan/2":
+        lines.append("planning_only: true")
+        lines.append(f"objective: {explain.get('objective')}")
+        selected = explain.get("selected_targets")
+        if selected is None:
+            selected = {
+                item.get("node_name"): item.get("target_id")
+                for item in explain.get("decisions") or []
+                if isinstance(item, dict)
+            }
+        lines.append(f"selected_targets: {selected}")
+        lines.append("")
+        lines.append("Regions:")
+        for region in explain.get("regions") or []:
+            lines.append(
+                f"  - {region.get('identity')}: target={region.get('target_id')}, "
+                f"nodes={region.get('logical_nodes') or region.get('node_names')}"
+            )
+        lines.append("")
+        lines.append("Physical units:")
+        physical = explain.get("physical_dag") or {}
+        for unit in physical.get("units") or []:
+            lines.append(
+                f"  - {unit.get('identity')} [{unit.get('kind')}]: "
+                f"target={unit.get('target_identity')}"
+            )
+        return "\n".join(lines)
     lines.append("Capability decisions:")
     for item in explain.get("capability_decisions") or []:
         lines.append(

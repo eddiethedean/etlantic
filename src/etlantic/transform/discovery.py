@@ -88,6 +88,7 @@ def register_discovered_compilers(
                 },
             )
         )
+        registry.register_transform_compiler(engine, compiler)
     return discovered
 
 

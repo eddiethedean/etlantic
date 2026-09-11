@@ -1,30 +1,48 @@
 {
   "artifact": "adaptive_runtime_conformance_0_51.json",
+  "passed_scenarios": 2,
   "planner_version": "0.52",
+  "platform": {
+    "os": "darwin",
+    "python": "3.11.15"
+  },
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:6731c6c1ae72479576fc32ab4820b553e3dac0ba795393988a5087b7fbc1c740",
+  "repository_revision": "sha256:03aa18e5839cac5090eb5e95c56e74013cd2772f8c9ef289e786b3476bacae81",
   "result": "pass",
+  "scenario_count": 2,
   "scenarios": [
     {
       "acceptance_criterion": "AC-052-016",
       "actual": "pass",
+      "executed": true,
       "expected": "pass",
       "id": "test_adaptive_execution_rejects_before_runtime",
-      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
       "result": "pass",
       "verification": "test_adaptive_execution_rejects_before_runtime"
     },
     {
       "acceptance_criterion": "AC-052-016",
       "actual": "pass",
+      "executed": true,
       "expected": "pass",
       "id": "test_local_scheduler_rejects_adaptive_before_runtime_access",
-      "plan_fingerprint": "a4b4764217ef7db656703117b86c9af9829377be5dc89577714c112627a9f1dc",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
       "result": "pass",
       "verification": "test_local_scheduler_rejects_adaptive_before_runtime_access"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",
+  "side_effect_counts": {
+    "compile": 0,
+    "execute": 0,
+    "io": 0
+  },
+  "source_scan": {
+    "absolute_repository_path": false,
+    "secrets": false,
+    "source_rows": false
+  },
   "verification_command": [
     "python",
     "-m",

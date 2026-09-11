@@ -17,6 +17,7 @@ from etlantic.plugin_manifest import (
 from etlantic.plugin_trust import is_production_profile
 from etlantic.profile import Profile
 from etlantic.runtime.events import SecurityEvent
+from etlantic.runtime.logging import redact_message
 
 _LOG = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -324,9 +325,14 @@ def load_authorized_plugins(
                 )
             loaded[str(key)] = plugin
         except Exception as exc:
+            # Entry-point code is untrusted; never propagate raw exception
+            # text into diagnostics or logs where it could contain secrets.
+            safe_error = redact_message(str(exc))
+            if not safe_error or safe_error == str(exc):
+                safe_error = "plugin load failed"
             msg = (
                 f"Failed to load authorized plugin entry point "
-                f"{item.group}:{item.name}: {exc}"
+                f"{item.group}:{item.name}: {safe_error}"
             )
             severity = Severity.ERROR if production else Severity.WARNING
             if production:

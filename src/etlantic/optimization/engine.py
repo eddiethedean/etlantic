@@ -27,6 +27,7 @@ from etlantic.optimization.registry import (
     discover_optimization_passes,
     resolve_pass_order,
 )
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan
 from etlantic.plan.diff import PlanDiff, diff_plans
 from etlantic.plan.freeze import deep_freeze, mutable_copy
 from etlantic.plan.model import PipelinePlan
@@ -175,7 +176,7 @@ def _is_dominated(candidate: OptimizationCandidate) -> bool:
 
 
 def optimize_plan(
-    baseline: PipelinePlan,
+    baseline: PipelinePlan | AdaptivePipelinePlan,
     *,
     profile: Profile | None = None,
     evidence: EvidenceStore | None = None,
@@ -188,6 +189,13 @@ def optimize_plan(
     budgets: dict[str, float] | None = None,
 ) -> OptimizationResult:
     """Run the advisory optimization pipeline on a baseline plan."""
+    if (
+        isinstance(baseline, AdaptivePipelinePlan)
+        or getattr(baseline, "schema", None) == "etlantic.plan/2"
+    ):
+        raise ValueError(
+            "PMADP500: optimization is not available for adaptive /2 plans"
+        )
     if profile is None:
         snap = dict(baseline.profile_snapshot or {})
         if snap:

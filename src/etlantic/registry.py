@@ -223,6 +223,9 @@ class RegistryBundle:
     bindings: dict[str, BindingDescriptor] = field(default_factory=dict)
     secret_providers: dict[str, PluginDescriptor] = field(default_factory=dict)
     engines: dict[str, PluginCapabilities] = field(default_factory=dict)
+    # Loaded portable compilers are retained only for pure analyze() calls;
+    # compile/execute are never invoked by adaptive planning.
+    transform_compilers: dict[str, Any] = field(default_factory=dict)
 
     def register_plugin(self, descriptor: PluginDescriptor) -> None:
         """Register a plugin descriptor."""
@@ -240,6 +243,10 @@ class RegistryBundle:
         """Register an implementation descriptor keyed by transform+engine."""
         key = f"{descriptor.transformation_id}::{descriptor.engine}"
         self.implementations[key] = descriptor
+
+    def register_transform_compiler(self, engine: str, compiler: Any) -> None:
+        """Register a resolved compiler for plan-only support analysis."""
+        self.transform_compilers[str(engine)] = compiler
 
 
 def builtin_stub_registry() -> RegistryBundle:

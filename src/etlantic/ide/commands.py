@@ -213,6 +213,13 @@ def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Id
     else:
         plan = plan_pipeline_like(pipeline, profile=profile_name)
 
+    if getattr(plan, "schema", None) == "etlantic.plan/2":
+        return IdeResult(
+            name="optimize",
+            ok=False,
+            error="PMADP500: optimization is not available for adaptive /2 plans",
+        )
+
     try:
         opt_profile = load_profile(profile_name)
     except Exception:

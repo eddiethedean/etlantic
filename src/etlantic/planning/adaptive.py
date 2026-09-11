@@ -8,8 +8,9 @@ logical graph and the profile's target descriptors, produces the closed
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Any
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
@@ -72,6 +73,22 @@ def _safe_ref(value: Any) -> Any:
     return value
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolvedTarget:
+    """Placement target decorated with immutable discovery facts."""
+
+    target: Any
+    resolved: tuple[dict[str, Any], ...]
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.target, name)
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = dict(self.target.to_dict())
+        payload["resolved_components"] = [dict(item) for item in self.resolved]
+        return payload
+
+
 def _target_identity(target: Any) -> str:
     return _digest(_safe_ref(target.to_dict()))
 
@@ -85,7 +102,7 @@ def build_adaptive_plan(
 ) -> AdaptivePipelinePlan | Any:
     """Build an adaptive plan, or the explicitly configured fallback plan."""
     graph = _graph_for_input(pipeline_cls, definition)
-    selected = _select_graph(graph, selection or context.selection)
+    selected = _canonical_graph(_select_graph(graph, selection or context.selection))
     _validate_scope(selected)
     targets = _inventory(context)
     unknown_overrides = sorted(
@@ -186,6 +203,52 @@ def _graph_for_input(
     return pipeline_cls.build_graph()
 
 
+def _canonical_graph(graph: LogicalGraph) -> LogicalGraph:
+    """Return stable Kahn order with lexical ready-set tie breaking."""
+    nodes = {node.name: node for node in graph.nodes}
+    indegree = {name: 0 for name in nodes}
+    outgoing: dict[str, list[str]] = {name: [] for name in nodes}
+    for edge in graph.edges:
+        if edge.producer_node in nodes and edge.consumer_node in nodes:
+            outgoing[edge.producer_node].append(edge.consumer_node)
+            indegree[edge.consumer_node] += 1
+    ready = [name for name, degree in indegree.items() if degree == 0]
+    heapq.heapify(ready)
+    ordered: list[str] = []
+    while ready:
+        name = heapq.heappop(ready)
+        ordered.append(name)
+        for consumer in sorted(outgoing[name]):
+            indegree[consumer] -= 1
+            if indegree[consumer] == 0:
+                heapq.heappush(ready, consumer)
+    if len(ordered) != len(nodes):
+        ordered = sorted(nodes)
+    position = {name: index for index, name in enumerate(ordered)}
+    edges = tuple(
+        sorted(
+            graph.edges,
+            key=lambda edge: (
+                position.get(edge.producer_node, len(position)),
+                edge.producer_node,
+                edge.producer_port,
+                position.get(edge.consumer_node, len(position)),
+                edge.consumer_node,
+                edge.consumer_port,
+                edge.producer_contract_id or "",
+                edge.consumer_contract_id or "",
+            ),
+        )
+    )
+    return LogicalGraph(
+        pipeline_id=graph.pipeline_id,
+        pipeline_name=graph.pipeline_name,
+        nodes=tuple(nodes[name] for name in ordered),
+        edges=edges,
+        metadata=graph.metadata,
+    )
+
+
 def _select_graph(graph: LogicalGraph, selection: dict[str, Any]) -> LogicalGraph:
     if not selection:
         return graph
@@ -200,7 +263,7 @@ def _select_graph(graph: LogicalGraph, selection: dict[str, Any]) -> LogicalGrap
             selected = graph.node_names()
         if not selected:
             raise ValueError("Selection produced an empty graph.")
-        return slice_graph(graph, selected)
+        return _canonical_graph(slice_graph(graph, selected))
     except ValueError as exc:
         raise _error("PMPLAN501", str(exc), path=("selection",)) from exc
 
@@ -237,6 +300,7 @@ def _inventory(context: PlanningContext) -> tuple[tuple[str, Any, Any], ...]:
     seen_identity: dict[str, str] = {}
     for target_id in profile.eligible_targets:
         target = profile.placement_targets[target_id]
+        target = _ResolvedTarget(target, _resolved_components(target, context))
         identity = _target_identity(target)
         previous = seen_identity.get(identity)
         if previous is not None:
@@ -251,6 +315,62 @@ def _inventory(context: PlanningContext) -> tuple[tuple[str, Any, Any], ...]:
             caps = None
         result.append((target_id, target, caps))
     return tuple(result)
+
+
+def _resolved_components(
+    target: Any, context: PlanningContext
+) -> tuple[dict[str, Any], ...]:
+    """Collect deterministic, redacted facts for each target reference."""
+    refs = {
+        component: getattr(target, component)
+        for component in ("engine", "compiler", "executor", "connector", "resource")
+        if getattr(target, component) is not None
+    }
+    records: list[dict[str, Any]] = []
+    for component, reference in sorted(refs.items()):
+        matches: list[dict[str, Any]] = []
+        for descriptor in context.registry.plugins.values():
+            if reference not in {descriptor.name, descriptor.engine}:
+                continue
+            if component != "engine" and not _plugin_matches_component(
+                descriptor, reference, component
+            ):
+                continue
+            matches.append({"kind": "plugin", **descriptor.to_dict()})
+        for descriptor in context.registry.implementations.values():
+            if component == "compiler" and reference in {
+                descriptor.identity,
+                descriptor.compiler_name,
+                descriptor.engine,
+            }:
+                matches.append({"kind": "implementation", **descriptor.to_dict()})
+        trust = [
+            dict(record)
+            for record in context.plugin_trust_records
+            if reference
+            in {
+                record.get("name"),
+                record.get("distribution"),
+                record.get("package"),
+                record.get("engine"),
+            }
+            and _trust_group_matches_component(record.get("group"), component)
+        ]
+        records.append(
+            {
+                "component": component,
+                "reference": reference,
+                "resolved": sorted(
+                    (_safe_ref(item) for item in matches),
+                    key=lambda item: json.dumps(item, sort_keys=True),
+                ),
+                "trust": sorted(
+                    (_safe_ref(item) for item in trust),
+                    key=lambda item: json.dumps(item, sort_keys=True),
+                ),
+            }
+        )
+    return tuple(records)
 
 
 def _missing_target_references(
@@ -343,6 +463,14 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
         identity = _target_identity(target)
         capability_payload = caps.to_dict() if caps is not None else {}
         cap_fp = _digest(capability_payload)
+        resolved_components = target.to_dict().get("resolved_components", ())
+        evidence_refs = tuple(
+            f"sha256:{_digest(_safe_ref(item))}"
+            for item in resolved_components
+            if isinstance(item, dict)
+        )[:MAX_EVIDENCE]
+        if not evidence_refs:
+            evidence_refs = (f"sha256:{_digest({'target': identity})}",)
         descriptor = TargetDescriptor(
             target_id=target_id,
             identity=identity,
@@ -358,7 +486,7 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
                 "physical_unit": PHYSICAL_UNIT_SCHEMA,
             },
             capability_fingerprint=cap_fp,
-            evidence_refs=(f"etlantic.target/{target_id}",),
+            evidence_refs=evidence_refs,
             metadata={
                 "etlantic.available": caps is not None,
                 "etlantic.required_capabilities": list(target.required_capabilities),
@@ -397,10 +525,19 @@ def _candidate_matrix(
     overrides = context.profile.implementation_overrides
     for node in graph.nodes:
         for target_id, target, caps in targets:
+            # Reserve a deterministic envelope before constructing a record so
+            # an adversarial matrix cannot cross the budget via an oversized
+            # intermediate object.
+            if charged + 4096 > MAX_TRANSIENT_BYTES:
+                raise _error(
+                    "PMADP303",
+                    "Adaptive planner transient budget exceeded.",
+                    path=("adaptive", "candidates"),
+                )
             reasons: list[str] = []
             evidence_items = [
-                f"etlantic.target/{target_id}",
-                f"etlantic.capability/{target.engine}",
+                f"sha256:{_digest({'target': _target_identity(target)})}",
+                f"sha256:{_digest(caps.to_dict() if caps is not None else {})}",
             ]
             if caps is None:
                 reasons.append("PMADP200")
@@ -427,12 +564,67 @@ def _candidate_matrix(
                     or context.profile.portable_transform_policy == "native"
                 ):
                     reasons.append("PMADP120")
-                elif (
-                    target.engine != "local"
-                    and f"{node.transformation_id}::{target.engine}"
-                    not in context.registry.implementations
-                ):
-                    reasons.append("PMADP124")
+                else:
+                    compiler = context.registry.transform_compilers.get(target.engine)
+                    if compiler is None and target.engine == "local":
+                        from etlantic.transform.local_compiler import (
+                            LocalTransformCompiler,
+                        )
+
+                        compiler = LocalTransformCompiler()
+                    if compiler is None:
+                        reasons.append("PMADP124")
+                    else:
+                        try:
+                            from etlantic.transform.compiler import (
+                                TransformPlanningContext,
+                                required_support_failures,
+                            )
+
+                            support = compiler.analyze(
+                                portable.plan,
+                                context=TransformPlanningContext(
+                                    pipeline_id=graph.pipeline_id,
+                                    step_name=node.name,
+                                    profile_name=context.profile.name,
+                                    engine=target.engine,
+                                ),
+                                requirements=portable.requirements,
+                            )
+                            info = compiler.info
+                            target_payload = {
+                                "engine": info.engine,
+                                "compiler": info.name,
+                                "version": info.version,
+                                "protocol": info.compiler_protocol,
+                                "package": info.package or info.name,
+                                "implementation": info.implementation or info.name,
+                            }
+                            summary = support.to_requirement_support(
+                                target=target_payload
+                            )
+                            failures = required_support_failures(summary)
+                            if failures:
+                                findings = {
+                                    item.get("requirement"): item
+                                    for item in summary.get("findings", ())
+                                }
+                                for requirement in failures:
+                                    reasons.append(
+                                        str(
+                                            findings.get(requirement, {}).get(
+                                                "reason_code", "PMADP124"
+                                            )
+                                        )
+                                    )
+                            if summary.get("fingerprint"):
+                                evidence_items.append(str(summary["fingerprint"]))
+                            if info.evidence_fingerprint:
+                                evidence_items.append(info.evidence_fingerprint)
+                        except Exception:
+                            # Analyzer failures are an unknown capability, never
+                            # an optimistic eligibility result.
+                            reasons.append("PMADP124")
             if node.kind is NodeKind.STEP:
                 implementation = context.registry.implementations.get(
                     f"{node.transformation_id}::{target.engine}"
@@ -503,7 +695,13 @@ def _candidate_matrix(
 
 def _fallback_allowed(candidates: tuple[CandidateRecord, ...]) -> bool:
     """Fallback is limited to ordinary capability/implementation infeasibility."""
-    hard = {"PMADP101", "PMADP102", "PMADP124", "PMADP125"}
+    hard = {
+        "PMADP101",
+        "PMADP102",
+        "PMADP124",
+        "PMADP125",
+        "PMADP200",
+    }
     rejected = [code for candidate in candidates for code in candidate.reason_codes]
     return not any(code in hard for code in rejected)
 
@@ -515,13 +713,19 @@ def _handoff_contract(
     context: PlanningContext,
 ) -> dict[str, str]:
     """Build the complete canonical key for directional handoff evidence."""
+    source_identity_target = getattr(source_target, "target", source_target)
+    destination_identity_target = getattr(
+        destination_target, "target", destination_target
+    )
     source = source_target.engine
     destination = destination_target.engine
     source_caps = context.registry.engines.get(source)
     destination_caps = context.registry.engines.get(destination)
     return {
-        "producer_target_identity": _target_identity(source_target),
-        "consumer_target_identity": _target_identity(destination_target),
+        # Handoff evidence is authored against profile target descriptors. The
+        # physical units and inventory separately carry resolved identities.
+        "producer_target_identity": _target_identity(source_identity_target),
+        "consumer_target_identity": _target_identity(destination_identity_target),
         "schema_fingerprint": _digest(
             {
                 "producer_contract_id": edge.producer_contract_id,
@@ -554,6 +758,13 @@ def _handoff_evidence(
     fingerprints; engine-pair declarations alone are not proof.
     """
     contract = _handoff_contract(source_target, destination_target, edge, context)
+    contracts = [contract]
+    # Preserve compatibility with evidence authored before inventory
+    # decoration while preferring the resolved identities for new plans.
+    raw_source = getattr(source_target, "target", None)
+    raw_destination = getattr(destination_target, "target", None)
+    if raw_source is not None and raw_destination is not None:
+        contracts.append(_handoff_contract(raw_source, raw_destination, edge, context))
     refs: list[str] = []
     for descriptor in (
         *context.registry.implementations.values(),
@@ -567,7 +778,10 @@ def _handoff_evidence(
         for record in records:
             if not isinstance(record, dict):
                 continue
-            if any(record.get(key) != value for key, value in contract.items()):
+            if not any(
+                all(record.get(key) == value for key, value in candidate.items())
+                for candidate in contracts
+            ):
                 continue
             ref = record.get("evidence_ref") or record.get("identity")
             if isinstance(ref, str) and _is_content_evidence_ref(ref):
@@ -1138,6 +1352,11 @@ def _physical_dag(
             "metadata": {
                 "etlantic.engine": target.engine,
                 "etlantic.region": region_by_node.get(node.name),
+                "etlantic.logical_predecessors": sorted(
+                    edge.producer_node
+                    for edge in graph.edges
+                    if edge.consumer_node == node.name
+                ),
             },
         }
     for edge in graph.edges:

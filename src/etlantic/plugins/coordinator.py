@@ -10,6 +10,7 @@ from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.plugins.specs import PluginGroupSpec
 from etlantic.profile import Profile
 from etlantic.registry import RegistryBundle
+from etlantic.runtime.logging import redact_message
 
 
 def profile_plugin_key(profile: Profile) -> str:
@@ -236,7 +237,7 @@ class PluginDiscoveryCoordinator:
                         severity=Severity.ERROR,
                         message=(
                             f"Plugin discovery failed for "
-                            f"{spec.entry_point_group}: {exc}"
+                            f"{spec.entry_point_group}: {redact_message(str(exc))}"
                         ),
                         path=("plugin", spec.entry_point_group),
                         phase="plugin_load",
@@ -258,7 +259,7 @@ class PluginDiscoveryCoordinator:
                     Diagnostic(
                         code="PMPLUG422",
                         severity=Severity.ERROR,
-                        message=f"Spark provider discovery failed: {exc}",
+                        message=f"Spark provider discovery failed: {redact_message(str(exc))}",
                         path=("plugin", "spark_providers"),
                         phase="plugin_load",
                     )
@@ -278,7 +279,7 @@ class PluginDiscoveryCoordinator:
                     Diagnostic(
                         code="PMPLUG424",
                         severity=Severity.ERROR,
-                        message=f"Resource provider discovery failed: {exc}",
+                        message=f"Resource provider discovery failed: {redact_message(str(exc))}",
                         path=("plugin", "resource_providers"),
                         phase="plugin_load",
                     )
@@ -310,7 +311,7 @@ class PluginDiscoveryCoordinator:
                     Diagnostic(
                         code="PMPLUG423",
                         severity=Severity.ERROR,
-                        message=f"Transform compiler discovery failed: {exc}",
+                        message=f"Transform compiler discovery failed: {redact_message(str(exc))}",
                         path=("plugin", "transform_compiler"),
                         phase="plugin_load",
                     )
@@ -487,6 +488,59 @@ def discover_planning_plugins(
                         metadata={
                             "etlantic.entry_point_group": group,
                             "etlantic.authorization": "allowed",
+                        },
+                    )
+                )
+
+        # Adaptive inventory is target-scoped but must include every declared
+        # lifecycle component, including executor and resource-provider trust
+        # records.  Runtime discovery remains disabled for ordinary planning.
+        for group, kind, key_fn in (
+            ("etlantic.orchestrator_plugins", "orchestrator", _generic_key),
+            ("etlantic.resource_providers", "resource_provider", _provider_key),
+        ):
+            lifecycle = discover_evaluate_authorize_load(
+                group,
+                profile=profile,
+                key_fn=key_fn,
+                allowed_names=target_engines,
+            )
+            trust_records.extend(lifecycle.trust_records)
+            diagnostics.extend(lifecycle.diagnostics)
+            trust_by_name = {
+                str(record.get("name")): record for record in lifecycle.trust_records
+            }
+            for name in sorted(lifecycle.loaded):
+                plugin = lifecycle.loaded[name]
+                info = getattr(plugin, "info", None)
+                record = trust_by_name.get(name, {})
+                capabilities = getattr(info, "capabilities", None)
+                if capabilities is None and hasattr(plugin, "capabilities"):
+                    try:
+                        capabilities = plugin.capabilities()
+                    except Exception:
+                        capabilities = None
+                registry.register_plugin(
+                    PluginDescriptor(
+                        name=str(getattr(info, "name", None) or name),
+                        kind=kind,
+                        version=str(
+                            getattr(info, "version", None)
+                            or record.get("version")
+                            or "0.0.0"
+                        ),
+                        engine=str(
+                            getattr(info, "engine", None)
+                            or record.get("engine")
+                            or name
+                        ),
+                        capabilities=capabilities,
+                        metadata={
+                            "etlantic.entry_point_group": group,
+                            "etlantic.authorization": "allowed",
+                            "etlantic.package": getattr(info, "package", None)
+                            or record.get("package"),
+                            "etlantic.digest": record.get("digest"),
                         },
                     )
                 )
