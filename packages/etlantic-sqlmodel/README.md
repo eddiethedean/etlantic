@@ -52,7 +52,7 @@ from etlantic_sqlmodel.control_plane import (
 from etlantic_sqlmodel.migrations import apply_migrations
 
 engine = create_sqlite_engine("sqlite:///cp.db")
-apply_migrations(engine)  # CP2 registry tables (001_registry_cp2)
+apply_migrations(engine)  # all provider-owned CP1–CP4 tables
 registry = SqlModelRegistryProvider(engine)
 definitions = SQLModelDefinitionRepository(engine)
 submissions = SQLModelSubmissionStore(engine)

@@ -119,7 +119,7 @@ Public surface classes:
 |---|---|
 | `etlantic.schedule/1` + `etlantic.firing/1` + injectable clock | Available (`etlantic.control_plane`) |
 | `ScheduleStore` + `MemoryScheduleStore` (tests/dev) | Available; production rejects memory (`PMSVC100`) |
-| SQLModel schedules + migration `004_schedules_0_47` | Available (`etlantic-sqlmodel`) |
+| SQLModel CP1–CP4 stores + migration `005_cp1_reference` | Available (`etlantic-sqlmodel`) |
 | Scheduler leader + due-timer loop (`etlantic scheduler serve`) | Available |
 | Execution host (`etlantic worker serve`) wrapping CP3 | Available; no FastAPI import |
 | FastAPI `/v1/schedules*` + definition schedules + health | Available (`etlantic-fastapi`; gateway only) |
@@ -142,7 +142,7 @@ Public surface classes:
 | Attestations + signed schema observations | Available |
 | `AuditEvidenceStore` hash chain | Available |
 | FastAPI `/v1/policy|approvals|quotas|erasure|audit|attestations|objectives` | Available (`etlantic-fastapi`) |
-| SQLModel CP4 snapshot stores + migration `003_cp4_governance` | Available (`etlantic-sqlmodel`; superseded head is `004_schedules_0_47`) |
+| SQLModel CP4 snapshot stores + migration `003_cp4_governance` | Available (`etlantic-sqlmodel`; superseded head is `005_cp1_reference`) |
 | CP4 conformance + outage matrix evidence | Available (`etlantic.testing` / `check_cp4_chaos.py`) |
 
 ### Control-plane durable work (CP3)

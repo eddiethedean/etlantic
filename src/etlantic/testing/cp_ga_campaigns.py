@@ -80,7 +80,7 @@ def run_compat_campaign() -> dict[str, Any]:
         cases.append(
             {
                 "id": "sqlmodel_migrations_fresh",
-                "status": "pass" if ver == "004_schedules_0_47" else "fail",
+                "status": "pass" if ver == "005_cp1_reference" else "fail",
                 "version": ver,
             }
         )
