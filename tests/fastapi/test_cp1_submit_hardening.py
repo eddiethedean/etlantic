@@ -153,8 +153,8 @@ def test_submit_rejects_adaptive_plan_before_acceptance() -> None:
 
     assert response.status_code >= 400, response.text
     assert "PMADP500" in response.text
-    assert subs.poll_accepted(_ctx(), limit=10) == ()
-    assert events.list_after_cursor(_ctx(), None, limit=10) == ()
+    assert not subs.poll_accepted(_ctx(), limit=10)
+    assert not events.list_after_cursor(_ctx(), None, limit=10)
 
 
 def test_poll_accepted_scoped_to_caller_tenant() -> None:
