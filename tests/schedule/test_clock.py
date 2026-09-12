@@ -54,6 +54,19 @@ def test_catch_up_bounded() -> None:
     assert len(found) == 3
 
 
+@pytest.mark.parametrize("catch_up_max", [0, 10])
+def test_schedule_spec_round_trip_preserves_catch_up_limit(catch_up_max: int) -> None:
+    spec = ScheduleSpec(
+        kind="interval",
+        interval_seconds=60,
+        catch_up_max=catch_up_max,
+    )
+
+    restored = ScheduleSpec.from_dict(spec.to_dict())
+
+    assert restored.catch_up_max == catch_up_max
+
+
 def test_america_new_york_spring_forward_skips_missing_hour() -> None:
     """2026-03-08 02:00 local does not exist in America/New_York."""
     spec = ScheduleSpec(kind="cron", cron="30 2 * * *", timezone="America/New_York")
