@@ -155,10 +155,17 @@ class InMemoryStreamSink:
     pending: list[str] = field(default_factory=list)
 
     def write(self, envelope: ChangeEnvelopeMetadata) -> None:
+        if (
+            envelope.source_position in self.committed
+            or envelope.source_position in self.pending
+        ):
+            return
         self.pending.append(envelope.source_position)
 
     def ack(self) -> None:
-        self.committed.extend(self.pending)
+        for source_position in self.pending:
+            if source_position not in self.committed:
+                self.committed.append(source_position)
         self.pending.clear()
 
     def crash(self) -> None:

@@ -24,7 +24,11 @@ from etlantic.streaming.errors import (
     RecordErrorOutcome,
     RecordErrorPolicy,
 )
-from etlantic.streaming.fixtures import InMemoryRecord, InMemoryStreamSource
+from etlantic.streaming.fixtures import (
+    InMemoryRecord,
+    InMemoryStreamSink,
+    InMemoryStreamSource,
+)
 from etlantic.testing.optimizer_conformance import _minimal_plan
 
 
@@ -157,3 +161,41 @@ def test_crash_does_not_advance_uncommitted_poison() -> None:
     assert "secret" not in str(report)
     assert src.committed_cursor == 1
     assert src.cursor == 1
+
+
+def test_sink_ack_is_idempotent_after_replay() -> None:
+    envelope = ChangeEnvelopeMetadata(
+        op=ChangeOp.INSERT,
+        source_position="1",
+        order_key="1",
+        schema_identity="s",
+    )
+    sink = InMemoryStreamSink("sink")
+
+    sink.write(envelope)
+    sink.write(envelope)
+    assert sink.pending == ["1"]
+    sink.ack()
+    sink.write(envelope)
+    sink.ack()
+
+    assert sink.committed == ["1"]
+    assert sink.pending == []
+
+
+def test_sink_crash_before_ack_allows_one_retry() -> None:
+    envelope = ChangeEnvelopeMetadata(
+        op=ChangeOp.INSERT,
+        source_position="1",
+        order_key="1",
+        schema_identity="s",
+    )
+    sink = InMemoryStreamSink("sink")
+
+    sink.write(envelope)
+    sink.crash()
+    sink.write(envelope)
+    sink.ack()
+
+    assert sink.committed == ["1"]
+    assert sink.pending == []
