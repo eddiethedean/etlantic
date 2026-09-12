@@ -31,6 +31,7 @@ from etlantic_sql.unicode_data import (
     CASE_IGNORABLE_CLASS,
     CASED_CLASS,
     EXPANSIONS,
+    SIMPLE_RANGES,
 )
 
 _BINARY_SQL = {
@@ -713,6 +714,24 @@ def _unicode_expansions(mode: str) -> tuple[tuple[str, str], ...]:
     return EXPANSIONS[mode]
 
 
+@lru_cache(maxsize=2)
+def _unicode_simple_case_clauses(mode: str) -> tuple[str, ...]:
+    """Return SQL clauses for every pinned one-codepoint case mapping."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    clauses = []
+    for start, end, offset in SIMPLE_RANGES[mode]:
+        condition = (
+            f"ASCII(etlantic_chars.ch) = {start}"
+            if start == end
+            else f"ASCII(etlantic_chars.ch) BETWEEN {start} AND {end}"
+        )
+        clauses.append(
+            f"WHEN {condition} THEN CHR(ASCII(etlantic_chars.ch) + {offset})"
+        )
+    return tuple(clauses)
+
+
 def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
@@ -752,11 +771,7 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     into code points keeps execution in SQL while applying the full mapping.
     Lowercase sigma additionally needs the default context-sensitive final form.
     """
-    simple = mode.upper()
-    clauses = [
-        f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
-        for source, mapped in _unicode_expansions(mode)
-    ]
+    clauses: list[str] = []
     if mode == "lower":
         text = f"CAST({value} AS TEXT)"
         ignorable = _postgres_case_ignorable_class()
@@ -781,10 +796,15 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
             f"LEFT({suffix}, 1) !~ {_sql_literal(cased)}) "
             "THEN 'ς'"
         )
+    clauses.extend(
+        f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
+        for source, mapped in _unicode_expansions(mode)
+    )
+    clauses.extend(_unicode_simple_case_clauses(mode))
     cases = " ".join(clauses)
     return (
         "(SELECT COALESCE(STRING_AGG(CASE "
-        f"{cases} ELSE {simple}(etlantic_chars.ch) END, '' "
+        f"{cases} ELSE etlantic_chars.ch END, '' "
         "ORDER BY etlantic_chars.ordinality), '') "
         f"FROM REGEXP_SPLIT_TO_TABLE(CAST({value} AS TEXT), '') WITH ORDINALITY "
         "AS etlantic_chars(ch, ordinality))"

@@ -244,8 +244,16 @@ jobs:
         run: uv run python examples/dataframe_parity.py ${{ matrix.engine }}
 
   sql:
-    name: SQL plugin (arm64)
-    runs-on: ubuntu-24.04-arm
+    name: SQL plugin (${{ matrix.architecture }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            architecture: x86_64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
     services:
       postgres:
         image: postgres:16
@@ -303,8 +311,10 @@ jobs:
           uv run pytest -q tests/portable_conformance -m sql
 
       - name: PostgreSQL Unicode sigma evidence
+        if: matrix.architecture == 'arm64'
         env:
           ETLANTIC_SQL_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_REQUIRE_ARM64_POSTGRES_EVIDENCE: "1"
         run: uv run pytest -q -s tests/portable_conformance/test_review_blockers.py -m sql -k final_rel_003_postgresql_arm64_locale_evidence
 
       - name: Runnable SQL examples

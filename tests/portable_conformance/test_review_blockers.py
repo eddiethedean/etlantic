@@ -215,6 +215,8 @@ def test_final_rel_003_postgresql_uses_complete_case_ignorable_context() -> None
 def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
     """Record the PostgreSQL environment used for the sigma parity proof."""
     _require_postgresql()
+    if os.environ.get("ETLANTIC_REQUIRE_ARM64_POSTGRES_EVIDENCE") != "1":
+        pytest.skip("ARM64 evidence is collected only by the dedicated CI step")
     pytest.importorskip("sqlalchemy")
     import json
     import platform

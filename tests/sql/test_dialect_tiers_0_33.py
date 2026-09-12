@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 pytest.importorskip("sqlalchemy")
@@ -96,6 +98,42 @@ def test_postgresql_sigma_context_does_not_use_locale_case_mapping() -> None:
     assert " !~ '" in compiled.text
     assert "UPPER(RIGHT(" not in compiled.text
     assert "LOWER(RIGHT(" not in compiled.text
+
+
+def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
+    """Unicode sigma mapping must not depend on PostgreSQL's C locale."""
+    if not os.environ.get("ETLANTIC_SQL_URL", "").startswith("postgresql"):
+        pytest.skip("PostgreSQL collation verification requires ETLANTIC_SQL_URL")
+    from sqlalchemy import create_engine, text
+
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    compiled = compiler.compile_query(
+        SqlQuery(
+            source=RelationRef(name="sigma_c_033"),
+            columns=(
+                AliasedExpr(
+                    CallExpr("dtcs:lower", (col("name"),)),
+                    "lower_name",
+                ),
+            ),
+        ),
+        context=SqlExecutionContext(
+            run_id="r", pipeline_id="p", plan_id="plan", step_name="lower"
+        ),
+    )
+    engine = create_engine(os.environ["ETLANTIC_SQL_URL"])
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text('CREATE TEMP TABLE sigma_c_033 (name TEXT COLLATE "C")')
+            )
+            connection.execute(text("INSERT INTO sigma_c_033 VALUES ('A-Σ'), ('AΣ-B')"))
+            rows = connection.execute(
+                text(compiled.text), compiled.metadata["_bound_params"]
+            ).all()
+    finally:
+        engine.dispose()
+    assert rows == [("a-\u03c3",), ("a\u03c2-b",)]
 
 
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
