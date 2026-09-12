@@ -95,7 +95,11 @@ class FakeRemoteHost:
 
     def evaluate_placement(self, request: Mapping[str, Any]) -> dict[str, Any]:
         required = set(request.get("required_capabilities") or ())
-        have = {"map", "branch", "stream"} if self.capabilities.map else set()
+        have = {
+            name
+            for name in ("map", "branch", "stream")
+            if getattr(self.capabilities, name)
+        }
         if not required.issubset(have | {"k8s", "spark-connect", "cpu"}):
             raise ValueError(
                 res_diagnostic(

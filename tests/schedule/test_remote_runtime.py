@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from etlantic.control_plane.remote_runtime import FakeRemoteHost
+from etlantic.control_plane.remote_runtime import FakeRemoteHost, RemoteCapabilities
 
 
 def test_negotiate_submit_and_recover() -> None:
@@ -71,6 +71,21 @@ def test_placement_rejects_before_transfer() -> None:
     with pytest.raises(ValueError, match="PMRES110"):
         host.evaluate_placement({"required_capabilities": ["gpu"]})
     decision = host.evaluate_placement({"required_capabilities": ["map"]})
+    assert decision["transferred"] is False
+
+
+def test_placement_uses_independent_dynamic_capabilities() -> None:
+    host = FakeRemoteHost(
+        capabilities=RemoteCapabilities(map=True, branch=False, stream=False)
+    )
+    for capability in ("branch", "stream"):
+        with pytest.raises(ValueError, match="PMRES110"):
+            host.evaluate_placement({"required_capabilities": [capability]})
+
+    branch_host = FakeRemoteHost(
+        capabilities=RemoteCapabilities(map=False, branch=True, stream=False)
+    )
+    decision = branch_host.evaluate_placement({"required_capabilities": ["branch"]})
     assert decision["transferred"] is False
 
 
