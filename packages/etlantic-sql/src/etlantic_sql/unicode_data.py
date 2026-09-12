@@ -1,5 +1,10 @@
 """Pinned Unicode 14.0.0 data used by the SQL compiler."""
 
+import hashlib
+import json
+import re
+from functools import lru_cache
+
 # These literals intentionally contain Unicode characters.
 # ruff: noqa: RUF001
 
@@ -1473,3 +1478,59 @@ EXPANSIONS = {
         ("ﬗ", "ՄԽ"),
     ),
 }
+
+
+@lru_cache(maxsize=2)
+def _unicode_case_mapping(mode: str) -> dict[str, str]:
+    """Build the pinned one-codepoint and expansion mapping for SQLite."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    mapping = {
+        chr(codepoint): chr(codepoint + offset)
+        for start, end, offset in SIMPLE_RANGES[mode]
+        for codepoint in range(start, end + 1)
+    }
+    mapping.update(dict(EXPANSIONS[mode]))
+    return mapping
+
+
+_CASE_IGNORABLE_TRAILING = re.compile(CASE_IGNORABLE_CLASS + r"+$")
+_CASE_IGNORABLE_LEADING = re.compile(r"^" + CASE_IGNORABLE_CLASS + r"+")
+_CASED = re.compile(CASED_CLASS)
+
+
+def unicode_case(value: str, *, mode: str) -> str:
+    """Apply pinned Unicode default casing to a string for SQLite execution."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    mapping = _unicode_case_mapping(mode)
+    output: list[str] = []
+    for index, character in enumerate(value):
+        if mode == "lower" and character == "Σ":
+            prefix = _CASE_IGNORABLE_TRAILING.sub("", value[:index])
+            suffix = _CASE_IGNORABLE_LEADING.sub("", value[index + 1 :])
+            if (
+                prefix
+                and _CASED.fullmatch(prefix[-1])
+                and (not suffix or not _CASED.fullmatch(suffix[0]))
+            ):
+                output.append("ς")
+                continue
+        output.append(mapping.get(character, character))
+    return "".join(output)
+
+
+UNICODE_DATA_FINGERPRINT = hashlib.sha256(
+    json.dumps(
+        {
+            "version": UNICODE_DATA_VERSION,
+            "case_ignorable": CASE_IGNORABLE_CLASS,
+            "cased": CASED_CLASS,
+            "simple": SIMPLE_RANGES,
+            "expansions": EXPANSIONS,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+).hexdigest()

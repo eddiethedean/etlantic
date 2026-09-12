@@ -279,6 +279,28 @@ def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
     )
 
 
+@pytest.mark.sql
+def test_final_rel_003_sqlite_uses_pinned_unicode_context(monkeypatch) -> None:
+    """SQLite casing must not vary with the host Python Unicode database."""
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = _project_case(
+        "final_rel_003_sqlite_pinned_unicode_context",
+        [("value", _call("dtcs:lower", _field("text")))],
+        rows=[
+            {"text": "AΣ\u0eceB"},
+            {"text": "A-\U0001e900"},
+        ],
+        expected=[
+            {"value": "aς\u0eceb"},
+            {"value": "a-\U0001e922"},
+        ],
+    )
+    _run(create_transform_compiler(), case)
+
+
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:
     """A field-derived bound cannot establish the non-negative invariant."""
     plan = _project_case(

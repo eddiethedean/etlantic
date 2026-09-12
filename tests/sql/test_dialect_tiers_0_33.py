@@ -98,6 +98,8 @@ def test_postgresql_sigma_context_does_not_use_locale_case_mapping() -> None:
     assert " !~ '" in compiled.text
     assert "UPPER(RIGHT(" not in compiled.text
     assert "LOWER(RIGHT(" not in compiled.text
+    assert "TRANSLATE(" in compiled.text
+    assert "ASCII(etlantic_chars.ch)" not in compiled.text
 
 
 def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
@@ -141,10 +143,11 @@ def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
     """Unicode-dependent SQL lowering must identify its Unicode data version."""
     from etlantic_sql.transform_compiler import create_transform_compiler
-    from etlantic_sql.unicode_data import UNICODE_DATA_VERSION
+    from etlantic_sql.unicode_data import UNICODE_DATA_FINGERPRINT, UNICODE_DATA_VERSION
 
     compiler = create_transform_compiler()
     assert compiler.info.environment["unicode"] == UNICODE_DATA_VERSION
+    assert compiler.info.environment["unicode_fingerprint"] == UNICODE_DATA_FINGERPRINT
 
 
 def test_model_create_and_pk_validation_sqlite() -> None:

@@ -36,7 +36,11 @@ from etlantic_sql.lowering.actions import (
     CLAIMED_ACTIONS,
     apply_action_to_query,
 )
-from etlantic_sql.unicode_data import UNICODE_DATA_VERSION
+from etlantic_sql.unicode_data import (
+    UNICODE_DATA_FINGERPRINT,
+    UNICODE_DATA_VERSION,
+    unicode_case,
+)
 
 __version__ = "0.50.0"
 
@@ -98,12 +102,24 @@ def _environment_identity(dialect: str | None = None) -> dict[str, str]:
     """Return the SQL runtime identity used for planning evidence."""
     if dialect is None:
         url = os.environ.get("ETLANTIC_SQL_URL", "")
-        dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "unknown"
-    return {
-        "dialect": dialect or "unknown",
+        dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "sqlite"
+    dialect = str(dialect or "sqlite").split("+", 1)[0].lower()
+    environment = {
+        "dialect": dialect,
         "runtime": "sqlalchemy",
-        "unicode": UNICODE_DATA_VERSION,
     }
+    if dialect in {"sqlite", "postgresql"}:
+        environment.update(
+            {
+                "unicode": UNICODE_DATA_VERSION,
+                "unicode_fingerprint": UNICODE_DATA_FINGERPRINT,
+            }
+        )
+    elif dialect in {"unknown", ""}:
+        environment["unicode"] = "unknown"
+    else:
+        environment["unicode"] = "backend-defined"
+    return environment
 
 
 class SqlTransformCompiler:
@@ -131,14 +147,14 @@ class SqlTransformCompiler:
             name="etlantic-sql",
             version=__version__,
             engine="sql",
-            implementation="sql-native/1",
+            implementation="sql-native/2",
             package="etlantic-sql",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
             evidence_fingerprint=capabilities_fingerprint(
                 caps,
                 compiler="etlantic-sql",
-                implementation="sql-native/1",
+                implementation="sql-native/2",
                 package="etlantic-sql",
                 version=__version__,
                 engine="sql",
@@ -282,13 +298,21 @@ class SqlTransformCompiler:
                 driver.create_function(
                     "ETLANTIC_UNICODE_LOWER",
                     1,
-                    lambda value: None if value is None else str(value).lower(),
+                    lambda value: (
+                        None
+                        if value is None
+                        else unicode_case(str(value), mode="lower")
+                    ),
                     deterministic=True,
                 )
                 driver.create_function(
                     "ETLANTIC_UNICODE_UPPER",
                     1,
-                    lambda value: None if value is None else str(value).upper(),
+                    lambda value: (
+                        None
+                        if value is None
+                        else unicode_case(str(value), mode="upper")
+                    ),
                     deterministic=True,
                 )
                 driver.create_aggregate("ETLANTIC_DECIMAL_SUM", 1, _DecimalSumAggregate)

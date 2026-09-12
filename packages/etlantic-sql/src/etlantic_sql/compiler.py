@@ -715,21 +715,34 @@ def _unicode_expansions(mode: str) -> tuple[tuple[str, str], ...]:
 
 
 @lru_cache(maxsize=2)
-def _unicode_simple_case_clauses(mode: str) -> tuple[str, ...]:
-    """Return SQL clauses for every pinned one-codepoint case mapping."""
+def _unicode_simple_case_translation(
+    mode: str, value: str = "etlantic_chars.ch"
+) -> str:
+    """Return a compact SQL translation for pinned simple case mappings."""
     if mode not in {"lower", "upper"}:
         raise ValueError(f"Unsupported Unicode case mode {mode!r}")
-    clauses = []
+    sources: list[str] = []
+    targets: list[str] = []
     for start, end, offset in SIMPLE_RANGES[mode]:
-        condition = (
-            f"ASCII(etlantic_chars.ch) = {start}"
-            if start == end
-            else f"ASCII(etlantic_chars.ch) BETWEEN {start} AND {end}"
+        sources.extend(chr(codepoint) for codepoint in range(start, end + 1))
+        targets.extend(chr(codepoint + offset) for codepoint in range(start, end + 1))
+    return (
+        f"TRANSLATE({value}, {_sql_literal(''.join(sources))}, "
+        f"{_sql_literal(''.join(targets))})"
+    )
+
+
+@lru_cache(maxsize=4)
+def _unicode_case_translation(mode: str, value: str) -> str:
+    """Return whole-string pinned casing for inputs without contextual sigma."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    translated = _unicode_simple_case_translation(mode, value)
+    for source, mapped in _unicode_expansions(mode):
+        translated = (
+            f"REPLACE({translated}, {_sql_literal(source)}, {_sql_literal(mapped)})"
         )
-        clauses.append(
-            f"WHEN {condition} THEN CHR(ASCII(etlantic_chars.ch) + {offset})"
-        )
-    return tuple(clauses)
+    return translated
 
 
 def _sql_literal(value: str) -> str:
@@ -800,14 +813,31 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
         f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
         for source, mapped in _unicode_expansions(mode)
     )
-    clauses.extend(_unicode_simple_case_clauses(mode))
     cases = " ".join(clauses)
-    return (
+    simple_character = _unicode_simple_case_translation(mode)
+    split_case = (
         "(SELECT COALESCE(STRING_AGG(CASE "
-        f"{cases} ELSE etlantic_chars.ch END, '' "
+        f"{cases} ELSE {simple_character} END, '' "
         "ORDER BY etlantic_chars.ordinality), '') "
         f"FROM REGEXP_SPLIT_TO_TABLE(CAST({value} AS TEXT), '') WITH ORDINALITY "
         "AS etlantic_chars(ch, ordinality))"
+    )
+    if mode == "lower":
+        simple = _unicode_simple_case_translation(mode, text)
+        special = " OR ".join(
+            f"POSITION({_sql_literal(source)} IN ({text})) > 0"
+            for source, _ in (("Σ", "ς"), *EXPANSIONS[mode])
+        )
+        return f"COALESCE(CASE WHEN {special} THEN {split_case} ELSE {simple} END, '')"
+    text = f"CAST({value} AS TEXT)"
+    special = " OR ".join(
+        f"POSITION({_sql_literal(source)} IN ({text})) > 0"
+        for source, _ in EXPANSIONS[mode]
+    )
+    return (
+        "COALESCE(CASE "
+        f"WHEN {special} THEN {_unicode_case_translation(mode, text)} "
+        f"ELSE {_unicode_simple_case_translation(mode, text)} END, '')"
     )
 
 
