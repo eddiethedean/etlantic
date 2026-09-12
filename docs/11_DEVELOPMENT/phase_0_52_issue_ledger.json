@@ -1,0 +1,739 @@
+{
+  "schema": "etlantic.adaptive-issue-ledger/1",
+  "phase": "0.52",
+  "authority": "docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md",
+  "scope_note": "Entries record the approved 0.52 planning contract, not blanket closure of historical multi-release GitHub issues. The verifier requires executed passing proofs; status alone is not release evidence.",
+  "deferred": [
+    {
+      "phase": "0.53",
+      "scope": "Physical execution, admission, runtime recovery and artifact lifecycle enforcement (issues 69–73, 88–90). Planning records and fail-closed consumer rejection remain required in 0.52."
+    },
+    {
+      "phase": "0.54",
+      "scope": "Third-party graduation and heterogeneous runtime conformance (issues 78–81, 95). Core planner determinism remains required in 0.52."
+    }
+  ],
+  "issues": [
+    {
+      "issue": 32,
+      "scope": "Trusted target-scoped inventory, deterministic identity, unavailable-reference rejection, redacted metadata.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-004",
+        "AC-052-005",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_inventory",
+        "src/etlantic/planning/adaptive.py:_inventory_model"
+      ],
+      "verification": [
+        "test_final_052_001_missing_target_reference_is_negative",
+        "test_adaptive_artifacts_redact_absolute_target_resources",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 33,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 34,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 35,
+      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-002",
+        "AC-052-010"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_regions"
+      ],
+      "verification": [
+        "test_adaptive_regions_are_maximal_and_unfused_without_proof",
+        "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 36,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 38,
+      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-013",
+        "AC-052-014",
+        "AC-052-015",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/plan/explain.py:explain_plan",
+        "src/etlantic/plan/diff.py:diff_plans"
+      ],
+      "verification": [
+        "test_adaptive_explain_uses_the_bounded_summary",
+        "test_final_052_018_explain_exact_four_mib_boundary",
+        "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
+        "test_adaptive_surface_projections_share_plan_identity",
+        "test_adaptive_artifacts_redact_absolute_target_resources"
+      ]
+    },
+    {
+      "issue": 45,
+      "scope": "Trusted target-scoped inventory, deterministic identity, unavailable-reference rejection, redacted metadata.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-004",
+        "AC-052-005",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_inventory",
+        "src/etlantic/planning/adaptive.py:_inventory_model"
+      ],
+      "verification": [
+        "test_final_052_001_missing_target_reference_is_negative",
+        "test_adaptive_artifacts_redact_absolute_target_resources",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 46,
+      "scope": "Trusted target-scoped inventory, deterministic identity, unavailable-reference rejection, redacted metadata.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-004",
+        "AC-052-005",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_inventory",
+        "src/etlantic/planning/adaptive.py:_inventory_model"
+      ],
+      "verification": [
+        "test_final_052_001_missing_target_reference_is_negative",
+        "test_adaptive_artifacts_redact_absolute_target_resources",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 47,
+      "scope": "Trusted target-scoped inventory, deterministic identity, unavailable-reference rejection, redacted metadata.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-004",
+        "AC-052-005",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_inventory",
+        "src/etlantic/planning/adaptive.py:_inventory_model"
+      ],
+      "verification": [
+        "test_final_052_001_missing_target_reference_is_negative",
+        "test_adaptive_artifacts_redact_absolute_target_resources",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 48,
+      "scope": "Contract-bound directional handoff evidence; unknown or reverse evidence cannot authorize a transfer.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-005",
+        "AC-052-011"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_handoff_evidence",
+        "src/etlantic/planning/adaptive.py:_physical_dag"
+      ],
+      "verification": [
+        "test_final_052_002_generic_engine_pair_is_not_handoff_evidence",
+        "test_adaptive_cross_target_accepts_fully_bound_content_evidence",
+        "test_adaptive_cross_target_requires_directional_handoff_evidence"
+      ]
+    },
+    {
+      "issue": 49,
+      "scope": "Independent canonical predicate/projection advisory proposals from static source-addressed connector evidence, not engine negotiation or generic flags.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-005"
+      ],
+      "implementation": [
+        "src/etlantic/optimization/passes.py:PushdownPass"
+      ],
+      "verification": [
+        "test_final_052_015_pushdown_requires_independent_connector_evidence"
+      ]
+    },
+    {
+      "issue": 50,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 51,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 52,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 53,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 54,
+      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-003",
+        "AC-052-006"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_candidate_matrix",
+        "src/etlantic/plan/adaptive_model.py:CandidateRecord"
+      ],
+      "verification": [
+        "test_candidate_matrix_is_canonical_node_then_target_order",
+        "test_candidate_matrix_rejects_duplicate_node_target_cell",
+        "test_adaptive_candidate_analysis_is_analyze_only",
+        "test_final_052_001_target_limit_precedes_plugin_discovery"
+      ]
+    },
+    {
+      "issue": 55,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 56,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 57,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 58,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 59,
+      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-001",
+        "AC-052-007",
+        "AC-052-008"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_objective",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_003_fallback_report_and_integrity",
+        "test_adaptive_solver_matches_seeded_oracle_corpus",
+        "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
+      ]
+    },
+    {
+      "issue": 60,
+      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-002",
+        "AC-052-010"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_regions"
+      ],
+      "verification": [
+        "test_adaptive_regions_are_maximal_and_unfused_without_proof",
+        "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 61,
+      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-002",
+        "AC-052-010"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_regions"
+      ],
+      "verification": [
+        "test_adaptive_regions_are_maximal_and_unfused_without_proof",
+        "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 62,
+      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-002",
+        "AC-052-010"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_regions"
+      ],
+      "verification": [
+        "test_adaptive_regions_are_maximal_and_unfused_without_proof",
+        "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 63,
+      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-002",
+        "AC-052-010"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_regions"
+      ],
+      "verification": [
+        "test_adaptive_regions_are_maximal_and_unfused_without_proof",
+        "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order"
+      ]
+    },
+    {
+      "issue": 64,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 65,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 66,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 67,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 68,
+      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-011",
+        "AC-052-012",
+        "AC-052-016"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive.py:_physical_dag",
+        "src/etlantic/plan/physical.py:PhysicalDAG",
+        "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
+      ],
+      "verification": [
+        "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
+        "test_final_052_017_generated_edge_requires_one_data_path",
+        "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
+        "test_final_052_016_historical_incomplete_topology_remains_readable",
+        "test_adaptive_release_side_effect_sentinels",
+        "test_adaptive_wire_round_trip_and_dispatch"
+      ]
+    },
+    {
+      "issue": 74,
+      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-013",
+        "AC-052-014",
+        "AC-052-015",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/plan/explain.py:explain_plan",
+        "src/etlantic/plan/diff.py:diff_plans"
+      ],
+      "verification": [
+        "test_adaptive_explain_uses_the_bounded_summary",
+        "test_final_052_018_explain_exact_four_mib_boundary",
+        "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
+        "test_adaptive_surface_projections_share_plan_identity",
+        "test_adaptive_artifacts_redact_absolute_target_resources"
+      ]
+    },
+    {
+      "issue": 75,
+      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-013",
+        "AC-052-014",
+        "AC-052-015",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/plan/explain.py:explain_plan",
+        "src/etlantic/plan/diff.py:diff_plans"
+      ],
+      "verification": [
+        "test_adaptive_explain_uses_the_bounded_summary",
+        "test_final_052_018_explain_exact_four_mib_boundary",
+        "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
+        "test_adaptive_surface_projections_share_plan_identity",
+        "test_adaptive_artifacts_redact_absolute_target_resources"
+      ]
+    },
+    {
+      "issue": 76,
+      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-013",
+        "AC-052-014",
+        "AC-052-015",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/plan/explain.py:explain_plan",
+        "src/etlantic/plan/diff.py:diff_plans"
+      ],
+      "verification": [
+        "test_adaptive_explain_uses_the_bounded_summary",
+        "test_final_052_018_explain_exact_four_mib_boundary",
+        "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
+        "test_adaptive_surface_projections_share_plan_identity",
+        "test_adaptive_artifacts_redact_absolute_target_resources"
+      ]
+    },
+    {
+      "issue": 77,
+      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-013",
+        "AC-052-014",
+        "AC-052-015",
+        "AC-052-017"
+      ],
+      "implementation": [
+        "src/etlantic/plan/explain.py:explain_plan",
+        "src/etlantic/plan/diff.py:diff_plans"
+      ],
+      "verification": [
+        "test_adaptive_explain_uses_the_bounded_summary",
+        "test_final_052_018_explain_exact_four_mib_boundary",
+        "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
+        "test_adaptive_surface_projections_share_plan_identity",
+        "test_adaptive_artifacts_redact_absolute_target_resources"
+      ]
+    },
+    {
+      "issue": 91,
+      "scope": "Prospective deterministic live-ownership accounting and resource-limit rejection, cleanup, exact output sizing and small-graph exhaustive oracle. 0.52 diagnostics follow the approved 0.52 contract (PMADP303 memory, PMADP304 work, PMADP306 oracle), superseding the issue's old 0.51 numbering.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-009"
+      ],
+      "implementation": [
+        "src/etlantic/planning/adaptive_budget.py:TransientBudget",
+        "src/etlantic/planning/adaptive.py:_solve",
+        "src/etlantic/planning/adaptive.py:_check_oracle"
+      ],
+      "verification": [
+        "test_final_052_018_each_owner_has_exact_before_at_after_limits",
+        "test_final_052_018_public_pipeline_accounts_all_phases_and_cleans_owners",
+        "test_final_052_018_rejects_before_record_construction_and_releases_on_error",
+        "test_final_052_018_output_allocations_reject_before_materialization",
+        "test_final_052_018_selected_node_limit",
+        "test_final_052_018_target_limit",
+        "test_final_052_018_evidence_cap_boundaries",
+        "test_final_052_018_expansion_limit_checks_prospective_work",
+        "test_adaptive_solver_matches_seeded_oracle_corpus"
+      ]
+    },
+    {
+      "issue": 93,
+      "scope": "Executable source-bound issue/AC/proof ledger and deterministic generated evidence on all supported CI rows.",
+      "status": "implemented",
+      "acceptance_criteria": [
+        "AC-052-018"
+      ],
+      "implementation": [
+        "scripts/check_adaptive_0_52.py:_payloads"
+      ],
+      "verification": [
+        "test_adaptive_release_evidence_contract_is_ci_gated",
+        "test_adaptive_bytes_ignore_target_mapping_insertion_order",
+        "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof"
+      ]
+    }
+  ]
+}

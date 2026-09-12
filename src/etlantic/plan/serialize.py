@@ -17,6 +17,7 @@ from etlantic.plan.adaptive_serialize import (
     adaptive_plan_from_json,
     adaptive_plan_to_json,
     canonical_adaptive_dict,
+    canonical_adaptive_json,
     verify_adaptive_fingerprint,
 )
 from etlantic.plan.model import PipelinePlan
@@ -37,6 +38,8 @@ def canonical_plan_dict(plan: PlanDocument) -> dict[str, Any]:
 
 def canonical_plan_json(plan: PlanDocument) -> str:
     """Return canonical JSON bytes as a UTF-8 string."""
+    if isinstance(plan, AdaptivePipelinePlan):
+        return canonical_adaptive_json(plan)
     return json.dumps(
         canonical_plan_dict(plan),
         sort_keys=True,

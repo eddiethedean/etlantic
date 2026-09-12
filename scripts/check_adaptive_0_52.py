@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -15,6 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "11_DEVELOPMENT" / "evidence" / "adaptive_0_51"
+ISSUE_LEDGER = "docs/11_DEVELOPMENT/phase_0_52_issue_ledger.json"
+REQUIRED_ISSUES = {32, 33, 34, 35, 36, 38, *range(45, 69), *range(74, 78), 91, 93}
 
 CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
     "adaptive_inventory_conformance_0_51.json": (
@@ -34,6 +37,14 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         ("AC-052-003", "test_final_052_001_target_limit_precedes_plugin_discovery"),
         ("AC-052-009", "test_adaptive_resource_limits_fail_before_crossing"),
         ("AC-052-009", "test_adaptive_bytes_ignore_target_mapping_insertion_order"),
+        (
+            "AC-052-009",
+            "test_final_052_018_public_pipeline_accounts_all_phases_and_cleans_owners",
+        ),
+        (
+            "AC-052-009",
+            "test_final_052_018_each_owner_has_exact_before_at_after_limits",
+        ),
     ),
     "adaptive_physical_dag_conformance_0_51.json": (
         ("AC-052-010", "test_adaptive_regions_are_maximal_and_unfused_without_proof"),
@@ -65,11 +76,21 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         ("AC-052-002", "test_explicit_plan_snapshot_omits_dormant_adaptive_policy"),
         ("AC-052-007", "test_final_052_003_fallback_report_and_integrity"),
         ("AC-052-012", "test_adaptive_wire_round_trip_and_dispatch"),
+        (
+            "AC-052-012",
+            "test_final_052_016_historical_incomplete_topology_remains_readable",
+        ),
+        ("AC-052-012", "test_final_052_017_generated_edge_requires_one_data_path"),
         ("AC-052-018", "test_adaptive_release_evidence_contract_is_ci_gated"),
+        (
+            "AC-052-018",
+            "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof",
+        ),
     ),
 }
 
 VERIFICATION_FILES = (
+    "tests/plan/test_adaptive_final_remediation_0_52.py",
     "tests/plan/test_adaptive_planner_0_52.py",
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
@@ -77,6 +98,7 @@ VERIFICATION_FILES = (
 )
 
 REVISION_FILES = (
+    ISSUE_LEDGER,
     ".github/workflows/checks.yml",
     "docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md",
     "mkdocs.yml",
@@ -86,6 +108,51 @@ REVISION_FILES = (
 )
 REVISION_TREES = ("src/etlantic", "packages", "tests")
 REVISION_SUFFIXES = {".json", ".py", ".pyi", ".toml", ".yaml", ".yml"}
+
+
+def _verify_issue_ledger(
+    passed_tests: set[str], ledger: dict | None = None
+) -> list[dict]:
+    """Bind every approved issue to real implementation and executed proof."""
+    if ledger is None:
+        ledger = json.loads((ROOT / ISSUE_LEDGER).read_text(encoding="utf-8"))
+    entries = ledger.get("issues", [])
+    numbers = [entry["issue"] for entry in entries]
+    if len(numbers) != len(set(numbers)) or set(numbers) != REQUIRED_ISSUES:
+        raise RuntimeError("adaptive issue ledger is incomplete or duplicated")
+    criteria = {f"AC-052-{index:03}" for index in range(1, 19)}
+    covered = set()
+    for entry in entries:
+        if entry.get("status") != "implemented" or not entry.get("scope"):
+            raise RuntimeError("in-scope adaptive issue has not been implemented")
+        acs = set(entry.get("acceptance_criteria", []))
+        if not acs or not acs <= criteria:
+            raise RuntimeError("adaptive issue has invalid acceptance criteria")
+        covered.update(acs)
+        if not entry.get("implementation"):
+            raise RuntimeError("adaptive issue lacks implementation references")
+        for reference in entry["implementation"]:
+            path, symbol = reference.rsplit(":", 1)
+            source = ROOT / path
+            if not source.is_file() or not source.resolve().is_relative_to(
+                ROOT.resolve()
+            ):
+                raise RuntimeError("adaptive issue implementation does not exist")
+            tree = ast.parse(source.read_text(encoding="utf-8"))
+            if not any(
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                and node.name == symbol
+                for node in ast.walk(tree)
+            ):
+                raise RuntimeError(
+                    "adaptive issue implementation symbol does not exist"
+                )
+        proofs = set(entry.get("verification", []))
+        if not proofs or not proofs <= passed_tests:
+            raise RuntimeError("adaptive issue proof was not executed successfully")
+    if covered != criteria:
+        raise RuntimeError("adaptive issue ledger does not cover every AC")
+    return entries
 
 
 def _source_revision() -> str:
@@ -228,6 +295,7 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
             + repr(side_effect_counts)
         )
     revision = _source_revision()
+    issue_ledger = _verify_issue_ledger(passed_tests)
     fingerprint = _verified_plan_fingerprint()
     supported_platforms = _supported_platforms()
     payloads: dict[str, dict[str, object]] = {}
@@ -265,6 +333,11 @@ def _payloads() -> tuple[dict[str, dict[str, object]], str]:
             "passed_scenarios": sum(item["result"] == "pass" for item in scenarios),
             "supported_platforms": supported_platforms,
             "side_effect_counts": side_effect_counts,
+            "verified_issues": [entry["issue"] for entry in issue_ledger],
+            "issue_ledger": ISSUE_LEDGER,
+            "issue_ledger_sha256": hashlib.sha256(
+                (ROOT / ISSUE_LEDGER).read_bytes().replace(b"\r\n", b"\n")
+            ).hexdigest(),
             "scenarios": scenarios,
             "verification_command": [
                 "python",

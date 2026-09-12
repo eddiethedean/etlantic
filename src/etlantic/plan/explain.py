@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from collections import Counter
 from typing import Any
 
 from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
+from etlantic.planning.adaptive_budget import (
+    budget_scope,
+    canonical_chunks,
+    materialize_wire,
+)
 
 
 def explain_plan(plan: PlanDocument) -> dict[str, Any]:
@@ -157,10 +161,17 @@ def explain_plan(plan: PlanDocument) -> dict[str, Any]:
 
 def _explain_adaptive(plan: AdaptivePipelinePlan) -> dict[str, Any]:
     """Project stored adaptive evidence without replanning."""
-    decisions = {item.node_name: item.to_dict() for item in plan.decisions}
-    alternatives: dict[str, list[dict[str, Any]]] = {}
+    with budget_scope() as budget, budget.frame():
+        return _explain_adaptive_bounded(plan)
+
+
+def _explain_adaptive_bounded(plan: AdaptivePipelinePlan) -> dict[str, Any]:
+    from etlantic.planning.adaptive_budget import current_budget
+
+    decisions = {item.node_name: item for item in plan.decisions}
+    alternatives: dict[str, list[Any]] = {}
     for candidate in plan.candidates:
-        alternatives.setdefault(candidate.node_name, []).append(candidate.to_dict())
+        alternatives.setdefault(candidate.node_name, []).append(candidate)
     payload = {
         "plan_id": plan.plan_id,
         "pipeline_id": plan.pipeline_id,
@@ -170,24 +181,34 @@ def _explain_adaptive(plan: AdaptivePipelinePlan) -> dict[str, Any]:
         "security_domain": plan.security_domain,
         "planning_only": True,
         "objective": list(plan.objective),
-        "inventory": plan.inventory.to_dict(),
+        "inventory": plan.inventory,
         "decisions": list(decisions.values()),
         "alternatives": alternatives,
-        "regions": [region.to_dict() for region in plan.regions],
-        "physical_dag": plan.physical_dag.to_dict(),
+        "regions": plan.regions,
+        "physical_dag": plan.physical_dag,
         "selected_nodes": list(plan.selected_nodes)
         if plan.selected_nodes is not None
         else None,
         "metadata": dict(plan.metadata),
     }
-    encoded = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
-    if len(encoded) <= 4 * 1024 * 1024:
-        return payload
+    digest = hashlib.sha256()
+    size = 0
+    for chunk in canonical_chunks(payload):
+        size += len(chunk)
+        digest.update(chunk)
+    if size <= 4 * 1024 * 1024:
+        overhead = 64 * (
+            1
+            + len(plan.candidates)
+            + len(plan.decisions)
+            + len(plan.regions)
+            + len(plan.physical_dag.units)
+        )
+        with current_budget().allocation(payload, "explain", overhead):
+            return materialize_wire(payload)
     # Explain is a projection of stored evidence; when bounded output would be
     # exceeded, return a deterministic summary without replanning or loading.
-    return {
+    summary = {
         "plan_id": plan.plan_id,
         "pipeline_id": plan.pipeline_id,
         "profile": plan.profile_name,
@@ -208,7 +229,7 @@ def _explain_adaptive(plan: AdaptivePipelinePlan) -> dict[str, Any]:
             "regions": len(plan.regions),
             "physical_units": len(plan.physical_dag.units),
         },
-        "omitted_sha256": hashlib.sha256(encoded).hexdigest(),
+        "omitted_sha256": digest.hexdigest(),
         "rejection_reason_counts": dict(
             sorted(
                 Counter(
@@ -219,3 +240,20 @@ def _explain_adaptive(plan: AdaptivePipelinePlan) -> dict[str, Any]:
             )
         ),
     }
+    if sum(len(chunk) for chunk in canonical_chunks(summary)) > 4 * 1024 * 1024:
+        # Even logical names and objective tie-break IDs can be large in a
+        # historical document. Retain the content identity, counts and omission
+        # digest rather than returning an oversized fallback explanation.
+        summary = {
+            key: summary[key]
+            for key in (
+                "schema",
+                "planning_only",
+                "truncated",
+                "diagnostic",
+                "counts",
+                "omitted_sha256",
+            )
+        }
+    with current_budget().allocation(summary, "explain", 64):
+        return materialize_wire(summary)

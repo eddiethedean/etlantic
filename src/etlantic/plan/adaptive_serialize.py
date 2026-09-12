@@ -2,33 +2,54 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 from typing import Any
 
 from etlantic.plan.adaptive_model import AdaptivePipelinePlan
+from etlantic.planning.adaptive_budget import (
+    budget_scope,
+    canonical_chunks,
+    materialize_wire,
+    serialized_size,
+    wire_view,
+)
 
 
 def canonical_adaptive_dict(plan: AdaptivePipelinePlan) -> dict[str, Any]:
     """Return all semantic ``/2`` fields in deterministic order."""
-    data = copy.deepcopy(plan.to_dict())
+    data = wire_view(plan)
     data.pop("fingerprint", None)
     data.pop("plan_id", None)
-    return _sort_structure(data)
+    with budget_scope() as budget, budget.allocation(data, "serialization-record", 64):
+        return materialize_wire(data)
 
 
 def canonical_adaptive_json(plan: AdaptivePipelinePlan) -> str:
-    return json.dumps(
-        canonical_adaptive_dict(plan),
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    )
+    data = wire_view(plan)
+    data.pop("fingerprint", None)
+    data.pop("plan_id", None)
+    with (
+        budget_scope() as budget,
+        budget.allocation(data, "serialization-record", 64),
+        budget.allocation(data, "serialization-buffer"),
+    ):
+        return json.dumps(
+            materialize_wire(data),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
 
 
 def adaptive_plan_fingerprint(plan: AdaptivePipelinePlan) -> str:
-    return hashlib.sha256(canonical_adaptive_json(plan).encode("utf-8")).hexdigest()
+    data = wire_view(plan)
+    data.pop("fingerprint", None)
+    data.pop("plan_id", None)
+    digest = hashlib.sha256()
+    for chunk in canonical_chunks(data):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def verify_adaptive_fingerprint(plan: AdaptivePipelinePlan) -> None:
@@ -41,10 +62,18 @@ def verify_adaptive_fingerprint(plan: AdaptivePipelinePlan) -> None:
 
 
 def adaptive_plan_to_json(plan: AdaptivePipelinePlan, *, indent: int | None = 2) -> str:
-    data = plan.to_dict()
-    if indent is None:
-        return json.dumps(data, sort_keys=True, separators=(",", ":"))
-    return json.dumps(data, indent=indent, sort_keys=True) + "\n"
+    view = wire_view(plan)
+    with budget_scope() as budget, budget.allocation(view, "serialization-record", 64):
+        token = budget.reserve(
+            serialized_size(view, indent) + (indent is not None), "serialization-buffer"
+        )
+        try:
+            data = materialize_wire(view)
+            if indent is None:
+                return json.dumps(data, sort_keys=True, separators=(",", ":"))
+            return json.dumps(data, indent=indent, sort_keys=True) + "\n"
+        finally:
+            budget.release(token)
 
 
 def adaptive_plan_from_json(text: str, *, verify: bool = True) -> AdaptivePipelinePlan:

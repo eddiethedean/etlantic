@@ -1,11 +1,13 @@
 {
   "artifact": "adaptive_e2e_0_51.json",
-  "passed_scenarios": 4,
+  "issue_ledger": "docs/11_DEVELOPMENT/phase_0_52_issue_ledger.json",
+  "issue_ledger_sha256": "96dcf77e8bc33e3752505679f7af701e4d40f37d3ba980a0d4af8c154e97df1d",
+  "passed_scenarios": 7,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:cafa34f2a35d69779c6842b7640d1b5e44fa972966e87e59d31dc2c6128a5ef6",
+  "repository_revision": "sha256:de3d4e9933d9f76a0438f77f7f961cc8532ee0bb772f9fdcdad7ce5c15b5761f",
   "result": "pass",
-  "scenario_count": 4,
+  "scenario_count": 7,
   "scenarios": [
     {
       "acceptance_criterion": "AC-052-002",
@@ -38,6 +40,26 @@
       "verification": "test_adaptive_wire_round_trip_and_dispatch"
     },
     {
+      "acceptance_criterion": "AC-052-012",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_final_052_016_historical_incomplete_topology_remains_readable",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "result": "pass",
+      "verification": "test_final_052_016_historical_incomplete_topology_remains_readable"
+    },
+    {
+      "acceptance_criterion": "AC-052-012",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_final_052_017_generated_edge_requires_one_data_path",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "result": "pass",
+      "verification": "test_final_052_017_generated_edge_requires_one_data_path"
+    },
+    {
       "acceptance_criterion": "AC-052-018",
       "actual": "pass",
       "executed": true,
@@ -46,6 +68,16 @@
       "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
       "result": "pass",
       "verification": "test_adaptive_release_evidence_contract_is_ci_gated"
+    },
+    {
+      "acceptance_criterion": "AC-052-018",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof",
+      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "result": "pass",
+      "verification": "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",
@@ -113,11 +145,50 @@
     "-q",
     "-vv",
     "-s",
+    "tests/plan/test_adaptive_final_remediation_0_52.py",
     "tests/plan/test_adaptive_planner_0_52.py",
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
     "tests/plan/test_phase_0_52_review_blockers.py",
     "-k",
     "not final_052_006"
+  ],
+  "verified_issues": [
+    32,
+    33,
+    34,
+    35,
+    36,
+    38,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    74,
+    75,
+    76,
+    77,
+    91,
+    93
   ]
 }

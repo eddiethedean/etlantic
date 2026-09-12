@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from etlantic.optimization.protocol import (
@@ -107,43 +108,59 @@ class PushdownPass(_BasePass):
     ) -> tuple[OptimizationCandidate, ...]:
         plan = context.baseline
         candidates: list[OptimizationCandidate] = []
-        for decision in plan.capability_decisions:
-            if not isinstance(decision, dict):
+        # Engine negotiation is not connector evidence. Consume only static,
+        # source-addressed facts from the existing evidence store; never discover
+        # or instantiate a connector while proposing an optimization.
+        for source in sorted(plan.logical_graph.nodes, key=lambda item: item.name):
+            if source.kind.value != "source":
                 continue
-            caps = decision.get("capabilities") or decision
-            if not isinstance(caps, dict):
-                continue
-            supported = bool(
-                caps.get("source.filter_pushdown")
-                or caps.get("source.projection_pushdown")
-                or caps.get("pushdown")
+            records = tuple(
+                item
+                for item in context.evidence.by_kind("connector_capabilities")
+                if item.subject == source.name
+                and item.provenance == "static"
+                and item.expires_at is None
+                and item.confidence == 1.0
+                and isinstance(item.value, Mapping)
             )
-            node = str(decision.get("node") or decision.get("binding") or "source")
-            if not supported:
+            for action in ("predicate", "projection"):
+                token = f"source.{action}_pushdown"
+                supported = bool(records) and all(
+                    item.value.get(token) is True for item in records
+                )
+                identity = f"pushdown:{source.name}:{action}"
+                if not supported:
+                    candidates.append(
+                        _reject(
+                            pass_id=self.metadata.pass_id,
+                            candidate_id=identity,
+                            rewrite_kind="pushdown",
+                            reason=f"connector evidence does not prove {token}",
+                            capability="unknown" if not records else "unsupported",
+                        )
+                    )
+                    continue
                 candidates.append(
-                    _reject(
+                    OptimizationCandidate(
+                        candidate_id=identity,
                         pass_id=self.metadata.pass_id,
-                        candidate_id=f"pushdown-reject:{node}",
                         rewrite_kind="pushdown",
-                        reason="connector does not advertise pushdown capability",
+                        decision="chosen",
+                        expected_benefit={"relative": 0.4, "kind": "io"},
+                        proofs=_base_proofs("schema", "ordering", "side_effect"),
+                        evidence_refs=_resolved_evidence_refs(
+                            context,
+                            *(
+                                (item.evidence_id, item.kind, item.confidence)
+                                for item in records
+                            ),
+                        ),
+                        policy_result="accepted",
+                        capability_result="supported",
+                        reason=f"connector evidence proves {token}",
+                        hints={"annotate": {f"{action}_pushdown_nodes": [source.name]}},
                     )
                 )
-                continue
-            candidates.append(
-                OptimizationCandidate(
-                    candidate_id=f"pushdown:{node}",
-                    pass_id=self.metadata.pass_id,
-                    rewrite_kind="pushdown",
-                    decision="chosen",
-                    expected_benefit={"relative": 0.4, "kind": "io"},
-                    proofs=_base_proofs("schema", "ordering", "side_effect"),
-                    evidence_refs=(),  # justified by plan capability_decisions
-                    policy_result="accepted",
-                    capability_result="supported",
-                    reason="connector advertises pushdown",
-                    hints={"annotate": {"pushdown_nodes": [node]}},
-                )
-            )
         if not candidates and self._prereq_ok(context):
             # No capability evidence: safe no-op reject rather than invent pushdown.
             candidates.append(

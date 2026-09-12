@@ -345,7 +345,7 @@ class PhysicalDAG:
         }
 
     def validate_logical_paths(
-        self, logical_edges: tuple[tuple[str, str], ...]
+        self, logical_edges: tuple[tuple[str, ...], ...]
     ) -> None:
         """Validate logical-edge reachability against the physical topology.
 
@@ -354,7 +354,21 @@ class PhysicalDAG:
         logical edge has a physical realization.
         """
         unit_map = {unit.identity: unit for unit in self.units}
-        for producer, consumer in logical_edges:
+        port_edges = {edge for edge in logical_edges if len(edge) == 4}
+        if port_edges:
+            for unit in self.units:
+                ports = unit.metadata.get("etlantic.edge_ports")
+                if ports is not None and (
+                    not isinstance(ports, (list, tuple))
+                    or len(ports) != 4
+                    or not all(isinstance(value, str) for value in ports)
+                    or tuple(ports) not in port_edges
+                ):
+                    raise ValueError(
+                        "PMADP403: physical route references an unknown logical port edge"
+                    )
+        for edge in logical_edges:
+            producer, consumer = edge[:2]
             producer_id = self.logical_to_physical.get(producer)
             consumer_id = self.logical_to_physical.get(consumer)
             if producer_id is None or consumer_id is None:
@@ -365,24 +379,40 @@ class PhysicalDAG:
             # with the same compute unit.
             if producer_id == consumer_id:
                 continue
-            seen: set[str] = set()
-            frontier = [
-                dependency.unit_id for dependency in unit_map[consumer_id].dependencies
-            ]
-            while frontier:
-                unit_id = frontier.pop()
-                if unit_id in seen:
-                    continue
-                seen.add(unit_id)
+            # Count edge realizations, not arbitrary transitive graph paths.
+            # An intervening compute unit belongs to another logical edge;
+            # ordinary logical diamonds must remain valid. Saturate at two so
+            # adversarial branching cannot amplify work or integer sizes.
+            paths: dict[str, int] = {producer_id: 1}
+            for unit_id in self.topological_order:
                 if unit_id == producer_id:
-                    break
-                frontier.extend(
-                    dependency.unit_id for dependency in unit_map[unit_id].dependencies
+                    continue
+                unit = unit_map[unit_id]
+                ports = unit.metadata.get("etlantic.edge_ports")
+                if len(edge) == 4 and ports is not None and tuple(ports) != edge:
+                    paths[unit_id] = 0
+                    continue
+                if unit.kind is PhysicalUnitKind.COMPUTE and unit_id != consumer_id:
+                    paths[unit_id] = 0
+                    continue
+                paths[unit_id] = min(
+                    2,
+                    sum(
+                        paths.get(dependency.unit_id, 0)
+                        for dependency in unit.dependencies
+                        if dependency.kind == "data"
+                    ),
                 )
-            else:
+            count = paths.get(consumer_id, 0)
+            if count == 0:
                 raise ValueError(
                     f"PMADP403: logical edge {producer!r} -> {consumer!r} "
                     "has no physical dependency path"
+                )
+            if count > 1:
+                raise ValueError(
+                    f"PMADP403: logical edge {producer!r} -> {consumer!r} "
+                    "has multiple physical dependency paths"
                 )
 
     @classmethod

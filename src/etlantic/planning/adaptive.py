@@ -42,6 +42,17 @@ from etlantic.plan.slicing import (
     run_until_selection,
     slice_graph,
 )
+from etlantic.planning.adaptive_budget import (
+    budget_scope,
+    canonical_chunks,
+    current_budget,
+    materialize_wire,
+    redacted_view,
+    wire_view,
+)
+from etlantic.planning.adaptive_budget import (
+    record as owned_record,
+)
 from etlantic.registry import PlanningContext
 
 MAX_NODES = 256
@@ -90,7 +101,10 @@ class _ResolvedTarget:
 
 
 def _target_identity(target: Any) -> str:
-    return _digest(_safe_ref(target.to_dict()))
+    view = wire_view(getattr(target, "target", target))
+    if isinstance(target, _ResolvedTarget):
+        view = {**view, "resolved_components": target.resolved}
+    return _digest(redacted_view(view))
 
 
 def build_adaptive_plan(
@@ -101,6 +115,19 @@ def build_adaptive_plan(
     definition: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
     """Build an adaptive plan, or the explicitly configured fallback plan."""
+    with budget_scope(MAX_TRANSIENT_BYTES) as budget, budget.frame():
+        return _build_adaptive_plan(
+            pipeline_cls, context, selection=selection, definition=definition
+        )
+
+
+def _build_adaptive_plan(
+    pipeline_cls: type[Any] | None,
+    context: PlanningContext,
+    *,
+    selection: dict[str, Any] | None = None,
+    definition: Any | None = None,
+) -> AdaptivePipelinePlan | Any:
     graph = _graph_for_input(pipeline_cls, definition)
     selected = _canonical_graph(_select_graph(graph, selection or context.selection))
     _validate_scope(selected)
@@ -142,8 +169,11 @@ def build_adaptive_plan(
             )
         raise error
 
-    decisions = _solve(selected, candidates, targets, context)
-    _check_oracle(selected, candidates, targets, decisions, context)
+    budget = current_budget()
+    with budget.frame():
+        decisions = _solve(selected, candidates, targets, context)
+    with budget.frame():
+        _check_oracle(selected, candidates, targets, decisions, context)
     regions = _regions(selected, decisions, targets, context)
     physical = _physical_dag(selected, decisions, targets, regions, context)
     inventory = _inventory_model(targets)
@@ -164,7 +194,7 @@ def build_adaptive_plan(
     selected_nodes = (
         None if not (selection or context.selection) else selected.node_names()
     )
-    plan = AdaptivePipelinePlan(
+    plan_fields = dict(
         schema=ADAPTIVE_PLAN_SCHEMA,
         plan_id="plan:pending",
         pipeline_id=selected.pipeline_id,
@@ -187,8 +217,26 @@ def build_adaptive_plan(
         security_domain=profile.security_domain,
         metadata=metadata,
     )
-    fingerprint = adaptive_plan_fingerprint(plan)
-    return replace(plan, fingerprint=fingerprint, plan_id=f"plan:{fingerprint[:16]}")
+    # Nested records already have owners. The final container borrows them;
+    # only its new snapshot/decision/metadata data and validation copies are
+    # new allocations. Scope exit transfers retained ownership to the caller.
+    with (
+        budget.allocation(
+            {
+                key: value
+                for key, value in plan_fields.items()
+                if key not in {"inventory", "candidates", "regions", "physical_dag"}
+            },
+            "plan",
+            64,
+        ),
+        budget.allocation(plan_fields, "serialization-buffer"),
+    ):
+        plan = AdaptivePipelinePlan(**plan_fields)
+        fingerprint = adaptive_plan_fingerprint(plan)
+        return replace(
+            plan, fingerprint=fingerprint, plan_id=f"plan:{fingerprint[:16]}"
+        )
 
 
 def _graph_for_input(
@@ -336,16 +384,16 @@ def _resolved_components(
                 descriptor, reference, component
             ):
                 continue
-            matches.append({"kind": "plugin", **descriptor.to_dict()})
+            matches.append({"kind": "plugin", **wire_view(descriptor)})
         for descriptor in context.registry.implementations.values():
             if component == "compiler" and reference in {
                 descriptor.identity,
                 descriptor.compiler_name,
                 descriptor.engine,
             }:
-                matches.append({"kind": "implementation", **descriptor.to_dict()})
+                matches.append({"kind": "implementation", **wire_view(descriptor)})
         trust = [
-            dict(record)
+            record
             for record in context.plugin_trust_records
             if reference
             in {
@@ -356,20 +404,29 @@ def _resolved_components(
             }
             and _trust_group_matches_component(record.get("group"), component)
         ]
-        records.append(
-            {
-                "component": component,
-                "reference": reference,
-                "resolved": sorted(
-                    (_safe_ref(item) for item in matches),
-                    key=lambda item: json.dumps(item, sort_keys=True),
-                ),
-                "trust": sorted(
-                    (_safe_ref(item) for item in trust),
-                    key=lambda item: json.dumps(item, sort_keys=True),
-                ),
-            }
+        borrowed = {
+            "component": component,
+            "reference": reference,
+            "resolved": matches,
+            "trust": trust,
+        }
+        view = redacted_view(borrowed)
+        budget = current_budget()
+        # Charge the exact retained redacted record before copying. Sorting
+        # owns temporary canonical keys separately, released at phase end.
+        budget.reserve(
+            sum(len(chunk) for chunk in canonical_chunks(view)) + 64,
+            "inventory-resolution",
         )
+        with budget.allocation(view, "serialization-buffer"):
+            owned = materialize_wire(view)
+            for field in ("resolved", "trust"):
+                owned[field].sort(
+                    key=lambda item: json.dumps(
+                        item, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+                    )
+                )
+        records.append(owned)
     return tuple(records)
 
 
@@ -463,7 +520,7 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
         identity = _target_identity(target)
         capability_payload = caps.to_dict() if caps is not None else {}
         cap_fp = _digest(capability_payload)
-        resolved_components = target.to_dict().get("resolved_components", ())
+        resolved_components = getattr(target, "resolved", ())
         evidence_refs = tuple(
             f"sha256:{_digest(_safe_ref(item))}"
             for item in resolved_components
@@ -471,7 +528,9 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
         )[:MAX_EVIDENCE]
         if not evidence_refs:
             evidence_refs = (f"sha256:{_digest({'target': identity})}",)
-        descriptor = TargetDescriptor(
+        descriptor = owned_record(
+            TargetDescriptor,
+            "inventory",
             target_id=target_id,
             identity=identity,
             engine=target.engine,
@@ -495,15 +554,20 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
         )
         descriptors.append(descriptor)
     payload = {
-        "targets": [item.to_dict() for item in descriptors],
+        "targets": descriptors,
         "eligible_target_order": [x[0] for x in targets],
     }
-    return AdaptiveInventory(
-        targets=tuple(descriptors),
+    shell = dict(
         eligible_target_order=tuple(x[0] for x in targets),
         fingerprint=_digest(payload),
         evidence_refs=tuple(ref for item in descriptors for ref in item.evidence_refs),
     )
+    current_budget().reserve(
+        sum(len(chunk) for chunk in canonical_chunks(shell)) + 64,
+        "inventory",
+    )
+    with current_budget().allocation(payload, "validation-buffer"):
+        return AdaptiveInventory(targets=tuple(descriptors), **shell)
 
 
 def _candidate_matrix(
@@ -521,19 +585,9 @@ def _candidate_matrix(
         )
     transform_map = _transform_map(pipeline_cls, definition)
     output: list[CandidateRecord] = []
-    charged = 0
     overrides = context.profile.implementation_overrides
     for node in graph.nodes:
         for target_id, target, caps in targets:
-            # Reserve a deterministic envelope before constructing a record so
-            # an adversarial matrix cannot cross the budget via an oversized
-            # intermediate object.
-            if charged + 4096 > MAX_TRANSIENT_BYTES:
-                raise _error(
-                    "PMADP303",
-                    "Adaptive planner transient budget exceeded.",
-                    path=("adaptive", "candidates"),
-                )
             reasons: list[str] = []
             evidence_items = [
                 f"sha256:{_digest({'target': _target_identity(target)})}",
@@ -653,7 +707,9 @@ def _candidate_matrix(
                     "identity": _target_identity(target),
                 }
             )[:24]
-            record = CandidateRecord(
+            candidate = owned_record(
+                CandidateRecord,
+                "candidate",
                 candidate_id=f"candidate:{candidate_id}",
                 node_name=node.name,
                 target_id=target_id,
@@ -672,24 +728,7 @@ def _candidate_matrix(
                     ),
                 },
             )
-            charged += (
-                len(
-                    json.dumps(
-                        record.to_dict(),
-                        sort_keys=True,
-                        separators=(",", ":"),
-                        ensure_ascii=False,
-                    ).encode("utf-8")
-                )
-                + 64
-            )
-            if charged > MAX_TRANSIENT_BYTES:
-                raise _error(
-                    "PMADP303",
-                    "Adaptive planner transient budget exceeded.",
-                    path=("adaptive", "candidates"),
-                )
-            output.append(record)
+            output.append(candidate)
     return tuple(output)
 
 
@@ -980,6 +1019,7 @@ def _solve(
     best_score: tuple[int | str, ...] | None = None
     best: tuple[AdaptiveDecision, ...] | None = None
     expansions = 0
+    incumbent_token: int | None = None
     identity_by_target = {
         target.target_id: target.identity for target in inventory.targets
     }
@@ -1054,15 +1094,24 @@ def _solve(
         )
 
     def visit(index: int, chosen: list[CandidateRecord]) -> None:
-        nonlocal best_score, best, expansions
+        nonlocal expansions
+        _check_expansion_limit(expansions + 1)
         expansions += 1
-        if expansions > MAX_SOLVER_EXPANSIONS:
-            raise _error(
-                "PMADP304",
-                "Adaptive solver expansion limit exceeded.",
-                path=("adaptive", "solver"),
-            )
-        if best_score is not None and lower_bound(chosen) >= best_score:
+        bound = lower_bound(chosen)
+        frontier = {
+            "node_index": index,
+            "candidate_identities": tuple(c.candidate_id for c in chosen),
+            "partial_objective": bound[:6],
+            "lower_bound": bound,
+        }
+        with current_budget().allocation(frontier, "solver-frontier", 128):
+            visit_body(index, chosen, bound)
+
+    def visit_body(
+        index: int, chosen: list[CandidateRecord], bound: tuple[int | str, ...]
+    ) -> None:
+        nonlocal best_score, best, incumbent_token
+        if best_score is not None and bound >= best_score:
             return
         if index == len(ordered_nodes):
             decisions = tuple(
@@ -1073,6 +1122,19 @@ def _solve(
                 return
             score = _objective(graph, decisions, candidates, inventory)
             if best_score is None or score < best_score:
+                payload = {
+                    "node_index": index,
+                    "candidate_identities": tuple(c.candidate_id for c in chosen),
+                    "partial_objective": score,
+                    "lower_bound": score,
+                }
+                token = current_budget().reserve(
+                    sum(len(chunk) for chunk in canonical_chunks(payload)) + 128,
+                    "solver-incumbent",
+                )
+                if incumbent_token is not None:
+                    current_budget().release(incumbent_token)
+                incumbent_token = token
                 best_score, best = score, decisions
             return
         for candidate in by_node[ordered_nodes[index]]:
@@ -1088,6 +1150,15 @@ def _solve(
             path=("adaptive", "solver"),
         )
     return best
+
+
+def _check_expansion_limit(prospective: int) -> None:
+    if prospective > MAX_SOLVER_EXPANSIONS:
+        raise _error(
+            "PMADP304",
+            "Adaptive solver expansion limit exceeded.",
+            path=("adaptive", "solver"),
+        )
 
 
 def _check_oracle(
@@ -1123,9 +1194,20 @@ def _check_oracle(
     }
     best_score: tuple[int | str, ...] | None = None
     best_assignment: tuple[AdaptiveDecision, ...] | None = None
+    incumbent_token: int | None = None
 
     def enumerate_assignments(index: int, chosen: list[CandidateRecord]) -> None:
-        nonlocal best_score, best_assignment
+        frontier = {
+            "node_index": index,
+            "candidate_identities": tuple(c.candidate_id for c in chosen),
+            "partial_objective": (),
+            "lower_bound": (),
+        }
+        with current_budget().allocation(frontier, "oracle-frontier", 128):
+            enumerate_body(index, chosen)
+
+    def enumerate_body(index: int, chosen: list[CandidateRecord]) -> None:
+        nonlocal best_score, best_assignment, incumbent_token
         if index == len(graph.nodes):
             decisions = tuple(
                 AdaptiveDecision(node.name, candidate.candidate_id, candidate.target_id)
@@ -1141,6 +1223,19 @@ def _check_oracle(
                 best_score,
                 tuple(d.candidate_id for d in (best_assignment or ())),
             ):
+                payload = {
+                    "node_index": index,
+                    "candidate_identities": tuple(c.candidate_id for c in chosen),
+                    "partial_objective": score,
+                    "lower_bound": score,
+                }
+                token = current_budget().reserve(
+                    sum(len(chunk) for chunk in canonical_chunks(payload)) + 128,
+                    "oracle-incumbent",
+                )
+                if incumbent_token is not None:
+                    current_budget().release(incumbent_token)
+                incumbent_token = token
                 best_score = score
                 best_assignment = decisions
             return
@@ -1274,7 +1369,9 @@ def _regions(
         for member in members:
             region_identity_by_node[member] = region_id
         regions.append(
-            AdaptiveRegion(
+            owned_record(
+                AdaptiveRegion,
+                "region",
                 identity=region_id,
                 target_id=target_id,
                 logical_nodes=tuple(members),
@@ -1292,10 +1389,19 @@ def _regions(
         )
         if left != right:
             deps[right].add(left)
-    return tuple(
-        replace(region, dependencies=tuple(sorted(deps[region.identity])))
-        for region in regions
-    )
+    completed = []
+    for region in regions:
+        updated = owned_record(
+            AdaptiveRegion,
+            "region",
+            **{
+                **wire_view(region),
+                "dependencies": tuple(sorted(deps[region.identity])),
+            },
+        )
+        current_budget().release_object(region)
+        completed.append(updated)
+    return tuple(completed)
 
 
 def _is_hard_boundary(producer: Any, consumer: Any, context: PlanningContext) -> bool:
@@ -1400,6 +1506,12 @@ def _physical_dag(
                     "etlantic.source_target": _target_identity(source),
                     "etlantic.destination_target": _target_identity(destination),
                     "etlantic.edge": [edge.producer_node, edge.consumer_node],
+                    "etlantic.edge_ports": [
+                        edge.producer_node,
+                        edge.consumer_node,
+                        edge.producer_port,
+                        edge.consumer_port,
+                    ],
                     "etlantic.handoff_evidence": list(handoff_refs),
                     "etlantic.handoff_contract": _handoff_contract(
                         source, destination, edge, context
@@ -1495,7 +1607,7 @@ def _physical_dag(
                     else dep
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
-        units.append(PhysicalUnit(identity=uid, **spec))
+        units.append(owned_record(PhysicalUnit, "boundary", identity=uid, **spec))
     order = _topological_units(units)
     return PhysicalDAG(
         units=tuple(units), logical_to_physical=compute_ids, topological_order=order
@@ -1579,8 +1691,10 @@ def _explicit_fallback(
 
 
 def _digest(value: Any) -> str:
-    text = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256()
+    for chunk in canonical_chunks(value):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _error(
