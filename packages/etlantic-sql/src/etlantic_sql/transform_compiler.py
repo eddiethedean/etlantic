@@ -283,13 +283,7 @@ class SqlTransformCompiler:
 
         validate_portable_runtime_parameters(plan, parameters)
 
-        expected_dialect = str(self.info.environment.get("dialect") or "")
-        dialect, engine = _open_engine(
-            context.metadata,
-            expected_dialect=expected_dialect
-            if expected_dialect not in {"", "unknown", "backend-defined"}
-            else None,
-        )
+        dialect, engine = _open_engine(context.metadata)
         compiler = SqlCompiler(
             dialect=dialect,
             supports_merge=str(dialect).startswith("postgresql"),
@@ -507,19 +501,12 @@ def _text(sql: str) -> Any:
     return text(sql)
 
 
-def _open_engine(
-    metadata: Mapping[str, Any], *, expected_dialect: str | None = None
-) -> tuple[str, Any]:
+def _open_engine(metadata: Mapping[str, Any]) -> tuple[str, Any]:
     from sqlalchemy import create_engine
 
     if "sqlalchemy_engine" in metadata:
         engine = metadata["sqlalchemy_engine"]
         dialect = str(metadata.get("sql_dialect") or engine.dialect.name)
-        if expected_dialect and dialect != expected_dialect:
-            raise ValueError(
-                f"SQL runtime dialect {dialect!r} does not match "
-                f"compiler evidence dialect {expected_dialect!r}"
-            )
         return dialect, engine
     url = (
         metadata.get("database_url")
@@ -529,21 +516,9 @@ def _open_engine(
     if url:
         engine = create_engine(str(url))
         dialect = engine.dialect.name
-        if expected_dialect and dialect != expected_dialect:
-            engine.dispose()
-            raise ValueError(
-                f"SQL runtime dialect {dialect!r} does not match "
-                f"compiler evidence dialect {expected_dialect!r}"
-            )
         return dialect, engine
     # Conformance / local default: in-memory SQLite (PostgreSQL via env for gate).
     engine = create_engine("sqlite+pysqlite:///:memory:")
-    if expected_dialect and expected_dialect != "sqlite":
-        engine.dispose()
-        raise ValueError(
-            "SQL runtime dialect 'sqlite' does not match "
-            f"compiler evidence dialect {expected_dialect!r}"
-        )
     return "sqlite", engine
 
 
