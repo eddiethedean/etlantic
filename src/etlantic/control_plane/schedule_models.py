@@ -129,7 +129,9 @@ class ScheduleSpec:
             ),
             cron=data.get("cron"),
             misfire=str(data.get("misfire") or "fire_once"),  # type: ignore[arg-type]
-            catch_up_max=int(data.get("catch_up_max") or 10),
+            catch_up_max=int(
+                10 if data.get("catch_up_max") is None else data["catch_up_max"]
+            ),
             overlap=str(data.get("overlap") or "skip"),  # type: ignore[arg-type]
             jitter_seconds=int(data.get("jitter_seconds") or 0),
             window_start=data.get("window_start"),

@@ -115,7 +115,22 @@ class SchedulerService:
                 last = due - timedelta(seconds=int(rec.spec.interval_seconds))
             else:
                 last = due - timedelta(minutes=1)
-            nominals = catch_up_nominals(rec.spec, last_nominal=last, now=now) or [due]
+            if rec.spec.catch_up_max == 0:
+                nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
+                _firing, created = self.schedule_store.claim_firing(
+                    ctx,
+                    schedule_id=rec.schedule_id,
+                    revision_id=rec.revision_id,
+                    nominal_fire_time=_iso(due),
+                    owner_id=self.owner_id,
+                    fencing_token=fencing_token,
+                    plan_fingerprint=self.plan_fingerprint,
+                    durable=self.durable,
+                    next_fire_at=_iso(nxt) if nxt is not None else None,
+                    skip_status="skipped_misfire",
+                )
+                return int(created)
+            nominals = catch_up_nominals(rec.spec, last_nominal=last, now=now)
         else:
             nominals = [due]
         claimed = 0

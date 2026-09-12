@@ -92,6 +92,34 @@ def test_misfire_skip_does_not_accept_durable_work() -> None:
     assert durable.pending_outbox(ctx) == []
 
 
+def test_catch_up_zero_skips_missed_due_without_durable_work() -> None:
+    store = MemoryScheduleStore()
+    durable = MemoryDurableWorkStore()
+    clock = FakeScheduleClock(datetime(2026, 1, 1, 0, 5, tzinfo=UTC))
+    ctx = _ctx()
+    rec = store.create(
+        ctx,
+        definition_id="pipe-1",
+        profile_name="test",
+        spec=ScheduleSpec(
+            kind="interval",
+            interval_seconds=60,
+            misfire="catch_up",
+            catch_up_max=0,
+            overlap="queue",
+        ),
+        next_fire_at="2026-01-01T00:01:00Z",
+    )
+    service = SchedulerService(store, durable=durable, clock=clock, owner_id="sched-1")
+
+    assert service.tick(ctx) == 1
+    firings = store.list_firings(ctx, rec.schedule_id)
+    assert len(firings) == 1
+    assert firings[0].status == "skipped_misfire"
+    assert durable.pending_outbox(ctx) == []
+    assert store.get(ctx, rec.schedule_id).next_fire_at == "2026-01-01T00:06:00Z"
+
+
 def test_effective_window_skip_outside_window() -> None:
     store = MemoryScheduleStore()
     durable = MemoryDurableWorkStore()
