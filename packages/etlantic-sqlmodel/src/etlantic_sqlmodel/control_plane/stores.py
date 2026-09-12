@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from collections.abc import Callable, Mapping, Sequence
@@ -10,6 +11,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 
 from etlantic.control_plane import (
     AcceptReceipt,
@@ -30,6 +33,10 @@ from sqlmodel import Session, SQLModel, select
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+_EVENT_APPEND_MAX_ATTEMPTS = 3
+_EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
 
 
 def create_control_plane_tables(engine: Engine) -> None:
@@ -316,12 +323,47 @@ class SqlModelEventStore:
         kind: str,
         payload: Mapping[str, Any] | None = None,
     ) -> ControlPlaneEvent:
-        import hashlib
-
         safe_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
         if not isinstance(safe_payload, dict):
             safe_payload = {}
+        for attempt in range(1, _EVENT_APPEND_MAX_ATTEMPTS + 1):
+            try:
+                return self._append_once(
+                    ctx,
+                    kind=kind,
+                    safe_payload=safe_payload,
+                )
+            except IntegrityError as exc:
+                if not self._is_sequence_conflict(exc):
+                    raise
+                if attempt == _EVENT_APPEND_MAX_ATTEMPTS:
+                    raise ControlPlaneError.conflict(
+                        "Concurrent event append could not allocate a sequence; retry the append",
+                        extensions={
+                            "operation": "event.append",
+                            "retryable": True,
+                        },
+                    ) from exc
+
+        raise AssertionError("event append retry loop did not return")
+
+    @staticmethod
+    def _is_sequence_conflict(exc: IntegrityError) -> bool:
+        diagnostic = getattr(exc.orig, "diag", None)
+        constraint_name = getattr(diagnostic, "constraint_name", None)
+        if constraint_name is not None:
+            return constraint_name == _EVENT_SEQUENCE_CONSTRAINT
+        return _EVENT_SEQUENCE_CONSTRAINT in str(exc.orig)
+
+    def _append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        kind: str,
+        safe_payload: dict[str, Any],
+    ) -> ControlPlaneEvent:
         with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
             statement = (
                 select(EventRow)
                 .where(
@@ -367,6 +409,26 @@ class SqlModelEventStore:
                     "workspace_id": ctx.workspace.workspace_id,
                 },
             )
+
+    def _lock_append_scope(self, session: Session, ctx: ControlPlaneContext) -> None:
+        """Serialize sequence allocation for this scope on PostgreSQL.
+
+        The unique constraint remains the final safety net for writers that do
+        not yet use this allocator. Those collisions are retried by ``append``
+        and become a transport-neutral control-plane conflict if exhausted.
+        """
+        if self._engine.dialect.name != "postgresql":
+            return
+        session.execute(
+            text(
+                "SELECT pg_advisory_xact_lock("
+                "hashtext(:tenant_id), hashtext(:workspace_id))"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        )
 
     def list_after_cursor(
         self,

@@ -10,6 +10,8 @@ import pytest
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 
+from sqlalchemy.exc import IntegrityError
+
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
@@ -80,6 +82,59 @@ def test_sqlite_event_store_restart(tmp_path: Path) -> None:
     assert listed[0].event_id == first.event_id
     assert listed[0].payload == {"run_id": "run-1", "note": "ok"}
     assert listed[0].to_dict()["run_id"] == "run-1"
+
+
+def test_sqlite_event_sequence_conflict_is_bounded_and_retryable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-events.db'}")
+    create_control_plane_tables(engine)
+    events = SqlModelEventStore(engine)
+    attempts = 0
+
+    def collide(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        raise IntegrityError(
+            "INSERT INTO cp_events",
+            {},
+            RuntimeError("duplicate uq_cp_event_scope_seq"),
+        )
+
+    monkeypatch.setattr(events, "_append_once", collide)
+    with pytest.raises(ControlPlaneError) as caught:
+        events.append(_ctx(), kind="run.accepted")
+
+    assert attempts == 3
+    assert caught.value.code == "PMCP409"
+    assert caught.value.extensions == {
+        "operation": "event.append",
+        "retryable": True,
+    }
+
+
+def test_sqlite_event_append_does_not_retry_unrelated_integrity_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-events.db'}")
+    create_control_plane_tables(engine)
+    events = SqlModelEventStore(engine)
+    attempts = 0
+
+    def fail(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        raise IntegrityError(
+            "INSERT INTO cp_events",
+            {},
+            RuntimeError("not-null violation"),
+        )
+
+    monkeypatch.setattr(events, "_append_once", fail)
+    with pytest.raises(IntegrityError):
+        events.append(_ctx(), kind="run.accepted")
+
+    assert attempts == 1
 
 
 def test_sqlite_multi_worker_idempotent_submit(tmp_path: Path) -> None:

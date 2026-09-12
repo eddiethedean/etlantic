@@ -148,6 +148,13 @@ Control-plane failures use Problem Details with `PMCP*` codes (not pipeline
 | `PMCP501` | Provider not configured on a mounted CP route |
 | `PMCP503` | Provider unavailable / fail-closed outage |
 
+For PostgreSQL-backed event stores, a `PMCP409` with extensions
+`{"operation": "event.append", "retryable": true}` means sequence allocation
+was exhausted after bounded concurrency retries. The failed transaction is
+rolled back, so clients may retry the complete append operation. Other
+`PMCP409` responses, such as idempotency conflicts, are not implicitly
+retryable.
+
 Wire schema: `etlantic.control_plane.error/1`. Authorization runs before
 existence lookup; cross-tenant misses stay opaque **404**.
 
