@@ -126,6 +126,7 @@ keyring = [
 ]
 sqlmodel = [
     "etlantic-sqlmodel",
+    "psycopg[binary]>=3.1,<4",
 ]
 medallantic = [
     "medallantic",
