@@ -36,6 +36,7 @@ def _utcnow_iso() -> str:
 
 
 _EVENT_APPEND_MAX_ATTEMPTS = 3
+_EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
 
 
 def create_control_plane_tables(engine: Engine) -> None:
@@ -333,6 +334,8 @@ class SqlModelEventStore:
                     safe_payload=safe_payload,
                 )
             except IntegrityError as exc:
+                if not self._is_sequence_conflict(exc):
+                    raise
                 if attempt == _EVENT_APPEND_MAX_ATTEMPTS:
                     raise ControlPlaneError.conflict(
                         "Concurrent event append could not allocate a sequence; retry the append",
@@ -343,6 +346,14 @@ class SqlModelEventStore:
                     ) from exc
 
         raise AssertionError("event append retry loop did not return")
+
+    @staticmethod
+    def _is_sequence_conflict(exc: IntegrityError) -> bool:
+        diagnostic = getattr(exc.orig, "diag", None)
+        constraint_name = getattr(diagnostic, "constraint_name", None)
+        if constraint_name is not None:
+            return constraint_name == _EVENT_SEQUENCE_CONSTRAINT
+        return _EVENT_SEQUENCE_CONSTRAINT in str(exc.orig)
 
     def _append_once(
         self,

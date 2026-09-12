@@ -73,11 +73,13 @@ def postgres_engine_factory() -> Iterator[Callable[[], Engine]]:
         admin_engine.dispose()
 
 
-def _ctx() -> ControlPlaneContext:
+def _ctx(
+    tenant: str = "tenant-a", workspace: str = "workspace-a"
+) -> ControlPlaneContext:
     return ControlPlaneContext(
         principal=Principal(subject="alice"),
-        tenant=TenantRef(tenant_id="tenant-a"),
-        workspace=WorkspaceRef(tenant_id="tenant-a", workspace_id="workspace-a"),
+        tenant=TenantRef(tenant_id=tenant),
+        workspace=WorkspaceRef(tenant_id=tenant, workspace_id=workspace),
         environment=EnvironmentRef(name="development"),
         security_domain=SecurityDomain(domain_id="default"),
     )
@@ -233,8 +235,9 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     barrier = Barrier(workers)
 
     def append(index: int):
+        store = SqlModelEventStore(postgres_engine_factory())
         barrier.wait(timeout=30)
-        return SqlModelEventStore(postgres_engine_factory()).append(
+        return store.append(
             ctx,
             kind="run.accepted",
             payload={"index": index},
@@ -245,9 +248,22 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
 
     assert sorted(event.sequence for event in events) == list(range(1, workers + 1))
     assert len({event.event_id for event in events}) == workers
+    assert len({event.cursor for event in events}) == workers
 
     replayed = SqlModelEventStore(postgres_engine_factory()).list_after_cursor(
         ctx, None, limit=workers
     )
     assert [event.sequence for event in replayed] == list(range(1, workers + 1))
     assert {event.payload["index"] for event in replayed} == set(range(workers))
+    assert [(event.event_id, event.cursor) for event in replayed] == [
+        (event.event_id, event.cursor)
+        for event in sorted(events, key=lambda item: item.sequence)
+    ]
+
+    isolated = SqlModelEventStore(postgres_engine_factory()).append(
+        _ctx("tenant-b", "workspace-b"),
+        kind="run.accepted",
+        payload={"index": 0},
+    )
+    assert isolated.sequence == 1
+    assert isolated.cursor not in {event.cursor for event in events}
