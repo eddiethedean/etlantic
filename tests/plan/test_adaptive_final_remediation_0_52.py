@@ -136,7 +136,9 @@ def test_final_052_017_logical_diamond_preserves_individual_edge_paths() -> None
 
 
 @pytest.mark.parametrize(
-    "value", ['a\n"\\☃😀' * 2000, {"x": [1, True, None, "é"], "z": {}}, [[], {"": ""}]]
+    "value",
+    ['a\n"\\☃😀' * 2000, {"x": [1, True, None, "é"], "z": {}}, [[], {"": ""}]],
+    ids=("large-unicode", "nested-values", "empty-containers"),
 )
 def test_final_052_018_sizing_matches_public_json_without_large_buffers(
     value: object,
