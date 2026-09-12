@@ -54,7 +54,8 @@
       "engine": "sql",
       "environment": {
         "dialect": "postgresql",
-        "runtime": "sqlalchemy"
+        "runtime": "sqlalchemy",
+        "unicode": "14.0.0"
       },
       "implementation": "sql-native/1",
       "package": "etlantic-sql",
