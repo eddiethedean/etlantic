@@ -37,8 +37,8 @@ ETLANTIC_SQL_URL='postgresql+psycopg://postgres:postgres@127.0.0.1:55432/etlanti
   uv run pytest -q tests/portable_conformance/test_review_blockers.py -m sql
 ```
 
-The result was `9 passed, 6 deselected`. The full SQL and portable SQL suites
-also passed with `48 passed, 165 deselected`.
+The result was `9 passed, 1 skipped, 6 deselected`. The full SQL and portable SQL
+suites also passed with `50 passed, 1 skipped, 165 deselected`.
 
 The regression corpus covers non-final and final sigma, word boundaries,
 case-ignorable punctuation, and combining marks. Examples include:

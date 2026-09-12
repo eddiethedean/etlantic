@@ -301,6 +301,14 @@ def test_final_rel_003_sqlite_uses_pinned_unicode_context(monkeypatch) -> None:
     _run(create_transform_compiler(), case)
 
 
+def test_final_rel_003_sqlite_handles_long_sigma_text() -> None:
+    """SQLite sigma context stays correct for long inputs with many sigmas."""
+    from etlantic_sql.unicode_data import unicode_case
+
+    value = "A" + ("Σ" * 4096) + "B"
+    assert unicode_case(value, mode="lower") == "a" + ("\u03c3" * 4096) + "b"
+
+
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:
     """A field-derived bound cannot establish the non-negative invariant."""
     plan = _project_case(

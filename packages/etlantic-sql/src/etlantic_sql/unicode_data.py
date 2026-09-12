@@ -1494,8 +1494,7 @@ def _unicode_case_mapping(mode: str) -> dict[str, str]:
     return mapping
 
 
-_CASE_IGNORABLE_TRAILING = re.compile(CASE_IGNORABLE_CLASS + r"+$")
-_CASE_IGNORABLE_LEADING = re.compile(r"^" + CASE_IGNORABLE_CLASS + r"+")
+_CASE_IGNORABLE = re.compile(CASE_IGNORABLE_CLASS)
 _CASED = re.compile(CASED_CLASS)
 
 
@@ -1504,18 +1503,24 @@ def unicode_case(value: str, *, mode: str) -> str:
     if mode not in {"lower", "upper"}:
         raise ValueError(f"Unsupported Unicode case mode {mode!r}")
     mapping = _unicode_case_mapping(mode)
+    final_sigma: list[bool] = []
+    if mode == "lower":
+        preceding_cased = False
+        for character in value:
+            final_sigma.append(preceding_cased)
+            if not _CASE_IGNORABLE.fullmatch(character):
+                preceding_cased = bool(_CASED.fullmatch(character))
+        following_cased = False
+        for index in range(len(value) - 1, -1, -1):
+            final_sigma[index] = final_sigma[index] and not following_cased
+            character = value[index]
+            if not _CASE_IGNORABLE.fullmatch(character):
+                following_cased = bool(_CASED.fullmatch(character))
     output: list[str] = []
     for index, character in enumerate(value):
-        if mode == "lower" and character == "Σ":
-            prefix = _CASE_IGNORABLE_TRAILING.sub("", value[:index])
-            suffix = _CASE_IGNORABLE_LEADING.sub("", value[index + 1 :])
-            if (
-                prefix
-                and _CASED.fullmatch(prefix[-1])
-                and (not suffix or not _CASED.fullmatch(suffix[0]))
-            ):
-                output.append("ς")
-                continue
+        if mode == "lower" and character == "Σ" and final_sigma[index]:
+            output.append("ς")
+            continue
         output.append(mapping.get(character, character))
     return "".join(output)
 
