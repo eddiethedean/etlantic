@@ -248,6 +248,36 @@ def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
     )
     assert any(finding.code == "PMXFORM304" for finding in report.findings)
 
+    literal_definition = {
+        **definition,
+        "actions": [
+            {
+                "kind": {
+                    "action": "dtcs:project",
+                    "parameters": {
+                        "fields": [
+                            {
+                                "name": "value",
+                                "expression": {
+                                    "kind": "literal",
+                                    "value": {
+                                        "type": "string",
+                                        "value": "dtcs:lower",
+                                    },
+                                },
+                            }
+                        ]
+                    },
+                }
+            }
+        ],
+    }
+    literal_report = create_transform_compiler().analyze(
+        literal_definition,
+        context=TransformPlanningContext("p", "s", "profile", "sql"),
+    )
+    assert not any(finding.code == "PMXFORM304" for finding in literal_report.findings)
+
 
 def test_model_create_and_pk_validation_sqlite() -> None:
     pytest.importorskip("sqlmodel")

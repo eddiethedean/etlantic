@@ -205,9 +205,11 @@ class SqlTransformCompiler:
         findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
         blob = json.dumps(definition, sort_keys=True)
-        if not _unicode_runtime_matches_pinned() and (
-            "dtcs:lower" in blob or "dtcs:upper" in blob
-        ):
+        uses_unicode_casing = any(
+            function in {"dtcs:lower", "dtcs:upper"}
+            for function in req.get("functions", ())
+        )
+        if not _unicode_runtime_matches_pinned() and uses_unicode_casing:
             findings.append(
                 TransformSupportFinding(
                     code="PMXFORM304",
