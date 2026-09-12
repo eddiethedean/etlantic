@@ -1504,7 +1504,7 @@ def unicode_case(value: str, *, mode: str) -> str:
         raise ValueError(f"Unsupported Unicode case mode {mode!r}")
     mapping = _unicode_case_mapping(mode)
     final_sigma: list[bool] = []
-    if mode == "lower":
+    if mode == "lower" and "Σ" in value:
         preceding_cased = False
         for character in value:
             final_sigma.append(preceding_cased)

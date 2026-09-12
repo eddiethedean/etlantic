@@ -309,6 +309,22 @@ def test_final_rel_003_sqlite_handles_long_sigma_text() -> None:
     assert unicode_case(value, mode="lower") == "a" + ("\u03c3" * 4096) + "b"
 
 
+@pytest.mark.sql
+def test_final_rel_003_sqlite_skips_sigma_context_without_sigma(monkeypatch) -> None:
+    """SQLite casing should not scan Unicode context when no sigma is present."""
+    import etlantic_sql.unicode_data as unicode_data
+
+    class UnexpectedContextScan:
+        def fullmatch(self, character: str) -> None:
+            raise AssertionError(f"unexpected context scan for {character!r}")
+
+    monkeypatch.setattr(unicode_data, "_CASE_IGNORABLE", UnexpectedContextScan())
+    monkeypatch.setattr(unicode_data, "_CASED", UnexpectedContextScan())
+
+    value = "A" * 4096
+    assert unicode_data.unicode_case(value, mode="lower") == "a" * 4096
+
+
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:
     """A field-derived bound cannot establish the non-negative invariant."""
     plan = _project_case(
