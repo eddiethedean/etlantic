@@ -93,6 +93,11 @@ _COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
+def _dialect_from_url(url: str) -> str:
+    """Return the SQLAlchemy dialect name encoded by a database URL."""
+    return url.split(":", 1)[0].split("+", 1)[0].lower()
+
+
 def create_transform_compiler() -> SqlTransformCompiler:
     """Entry-point factory for ``etlantic.transform_compilers``."""
     return SqlTransformCompiler()
@@ -101,9 +106,9 @@ def create_transform_compiler() -> SqlTransformCompiler:
 def _environment_identity(dialect: str | None = None) -> dict[str, str]:
     """Return the SQL runtime identity used for planning evidence."""
     if dialect is None:
-        url = os.environ.get("ETLANTIC_SQL_URL", "")
-        dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "sqlite"
-    dialect = str(dialect or "sqlite").split("+", 1)[0].lower()
+        url = os.environ.get("ETLANTIC_SQL_URL") or os.environ.get("DATABASE_URL")
+        dialect = _dialect_from_url(url) if url else "sqlite"
+    dialect = _dialect_from_url(str(dialect or "sqlite"))
     environment = {
         "dialect": dialect,
         "runtime": "sqlalchemy",
@@ -278,7 +283,13 @@ class SqlTransformCompiler:
 
         validate_portable_runtime_parameters(plan, parameters)
 
-        dialect, engine = _open_engine(context.metadata)
+        expected_dialect = str(self.info.environment.get("dialect") or "")
+        dialect, engine = _open_engine(
+            context.metadata,
+            expected_dialect=expected_dialect
+            if expected_dialect not in {"", "unknown", "backend-defined"}
+            else None,
+        )
         compiler = SqlCompiler(
             dialect=dialect,
             supports_merge=str(dialect).startswith("postgresql"),
@@ -496,12 +507,19 @@ def _text(sql: str) -> Any:
     return text(sql)
 
 
-def _open_engine(metadata: Mapping[str, Any]) -> tuple[str, Any]:
+def _open_engine(
+    metadata: Mapping[str, Any], *, expected_dialect: str | None = None
+) -> tuple[str, Any]:
     from sqlalchemy import create_engine
 
     if "sqlalchemy_engine" in metadata:
         engine = metadata["sqlalchemy_engine"]
         dialect = str(metadata.get("sql_dialect") or engine.dialect.name)
+        if expected_dialect and dialect != expected_dialect:
+            raise ValueError(
+                f"SQL runtime dialect {dialect!r} does not match "
+                f"compiler evidence dialect {expected_dialect!r}"
+            )
         return dialect, engine
     url = (
         metadata.get("database_url")
@@ -510,9 +528,22 @@ def _open_engine(metadata: Mapping[str, Any]) -> tuple[str, Any]:
     )
     if url:
         engine = create_engine(str(url))
-        return engine.dialect.name, engine
+        dialect = engine.dialect.name
+        if expected_dialect and dialect != expected_dialect:
+            engine.dispose()
+            raise ValueError(
+                f"SQL runtime dialect {dialect!r} does not match "
+                f"compiler evidence dialect {expected_dialect!r}"
+            )
+        return dialect, engine
     # Conformance / local default: in-memory SQLite (PostgreSQL via env for gate).
     engine = create_engine("sqlite+pysqlite:///:memory:")
+    if expected_dialect and expected_dialect != "sqlite":
+        engine.dispose()
+        raise ValueError(
+            "SQL runtime dialect 'sqlite' does not match "
+            f"compiler evidence dialect {expected_dialect!r}"
+        )
     return "sqlite", engine
 
 

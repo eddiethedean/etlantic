@@ -150,6 +150,29 @@ def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
     assert compiler.info.environment["unicode_fingerprint"] == UNICODE_DATA_FINGERPRINT
 
 
+def test_sql_compiler_identity_honors_database_url(monkeypatch) -> None:
+    """Compiler evidence must match the runtime URL fallback."""
+    monkeypatch.delenv("ETLANTIC_SQL_URL", raising=False)
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+psycopg://postgres:postgres@127.0.0.1/db"
+    )
+    from etlantic_sql.transform_compiler import create_transform_compiler
+
+    compiler = create_transform_compiler()
+    assert compiler.info.environment["dialect"] == "postgresql"
+
+
+def test_sql_runtime_rejects_dialect_identity_mismatch() -> None:
+    """Runtime engine overrides cannot bypass compiler dialect evidence."""
+    from etlantic_sql.transform_compiler import _open_engine
+
+    with pytest.raises(ValueError, match="does not match compiler evidence"):
+        _open_engine(
+            {"database_url": "postgresql+psycopg://postgres:postgres@127.0.0.1/db"},
+            expected_dialect="sqlite",
+        )
+
+
 def test_model_create_and_pk_validation_sqlite() -> None:
     pytest.importorskip("sqlmodel")
     from sqlmodel import Field, SQLModel
