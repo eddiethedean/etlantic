@@ -117,6 +117,16 @@ def test_memory_event_store_concurrent_append() -> None:
     assert sequences == list(range(1, 41))
 
 
+def test_memory_store_empty_positive_limits_return_lists() -> None:
+    ctx = _ctx()
+
+    submissions = MemorySubmissionStore()
+    events = MemoryEventStore()
+
+    assert type(submissions.poll_accepted(ctx, limit=1)) is list
+    assert type(events.list_after_cursor(ctx, None, limit=1)) is list
+
+
 def test_problem_details_round_trip() -> None:
     problem = ProblemDetails(
         type="etlantic.control_plane/not_found",

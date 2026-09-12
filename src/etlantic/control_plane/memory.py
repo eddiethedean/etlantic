@@ -265,7 +265,7 @@ class MemorySubmissionStore:
                 out.append(deepcopy(record))
                 if len(out) >= limit:
                     break
-            return out if out else ()
+            return out
 
 
 @dataclass
@@ -343,7 +343,7 @@ class MemoryEventStore:
                         },
                     )
             items = [deepcopy(ev) for ev in bucket[start : start + limit]]
-            return items if items else ()
+            return items
 
 
 __all__ = [
