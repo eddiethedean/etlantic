@@ -773,7 +773,7 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     """
     clauses: list[str] = []
     if mode == "lower":
-        text = f"CAST({value} AS TEXT)"
+        text = f'CAST({value} AS TEXT) COLLATE "C"'
         ignorable = _postgres_case_ignorable_class()
         cased = _postgres_cased_class()
         prefix = (
@@ -791,9 +791,9 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
         clauses.append(
             "WHEN etlantic_chars.ch = 'Σ' "
             f"AND LENGTH({prefix}) > 0 "
-            f"AND RIGHT({prefix}, 1) ~ {_sql_literal(cased)} "
+            f'AND RIGHT({prefix}, 1) COLLATE "C" ~ {_sql_literal(cased)} '
             f"AND (LENGTH({suffix}) = 0 OR "
-            f"LEFT({suffix}, 1) !~ {_sql_literal(cased)}) "
+            f'LEFT({suffix}, 1) COLLATE "C" !~ {_sql_literal(cased)}) '
             "THEN 'ς'"
         )
     clauses.extend(
