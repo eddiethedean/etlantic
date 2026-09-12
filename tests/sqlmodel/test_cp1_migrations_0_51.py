@@ -5,7 +5,9 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 
@@ -217,3 +219,35 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
     assert receipt.submission_id == accepted.receipt.submission_id
     replayed = SqlModelEventStore(restarted).list_after_cursor(ctx, None)
     assert [item.event_id for item in replayed] == [event.event_id]
+
+
+def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "005_cp1_reference"
+    engine.dispose()
+
+    ctx = _ctx()
+    workers = 16
+    barrier = Barrier(workers)
+
+    def append(index: int):
+        barrier.wait(timeout=30)
+        return SqlModelEventStore(postgres_engine_factory()).append(
+            ctx,
+            kind="run.accepted",
+            payload={"index": index},
+        )
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        events = list(pool.map(append, range(workers)))
+
+    assert sorted(event.sequence for event in events) == list(range(1, workers + 1))
+    assert len({event.event_id for event in events}) == workers
+
+    replayed = SqlModelEventStore(postgres_engine_factory()).list_after_cursor(
+        ctx, None, limit=workers
+    )
+    assert [event.sequence for event in replayed] == list(range(1, workers + 1))
+    assert {event.payload["index"] for event in replayed} == set(range(workers))
