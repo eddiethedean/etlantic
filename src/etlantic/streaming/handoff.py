@@ -65,8 +65,10 @@ def evaluate_handoff(
     """Detect unreported gap or overlap between snapshot and stream.
 
     Positions are opaque totally-ordered strings compared lexicographically
-    (in-memory fixtures use zero-padded integers). Schema mismatch during
-    concurrent change fails closed.
+    (in-memory fixtures use zero-padded integers). The declared cut is
+    inclusive: a stream may begin at the cut or after it only when the
+    snapshot reached the cut. Schema mismatch during concurrent change fails
+    closed.
     """
     if (
         concurrent_schema_identity is not None
@@ -80,12 +82,9 @@ def evaluate_handoff(
             stream_position=snapshot.stream_position,
             message="concurrent schema change during snapshot-to-stream handoff",
         )
-    gap = first_stream_position > snapshot.stream_position and (
-        last_snapshot_position < snapshot.stream_position
-    )
-    # Gap: stream starts after the declared cut with a hole after snapshot.
-    if first_stream_position > snapshot.stream_position:
-        gap = True
+    # Gap: the snapshot ended before the declared cut, regardless of where
+    # the stream starts relative to that cut.
+    gap = last_snapshot_position < snapshot.stream_position
     overlap = first_stream_position < snapshot.stream_position
     if gap:
         return HandoffResult(

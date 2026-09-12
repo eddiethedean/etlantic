@@ -64,7 +64,7 @@ def test_handoff_gap_and_overlap_fail_closed() -> None:
     gap = evaluate_handoff(
         snapshot=cut,
         first_stream_position="000020",
-        last_snapshot_position="000010",
+        last_snapshot_position="000009",
     )
     assert gap.accepted is False
     assert gap.gap_detected is True
@@ -77,6 +77,30 @@ def test_handoff_gap_and_overlap_fail_closed() -> None:
     assert overlap.accepted is False
     assert overlap.overlap_detected is True
     assert handoff_failure_diagnostic(overlap).code == "PMSTR201"
+
+
+def test_handoff_uses_last_snapshot_position_at_cutover() -> None:
+    cut = SnapshotCut(
+        snapshot_identity="snap-1",
+        stream_position="000010",
+        schema_identity="sch-1",
+    )
+    contiguous = evaluate_handoff(
+        snapshot=cut,
+        first_stream_position="000011",
+        last_snapshot_position="000010",
+    )
+    assert contiguous.accepted is True
+    assert contiguous.gap_detected is False
+
+    hole_at_cut = evaluate_handoff(
+        snapshot=cut,
+        first_stream_position="000010",
+        last_snapshot_position="000009",
+    )
+    assert hole_at_cut.accepted is False
+    assert hole_at_cut.gap_detected is True
+    assert handoff_failure_diagnostic(hole_at_cut).code == "PMSTR200"
 
 
 def test_continuous_report_has_lag_watermark_and_rejected_ids() -> None:

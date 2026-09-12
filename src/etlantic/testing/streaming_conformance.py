@@ -94,18 +94,18 @@ def run_streaming_conformance_suite() -> dict[str, Any]:
 
     cut = SnapshotCut(
         snapshot_identity="snap",
-        stream_position="10",
+        stream_position="000010",
         schema_identity="s1",
     )
     ok = evaluate_handoff(
         snapshot=cut,
-        first_stream_position="10",
-        last_snapshot_position="10",
+        first_stream_position="000010",
+        last_snapshot_position="000010",
     )
     gap = evaluate_handoff(
         snapshot=cut,
-        first_stream_position="11",
-        last_snapshot_position="9",
+        first_stream_position="000011",
+        last_snapshot_position="000009",
     )
     checks["handoff_exact"] = ok.accepted
     checks["handoff_gap"] = gap.gap_detected and not gap.accepted
