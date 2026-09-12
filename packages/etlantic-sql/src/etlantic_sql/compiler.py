@@ -786,17 +786,18 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     """
     clauses: list[str] = []
     if mode == "lower":
-        text = f'CAST({value} AS TEXT) COLLATE "C"'
+        text = f"CAST({value} AS TEXT)"
+        context_text = f'{text} COLLATE "C"'
         ignorable = _postgres_case_ignorable_class()
         cased = _postgres_cased_class()
         prefix = (
-            f"REGEXP_REPLACE(SUBSTRING({text} FROM 1 FOR "
+            f"REGEXP_REPLACE(SUBSTRING({context_text} FROM 1 FOR "
             "CAST(etlantic_chars.ordinality - 1 AS INTEGER)), "
             f"{_sql_literal(ignorable + '+$')}"
             ", '')"
         )
         suffix = (
-            f"REGEXP_REPLACE(SUBSTRING({text} FROM "
+            f"REGEXP_REPLACE(SUBSTRING({context_text} FROM "
             "CAST(etlantic_chars.ordinality + 1 AS INTEGER)), "
             f"{_sql_literal('^' + ignorable + '+')}"
             ", '')"

@@ -140,6 +140,49 @@ def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
     assert rows == [("a-\u03c3",), ("a\u03c2-b",), ("a-𞤢",)]
 
 
+def test_postgresql_lower_preserves_input_collation() -> None:
+    """Context classification must not force the result to C collation."""
+    if not os.environ.get("ETLANTIC_SQL_URL", "").startswith("postgresql"):
+        pytest.skip("PostgreSQL collation verification requires ETLANTIC_SQL_URL")
+    from sqlalchemy import create_engine, text
+
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    compiled = compiler.compile_query(
+        SqlQuery(
+            source=RelationRef(name="sigma_collation_033"),
+            columns=(
+                AliasedExpr(
+                    CallExpr("dtcs:lower", (col("name"),)),
+                    "lower_name",
+                ),
+            ),
+        ),
+        context=SqlExecutionContext(
+            run_id="r", pipeline_id="p", plan_id="plan", step_name="lower"
+        ),
+    )
+    engine = create_engine(os.environ["ETLANTIC_SQL_URL"])
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TEMP TABLE sigma_collation_033 "
+                    '(name TEXT COLLATE "en-US-x-icu")'
+                )
+            )
+            connection.execute(text("INSERT INTO sigma_collation_033 VALUES ('Ä')"))
+            rows = connection.execute(
+                text(
+                    "SELECT pg_collation_for(lower_name), lower_name < 'z' "
+                    f"FROM ({compiled.text}) AS lowered"
+                ),
+                compiled.metadata["_bound_params"],
+            ).all()
+    finally:
+        engine.dispose()
+    assert rows == [('"en-US-x-icu"', True)]
+
+
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
     """Unicode-dependent SQL lowering must identify its Unicode data version."""
     from etlantic_sql.transform_compiler import create_transform_compiler
@@ -160,6 +203,50 @@ def test_sql_compiler_identity_honors_database_url(monkeypatch) -> None:
 
     compiler = create_transform_compiler()
     assert compiler.info.environment["dialect"] == "postgresql"
+
+
+def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
+    """Portable SQL casing must fail closed when host Unicode data differs."""
+    import etlantic_sql.transform_compiler as transform_compiler
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic_sql.transform_compiler import create_transform_compiler
+
+    monkeypatch.setattr(
+        transform_compiler, "_unicode_runtime_matches_pinned", lambda: False
+    )
+    definition = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "actions": [
+            {
+                "kind": {
+                    "action": "dtcs:project",
+                    "parameters": {
+                        "fields": [
+                            {
+                                "name": "value",
+                                "expression": {
+                                    "kind": "call",
+                                    "callee": "dtcs:lower",
+                                    "args": [
+                                        {
+                                            "kind": "fieldRef",
+                                            "scope": "field",
+                                            "target": "text",
+                                        }
+                                    ],
+                                },
+                            }
+                        ]
+                    },
+                }
+            }
+        ],
+    }
+    report = create_transform_compiler().analyze(
+        definition,
+        context=TransformPlanningContext("p", "s", "profile", "sql"),
+    )
+    assert any(finding.code == "PMXFORM304" for finding in report.findings)
 
 
 def test_model_create_and_pk_validation_sqlite() -> None:
