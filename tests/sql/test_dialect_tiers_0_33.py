@@ -127,13 +127,15 @@ def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
             connection.execute(
                 text('CREATE TEMP TABLE sigma_c_033 (name TEXT COLLATE "C")')
             )
-            connection.execute(text("INSERT INTO sigma_c_033 VALUES ('A-Σ'), ('AΣ-B')"))
+            connection.execute(
+                text("INSERT INTO sigma_c_033 VALUES ('A-Σ'), ('AΣ-B'), ('A-𞤀')")
+            )
             rows = connection.execute(
                 text(compiled.text), compiled.metadata["_bound_params"]
             ).all()
     finally:
         engine.dispose()
-    assert rows == [("a-\u03c3",), ("a\u03c2-b",)]
+    assert rows == [("a-\u03c3",), ("a\u03c2-b",), ("a-𞤢",)]
 
 
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
