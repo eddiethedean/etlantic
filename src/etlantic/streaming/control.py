@@ -6,6 +6,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import islice
 from typing import Any
 
 from etlantic.diagnostics import Diagnostic, ValidationReport
@@ -182,7 +183,7 @@ def expand_children(
     """Expand ``keys`` into deterministic child identities.
 
     Raises:
-        PipelineValidationError: When bounds would be exhausted.
+        PipelineValidationError: When bounds or key identity constraints fail.
     """
     diagnostics: list[Diagnostic] = []
     n = len(keys)
@@ -269,19 +270,58 @@ def expand_children(
                 diagnostics, phases=("expansion",)
             ),
         )
+    normalized_keys = [str(key) for key in islice(keys, n + 1)]
+    normalized_n = len(normalized_keys)
+    if normalized_n != n:
+        diagnostic = dyn_diagnostic(
+            "bound_exhausted",
+            (
+                f"Expansion of {spec.parent_id!r} changed from {n} to "
+                f"{normalized_n} keys during validation; refusing unstable "
+                "child identities"
+            ),
+            path=("expansion", spec.parent_id, "keys"),
+            metadata={
+                "parent_id": spec.parent_id,
+                "declared_child_count": n,
+                "observed_child_count": normalized_n,
+            },
+        )
+        raise PipelineValidationError(
+            "Dynamic expansion keys changed during validation.",
+            report=ValidationReport.from_diagnostics(
+                (diagnostic,), phases=("expansion",)
+            ),
+        )
+    if len(set(normalized_keys)) != normalized_n:
+        diagnostic = dyn_diagnostic(
+            "bound_exhausted",
+            (
+                f"Expansion of {spec.parent_id!r} contains duplicate map keys; "
+                "refusing duplicate child identities"
+            ),
+            path=("expansion", spec.parent_id, "keys"),
+            metadata={"parent_id": spec.parent_id, "child_count": normalized_n},
+        )
+        raise PipelineValidationError(
+            "Dynamic expansion keys must be unique.",
+            report=ValidationReport.from_diagnostics(
+                (diagnostic,), phases=("expansion",)
+            ),
+        )
     children: list[ChildExpansion] = []
-    for key in keys:
+    for key in normalized_keys:
         identity = child_identity(
             plan_id=plan_id,
             parent_id=spec.parent_id,
-            map_key=str(key),
+            map_key=key,
             input_snapshot_id=input_snapshot_id,
         )
         children.append(
             ChildExpansion(
                 identity=identity,
                 parent_id=spec.parent_id,
-                map_key=str(key),
+                map_key=key,
                 input_snapshot_id=input_snapshot_id,
                 depth=depth,
             )
