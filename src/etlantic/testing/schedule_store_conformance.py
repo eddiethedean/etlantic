@@ -101,5 +101,14 @@ def run_schedule_store_conformance_suite(store: Any) -> None:
     try:
         store.get(ctx, created.schedule_id)
         raise AssertionError("deleted schedule must 404")
-    except ControlPlaneError:
-        pass
+    except ControlPlaneError as exc:
+        assert exc.status == 404
+    assert all(
+        item.schedule_id != created.schedule_id for item in store.list_schedules(ctx)
+    )
+    for mutation in (store.pause, store.resume, store.delete):
+        try:
+            mutation(ctx, created.schedule_id)
+            raise AssertionError("deleted schedule mutation must 404")
+        except ControlPlaneError as exc:
+            assert exc.status == 404

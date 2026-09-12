@@ -139,7 +139,7 @@ class MemoryScheduleStore:
         key = (*_scope(ctx), schedule_id)
         with self._lock:
             rec = self._schedules.get(key)
-            if rec is None:
+            if rec is None or rec.status == "deleted":
                 raise ControlPlaneError.not_found("schedule not found")
             rec = replace(rec, status=status, updated_at=_iso())  # type: ignore[arg-type]
             self._schedules[key] = rec
