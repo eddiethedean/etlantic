@@ -86,9 +86,7 @@ _SUPPORT_PAYLOAD_KEYS = frozenset(
 _PLACEMENT_TARGET_KEYS = frozenset(
     {"resource", "location", "security_domain", "connector", "policy"}
 )
-_ENVIRONMENT_KEYS = frozenset(
-    {"dialect", "runtime", "driver", "version", "unicode"}
-)
+_ENVIRONMENT_KEYS = frozenset({"dialect", "runtime", "driver", "version", "unicode"})
 _REQUIREMENT_KEYS = frozenset(
     {
         "id",
