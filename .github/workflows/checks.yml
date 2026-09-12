@@ -302,6 +302,11 @@ jobs:
           uv run pytest -q tests/sql -m sql
           uv run pytest -q tests/portable_conformance -m sql
 
+      - name: PostgreSQL Unicode sigma evidence
+        env:
+          ETLANTIC_SQL_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+        run: uv run pytest -q -s tests/portable_conformance/test_review_blockers.py -m sql -k final_rel_003_postgresql_arm64_locale_evidence
+
       - name: Runnable SQL examples
         env:
           ETLANTIC_SQL_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"

@@ -196,15 +196,82 @@ def test_final_rel_003_postgresql_uses_complete_case_ignorable_context() -> None
             {"text": "A\u03a3:B"},
             {"text": "A'\u03a3"},
             {"text": "A\u03a3'B"},
+            {"text": "A\u03a3\u0301"},
+            {"text": "A\u03a3\u0301B"},
         ],
         expected=[
             {"value": "a:\u03c2"},
             {"value": "a\u03c3:b"},
             {"value": "a'\u03c2"},
             {"value": "a\u03c3'b"},
+            {"value": "a\u03c2\u0301"},
+            {"value": "a\u03c3\u0301b"},
         ],
     )
     _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
+    """Record the PostgreSQL environment used for the sigma parity proof."""
+    _require_postgresql()
+    pytest.importorskip("sqlalchemy")
+    import json
+    import platform
+    import re
+
+    from sqlalchemy import create_engine, text
+
+    url = os.environ["ETLANTIC_SQL_URL"]
+    engine = create_engine(url)
+    try:
+        with engine.connect() as connection:
+            version = str(connection.execute(text("SELECT version()")).scalar_one())
+            environment = connection.execute(
+                text(
+                    """
+                    SELECT current_setting('server_version_num'),
+                           pg_encoding_to_char(dat.encoding),
+                           dat.datcollate,
+                           dat.datctype,
+                           dat.datlocprovider
+                    FROM pg_database AS dat
+                    WHERE dat.datname = current_database()
+                    """
+                )
+            ).one()
+    finally:
+        engine.dispose()
+
+    server_version, encoding, collate, ctype, provider = environment
+    server_architecture_match = re.search(r"\bon\s+([^,]+)", version)
+    server_architecture = (
+        server_architecture_match.group(1).strip()
+        if server_architecture_match
+        else None
+    )
+    assert str(server_version).startswith("16")
+    assert encoding == "UTF8"
+    assert collate
+    assert ctype
+    assert provider in {"c", "i", "d"}
+    assert server_architecture
+    print(
+        "FINAL-REL-003 PostgreSQL evidence "
+        + json.dumps(
+            {
+                "architecture": platform.machine(),
+                "server_architecture": server_architecture,
+                "server_version": version,
+                "server_version_num": server_version,
+                "encoding": encoding,
+                "collate": collate,
+                "ctype": ctype,
+                "locale_provider": provider,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:

@@ -720,6 +720,30 @@ def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+def _unicode_regex_class(codepoints: list[int]) -> str:
+    """Return a compact PostgreSQL regex class for Unicode code points."""
+    ranges: list[tuple[int, int]] = []
+    if codepoints:
+        start = previous = codepoints[0]
+        for codepoint in codepoints[1:]:
+            if codepoint == previous + 1:
+                previous = codepoint
+                continue
+            ranges.append((start, previous))
+            start = previous = codepoint
+        ranges.append((start, previous))
+
+    def escaped(codepoint: int) -> str:
+        char = chr(codepoint)
+        return "\\" + char if char in {"\\", "]", "-", "^"} else char
+
+    parts = [
+        escaped(start) if start == end else f"{escaped(start)}-{escaped(end)}"
+        for start, end in ranges
+    ]
+    return "[" + "".join(parts) + "]"
+
+
 @lru_cache(maxsize=1)
 def _postgres_case_ignorable_class() -> str:
     """Return a PostgreSQL regex class for Unicode Case_Ignorable code points.
@@ -762,26 +786,27 @@ def _postgres_case_ignorable_class() -> str:
         if unicodedata.category(chr(codepoint)) in {"Mn", "Me", "Cf", "Lm", "Sk"}
         or codepoint in case_ignorable_punctuation
     ]
-    ranges: list[tuple[int, int]] = []
-    if codepoints:
-        start = previous = codepoints[0]
-        for codepoint in codepoints[1:]:
-            if codepoint == previous + 1:
-                previous = codepoint
-                continue
-            ranges.append((start, previous))
-            start = previous = codepoint
-        ranges.append((start, previous))
+    return _unicode_regex_class(codepoints)
 
-    def escaped(codepoint: int) -> str:
-        char = chr(codepoint)
-        return "\\" + char if char in {"\\", "]", "-", "^"} else char
 
-    parts = [
-        escaped(start) if start == end else f"{escaped(start)}-{escaped(end)}"
-        for start, end in ranges
+@lru_cache(maxsize=1)
+def _postgres_cased_class() -> str:
+    """Return a locale-independent regex class for Unicode ``Cased`` code points.
+
+    PostgreSQL's ``UPPER``/``LOWER`` functions are locale-sensitive.  They
+    must not decide whether a neighboring character is cased because that
+    would make final-sigma lowering vary with the database locale or build
+    architecture.  Python's Unicode predicates provide the compile-time
+    Unicode default property used to generate this literal class.
+    """
+    codepoints = [
+        codepoint
+        for codepoint in range(sys.maxunicode + 1)
+        if unicodedata.category(chr(codepoint)) in {"Lu", "Ll", "Lt"}
+        or chr(codepoint).isupper()
+        or chr(codepoint).islower()
     ]
-    return "[" + "".join(parts) + "]"
+    return _unicode_regex_class(codepoints)
 
 
 def _postgres_unicode_case(value: str, *, mode: str) -> str:
@@ -800,6 +825,7 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     if mode == "lower":
         text = f"CAST({value} AS TEXT)"
         ignorable = _postgres_case_ignorable_class()
+        cased = _postgres_cased_class()
         prefix = (
             f"REGEXP_REPLACE(SUBSTRING({text} FROM 1 FOR "
             "CAST(etlantic_chars.ordinality - 1 AS INTEGER)), "
@@ -815,9 +841,9 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
         clauses.append(
             "WHEN etlantic_chars.ch = 'Σ' "
             f"AND LENGTH({prefix}) > 0 "
-            f"AND UPPER(RIGHT({prefix}, 1)) <> LOWER(RIGHT({prefix}, 1)) "
+            f"AND RIGHT({prefix}, 1) ~ {_sql_literal(cased)} "
             f"AND (LENGTH({suffix}) = 0 OR "
-            f"UPPER(LEFT({suffix}, 1)) = LOWER(LEFT({suffix}, 1))) "
+            f"LEFT({suffix}, 1) !~ {_sql_literal(cased)}) "
             "THEN 'ς'"
         )
     cases = " ".join(clauses)

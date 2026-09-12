@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import unicodedata
 from collections.abc import Mapping, Sequence
 from decimal import Decimal, localcontext
 from typing import Any
@@ -98,7 +99,11 @@ def _environment_identity(dialect: str | None = None) -> dict[str, str]:
     if dialect is None:
         url = os.environ.get("ETLANTIC_SQL_URL", "")
         dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "unknown"
-    return {"dialect": dialect or "unknown", "runtime": "sqlalchemy"}
+    return {
+        "dialect": dialect or "unknown",
+        "runtime": "sqlalchemy",
+        "unicode": unicodedata.unidata_version,
+    }
 
 
 class SqlTransformCompiler:

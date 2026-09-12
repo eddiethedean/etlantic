@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import unicodedata
+
 import pytest
 
 pytest.importorskip("sqlalchemy")
 
 from etlantic.sql.expression import col
 from etlantic.sql.protocol import (
+    AliasedExpr,
+    CallExpr,
     RelationRef,
     SqlExecutionContext,
     SqlQuery,
@@ -70,6 +74,38 @@ def test_postgresql_merge_compile_on_conflict() -> None:
     assert "ON CONFLICT" in compiled.text
     assert "EXCLUDED" in compiled.text
     assert "DO UPDATE SET" in compiled.text
+
+
+def test_postgresql_sigma_context_does_not_use_locale_case_mapping() -> None:
+    """Final-sigma context classification must be locale-independent."""
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    compiled = compiler.compile_query(
+        SqlQuery(
+            source=RelationRef(name="customers"),
+            columns=(
+                AliasedExpr(
+                    CallExpr("dtcs:lower", (col("name"),)),
+                    "lower_name",
+                ),
+            ),
+        ),
+        context=SqlExecutionContext(
+            run_id="r", pipeline_id="p", plan_id="plan", step_name="lower"
+        ),
+    )
+
+    assert "RIGHT(" in compiled.text
+    assert " !~ '" in compiled.text
+    assert "UPPER(RIGHT(" not in compiled.text
+    assert "LOWER(RIGHT(" not in compiled.text
+
+
+def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
+    """Unicode-dependent SQL lowering must identify its Unicode data version."""
+    from etlantic_sql.transform_compiler import create_transform_compiler
+
+    compiler = create_transform_compiler()
+    assert compiler.info.environment["unicode"] == unicodedata.unidata_version
 
 
 def test_model_create_and_pk_validation_sqlite() -> None:
