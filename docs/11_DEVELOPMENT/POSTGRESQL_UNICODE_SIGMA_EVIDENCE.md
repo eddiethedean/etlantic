@@ -1,3 +1,9 @@
+---
+title: PostgreSQL Unicode Sigma Evidence
+description: Reproducible PostgreSQL 16 arm64 evidence for Unicode final-sigma parity.
+status: verified
+---
+
 # PostgreSQL Unicode Sigma Evidence
 
 Issue [#127](https://github.com/eddiethedean/etlantic/issues/127) tracked a
