@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-import unicodedata
 from decimal import Decimal
 from functools import lru_cache
 from typing import Any
@@ -29,6 +27,11 @@ from etlantic.sql.protocol import (
     WriteIntentKind,
 )
 from etlantic_sql.dialect_postgresql import quote_identifier
+from etlantic_sql.unicode_data import (
+    CASE_IGNORABLE_CLASS,
+    CASED_CLASS,
+    EXPANSIONS,
+)
 
 _BINARY_SQL = {
     "eq": "=",
@@ -704,44 +707,14 @@ class SqlCompiler:
 
 @lru_cache(maxsize=2)
 def _unicode_expansions(mode: str) -> tuple[tuple[str, str], ...]:
-    """Return the host Unicode database's full one-codepoint case expansions."""
+    """Return the pinned Unicode database's full one-codepoint expansions."""
     if mode not in {"lower", "upper"}:
         raise ValueError(f"Unsupported Unicode case mode {mode!r}")
-    expansions: list[tuple[str, str]] = []
-    for codepoint in range(sys.maxunicode + 1):
-        char = chr(codepoint)
-        mapped = getattr(char, mode)()
-        if len(mapped) != 1:
-            expansions.append((char, mapped))
-    return tuple(expansions)
+    return EXPANSIONS[mode]
 
 
 def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
-
-
-def _unicode_regex_class(codepoints: list[int]) -> str:
-    """Return a compact PostgreSQL regex class for Unicode code points."""
-    ranges: list[tuple[int, int]] = []
-    if codepoints:
-        start = previous = codepoints[0]
-        for codepoint in codepoints[1:]:
-            if codepoint == previous + 1:
-                previous = codepoint
-                continue
-            ranges.append((start, previous))
-            start = previous = codepoint
-        ranges.append((start, previous))
-
-    def escaped(codepoint: int) -> str:
-        char = chr(codepoint)
-        return "\\" + char if char in {"\\", "]", "-", "^"} else char
-
-    parts = [
-        escaped(start) if start == end else f"{escaped(start)}-{escaped(end)}"
-        for start, end in ranges
-    ]
-    return "[" + "".join(parts) + "]"
 
 
 @lru_cache(maxsize=1)
@@ -751,62 +724,24 @@ def _postgres_case_ignorable_class() -> str:
     PostgreSQL's POSIX ``alpha`` class is not sufficient for Unicode default
     casing context: punctuation such as a hyphen must stop a sigma context,
     while combining marks, modifier characters, and the punctuation listed by
-    Unicode's ``Case_Ignorable`` property must be skipped.  Python's Unicode
-    database is available at compile time, so encode the category-based subset
-    and the assigned punctuation exceptions as compact character ranges in the
-    generated SQL.
+    Unicode's ``Case_Ignorable`` property must be skipped. The pinned Unicode
+    data is encoded as a compact character range in the generated SQL.
     """
 
-    # Python's stdlib exposes General_Category but not the derived
-    # Case_Ignorable property. Keep the assigned punctuation exceptions
-    # explicit so PostgreSQL's final-sigma context matches default Unicode
-    # casing (including separators such as ':' and '.').
-    case_ignorable_punctuation = {
-        0x27,
-        0x2E,
-        0x3A,
-        0xB7,
-        0x387,
-        0x55F,
-        0x5F4,
-        0x2018,
-        0x2019,
-        0x2024,
-        0x2027,
-        0xFE13,
-        0xFE52,
-        0xFE55,
-        0xFF07,
-        0xFF0E,
-        0xFF1A,
-    }
-    codepoints = [
-        codepoint
-        for codepoint in range(sys.maxunicode + 1)
-        if unicodedata.category(chr(codepoint)) in {"Mn", "Me", "Cf", "Lm", "Sk"}
-        or codepoint in case_ignorable_punctuation
-    ]
-    return _unicode_regex_class(codepoints)
+    return CASE_IGNORABLE_CLASS
 
 
 @lru_cache(maxsize=1)
 def _postgres_cased_class() -> str:
     """Return a locale-independent regex class for Unicode ``Cased`` code points.
 
-    PostgreSQL's ``UPPER``/``LOWER`` functions are locale-sensitive.  They
+    PostgreSQL's ``UPPER``/``LOWER`` functions are locale-sensitive. They
     must not decide whether a neighboring character is cased because that
     would make final-sigma lowering vary with the database locale or build
-    architecture.  Python's Unicode predicates provide the compile-time
-    Unicode default property used to generate this literal class.
+    architecture. The pinned Unicode default property is used to generate
+    this literal class.
     """
-    codepoints = [
-        codepoint
-        for codepoint in range(sys.maxunicode + 1)
-        if unicodedata.category(chr(codepoint)) in {"Lu", "Ll", "Lt"}
-        or chr(codepoint).isupper()
-        or chr(codepoint).islower()
-    ]
-    return _unicode_regex_class(codepoints)
+    return CASED_CLASS
 
 
 def _postgres_unicode_case(value: str, *, mode: str) -> str:

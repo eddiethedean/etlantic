@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import unicodedata
-
 import pytest
 
 pytest.importorskip("sqlalchemy")
@@ -103,9 +101,10 @@ def test_postgresql_sigma_context_does_not_use_locale_case_mapping() -> None:
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
     """Unicode-dependent SQL lowering must identify its Unicode data version."""
     from etlantic_sql.transform_compiler import create_transform_compiler
+    from etlantic_sql.unicode_data import UNICODE_DATA_VERSION
 
     compiler = create_transform_compiler()
-    assert compiler.info.environment["unicode"] == unicodedata.unidata_version
+    assert compiler.info.environment["unicode"] == UNICODE_DATA_VERSION
 
 
 def test_model_create_and_pk_validation_sqlite() -> None:

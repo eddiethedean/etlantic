@@ -657,6 +657,7 @@ nav:
           - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
   - Development:
       - Portable 0.50 plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md
+      - PostgreSQL Unicode sigma evidence: 11_DEVELOPMENT/POSTGRESQL_UNICODE_SIGMA_EVIDENCE.md
       - Adaptive 0.52 evidence: 11_DEVELOPMENT/evidence/adaptive_0_51/FINDINGS.md
       - Portable 0.50 findings: 11_DEVELOPMENT/evidence/portable_0_50/FINDINGS_0_50.md
       - Portable 0.50 migration: 11_DEVELOPMENT/evidence/portable_0_50/MIGRATION_0_49_TO_0_50.md

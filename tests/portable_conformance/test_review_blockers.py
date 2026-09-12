@@ -250,17 +250,20 @@ def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
         if server_architecture_match
         else None
     )
+    runner_architecture = platform.machine().lower()
     assert str(server_version).startswith("16")
     assert encoding == "UTF8"
     assert collate
     assert ctype
     assert provider in {"c", "i", "d"}
+    assert runner_architecture in {"aarch64", "arm64"}
     assert server_architecture
+    assert server_architecture.lower().startswith(("aarch64", "arm64"))
     print(
         "FINAL-REL-003 PostgreSQL evidence "
         + json.dumps(
             {
-                "architecture": platform.machine(),
+                "architecture": runner_architecture,
                 "server_architecture": server_architecture,
                 "server_version": version,
                 "server_version_num": server_version,

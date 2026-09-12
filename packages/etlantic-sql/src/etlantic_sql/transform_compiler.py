@@ -6,7 +6,6 @@ import hashlib
 import json
 import os
 import re
-import unicodedata
 from collections.abc import Mapping, Sequence
 from decimal import Decimal, localcontext
 from typing import Any
@@ -37,6 +36,7 @@ from etlantic_sql.lowering.actions import (
     CLAIMED_ACTIONS,
     apply_action_to_query,
 )
+from etlantic_sql.unicode_data import UNICODE_DATA_VERSION
 
 __version__ = "0.50.0"
 
@@ -102,7 +102,7 @@ def _environment_identity(dialect: str | None = None) -> dict[str, str]:
     return {
         "dialect": dialect or "unknown",
         "runtime": "sqlalchemy",
-        "unicode": unicodedata.unidata_version,
+        "unicode": UNICODE_DATA_VERSION,
     }
 
 
