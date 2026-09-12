@@ -153,16 +153,38 @@ class InMemoryStreamSink:
     identity: str
     committed: list[str] = field(default_factory=list)
     pending: list[str] = field(default_factory=list)
+    _committed_positions: set[str] = field(
+        default_factory=set, init=False, repr=False, compare=False
+    )
+    _pending_positions: set[str] = field(
+        default_factory=set, init=False, repr=False, compare=False
+    )
+
+    def __post_init__(self) -> None:
+        self._committed_positions.update(self.committed)
+        self._pending_positions.update(self.pending)
 
     def write(self, envelope: ChangeEnvelopeMetadata) -> None:
-        self.pending.append(envelope.source_position)
+        source_position = envelope.source_position
+        if (
+            source_position in self._committed_positions
+            or source_position in self._pending_positions
+        ):
+            return
+        self.pending.append(source_position)
+        self._pending_positions.add(source_position)
 
     def ack(self) -> None:
-        self.committed.extend(self.pending)
+        for source_position in self.pending:
+            if source_position not in self._committed_positions:
+                self.committed.append(source_position)
+                self._committed_positions.add(source_position)
         self.pending.clear()
+        self._pending_positions.clear()
 
     def crash(self) -> None:
         self.pending.clear()
+        self._pending_positions.clear()
 
     def checkpoint_id(self) -> str:
         return namespaced_checkpoint_id("checkpoint", self.identity)
