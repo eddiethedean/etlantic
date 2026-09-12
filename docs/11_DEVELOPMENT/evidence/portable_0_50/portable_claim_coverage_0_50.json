@@ -1007,7 +1007,7 @@
     {
       "actions": 12,
       "engine": "sql",
-      "evidence_fingerprint": "1933c84aabba807cfbc80ba9547c8be8e537e7cbdca4f7f8ea3d4d0374c228e8",
+      "evidence_fingerprint": "905bf9b28468a306649cb4b5b94702ab6388455a9430c9cbc550ddb5a6d5000b",
       "execution_modes": {
         "eager": true,
         "lazy": true
@@ -2374,7 +2374,7 @@
       "result": "pass"
     }
   ],
-  "repository_commit": "15eaee4d97fef13399a306832a0374586ca87d83",
+  "repository_commit": "4fd190c7edc8da5948f0bfa30cd4b8ee3113b69d",
   "required_fixture_ids": [
     "baseline_aggregate_functions",
     "baseline_field_actions",
@@ -2394,5 +2394,5 @@
   ],
   "result": "pass",
   "schema": "etlantic.portable-claim-coverage/1",
-  "source_tree_digest": "06fdc6026f7867304ec5d15d01efd3d6c8db6c0faad58d38526ef561c02ab3d0"
+  "source_tree_digest": "6efd44fef5fd199d1204bd8dac7a5bbcecddd4fb694f4144030553afae25d458"
 }
