@@ -67,8 +67,8 @@ def evaluate_handoff(
     Positions are opaque totally-ordered strings compared lexicographically
     (in-memory fixtures use zero-padded integers). The declared cut is
     inclusive: a stream may begin at the cut or after it only when the
-    snapshot reached the cut. Schema mismatch during concurrent change fails
-    closed.
+    snapshot ended exactly at the cut. Schema mismatch during concurrent
+    change fails closed.
     """
     if (
         concurrent_schema_identity is not None
@@ -85,7 +85,10 @@ def evaluate_handoff(
     # Gap: the snapshot ended before the declared cut, regardless of where
     # the stream starts relative to that cut.
     gap = last_snapshot_position < snapshot.stream_position
-    overlap = first_stream_position < snapshot.stream_position
+    overlap = (
+        first_stream_position < snapshot.stream_position
+        or last_snapshot_position > snapshot.stream_position
+    )
     if gap:
         return HandoffResult(
             accepted=False,

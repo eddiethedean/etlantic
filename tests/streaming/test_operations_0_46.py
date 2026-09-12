@@ -103,6 +103,23 @@ def test_handoff_uses_last_snapshot_position_at_cutover() -> None:
     assert handoff_failure_diagnostic(hole_at_cut).code == "PMSTR200"
 
 
+def test_handoff_rejects_snapshot_overshoot_as_overlap() -> None:
+    cut = SnapshotCut(
+        snapshot_identity="snap-1",
+        stream_position="000010",
+        schema_identity="sch-1",
+    )
+    result = evaluate_handoff(
+        snapshot=cut,
+        first_stream_position="000010",
+        last_snapshot_position="000011",
+    )
+
+    assert result.accepted is False
+    assert result.overlap_detected is True
+    assert handoff_failure_diagnostic(result).code == "PMSTR201"
+
+
 def test_continuous_report_has_lag_watermark_and_rejected_ids() -> None:
     snapshot = StreamOperationsSnapshot(
         status="running",
