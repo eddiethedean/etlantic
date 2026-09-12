@@ -32,6 +32,7 @@ released.
 - [What's new in 0.51](../01_GETTING_STARTED/WHATS_NEW_0_51.md)
 - [0.51 adaptive-execution plan](IMPLEMENTATION_PLAN_0_51.md) and
   [exit gate](EXIT_GATE_0_51.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30))
+- [0.52 release-blocker remediation and verification](REMEDIATION_0_52.md)
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
 - [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
 - [Exit gate 0.48](EXIT_GATE_0_48.md) (Gate-ready)
