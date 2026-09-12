@@ -55,9 +55,10 @@
       "environment": {
         "dialect": "postgresql",
         "runtime": "sqlalchemy",
-        "unicode": "14.0.0"
+        "unicode": "14.0.0",
+        "unicode_fingerprint": "84ed438f6e835b99dce923d8e4e807b0942611a5595971105cd9b93fdbc0c1ee"
       },
-      "implementation": "sql-native/1",
+      "implementation": "sql-native/2",
       "package": "etlantic-sql",
       "protocol": "etlantic.transform-compiler/1",
       "version": "0.50.0"
