@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import heapq
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -170,8 +171,26 @@ def _build_adaptive_plan(
         raise error
 
     budget = current_budget()
-    with budget.frame():
-        decisions = _solve(selected, candidates, targets, context)
+    try:
+        with budget.frame():
+            decisions = _solve(selected, candidates, targets, context)
+    except PipelineValidationError as error:
+        # A matrix can be individually viable yet have no feasible global
+        # assignment (for example because every assignment needs a missing
+        # handoff).  That is the same adaptive-infeasibility outcome as an
+        # empty viable row, and is the only solver failure eligible for the
+        # explicitly requested fallback.
+        codes = {diagnostic.code for diagnostic in error.report.diagnostics}
+        if context.profile.adaptive_fallback == "explicit" and codes == {"PMADP320"}:
+            return _explicit_fallback(
+                pipeline_cls,
+                context,
+                selected,
+                selection=selection,
+                definition=definition,
+                report=error.report,
+            )
+        raise
     with budget.frame():
         _check_oracle(selected, candidates, targets, decisions, context)
     regions = _regions(selected, decisions, targets, context)
@@ -716,7 +735,14 @@ def _candidate_matrix(
                 kind=kind,
                 status="eligible" if not reasons else "rejected",
                 reason_codes=tuple(sorted(set(reasons))),
-                evidence_refs=evidence,
+                evidence_refs=_bounded_evidence(
+                    [
+                        *evidence,
+                        *_candidate_objective_evidence(
+                            node, target, context, transform_map
+                        ),
+                    ]
+                ),
                 objective_facts=_objective_facts(
                     node, target, caps, context, transform_map
                 ),
@@ -730,6 +756,41 @@ def _candidate_matrix(
             )
             output.append(candidate)
     return tuple(output)
+
+
+def _candidate_objective_evidence(
+    node: Any, target: Any, context: PlanningContext, transforms: dict[str, Any]
+) -> tuple[str, ...]:
+    """Expose the immutable proofs behind objective-positive claims."""
+    metadata = getattr(node, "metadata", {}) or {}
+    target_metadata = getattr(getattr(target, "target", target), "metadata", {}) or {}
+    refs = list(
+        _content_evidence_refs(
+            (
+                metadata.get("etlantic.local_io_evidence"),
+                target_metadata.get("etlantic.local_io_evidence"),
+            )
+        )
+    )
+    if (
+        node.kind is NodeKind.STEP
+        and _portable_definition(node, transforms) is not None
+    ):
+        implementation = context.registry.implementations.get(
+            f"{node.transformation_id}::{target.engine}"
+        )
+        if implementation is not None:
+            support = getattr(implementation, "support_summary", {}) or {}
+            refs.extend(
+                _content_evidence_refs(
+                    (
+                        support.get("pushdown_evidence"),
+                        support.get("semantic_parity_evidence"),
+                        getattr(implementation, "compiler_evidence_fingerprint", None),
+                    )
+                )
+            )
+    return tuple(sorted(set(refs)))
 
 
 def _fallback_allowed(candidates: tuple[CandidateRecord, ...]) -> bool:
@@ -960,12 +1021,24 @@ def _objective_facts(
     context: PlanningContext,
     transforms: dict[str, Any],
 ) -> dict[str, int]:
-    metadata = dict(getattr(node, "metadata", {}) or {})
+    # Facts in the objective are positive claims.  A target location or an
+    # implementation's self-description is useful context, but is not proof
+    # that a connector can perform local I/O or that a backend can push an IR
+    # operation down.  Both claims therefore require immutable evidence.
+    metadata = getattr(node, "metadata", {}) or {}
+    target_metadata = getattr(getattr(target, "target", target), "metadata", {}) or {}
+    local_evidence = _content_evidence_refs(
+        (
+            metadata.get("etlantic.local_io_evidence"),
+            target_metadata.get("etlantic.local_io_evidence"),
+        )
+    )
     facts = {
         "proven_local_io_nodes": int(
             node.kind in {NodeKind.SOURCE, NodeKind.SINK}
             and target.location == "local"
             and caps is not None
+            and bool(local_evidence)
         ),
         "proven_pushdown_actions": 0,
         "collection_units": int(
@@ -984,16 +1057,41 @@ def _objective_facts(
         implementation = context.registry.implementations.get(
             f"{node.transformation_id}::{target.engine}"
         )
-        support = dict(getattr(implementation, "support_summary", {}) or {})
+        support = getattr(implementation, "support_summary", {}) or {}
         if portable is not None and implementation is not None:
+            pushdown_evidence = _content_evidence_refs(
+                (
+                    support.get("pushdown_evidence"),
+                    support.get("semantic_parity_evidence"),
+                    getattr(implementation, "compiler_evidence_fingerprint", None),
+                )
+            )
             facts["proven_pushdown_actions"] = int(
-                bool(support.get("pushdown") or support.get("semantic_parity"))
+                bool(
+                    support.get("pushdown")
+                    and support.get("semantic_parity")
+                    and pushdown_evidence
+                )
             )
             facts["safely_fusible_logical_edges"] = int(
                 bool(support.get("fusion") or support.get("fusible"))
             )
         del transform
     return facts
+
+
+def _content_evidence_refs(values: Any) -> tuple[str, ...]:
+    """Return only immutable content identities from nested evidence values."""
+    if isinstance(values, str):
+        return (values,) if _is_content_evidence_ref(values) else ()
+    if isinstance(values, Mapping):
+        values = values.values()
+    if not isinstance(values, (tuple, list, set, frozenset)):
+        return ()
+    refs: list[str] = []
+    for value in values:
+        refs.extend(_content_evidence_refs(value))
+    return tuple(sorted(set(refs)))
 
 
 def _solve(
@@ -1365,7 +1463,16 @@ def _regions(
         members = sorted(members, key=names.index)
         target_id = by_node[members[0]]
         target = target_by_id[target_id]
-        region_id = f"region:{_digest({'target': _target_identity(target), 'nodes': members, 'security': target.security_domain, 'planner': '0.52'})[:24]}"
+        boundary_facts = {
+            "target": _target_identity(target),
+            "nodes": members,
+            "security": target.security_domain,
+            "execution": "planning-only",
+            "policy": "conservative",
+            "fused": False,
+            "planner": "0.52",
+        }
+        region_id = f"region:{_digest(boundary_facts)[:24]}"
         for member in members:
             region_identity_by_node[member] = region_id
         regions.append(
@@ -1377,7 +1484,12 @@ def _regions(
                 logical_nodes=tuple(members),
                 fused=False,
                 security_domain=target.security_domain,
-                metadata={"etlantic.boundary_policy": "conservative"},
+                metadata={
+                    "etlantic.boundary_policy": "conservative",
+                    "etlantic.execution": "planning-only",
+                    "etlantic.fusion_evidence": "none",
+                    "etlantic.security_domain": target.security_domain,
+                },
             )
         )
     # Region dependencies are canonical and refer only to region identities.
@@ -1407,6 +1519,8 @@ def _regions(
 def _is_hard_boundary(producer: Any, consumer: Any, context: PlanningContext) -> bool:
     """Return true when declared semantics require a physical boundary."""
     keys = (
+        "etlantic.selection_boundary",
+        "etlantic.security_boundary",
         "etlantic.effect_boundary",
         "etlantic.retry_boundary",
         "etlantic.checkpoint_boundary",
@@ -1415,9 +1529,16 @@ def _is_hard_boundary(producer: Any, consumer: Any, context: PlanningContext) ->
         "etlantic.publication_required",
         "etlantic.handoff_required",
     )
-    del context
+    producer_metadata = getattr(producer, "metadata", {}) or {}
+    consumer_metadata = getattr(consumer, "metadata", {}) or {}
+    if producer_metadata.get(
+        "etlantic.security_domain", context.profile.security_domain
+    ) != consumer_metadata.get(
+        "etlantic.security_domain", context.profile.security_domain
+    ):
+        return True
     return any(
-        bool(dict(getattr(node, "metadata", {}) or {}).get(key))
+        bool((getattr(node, "metadata", {}) or {}).get(key))
         for node in (producer, consumer)
         for key in keys
     )
@@ -1441,12 +1562,52 @@ def _physical_dag(
     dependencies: dict[str, list[PhysicalDependency]] = {
         node.name: [] for node in graph.nodes
     }
+    node_map = graph.node_map()
+
+    def contracts(
+        node: Any,
+    ) -> tuple[tuple[dict[str, str], ...], tuple[dict[str, str], ...]]:
+        inputs = tuple(
+            {"port": port.name, "contract_id": port.contract_id or ""}
+            for port in node.inputs
+        )
+        outputs = tuple(
+            {
+                "port": port.name,
+                "contract_id": port.contract_id or node.contract_id or "",
+            }
+            for port in node.outputs
+        )
+        return inputs, outputs
+
+    def envelope(node: Any, target: Any) -> dict[str, Any]:
+        inputs, outputs = contracts(node)
+        return {
+            "input_contracts": inputs,
+            "output_contracts": outputs,
+            "policy": {
+                "security_domain": target.security_domain,
+                "execution": "planning-only",
+            },
+            "retry_policy": {"mode": "declared", "boundary": False},
+            "ownership": {
+                "logical_node": node.name,
+                "target": _target_identity(target),
+            },
+            "protocol_versions": {
+                "physical_unit": PHYSICAL_UNIT_SCHEMA,
+                "contract": "etlantic.contract/1",
+            },
+        }
+
     for node in graph.nodes:
         target = target_map[decision_map[node.name].target_id]
         compute_payload = {
             "kind": "compute",
             "node": node.name,
             "target": _target_identity(target),
+            "contracts": contracts(node),
+            "security": target.security_domain,
         }
         uid = f"unit:{_digest(compute_payload)[:24]}"
         compute_ids[node.name] = uid
@@ -1464,6 +1625,7 @@ def _physical_dag(
                     if edge.consumer_node == node.name
                 ),
             },
+            **envelope(node, target),
         }
     for edge in graph.edges:
         producer = decision_map[edge.producer_node]
@@ -1517,6 +1679,34 @@ def _physical_dag(
                         source, destination, edge, context
                     ),
                 },
+                "input_contracts": (
+                    {
+                        "port": edge.producer_port,
+                        "contract_id": edge.producer_contract_id or "",
+                    },
+                ),
+                "output_contracts": (
+                    {
+                        "port": edge.consumer_port,
+                        "contract_id": edge.consumer_contract_id or "",
+                    },
+                ),
+                "policy": {
+                    "source_security_domain": source.security_domain,
+                    "destination_security_domain": destination.security_domain,
+                    "mode": "batch",
+                    "durability": "ephemeral",
+                },
+                "retry_policy": {"mode": "declared", "boundary": True},
+                "ownership": {
+                    "source_target": _target_identity(source),
+                    "destination_target": _target_identity(destination),
+                },
+                "protocol_versions": {
+                    "physical_unit": PHYSICAL_UNIT_SCHEMA,
+                    "contract": "etlantic.contract/1",
+                    "handoff": "etlantic.handoff/1",
+                },
             }
             dependencies[edge.consumer_node].append(PhysicalDependency(transfer_id))
             if bool(
@@ -1537,6 +1727,7 @@ def _physical_dag(
                     "metadata": {
                         "etlantic.edge": [edge.producer_node, edge.consumer_node]
                     },
+                    **envelope(node_map[edge.consumer_node], destination),
                 }
                 dependencies[edge.consumer_node][-1] = PhysicalDependency(collection_id)
     for node in graph.nodes:
@@ -1565,6 +1756,7 @@ def _physical_dag(
                     "etlantic.logical_node": node.name,
                     "etlantic.requirement": node_metadata[flag],
                 },
+                **envelope(node, target),
             }
             tail = uid
         node_tails[node.name] = tail
@@ -1580,6 +1772,7 @@ def _physical_dag(
                 "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail, "lifecycle"),),
                 "metadata": {"etlantic.logical_node": node.name},
+                **envelope(node, target),
             }
     units: list[PhysicalUnit] = []
     producer_for_compute = {unit_id: node for node, unit_id in compute_ids.items()}

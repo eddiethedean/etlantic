@@ -415,6 +415,42 @@ class PhysicalDAG:
                     "has multiple physical dependency paths"
                 )
 
+    def validate_generated_envelope(self) -> None:
+        """Validate evidence required for newly generated 0.52 physical units."""
+        for unit in self.units:
+            if not unit.policy or not unit.ownership or not unit.protocol_versions:
+                raise ValueError(
+                    "PMADP403: generated physical unit lacks policy, ownership, or protocol evidence"
+                )
+            if unit.kind is PhysicalUnitKind.COMPUTE and not (
+                unit.input_contracts or unit.output_contracts
+            ):
+                raise ValueError(
+                    "PMADP403: generated compute unit lacks contract bindings"
+                )
+            if unit.kind is PhysicalUnitKind.TRANSFER:
+                contract = unit.metadata.get("etlantic.handoff_contract")
+                evidence = unit.metadata.get("etlantic.handoff_evidence")
+                required = {
+                    "producer_target_identity",
+                    "consumer_target_identity",
+                    "schema_fingerprint",
+                    "format",
+                    "mode",
+                    "durability",
+                    "producer_capability_fingerprint",
+                    "consumer_capability_fingerprint",
+                }
+                if (
+                    not isinstance(contract, Mapping)
+                    or not required <= set(contract)
+                    or not isinstance(evidence, (list, tuple))
+                    or not evidence
+                ):
+                    raise ValueError(
+                        "PMADP403: generated transfer lacks bound handoff contract evidence"
+                    )
+
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PhysicalDAG:
         _reject_unknown(

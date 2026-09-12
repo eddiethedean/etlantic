@@ -241,19 +241,23 @@ def _explain_adaptive_bounded(plan: AdaptivePipelinePlan) -> dict[str, Any]:
         ),
     }
     if sum(len(chunk) for chunk in canonical_chunks(summary)) > 4 * 1024 * 1024:
-        # Even logical names and objective tie-break IDs can be large in a
-        # historical document. Retain the content identity, counts and omission
-        # digest rather than returning an oversized fallback explanation.
-        summary = {
-            key: summary[key]
-            for key in (
-                "schema",
-                "planning_only",
-                "truncated",
-                "diagnostic",
-                "counts",
-                "omitted_sha256",
-            )
+        # These identifiers are convenient detail, but unlike the fingerprint
+        # they are not part of the bounded-summary contract.  Dropping them
+        # first preserves every mandatory decision/audit field even when a
+        # caller has mutated an in-memory historical object with a huge id.
+        summary.pop("plan_id", None)
+        summary.pop("pipeline_id", None)
+        summary.pop("profile", None)
+        summary.pop("security_domain", None)
+    if sum(len(chunk) for chunk in canonical_chunks(summary)) > 4 * 1024 * 1024:
+        # Keep the required mapping but make its values fixed-width content
+        # identities; the complete omitted payload remains bound by
+        # omitted_sha256.
+        summary["selected_targets"] = {
+            hashlib.sha256(name.encode("utf-8")).hexdigest(): hashlib.sha256(
+                target.encode("utf-8")
+            ).hexdigest()
+            for name, target in summary["selected_targets"].items()
         }
     with current_budget().allocation(summary, "explain", 64):
         return materialize_wire(summary)

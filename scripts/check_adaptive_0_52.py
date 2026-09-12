@@ -32,6 +32,10 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         ("AC-052-006", "test_adaptive_candidate_analysis_is_analyze_only"),
         ("AC-052-008", "test_adaptive_solver_matches_seeded_oracle_corpus"),
         ("AC-052-008", "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"),
+        (
+            "AC-052-007",
+            "test_final_052_020_solver_infeasibility_uses_explicit_fallback",
+        ),
     ),
     "adaptive_resource_budget_0_51.json": (
         ("AC-052-003", "test_final_052_001_target_limit_precedes_plugin_discovery"),
@@ -48,10 +52,18 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "adaptive_physical_dag_conformance_0_51.json": (
         ("AC-052-010", "test_adaptive_regions_are_maximal_and_unfused_without_proof"),
+        (
+            "AC-052-010",
+            "test_final_052_021_regions_bind_execution_policy_and_fusion_facts",
+        ),
         ("AC-052-011", "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds"),
         (
             "AC-052-012",
             "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata",
+        ),
+        (
+            "AC-052-011",
+            "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
         ),
     ),
     "adaptive_runtime_conformance_0_51.json": (
@@ -64,6 +76,10 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
     "adaptive_explain_identity_0_51.json": (
         ("AC-052-013", "test_adaptive_explain_uses_the_bounded_summary"),
         ("AC-052-014", "test_adaptive_diff_covers_semantic_and_cross_schema_changes"),
+        (
+            "AC-052-013",
+            "test_final_052_023_truncated_explain_retains_release_contract_fields",
+        ),
     ),
     "adaptive_security_matrix_0_51.json": (
         (
@@ -82,6 +98,7 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         ),
         ("AC-052-012", "test_final_052_017_generated_edge_requires_one_data_path"),
         ("AC-052-018", "test_adaptive_release_evidence_contract_is_ci_gated"),
+        ("AC-052-006", "test_final_052_019_candidate_credits_require_content_evidence"),
         (
             "AC-052-018",
             "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof",

@@ -555,3 +555,64 @@ def test_final_052_018_inventory_refuses_before_materializing(
         with pytest.raises(PipelineValidationError, match="PMADP303"):
             plan_pipeline(Sample, profile=profile())
         assert budget.live == 0
+
+
+def test_final_052_019_candidate_credits_require_content_evidence() -> None:
+    """Location and implementation flags alone never earn objective credits."""
+    plan = plan_pipeline(Sample, profile=profile())
+    assert all(
+        candidate.objective_facts["proven_local_io_nodes"] == 0
+        for candidate in plan.candidates
+    )
+
+
+def test_final_052_020_solver_infeasibility_uses_explicit_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fallback covers a globally infeasible matrix, not only empty rows."""
+    from etlantic.planning import adaptive
+
+    def infeasible(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise adaptive._error("PMADP320", "No feasible assignment.", path=("adaptive",))
+
+    monkeypatch.setattr(adaptive, "_solve", infeasible)
+    result = plan_pipeline(
+        Sample,
+        profile=profile().with_updates(adaptive_fallback="explicit"),
+    )
+    assert result.schema == "etlantic.plan/1"
+    assert result.metadata["etlantic.adaptive_fallback"]["chosen_target"] == "local"
+
+
+def test_final_052_022_generated_units_bind_contract_and_policy_evidence() -> None:
+    """Every generated unit has the executable evidence envelope."""
+    plan = plan_pipeline(Sample, profile=profile())
+    for unit in plan.physical_dag.units:
+        assert unit.policy and unit.ownership and unit.protocol_versions
+    for unit in plan.physical_dag.units:
+        if unit.kind == "compute":
+            assert unit.input_contracts or unit.output_contracts
+
+
+def test_final_052_021_regions_bind_execution_policy_and_fusion_facts() -> None:
+    """Region identity inputs and metadata retain boundary-relevant facts."""
+    region = plan_pipeline(Sample, profile=profile()).regions[0]
+    assert region.metadata["etlantic.execution"] == "planning-only"
+    assert region.metadata["etlantic.boundary_policy"] == "conservative"
+    assert region.metadata["etlantic.fusion_evidence"] == "none"
+
+
+def test_final_052_023_truncated_explain_retains_release_contract_fields() -> None:
+    """A bounded explain result retains its mandatory audit summary."""
+    plan = plan_pipeline(Sample, profile=profile())
+    object.__setattr__(plan, "pipeline_id", "x" * (4 * 1024 * 1024))
+    summary = explain_plan(plan)
+    assert {
+        "fingerprint",
+        "objective",
+        "selected_targets",
+        "counts",
+        "rejection_reason_counts",
+        "omitted_sha256",
+    } <= set(summary)

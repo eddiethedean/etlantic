@@ -1,13 +1,13 @@
 {
   "artifact": "adaptive_explain_identity_0_51.json",
   "issue_ledger": "docs/11_DEVELOPMENT/phase_0_52_issue_ledger.json",
-  "issue_ledger_sha256": "96dcf77e8bc33e3752505679f7af701e4d40f37d3ba980a0d4af8c154e97df1d",
-  "passed_scenarios": 2,
+  "issue_ledger_sha256": "b9e5e80f7f16bb00864cb2d08bb6dc2e3d3b6e9b2e4bf2c3b8a6b8aa4f4901a4",
+  "passed_scenarios": 3,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:acfa75f58f776fbe42cb882099e02cba56530990217c5065a6b4e357e6a8ffaf",
+  "repository_revision": "sha256:97693974eec5ce5aa9d0272111abb054f5282fc1de5f2bb6f045fc4bc8a0d844",
   "result": "pass",
-  "scenario_count": 2,
+  "scenario_count": 3,
   "scenarios": [
     {
       "acceptance_criterion": "AC-052-013",
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_explain_uses_the_bounded_summary",
-      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
       "result": "pass",
       "verification": "test_adaptive_explain_uses_the_bounded_summary"
     },
@@ -25,9 +25,19 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
-      "plan_fingerprint": "9c4004396eb1d60a03ff7357db4af5567a98005be2867f4a6956b2a780230ef0",
+      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
       "result": "pass",
       "verification": "test_adaptive_diff_covers_semantic_and_cross_schema_changes"
+    },
+    {
+      "acceptance_criterion": "AC-052-013",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_final_052_023_truncated_explain_retains_release_contract_fields",
+      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "result": "pass",
+      "verification": "test_final_052_023_truncated_explain_retains_release_contract_fields"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",

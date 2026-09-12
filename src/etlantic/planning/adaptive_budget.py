@@ -34,13 +34,13 @@ def wire_view(value: Any) -> Any:
             "PortSpec": {"contract_type"},
             "ParameterSpec": {"value_type", "default", "value"},
         }.get(type(value).__name__, set())
-        result = {
+        result: Mapping[str, Any] = {
             f.name: getattr(value, f.name)
             for f in fields(value)
             if f.name not in excluded
         }
         if type(value).__name__ == "PhysicalUnit":
-            result["schema"] = "etlantic.physical_unit/1"
+            result = {"schema": "etlantic.physical_unit/1", **result}
         return result
     return value
 
@@ -253,7 +253,10 @@ def current_budget() -> TransientBudget:
 
 def record(cls: type[T], category: str, **kwargs: Any) -> T:
     """Admit a record and its validation projection before constructing it."""
-    payload = dict(kwargs)
+    # ``kwargs`` is already the call-owned mapping.  Do not duplicate it
+    # before admission: all retained model fields are passed explicitly by the
+    # planner, so the sizing pass can borrow this mapping directly.
+    payload = kwargs
     for field in fields(cls):  # type: ignore[arg-type]
         if field.name not in payload:
             if field.default is not MISSING:
@@ -266,6 +269,9 @@ def record(cls: type[T], category: str, **kwargs: Any) -> T:
     size = canonical_size(payload)
     token = budget.reserve(size + 64, category)
     try:
+        # ``schema`` participates in the retained wire size but is not a
+        # dataclass constructor parameter.
+        payload.pop("schema", None)
         with budget.allocation(payload, "validation-buffer"):
             result = cls(**kwargs)
     except BaseException:

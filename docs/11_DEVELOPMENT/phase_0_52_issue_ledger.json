@@ -226,7 +226,7 @@
     },
     {
       "issue": 50,
-      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "scope": "Candidate locality scoring is conservative: source/sink local-I/O credit requires immutable connector or node evidence, not a local target label.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-003",
@@ -237,6 +237,7 @@
         "src/etlantic/plan/adaptive_model.py:CandidateRecord"
       ],
       "verification": [
+        "test_final_052_019_candidate_credits_require_content_evidence",
         "test_candidate_matrix_is_canonical_node_then_target_order",
         "test_candidate_matrix_rejects_duplicate_node_target_cell",
         "test_adaptive_candidate_analysis_is_analyze_only",
@@ -321,7 +322,7 @@
     },
     {
       "issue": 55,
-      "scope": "Exact canonical objective and hard constraints, independent oracle, shared dispatch and permitted explicit fallback.",
+      "scope": "Explicit fallback handles both an empty viable candidate row and a solver-proven globally infeasible adaptive assignment, while preserving hard validation failures.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-001",
@@ -334,6 +335,7 @@
         "src/etlantic/planning/adaptive.py:_check_oracle"
       ],
       "verification": [
+        "test_final_052_020_solver_infeasibility_uses_explicit_fallback",
         "test_adaptive_report_path_uses_same_plan_dispatch",
         "test_final_052_003_fallback_report_and_integrity",
         "test_adaptive_solver_matches_seeded_oracle_corpus",
@@ -426,7 +428,7 @@
     },
     {
       "issue": 60,
-      "scope": "Deterministic maximal safe regions; conservative unfused compute without fusion proof; explicit compatibility.",
+      "scope": "Region identities and records bind target identity, member order, execution mode, conservative policy, security domain, planner version, and fusion evidence.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-002",
@@ -436,6 +438,7 @@
         "src/etlantic/planning/adaptive.py:_regions"
       ],
       "verification": [
+        "test_final_052_021_regions_bind_execution_policy_and_fusion_facts",
         "test_adaptive_regions_are_maximal_and_unfused_without_proof",
         "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
         "test_adaptive_bytes_ignore_target_mapping_insertion_order"
@@ -494,7 +497,7 @@
     },
     {
       "issue": 64,
-      "scope": "Seven-kind plan-only lowering, complete single-realization logical provenance, tamper checks, historical /2 reader compatibility; no execution authorization.",
+      "scope": "Generated physical units bind logical contracts, policy, ownership, and protocol evidence; a generated transfer must retain its directional handoff contract and immutable evidence after deserialization.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-011",
@@ -507,6 +510,7 @@
         "src/etlantic/plan/adaptive_model.py:AdaptivePipelinePlan"
       ],
       "verification": [
+        "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
         "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
         "test_final_052_017_generated_edge_requires_one_data_path",
         "test_final_052_017_logical_diamond_preserves_individual_edge_paths",
@@ -609,7 +613,7 @@
     },
     {
       "issue": 74,
-      "scope": "Stored-evidence explain/diff, bounded output, deterministic surface identity and redaction.",
+      "scope": "Oversized adaptive explain output preserves fingerprint, objective, selected target mapping, counts, rejection-reason counts, and omission digest within the hard size limit.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-013",
@@ -622,6 +626,7 @@
         "src/etlantic/plan/diff.py:diff_plans"
       ],
       "verification": [
+        "test_final_052_023_truncated_explain_retains_release_contract_fields",
         "test_adaptive_explain_uses_the_bounded_summary",
         "test_final_052_018_explain_exact_four_mib_boundary",
         "test_adaptive_diff_covers_semantic_and_cross_schema_changes",

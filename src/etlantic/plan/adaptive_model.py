@@ -569,6 +569,7 @@ class AdaptivePipelinePlan:
                     for edge in self.logical_graph.edges
                 )
             )
+            dag.validate_generated_envelope()
         units_by_id = {unit.identity: unit for unit in dag.units}
         for unit in dag.units:
             if unit.target_identity not in target_identities:
