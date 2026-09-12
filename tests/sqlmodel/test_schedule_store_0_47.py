@@ -22,8 +22,8 @@ pytestmark = pytest.mark.sqlmodel
 
 def test_sqlmodel_schedule_store_conformance(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'sched.db'}")
-    assert apply_migrations(engine) == "004_schedules_0_47"
-    assert current_version(engine) == "004_schedules_0_47"
+    assert apply_migrations(engine) == "005_cp1_reference"
+    assert current_version(engine) == "005_cp1_reference"
     run_schedule_store_conformance_suite(SQLModelScheduleStore(engine))
 
 

@@ -19,6 +19,7 @@ VERSIONS: Sequence[str] = (
     "002_durable_cp3",
     "003_cp4_governance",
     "004_schedules_0_47",
+    "005_cp1_reference",
 )
 
 

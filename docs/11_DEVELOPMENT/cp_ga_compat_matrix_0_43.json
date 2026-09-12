@@ -9,7 +9,7 @@
     {
       "id": "sqlmodel_migrations_fresh",
       "status": "pass",
-      "version": "004_schedules_0_47"
+      "version": "005_cp1_reference"
     },
     {
       "id": "compat_floor",

@@ -1005,6 +1005,7 @@ sql = [
 ]
 sqlmodel = [
     { name = "etlantic-sqlmodel" },
+    { name = "psycopg", extra = ["binary"] },
 ]
 
 [package.metadata]
@@ -1106,7 +1107,10 @@ schemaregistry = [{ name = "etlantic-schemaregistry", editable = "packages/etlan
 snowflake = [{ name = "etlantic-snowflake", editable = "packages/etlantic-snowflake" }]
 spark-connect = [{ name = "etlantic-spark-connect", editable = "packages/etlantic-spark-connect" }]
 sql = [{ name = "etlantic-sql", editable = "packages/etlantic-sql" }]
-sqlmodel = [{ name = "etlantic-sqlmodel", editable = "packages/etlantic-sqlmodel" }]
+sqlmodel = [
+    { name = "etlantic-sqlmodel", editable = "packages/etlantic-sqlmodel" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.1,<4" },
+]
 
 [[package]]
 name = "etlantic-airflow"
