@@ -5,13 +5,34 @@
     "pytest",
     "-q",
     "tests/runtime/test_adaptive_execution_0_53.py",
-    "tests/plan/test_adaptive_planner_0_52.py"
+    "tests/plan/test_adaptive_planner_0_52.py",
+    "tests/runtime/test_sol_0_53_contract_rereview.py"
   ],
-  "observed_at": "2026-09-13T21:30:19.562873+00:00",
+  "observed_at": "2026-09-13T22:08:09.296874+00:00",
+  "passed_scenarios": 3,
   "phase": "0.53",
+  "result": "pass",
   "returncode": 0,
+  "scenario_count": 3,
+  "scenarios": [
+    {
+      "executed": true,
+      "id": "tests/runtime/test_adaptive_execution_0_53.py",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests/plan/test_adaptive_planner_0_52.py",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests/runtime/test_sol_0_53_contract_rereview.py",
+      "result": "pass"
+    }
+  ],
   "schema": "etlantic.adaptive_evidence/1",
-  "source_revision": "sha256:b9462a4da1e14fb986c545499157e320a2cad97125d5997ee0a52fbee202c6b2",
+  "source_revision": "sha256:761b015443620d66051e029be94bdade4814e1fa526ea7232960ac6e7530eda6",
   "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "stdout_sha256": "c17dc01f6eb2b85f689383844689fe5f1575c1b1e783afb7ff7ef88fa81fbca6"
+  "stdout_sha256": "241bc996cf796ccaf87a64fa2b0d410f9add497c273b4dab00451ea58fe4c5f8"
 }

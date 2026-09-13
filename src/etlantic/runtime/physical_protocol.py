@@ -103,7 +103,7 @@ class PhysicalUnitFinding:
             "unit_id": self.unit_id,
             "target_identity": self.target_identity,
             "path": list(self.path),
-            "reason": self.reason[:1024],
+            "reason": _safe_failure_message(self.reason),
         }
 
 
@@ -245,6 +245,11 @@ class PhysicalUnitFailure(Exception):
 
     def to_dict(self) -> dict[str, Any]:
         receipt = self.unknown_receipt
+        safe_receipt: Any = None
+        if receipt is not None:
+            # Provider receipt serializers are outside the trust boundary.
+            # Preserve only a bounded type identity for reconciliation.
+            safe_receipt = {"type": type(receipt).__name__}
         return {
             "schema": PHYSICAL_EXECUTION_SCHEMA,
             "unit_id": self.unit_id,
@@ -253,11 +258,7 @@ class PhysicalUnitFailure(Exception):
             "stage": self.stage,
             "logical_names": list(self.logical_names),
             "message": _safe_failure_message(str(self)),
-            "unknown_receipt": (
-                receipt.to_dict()
-                if receipt is not None and hasattr(receipt, "to_dict")
-                else None
-            ),
+            "unknown_receipt": safe_receipt,
         }
 
 

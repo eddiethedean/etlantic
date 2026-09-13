@@ -19,6 +19,7 @@ OUT = ROOT / "docs" / "11_DEVELOPMENT" / "evidence" / "adaptive_0_53"
 TESTS = (
     "tests/runtime/test_adaptive_execution_0_53.py",
     "tests/plan/test_adaptive_planner_0_52.py",
+    "tests/runtime/test_sol_0_53_contract_rereview.py",
 )
 EVIDENCE_SCHEMA = "etlantic.adaptive_evidence/1"
 
@@ -32,7 +33,10 @@ def source_revision() -> str:
             "tests/runtime/test_adaptive_execution_0_53.py",
             "tests/plan/test_adaptive_planner_0_52.py",
             "tests/runtime/test_sol_0_53_rereview.py",
+            "tests/runtime/test_sol_0_53_contract_rereview.py",
             "scripts/check_adaptive_0_53.py",
+            "docs/11_DEVELOPMENT/evidence/adaptive_0_53/README.md",
+            ".github/workflows/checks.yml",
             "pyproject.toml",
         ],
         cwd=ROOT,
@@ -67,8 +71,28 @@ def _verify_committed_evidence(record: dict[str, object], revision: str) -> bool
         "source_revision": revision,
         "returncode": 0,
     }
-    return all(committed.get(key) == value for key, value in required.items()) and (
-        committed.get("command") == record.get("command")
+    if not all(committed.get(key) == value for key, value in required.items()):
+        return False
+    if committed.get("command") != record.get("command"):
+        return False
+    for field in ("stdout_sha256", "stderr_sha256"):
+        digest = committed.get(field)
+        if not isinstance(digest, str) or len(digest) != 64:
+            return False
+    scenarios = committed.get("scenarios")
+    return (
+        committed.get("result") == "pass"
+        and isinstance(committed.get("scenario_count"), int)
+        and committed["scenario_count"] == len(TESTS)
+        and committed.get("passed_scenarios") == len(TESTS)
+        and isinstance(scenarios, list)
+        and len(scenarios) == len(TESTS)
+        and all(
+            isinstance(item, dict)
+            and item.get("result") == "pass"
+            and item.get("executed") is True
+            for item in scenarios
+        )
     )
 
 
@@ -89,6 +113,14 @@ def main() -> int:
         "stdout_sha256": hashlib.sha256(result.stdout.encode()).hexdigest(),
         "stderr_sha256": hashlib.sha256(result.stderr.encode()).hexdigest(),
         "observed_at": datetime.now(UTC).isoformat(),
+        "result": "pass" if result.returncode == 0 else "fail",
+        "scenario_count": len(TESTS),
+        "passed_scenarios": len(TESTS) if result.returncode == 0 else 0,
+        "scenarios": [
+            {"id": test, "result": "pass", "executed": True} for test in TESTS
+        ]
+        if result.returncode == 0
+        else [],
     }
     if not args.write and not _verify_committed_evidence(
         record, record["source_revision"]

@@ -12,7 +12,6 @@ from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from etlantic.plan.adaptive_model import PlanDocument
-from etlantic.plan.model import PipelinePlan
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.request import RunRequest
 
@@ -145,7 +144,7 @@ class LocalScheduler:
 
     def analyze(
         self,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         request: RunRequest,
         context: SchedulingContext,
@@ -208,7 +207,7 @@ class LocalScheduler:
 
     async def execute(
         self,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         request: RunRequest,
         runtime: Any,
@@ -245,7 +244,7 @@ class LocalScheduler:
             from etlantic.runtime.adaptive_admission import admit_adaptive_plan
             from etlantic.runtime.physical_host import pipeline_plan_for_adaptive
 
-            admit_adaptive_plan(plan, request=request, runtime=runtime)
+            admission = admit_adaptive_plan(plan, request=request, runtime=runtime)
             host_plan = pipeline_plan_for_adaptive(
                 plan, runtime=runtime, pipeline_cls=pipeline_cls
             )
@@ -259,6 +258,8 @@ class LocalScheduler:
                 run_id=context.run_id if context is not None else None,
                 physical_mode=True,
                 adaptive_plan=plan,
+                physical_executor_pins=admission.executor_pins,
+                physical_storage_pins=admission.storage_pins,
             )
             result = await host.execute()
             result.metadata.setdefault("etlantic.scheduler", self.info.name)

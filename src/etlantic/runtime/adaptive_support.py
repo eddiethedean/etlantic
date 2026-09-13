@@ -16,6 +16,15 @@ SUPPORT_MATURITY = "Experimental"
 SUPPORTED_PATTERNS = frozenset(
     {"chain/1", "diamond/1", "fanout/1", "dual-port-chain/1"}
 )
+# These identifiers refer to the checked-in 0.53 qualification bundle.  They
+# are deliberately independent of a submitted graph fingerprint: topology
+# matching selects a row, while this immutable bundle is the authority for the
+# operations, policies and backend versions that row permits.
+_QUALIFIED_EVIDENCE = {
+    (pattern, family): f"bundle:adaptive-0.53/{pattern}/{family}/v1"
+    for pattern in SUPPORTED_PATTERNS
+    for family in ("local", "polars", "pandas")
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,9 +71,9 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
     source_kinds = {nodes[name].kind.value for name in sources}
     sink_kinds = {nodes[name].kind.value for name in sinks}
     if (
-        len(sinks) == 1
-        and source_kinds == {"source"}
-        and sink_kinds == {"sink"}
+        source_kinds == {"source"}
+        and (len(sinks) == 1 or (len(nodes) == 1 and sinks == sources))
+        and (not sinks or sink_kinds == {"sink"} or sinks == sources)
         and len(graph.edges) == max(0, len(nodes) - 1)
         and all(value <= 1 for value in indegree.values())
         and all(value <= 1 for value in outdegree.values())
@@ -76,7 +85,7 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
         and len(sinks) == 1
         and source_kinds == {"source"}
         and sink_kinds == {"sink"}
-        and len(graph.edges) == 6
+        and len(graph.edges) == 5
         and sum(v == 2 for v in indegree.values()) == 1
         and sum(v == 2 for v in outdegree.values()) == 1
         and sum(v == 0 for v in indegree.values()) == 1
@@ -172,7 +181,11 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
         contract_profiles=("etlantic.contract/1",),
         io_families=("memory", "json", "csv", "null"),
         policy_modes=("standard", "validate", "overwrite", "no_write"),
-        evidence_refs=(f"sha256:{topology_fingerprint(plan)}",),
+        evidence_refs=tuple(
+            _QUALIFIED_EVIDENCE[(pattern, family)]
+            for family in dict.fromkeys(families)
+            if (pattern, family) in _QUALIFIED_EVIDENCE
+        ),
     )
 
 

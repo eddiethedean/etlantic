@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from etlantic.exceptions import PipelineExecutionError
@@ -26,6 +26,8 @@ class AdaptiveAdmission:
     units: tuple[Any, ...]
     target_engines: Mapping[str, str]
     request: RunRequest
+    executor_pins: Mapping[str, Any] = field(default_factory=dict)
+    storage_pins: Mapping[str, Any] = field(default_factory=dict)
 
 
 def _reject(message: str, code: str) -> PipelineExecutionError:
@@ -189,6 +191,16 @@ def admit_adaptive_plan(
                 "Adaptive step is missing its implementation descriptor", "PMADP401"
             )
     dag = plan.physical_dag
+    # Boundary markers are not executable operations. Require a closed
+    # descriptor before any runtime/session effect is permitted.
+    for unit in dag.units:
+        if unit.kind.value in {"collection", "validation", "materialization", "reuse"}:
+            requirement = unit.metadata.get("etlantic.requirement")
+            if not isinstance(requirement, Mapping) or not requirement:
+                raise _reject(
+                    "Adaptive boundary is missing a qualified operation descriptor",
+                    "PMADP500",
+                )
     # Resolve the live trust boundary before a session is entered.  Stored
     # descriptors are data only; a live binding must still be present and
     # admissible for this invocation.
@@ -243,6 +255,7 @@ def admit_adaptive_plan(
         # It must run for every selected unit before the caller enters a
         # runtime session or permits any data effect.
         executors = getattr(runtime, "physical_executors", {}) or {}
+        executor_pins: dict[str, Any] = {}
         for unit in dag.units:
             target = target_by_identity.get(unit.target_identity) or target_by_id.get(
                 unit.target_identity
@@ -252,8 +265,32 @@ def admit_adaptive_plan(
             executor = executors.get(unit.target_identity) or executors.get(
                 target.engine
             )
+            executor_pins.setdefault(unit.target_identity, executor)
+            executor_pins.setdefault(target.engine, executor)
             if executor is None:
                 continue
+            info = getattr(executor, "info", None)
+            if info is None:
+                raise _reject("Adaptive executor metadata is missing", "PMADP501")
+            if (
+                target.executor is not None
+                and getattr(info, "identity", None) != target.executor
+            ):
+                raise _reject("Adaptive executor identity is not qualified", "PMADP501")
+            if "etlantic.plan/2" not in tuple(getattr(info, "plan_versions", ())):
+                raise _reject("Adaptive executor does not support plan/2", "PMADP501")
+            if "etlantic.physical_unit/1" not in tuple(
+                getattr(info, "unit_protocol_versions", ())
+            ):
+                raise _reject(
+                    "Adaptive executor does not support physical-unit/1", "PMADP501"
+                )
+            if target.capability_fingerprint and getattr(
+                info, "capability_fingerprint", ""
+            ) not in {"", target.capability_fingerprint}:
+                raise _reject(
+                    "Adaptive executor capability fingerprint drifted", "PMADP501"
+                )
             analyze = getattr(executor, "analyze", None)
             if not callable(analyze):
                 raise _reject("Adaptive executor has no metadata analysis", "PMADP501")
@@ -307,7 +344,19 @@ def admit_adaptive_plan(
         ]
         if errors:
             raise _reject("Adaptive runtime trust admission failed", "PMADP501")
-    return AdaptiveAdmission(plan, row, tuple(dag.units), target_engines, request)
+    storage_pins: dict[str, Any] = {}
+    if runtime is not None:
+        storage_pins.update(getattr(runtime, "storage", {}) or {})
+        storage_pins.setdefault("memory", getattr(runtime, "memory", None))
+    return AdaptiveAdmission(
+        plan,
+        row,
+        tuple(dag.units),
+        target_engines,
+        request,
+        executor_pins,
+        storage_pins,
+    )
 
 
 __all__ = ["AdaptiveAdmission", "admit_adaptive_plan"]

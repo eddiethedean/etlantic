@@ -1,3 +1,7 @@
+---
+status: Experimental
+---
+
 # Adaptive execution 0.53 qualification
 
 `scripts/check_adaptive_0_53.py` runs the phase 0.53 adaptive execution and

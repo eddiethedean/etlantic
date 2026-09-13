@@ -115,6 +115,21 @@ async def arun_pipeline(
     request_supplied = request is not None
     request = request or RunRequest()
     resolved = resolve_profile(profile)
+    if resolved.execution_strategy == "adaptive" and resolved.concurrency is not None:
+        request = RunRequest(
+            selection=request.selection,
+            intent=request.intent,
+            materialization=request.materialization,
+            retry=request.retry,
+            timeout=request.timeout,
+            cancellation=request.cancellation,
+            parameter_overrides=request.parameter_overrides,
+            asset_overrides=request.asset_overrides,
+            implementation_overrides=request.implementation_overrides,
+            invalidation=request.invalidation,
+            no_write=request.no_write,
+            metadata={**request.metadata, "concurrency": resolved.concurrency},
+        )
     if (
         resolved.execution_strategy == "adaptive"
         and not request_supplied
