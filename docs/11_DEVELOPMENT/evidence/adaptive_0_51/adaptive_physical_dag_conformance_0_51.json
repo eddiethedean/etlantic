@@ -1,11 +1,11 @@
 {
   "artifact": "adaptive_physical_dag_conformance_0_51.json",
   "issue_ledger": "docs/11_DEVELOPMENT/phase_0_52_issue_ledger.json",
-  "issue_ledger_sha256": "b9e5e80f7f16bb00864cb2d08bb6dc2e3d3b6e9b2e4bf2c3b8a6b8aa4f4901a4",
+  "issue_ledger_sha256": "17ae469234f481a8211a35e22b680a08badf3c1aa8a24d6379e374ea8723072b",
   "passed_scenarios": 5,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:06f721f2d5073d286446faa70685f61fa924ba811827ba3e1e77aeb5732b133b",
+  "repository_revision": "sha256:a31b49ad742c33c90af4a635650d5634deccc65d58aac5a81a90d48943d3696e",
   "result": "pass",
   "scenario_count": 5,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_regions_are_maximal_and_unfused_without_proof",
-      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "plan_fingerprint": "50120b03266764a52237f85e84ea882e0279ddbe806c94155b626dc3c397c623",
       "result": "pass",
       "verification": "test_adaptive_regions_are_maximal_and_unfused_without_proof"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_021_regions_bind_execution_policy_and_fusion_facts",
-      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "plan_fingerprint": "50120b03266764a52237f85e84ea882e0279ddbe806c94155b626dc3c397c623",
       "result": "pass",
       "verification": "test_final_052_021_regions_bind_execution_policy_and_fusion_facts"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
-      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "plan_fingerprint": "50120b03266764a52237f85e84ea882e0279ddbe806c94155b626dc3c397c623",
       "result": "pass",
       "verification": "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds"
     },
@@ -45,7 +45,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata",
-      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "plan_fingerprint": "50120b03266764a52237f85e84ea882e0279ddbe806c94155b626dc3c397c623",
       "result": "pass",
       "verification": "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata"
     },
@@ -55,7 +55,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
-      "plan_fingerprint": "f40ea82a496bcb2b20849f1df7741ec11e623e4e0ecdf678680e10d79f225a1e",
+      "plan_fingerprint": "50120b03266764a52237f85e84ea882e0279ddbe806c94155b626dc3c397c623",
       "result": "pass",
       "verification": "test_final_052_022_generated_units_bind_contract_and_policy_evidence"
     }
