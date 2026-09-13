@@ -1,7 +1,7 @@
 # etlantic-snowflake (Experimental)
 
 
-Version **0.51.0** (lockstep with ETLantic core).
+Version **0.52.0** (lockstep with ETLantic core).
 Native Snowflake connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `snowflake` source/sink/storage connectors. CI
@@ -14,13 +14,13 @@ uses an in-memory fake; live Snowflake is optional. Pin with core.
 ## Install
 
 ```bash
-pip install 'etlantic-snowflake==0.51.0'
+pip install 'etlantic-snowflake==0.52.0'
 # Live Snowflake (optional):
-# pip install 'etlantic-snowflake[snowflake]==0.51.0'
-# pip install 'etlantic==0.51.0'
+# pip install 'etlantic-snowflake[snowflake]==0.52.0'
+# pip install 'etlantic==0.52.0'
 ```
 
-Core dependency: `etlantic>=0.51.0,<0.52`.
+Core dependency: `etlantic>=0.52.0,<0.53`.
 
 ## Entry points
 
