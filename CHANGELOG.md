@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Executable, revision-bound adaptive conformance evidence covering
   AC-052-001 through AC-052-018, enforced by the CI evidence verifier.
 
+## [0.52.0] - 2026-09-12
+
+### Added
+
+- Deterministic adaptive planning with complete candidate matrices, canonical
+  objectives, bounded explain output, and content-bound physical-DAG records.
+- Lockstep 0.52.0 package metadata, migration guidance, and release evidence.
+
+### Safety boundary
+
+- Adaptive execution and external compilation remain unavailable and reject
+  before external I/O. Existing explicit `/1` planning remains compatible.
+
 ## [0.51.0] - 2026-09-11
 
 ### Adopter summary
@@ -1987,6 +2000,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 
 [Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.51.0...HEAD
 [0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0
+[0.52.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.0
 [0.50.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.1
 [0.50.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.0
 [0.49.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.49.0

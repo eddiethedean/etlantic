@@ -1,6 +1,6 @@
 # Support
 
-ETLantic **0.51.0** is the **current published Beta release** suitable for documented
+ETLantic **0.52.0** is the **current published Beta release** suitable for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed
@@ -8,7 +8,7 @@ response time.
 
 ## What we support
 
-- Bug reports against the **current published minor line** (`0.51.x`)
+- Bug reports against the **current published minor line** (`0.52.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 
@@ -19,7 +19,7 @@ response time.
 - Compliance attestations (SOC2, GDPR certification, etc.)
 - Advanced supply-chain programs beyond shipped SHA-256 digests, attestations,
   OIDC publish, documented package pins, and plugin allowlists (CycloneDX SBOM
-  optional; failed for v0.35.0 — verify the current release notes for 0.51.x)
+  optional; failed for v0.35.0 — verify the current release notes for 0.52.x)
 - Guarantees for Experimental APIs (for example Structured Streaming, shared-service)
 - Guarantees for Future design / Design Proposal pages
 - Formal enterprise SLA or unbounded scale claims
